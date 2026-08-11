@@ -8478,6 +8478,287 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
   _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+--- !u!1 &361590620
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 361590622}
+  - component: {fileID: 361590621}
+  m_Layer: 0
+  m_Name: __MoyvaJsonBindings
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &361590621
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 361590620}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea688967269dbc51aa030e7381716f56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.Jsonization::Kruty1918.Moyva.Jsonization.MoyvaJsonBindingMarker
+  _bindings:
+  - Target: {fileID: 678375842}
+    PropertyPath: _graphAsset
+    ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
+    ConfigId: testgeneratorgraph
+  - Target: {fileID: 678375842}
+    PropertyPath: _projectSettings
+    ConfigType: Kruty1918.Moyva.Grid.API.MoyvaProjectSettingsSO
+    ConfigId: moyvaprojectsettings
+  - Target: {fileID: 678375842}
+    PropertyPath: _tileRegistryOverride
+    ConfigType: Kruty1918.Moyva.Grid.API.TileRegistrySO
+    ConfigId: tile3dregistry
+  - Target: {fileID: 678375842}
+    PropertyPath: _mapObjectRegistry
+    ConfigType: Kruty1918.Moyva.Generator.API.MapObjectRegistrySO
+    ConfigId: mapobjectregistry
+  - Target: {fileID: 678375842}
+    PropertyPath: _buildingRegistry
+    ConfigType: Kruty1918.Moyva.Construction.Runtime.BuildingRegistrySO
+    ConfigId: new-building-registry-so
+  - Target: {fileID: 678375842}
+    PropertyPath: _cloudsSettings
+    ConfigType: Kruty1918.Moyva.Clouds.API.CloudsSettings
+    ConfigId: cloudssettings
+  - Target: {fileID: 429876364}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1827957274}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 708577336}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2126115994}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1549643411}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1391855618}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2144015534}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2039796958}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2026830664}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1071735479}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1316308756}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1290484283}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1415812550}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2143226278}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 709592911}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1225398777}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 233092239}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 348544268}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 537050249}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1920223995}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1461487383}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2021469319}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1486479234}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1703230491}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1659762366}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1649478609}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1145700848}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 827738559}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 829916996}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1167575359}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1783245605}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1155678258}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 396159002}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 233218942}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1243697399}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2105000206}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 976000054}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2105000077}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2105000105}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2105000125}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2035747930}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 329567565}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2093891340}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 969977535}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 746021222}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 684164734}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 601570575}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 604988764}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 254606370}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 352495801}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 610174634}
+    PropertyPath: _audioMixerBindings
+    ConfigType: Kruty1918.Moyva.HomeMenu.Runtime.AudioMixerBindingsSO
+    ConfigId: moyvaaudiomixerbindings
+  - Target: {fileID: 610174634}
+    PropertyPath: _config
+    ConfigType: Kruty1918.Moyva.HomeMenu.Runtime.HomeMenuConfigSO
+    ConfigId: homemenuconfig
+  - Target: {fileID: 610174634}
+    PropertyPath: _worldCreationDefaults
+    ConfigType: Kruty1918.Moyva.WorldCreation.API.WorldCreationDefaultsSO
+    ConfigId: worldcreationdefaults
+--- !u!4 &361590622
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 361590620}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &365489598
 GameObject:
   m_ObjectHideFlags: 0
@@ -57103,3 +57384,4 @@ SceneRoots:
   - {fileID: 1372784659}
   - {fileID: 1240876895}
   - {fileID: 1751531049}
+  - {fileID: 361590622}

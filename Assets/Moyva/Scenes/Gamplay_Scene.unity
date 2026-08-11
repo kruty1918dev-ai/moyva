@@ -3981,6 +3981,143 @@ MonoBehaviour:
   drawSourceFootprints: 1
   drawEmittedCellsWhenSelected: 1
   drawAllChunkLabels: 0
+--- !u!1 &372326419
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 372326421}
+  - component: {fileID: 372326420}
+  m_Layer: 0
+  m_Name: __MoyvaJsonBindings
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &372326420
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 372326419}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea688967269dbc51aa030e7381716f56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.Jsonization::Kruty1918.Moyva.Jsonization.MoyvaJsonBindingMarker
+  _bindings:
+  - Target: {fileID: 1490513038}
+    PropertyPath: tileRegistry
+    ConfigType: Kruty1918.Moyva.Grid.API.TileRegistrySO
+    ConfigId: tile3dregistry
+  - Target: {fileID: 1490513038}
+    PropertyPath: terrainLayerProfiles
+    ConfigType: Kruty1918.Moyva.Grid.API.TerrainLayerProfileSO
+    ConfigId: terrainlayerprofiles-gamplay
+  - Target: {fileID: 1490513038}
+    PropertyPath: projectSettings
+    ConfigType: Kruty1918.Moyva.Grid.API.MoyvaProjectSettingsSO
+    ConfigId: moyvaprojectsettings
+  - Target: {fileID: 782056239}
+    PropertyPath: _graphAsset
+    ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
+    ConfigId: testgeneratorgraph
+  - Target: {fileID: 782056239}
+    PropertyPath: _tileRegistry
+    ConfigType: Kruty1918.Moyva.Grid.API.TileRegistrySO
+    ConfigId: tile3dregistry
+  - Target: {fileID: 782056239}
+    PropertyPath: _mapObjectRegistry
+    ConfigType: Kruty1918.Moyva.Generator.API.MapObjectRegistrySO
+    ConfigId: mapobjectregistry
+  - Target: {fileID: 782056239}
+    PropertyPath: _tileWorldCreatorMapping
+    ConfigType: Kruty1918.Moyva.Generator.API.TileWorldCreatorIdMappingSO
+    ConfigId: moyvatileworldcreatoridmapping
+  - Target: {fileID: 1002158795}
+    PropertyPath: _projectSettings
+    ConfigType: Kruty1918.Moyva.Grid.API.MoyvaProjectSettingsSO
+    ConfigId: moyvaprojectsettings
+  - Target: {fileID: 2084813299}
+    PropertyPath: _unitRegistry
+    ConfigType: Kruty1918.Moyva.Units.Runtime.UnitRegistrySO
+    ConfigId: unitregistry
+  - Target: {fileID: 2100979363}
+    PropertyPath: _config
+    ConfigType: Kruty1918.Moyva.Bootstrap.Runtime.BootstrapInstallerConfigSO
+    ConfigId: bootstrapinstallerconfig
+  - Target: {fileID: 2100979366}
+    PropertyPath: buildingRegistry
+    ConfigType: Kruty1918.Moyva.Construction.Runtime.BuildingRegistrySO
+    ConfigId: new-building-registry-so
+  - Target: {fileID: 2100979366}
+    PropertyPath: _worldDefaults
+    ConfigType: Kruty1918.Moyva.WorldCreation.API.WorldCreationDefaultsSO
+    ConfigId: worldcreationdefaults
+  - Target: {fileID: 2100979367}
+    PropertyPath: _database
+    ConfigType: Kruty1918.Moyva.Economy.API.EconomyDatabaseSO
+    ConfigId: economydatabase
+  - Target: {fileID: 2100979367}
+    PropertyPath: _rulesTemplate
+    ConfigType: Kruty1918.Moyva.Economy.API.EconomyRulesConfiguration
+    ConfigId: economyrulesconfiguration
+  - Target: {fileID: 1735969942}
+    PropertyPath: _cameraSettings
+    ConfigType: Kruty1918.Moyva.Camera.API.CameraSettingsSO
+    ConfigId: camerasettings
+  - Target: {fileID: 1998921543}
+    PropertyPath: _settings
+    ConfigType: Kruty1918.Moyva.FogOfWar.API.FogOfWarSettings
+    ConfigId: fogofwarsettings
+  - Target: {fileID: 1306218301}
+    PropertyPath: _sessionConfig
+    ConfigType: Kruty1918.Moyva.Calendar.Runtime.CalendarSessionConfigSO
+    ConfigId: calendarsessionconfig
+  - Target: {fileID: 275478190}
+    PropertyPath: _database
+    ConfigType: Kruty1918.Moyva.Economy.API.EconomyDatabaseSO
+    ConfigId: economydatabase
+  - Target: {fileID: 275478190}
+    PropertyPath: _rulesTemplate
+    ConfigType: Kruty1918.Moyva.Economy.API.EconomyRulesConfiguration
+    ConfigId: economyrulesconfiguration
+  - Target: {fileID: 1281916540}
+    PropertyPath: _settings
+    ConfigType: Kruty1918.Moyva.Clouds.API.CloudsSettings
+    ConfigId: cloudssettings
+  - Target: {fileID: 1744875389}
+    PropertyPath: _graphAsset
+    ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
+    ConfigId: testgeneratorgraph
+  - Target: {fileID: 1575837378}
+    PropertyPath: _systemProfile
+    ConfigType: Kruty1918.Moyva.Construction.API.ConstructionSystemProfileSO
+    ConfigId: constructionsystemprofile-gamplay
+  - Target: {fileID: 1575837378}
+    PropertyPath: _buildingRegistry
+    ConfigType: Kruty1918.Moyva.Construction.Runtime.BuildingRegistrySO
+    ConfigId: new-building-registry-so
+--- !u!4 &372326421
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 372326419}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &373938575
 GameObject:
   m_ObjectHideFlags: 0
@@ -14983,10 +15120,6 @@ MonoBehaviour:
   iconImage: {fileID: 1082362508}
   button: {fileID: 1562288825}
   selectedColor: {r: 0.82, g: 0.66, b: 0.28, a: 1}
-  pressScaleMultiplier: 1.08
-  pressDuration: 0.16
-  pressVibrato: 8
-  pressElasticity: 0.8
   disabledVisualAlpha: 0.45
 --- !u!114 &1562288825
 MonoBehaviour:
@@ -17137,6 +17270,7 @@ MonoBehaviour:
   itemContainer: {fileID: 2039294800}
   buttonPrefab: {fileID: 1562288823}
   categoryTabs: {fileID: 1197400013}
+  searchInput: {fileID: 0}
   buttonSize: {x: 112, y: 128}
 --- !u!114 &1821345902
 MonoBehaviour:
@@ -21193,3 +21327,4 @@ SceneRoots:
   - {fileID: 786021154}
   - {fileID: 1316673325}
   - {fileID: 1575837379}
+  - {fileID: 372326421}

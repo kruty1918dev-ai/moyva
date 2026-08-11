@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "silver-ingot-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Silver-ingot",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-27.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "8ce5a7661c214ba4a812ef1912e0b398",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Silver-ingot.asset",
+    "sourceHash": "4d6e1c97b4f95b1b18a5d1e8dd9de24136fa7fc265e449437c949f9f1cb170a5"
+  }
+}

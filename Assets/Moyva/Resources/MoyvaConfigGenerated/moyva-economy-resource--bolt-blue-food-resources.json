@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "bolt-blue-food-resources",
+  "model": "economy-resource",
+  "displayName": "Bolt-blue",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-44.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "5df3c6176fb04295a5fcde8631f1829e",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Berry-bunch.asset",
+    "sourceHash": "6e42fb0d397520387a2e63b14b0ec8358613fddb9e892466829527403bd4d112"
+  }
+}

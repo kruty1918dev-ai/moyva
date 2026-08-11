@@ -1,0 +1,24 @@
+{
+  "$schema": "../../Schemas/data-biomes.schema.json",
+  "schema": "moyva.data-biomes",
+  "version": 1,
+  "id": "databiomessettings",
+  "model": "data-biomes",
+  "biomes": [
+    {
+      "tileID": "grass-0",
+      "biomeName": "grass",
+      "minHeight": 0.0,
+      "maxHeight": 0.3,
+      "minMoisture": 0.0,
+      "maxMoisture": 0.2
+    }
+  ],
+  "defaultTileID": "grass-0",
+  "moistureScale": 0.0,
+  "migration": {
+    "sourceAssetGuid": "c305e5bb3e9ea5947b96ce9b03612bcb",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/Prototype/DataBiomesSettings.asset",
+    "sourceHash": "67b1b326ff136a98bce48c82b340c60102fdf14dfa2f7badb72280f50fa15b06"
+  }
+}

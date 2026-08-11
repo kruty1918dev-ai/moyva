@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "silver-chunks-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Silver-chunks",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-68.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "9ce91407e82f4b2cbc8b2d5c29a83a7d",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Silver-chunks.asset",
+    "sourceHash": "b1d835203c43679367e4077fac066a41820bdf25afee5bee956931c0d15babb8"
+  }
+}

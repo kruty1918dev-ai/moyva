@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "cyan-gem-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Cyan-gem",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-15.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "3b519cf7f33143d08253b5c9ca49e35d",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Ruby.asset",
+    "sourceHash": "afd575f5e919e29dfc7310d6c61c704a94d87b4e300e33427855882aa99a41b6"
+  }
+}

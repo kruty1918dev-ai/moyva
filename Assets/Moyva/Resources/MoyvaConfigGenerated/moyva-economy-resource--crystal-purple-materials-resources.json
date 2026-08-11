@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "crystal-purple-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Crystal-purple",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-14.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "1aca25c524ee44cf82f91af4c802f338",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Diamond.asset",
+    "sourceHash": "58986708fdfa0c61d392a72844b81a8f796de7be401b6f219bb749d4d62068f1"
+  }
+}

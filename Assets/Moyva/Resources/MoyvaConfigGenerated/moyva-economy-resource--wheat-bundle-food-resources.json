@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "wheat-bundle-food-resources",
+  "model": "economy-resource",
+  "displayName": "Wheat-bundle",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-47.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "c3894322889f41da8b91ee7316c1e546",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Wheat-bundle.asset",
+    "sourceHash": "2fdb70569b6c708da9de95ab31a1e39fa6af6957f610bcb9fe51e98c40375e96"
+  }
+}

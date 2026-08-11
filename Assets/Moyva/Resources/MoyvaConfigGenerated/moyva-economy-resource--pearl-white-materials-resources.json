@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "pearl-white-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Pearl-white",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-20.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "96ced90b67c84e1699c5fc3b48de3fc9",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Amber-crystal.asset",
+    "sourceHash": "e4209f9b67ee704bd7f3b8f92ad183963e9c3b7e65ce9716d644d7f11dd748cf"
+  }
+}

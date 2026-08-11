@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "barrel-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Barrel",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-142.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "7863ca2d47694a64886d87598d456845",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Barrel.asset",
+    "sourceHash": "8629d59e5c63d759c7ea72c6f77a0160c8ae4e3c1ec1dd28a9a1bd2617b45b99"
+  }
+}

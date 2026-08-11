@@ -1,0 +1,198 @@
+{
+  "$schema": "../../Schemas/clouds.schema.json",
+  "schema": "moyva.clouds",
+  "version": 1,
+  "id": "cloudssettings",
+  "model": "clouds",
+  "enabled": true,
+  "maxActiveClouds": 24,
+  "initialClouds": 14,
+  "initialCloudsStartInView": true,
+  "spawnIntervalRange": {
+    "x": 4.0,
+    "y": 9.0
+  },
+  "spawnAreaMode": "MapBounds",
+  "minimumSpawnDistance": 5.0,
+  "spawnPlacementAttempts": 10,
+  "cloudSprites": [
+    {
+      "sprite": {
+        "$asset": "asset.sprite.2d-clouds-0.137c6b21",
+        "editorPath": "Assets/Moyva/Art/2d-clouds.png",
+        "required": true
+      },
+      "chance": 1.0
+    },
+    {
+      "sprite": {
+        "$asset": "asset.sprite.2d-clouds-1.137c6b21",
+        "editorPath": "Assets/Moyva/Art/2d-clouds.png",
+        "required": true
+      },
+      "chance": 1.0
+    },
+    {
+      "sprite": {
+        "$asset": "asset.sprite.2d-clouds-2.137c6b21",
+        "editorPath": "Assets/Moyva/Art/2d-clouds.png",
+        "required": true
+      },
+      "chance": 1.0
+    },
+    {
+      "sprite": {
+        "$asset": "asset.sprite.2d-clouds-3.137c6b21",
+        "editorPath": "Assets/Moyva/Art/2d-clouds.png",
+        "required": true
+      },
+      "chance": 1.0
+    },
+    {
+      "sprite": {
+        "$asset": "asset.sprite.2d-clouds-4.137c6b21",
+        "editorPath": "Assets/Moyva/Art/2d-clouds.png",
+        "required": true
+      },
+      "chance": 1.0
+    },
+    {
+      "sprite": {
+        "$asset": "asset.sprite.2d-clouds-5.137c6b21",
+        "editorPath": "Assets/Moyva/Art/2d-clouds.png",
+        "required": true
+      },
+      "chance": 1.0
+    },
+    {
+      "sprite": {
+        "$asset": "asset.sprite.2d-clouds-6.137c6b21",
+        "editorPath": "Assets/Moyva/Art/2d-clouds.png",
+        "required": true
+      },
+      "chance": 1.0
+    },
+    {
+      "sprite": {
+        "$asset": "asset.sprite.2d-clouds-7.137c6b21",
+        "editorPath": "Assets/Moyva/Art/2d-clouds.png",
+        "required": true
+      },
+      "chance": 1.0
+    },
+    {
+      "sprite": {
+        "$asset": "asset.sprite.2d-clouds-8.137c6b21",
+        "editorPath": "Assets/Moyva/Art/2d-clouds.png",
+        "required": true
+      },
+      "chance": 1.0
+    },
+    {
+      "sprite": {
+        "$asset": "asset.sprite.2d-clouds-9.137c6b21",
+        "editorPath": "Assets/Moyva/Art/2d-clouds.png",
+        "required": true
+      },
+      "chance": 1.0
+    },
+    {
+      "sprite": {
+        "$asset": "asset.sprite.2d-clouds-10.137c6b21",
+        "editorPath": "Assets/Moyva/Art/2d-clouds.png",
+        "required": true
+      },
+      "chance": 1.0
+    },
+    {
+      "sprite": {
+        "$asset": "asset.sprite.2d-clouds-11.137c6b21",
+        "editorPath": "Assets/Moyva/Art/2d-clouds.png",
+        "required": true
+      },
+      "chance": 1.0
+    }
+  ],
+  "speedRange": {
+    "x": 0.1,
+    "y": 0.8
+  },
+  "scaleRange": {
+    "x": 1.0,
+    "y": 2.0
+  },
+  "altitudeScaleJitter": 0.12,
+  "lowAltitudeMipBias": 1.2,
+  "highAltitudeMipBias": 0.15,
+  "lowAltitudeHeightMultiplier": 0.7,
+  "highAltitudeHeightMultiplier": 1.35,
+  "leftToRightChance": 0.5,
+  "spawnHorizontalPadding": 3.0,
+  "spawnVerticalPadding": 1.5,
+  "despawnHorizontalPadding": 4.0,
+  "fadeDuration": 10.0,
+  "mapMaskEnabled": true,
+  "manualMapSize": {
+    "x": 32.0,
+    "y": 32.0
+  },
+  "manualMapCenter": {
+    "x": 15.5,
+    "y": 15.5
+  },
+  "maskEdgeFadeWidth": 1.5,
+  "maskEdgeFadeSteps": 5,
+  "lifetimeDissolveEnabled": true,
+  "lifetimeRange": {
+    "x": 80.0,
+    "y": 180.0
+  },
+  "dissolveDuration": 3.0,
+  "cloudColor": {
+    "r": 1.0,
+    "g": 1.0,
+    "b": 1.0,
+    "a": 1.0
+  },
+  "cloudAlpha": 0.85,
+  "spriteMaterial": {
+    "$asset": "",
+    "editorPath": "",
+    "required": true
+  },
+  "cameraProximityFadeEnabled": true,
+  "cameraFadeOrthographicRange": {
+    "x": 5.0,
+    "y": 14.0
+  },
+  "closeCameraAlphaMultiplier": 0.28,
+  "cameraFadeSteps": 4,
+  "sortingLayerName": "Default",
+  "sortingOrder": 50,
+  "shadowsEnabled": true,
+  "cloudHeight": 2.0,
+  "shadowOffset": {
+    "x": 0.0,
+    "y": -2.0
+  },
+  "shadowOffsetPerHeight": {
+    "x": 0.08,
+    "y": -0.18
+  },
+  "shadowColor": {
+    "r": 0.0,
+    "g": 0.0,
+    "b": 0.0,
+    "a": 1.0
+  },
+  "shadowAlphaMultiplier": 0.35,
+  "shadowScaleMultiplier": 1.4,
+  "shadowScalePerHeight": 0.04,
+  "shadowAlphaHeightFade": 0.08,
+  "shadowSortingOrderOffset": -1,
+  "migration": {
+    "sourceAssetGuid": "1791697a3240b51ddadc7bae72cf33e3",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Effects/CloudsSettings.asset",
+    "sourceHash": "3a051ca8027cd2dd75e5d0f0db8d89b52bc09215cfc7264ce77e331b537f5e3f"
+  }
+}

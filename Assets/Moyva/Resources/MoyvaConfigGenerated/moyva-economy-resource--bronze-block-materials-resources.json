@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "bronze-block-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Bronze-block",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-32.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "0b59e904702942cb8d86534bbfdd4a1d",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Bronze-block.asset",
+    "sourceHash": "2decb4c5f640a6efaf39c5823a640329ea8efc06209e4175a5a3577048af1fe0"
+  }
+}

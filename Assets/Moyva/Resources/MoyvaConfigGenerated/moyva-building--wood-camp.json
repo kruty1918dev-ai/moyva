@@ -1,0 +1,132 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "wood-camp",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 0,
+  "identity": {
+    "id": "wood-camp",
+    "displayName": "Табір лісорубів",
+    "category": "Industrial",
+    "role": "Production",
+    "description": "Заготовляє деревину та потребує двох працівників.",
+    "tags": []
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.building-lumbermill-blue.81e5f8fe",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_lumbermill_blue.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.wood-camp.b87e1d3e",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/wood-camp.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.wood-camp.b87e1d3e",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/wood-camp.png",
+      "required": true
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 5
+      }
+    ],
+    "buildTurns": 2,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "workforce",
+      "workersRequired": 2,
+      "priority": 0,
+      "workerTypeId": "",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "production",
+      "resourceId": "walnut-wood-materials-resources",
+      "workersRequired": 0,
+      "priority": 0,
+      "recipes": [],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "a435c2324a0288cdea730d07f0c151ad",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/wood-camp.asset",
+    "sourceHash": "6c520740354786befb5458b4901daf0641d7fd8a022f662c9395374d0d2b15ed"
+  }
+}

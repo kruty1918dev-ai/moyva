@@ -1,0 +1,20 @@
+{
+  "$schema": "../../Schemas/data-noise.schema.json",
+  "schema": "moyva.data-noise",
+  "version": 1,
+  "id": "datanoisesettings",
+  "model": "data-noise",
+  "scale": 20.0,
+  "octaves": 4,
+  "persistance": 0.5,
+  "lacunarity": 2.0,
+  "offset": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "migration": {
+    "sourceAssetGuid": "b52c6a6864aaac144b8a37c6cccf1366",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/Prototype/DataNoiseSettings.asset",
+    "sourceHash": "15a54f8d0b4967c46ec1b1ede5cbc28ffc1be8707c5992e9cbe52af8f0c2a3f8"
+  }
+}

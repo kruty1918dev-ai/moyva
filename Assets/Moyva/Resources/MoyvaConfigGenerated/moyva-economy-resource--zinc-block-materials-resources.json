@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "zinc-block-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Zinc-block",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-35.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "d6270431a6ce40e9bb06fa5cb7e5dd30",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Zinc-block.asset",
+    "sourceHash": "de4988bf9e533e772302ee4c7b48e0712759f217df5e115380a75efff415c9b8"
+  }
+}

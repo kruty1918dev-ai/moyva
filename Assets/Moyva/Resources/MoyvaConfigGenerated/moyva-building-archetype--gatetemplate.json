@@ -1,0 +1,68 @@
+{
+  "$schema": "../../Schemas/building-archetype.schema.json",
+  "schema": "moyva.building-archetype",
+  "version": 1,
+  "id": "gatetemplate",
+  "model": "building-archetype",
+  "displayName": "Gate Template",
+  "role": "Gate",
+  "category": "Walls",
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": false,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [],
+    "buildTurns": 1,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 1,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "gate",
+      "hitPoints": 100,
+      "openSpeed": 1.0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "548a098335d346ac8bf54d55c49c5a4c",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Templates/GateTemplate.asset",
+    "sourceHash": "0b1d8029c4cc66804daefebb66dfd489df507749f92e5be795375623583f8ae5"
+  }
+}

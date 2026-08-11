@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "blue-gem-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Blue-gem",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-18.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "246b1cc6702249968bf13d1749d56f85",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Red-gem.asset",
+    "sourceHash": "0e6917111266cadcd81b1d07fa0b5977bc595da7da44f25f067d17c3bb265ec5"
+  }
+}

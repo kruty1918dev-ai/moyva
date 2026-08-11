@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "cup-gold-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Cup-gold",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-143.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "ada8b61321c34bd79c9785ab1cb57b19",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Bowl.asset",
+    "sourceHash": "6cbd51f874c84867f573fabcd111c447246cf801f5b7e43d9e456e8e2b97b969"
+  }
+}

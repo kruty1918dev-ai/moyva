@@ -1,0 +1,466 @@
+{
+  "$schema": "../../Schemas/tile-world-creator-id-mapping.schema.json",
+  "schema": "moyva.tile-world-creator-id-mapping",
+  "version": 1,
+  "id": "moyvatileworldcreatoridmapping",
+  "model": "tile-world-creator-id-mapping",
+  "terrainLayers": [
+    {
+      "idPattern": "water*",
+      "blueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "blueprintLayerName": "Water",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.af07a11c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Fill.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "grass-coast-*",
+      "blueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "blueprintLayerName": "Sand",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.6f7566a5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "stone-hill-*",
+      "blueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "blueprintLayerName": "Hill",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.cliff-fill.6242e01f",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Fill.prefab",
+        "required": true
+      },
+      "movementCost": 1.2
+    },
+    {
+      "idPattern": "texture-grass-*",
+      "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "blueprintLayerName": "Grass",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "grass*",
+      "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "blueprintLayerName": "Grass",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "TileGrass",
+      "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "blueprintLayerName": "Grass",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "sand*",
+      "blueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "blueprintLayerName": "Sand",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.6f7566a5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "snow*",
+      "blueprintLayerGuid": "4b3b8cd0-44ae-4923-aadb-bc49251bbc6b",
+      "blueprintLayerName": "Snow",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      },
+      "movementCost": 2.5
+    },
+    {
+      "idPattern": "water",
+      "blueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "blueprintLayerName": "Water",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.af07a11c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Fill.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "ocean-deep",
+      "blueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "blueprintLayerName": "Water",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.af07a11c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Fill.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "ocean-shallow",
+      "blueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "blueprintLayerName": "Water",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.af07a11c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Fill.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "beach",
+      "blueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "blueprintLayerName": "Sand",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.6f7566a5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "lowland",
+      "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "blueprintLayerName": "Grass",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.4b3b1230",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/GrassToBeach/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "grass",
+      "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "blueprintLayerName": "Grass",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "hill",
+      "blueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "blueprintLayerName": "Hill",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.cliff-fill.6242e01f",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Fill.prefab",
+        "required": true
+      },
+      "movementCost": 1.2
+    },
+    {
+      "idPattern": "mountain",
+      "blueprintLayerGuid": "3e238af7-89df-4ad7-a35a-1869f9321613",
+      "blueprintLayerName": "Mountain",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.baseblockpresetgreenramp.53689e49",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetGreenRamp.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.9d579ac9",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Green/BaseBlock_Fill.prefab",
+        "required": true
+      },
+      "movementCost": 3.0
+    },
+    {
+      "idPattern": "snow",
+      "blueprintLayerGuid": "4b3b8cd0-44ae-4923-aadb-bc49251bbc6b",
+      "blueprintLayerName": "Snow",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.4b3b1230",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/GrassToBeach/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 2.5
+    },
+    {
+      "idPattern": "forest-sparse",
+      "blueprintLayerGuid": "3c608b14-579d-43b1-bb78-04b76e1609a5",
+      "blueprintLayerName": "Forest",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.4b3b1230",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/GrassToBeach/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 1.5
+    },
+    {
+      "idPattern": "forest-dense",
+      "blueprintLayerGuid": "3c608b14-579d-43b1-bb78-04b76e1609a5",
+      "blueprintLayerName": "Forest",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.4b3b1230",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/GrassToBeach/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 2.0
+    },
+    {
+      "idPattern": "grass-tile-level-1-001",
+      "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "blueprintLayerName": "Grass",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.4b3b1230",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/GrassToBeach/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "grass-tile-level-2-001",
+      "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "blueprintLayerName": "Grass",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.4b3b1230",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/GrassToBeach/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "grass-tile-level-3-001",
+      "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "blueprintLayerName": "Grass",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.4b3b1230",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/GrassToBeach/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "grass-tile-level-4-001",
+      "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "blueprintLayerName": "Grass",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.4b3b1230",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/GrassToBeach/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "grass-tile-level-5-001",
+      "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "blueprintLayerName": "Grass",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.4b3b1230",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/GrassToBeach/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "grass-tile-level-6-001",
+      "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "blueprintLayerName": "Grass",
+      "tilePreset": {
+        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "required": true
+      },
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.fill-tile.4b3b1230",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/GrassToBeach/Fill_Tile.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    }
+  ],
+  "objectLayers": [],
+  "buildingLayers": [],
+  "migration": {
+    "sourceAssetGuid": "a45823eb63d12f8b5a4e688262ed4fca",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/TileWorldCreator/MoyvaTileWorldCreatorIdMapping.asset",
+    "sourceHash": "188d94624dc28f87410398c168aef8dfdbabd670c7773f3b4b080e67181111c6"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "$schema": "../../Schemas/data-biomes.schema.json",
+  "schema": "moyva.data-biomes",
+  "version": 1,
+  "id": "archipelagobiomes",
+  "model": "data-biomes",
+  "biomes": [
+    {
+      "tileID": "ocean-deep",
+      "biomeName": "Deep Ocean",
+      "minHeight": 0.0,
+      "maxHeight": 0.2,
+      "minMoisture": 0.0,
+      "maxMoisture": 1.0
+    },
+    {
+      "tileID": "ocean-shallow",
+      "biomeName": "Shallow Ocean",
+      "minHeight": 0.2,
+      "maxHeight": 0.3,
+      "minMoisture": 0.0,
+      "maxMoisture": 1.0
+    },
+    {
+      "tileID": "beach",
+      "biomeName": "Beach",
+      "minHeight": 0.3,
+      "maxHeight": 0.36,
+      "minMoisture": 0.0,
+      "maxMoisture": 1.0
+    },
+    {
+      "tileID": "lowland",
+      "biomeName": "Wet Lowland",
+      "minHeight": 0.36,
+      "maxHeight": 0.48,
+      "minMoisture": 0.0,
+      "maxMoisture": 1.0
+    },
+    {
+      "tileID": "grass",
+      "biomeName": "Open Grassland",
+      "minHeight": 0.48,
+      "maxHeight": 0.6,
+      "minMoisture": 0.0,
+      "maxMoisture": 0.68
+    },
+    {
+      "tileID": "forest-sparse",
+      "biomeName": "Humid Woodland",
+      "minHeight": 0.48,
+      "maxHeight": 0.6,
+      "minMoisture": 0.68,
+      "maxMoisture": 1.0
+    },
+    {
+      "tileID": "hill",
+      "biomeName": "Hills",
+      "minHeight": 0.6,
+      "maxHeight": 0.72,
+      "minMoisture": 0.0,
+      "maxMoisture": 1.0
+    },
+    {
+      "tileID": "mountain",
+      "biomeName": "Mountain Ridge",
+      "minHeight": 0.72,
+      "maxHeight": 0.86,
+      "minMoisture": 0.0,
+      "maxMoisture": 1.0
+    },
+    {
+      "tileID": "snow",
+      "biomeName": "Snowcap",
+      "minHeight": 0.86,
+      "maxHeight": 1.0,
+      "minMoisture": 0.0,
+      "maxMoisture": 1.0
+    }
+  ],
+  "defaultTileID": "grass",
+  "moistureScale": 3.2,
+  "migration": {
+    "sourceAssetGuid": "653880f128a105210b7ab2057472065d",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/ArchipelagoBiomes.asset",
+    "sourceHash": "e39742be0c179ee7e2633645d50a119648d077060d495edb4e283ea03a0dbf98"
+  }
+}

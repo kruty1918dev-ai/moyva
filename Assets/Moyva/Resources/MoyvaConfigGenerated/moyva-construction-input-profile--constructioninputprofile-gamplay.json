@@ -1,0 +1,19 @@
+{
+  "$schema": "../../Schemas/construction-input-profile.schema.json",
+  "schema": "moyva.construction-input-profile",
+  "version": 1,
+  "id": "constructioninputprofile-gamplay",
+  "model": "construction-input-profile",
+  "touchTapMaxMovePixels": 18.0,
+  "touchTapMaxDurationSeconds": 0.45,
+  "enableMousePendingPreviewDrag": true,
+  "enableTouchPendingPreviewDrag": true,
+  "enableMultiTouchCancel": true,
+  "blockInteractiveUi": true,
+  "allowClicksThroughNonInteractiveUi": true,
+  "migration": {
+    "sourceAssetGuid": "2dd7f85b85d1446daa31dd2ded24490d",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/ConstructionInputProfile_Gamplay.asset",
+    "sourceHash": "e576fd0aa19d988a6955b4f6c72a7044240dfeeef92eaab5079b7e29620577af"
+  }
+}

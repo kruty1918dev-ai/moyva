@@ -1,0 +1,76 @@
+{
+  "$schema": "../../Schemas/bootstrap-installer-config.schema.json",
+  "schema": "moyva.bootstrap-installer-config",
+  "version": 1,
+  "id": "bootstrapinstallerconfig",
+  "model": "bootstrap-installer-config",
+  "gameSettings": {
+    "initialResources": [
+      {
+        "resourceId": "steak-food-resources",
+        "amount": 45.0
+      },
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 10.0
+      },
+      {
+        "resourceId": "hardwood-materials-resources",
+        "amount": 30.0
+      },
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 10.0
+      }
+    ],
+    "worldRevealFade": {
+      "enabled": true,
+      "durationSeconds": 0.8,
+      "startDelaySeconds": 0.05,
+      "startAlpha": 1.0
+    }
+  },
+  "startingPositionSettings": {
+    "minMarginFromBorder": 3,
+    "relativeMarginFactor": 0.0853,
+    "startMinHeight": 0.36,
+    "startMaxHeight": 0.7,
+    "requireHeightMapForStart": true,
+    "revealedCircleRadius": 15,
+    "revealShape": "PixelCircle",
+    "minimumExploredTilesBeforeRepair": 4,
+    "useMapSizeScaledFog": true,
+    "fogScaleByMapSize": [
+      {
+        "mapSideTiles": 64,
+        "revealedRadius": 5,
+        "coreVisibleRadius": 7
+      },
+      {
+        "mapSideTiles": 128,
+        "revealedRadius": 10,
+        "coreVisibleRadius": 12
+      },
+      {
+        "mapSideTiles": 256,
+        "revealedRadius": 15,
+        "coreVisibleRadius": 18
+      }
+    ],
+    "keepCoreFullyVisible": true,
+    "coreVisibleRadiusOverride": 16,
+    "multiplayerStartSlots": 4,
+    "minAStarDistanceBetweenPlayers": 30,
+    "startCandidateAttempts": 512,
+    "cameraZ": -10.0,
+    "ensureStartupCameraShowsRevealedArea": true,
+    "startupCameraPaddingTiles": 2.0,
+    "startupCameraRadiusSource": "RevealedFogRadius",
+    "manualStartupCameraRadius": 15
+  },
+  "migration": {
+    "sourceAssetGuid": "ffbfa0b8da1df2ee09606da8300526fc",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Bootstrap/BootstrapInstallerConfig.asset",
+    "sourceHash": "22d3004bebc6b2a387b9a3b0eedb9f72ea2df2ecb53c3fecd9304e65e7b8486f"
+  }
+}

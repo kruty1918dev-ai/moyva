@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "sulfur-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Sulfur",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-22.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "04e16c5649074232bde41e9129e00189",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Sulfur.asset",
+    "sourceHash": "657bc54cf772c91399b6518b4c54414aa5eaf80a3e31c390a06052a2ab76dcf4"
+  }
+}

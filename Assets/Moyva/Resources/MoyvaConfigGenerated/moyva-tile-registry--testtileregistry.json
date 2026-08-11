@@ -1,0 +1,2594 @@
+{
+  "$schema": "../../Schemas/tile-registry.schema.json",
+  "schema": "moyva.tile-registry",
+  "version": 1,
+  "id": "testtileregistry",
+  "model": "tile-registry",
+  "definitions": [
+    {
+      "id": "grass-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-tile-001.fc3f8a45",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.texture-grass-tile-001.d585bc2f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/texture-grass-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.texture-grass-tile-002.3734e76d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/texture-grass-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.texture-grass-tile-003.d1036068",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/texture-grass-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-004",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.texture-grass-tile-004.1934540f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/texture-grass-tile-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-005",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.texture-grass-tile-005.27d99b06",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/texture-grass-tile-005.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-006",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.texture-grass-tile-006.85843760",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/texture-grass-tile-006.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-007",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.texture-grass-tile-007.268293be",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/texture-grass-tile-007.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-008",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.texture-grass-tile-008.eaff9ec4",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/texture-grass-tile-008.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-end-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-end-tile-001.ae40e19b",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-end-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-left-tile-001.07d30624",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-middle-tile-001.03bab146",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-right-tile-001.c0e028b4",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-corners-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-corners-tile-001.174093cd",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-corners-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-left-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-left-tile-002.4b9a012c",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-left-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-middle-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-middle-tile-002.a3b2d178",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-middle-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-right-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-right-tile-002.e49a3733",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-right-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-middle-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-middle-left-corner-tile-001.cb3fb94f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-middle-left-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-middle-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-middle-right-corner-tile-001.402616f0",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-middle-right-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-end-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-end-tile-002.d1119e34",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-end-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-left-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-left-tile-003.31e4b053",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-left-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-middle-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-middle-tile-003.908c8cfa",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-middle-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-right-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-right-tile-003.b64c9ed1",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-right-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-corners-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-corners-tile-002.0d01ad99",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-corners-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-left-tile-004",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-left-tile-004.eb4ee047",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-left-tile-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-middle-tile-004",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-middle-tile-004.fcc01518",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-middle-tile-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-right-tile-004",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-right-tile-004.ff63b5f8",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-right-tile-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-middle-left-corner-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-middle-left-corner-tile-002.a88b32df",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-middle-left-corner-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-top-middle-right-corner-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-top-middle-right-corner-tile-002.fac98a0e",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-top-middle-right-corner-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-001.e7c73fbb",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-002.f44e6d95",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-corners-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-corners-tile-001.4c03f15c",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-corners-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-003.5c7bb5ee",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-left-corners-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-left-corners-tile-001.7df2fa4d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-left-corners-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-tile-001.bf91a345",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-right-corners-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-right-corners-tile-001.4c6fdf8b",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-right-corners-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-004",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-004.fc508324",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-tile-002.0ff68684",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-005",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-005.52f5a6df",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-005.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-left-down-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-left-down-corner-tile-001.dae4fc98",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-left-down-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-right-down-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-right-down-corner-tile-001.6b33a18b",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-right-down-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-006",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-006.3385b50e",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-006.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-007",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-007.191bd04b",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-007.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-008",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-008.55ad15b0",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-008.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-009",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-009.253cffdb",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-009.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-left-corners-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-left-corners-tile-002.33fa8b8a",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-left-corners-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-tile-003.fba05ac4",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-right-corners-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-right-corners-tile-002.ab600d93",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-right-corners-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-010",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-010.01ecf413",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-010.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-011",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-011.70a5fccf",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-011.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-left-down-corner-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-left-down-corner-tile-002.79cd920e",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-left-down-corner-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-right-down-corner-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-right-down-corner-tile-002.4c7eebbc",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-right-down-corner-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-end-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-end-tile-001.339499df",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-end-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-left-tile-001.e91e33b6",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-middle-tile-001.4d62f3f3",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-right-tile-001.706e996f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-down-corners-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-down-corners-tile-001.a6438950",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-down-corners-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-left-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-left-tile-002.60892be5",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-left-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-middle-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-middle-tile-002.e52fce2e",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-middle-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-right-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-right-tile-002.a7709753",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-right-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-diagonal-corners-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-diagonal-corners-tile-001.1802f47f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-diagonal-corners-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-diagonal-corners-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-diagonal-corners-tile-002.5ca88609",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-diagonal-corners-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-end-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-end-tile-002.12ff8031",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-end-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-left-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-left-tile-003.03879e61",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-left-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-middle-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-middle-tile-003.71d967a7",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-middle-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-right-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-right-tile-003.dd909ca5",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-right-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-down-corners-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-down-corners-tile-002.966c9de8",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-down-corners-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-left-tile-004",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-left-tile-004.0275bfce",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-left-tile-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-middle-tile-004",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-middle-tile-004.14772fb9",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-middle-tile-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-down-right-tile-004",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-down-right-tile-004.85422e7f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-down-right-tile-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-diagonal-corners-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-diagonal-corners-tile-003.de0bb643",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-diagonal-corners-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-diagonal-corners-tile-004",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-diagonal-corners-tile-004.307499de",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-diagonal-corners-tile-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-012",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-012.ac3d5e12",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-012.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-left-end-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-left-end-tile-001.c38edd6c",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-left-end-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-013",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-013.32ddec48",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-013.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-right-end-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-right-end-tile-001.b5aafb85",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-right-end-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-014",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-014.3b769c62",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-014.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-left-end-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-left-end-tile-002.7fc4ab9c",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-left-end-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-middle-tile-015",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-middle-tile-015.a40065c3",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-middle-tile-015.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-to-grass-right-end-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-to-grass-right-end-tile-002.b8652d4d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-to-grass-right-end-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-left-tile-001-copy",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-left-tile-001.8740f3d7",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-left-tile-001.8740f3d7",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-middle-tile-001-copy",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-middle-tile-001.582dd519",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-middle-tile-001.582dd519",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-right-tile-001-copy",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-right-tile-001.3283a38f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-right-tile-001.3283a38f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-left-inner-corner-tile-001-copy",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-left-inner-corner-tile-001.ea8ac053",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-left-inner-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-left-inner-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-left-inner-corner-tile-001.ea8ac053",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-left-inner-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-right-inner-corner-tile-001-copy",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-right-inner-corner-tile-001.490ed102",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-right-inner-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-right-inner-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-right-inner-corner-tile-001.490ed102",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-right-inner-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-left-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-left-tile-002.a8fc8c25",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-left-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-middle-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-middle-tile-002.3fcca6b8",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-middle-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-right-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-right-tile-002.10948789",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-right-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-left-inner-corner-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-left-inner-corner-tile-002.ed18a0a7",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-left-inner-corner-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-right-inner-corner-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-right-inner-corner-tile-002.98ad9506",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-right-inner-corner-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-tile-001-copy",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-left-tile-001.994ce1e0",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-left-tile-001.994ce1e0",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-tile-001-copy",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-right-tile-001.7ffb3b84",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-right-tile-001.7ffb3b84",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-left-inner-corner-tile-001-copy",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-left-inner-corner-tile-001.27f30d8d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-left-inner-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-left-inner-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-left-inner-corner-tile-001.27f30d8d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-left-inner-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-right-inner-corner-tile-001-copy",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-right-inner-corner-tile-001.7e7078f4",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-right-inner-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-right-inner-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-right-inner-corner-tile-001.7e7078f4",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-right-inner-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-left-tile-002.0a3f1cb2",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-left-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-right-tile-002.9a273e02",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-right-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-left-inner-corner-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-left-inner-corner-tile-002.47cacb89",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-left-inner-corner-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-right-inner-corner-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-right-inner-corner-tile-002.1c0592ec",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-right-inner-corner-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-left-tile-001-copy",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-left-tile-001.9b9ff0e9",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-left-tile-001.9b9ff0e9",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-middle-tile-001-copy",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-middle-tile-001.34b247ee",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-middle-tile-001.34b247ee",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-right-tile-001-copy",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-right-tile-001.67dff318",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-right-tile-001.67dff318",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-left-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-left-tile-002.fc090802",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-left-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-middle-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-middle-tile-002.af2d182d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-middle-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-right-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-right-tile-002.0a7c74f7",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-right-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-diagonal-corners-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-left-diagonal-corners-tile-001.8d68e24a",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-left-diagonal-corners-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-diagonal-corners-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-right-diagonal-corners-tile-001.49d6347d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-right-diagonal-corners-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-diagonal-corners-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-left-diagonal-corners-tile-002.e696d814",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-left-diagonal-corners-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-diagonal-corners-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-right-diagonal-corners-tile-002.c0457357",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-right-diagonal-corners-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-stairs-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-stairs-tile-001.3cef96ff",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-stairs-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-stairs-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-stairs-tile-002.52449896",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-stairs-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-stairs-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-left-stairs-tile-001.664ef374",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-left-stairs-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-stairs-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-left-stairs-tile-002.25a5f81f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-left-stairs-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-stairs-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-right-stairs-tile-001.f4f61afa",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-right-stairs-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-stairs-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-right-stairs-tile-002.59d1d5a9",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-right-stairs-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-stairs-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-stairs-tile-001.49916ac5",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-stairs-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-stairs-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-stairs-tile-002.05e46b90",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-stairs-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-road-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-top-road-tile-001.28b51701",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-top-road-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-road-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-left-road-tile-001.1d1e975d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-left-road-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-road-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-right-road-tile-001.57dc5ed3",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-right-road-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-road-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-hill-down-road-tile-001.1c3b5860",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/stone-hill-down-road-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-top-end-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-top-end-tile-001.85b0a32b",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-top-end-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-top-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-top-left-tile-001.6de63ab6",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-top-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-top-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-top-middle-tile-001.9760160b",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-top-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-top-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-top-right-tile-001.3c3d85c0",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-top-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-middle-top-corners-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-middle-top-corners-tile-001.17832a19",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-middle-top-corners-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-vertical-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-vertical-middle-tile-001.f1621d96",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-vertical-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-vertical-middle-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-vertical-middle-tile-002.52810515",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-vertical-middle-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-middle-tile-001.e1289d46",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-vertical-middle-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-vertical-middle-tile-003.fa6db16c",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-vertical-middle-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-middle-left-corners-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-middle-left-corners-tile-001.3911d9b6",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-middle-left-corners-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-middle-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-middle-tile-002.cf8aa417",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-middle-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-middle-right-corners-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-middle-right-corners-tile-001.48bf5871",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-middle-right-corners-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-down-end-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-down-end-tile-001.db9374a5",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-down-end-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-down-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-down-left-tile-001.13910118",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-down-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-down-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-down-middle-tile-001.63285a5e",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-down-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-down-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-down-right-tile-001.e962d53d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-down-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-middle-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-middle-tile-003.25f96104",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-middle-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-left-end-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-left-end-tile-001.6caa7959",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-left-end-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-horizontal-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-horizontal-middle-tile-001.91e3be48",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-horizontal-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-right-end-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-right-end-tile-001.672ba948",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-right-end-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-ditch-middle-down-corners-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-ditch-middle-down-corners-tile-001.5fb1bc23",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-ditch-middle-down-corners-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-top-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-coast-top-left-tile-001.9d63cbca",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-coast-top-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-top-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-coast-top-middle-tile-001.d0423971",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-coast-top-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-top-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-coast-top-right-tile-001.bcacbe5d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-coast-top-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-top-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-coast-top-left-corner-tile-001.e846a72a",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-coast-top-left-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-top-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-coast-top-right-corner-tile-001.2100a5c2",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-coast-top-right-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-coast-left-tile-001.ef28926a",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-coast-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-tile-001.e5db0b0d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-coast-right-tile-001.d3e240d6",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-coast-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-down-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-coast-down-left-corner-tile-001.f47b1c64",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-coast-down-left-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-down-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-coast-down-right-corner-tile-001.659ecb14",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-coast-down-right-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-down-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-coast-down-left-tile-001.ef6e1912",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-coast-down-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-down-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-coast-down-middle-tile-001.d6ee218d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-coast-down-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-down-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-coast-down-right-tile-001.406204f5",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-coast-down-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-coast-top-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-coast-top-left-tile-001.600e404c",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-coast-top-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-coast-top-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-coast-top-middle-tile-001.c7dd7fd3",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-coast-top-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-coast-top-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-coast-top-right-tile-001.a7e1b745",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-coast-top-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-coast-top-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-coast-top-left-corner-tile-001.1d38bbc1",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-coast-top-left-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-coast-top-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-coast-top-right-corner-tile-001.da244917",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-coast-top-right-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-coast-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-coast-left-tile-001.309de44c",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-coast-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-shoal-depth-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-shoal-depth-tile-001.c5f70021",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-shoal-depth-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-coast-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-coast-right-tile-001.cac5ccbd",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-coast-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-coast-down-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-coast-down-left-corner-tile-001.4d212fd8",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-coast-down-left-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-coast-down-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-coast-down-right-corner-tile-001.99d048a5",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-coast-down-right-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-coast-down-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-coast-down-left-tile-001.b4bbc204",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-coast-down-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-coast-down-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-coast-down-middle-tile-001.98b2f601",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-coast-down-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-coast-down-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.sand-coast-down-right-tile-001.7722a021",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/sand-coast-down-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-top-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-to-shoal-top-left-tile-001.9591926f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-to-shoal-top-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-top-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-to-shoal-top-middle-tile-001.084f495b",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-to-shoal-top-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-top-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-to-shoal-top-right-tile-001.2acd896a",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-to-shoal-top-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-top-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-to-shoal-top-left-corner-tile-001.bd69f8c5",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-to-shoal-top-left-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-top-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-to-shoal-top-right-corner-tile-001.99a68155",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-to-shoal-top-right-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-to-shoal-left-tile-001.e9301c54",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-to-shoal-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-to-shoal-right-tile-001.f8204401",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-to-shoal-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-down-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-to-shoal-down-left-corner-tile-001.a3217a17",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-to-shoal-down-left-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-down-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-to-shoal-down-right-corner-tile-001.60b0a651",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-to-shoal-down-right-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-down-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-to-shoal-down-left-tile-001.01da10fe",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-to-shoal-down-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-down-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-to-shoal-down-middle-tile-001.b2c3b335",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-to-shoal-down-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-down-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-middle-depth-to-shoal-down-right-tile-001.7609924f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-middle-depth-to-shoal-down-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-top-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-to-middle-top-left-tile-001.59c550c6",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-to-middle-top-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-top-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-to-middle-top-middle-tile-001.01635c2f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-to-middle-top-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-top-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-to-middle-top-right-tile-001.1ed5e8fe",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-to-middle-top-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-top-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-to-middle-top-left-corner-tile-001.9c0a9dfe",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-to-middle-top-left-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-top-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-to-middle-top-right-corner-tile-001.69264244",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-to-middle-top-right-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-to-middle-left-tile-001.7afd3971",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-to-middle-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-tile-001.5aefd161",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-to-middle-right-tile-001.4d5721eb",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-to-middle-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-down-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-to-middle-down-left-corner-tile-001.b01abc46",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-to-middle-down-left-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-down-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-to-middle-down-right-corner-tile-001.29d1c17b",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-to-middle-down-right-corner-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-down-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-to-middle-down-left-tile-001.de7f6bff",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-to-middle-down-left-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-down-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-to-middle-down-middle-tile-001.84aada8d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-to-middle-down-middle-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-down-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-to-middle-down-right-tile-001.f87ee601",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-to-middle-down-right-tile-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-tile-002.e9588994",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-tile-003.0c8dcf0f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-tile-002.e9588994",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-tile-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water-deep-depth-tile-003.0c8dcf0f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water-deep-depth-tile-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-tile-level-1-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-tile-level-1-001.e82361f0",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-tile-level-1-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-tile-level-2-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-tile-level-2-001.955f6aa9",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-tile-level-2-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-tile-level-3-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-tile-level-3-001.eb0fb5eb",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-tile-level-3-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-tile-level-4-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-tile-level-4-001.4ad2fec8",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-tile-level-4-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-tile-level-5-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-tile-level-5-001.f5e8775c",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-tile-level-5-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-tile-level-6-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-tile-level-6-001.47b18e70",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-tile-level-6-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "snow-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.snow-tile-001.afa0ca93",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/snow-tile-001.prefab",
+        "required": true
+      }
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "bc77e778b9a26da4abebea25d37293b9",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Tile/TestTileRegistry.asset",
+    "sourceHash": "3869e138c2e08f68dcf3473f6856e8d67af5f5d3a2efa5357db007a174f29fda"
+  }
+}

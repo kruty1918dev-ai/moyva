@@ -1,0 +1,128 @@
+{
+  "$schema": "../../Schemas/moyva-project-settings.schema.json",
+  "schema": "moyva.moyva-project-settings",
+  "version": 1,
+  "id": "moyvaprojectsettings",
+  "model": "moyva-project-settings",
+  "projectVisualMode": "Full3D",
+  "useAdvancedProjectSettings": false,
+  "defaultGridTopology": "Layered",
+  "defaultProjectionMode": "Orthographic3D",
+  "defaultRenderMode": "Mesh3D",
+  "defaultNeighborhood": "Auto",
+  "orthogonalCellWidth": 1.0,
+  "orthogonalCellHeight": 1.0,
+  "orthogonalCellDepth": 1.0,
+  "isometricTileWidth": 1.0,
+  "isometricTileHeight": 0.5,
+  "hexOrientation": "PointyTop",
+  "hexRadius": 0.5,
+  "heightScale": 0.25,
+  "useHeightForPreview": true,
+  "enableMeshPrefabPreviews": true,
+  "previewTextureSize": 96,
+  "previewPadding": 1.35,
+  "generatePreviewMipmaps": false,
+  "previewFilterMode": "Bilinear",
+  "previewRenderTextureFormat": "ARGB32",
+  "previewRenderTextureReadWrite": "Linear",
+  "orthographic3DPreviewEuler": {
+    "x": 90.0,
+    "y": 0.0,
+    "z": 0.0
+  },
+  "isometric3DPreviewEuler": {
+    "x": 50.0,
+    "y": 45.0,
+    "z": 0.0
+  },
+  "usePerspectivePreviewCameraIn3D": true,
+  "previewPerspectiveFieldOfView": 55.0,
+  "previewLightEuler": {
+    "x": 50.0,
+    "y": -30.0,
+    "z": 0.0
+  },
+  "previewLightIntensity": 1.35,
+  "useLiveHomeMenuMeshPreview": true,
+  "homeMenuPreviewIncludeObjects": true,
+  "homeMenuPreviewIncludeBuildings": true,
+  "homeMenuPreviewCombineMeshesByMaterial": true,
+  "homeMenuPreviewTileStride": 1,
+  "homeMenuPreviewMaxTerrainTiles": 30000,
+  "homeMenuPreviewMaxVerticesPerBatch": 60000,
+  "homeMenuPreviewMaxMaterialBatches": 128,
+  "homeMenuPreviewCameraPadding": 1.2,
+  "homeMenuPreviewCameraDepth": 100.0,
+  "homeMenuPreviewLayer": 30,
+  "homeMenuPreviewDisableFog": true,
+  "homeMenuPreviewUploadMeshData": true,
+  "homeMenuPreviewCastShadows": false,
+  "homeMenuPreviewReceiveShadows": false,
+  "homeMenuPreviewBackgroundColor": {
+    "r": 0.05,
+    "g": 0.07,
+    "b": 0.08,
+    "a": 1.0
+  },
+  "autoConfigure3DLighting": true,
+  "createDirectionalLightIn3D": true,
+  "project3DLightEuler": {
+    "x": 50.0,
+    "y": -35.0,
+    "z": 0.0
+  },
+  "project3DLightColor": {
+    "r": 1.0,
+    "g": 0.96,
+    "b": 0.88,
+    "a": 1.0
+  },
+  "project3DLightIntensity": 1.35,
+  "project3DLightShadows": true,
+  "project3DAmbientSkyColor": {
+    "r": 0.46,
+    "g": 0.54,
+    "b": 0.64,
+    "a": 1.0
+  },
+  "project3DAmbientEquatorColor": {
+    "r": 0.42,
+    "g": 0.38,
+    "b": 0.32,
+    "a": 1.0
+  },
+  "project3DAmbientGroundColor": {
+    "r": 0.18,
+    "g": 0.16,
+    "b": 0.14,
+    "a": 1.0
+  },
+  "enable3DAtmosphericFog": true,
+  "project3DAtmosphericFogColor": {
+    "r": 0.62,
+    "g": 0.68,
+    "b": 0.72,
+    "a": 1.0
+  },
+  "project3DAtmosphericFogDensity": 0.012,
+  "cameraPolicy": "Force3DPerspective",
+  "cameraAnglePolicy": "Isometric",
+  "custom3DCameraEuler": {
+    "x": 50.0,
+    "y": 45.0,
+    "z": 0.0
+  },
+  "project3DCameraDistance": 20.0,
+  "project3DOrthographicSize": 20.0,
+  "project3DFieldOfView": 30.0,
+  "ensureStartupCameraShowsRevealedArea": true,
+  "startupCameraPaddingTiles": 2.0,
+  "startupCameraRadiusSource": "RevealedFogRadius",
+  "manualStartupCameraRadius": 15,
+  "migration": {
+    "sourceAssetGuid": "62c207fc5c1497db8a5ea98c4f27f42b",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/ProjectDefaults/MoyvaProjectSettings.asset",
+    "sourceHash": "c782c85608e10abd78986307a8eb60018aa246b624db6f32bc36a6886da9dd9b"
+  }
+}

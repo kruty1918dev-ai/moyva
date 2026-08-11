@@ -1,0 +1,18 @@
+{
+  "$schema": "../../Schemas/shared-generator-settings.schema.json",
+  "schema": "moyva.shared-generator-settings",
+  "version": 1,
+  "id": "sharedgeneratorsettings",
+  "model": "shared-generator-settings",
+  "waterLikeTileIds": [
+    "water"
+  ],
+  "riverBaseObjectId": "river",
+  "separator": "-",
+  "matchBaseTypes": true,
+  "migration": {
+    "sourceAssetGuid": "de6891e3535a0753ba37103d6e8bc936",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/SharedGeneratorSettings.asset",
+    "sourceHash": "6d63956f21ae5c088ec23c2f1d856207bbb1dd1babe7f752e209e674e11dab29"
+  }
+}
