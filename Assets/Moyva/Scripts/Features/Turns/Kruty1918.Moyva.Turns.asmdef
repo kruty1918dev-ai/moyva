@@ -1,14 +1,10 @@
 {
-  "name": "Kruty1918.Moyva.GameMode",
-  "rootNamespace": "Kruty1918.Moyva.GameMode",
+  "name": "Kruty1918.Moyva.Turns",
+  "rootNamespace": "Kruty1918.Moyva.Turns",
   "references": [
     "Zenject",
     "Kruty1918.Moyva.Signals",
-    "Kruty1918.Moyva.InputRouting",
-    "Kruty1918.Moyva.Turns",
-    "Unity.InputSystem",
-    "Unity.TextMeshPro",
-    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+    "Kruty1918.Moyva.Calendar"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

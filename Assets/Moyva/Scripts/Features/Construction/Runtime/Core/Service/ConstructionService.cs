@@ -9,6 +9,7 @@ using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
+using Kruty1918.Moyva.Turns.API;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
@@ -94,6 +95,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placementAuthorityPolicy;
         private readonly IReadOnlyList<IBuildingPlacementRuleEvaluator>
             _placementRuleEvaluators;
+        private readonly ITurnService _turns;
         private bool _initialized;
         private bool _disposed;
 
@@ -154,7 +156,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] IConstructionPlacementAuthorityPolicy
                 placementAuthorityPolicy = null,
             [InjectOptional] List<IBuildingPlacementRuleEvaluator>
-                placementRuleEvaluators = null)
+                placementRuleEvaluators = null,
+            [InjectOptional] ITurnService turns = null)
         {
             _objectsMapService = objectsMapService;
             _buildingRegistry = buildingRegistry;
@@ -177,6 +180,18 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placementRuleEvaluators = placementRuleEvaluators
                 ?? (IReadOnlyList<IBuildingPlacementRuleEvaluator>)
                     Array.Empty<IBuildingPlacementRuleEvaluator>();
+            _turns = turns;
+        }
+
+        private bool CanActiveOwnerAct(out string reason)
+        {
+            if (_turns == null)
+            {
+                reason = null;
+                return true;
+            }
+
+            return _turns.CanOwnerAct(_activeOwnerId, out reason);
         }
 
         public void Initialize()

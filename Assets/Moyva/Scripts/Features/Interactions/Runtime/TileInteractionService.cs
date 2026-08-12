@@ -6,6 +6,7 @@ using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.Turns.API;
 using UnityEngine;
 using Zenject;
 using System;
@@ -34,6 +35,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly IUnitOwnershipQuery _unitOwnershipQuery;
         private readonly IConstructionService _constructionService;
         private readonly SignalBus _signalBus;
+        private readonly ITurnService _turns;
         private GameModeType _currentMode = GameModeType.Normal;
         
         private string _selectedUnitId;
@@ -56,6 +58,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             [InjectOptional] IUnitMovementService unitMovementService,
             [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery,
             [InjectOptional] IConstructionService constructionService,
+            [InjectOptional] ITurnService turns,
             SignalBus signalBus)
         {
             _gridService = gridService;
@@ -66,6 +69,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _unitMovementService = unitMovementService;
             _unitOwnershipQuery = unitOwnershipQuery;
             _constructionService = constructionService;
+            _turns = turns;
             _signalBus = signalBus;
         }
 
@@ -297,7 +301,9 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         }
 
         private string GetLocalOwnerId()
-            => _constructionService?.GetActiveOwner()?.Trim() ?? string.Empty;
+            => _turns?.LocalOwnerId?.Trim()
+               ?? _constructionService?.GetActiveOwner()?.Trim()
+               ?? string.Empty;
 
         private void OnWorldInfoSelectionChanged(WorldInfoSelectionChangedSignal signal)
         {

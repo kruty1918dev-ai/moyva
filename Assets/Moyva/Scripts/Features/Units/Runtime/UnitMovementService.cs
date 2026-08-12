@@ -10,13 +10,14 @@ using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Pathfinding.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
+using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
-	internal sealed class UnitMovementService : IUnitMovementService, IInitializable, IDisposable
+	internal sealed class UnitMovementService : IUnitMovementService, ITurnBlocker, IInitializable, IDisposable
 	{
 		private readonly IUnitService _unitService;
 		private readonly IPathfinder _pathfinder;
@@ -31,6 +32,8 @@ namespace Kruty1918.Moyva.Units.Runtime
 		private readonly WorldCreationDefaultsSO _worldDefaults;
 		private readonly IGridProjection _gridProjection;
 		private readonly TileRegistrySO _tileRegistry;
+		private readonly ITurnService _turns;
+		private readonly IUnitOwnershipQuery _ownership;
 
 		private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
 		private readonly Dictionary<string, float> _tileSurfaceOffsetYById = new();
@@ -48,7 +51,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 			[InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null,
 			[InjectOptional] WorldCreationDefaultsSO worldDefaults = null,
 			[InjectOptional] IGridProjection gridProjection = null,
-			[InjectOptional] TileRegistrySO tileRegistry = null)
+			[InjectOptional] TileRegistrySO tileRegistry = null,
+			[InjectOptional] ITurnService turns = null,
+			[InjectOptional] IUnitOwnershipQuery ownership = null)
 		{
 			_unitService = unitService;
 			_pathfinder = pathfinder;
@@ -63,6 +68,8 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_worldDefaults = worldDefaults;
 			_gridProjection = gridProjection;
 			_tileRegistry = tileRegistry;
+			_turns = turns;
+			_ownership = ownership;
 		}
 
 		[System.Diagnostics.Conditional("MOYVA_VERBOSE_MOVEMENT")]
@@ -121,6 +128,13 @@ namespace Kruty1918.Moyva.Units.Runtime
 			if (string.IsNullOrEmpty(unitId))
 			{
 				Debug.LogWarning("[UnitMovement] MoveUnitAsync: unitId пустий або null. Рух скасовано.");
+				return;
+			}
+
+			string ownerId = _ownership?.GetUnitOwnerId(unitId);
+			if (_turns != null && !_turns.CanOwnerAct(ownerId, out string turnReason))
+			{
+				Debug.LogWarning($"[UnitMovement] Move rejected for '{unitId}': {turnReason}");
 				return;
 			}
 
@@ -188,6 +202,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 			using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(externalToken, internalCts.Token);
 
+			int completedSteps = 0;
 			try
 			{
 				var unitTypeId = _unitService.GetUnitTypeId(unitId);
@@ -197,7 +212,11 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 				var settings = _unitGameplayProfileService.ResolveMovementAnimationSettings(unitTypeId);
 				settings.CanPerformStep = stepPos => CanMakeStep(unitId, stepPos);
-				settings.OnStepCompleted = stepPos => OnStepCompleted(unitId, stepPos);
+					settings.OnStepCompleted = stepPos =>
+					{
+						OnStepCompleted(unitId, stepPos);
+						completedSteps++;
+					};
 				float unitSurfacePivotOffsetY = ResolveUnitSurfacePivotOffsetY(unitObj, startPosition);
 				settings.ResolveWorldPosition = stepPos => ResolveMovementWorldPosition(stepPos, unitSurfacePivotOffsetY);
 
@@ -216,8 +235,23 @@ namespace Kruty1918.Moyva.Units.Runtime
 				if (_activeMovements.TryGetValue(unitId, out var currentCts) && currentCts == internalCts)
 					_activeMovements.Remove(unitId);
 
-				internalCts.Dispose();
+					internalCts.Dispose();
+				}
+
+			if (completedSteps > 0)
+				_turns?.TryRecordAction(ownerId, "unit-move");
+		}
+
+		public bool IsTurnBlocked(out string reason)
+		{
+			if (_activeMovements.Count > 0)
+			{
+				reason = "Дочекайтеся завершення руху юніта.";
+				return true;
 			}
+
+			reason = null;
+			return false;
 		}
 
 		private bool CanMakeStep(string unitId, Vector2Int stepPos)

@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.GameMode.API;
+using Kruty1918.Moyva.Turns.Runtime;
 using UnityEngine;
 using Zenject;
 
@@ -8,6 +9,8 @@ namespace Kruty1918.Moyva.GameMode.Runtime
     {
         public override void InstallBindings()
         {
+            TurnBindings.Install(Container);
+
             Container.Bind<IGameModeService>()
                 .To<GameModeService>()
                 .AsSingle()

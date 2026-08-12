@@ -64,6 +64,11 @@ namespace Kruty1918.Moyva.Bootstrap
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInterfacesAndSelfTo<TurnSaveModule>().AsSingle();
+            Container.BindInterfacesTo<SaveModuleRegistrar<TurnSaveModule>>()
+                .AsSingle()
+                .NonLazy();
+
             // Автозбереження при виході з програми.
             Container.BindInterfacesTo<GameExitSaver>()
                 .AsSingle()

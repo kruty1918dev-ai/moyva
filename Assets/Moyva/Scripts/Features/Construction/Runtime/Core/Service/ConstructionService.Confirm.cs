@@ -89,6 +89,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Confirm()
         {
+            if (!CanActiveOwnerAct(out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                Debug.LogWarning($"[Construction] Confirm rejected: {turnReason}");
+                return;
+            }
+
             double confirmStartedAt =
                 Time.realtimeSinceStartupAsDouble;
             int pendingAtStart = _pendingPlacements.Count;
@@ -411,6 +418,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         RotationQuarterTurns =
                             (int)placement.Rotation,
                     });
+                    _turns?.TryRecordAction(relocationOwnerId, "building-place");
 
                     AddConfirmStage(
                         ref signalMs,
