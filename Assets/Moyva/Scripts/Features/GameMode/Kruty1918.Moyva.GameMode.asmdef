@@ -5,6 +5,7 @@
     "Zenject",
     "Kruty1918.Moyva.Signals",
     "Kruty1918.Moyva.InputRouting",
+    "Kruty1918.Moyva.Turns",
     "Unity.InputSystem",
     "Unity.TextMeshPro",
     "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"

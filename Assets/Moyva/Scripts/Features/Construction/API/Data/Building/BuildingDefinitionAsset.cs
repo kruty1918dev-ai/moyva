@@ -197,6 +197,7 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
                 Footprint = CloneFootprint(Footprint),
                 VisualYOffset = Presentation.VisualYOffset,
                 ConstructionCost = CloneCost(Construction.Cost),
+                BuildTurns = Mathf.Max(0, Construction.BuildTurns),
                 Modules = CloneModuleList(Modules),
                 IsAssetRuntimeSnapshot = true,
                 MaxHp = Mathf.Max(1, RuntimeStats.MaxHp),

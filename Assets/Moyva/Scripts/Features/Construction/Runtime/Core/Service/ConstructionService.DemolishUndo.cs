@@ -82,6 +82,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public bool TryDemolishAt(Vector2Int position)
         {
+            if (!CanActiveOwnerAct(out string turnReason))
+            {
+                Debug.LogWarning($"[Construction] Demolition rejected: {turnReason}");
+                return false;
+            }
+
             if (!_isActive || !IsDemolishMode)
             {
                 if (VerboseLogs)

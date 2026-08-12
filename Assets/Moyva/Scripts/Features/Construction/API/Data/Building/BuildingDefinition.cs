@@ -73,6 +73,7 @@ namespace Kruty1918.Moyva.Construction.API
         [Header("Вартість будівництва")]
         [Tooltip("Список ресурсів і кількостей, необхідних для побудови 1 екземпляра цієї будівлі.\nПорожній список означає безкоштовне будівництво.")]
         public List<BuildingConstructionCostEntry> ConstructionCost = new List<BuildingConstructionCostEntry>();
+        public int BuildTurns = 1;
 
         [Header("Модулі")]
         [Tooltip("Компонентна модель будівлі. Runtime використовує модулі для визначення можливостей.")]

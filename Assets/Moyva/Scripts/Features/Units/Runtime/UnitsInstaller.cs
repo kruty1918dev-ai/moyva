@@ -38,6 +38,9 @@ namespace Kruty1918.Moyva.Units.Runtime
             Container.BindInterfacesAndSelfTo<UnitMovementService>()
                 .AsSingle();
 
+            Container.BindInterfacesTo<UnitTurnParticipant>()
+                .AsSingle();
+
             Container.Bind<IUnitClassConfig>()
                 .To<UnitClassConfigService>()
                 .AsSingle();

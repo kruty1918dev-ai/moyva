@@ -106,6 +106,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInterfacesTo<ConstructionTurnParticipant>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<ConstructionLifecycleService>()
+                .AsSingle()
+                .NonLazy();
+
+            Container.BindInterfacesTo<SaveModuleRegistrar<ConstructionLifecycleService>>()
+                .AsSingle()
+                .NonLazy();
+
             Container.BindInterfacesTo<ConstructionAuthorityEndpointRegistration>()
                 .AsSingle()
                 .NonLazy();

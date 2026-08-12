@@ -9,6 +9,7 @@ using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Pathfinding.API;
 using Kruty1918.Moyva.Units.API;
+using Kruty1918.Moyva.Recruitment;
 
 namespace Kruty1918.Moyva.Bootstrap
 {
@@ -24,6 +25,8 @@ namespace Kruty1918.Moyva.Bootstrap
 
         public override void InstallBindings()
         {
+            RecruitmentBindings.Install(Container);
+
             Debug.Log($"{WorldGenDiagTag} BootstrapInstaller.InstallBindings scene={gameObject.scene.name}, mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}.");
             Debug.Log($"{DirectDiagTag} BootstrapInstaller.InstallBindings scene={gameObject.scene.name}, mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}.");
             var gameSettings = _config != null ? _config.GameSettings : _legacyGameSettings;
@@ -64,6 +67,11 @@ namespace Kruty1918.Moyva.Bootstrap
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInterfacesAndSelfTo<TurnSaveModule>().AsSingle();
+            Container.BindInterfacesTo<SaveModuleRegistrar<TurnSaveModule>>()
+                .AsSingle()
+                .NonLazy();
+
             // Автозбереження при виході з програми.
             Container.BindInterfacesTo<GameExitSaver>()
                 .AsSingle()
@@ -76,6 +84,9 @@ namespace Kruty1918.Moyva.Bootstrap
 
             Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
             Container.BindExecutionOrder<TestUnitSpawner>(100);
+
+            Container.BindInterfacesTo<GameplayTurnHudPresenter>().AsSingle().NonLazy();
+            Container.BindInterfacesTo<TurnBotDriver>().AsSingle().NonLazy();
 
             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
             // Виконується після TestUnitSpawner, щоб знати чи є збереження.

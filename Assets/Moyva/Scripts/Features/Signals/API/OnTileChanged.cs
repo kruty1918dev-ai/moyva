@@ -45,6 +45,13 @@ namespace Kruty1918.Moyva.Signals
         public string OwnerId;
     }
 
+    public struct BuildingOperationalSignal
+    {
+        public string BuildingId;
+        public Vector2Int Position;
+        public string OwnerId;
+    }
+
     // Викликається, коли юніт перемістився
     public struct UnitMovedSignal
     {

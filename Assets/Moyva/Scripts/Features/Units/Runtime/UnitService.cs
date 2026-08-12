@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System;
-using Kruty1918.Moyva.Calendar.Core;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Combat.Runtime;
@@ -26,7 +25,6 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly ITileSettingsService _tileSettings;
         private readonly IUnitClassConfig _unitClassConfig;
         private readonly IObjectsMapService _objectsMapService;
-        private readonly ICalendarService _calendarService;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IConstructionGateStateService _gateStateService;
 
@@ -72,7 +70,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             IUnitClassConfig unitClassConfig,
             IObjectsMapService objectsMapService,
             IHealthRegistry healthRegistry = null,
-            ICalendarService calendarService = null,
             [InjectOptional] IBuildingRegistry buildingRegistry = null,
             [InjectOptional] IConstructionGateStateService gateStateService = null)
         {
@@ -82,7 +79,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             _unitClassConfig = unitClassConfig;
             _objectsMapService = objectsMapService;
             _healthRegistry = healthRegistry;
-            _calendarService = calendarService;
             _buildingRegistry = buildingRegistry;
             _gateStateService = gateStateService;
         }
@@ -183,23 +179,6 @@ namespace Kruty1918.Moyva.Units.Runtime
                 $"[UnitService] Unit {signal.UnitId} -> {signal.NewPosition}. " +
                 $"Stamina {staminaBefore} -> {_unitStamina[signal.UnitId]}");
 
-            if (_calendarService != null)
-            {
-                try
-                {
-                    _calendarService.AdvanceTurn();
-                }
-                catch (InvalidOperationException)
-                {
-                    // ClientCalendarProxy is read-only and advances only via snapshots.
-                }
-
-                var now = _calendarService.Current;
-                LogMovementVerbose(
-                    $"[Time] {signal.UnitId}: " +
-                    $"{now.Year:D4}-{now.Month:D2}-{now.Day:D2} " +
-                    $"{now.Hour:D2}:00 phase={_calendarService.CurrentDayPhase}");
-            }
         }
 
         private void OnUnitDestroyed(UnitDestroyedSignal signal)

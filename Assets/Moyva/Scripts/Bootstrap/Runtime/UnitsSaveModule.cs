@@ -15,16 +15,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     /// </summary>
     internal sealed class UnitsSaveModule : ISaveModule, IInitializable, System.IDisposable
     {
+        private const int SaveMagic = unchecked((int)0x554E4954);
+        private const int SaveVersion = 2;
         private readonly struct UnitRecord
         {
+            public readonly string UnitId;
             public readonly string TypeId;
+            public readonly string OwnerId;
             public readonly Vector2Int Position;
             public readonly bool HasStamina;
             public readonly float Stamina;
 
-            public UnitRecord(string typeId, Vector2Int position, bool hasStamina, float stamina)
+            public UnitRecord(string unitId, string typeId, string ownerId, Vector2Int position, bool hasStamina, float stamina)
             {
+                UnitId = unitId;
                 TypeId = typeId;
+                OwnerId = ownerId;
                 Position = position;
                 HasStamina = hasStamina;
                 Stamina = stamina;
@@ -33,6 +39,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private readonly IUnitService _unitService;
         private readonly IUnitFactory _unitFactory;
+        private readonly IUnitOwnershipQuery _ownership;
         private readonly SignalBus _signalBus;
         private readonly ISaveLoadDiagnostics _loadDiagnostics;
         private readonly ISaveLoadDiagnosticsSession _loadDiagnosticsSession;
@@ -42,12 +49,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public UnitsSaveModule(
             IUnitService unitService,
             IUnitFactory unitFactory,
+            IUnitOwnershipQuery ownership,
             SignalBus signalBus,
             [InjectOptional] ISaveLoadDiagnostics loadDiagnostics = null,
             [InjectOptional] ISaveLoadDiagnosticsSession loadDiagnosticsSession = null)
         {
             _unitService = unitService;
             _unitFactory = unitFactory;
+            _ownership = ownership;
             _signalBus = signalBus;
             _loadDiagnostics = loadDiagnostics;
             _loadDiagnosticsSession = loadDiagnosticsSession;
@@ -66,6 +75,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public void OnSave(ISaveContext context)
         {
             var unitIds = _unitService.GetAllUnitIds();
+            context.Writer.Write(SaveMagic);
+            context.Writer.Write(SaveVersion);
             context.Writer.Write(unitIds.Count);
 
             foreach (var unitId in unitIds)
@@ -74,7 +85,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 bool hasPos   = _unitService.TryGetUnitPosition(unitId, out var pos);
                 float stamina = _unitService.GetStamina(unitId);
 
+                context.Writer.Write(unitId ?? string.Empty);
                 context.Writer.Write(typeId);
+                context.Writer.Write(_ownership.GetUnitOwnerId(unitId) ?? "player_0");
                 context.Writer.Write(hasPos ? pos.x : 0);
                 context.Writer.Write(hasPos ? pos.y : 0);
                 context.Writer.Write(stamina);
@@ -87,7 +100,29 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void OnLoad(ISaveContext context)
         {
-            int count = context.Reader.ReadInt32();
+            int markerOrCount = context.Reader.ReadInt32();
+            if (markerOrCount == SaveMagic)
+            {
+                int version = context.Reader.ReadInt32();
+                if (version != SaveVersion)
+                    throw new System.IO.InvalidDataException($"Unsupported units save version {version}.");
+                int versionedCount = context.Reader.ReadInt32();
+                var versionedRecords = new System.Collections.Generic.List<UnitRecord>(versionedCount);
+                for (int index = 0; index < versionedCount; index++)
+                {
+                    versionedRecords.Add(new UnitRecord(
+                        context.Reader.ReadString(),
+                        context.Reader.ReadString(),
+                        context.Reader.ReadString(),
+                        new Vector2Int(context.Reader.ReadInt32(), context.Reader.ReadInt32()),
+                        true,
+                        context.Reader.ReadSingle()));
+                }
+                QueueOrSpawn(versionedRecords);
+                return;
+            }
+
+            int count = markerOrCount;
             long payloadStart = context.Reader.BaseStream.Position;
 
             if (!TryParseRecordsWithStamina(context.Reader, count, out var records))
@@ -103,6 +138,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 Debug.Log("[UnitsSave] Завантаження виконано у legacy-режимі (без стаміни в сейві).");
             }
 
+            QueueOrSpawn(records);
+        }
+
+        private void QueueOrSpawn(System.Collections.Generic.List<UnitRecord> records)
+        {
             if (!_worldBuilt)
             {
                 _pendingRecords.Clear();
@@ -139,7 +179,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     continue;
                 }
 
-                string newUnitId = _unitFactory.CreateUnit(record.TypeId, record.Position);
+                string newUnitId = string.IsNullOrWhiteSpace(record.UnitId)
+                    ? _unitFactory.CreateUnit(record.TypeId, record.Position, record.OwnerId)
+                    : _unitFactory.CreateUnitWithId(record.UnitId, record.TypeId, record.Position, record.OwnerId);
                 if (!string.IsNullOrEmpty(newUnitId) && record.HasStamina)
                     _unitService.SetStamina(newUnitId, record.Stamina);
 
@@ -168,7 +210,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     if (float.IsNaN(stamina) || float.IsInfinity(stamina) || stamina < 0f || stamina > 100000f)
                         return false;
 
-                    records.Add(new UnitRecord(typeId, new Vector2Int(x, y), true, stamina));
+                    records.Add(new UnitRecord(string.Empty, typeId, "player_0", new Vector2Int(x, y), true, stamina));
                 }
 
                 return reader.BaseStream.Position == reader.BaseStream.Length;
@@ -191,7 +233,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     int x = reader.ReadInt32();
                     int y = reader.ReadInt32();
 
-                    records.Add(new UnitRecord(typeId, new Vector2Int(x, y), false, 0f));
+                    records.Add(new UnitRecord(string.Empty, typeId, "player_0", new Vector2Int(x, y), false, 0f));
                 }
 
                 return reader.BaseStream.Position == reader.BaseStream.Length;

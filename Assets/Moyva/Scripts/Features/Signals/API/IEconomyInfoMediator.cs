@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.Signals
         bool TryGetBuildingContext(Vector2Int position, out string buildingId, out string ownerId);
         bool TryConsumeSettlementResources(string settlementId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage);
         bool TryConsumeOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage);
+        void RefundOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resources);
         bool OwnerHasAnyWarehouse(string ownerId);
         IReadOnlyDictionary<string, float> GetWarehouseResourceTotals(Vector2Int warehousePosition);
         IReadOnlyDictionary<string, float> GetSettlementWarehousesTotal(string settlementId);
