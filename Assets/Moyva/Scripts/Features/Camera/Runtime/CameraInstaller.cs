@@ -2,6 +2,7 @@ using System;
 using Kruty1918.Moyva.Camera.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.InputRouting.Runtime;
+using Kruty1918.Moyva.Jsonization;
 using Kruty1918.Moyva.MapChunks.Runtime;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -9,7 +10,6 @@ using Zenject;
 
 #if UNITY_EDITOR
 using UnityEditor;
-using Kruty1918.Moyva.Jsonization;
 #endif
 
 namespace Kruty1918.Moyva.Camera.Runtime
