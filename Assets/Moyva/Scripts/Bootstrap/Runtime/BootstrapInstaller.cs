@@ -85,6 +85,9 @@ namespace Kruty1918.Moyva.Bootstrap
             Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
             Container.BindExecutionOrder<TestUnitSpawner>(100);
 
+            Container.BindInterfacesTo<GameplayTurnHudPresenter>().AsSingle().NonLazy();
+            Container.BindInterfacesTo<TurnBotDriver>().AsSingle().NonLazy();
+
             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
             // Виконується після TestUnitSpawner, щоб знати чи є збереження.
             Container.BindInstance(startingPositionSettings).AsSingle();
