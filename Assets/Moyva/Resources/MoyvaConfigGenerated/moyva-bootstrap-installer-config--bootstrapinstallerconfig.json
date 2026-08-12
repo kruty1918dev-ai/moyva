@@ -8,19 +8,23 @@
     "initialResources": [
       {
         "resourceId": "steak-food-resources",
-        "amount": 45.0
+        "amount": 100.0
       },
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 10.0
+        "amount": 80.0
       },
       {
         "resourceId": "hardwood-materials-resources",
-        "amount": 30.0
+        "amount": 80.0
       },
       {
         "resourceId": "stone-materials-resources",
-        "amount": 10.0
+        "amount": 80.0
+      },
+      {
+        "resourceId": "iron-ingot-materials-resources",
+        "amount": 30.0
       }
     ],
     "worldRevealFade": {

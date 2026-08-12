@@ -117,7 +117,22 @@
     "flags": "BlocksPath, Selectable, Damageable",
     "runtimeTags": []
   },
-  "modules": [],
+  "modules": [
+    {
+      "$type": "unit-recruitment",
+      "queueCapacity": 3,
+      "spawnRadius": 2,
+      "recipes": [
+        { "unitTypeId": "light-cavalry", "trainingTurns": 3, "costs": [
+          { "resourceId": "steak-food-resources", "amount": 20 },
+          { "resourceId": "hardwood-materials-resources", "amount": 10 },
+          { "resourceId": "iron-ingot-materials-resources", "amount": 5 }
+        ] }
+      ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
   "migration": {
     "sourceAssetGuid": "574a21c8262590755943aedbec51bcb3",
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/stable.asset",

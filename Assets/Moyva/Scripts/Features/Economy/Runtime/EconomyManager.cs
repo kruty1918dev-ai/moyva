@@ -76,6 +76,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         {
             _calendar.OnHourChanged += OnTurnAdvanced;
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+            _signalBus.Subscribe<BuildingOperationalSignal>(OnBuildingOperational);
             _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
             _signalBus.Subscribe<GrantStarterPackResourcesSignal>(OnGrantStarterPackResources);
             BuildingDefinitionAsset.RuntimeRevisionChanged +=
@@ -86,6 +87,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         {
             _calendar.OnHourChanged -= OnTurnAdvanced;
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+            _signalBus.TryUnsubscribe<BuildingOperationalSignal>(OnBuildingOperational);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
             _signalBus.TryUnsubscribe<GrantStarterPackResourcesSignal>(OnGrantStarterPackResources);
             BuildingDefinitionAsset.RuntimeRevisionChanged -=
@@ -106,7 +108,16 @@ namespace Kruty1918.Moyva.Economy.Runtime
         // ───────────────────────── Construction Events
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
+            => ProcessBuildingPlaced(signal, allowTimedBuilding: false);
+
+        private void ProcessBuildingPlaced(BuildingPlacedSignal signal, bool allowTimedBuilding)
         {
+            var definition = string.IsNullOrWhiteSpace(signal.BuildingId)
+                ? null
+                : _buildingRegistry?.GetById(signal.BuildingId);
+            if (!allowTimedBuilding && definition != null && definition.BuildTurns > 0)
+                return;
+
             using var marker = BuildingPlacedMarker.Auto();
             _buildingIntegration.OnBuildingPlaced(
                 signal,
@@ -115,14 +126,20 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 _database,
                 _buildingRegistry);
 
-            var definition = string.IsNullOrWhiteSpace(signal.BuildingId)
-                ? null
-                : _buildingRegistry?.GetById(signal.BuildingId);
-
             if (definition != null && BuildingDefinitionCapabilities.IsWarehouse(definition))
                 _ownerResourcePoolService.TransferOwnerResourcesToFirstWarehouse(signal.OwnerId, _settlementRegistry.AllSettlements, _signalBus, StarterPackLogTag);
 
             TryApplyPendingRuntimeSaveSnapshot();
+        }
+
+        private void OnBuildingOperational(BuildingOperationalSignal signal)
+        {
+            ProcessBuildingPlaced(new BuildingPlacedSignal
+            {
+                BuildingId = signal.BuildingId,
+                Position = signal.Position,
+                OwnerId = signal.OwnerId,
+            }, allowTimedBuilding: true);
         }
 
         private void OnBuildingDemolished(BuildingDemolishedSignal signal)
@@ -444,6 +461,14 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 ResolveResourceDisplayName,
                 _signalBus,
                 out errorMessage);
+        }
+
+        public void RefundOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resources)
+        {
+            if (resources == null)
+                return;
+            foreach (KeyValuePair<string, float> pair in resources)
+                _ownerResourcePoolService.AddOwnerResource(ownerId, pair.Key, pair.Value, _signalBus);
         }
 
         public bool TryGetBuildingAtPosition(Vector2Int position, out string buildingId, out string ownerId)

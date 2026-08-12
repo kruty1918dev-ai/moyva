@@ -80,6 +80,9 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 && _economyManager.TryConsumeOwnerPoolResources(ownerId, resourceCosts, out errorMessage);
         }
 
+        public void RefundOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resources)
+            => _economyManager?.RefundOwnerPoolResources(ownerId, resources);
+
         public bool OwnerHasAnyWarehouse(string ownerId)
             => _economyManager != null && _economyManager.OwnerHasAnyWarehouse(ownerId);
 

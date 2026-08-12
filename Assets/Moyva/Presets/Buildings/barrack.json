@@ -113,7 +113,29 @@
     "flags": "BlocksPath, Selectable, Damageable",
     "runtimeTags": []
   },
-  "modules": [],
+  "modules": [
+    {
+      "$type": "unit-recruitment",
+      "queueCapacity": 3,
+      "spawnRadius": 2,
+      "recipes": [
+        { "unitTypeId": "warrior", "trainingTurns": 1, "costs": [
+          { "resourceId": "steak-food-resources", "amount": 10 },
+          { "resourceId": "hardwood-materials-resources", "amount": 5 }
+        ] },
+        { "unitTypeId": "spearman", "trainingTurns": 2, "costs": [
+          { "resourceId": "steak-food-resources", "amount": 12 },
+          { "resourceId": "hardwood-materials-resources", "amount": 8 }
+        ] },
+        { "unitTypeId": "archer", "trainingTurns": 2, "costs": [
+          { "resourceId": "steak-food-resources", "amount": 10 },
+          { "resourceId": "hardwood-materials-resources", "amount": 10 }
+        ] }
+      ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
   "migration": {
     "sourceAssetGuid": "606d898fad7459e1995920a8a6c1b20c",
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/barrack.asset",

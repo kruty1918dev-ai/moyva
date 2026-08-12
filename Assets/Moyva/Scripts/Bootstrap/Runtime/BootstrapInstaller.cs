@@ -9,6 +9,7 @@ using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Pathfinding.API;
 using Kruty1918.Moyva.Units.API;
+using Kruty1918.Moyva.Recruitment;
 
 namespace Kruty1918.Moyva.Bootstrap
 {
@@ -24,6 +25,8 @@ namespace Kruty1918.Moyva.Bootstrap
 
         public override void InstallBindings()
         {
+            RecruitmentBindings.Install(Container);
+
             Debug.Log($"{WorldGenDiagTag} BootstrapInstaller.InstallBindings scene={gameObject.scene.name}, mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}.");
             Debug.Log($"{DirectDiagTag} BootstrapInstaller.InstallBindings scene={gameObject.scene.name}, mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}.");
             var gameSettings = _config != null ? _config.GameSettings : _legacyGameSettings;

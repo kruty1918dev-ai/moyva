@@ -45,6 +45,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<BuildingPreviewDragVisualSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildGridHoverChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildingDemolishedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<BuildingOperationalSignal>().OptionalSubscriber();
             Container.DeclareSignal<ShowWallHandlesSignal>();
             Container.DeclareSignal<PlaceBuildingConfirmRequestSignal>().OptionalSubscriber();
             Container.DeclareSignal<MoveUnitRequestSignal>().OptionalSubscriber();
