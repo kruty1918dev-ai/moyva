@@ -17260,7 +17260,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff3c15772288115478645c6fc1f0c442, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GiantGrey.TileWorldCreator::GiantGrey.TileWorldCreator.TileWorldCreatorManager
-  configuration: {fileID: -7672455758097596915, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
+  configuration: {fileID: 0}
   showClusterCellsDebug: 0
 --- !u!4 &1744875391
 Transform:
