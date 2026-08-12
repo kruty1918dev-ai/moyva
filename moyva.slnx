@@ -143,6 +143,7 @@
   <Project Path="Unity.Multiplayer.Tools.NetVis.Configuration.csproj" />
   <Project Path="Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.Core.csproj" />
   <Project Path="Kruty1918.Moyva.Calendar.csproj" />
+  <Project Path="Kruty1918.Moyva.Turns.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.FogOfWar.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Construction.csproj" />
   <Project Path="Kruty1918.Moyva.Clouds.csproj" />
@@ -193,8 +194,10 @@
   <Project Path="Unity.Services.DeploymentApi.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
   <Project Path="Unity.2D.Common.Runtime.csproj" />
+  <Project Path="Kruty1918.Moyva.Recruitment.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.Turns.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Signals.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Camera.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
