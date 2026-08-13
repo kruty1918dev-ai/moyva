@@ -11,6 +11,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         public bool TryPreviewAt(Vector2Int position)
         {
+            if (!CanActiveOwnerMutate(
+                    "create construction preview",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                return false;
+            }
+
             if (State != BuildingPlacementState.Placing)
             {
                 if (VerboseLogs)
@@ -182,6 +190,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public bool TryMovePendingPlacement(Vector2Int fromPosition, Vector2Int toPosition)
         {
+            if (!CanActiveOwnerMutate(
+                    "move construction preview",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                return false;
+            }
+
             if (State != BuildingPlacementState.Placing)
             {
                 if (VerboseLogs)
