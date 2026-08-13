@@ -16,26 +16,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     _playerPlacedBuildings.Count
                     + _factionPlacedBuildings.Count);
 
-            foreach (var pair in _playerPlacedBuildings)
-            {
-                result.Add(
-                    new ConstructionSavedPlacement(
-                        pair.Key,
-                        pair.Value,
-                        NormalizeOwnerId(_activeOwnerId),
-                        ResolvePlacedRotation(pair.Key)));
-            }
-
+            // Owner-indexed placements are canonical. Legacy player placements
+            // are appended only when no canonical record exists at the origin.
             foreach (var pair in _factionPlacedBuildings)
             {
-                if (_playerPlacedBuildings.ContainsKey(pair.Key))
-                    continue;
-
                 result.Add(
                     new ConstructionSavedPlacement(
                         pair.Key,
                         pair.Value.BuildingId,
                         NormalizeOwnerId(pair.Value.FactionId),
+                        ResolvePlacedRotation(pair.Key)));
+            }
+
+            foreach (var pair in _playerPlacedBuildings)
+            {
+                if (_factionPlacedBuildings.ContainsKey(pair.Key))
+                    continue;
+
+                result.Add(
+                    new ConstructionSavedPlacement(
+                        pair.Key,
+                        pair.Value,
+                        NormalizeOwnerId(_activeOwnerId),
                         ResolvePlacedRotation(pair.Key)));
             }
 
@@ -95,19 +97,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             string normalizedOwner =
                 NormalizeOwnerId(ownerId);
-            if (string.Equals(
-                    normalizedOwner,
-                    NormalizeOwnerId(_activeOwnerId),
-                    StringComparison.Ordinal))
-            {
-                _playerPlacedBuildings[position] =
-                    buildingId;
-            }
-            else
-            {
-                _factionPlacedBuildings[position] =
-                    (buildingId, normalizedOwner);
-            }
+            _playerPlacedBuildings.Remove(position);
+            _factionPlacedBuildings[position] =
+                (buildingId, normalizedOwner);
 
             _signalBus.Fire(
                 new BuildingPlacedSignal
@@ -132,13 +124,27 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         public bool TryDirectPlace(string buildingId, Vector2Int position, string placedByFactionId)
-            => TryCommitAuthoritativePlacement(
+        {
+            if (!TryAuthorizeConstructionMutation(
+                    placedByFactionId,
+                    "direct construction placement",
+                    requireLocalOwner: false,
+                    out string authorizedOwnerId,
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                Debug.LogWarning($"[Construction] TryDirectPlace rejected: {turnReason}");
+                return false;
+            }
+
+            return TryCommitAuthoritativePlacement(
                 buildingId,
                 position,
-                placedByFactionId,
+                authorizedOwnerId,
                 ConstructionPlacementCommitIntent.None,
                 ConstructionPlacementAttemptSource.DirectPlace,
                 includePendingPlacements: true);
+        }
 
         public bool TryPlaceAuthoritatively(
             string buildingId,
@@ -146,7 +152,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string ownerId,
             ConstructionPlacementCommitIntent intent)
         {
-            string normalizedOwnerId = NormalizeOwnerId(ownerId);
+            if (string.IsNullOrWhiteSpace(ownerId))
+                return false;
+
+            string normalizedOwnerId = ownerId.Trim();
             if (IsConfirmedPlacementAlreadyApplied(
                     buildingId,
                     position,
@@ -155,10 +164,23 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return true;
             }
 
+            if (!TryAuthorizeConstructionMutation(
+                    normalizedOwnerId,
+                    "host-authoritative construction placement",
+                    requireLocalOwner: false,
+                    out string authorizedOwnerId,
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                Debug.LogWarning(
+                    $"[Construction] TryPlaceAuthoritatively rejected: {turnReason}");
+                return false;
+            }
+
             return TryCommitAuthoritativePlacement(
                 buildingId,
                 position,
-                normalizedOwnerId,
+                authorizedOwnerId,
                 intent,
                 ConstructionPlacementAttemptSource.NetworkRequest,
                 includePendingPlacements: false);
@@ -357,6 +379,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             LogPlacementAttempt(
                 placement,
                 emitRejectedAction: false);
+            RecordConstructionAction(
+                ownerId,
+                isRelocation ? "building-relocate" : "building-place");
             if (VerboseLogs)
             {
                 Debug.Log(
@@ -661,27 +686,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public bool TryDemolishByFaction(Vector2Int position, string factionId)
         {
-            Vector2Int origin = ResolvePlacedOrigin(position);
-            if (!_factionPlacedBuildings.TryGetValue(origin, out var entry) || entry.FactionId != factionId)
+            if (!TryAuthorizeConstructionMutation(
+                    factionId,
+                    "construction demolition",
+                    requireLocalOwner: false,
+                    out string authorizedOwnerId,
+                    out string turnReason))
             {
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] TryDemolishByFaction({position}): будівля не знайдена або не належить фракції '{factionId}'.");
+                _lastActionMessage = turnReason;
+                Debug.LogWarning(
+                    $"[Construction] TryDemolishByFaction rejected: {turnReason}");
                 return false;
             }
 
-            UnregisterBuildingFootprint(origin, entry.BuildingId);
-            _factionPlacedBuildings.Remove(origin);
-            _placedRotationByOrigin.Remove(origin);
-            InvalidatePlacementAvailabilityCache();
-            _signalBus.Fire(new BuildingDemolishedSignal
-            {
-                BuildingId = entry.BuildingId,
-                Position = origin,
-                SourceFactionId = factionId
-            });
-            if (VerboseLogs)
-                Debug.Log($"[Construction] TryDemolishByFaction: знесено '{entry.BuildingId}' на {origin} від '{factionId}'.");
-            return true;
+            bool demolished = TryApplyCommittedDemolition(
+                position,
+                authorizedOwnerId,
+                recordTurnAction: true,
+                idempotentWhenMissing: false,
+                out string demolitionReason);
+            if (!demolished)
+                _lastActionMessage = demolitionReason;
+            return demolished;
         }
 
         public bool HasPlacedBuilding(string buildingId, string ownerId = null)
