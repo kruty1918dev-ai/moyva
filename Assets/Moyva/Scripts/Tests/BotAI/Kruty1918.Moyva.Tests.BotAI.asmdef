@@ -10,7 +10,8 @@
         "Kruty1918.Moyva.Faction",
         "Kruty1918.Moyva.Units",
         "Kruty1918.Moyva.BotAI",
-        "Kruty1918.Moyva.FogOfWar"
+        "Kruty1918.Moyva.FogOfWar",
+        "Kruty1918.Moyva.Turns"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
