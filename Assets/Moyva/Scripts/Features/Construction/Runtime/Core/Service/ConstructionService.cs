@@ -184,15 +184,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         private bool CanActiveOwnerAct(out string reason)
-        {
-            if (_turns == null)
-            {
-                reason = null;
-                return true;
-            }
-
-            return _turns.CanOwnerAct(_activeOwnerId, out reason);
-        }
+            => CanActiveOwnerMutate(
+                "construction mutation",
+                out reason);
 
         public void Initialize()
         {
