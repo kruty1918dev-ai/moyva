@@ -15,6 +15,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void UndoLast()
         {
+            if (!CanActiveOwnerMutate(
+                    "undo construction preview",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                return;
+            }
+
             EndPendingUndoBatch();
 
             if (_undoSnapshots.Count == 0)
@@ -41,6 +49,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void RedoLast()
         {
+            if (!CanActiveOwnerMutate(
+                    "redo construction preview",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                return;
+            }
+
             EndPendingUndoBatch();
 
             if (_redoSnapshots.Count == 0)
@@ -96,9 +112,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             position = ResolvePlacedOrigin(position);
-            if (!_playerPlacedBuildings.TryGetValue(position, out var buildingId))
+            if (!TryResolveCommittedBuildingForOwner(
+                    position,
+                    _activeOwnerId,
+                    out Vector2Int origin,
+                    out string buildingId,
+                    out string ownershipReason))
             {
-                Debug.LogWarning($"[Construction] TryDemolishAt({position}): будівля не була розміщена гравцем.");
+                _lastActionMessage = ownershipReason;
+                Debug.LogWarning(
+                    $"[Construction] TryDemolishAt({position}) rejected: {ownershipReason}");
                 return false;
             }
 
@@ -148,7 +171,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         public IReadOnlyDictionary<Vector2Int, string> GetPlayerPlacedBuildings()
-            => new ReadOnlyDictionary<Vector2Int, string>(_playerPlacedBuildings);
+        {
+            string activeOwner = NormalizeOwnerId(_activeOwnerId);
+            var snapshot = new Dictionary<Vector2Int, string>();
+            foreach (var pair in _factionPlacedBuildings)
+            {
+                if (string.Equals(
+                        NormalizeOwnerId(pair.Value.FactionId),
+                        activeOwner,
+                        System.StringComparison.Ordinal))
+                {
+                    snapshot[pair.Key] = pair.Value.BuildingId;
+                }
+            }
+
+            foreach (var pair in _playerPlacedBuildings)
+            {
+                if (!snapshot.ContainsKey(pair.Key))
+                    snapshot[pair.Key] = pair.Value;
+            }
+
+            return new ReadOnlyDictionary<Vector2Int, string>(snapshot);
+        }
 
         private void ConfirmPendingDemolitions()
         {
@@ -161,19 +205,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 var pos = demolition.Position;
                 var id = demolition.BuildingId;
 
-                if (!_playerPlacedBuildings.ContainsKey(pos))
-                    continue;
-
-                UnregisterBuildingFootprint(pos, id);
-                _playerPlacedBuildings.Remove(pos);
-                _placedRotationByOrigin.Remove(pos);
-                InvalidatePlacementAvailabilityCache();
-                _signalBus.Fire(new BuildingDemolishedSignal
+                if (!TryDemolishByFaction(
+                        pos,
+                        _activeOwnerId))
                 {
-                    BuildingId = id,
-                    Position = pos,
-                    OwnerId = _activeOwnerId,
-                });
+                    continue;
+                }
 
                 if (VerboseLogs)
                     Debug.Log($"[Construction] Confirm demolished '{id}' at {pos}");
