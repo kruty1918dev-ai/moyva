@@ -14,6 +14,7 @@
     "Kruty1918.Moyva.Grid",
     "Kruty1918.Moyva.GameMode",
     "Kruty1918.Moyva.Turns",
+    "Kruty1918.Moyva.Construction",
     "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
   ],
   "includePlatforms": [
