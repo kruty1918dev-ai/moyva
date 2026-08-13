@@ -51,6 +51,11 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .To<UnitClassConfigService>()
                 .AsSingle();
 
+            // P07: recruitment queue consumes data-driven building recipes and
+            // advances as a deterministic turn participant. Deployment is P08.
+            Container.BindInterfacesAndSelfTo<UnitRecruitmentService>()
+                .AsSingle();
+
             Container.Bind<IUnitGameplayProfileService>()
                 .To<UnitGameplayProfileService>()
                 .AsSingle();
