@@ -44,7 +44,7 @@ namespace Kruty1918.Moyva.Bootstrap
 
             // Гра-bootstrap готує owner-контекст і видає стартові ресурси на старті нового світу.
             Container.BindInstance(gameSettings).AsSingle();
-            Container.Bind<IBootstrapOwnerIdResolver>().To<BootstrapOwnerIdResolver>().AsSingle();
+            Container.BindInterfacesAndSelfTo<BootstrapOwnerIdResolver>().AsSingle();
             Container.Bind<IBootstrapStarterPackDecisionService>().To<BootstrapStarterPackDecisionService>().AsSingle();
             Container.Bind<IBootstrapStarterPackPersistenceService>().To<BootstrapStarterPackPersistenceService>().AsSingle();
             Container.Bind<IBootstrapStarterPackGrantService>().To<BootstrapStarterPackGrantService>().AsSingle();
