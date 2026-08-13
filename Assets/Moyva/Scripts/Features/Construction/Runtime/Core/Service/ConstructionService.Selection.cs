@@ -17,6 +17,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
+            if (!CanActiveOwnerMutate(
+                    "select building",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                Debug.LogWarning($"[Construction] SelectBuilding rejected: {turnReason}");
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(buildingId))
             {
                 Debug.LogWarning("[Construction] SelectBuilding: buildingId порожня");
@@ -114,6 +123,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
+            if (!CanActiveOwnerMutate(
+                    "rotate selected building",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                return false;
+            }
+
             if (_wallTopologyService?.IsWallOrGate(
                     _selectedBuildingId) == true)
             {
@@ -147,10 +164,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void SetActiveOwner(string ownerId)
         {
-            _activeOwnerId =
+            string nextOwnerId =
                 string.IsNullOrWhiteSpace(ownerId)
                     ? DefaultOwnerId
                     : ownerId.Trim();
+
+            if (string.Equals(
+                    _activeOwnerId,
+                    nextOwnerId,
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            // Pending previews, demolition marks and undo/redo history belong to
+            // exactly one turn owner. Never carry them into the next faction turn.
+            if (_isActive)
+                ResetSession(clearRedoHistory: true);
+
+            _activeOwnerId = nextOwnerId;
 
             if (_isActive)
                 ApplyBootstrapCastleSelectionIfNeeded();
@@ -277,6 +309,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void ApplyBootstrapCastleSelectionIfNeeded()
         {
+            if (_turns != null
+                && !IsLocalConstructionOwner(_activeOwnerId))
+            {
+                return;
+            }
+
             if (!RequiresInitialCastle(
                     _activeOwnerId,
                     out string castleBuildingId))
@@ -305,6 +343,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!_isActive)
             {
                 Debug.LogWarning("[Construction] ToggleDemolishMode called outside Construction mode.");
+                return;
+            }
+
+            if (!CanActiveOwnerMutate(
+                    "toggle demolition mode",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                Debug.LogWarning($"[Construction] ToggleDemolishMode rejected: {turnReason}");
                 return;
             }
 
