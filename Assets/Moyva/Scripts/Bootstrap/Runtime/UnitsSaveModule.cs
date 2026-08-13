@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
 using Kruty1918.Moyva.Diagnostics.API;
 using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.SaveSystem;
@@ -8,15 +11,12 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
-    /// <summary>
-    /// ISaveModule для збереження та завантаження юнітів.
-    /// Зберігає: typeId + позиція + стаміна для кожного активного юніта.
-    /// При завантаженні recreates юнітів через IUnitFactory.
-    /// </summary>
-    internal sealed class UnitsSaveModule : ISaveModule, IInitializable, System.IDisposable
+    internal sealed class UnitsSaveModule : ISaveModule, IInitializable, IDisposable
     {
         private const int SaveMagic = unchecked((int)0x554E4954);
-        private const int SaveVersion = 2;
+        private const int SaveVersion = 3;
+        private const int MaxRecordCount = 100000;
+
         private readonly struct UnitRecord
         {
             public readonly string UnitId;
@@ -43,7 +43,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly SignalBus _signalBus;
         private readonly ISaveLoadDiagnostics _loadDiagnostics;
         private readonly ISaveLoadDiagnosticsSession _loadDiagnosticsSession;
-        private readonly System.Collections.Generic.List<UnitRecord> _pendingRecords = new();
+        private readonly IUnitRecruitmentStateStore _recruitmentState;
+        private readonly List<UnitRecord> _pendingRecords = new();
+        private readonly List<UnitRecruitmentQueueItemSnapshot> _pendingRecruitment = new();
+        private bool _hasPendingRecruitmentState;
         private bool _worldBuilt;
 
         public UnitsSaveModule(
@@ -52,7 +55,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IUnitOwnershipQuery ownership,
             SignalBus signalBus,
             [InjectOptional] ISaveLoadDiagnostics loadDiagnostics = null,
-            [InjectOptional] ISaveLoadDiagnosticsSession loadDiagnosticsSession = null)
+            [InjectOptional] ISaveLoadDiagnosticsSession loadDiagnosticsSession = null,
+            [InjectOptional] IUnitRecruitmentStateStore recruitmentState = null)
         {
             _unitService = unitService;
             _unitFactory = unitFactory;
@@ -60,42 +64,37 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signalBus = signalBus;
             _loadDiagnostics = loadDiagnostics;
             _loadDiagnosticsSession = loadDiagnosticsSession;
+            _recruitmentState = recruitmentState;
         }
 
-        public void Initialize()
-        {
-            _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
-        }
-
-        public void Dispose()
-        {
-            _signalBus.TryUnsubscribe<WorldBuiltSignal>(OnWorldBuilt);
-        }
+        public void Initialize() => _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
+        public void Dispose() => _signalBus.TryUnsubscribe<WorldBuiltSignal>(OnWorldBuilt);
 
         public void OnSave(ISaveContext context)
         {
-            var unitIds = _unitService.GetAllUnitIds();
+            IReadOnlyCollection<string> unitIds = _unitService.GetAllUnitIds();
             context.Writer.Write(SaveMagic);
             context.Writer.Write(SaveVersion);
             context.Writer.Write(unitIds.Count);
 
-            foreach (var unitId in unitIds)
+            foreach (string unitId in unitIds)
             {
-                string typeId = _unitService.GetUnitTypeId(unitId) ?? "";
-                bool hasPos   = _unitService.TryGetUnitPosition(unitId, out var pos);
+                string typeId = _unitService.GetUnitTypeId(unitId) ?? string.Empty;
+                bool hasPos = _unitService.TryGetUnitPosition(unitId, out Vector2Int pos);
                 float stamina = _unitService.GetStamina(unitId);
-
                 context.Writer.Write(unitId ?? string.Empty);
                 context.Writer.Write(typeId);
-                context.Writer.Write(_ownership.GetUnitOwnerId(unitId) ?? "player_0");
+                context.Writer.Write(_ownership.GetUnitOwnerId(unitId) ?? string.Empty);
                 context.Writer.Write(hasPos ? pos.x : 0);
                 context.Writer.Write(hasPos ? pos.y : 0);
                 context.Writer.Write(stamina);
-
-                Debug.Log($"[UnitsSave] Збережено юніт: typeId={typeId}, pos={pos}, stamina={stamina}");
             }
 
-            Debug.Log($"[UnitsSave] Збережено {unitIds.Count} юнітів.");
+            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> queue =
+                _recruitmentState?.CaptureState() ?? Array.Empty<UnitRecruitmentQueueItemSnapshot>();
+            context.Writer.Write(queue.Count);
+            for (int index = 0; index < queue.Count; index++)
+                WriteRecruitmentRecord(context.Writer, queue[index]);
         }
 
         public void OnLoad(ISaveContext context)
@@ -104,100 +103,189 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (markerOrCount == SaveMagic)
             {
                 int version = context.Reader.ReadInt32();
-                if (version != SaveVersion)
-                    throw new System.IO.InvalidDataException($"Unsupported units save version {version}.");
-                int versionedCount = context.Reader.ReadInt32();
-                var versionedRecords = new System.Collections.Generic.List<UnitRecord>(versionedCount);
-                for (int index = 0; index < versionedCount; index++)
+                if (version != 2 && version != SaveVersion)
+                    throw new InvalidDataException($"Unsupported units save version {version}.");
+
+                int count = ReadBoundedCount(context.Reader, "unit");
+                var records = new List<UnitRecord>(count);
+                for (int index = 0; index < count; index++)
                 {
-                    versionedRecords.Add(new UnitRecord(
+                    records.Add(new UnitRecord(
                         context.Reader.ReadString(),
                         context.Reader.ReadString(),
                         context.Reader.ReadString(),
                         new Vector2Int(context.Reader.ReadInt32(), context.Reader.ReadInt32()),
                         true,
-                        context.Reader.ReadSingle()));
+                        ReadFiniteStamina(context.Reader)));
                 }
-                QueueOrSpawn(versionedRecords);
+
+                List<UnitRecruitmentQueueItemSnapshot> queue;
+                if (version >= 3)
+                {
+                    int queueCount = ReadBoundedCount(context.Reader, "recruitment queue");
+                    queue = new List<UnitRecruitmentQueueItemSnapshot>(queueCount);
+                    for (int index = 0; index < queueCount; index++)
+                        queue.Add(ReadRecruitmentRecord(context.Reader));
+                }
+                else
+                {
+                    queue = new List<UnitRecruitmentQueueItemSnapshot>();
+                }
+
+                QueueOrSpawn(records, queue);
                 return;
             }
 
-            int count = markerOrCount;
+            int legacyCount = markerOrCount;
+            if (legacyCount < 0 || legacyCount > MaxRecordCount)
+                throw new InvalidDataException($"Invalid legacy unit count {legacyCount}.");
             long payloadStart = context.Reader.BaseStream.Position;
 
-            if (!TryParseRecordsWithStamina(context.Reader, count, out var records))
+            if (!TryParseRecordsWithStamina(context.Reader, legacyCount, out List<UnitRecord> legacyRecords))
             {
                 context.Reader.BaseStream.Position = payloadStart;
-
-                if (!TryParseLegacyRecords(context.Reader, count, out records))
+                if (!TryParseLegacyRecords(context.Reader, legacyCount, out legacyRecords))
                 {
-                    Debug.LogWarning("[UnitsSave] Не вдалося розібрати блок юнітів (ані новий, ані legacy формат).");
+                    Debug.LogWarning("[UnitsSave] Failed to parse unit block in versioned or legacy form.");
                     return;
                 }
-
-                Debug.Log("[UnitsSave] Завантаження виконано у legacy-режимі (без стаміни в сейві).");
             }
-
-            QueueOrSpawn(records);
+            QueueOrSpawn(legacyRecords, Array.Empty<UnitRecruitmentQueueItemSnapshot>());
         }
 
-        private void QueueOrSpawn(System.Collections.Generic.List<UnitRecord> records)
+        private static void WriteRecruitmentRecord(BinaryWriter writer, UnitRecruitmentQueueItemSnapshot item)
+        {
+            writer.Write(item.QueueId);
+            writer.Write(item.OwnerId ?? string.Empty);
+            writer.Write(item.RecruitingBuildingPosition.x);
+            writer.Write(item.RecruitingBuildingPosition.y);
+            writer.Write(item.RecruitingBuildingId ?? string.Empty);
+            writer.Write(item.UnitTypeId ?? string.Empty);
+            writer.Write(item.CompletedTurns);
+            writer.Write(item.TrainingTurns);
+            writer.Write(item.EnqueuedGlobalTurn);
+            writer.Write(item.LastProgressGlobalTurn);
+        }
+
+        private static UnitRecruitmentQueueItemSnapshot ReadRecruitmentRecord(BinaryReader reader)
+        {
+            long queueId = reader.ReadInt64();
+            string ownerId = reader.ReadString();
+            var position = new Vector2Int(reader.ReadInt32(), reader.ReadInt32());
+            string buildingId = reader.ReadString();
+            string unitTypeId = reader.ReadString();
+            int completedTurns = reader.ReadInt32();
+            int trainingTurns = reader.ReadInt32();
+            long enqueuedGlobalTurn = reader.ReadInt64();
+            long lastProgressGlobalTurn = reader.ReadInt64();
+
+            if (queueId < 1 || string.IsNullOrWhiteSpace(ownerId) || string.IsNullOrWhiteSpace(unitTypeId)
+                || completedTurns < 0 || trainingTurns < 1 || completedTurns > trainingTurns
+                || enqueuedGlobalTurn < 1 || lastProgressGlobalTurn < enqueuedGlobalTurn)
+            {
+                throw new InvalidDataException($"Invalid recruitment queue record {queueId}.");
+            }
+
+            return new UnitRecruitmentQueueItemSnapshot(
+                queueId,
+                ownerId,
+                position,
+                buildingId,
+                unitTypeId,
+                completedTurns,
+                trainingTurns,
+                enqueuedGlobalTurn,
+                lastProgressGlobalTurn,
+                completedTurns >= trainingTurns
+                    ? UnitRecruitmentQueueStatus.Ready
+                    : UnitRecruitmentQueueStatus.Training);
+        }
+
+        private static int ReadBoundedCount(BinaryReader reader, string label)
+        {
+            int count = reader.ReadInt32();
+            if (count < 0 || count > MaxRecordCount)
+                throw new InvalidDataException($"Invalid {label} count {count}.");
+            return count;
+        }
+
+        private static float ReadFiniteStamina(BinaryReader reader)
+        {
+            float stamina = reader.ReadSingle();
+            if (float.IsNaN(stamina) || float.IsInfinity(stamina) || stamina < 0f || stamina > 100000f)
+                throw new InvalidDataException($"Invalid unit stamina {stamina}.");
+            return stamina;
+        }
+
+        private void QueueOrSpawn(
+            List<UnitRecord> records,
+            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> recruitment)
         {
             if (!_worldBuilt)
             {
                 _pendingRecords.Clear();
                 _pendingRecords.AddRange(records);
-                Debug.Log($"[UnitsSave] Світ ще не побудований. Відкладено завантаження {records.Count} юнітів до WorldBuiltSignal.");
-                _loadDiagnostics?.CompleteStep(_loadDiagnosticsSession?.CurrentFlow, SaveLoadDiagnosticSteps.UnitsRestored, $"deferred={records.Count}");
+                _pendingRecruitment.Clear();
+                if (recruitment != null)
+                    _pendingRecruitment.AddRange(recruitment);
+                _hasPendingRecruitmentState = true;
+                _loadDiagnostics?.CompleteStep(
+                    _loadDiagnosticsSession?.CurrentFlow,
+                    SaveLoadDiagnosticSteps.UnitsRestored,
+                    $"deferred={records.Count}");
                 return;
             }
 
+            // Restore active units before exposing ready recruitment state. This prevents
+            // TurnService/WorldBuilt ordering from deploying a saved ready entry before
+            // its already-spawned deterministic unit has been recreated from the save.
             SpawnRecords(records);
+            _recruitmentState?.RestoreState(
+                recruitment ?? Array.Empty<UnitRecruitmentQueueItemSnapshot>());
         }
 
         private void OnWorldBuilt(WorldBuiltSignal _)
         {
             _worldBuilt = true;
+            if (_pendingRecords.Count > 0)
+            {
+                var records = new List<UnitRecord>(_pendingRecords);
+                _pendingRecords.Clear();
+                SpawnRecords(records);
+            }
 
-            if (_pendingRecords.Count == 0)
-                return;
-
-            var records = new System.Collections.Generic.List<UnitRecord>(_pendingRecords);
-            _pendingRecords.Clear();
-            SpawnRecords(records);
+            if (_hasPendingRecruitmentState)
+            {
+                var queue = new List<UnitRecruitmentQueueItemSnapshot>(_pendingRecruitment);
+                _pendingRecruitment.Clear();
+                _hasPendingRecruitmentState = false;
+                _recruitmentState?.RestoreState(queue);
+            }
         }
 
-        private void SpawnRecords(System.Collections.Generic.List<UnitRecord> records)
+        private void SpawnRecords(List<UnitRecord> records)
         {
             for (int i = 0; i < records.Count; i++)
             {
-                var record = records[i];
-
+                UnitRecord record = records[i];
                 if (string.IsNullOrEmpty(record.TypeId))
-                {
-                    Debug.LogWarning($"[UnitsSave] Пропущено запис {i}: порожній typeId.");
                     continue;
-                }
 
                 string newUnitId = string.IsNullOrWhiteSpace(record.UnitId)
                     ? _unitFactory.CreateUnit(record.TypeId, record.Position, record.OwnerId)
                     : _unitFactory.CreateUnitWithId(record.UnitId, record.TypeId, record.Position, record.OwnerId);
                 if (!string.IsNullOrEmpty(newUnitId) && record.HasStamina)
                     _unitService.SetStamina(newUnitId, record.Stamina);
-
-                Debug.Log(
-                    $"[UnitsSave] Завантажено юніт: typeId={record.TypeId}, pos={record.Position}, " +
-                    $"stamina={(record.HasStamina ? record.Stamina.ToString() : "<legacy>")}, unitId={newUnitId}");
             }
-
-            Debug.Log($"[UnitsSave] Завантажено {records.Count} юнітів.");
-            _loadDiagnostics?.CompleteStep(_loadDiagnosticsSession?.CurrentFlow, SaveLoadDiagnosticSteps.UnitsRestored, $"spawned={records.Count}");
+            _loadDiagnostics?.CompleteStep(
+                _loadDiagnosticsSession?.CurrentFlow,
+                SaveLoadDiagnosticSteps.UnitsRestored,
+                $"spawned={records.Count}");
         }
 
-        private static bool TryParseRecordsWithStamina(System.IO.BinaryReader reader, int count, out System.Collections.Generic.List<UnitRecord> records)
+        private static bool TryParseRecordsWithStamina(BinaryReader reader, int count, out List<UnitRecord> records)
         {
-            records = new System.Collections.Generic.List<UnitRecord>(count);
-
+            records = new List<UnitRecord>(count);
             try
             {
                 for (int i = 0; i < count; i++)
@@ -206,13 +294,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     int x = reader.ReadInt32();
                     int y = reader.ReadInt32();
                     float stamina = reader.ReadSingle();
-
                     if (float.IsNaN(stamina) || float.IsInfinity(stamina) || stamina < 0f || stamina > 100000f)
                         return false;
-
                     records.Add(new UnitRecord(string.Empty, typeId, "player_0", new Vector2Int(x, y), true, stamina));
                 }
-
                 return reader.BaseStream.Position == reader.BaseStream.Length;
             }
             catch
@@ -221,10 +306,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
         }
 
-        private static bool TryParseLegacyRecords(System.IO.BinaryReader reader, int count, out System.Collections.Generic.List<UnitRecord> records)
+        private static bool TryParseLegacyRecords(BinaryReader reader, int count, out List<UnitRecord> records)
         {
-            records = new System.Collections.Generic.List<UnitRecord>(count);
-
+            records = new List<UnitRecord>(count);
             try
             {
                 for (int i = 0; i < count; i++)
@@ -232,10 +316,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     string typeId = reader.ReadString();
                     int x = reader.ReadInt32();
                     int y = reader.ReadInt32();
-
                     records.Add(new UnitRecord(string.Empty, typeId, "player_0", new Vector2Int(x, y), false, 0f));
                 }
-
                 return reader.BaseStream.Position == reader.BaseStream.Length;
             }
             catch
