@@ -21,6 +21,8 @@ namespace Kruty1918.Moyva.Turns.Runtime
         private int _activeFactionIndex;
         private bool _worldReady;
         private WorldSpawnPositionsSource _lastSpawnSource = WorldSpawnPositionsSource.Unknown;
+        private PendingTurnRestore _pendingRestore;
+        private bool _hasPendingRestore;
 
         public TurnService(
             SignalBus signalBus,
@@ -122,13 +124,26 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
         public void Restore(int round, long globalTurn, string activeOwnerId, int actions)
         {
-            Round = Mathf.Max(1, round);
-            GlobalTurn = Math.Max(1, globalTurn);
-            ActionsThisTurn = Mathf.Max(0, actions);
-            int restoredIndex = _factions.FindIndex(f => string.Equals(f.OwnerId, activeOwnerId, StringComparison.Ordinal));
-            if (restoredIndex >= 0)
-                _activeFactionIndex = restoredIndex;
-            StateChanged?.Invoke();
+            _pendingRestore = new PendingTurnRestore(
+                round,
+                globalTurn,
+                activeOwnerId?.Trim() ?? string.Empty,
+                actions);
+            _hasPendingRestore = true;
+
+            // Loading may happen before spawn assignments/world readiness, or while an existing
+            // session is already AwaitingInput. In both cases stop the live turn and let TryStart
+            // resume the persisted snapshot only after its owner can be resolved.
+            if (Phase != TurnPhase.Initializing)
+            {
+                Phase = TurnPhase.Initializing;
+                StateChanged?.Invoke();
+            }
+
+            Debug.Log(
+                $"[Turns] restore queued round={_pendingRestore.Round} global={_pendingRestore.GlobalTurn} " +
+                $"owner='{_pendingRestore.ActiveOwnerId}' actions={_pendingRestore.Actions}.");
+            TryStart();
         }
 
         private void OnSpawnPositions(WorldSpawnPositionsSignal signal)
@@ -250,6 +265,15 @@ namespace Kruty1918.Moyva.Turns.Runtime
             if (!_worldReady || _factions.Count == 0 || Phase != TurnPhase.Initializing)
                 return;
 
+            if (_hasPendingRestore)
+            {
+                if (!TryApplyPendingRestore())
+                    return;
+
+                ResumeRestoredTurn();
+                return;
+            }
+
             if (_eliminatedOwners.Contains(ActiveOwnerId) && !TrySelectFirstEligibleFaction())
             {
                 Debug.LogWarning("[Turns] Cannot start: every configured faction is eliminated.");
@@ -257,6 +281,69 @@ namespace Kruty1918.Moyva.Turns.Runtime
             }
 
             StartCurrentTurn();
+        }
+
+        private bool TryApplyPendingRestore()
+        {
+            if (_pendingRestore.Round < 1)
+            {
+                Debug.LogError($"[Turns] Cannot resume saved turn: round {_pendingRestore.Round} is invalid.");
+                return false;
+            }
+
+            if (_pendingRestore.GlobalTurn < 1)
+            {
+                Debug.LogError($"[Turns] Cannot resume saved turn: global turn {_pendingRestore.GlobalTurn} is invalid.");
+                return false;
+            }
+
+            if (_pendingRestore.Actions < 0)
+            {
+                Debug.LogError($"[Turns] Cannot resume saved turn: action count {_pendingRestore.Actions} is invalid.");
+                return false;
+            }
+
+            string ownerId = _pendingRestore.ActiveOwnerId;
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                Debug.LogError("[Turns] Cannot resume saved turn: active owner id is empty.");
+                return false;
+            }
+
+            int restoredIndex = _factions.FindIndex(
+                faction => string.Equals(faction.OwnerId, ownerId, StringComparison.Ordinal));
+            if (restoredIndex < 0)
+            {
+                Debug.LogWarning(
+                    $"[Turns] Saved owner '{ownerId}' is not in the current faction registry; restore remains pending.");
+                return false;
+            }
+
+            if (_eliminatedOwners.Contains(ownerId))
+            {
+                Debug.LogError(
+                    $"[Turns] Cannot resume saved turn: owner '{ownerId}' is already eliminated.");
+                return false;
+            }
+
+            Round = _pendingRestore.Round;
+            GlobalTurn = _pendingRestore.GlobalTurn;
+            ActionsThisTurn = _pendingRestore.Actions;
+            _activeFactionIndex = restoredIndex;
+            _hasPendingRestore = false;
+            return true;
+        }
+
+        private void ResumeRestoredTurn()
+        {
+            // Deliberately do not call ITurnParticipant.OnTurnStarted here. Unit stamina,
+            // construction/recruitment counters and other participant state are restored by
+            // their own save modules and must not receive a second turn-start side effect.
+            Phase = TurnPhase.AwaitingInput;
+            Debug.Log(
+                $"[Turns] resumed round={Round} global={GlobalTurn} owner='{ActiveOwnerId}' " +
+                $"bot={IsActiveFactionBot} actions={ActionsThisTurn}.");
+            StateChanged?.Invoke();
         }
 
         private void StartCurrentTurn()
@@ -352,6 +439,22 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
         private TurnContext CurrentContext()
             => new(Round, GlobalTurn, _activeFactionIndex, _factions[_activeFactionIndex]);
+
+        private readonly struct PendingTurnRestore
+        {
+            public PendingTurnRestore(int round, long globalTurn, string activeOwnerId, int actions)
+            {
+                Round = round;
+                GlobalTurn = globalTurn;
+                ActiveOwnerId = activeOwnerId ?? string.Empty;
+                Actions = actions;
+            }
+
+            public int Round { get; }
+            public long GlobalTurn { get; }
+            public string ActiveOwnerId { get; }
+            public int Actions { get; }
+        }
 
         private static int CompareAssignments(SpawnPositionAssignment left, SpawnPositionAssignment right)
         {
