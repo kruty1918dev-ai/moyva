@@ -342,6 +342,18 @@ namespace Kruty1918.Moyva.Construction.API
     }
 
     /// <summary>
+    /// Applies an already host-authorized demolition to a replica.
+    /// This is a state-convergence path and intentionally does not require the
+    /// replica's local owner to be the active faction.
+    /// </summary>
+    public interface IConfirmedConstructionDemolitionApplier
+    {
+        bool TryApplyConfirmedDemolition(
+            Vector2Int position,
+            string ownerId);
+    }
+
+    /// <summary>
     /// Immutable placement metadata that must survive an authoritative
     /// client-host-client round trip. Relocation and transactional pending
     /// replacement are placement intent, not properties that may be inferred
