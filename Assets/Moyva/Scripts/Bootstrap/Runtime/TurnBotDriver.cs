@@ -1,138 +1,99 @@
 using System;
-using System.Threading;
-using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Recruitment;
+using Kruty1918.Moyva.BotAI.API;
+using Kruty1918.Moyva.BotAI.Runtime;
 using Kruty1918.Moyva.Turns.API;
-using Kruty1918.Moyva.Units.API;
 using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
+    /// <summary>
+    /// Thin authoritative bridge between ITurnService and the bot executor.
+    /// It begins at most one executor pass per owner/global-turn epoch, then retries
+    /// TryEndTurn on later ticks until normal ITurnBlockers allow the turn to finish.
+    /// </summary>
     internal sealed class TurnBotDriver : ITickable
     {
         private readonly ITurnService _turns;
-        private readonly IConstructionService _construction;
-        private readonly IRecruitmentService _recruitment;
-        private readonly IUnitService _units;
-        private readonly IUnitOwnershipQuery _ownership;
-        private readonly IUnitMovementService _movement;
-        private readonly IGridService _grid;
-        private long _actedTurn;
+        private readonly IBotTurnExecutor _executor;
+        private long _begunGlobalTurn = long.MinValue;
+        private string _begunOwnerId = string.Empty;
 
+        [Inject]
         public TurnBotDriver(
             ITurnService turns,
-            IConstructionService construction,
-            IRecruitmentService recruitment,
-            IUnitService units,
-            IUnitOwnershipQuery ownership,
-            IUnitMovementService movement,
-            IGridService grid)
+            DiContainer container,
+            [InjectOptional] IBotTurnExecutor executor = null)
         {
-            _turns = turns;
-            _construction = construction;
-            _recruitment = recruitment;
-            _units = units;
-            _ownership = ownership;
-            _movement = movement;
-            _grid = grid;
+            _turns = turns ?? throw new ArgumentNullException(nameof(turns));
+            _executor = executor ?? TryCreateFallbackExecutor(container);
         }
 
         public void Tick()
         {
-            if (_turns.Phase != TurnPhase.AwaitingInput || !_turns.IsActiveFactionBot)
+            if (_turns.Phase != TurnPhase.AwaitingInput
+                || !_turns.IsActiveFactionBot)
+            {
+                return;
+            }
+
+            string ownerId = NormalizeId(_turns.ActiveOwnerId);
+            if (ownerId == null)
                 return;
 
-            string ownerId = _turns.ActiveOwnerId;
-            if (_actedTurn != _turns.GlobalTurn)
+            long globalTurn = _turns.GlobalTurn;
+            bool alreadyBegun =
+                _begunGlobalTurn == globalTurn
+                && string.Equals(_begunOwnerId, ownerId, StringComparison.Ordinal);
+
+            if (!alreadyBegun)
             {
-                _actedTurn = _turns.GlobalTurn;
-                ExecuteTurn(ownerId);
+                // Claim before invoking the executor so synchronous signals cannot
+                // re-enter this driver and start the same bot turn twice.
+                _begunGlobalTurn = globalTurn;
+                _begunOwnerId = ownerId;
+
+                if (_executor == null)
+                {
+                    Debug.LogWarning(
+                        $"[TurnBotDriver] No IBotTurnExecutor is available for owner '{ownerId}'. " +
+                        "The turn will fail closed to a no-op and proceed when blockers allow.");
+                }
+                else if (!_executor.TryBeginTurn(ownerId, globalTurn, out string reason))
+                {
+                    Debug.LogWarning(
+                        $"[TurnBotDriver] Bot execution did not start for owner '{ownerId}' " +
+                        $"at globalTurn={globalTurn}: {reason}");
+                }
+
+                // Do not attempt End Turn in the same tick. Asynchronous gameplay
+                // commands get one scheduler turn to register their ITurnBlocker state.
                 return;
             }
 
             _turns.TryEndTurn(ownerId, out _);
         }
 
-        private void ExecuteTurn(string ownerId)
+        private static IBotTurnExecutor TryCreateFallbackExecutor(DiContainer container)
         {
-            Vector2Int start = ResolveStart(ownerId);
-            if (!TryFindOwnedBuilding(ownerId, "barrack", out Vector2Int barrack))
+            if (container == null)
+                return null;
+
+            try
             {
-                if (TryPlaceBarrack(ownerId, start, out barrack))
-                    _turns.TryRecordAction(ownerId, "bot-building-place");
+                // Most scenes resolve the singleton bound by BotInstaller. This fallback
+                // protects direct/test scenes that contain TurnBotDriver but omit BotInstaller.
+                return container.Instantiate<BotTurnExecutor>();
             }
-
-            if (TryFindOwnedBuilding(ownerId, "barrack", out barrack))
-                _recruitment.TryEnqueue(barrack, "warrior", ownerId, out _);
-
-            foreach (string unitId in _units.GetAllUnitIds())
+            catch (Exception exception)
             {
-                if (!string.Equals(_ownership.GetUnitOwnerId(unitId), ownerId, StringComparison.Ordinal)
-                    || !_units.TryGetUnitPosition(unitId, out Vector2Int position))
-                    continue;
-                Vector2Int target = FindMoveTarget(position);
-                if (target != position)
-                    _ = _movement.MoveUnitAsync(unitId, target, CancellationToken.None);
+                Debug.LogWarning(
+                    $"[TurnBotDriver] Could not construct fallback BotTurnExecutor: {exception.Message}");
+                return null;
             }
         }
 
-        private Vector2Int ResolveStart(string ownerId)
-        {
-            foreach (TurnFaction faction in _turns.Factions)
-                if (string.Equals(faction.OwnerId, ownerId, StringComparison.Ordinal))
-                    return faction.StartPosition;
-            return Vector2Int.zero;
-        }
-
-        private bool TryFindOwnedBuilding(string ownerId, string buildingId, out Vector2Int position)
-        {
-            if (_construction is IConstructionSaveSnapshotSource source)
-            {
-                foreach (ConstructionSavedPlacement placement in source.GetSavedPlacements())
-                {
-                    if (string.Equals(placement.OwnerId, ownerId, StringComparison.Ordinal)
-                        && string.Equals(placement.BuildingId, buildingId, StringComparison.Ordinal))
-                    {
-                        position = placement.Position;
-                        return true;
-                    }
-                }
-            }
-            position = default;
-            return false;
-        }
-
-        private bool TryPlaceBarrack(string ownerId, Vector2Int center, out Vector2Int position)
-        {
-            for (int radius = 1; radius <= 6; radius++)
-            for (int x = -radius; x <= radius; x++)
-            for (int y = -radius; y <= radius; y++)
-            {
-                if (Mathf.Max(Mathf.Abs(x), Mathf.Abs(y)) != radius)
-                    continue;
-                Vector2Int candidate = center + new Vector2Int(x, y);
-                if (_construction.TryDirectPlace("barrack", candidate, ownerId))
-                {
-                    position = candidate;
-                    return true;
-                }
-            }
-            position = default;
-            return false;
-        }
-
-        private Vector2Int FindMoveTarget(Vector2Int position)
-        {
-            Vector2Int[] offsets = { Vector2Int.right, Vector2Int.up, Vector2Int.left, Vector2Int.down };
-            for (int index = 0; index < offsets.Length; index++)
-            {
-                Vector2Int candidate = position + offsets[index];
-                if (_grid.TryGetTileData(candidate, out string tileId) && !string.IsNullOrWhiteSpace(tileId))
-                    return candidate;
-            }
-            return position;
-        }
+        private static string NormalizeId(string value)
+            => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 }
