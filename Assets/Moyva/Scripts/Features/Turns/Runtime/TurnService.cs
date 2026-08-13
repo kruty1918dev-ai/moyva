@@ -15,22 +15,27 @@ namespace Kruty1918.Moyva.Turns.Runtime
         private readonly ICalendarService _calendar;
         private readonly List<ITurnParticipant> _participants;
         private readonly List<ITurnBlocker> _blockers;
+        private readonly ITurnLocalOwnerResolver _localOwnerResolver;
         private readonly List<TurnFaction> _factions = new();
+        private readonly HashSet<string> _eliminatedOwners = new(StringComparer.Ordinal);
         private int _activeFactionIndex;
         private bool _worldReady;
+        private WorldSpawnPositionsSource _lastSpawnSource = WorldSpawnPositionsSource.Unknown;
 
         public TurnService(
             SignalBus signalBus,
             IWorldGenerationSignalState worldState,
             ICalendarService calendar,
             [InjectOptional] List<ITurnParticipant> participants = null,
-            [InjectOptional] List<ITurnBlocker> blockers = null)
+            [InjectOptional] List<ITurnBlocker> blockers = null,
+            [InjectOptional] ITurnLocalOwnerResolver localOwnerResolver = null)
         {
             _signalBus = signalBus;
             _worldState = worldState;
             _calendar = calendar;
             _participants = participants ?? new List<ITurnParticipant>();
             _blockers = blockers ?? new List<ITurnBlocker>();
+            _localOwnerResolver = localOwnerResolver;
             _participants.Sort((left, right) => left.TurnOrder.CompareTo(right.TurnOrder));
         }
 
@@ -40,7 +45,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
         public long GlobalTurn { get; private set; } = 1;
         public int ActionsThisTurn { get; private set; }
         public string ActiveOwnerId => _factions.Count == 0 ? string.Empty : _factions[_activeFactionIndex].OwnerId;
-        public string LocalOwnerId { get; private set; } = "player_0";
+        public string LocalOwnerId { get; private set; } = string.Empty;
         public bool IsActiveFactionBot => _factions.Count > 0 && _factions[_activeFactionIndex].IsBot;
         public IReadOnlyList<TurnFaction> Factions => _factions;
 
@@ -48,14 +53,16 @@ namespace Kruty1918.Moyva.Turns.Runtime
         {
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnSpawnPositions);
             _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
+            _signalBus.Subscribe<FactionEliminatedSignal>(OnFactionEliminated);
             if (_worldState.TryGetWorldSpawnPositions(out WorldSpawnPositionsSignal cached))
-                ConfigureFactions(cached.Assignments);
+                ConfigureFactions(cached.Assignments, cached.Source);
         }
 
         public void Dispose()
         {
             _signalBus.TryUnsubscribe<WorldSpawnPositionsSignal>(OnSpawnPositions);
             _signalBus.TryUnsubscribe<WorldBuiltSignal>(OnWorldBuilt);
+            _signalBus.TryUnsubscribe<FactionEliminatedSignal>(OnFactionEliminated);
         }
 
         public bool IsOwnerActive(string ownerId)
@@ -67,6 +74,12 @@ namespace Kruty1918.Moyva.Turns.Runtime
             if (!_worldReady || Phase != TurnPhase.AwaitingInput)
             {
                 reason = $"Хід недоступний у фазі {Phase}.";
+                return false;
+            }
+
+            if (_eliminatedOwners.Contains(ActiveOwnerId))
+            {
+                reason = $"Фракція '{ActiveOwnerId}' вибула з гри.";
                 return false;
             }
 
@@ -120,7 +133,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
         private void OnSpawnPositions(WorldSpawnPositionsSignal signal)
         {
-            ConfigureFactions(signal.Assignments);
+            ConfigureFactions(signal.Assignments, signal.Source);
             TryStart();
         }
 
@@ -128,37 +141,121 @@ namespace Kruty1918.Moyva.Turns.Runtime
         {
             _worldReady = true;
             if (_factions.Count == 0 && _worldState.TryGetWorldSpawnPositions(out WorldSpawnPositionsSignal cached))
-                ConfigureFactions(cached.Assignments);
-            if (_factions.Count == 0)
-                ConfigureFactions(new[] { new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false } });
+                ConfigureFactions(cached.Assignments, cached.Source);
+            if (_factions.Count == 0 && _lastSpawnSource == WorldSpawnPositionsSource.DirectGameplayTest)
+                ConfigureDirectGameplayFallback();
             TryStart();
         }
 
-        private void ConfigureFactions(SpawnPositionAssignment[] assignments)
+        private void OnFactionEliminated(FactionEliminatedSignal signal)
         {
-            if (assignments == null || assignments.Length == 0)
+            string ownerId = signal.FactionId?.Trim();
+            if (string.IsNullOrWhiteSpace(ownerId) || !_eliminatedOwners.Add(ownerId))
                 return;
 
-            Array.Sort(assignments, (left, right) => left.SlotIndex.CompareTo(right.SlotIndex));
-            _factions.Clear();
-            var seen = new HashSet<string>(StringComparer.Ordinal);
-            for (int index = 0; index < assignments.Length; index++)
+            bool configured = _factions.FindIndex(
+                f => string.Equals(f.OwnerId, ownerId, StringComparison.Ordinal)) >= 0;
+            if (!configured)
             {
-                string ownerId = NormalizeOwner(assignments[index].ParticipantId, assignments[index].IsBot, index);
-                if (seen.Add(ownerId))
-                    _factions.Add(new TurnFaction(ownerId, assignments[index].IsBot, assignments[index].Position));
+                Debug.Log($"[Turns] faction elimination queued before registry configuration owner='{ownerId}'.");
+                return;
             }
 
-            TurnFaction local = _factions.Find(f => !f.IsBot);
-            LocalOwnerId = string.IsNullOrWhiteSpace(local.OwnerId) ? _factions[0].OwnerId : local.OwnerId;
-            _activeFactionIndex = Mathf.Clamp(_activeFactionIndex, 0, _factions.Count - 1);
+            Debug.Log($"[Turns] faction eliminated owner='{ownerId}'.");
             StateChanged?.Invoke();
+
+            if (_worldReady && Phase == TurnPhase.AwaitingInput && IsOwnerActive(ownerId))
+            {
+                Debug.Log($"[Turns] active faction '{ownerId}' eliminated; advancing without player input.");
+                EndCurrentTurn();
+            }
+        }
+
+        private void ConfigureFactions(SpawnPositionAssignment[] assignments, WorldSpawnPositionsSource source)
+        {
+            _lastSpawnSource = source;
+            if (assignments == null || assignments.Length == 0)
+            {
+                if (_worldReady && source == WorldSpawnPositionsSource.DirectGameplayTest && _factions.Count == 0)
+                    ConfigureDirectGameplayFallback();
+                return;
+            }
+
+            string previousActiveOwner = ActiveOwnerId;
+            var ordered = (SpawnPositionAssignment[])assignments.Clone();
+            Array.Sort(ordered, CompareAssignments);
+
+            _factions.Clear();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < ordered.Length; index++)
+            {
+                SpawnPositionAssignment assignment = ordered[index];
+                string ownerId = NormalizeOwner(assignment.ParticipantId, assignment.IsBot, assignment.SlotIndex);
+                if (seen.Add(ownerId))
+                    _factions.Add(new TurnFaction(ownerId, assignment.IsBot, assignment.Position));
+            }
+
+            _eliminatedOwners.RemoveWhere(ownerId => !seen.Contains(ownerId));
+            LocalOwnerId = ResolveLocalOwnerId();
+
+            int preservedIndex = string.IsNullOrWhiteSpace(previousActiveOwner)
+                ? -1
+                : _factions.FindIndex(f => string.Equals(f.OwnerId, previousActiveOwner, StringComparison.Ordinal));
+            if (preservedIndex >= 0)
+                _activeFactionIndex = preservedIndex;
+            else if (!TrySelectFirstEligibleFaction())
+                _activeFactionIndex = 0;
+
+            StateChanged?.Invoke();
+        }
+
+        private void ConfigureDirectGameplayFallback()
+        {
+            if (_factions.Count != 0)
+                return;
+
+            _factions.Add(new TurnFaction("player_0", false, Vector2Int.zero));
+            LocalOwnerId = ResolveLocalOwnerId();
+            _activeFactionIndex = 0;
+            Debug.LogWarning("[Turns] DirectGameplayTest has no spawn assignments; using explicit solo player_0 fallback.");
+            StateChanged?.Invoke();
+        }
+
+        private string ResolveLocalOwnerId()
+        {
+            if (_factions.Count == 0)
+                return string.Empty;
+
+            if (_localOwnerResolver != null)
+            {
+                string resolved = _localOwnerResolver.ResolveLocalOwnerId(_factions)?.Trim();
+                if (string.IsNullOrWhiteSpace(resolved))
+                    return string.Empty;
+
+                int match = _factions.FindIndex(f => string.Equals(f.OwnerId, resolved, StringComparison.Ordinal));
+                return match >= 0 ? _factions[match].OwnerId : string.Empty;
+            }
+
+            for (int index = 0; index < _factions.Count; index++)
+            {
+                if (!_factions[index].IsBot)
+                    return _factions[index].OwnerId;
+            }
+
+            return _factions[0].OwnerId;
         }
 
         private void TryStart()
         {
             if (!_worldReady || _factions.Count == 0 || Phase != TurnPhase.Initializing)
                 return;
+
+            if (_eliminatedOwners.Contains(ActiveOwnerId) && !TrySelectFirstEligibleFaction())
+            {
+                Debug.LogWarning("[Turns] Cannot start: every configured faction is eliminated.");
+                return;
+            }
+
             StartCurrentTurn();
         }
 
@@ -170,6 +267,14 @@ namespace Kruty1918.Moyva.Turns.Runtime
             TurnContext context = CurrentContext();
             for (int index = 0; index < _participants.Count; index++)
                 _participants[index]?.OnTurnStarted(context);
+
+            if (_eliminatedOwners.Contains(ActiveOwnerId))
+            {
+                Debug.Log($"[Turns] faction '{ActiveOwnerId}' was eliminated while its turn was starting; advancing.");
+                EndCurrentTurn();
+                return;
+            }
+
             Phase = TurnPhase.AwaitingInput;
             Debug.Log($"[Turns] started round={Round} global={GlobalTurn} owner='{ActiveOwnerId}' bot={IsActiveFactionBot}.");
             StateChanged?.Invoke();
@@ -183,7 +288,14 @@ namespace Kruty1918.Moyva.Turns.Runtime
             for (int index = _participants.Count - 1; index >= 0; index--)
                 _participants[index]?.OnTurnEnding(context);
 
-            bool completedRound = _activeFactionIndex >= _factions.Count - 1;
+            if (!TryFindNextEligibleFaction(out int nextIndex, out bool completedRound))
+            {
+                Phase = TurnPhase.Resolving;
+                Debug.LogWarning("[Turns] No eligible faction remains; turn loop is awaiting game-over resolution.");
+                StateChanged?.Invoke();
+                return;
+            }
+
             if (completedRound)
             {
                 int completedRoundNumber = Round;
@@ -192,21 +304,76 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 for (int index = 0; index < _participants.Count; index++)
                     _participants[index]?.OnRoundCompleted(completedRoundNumber);
                 Round++;
-                _activeFactionIndex = 0;
-            }
-            else
-            {
-                _activeFactionIndex++;
             }
 
+            _activeFactionIndex = nextIndex;
             GlobalTurn++;
             StartCurrentTurn();
+        }
+
+        private bool TryFindNextEligibleFaction(out int nextIndex, out bool completedRound)
+        {
+            completedRound = false;
+            nextIndex = -1;
+            if (_factions.Count == 0)
+                return false;
+
+            for (int step = 1; step <= _factions.Count; step++)
+            {
+                int rawIndex = _activeFactionIndex + step;
+                if (rawIndex >= _factions.Count)
+                    completedRound = true;
+
+                int candidate = rawIndex % _factions.Count;
+                if (_eliminatedOwners.Contains(_factions[candidate].OwnerId))
+                    continue;
+
+                nextIndex = candidate;
+                return true;
+            }
+
+            completedRound = false;
+            return false;
+        }
+
+        private bool TrySelectFirstEligibleFaction()
+        {
+            for (int index = 0; index < _factions.Count; index++)
+            {
+                if (_eliminatedOwners.Contains(_factions[index].OwnerId))
+                    continue;
+
+                _activeFactionIndex = index;
+                return true;
+            }
+
+            return false;
         }
 
         private TurnContext CurrentContext()
             => new(Round, GlobalTurn, _activeFactionIndex, _factions[_activeFactionIndex]);
 
-        private static string NormalizeOwner(string raw, bool isBot, int index)
-            => string.IsNullOrWhiteSpace(raw) ? (isBot ? $"bot_{index}" : $"player_{index}") : raw.Trim();
+        private static int CompareAssignments(SpawnPositionAssignment left, SpawnPositionAssignment right)
+        {
+            int comparison = left.SlotIndex.CompareTo(right.SlotIndex);
+            if (comparison != 0)
+                return comparison;
+
+            string leftId = left.ParticipantId?.Trim() ?? string.Empty;
+            string rightId = right.ParticipantId?.Trim() ?? string.Empty;
+            comparison = string.CompareOrdinal(leftId, rightId);
+            if (comparison != 0)
+                return comparison;
+
+            comparison = left.IsBot.CompareTo(right.IsBot);
+            if (comparison != 0)
+                return comparison;
+
+            comparison = left.Position.x.CompareTo(right.Position.x);
+            return comparison != 0 ? comparison : left.Position.y.CompareTo(right.Position.y);
+        }
+
+        private static string NormalizeOwner(string raw, bool isBot, int slotIndex)
+            => string.IsNullOrWhiteSpace(raw) ? (isBot ? $"bot_{slotIndex}" : $"player_{slotIndex}") : raw.Trim();
     }
 }
