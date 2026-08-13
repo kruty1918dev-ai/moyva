@@ -20,24 +20,57 @@ namespace Kruty1918.Moyva.Units.API
             int trainingTurns,
             long enqueuedGlobalTurn,
             UnitRecruitmentQueueStatus status)
+            : this(
+                queueId,
+                ownerId,
+                recruitingBuildingPosition,
+                string.Empty,
+                unitTypeId,
+                completedTurns,
+                trainingTurns,
+                enqueuedGlobalTurn,
+                enqueuedGlobalTurn,
+                status)
+        {
+        }
+
+        public UnitRecruitmentQueueItemSnapshot(
+            long queueId,
+            string ownerId,
+            Vector2Int recruitingBuildingPosition,
+            string recruitingBuildingId,
+            string unitTypeId,
+            int completedTurns,
+            int trainingTurns,
+            long enqueuedGlobalTurn,
+            long lastProgressGlobalTurn,
+            UnitRecruitmentQueueStatus status)
         {
             QueueId = queueId;
             OwnerId = ownerId ?? string.Empty;
             RecruitingBuildingPosition = recruitingBuildingPosition;
+            RecruitingBuildingId = recruitingBuildingId ?? string.Empty;
             UnitTypeId = unitTypeId ?? string.Empty;
             CompletedTurns = completedTurns < 0 ? 0 : completedTurns;
             TrainingTurns = trainingTurns < 1 ? 1 : trainingTurns;
             EnqueuedGlobalTurn = enqueuedGlobalTurn < 1 ? 1 : enqueuedGlobalTurn;
-            Status = status;
+            LastProgressGlobalTurn = lastProgressGlobalTurn < EnqueuedGlobalTurn
+                ? EnqueuedGlobalTurn
+                : lastProgressGlobalTurn;
+            Status = CompletedTurns >= TrainingTurns
+                ? UnitRecruitmentQueueStatus.Ready
+                : UnitRecruitmentQueueStatus.Training;
         }
 
         public long QueueId { get; }
         public string OwnerId { get; }
         public Vector2Int RecruitingBuildingPosition { get; }
+        public string RecruitingBuildingId { get; }
         public string UnitTypeId { get; }
         public int CompletedTurns { get; }
         public int TrainingTurns { get; }
         public long EnqueuedGlobalTurn { get; }
+        public long LastProgressGlobalTurn { get; }
         public UnitRecruitmentQueueStatus Status { get; }
         public bool IsReady => Status == UnitRecruitmentQueueStatus.Ready;
         public int RemainingTurns => IsReady
@@ -45,11 +78,6 @@ namespace Kruty1918.Moyva.Units.API
             : System.Math.Max(0, TrainingTurns - CompletedTurns);
     }
 
-    /// <summary>
-    /// Turn-authoritative, data-driven recruitment queue. P07 owns enqueue,
-    /// economy consumption and training progress. Deployment/removal of ready
-    /// entries is intentionally deferred to P08.
-    /// </summary>
     public interface IUnitRecruitmentService
     {
         bool TryEnqueue(
@@ -66,5 +94,15 @@ namespace Kruty1918.Moyva.Units.API
             string ownerId,
             Vector2Int recruitingBuildingPosition,
             out UnitRecruitmentQueueItemSnapshot item);
+    }
+
+    /// <summary>
+    /// Save/load boundary for already-paid recruitment queues. Restore must never
+    /// re-run economy consumption or enqueue authority checks.
+    /// </summary>
+    public interface IUnitRecruitmentStateStore
+    {
+        IReadOnlyList<UnitRecruitmentQueueItemSnapshot> CaptureState();
+        void RestoreState(IReadOnlyList<UnitRecruitmentQueueItemSnapshot> items);
     }
 }
