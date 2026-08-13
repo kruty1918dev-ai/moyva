@@ -173,7 +173,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 bool hasRelocationSource = placement.OriginalPosition.HasValue;
                 Vector2Int? relocationSource = placement.OriginalPosition;
                 string relocationOwnerId = _activeOwnerId;
-                bool relocationWasFactionOwned = false;
                 bool modelCommitted = false;
                 bool targetFootprintRegistered = false;
                 bool relocationFootprintRemoved = false;
@@ -242,18 +241,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         && relocationSource.HasValue
                         && _factionPlacedBuildings.TryGetValue(relocationSource.Value, out var sourceFactionEntry))
                     {
-                        relocationWasFactionOwned = true;
                         relocationOwnerId = sourceFactionEntry.FactionId;
-                    }
-                    else if (!hasRelocationSource
-                             && gateReplacementAllowed
-                             && _factionPlacedBuildings.ContainsKey(
-                                 replacedOrigin))
-                    {
-                        // Replacement changes the occupant, not the actor. Keep
-                        // the active owner (especially when RequireSameOwner is
-                        // disabled) instead of inheriting the replaced object.
-                        relocationWasFactionOwned = true;
                     }
 
                     double footprintStartedAt =
@@ -360,10 +348,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     if (hasRelocationSource && relocationSource.HasValue)
                         RemovePlacedRecordAt(relocationSource.Value);
 
-                    if (relocationWasFactionOwned)
-                        _factionPlacedBuildings[pos] = (id, relocationOwnerId);
-                    else
-                        _playerPlacedBuildings[pos] = id;
+                    _playerPlacedBuildings.Remove(pos);
+                    _factionPlacedBuildings[pos] =
+                        (id, NormalizeOwnerId(relocationOwnerId));
                     _placedRotationByOrigin[pos] =
                         placement.Rotation;
 
@@ -412,13 +399,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         BuildingId = id,
                         Position = pos,
                         OwnerId = relocationOwnerId,
-                        SourceFactionId = relocationWasFactionOwned ? relocationOwnerId : null,
+                        SourceFactionId = relocationOwnerId,
                         HasRelocationSource = isRelocation && relocationSource.HasValue && relocationSource.Value != pos,
                         RelocationSourcePosition = relocationSource.GetValueOrDefault(),
                         RotationQuarterTurns =
                             (int)placement.Rotation,
                     });
-                    _turns?.TryRecordAction(relocationOwnerId, "building-place");
+                    RecordConstructionAction(
+                        relocationOwnerId,
+                        isRelocation ? "building-relocate" : "building-place");
 
                     AddConfirmStage(
                         ref signalMs,
