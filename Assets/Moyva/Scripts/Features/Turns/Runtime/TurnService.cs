@@ -23,6 +23,12 @@ namespace Kruty1918.Moyva.Turns.Runtime
         private WorldSpawnPositionsSource _lastSpawnSource = WorldSpawnPositionsSource.Unknown;
         private PendingTurnRestore _pendingRestore;
         private bool _hasPendingRestore;
+        private bool _endTurnEvaluationInProgress;
+
+        private const string EndTurnEvaluationInProgressReason = "Turn end is already being evaluated.";
+        private const string DefaultBlockedReason = "Turn is blocked.";
+        private const string StateChangedDuringEvaluationReason = "Turn state changed while evaluating blockers.";
+        private const string StateChangedDuringTransitionReason = "Turn state changed during lifecycle transition.";
 
         public TurnService(
             SignalBus signalBus,
@@ -111,13 +117,60 @@ namespace Kruty1918.Moyva.Turns.Runtime
             if (!CanOwnerAct(requesterOwnerId, out reason))
                 return false;
 
-            for (int index = 0; index < _blockers.Count; index++)
+            if (_endTurnEvaluationInProgress)
             {
-                if (_blockers[index] != null && _blockers[index].IsTurnBlocked(out reason))
-                    return false;
+                reason = EndTurnEvaluationInProgressReason;
+                return false;
             }
 
-            EndCurrentTurn();
+            TurnStateSnapshot snapshot = CaptureTurnState();
+            ITurnBlocker[] blockers = _blockers.ToArray();
+            _endTurnEvaluationInProgress = true;
+            try
+            {
+                for (int index = 0; index < blockers.Length; index++)
+                {
+                    if (!MatchesTurnState(snapshot, TurnPhase.AwaitingInput))
+                    {
+                        reason = StateChangedDuringEvaluationReason;
+                        return false;
+                    }
+
+                    ITurnBlocker blocker = blockers[index];
+                    if (blocker == null)
+                        continue;
+
+                    bool blocked = blocker.IsTurnBlocked(out string blockerReason);
+                    if (!MatchesTurnState(snapshot, TurnPhase.AwaitingInput))
+                    {
+                        reason = StateChangedDuringEvaluationReason;
+                        return false;
+                    }
+
+                    if (blocked)
+                    {
+                        reason = string.IsNullOrWhiteSpace(blockerReason) ? DefaultBlockedReason : blockerReason;
+                        return false;
+                    }
+                }
+            }
+            finally
+            {
+                _endTurnEvaluationInProgress = false;
+            }
+
+            if (!MatchesTurnState(snapshot, TurnPhase.AwaitingInput))
+            {
+                reason = StateChangedDuringEvaluationReason;
+                return false;
+            }
+
+            if (!EndCurrentTurn())
+            {
+                reason = StateChangedDuringTransitionReason;
+                return false;
+            }
+
             reason = null;
             return true;
         }
@@ -346,56 +399,84 @@ namespace Kruty1918.Moyva.Turns.Runtime
             StateChanged?.Invoke();
         }
 
-        private void StartCurrentTurn()
+        private bool StartCurrentTurn()
         {
+            TurnStateSnapshot transition = CaptureTurnState();
             Phase = TurnPhase.Starting;
             ActionsThisTurn = 0;
+            transition = transition.WithPhaseAndActions(TurnPhase.Starting, 0);
             StateChanged?.Invoke();
+            if (!MatchesLifecycleState(transition, TurnPhase.Starting))
+                return false;
+
             TurnContext context = CurrentContext();
             for (int index = 0; index < _participants.Count; index++)
+            {
                 _participants[index]?.OnTurnStarted(context);
+                if (!MatchesLifecycleState(transition, TurnPhase.Starting))
+                    return false;
+            }
 
             if (_eliminatedOwners.Contains(ActiveOwnerId))
             {
                 Debug.Log($"[Turns] faction '{ActiveOwnerId}' was eliminated while its turn was starting; advancing.");
-                EndCurrentTurn();
-                return;
+                return EndCurrentTurn();
             }
 
             Phase = TurnPhase.AwaitingInput;
             Debug.Log($"[Turns] started round={Round} global={GlobalTurn} owner='{ActiveOwnerId}' bot={IsActiveFactionBot}.");
             StateChanged?.Invoke();
+            return true;
         }
 
-        private void EndCurrentTurn()
+        private bool EndCurrentTurn()
         {
+            TurnStateSnapshot transition = CaptureTurnState();
             Phase = TurnPhase.Ending;
+            transition = transition.WithPhaseAndActions(TurnPhase.Ending, ActionsThisTurn);
             StateChanged?.Invoke();
+            if (!MatchesLifecycleState(transition, TurnPhase.Ending))
+                return false;
+
             TurnContext context = CurrentContext();
             for (int index = _participants.Count - 1; index >= 0; index--)
+            {
                 _participants[index]?.OnTurnEnding(context);
+                if (!MatchesLifecycleState(transition, TurnPhase.Ending))
+                    return false;
+            }
 
             if (!TryFindNextEligibleFaction(out int nextIndex, out bool completedRound))
             {
                 Phase = TurnPhase.Resolving;
                 Debug.LogWarning("[Turns] No eligible faction remains; turn loop is awaiting game-over resolution.");
                 StateChanged?.Invoke();
-                return;
+                return true;
             }
 
             if (completedRound)
             {
                 int completedRoundNumber = Round;
                 Phase = TurnPhase.Resolving;
-                _calendar.AdvanceTurn();
+                TurnStateSnapshot resolving = transition.WithPhaseAndActions(TurnPhase.Resolving, ActionsThisTurn);
+                StateChanged?.Invoke();
+                if (!MatchesLifecycleState(resolving, TurnPhase.Resolving))
+                    return false;
+
                 for (int index = 0; index < _participants.Count; index++)
+                {
                     _participants[index]?.OnRoundCompleted(completedRoundNumber);
+                    if (!MatchesLifecycleState(resolving, TurnPhase.Resolving))
+                        return false;
+                }
+
+                _calendar.AdvanceTurn();
                 Round++;
             }
 
             _activeFactionIndex = nextIndex;
             GlobalTurn++;
-            StartCurrentTurn();
+            return StartCurrentTurn();
         }
 
         private bool TryFindNextEligibleFaction(out int nextIndex, out bool completedRound)
@@ -439,6 +520,57 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
         private TurnContext CurrentContext()
             => new(Round, GlobalTurn, _activeFactionIndex, _factions[_activeFactionIndex]);
+
+        private TurnStateSnapshot CaptureTurnState()
+            => new(Phase, Round, GlobalTurn, ActionsThisTurn, _activeFactionIndex, ActiveOwnerId, _factions.Count, _eliminatedOwners.Count);
+
+        private bool MatchesTurnState(TurnStateSnapshot snapshot, TurnPhase expectedPhase)
+            => Phase == expectedPhase
+               && Round == snapshot.Round
+               && GlobalTurn == snapshot.GlobalTurn
+               && ActionsThisTurn == snapshot.Actions
+               && _activeFactionIndex == snapshot.ActiveFactionIndex
+               && _factions.Count == snapshot.FactionCount
+               && _eliminatedOwners.Count == snapshot.EliminatedOwnerCount
+               && string.Equals(ActiveOwnerId, snapshot.ActiveOwnerId, StringComparison.Ordinal);
+
+        private bool MatchesLifecycleState(TurnStateSnapshot snapshot, TurnPhase expectedPhase)
+            => Phase == expectedPhase
+               && Round == snapshot.Round
+               && GlobalTurn == snapshot.GlobalTurn
+               && ActionsThisTurn == snapshot.Actions
+               && _activeFactionIndex == snapshot.ActiveFactionIndex
+               && _factions.Count == snapshot.FactionCount
+               && string.Equals(ActiveOwnerId, snapshot.ActiveOwnerId, StringComparison.Ordinal);
+
+        private readonly struct TurnStateSnapshot
+        {
+            public TurnStateSnapshot(
+                TurnPhase phase, int round, long globalTurn, int actions,
+                int activeFactionIndex, string activeOwnerId, int factionCount, int eliminatedOwnerCount)
+            {
+                Phase = phase;
+                Round = round;
+                GlobalTurn = globalTurn;
+                Actions = actions;
+                ActiveFactionIndex = activeFactionIndex;
+                ActiveOwnerId = activeOwnerId ?? string.Empty;
+                FactionCount = factionCount;
+                EliminatedOwnerCount = eliminatedOwnerCount;
+            }
+
+            public TurnPhase Phase { get; }
+            public int Round { get; }
+            public long GlobalTurn { get; }
+            public int Actions { get; }
+            public int ActiveFactionIndex { get; }
+            public string ActiveOwnerId { get; }
+            public int FactionCount { get; }
+            public int EliminatedOwnerCount { get; }
+
+            public TurnStateSnapshot WithPhaseAndActions(TurnPhase phase, int actions)
+                => new(phase, Round, GlobalTurn, actions, ActiveFactionIndex, ActiveOwnerId, FactionCount, EliminatedOwnerCount);
+        }
 
         private readonly struct PendingTurnRestore
         {
