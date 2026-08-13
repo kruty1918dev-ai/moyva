@@ -529,9 +529,21 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 _applyingNetworkEvent = true;
                 try
                 {
-                    _constructionService.TryDemolishByFaction(
-                        data.Position,
-                        data.OwnerId);
+                    if (_constructionService
+                        is not IConfirmedConstructionDemolitionApplier applier)
+                    {
+                        Debug.LogError(
+                            "[MultiplayerAuthority] Construction service cannot apply a host-confirmed demolition without local turn authority.");
+                        return;
+                    }
+
+                    if (!applier.TryApplyConfirmedDemolition(
+                            data.Position,
+                            data.OwnerId))
+                    {
+                        Debug.LogWarning(
+                            $"[Authority] Host-confirmed demolition could not be applied at {data.Position} for owner '{data.OwnerId}'.");
+                    }
                 }
                 finally { _applyingNetworkEvent = false; }
             }
