@@ -38,6 +38,12 @@ namespace Kruty1918.Moyva.Units.Runtime
             Container.BindInterfacesAndSelfTo<UnitMovementService>()
                 .AsSingle();
 
+            // P04: all command-facing movement resolutions receive the authoritative
+            // turn/owner lease decorator. The raw UnitMovementService remains the
+            // ITurnBlocker so end-turn waits for its active movement set.
+            Container.Decorate<IUnitMovementService>()
+                .With<UnitTurnAuthorityMovementService>();
+
             Container.BindInterfacesTo<UnitTurnParticipant>()
                 .AsSingle();
 
