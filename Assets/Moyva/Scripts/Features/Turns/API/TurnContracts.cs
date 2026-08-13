@@ -56,6 +56,16 @@ namespace Kruty1918.Moyva.Turns.API
         bool IsTurnBlocked(out string reason);
     }
 
+    /// <summary>
+    /// Resolves the owner controlled by this local process from the ordered turn registry.
+    /// Multiplayer implementations must treat the session's local participant id as authoritative;
+    /// returning an empty string is safer than silently assigning another human participant.
+    /// </summary>
+    public interface ITurnLocalOwnerResolver
+    {
+        string ResolveLocalOwnerId(IReadOnlyList<TurnFaction> factions);
+    }
+
     public interface ITurnService
     {
         event Action StateChanged;
