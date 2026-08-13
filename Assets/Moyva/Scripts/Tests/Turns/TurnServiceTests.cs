@@ -254,6 +254,253 @@ namespace Kruty1918.Moyva.Tests.Turns
             Assert.AreEqual(1, _turns.GlobalTurn);
         }
 
+        [Test]
+        public void RestoreBeforeRegistry_ResumesSavedTurnWithoutTurnStartSideEffects()
+        {
+            var participant = new CountingParticipant();
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+
+            _turns.Restore(4, 17, "bot_0", 3);
+            Start(
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true });
+
+            Assert.AreEqual(4, _turns.Round);
+            Assert.AreEqual(17, _turns.GlobalTurn);
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+            Assert.AreEqual(3, _turns.ActionsThisTurn);
+            Assert.AreEqual(0, participant.StartCount, "A restored in-progress turn must not replay OnTurnStarted.");
+        }
+
+        [Test]
+        public void RestoreAfterRegistryBeforeWorldBuilt_WaitsThenResumesSavedOwner()
+        {
+            var participant = new CountingParticipant();
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+            var assignments = new[]
+            {
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true },
+            };
+
+            _signals.Fire(new WorldSpawnPositionsSignal
+            {
+                Assignments = assignments,
+                Source = WorldSpawnPositionsSource.SavedGame,
+            });
+            Assert.AreEqual(TurnPhase.Initializing, _turns.Phase);
+
+            _turns.Restore(8, 31, "bot_0", 5);
+            Assert.AreEqual(TurnPhase.Initializing, _turns.Phase);
+            _signals.Fire<WorldBuiltSignal>();
+
+            Assert.AreEqual(TurnPhase.AwaitingInput, _turns.Phase);
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+            Assert.AreEqual(8, _turns.Round);
+            Assert.AreEqual(31, _turns.GlobalTurn);
+            Assert.AreEqual(5, _turns.ActionsThisTurn);
+            Assert.AreEqual(0, participant.StartCount);
+        }
+
+        [Test]
+        public void RestoreWhileTurnIsRunning_ReplacesTurnStateWithoutSecondStartCallback()
+        {
+            var participant = new CountingParticipant();
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+            Start(
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true });
+            Assert.AreEqual(1, participant.StartCount);
+
+            _turns.Restore(6, 22, "bot_0", 4);
+
+            Assert.AreEqual(TurnPhase.AwaitingInput, _turns.Phase);
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+            Assert.AreEqual(6, _turns.Round);
+            Assert.AreEqual(22, _turns.GlobalTurn);
+            Assert.AreEqual(4, _turns.ActionsThisTurn);
+            Assert.AreEqual(1, participant.StartCount, "Restore must resume, not start the saved turn again.");
+        }
+
+        [Test]
+        public void RestoreWithUnknownOwner_FailsClosedInsteadOfSelectingDifferentFaction()
+        {
+            var participant = new CountingParticipant();
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+            _turns.Restore(3, 9, "missing_owner", 2);
+
+            _signals.Fire(new WorldSpawnPositionsSignal
+            {
+                Assignments = new[]
+                {
+                    new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                    new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true },
+                },
+                Source = WorldSpawnPositionsSource.SavedGame,
+            });
+            _signals.Fire<WorldBuiltSignal>();
+
+            Assert.AreEqual(TurnPhase.Initializing, _turns.Phase);
+            Assert.AreEqual(0, participant.StartCount);
+            Assert.IsFalse(_turns.CanOwnerAct("player_0", out _));
+            Assert.IsFalse(_turns.CanOwnerAct("bot_0", out _));
+        }
+
+        [Test]
+        public void RestoredActionsRemainUntilEndTurn_ThenFreshTurnResetsThem()
+        {
+            var participant = new CountingParticipant();
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+            long calendarBefore = _calendar.TotalHoursSinceEpoch;
+
+            _turns.Restore(2, 10, "player_0", 7);
+            Start(
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true });
+
+            Assert.AreEqual(7, _turns.ActionsThisTurn);
+            Assert.AreEqual(calendarBefore, _calendar.TotalHoursSinceEpoch, "Restore itself must not advance calendar time.");
+            Assert.AreEqual(0, participant.StartCount);
+
+            Assert.IsTrue(_turns.TryEndTurn("player_0", out _));
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+            Assert.AreEqual(0, _turns.ActionsThisTurn);
+            Assert.AreEqual(1, participant.StartCount, "The next genuinely new turn must still execute OnTurnStarted once.");
+        }
+
+
+        [Test]
+        public void RestoreWithInvalidCounters_FailsClosedWithoutNormalizingSnapshot()
+        {
+            var participant = new CountingParticipant();
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+
+            _turns.Restore(0, 0, "player_0", -1);
+            _signals.Fire(new WorldSpawnPositionsSignal
+            {
+                Assignments = new[]
+                {
+                    new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                },
+                Source = WorldSpawnPositionsSource.SavedGame,
+            });
+            _signals.Fire<WorldBuiltSignal>();
+
+            Assert.AreEqual(TurnPhase.Initializing, _turns.Phase);
+            Assert.AreEqual(1, _turns.Round, "Invalid persisted round must not be silently clamped and applied.");
+            Assert.AreEqual(1, _turns.GlobalTurn, "Invalid persisted global turn must not be silently clamped and applied.");
+            Assert.AreEqual(0, _turns.ActionsThisTurn);
+            Assert.AreEqual(0, participant.StartCount);
+            Assert.IsFalse(_turns.CanOwnerAct("player_0", out _));
+        }
+
+        [Test]
+        public void RestoreWithEliminatedOwner_FailsClosed()
+        {
+            var participant = new CountingParticipant();
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+
+            _turns.Restore(3, 12, "bot_0", 2);
+            _signals.Fire(new FactionEliminatedSignal { FactionId = "bot_0" });
+            _signals.Fire(new WorldSpawnPositionsSignal
+            {
+                Assignments = new[]
+                {
+                    new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                    new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true },
+                },
+                Source = WorldSpawnPositionsSource.SavedGame,
+            });
+            _signals.Fire<WorldBuiltSignal>();
+
+            Assert.AreEqual(TurnPhase.Initializing, _turns.Phase);
+            Assert.AreEqual(0, participant.StartCount);
+            Assert.IsFalse(_turns.CanOwnerAct("player_0", out _));
+            Assert.IsFalse(_turns.CanOwnerAct("bot_0", out _));
+        }
+
+        [Test]
+        public void LaterValidRestore_ReplacesPreviouslyBlockedSnapshot()
+        {
+            var participant = new CountingParticipant();
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+            Start(
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true });
+            Assert.AreEqual(1, participant.StartCount);
+
+            _turns.Restore(4, 20, "missing_owner", 6);
+            Assert.AreEqual(TurnPhase.Initializing, _turns.Phase);
+
+            _turns.Restore(5, 21, "bot_0", 7);
+
+            Assert.AreEqual(TurnPhase.AwaitingInput, _turns.Phase);
+            Assert.AreEqual(5, _turns.Round);
+            Assert.AreEqual(21, _turns.GlobalTurn);
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+            Assert.AreEqual(7, _turns.ActionsThisTurn);
+            Assert.AreEqual(1, participant.StartCount, "Replacing a blocked restore must not replay turn start.");
+        }
+
+        [Test]
+        public void Restore_WorldBuiltBeforeSavedSpawns_WaitsForRegistryThenResumes()
+        {
+            var participant = new CountingParticipant();
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+
+            _turns.Restore(9, 44, "bot_0", 8);
+            _signals.Fire<WorldBuiltSignal>();
+            Assert.AreEqual(TurnPhase.Initializing, _turns.Phase);
+            Assert.AreEqual(0, _turns.Factions.Count);
+
+            _signals.Fire(new WorldSpawnPositionsSignal
+            {
+                Assignments = new[]
+                {
+                    new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                    new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true },
+                },
+                Source = WorldSpawnPositionsSource.SavedGame,
+            });
+
+            Assert.AreEqual(TurnPhase.AwaitingInput, _turns.Phase);
+            Assert.AreEqual(9, _turns.Round);
+            Assert.AreEqual(44, _turns.GlobalTurn);
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+            Assert.AreEqual(8, _turns.ActionsThisTurn);
+            Assert.AreEqual(0, participant.StartCount);
+        }
+
+        [Test]
+        public void RestoreWhileTurnIsRunning_DoesNotInvokeTurnEnding()
+        {
+            var participant = new CountingParticipant();
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+            Start(
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true });
+
+            Assert.AreEqual(1, participant.StartCount);
+            Assert.AreEqual(0, participant.EndCount);
+
+            _turns.Restore(7, 30, "bot_0", 2);
+
+            Assert.AreEqual(TurnPhase.AwaitingInput, _turns.Phase);
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+            Assert.AreEqual(1, participant.StartCount);
+            Assert.AreEqual(0, participant.EndCount, "Loading replaces live state; it must not execute gameplay turn-ending side effects.");
+        }
+
+        private sealed class CountingParticipant : ITurnParticipant
+        {
+            public int StartCount { get; private set; }
+            public int EndCount { get; private set; }
+            public int TurnOrder => 0;
+            public void OnTurnStarted(TurnContext context) => StartCount++;
+            public void OnTurnEnding(TurnContext context) => EndCount++;
+            public void OnRoundCompleted(int completedRound) { }
+        }
+
         private void CreateTurnService(
             ITurnLocalOwnerResolver localOwnerResolver = null,
             List<ITurnParticipant> participants = null)
