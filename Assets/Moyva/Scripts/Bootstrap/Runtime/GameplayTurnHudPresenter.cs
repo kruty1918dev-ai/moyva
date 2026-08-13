@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.Recruitment;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
@@ -17,10 +16,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly ITurnService _turns;
         private readonly IUnitService _units;
         private readonly IUnitClassConfig _unitConfigs;
-        private readonly IRecruitmentService _recruitment;
+        private readonly IUnitRecruitmentService _recruitment;
         private readonly IConstructionService _construction;
         private readonly IBuildingRegistry _buildings;
         private readonly SignalBus _signals;
+        private readonly IReadOnlyList<ITurnBlocker> _blockers;
+
         private TMP_Text _turnText;
         private TMP_Text _statusText;
         private TMP_Text _unitText;
@@ -28,17 +29,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private Button _endTurnButton;
         private GameObject _recruitmentPanel;
         private RectTransform _recipeRoot;
+        private readonly List<Button> _recipeButtons = new();
         private string _selectedUnitId;
         private Vector2Int? _selectedBuilding;
+        private string _statusOverride;
+        private GameplayTurnHudAuthoritySnapshot _authority;
 
         public GameplayTurnHudPresenter(
             ITurnService turns,
             IUnitService units,
             IUnitClassConfig unitConfigs,
-            IRecruitmentService recruitment,
+            IUnitRecruitmentService recruitment,
             IConstructionService construction,
             IBuildingRegistry buildings,
-            SignalBus signals)
+            SignalBus signals,
+            [InjectOptional] List<ITurnBlocker> blockers = null)
         {
             _turns = turns;
             _units = units;
@@ -47,21 +52,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _construction = construction;
             _buildings = buildings;
             _signals = signals;
+            _blockers = blockers ?? (IReadOnlyList<ITurnBlocker>)Array.Empty<ITurnBlocker>();
         }
 
         public void Initialize()
         {
             BuildUi();
-            _turns.StateChanged += Refresh;
+            _turns.StateChanged += OnTurnStateChanged;
             _signals.Subscribe<UnitInfoPanelRequestedSignal>(OnUnitSelected);
             _signals.Subscribe<BuildingInfoPanelRequestedSignal>(OnBuildingSelected);
             _signals.Subscribe<WorldInfoPanelClosedSignal>(OnSelectionClosed);
-            Refresh();
+            RefreshTurnAuthority();
         }
 
         public void Dispose()
         {
-            _turns.StateChanged -= Refresh;
+            _turns.StateChanged -= OnTurnStateChanged;
             _signals.TryUnsubscribe<UnitInfoPanelRequestedSignal>(OnUnitSelected);
             _signals.TryUnsubscribe<BuildingInfoPanelRequestedSignal>(OnBuildingSelected);
             _signals.TryUnsubscribe<WorldInfoPanelClosedSignal>(OnSelectionClosed);
@@ -71,7 +77,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void Tick()
         {
+            // ITurnBlocker state may change asynchronously without StateChanged.
+            RefreshTurnAuthority();
             RefreshUnit();
+            RefreshQueue();
+        }
+
+        private void OnTurnStateChanged()
+        {
+            _statusOverride = null;
+            RefreshTurnAuthority();
             RefreshQueue();
         }
 
@@ -117,24 +132,57 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _recruitmentPanel.SetActive(false);
         }
 
-        private void Refresh()
+        private void RefreshTurnAuthority()
         {
-            string actor = _turns.IsActiveFactionBot ? "Бот" : "Гравець";
-            _turnText.text = $"{actor}: {_turns.ActiveOwnerId}    Раунд {_turns.Round}    Хід {_turns.GlobalTurn}    Дії {_turns.ActionsThisTurn}";
-            _endTurnButton.interactable = _turns.Phase == TurnPhase.AwaitingInput && !_turns.IsActiveFactionBot;
-            _statusText.text = _turns.IsActiveFactionBot ? "Хід суперника" : string.Empty;
+            _authority = GameplayTurnHudAuthorityPolicy.Evaluate(_turns, _blockers);
+            string actor = _authority.IsActiveFactionBot ? "Бот" : "Фракція";
+            string owner = string.IsNullOrWhiteSpace(_authority.ActiveOwnerId)
+                ? "—"
+                : _authority.ActiveOwnerId;
+            _turnText.text =
+                $"{actor}: {owner}    Раунд {_turns.Round}    Хід {_turns.GlobalTurn}    " +
+                $"Фаза {GameplayTurnHudAuthorityPolicy.LocalizePhase(_authority.Phase)}    " +
+                $"Дії {_turns.ActionsThisTurn}";
+            _endTurnButton.interactable = _authority.CanEndTurn;
+
+            bool blockersTakePriority = _authority.IsLocalOwnerTurn
+                && _authority.BlockingReasons.Count > 0;
+            _statusText.text = blockersTakePriority || string.IsNullOrWhiteSpace(_statusOverride)
+                ? _authority.StatusText
+                : _statusOverride;
+
+            RefreshRecruitmentAuthority();
         }
 
         private void OnEndTurn()
         {
-            if (!_turns.TryEndTurn(_turns.LocalOwnerId, out string reason))
-                _statusText.text = reason;
+            // Never trust a potentially stale Button.interactable value.
+            GameplayTurnHudAuthoritySnapshot current =
+                GameplayTurnHudAuthorityPolicy.Evaluate(_turns, _blockers);
+            if (!current.CanEndTurn)
+            {
+                _statusOverride = string.IsNullOrWhiteSpace(current.StatusText)
+                    ? "Завершення ходу зараз недоступне."
+                    : current.StatusText;
+                RefreshTurnAuthority();
+                return;
+            }
+
+            if (!_turns.TryEndTurn(current.LocalOwnerId, out string reason))
+                _statusOverride = string.IsNullOrWhiteSpace(reason)
+                    ? "Система ходів відхилила завершення ходу."
+                    : reason;
+            else
+                _statusOverride = null;
+
+            RefreshTurnAuthority();
         }
 
         private void OnUnitSelected(UnitInfoPanelRequestedSignal signal)
         {
             _selectedUnitId = signal.UnitId;
             _selectedBuilding = null;
+            _statusOverride = null;
             _recruitmentPanel.SetActive(false);
         }
 
@@ -142,6 +190,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             _selectedUnitId = null;
             _selectedBuilding = signal.Position;
+            _statusOverride = null;
             BuildRecipeButtons(signal.BuildingId);
         }
 
@@ -149,36 +198,136 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             _selectedUnitId = null;
             _selectedBuilding = null;
+            _statusOverride = null;
             _recruitmentPanel.SetActive(false);
         }
 
         private void BuildRecipeButtons(string buildingId)
         {
+            _recipeButtons.Clear();
             for (int index = _recipeRoot.childCount - 1; index >= 0; index--)
                 UnityEngine.Object.Destroy(_recipeRoot.GetChild(index).gameObject);
-            BuildingDefinition definition = _buildings.GetById(buildingId);
-            if (definition == null || !BuildingDefinitionCapabilities.TryGetEnabledModule(definition, out UnitRecruitmentBuildingModule module))
+
+            if (!IsSelectedBuildingOwnedByLocalPlayer())
             {
                 _recruitmentPanel.SetActive(false);
                 return;
             }
-            _recruitmentPanel.SetActive(true);
-            foreach (UnitRecruitmentRecipeDefinition recipe in module.Recipes)
+
+            BuildingDefinition definition = _buildings.GetById(buildingId);
+            if (definition == null
+                || !BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition,
+                    out UnitRecruitmentBuildingModule module))
             {
-                string unitTypeId = recipe.UnitTypeId;
-                string label = $"{ResolveUnitName(unitTypeId)}  ·  {recipe.TrainingTurns} х.";
-                Button button = CreateButton(_recipeRoot, $"Recruit-{unitTypeId}", label, () => Enqueue(unitTypeId));
-                ((RectTransform)button.transform).sizeDelta = new Vector2(320f, 44f);
+                _recruitmentPanel.SetActive(false);
+                return;
             }
+
+            _recruitmentPanel.SetActive(true);
+            if (module.Recipes != null)
+            {
+                foreach (UnitRecruitmentRecipeDefinition recipe in module.Recipes)
+                {
+                    if (recipe == null || string.IsNullOrWhiteSpace(recipe.UnitTypeId))
+                        continue;
+
+                    string unitTypeId = recipe.UnitTypeId.Trim();
+                    string label = $"{ResolveUnitName(unitTypeId)}  ·  {Mathf.Max(1, recipe.TrainingTurns)} х.";
+                    Button button = CreateButton(
+                        _recipeRoot,
+                        $"Recruit-{unitTypeId}",
+                        label,
+                        () => Enqueue(unitTypeId));
+                    ((RectTransform)button.transform).sizeDelta = new Vector2(320f, 44f);
+                    _recipeButtons.Add(button);
+                }
+            }
+
+            RefreshRecruitmentAuthority();
+            RefreshQueue();
         }
 
         private void Enqueue(string unitTypeId)
         {
+            RefreshTurnAuthority();
             if (!_selectedBuilding.HasValue)
                 return;
-            if (!_recruitment.TryEnqueue(_selectedBuilding.Value, unitTypeId, _turns.LocalOwnerId, out string reason))
-                _statusText.text = reason;
+
+            if (!_authority.CanIssueLocalCommands)
+            {
+                _statusOverride = _authority.StatusText;
+                return;
+            }
+
+            if (!IsSelectedBuildingOwnedByLocalPlayer())
+            {
+                _statusOverride = "Найм доступний лише у власній будівлі.";
+                RefreshTurnAuthority();
+                return;
+            }
+
+            if (!_recruitment.TryEnqueue(
+                    _authority.LocalOwnerId,
+                    _selectedBuilding.Value,
+                    unitTypeId,
+                    out string reason))
+            {
+                _statusOverride = string.IsNullOrWhiteSpace(reason)
+                    ? "Найм відхилено authoritative recruitment service."
+                    : reason;
+            }
+            else
+            {
+                _statusOverride = null;
+            }
+
+            RefreshTurnAuthority();
             RefreshQueue();
+        }
+
+        private void RefreshRecruitmentAuthority()
+        {
+            if (_recruitmentPanel == null || !_recruitmentPanel.activeSelf)
+                return;
+
+            bool canRecruit = _authority.CanIssueLocalCommands
+                && IsSelectedBuildingOwnedByLocalPlayer()
+                && IsSelectedBuildingOperational();
+
+            for (int index = 0; index < _recipeButtons.Count; index++)
+            {
+                Button button = _recipeButtons[index];
+                if (button != null)
+                    button.interactable = canRecruit;
+            }
+        }
+
+        private bool IsSelectedBuildingOwnedByLocalPlayer()
+        {
+            if (!_selectedBuilding.HasValue
+                || string.IsNullOrWhiteSpace(_turns.LocalOwnerId)
+                || _construction is not IConstructionBuildingOwnershipQuery ownership)
+            {
+                return false;
+            }
+
+            return ownership.TryGetPlacedBuildingOwner(
+                       _selectedBuilding.Value,
+                       out string ownerId)
+                && string.Equals(
+                    ownerId?.Trim(),
+                    _turns.LocalOwnerId.Trim(),
+                    StringComparison.Ordinal);
+        }
+
+        private bool IsSelectedBuildingOperational()
+        {
+            if (!_selectedBuilding.HasValue)
+                return false;
+
+            return _construction is not IConstructionLifecycle lifecycle
+                || lifecycle.IsOperational(_selectedBuilding.Value);
         }
 
         private void RefreshUnit()
@@ -188,33 +337,59 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _unitText.text = string.Empty;
                 return;
             }
+
             string typeId = _units.GetUnitTypeId(_selectedUnitId);
             UnitClassConfig config = _unitConfigs.GetConfig(typeId);
-            _unitText.text = $"{ResolveUnitName(typeId)}    Stamina {_units.GetStamina(_selectedUnitId):0.#}/{config?.BaseStamina ?? 0f:0.#}";
+            _unitText.text =
+                $"{ResolveUnitName(typeId)}    Stamina " +
+                $"{_units.GetStamina(_selectedUnitId):0.#}/{config?.BaseStamina ?? 0f:0.#}";
         }
 
         private void RefreshQueue()
         {
-            if (!_selectedBuilding.HasValue || !_recruitmentPanel.activeSelf)
+            if (!_selectedBuilding.HasValue
+                || _recruitmentPanel == null
+                || !_recruitmentPanel.activeSelf
+                || !IsSelectedBuildingOwnedByLocalPlayer())
+            {
                 return;
-            IReadOnlyList<RecruitmentJobView> queue = _recruitment.GetQueue(_selectedBuilding.Value);
-            if (_construction is IConstructionLifecycle lifecycle && lifecycle.TryGetProgress(_selectedBuilding.Value, out int completed, out int required) && completed < required)
+            }
+
+            if (_construction is IConstructionLifecycle lifecycle
+                && lifecycle.TryGetProgress(
+                    _selectedBuilding.Value,
+                    out int completed,
+                    out int required)
+                && completed < required)
             {
                 _queueText.text = $"Будівництво: {completed}/{required}";
                 return;
             }
-            if (queue.Count == 0)
+
+            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> queue =
+                _recruitment.GetQueue(
+                    _turns.LocalOwnerId,
+                    _selectedBuilding.Value);
+
+            if (queue == null || queue.Count == 0)
             {
                 _queueText.text = "Черга порожня";
                 return;
             }
+
             var lines = new List<string>(queue.Count);
-            foreach (RecruitmentJobView job in queue)
-                lines.Add(job.Status == RecruitmentJobStatus.ReadyToDeploy ? $"{ResolveUnitName(job.UnitTypeId)}: очікує місця" : $"{ResolveUnitName(job.UnitTypeId)}: {job.RemainingTurns} х.");
+            for (int index = 0; index < queue.Count; index++)
+            {
+                UnitRecruitmentQueueItemSnapshot job = queue[index];
+                lines.Add(job.IsReady
+                    ? $"{ResolveUnitName(job.UnitTypeId)}: очікує місця"
+                    : $"{ResolveUnitName(job.UnitTypeId)}: {job.RemainingTurns} х.");
+            }
             _queueText.text = string.Join("\n", lines);
         }
 
-        private string ResolveUnitName(string typeId) => _unitConfigs.GetConfig(typeId)?.DisplayName ?? typeId;
+        private string ResolveUnitName(string typeId)
+            => _unitConfigs.GetConfig(typeId)?.DisplayName ?? typeId;
 
         private static RectTransform CreatePanel(Transform parent, string name, Color color)
         {
@@ -224,7 +399,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return (RectTransform)go.transform;
         }
 
-        private static TMP_Text CreateText(Transform parent, string name, int size, TextAlignmentOptions alignment)
+        private static TMP_Text CreateText(
+            Transform parent,
+            string name,
+            int size,
+            TextAlignmentOptions alignment)
         {
             GameObject go = new(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, false);
@@ -236,7 +415,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return text;
         }
 
-        private static Button CreateButton(Transform parent, string name, string label, UnityEngine.Events.UnityAction action)
+        private static Button CreateButton(
+            Transform parent,
+            string name,
+            string label,
+            UnityEngine.Events.UnityAction action)
         {
             RectTransform panel = CreatePanel(parent, name, new Color32(48, 96, 80, 255));
             Button button = panel.gameObject.AddComponent<Button>();
@@ -248,7 +431,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return button;
         }
 
-        private static void Anchor(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax, Vector2 position, Vector2 size)
+        private static void Anchor(
+            RectTransform rect,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 position,
+            Vector2 size)
         {
             rect.anchorMin = anchorMin;
             rect.anchorMax = anchorMax;
