@@ -1,36 +1,43 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
-using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionLifecycleService : IConstructionLifecycle, ITurnParticipant, ISaveModule, IInitializable, IDisposable
+    internal sealed class ConstructionLifecycleService :
+        IConstructionLifecycle,
+        ITurnParticipant,
+        ISaveModule,
+        IInitializable,
+        IDisposable
     {
         private const int SaveMagic = unchecked((int)0x434C4946);
-        private const int SaveVersion = 1;
-        private sealed class State
-        {
-            public string OwnerId;
-            public int Required;
-            public int Completed;
-            public long PlacedTurn;
-        }
+        private const int SaveVersion = 2;
+        private const int LegacySaveVersion = 1;
+        private const int MaxSavedStates = 100000;
 
         private readonly SignalBus _signals;
         private readonly IBuildingRegistry _registry;
         private readonly ITurnService _turns;
-        private readonly Dictionary<Vector2Int, State> _states = new();
+        private readonly IConstructionSaveSnapshotSource _placementSnapshots;
+        private readonly ConstructionLifecycleStateMachine _state = new();
 
-        public ConstructionLifecycleService(SignalBus signals, IBuildingRegistry registry, ITurnService turns)
+        public ConstructionLifecycleService(
+            SignalBus signals,
+            IBuildingRegistry registry,
+            ITurnService turns,
+            [InjectOptional] IConstructionSaveSnapshotSource placementSnapshots = null)
         {
             _signals = signals;
             _registry = registry;
             _turns = turns;
+            _placementSnapshots = placementSnapshots;
         }
 
         public int TurnOrder => 20;
@@ -48,33 +55,24 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         public bool IsOperational(Vector2Int position)
-            => !_states.TryGetValue(position, out State state) || state.Completed >= state.Required;
+            => _state.IsOperational(position);
 
-        public bool TryGetProgress(Vector2Int position, out int completedTurns, out int requiredTurns)
-        {
-            if (_states.TryGetValue(position, out State state))
-            {
-                completedTurns = state.Completed;
-                requiredTurns = state.Required;
-                return true;
-            }
-
-            completedTurns = requiredTurns = 0;
-            return false;
-        }
+        public bool TryGetProgress(
+            Vector2Int position,
+            out int completedTurns,
+            out int requiredTurns)
+            => _state.TryGetProgress(
+                position,
+                out completedTurns,
+                out requiredTurns);
 
         public void OnTurnStarted(TurnContext context)
         {
-            foreach (State state in _states.Values)
-            {
-                if (state.Completed >= state.Required
-                    || state.PlacedTurn >= context.GlobalTurn
-                    || !string.Equals(state.OwnerId, context.Faction.OwnerId, StringComparison.Ordinal))
-                    continue;
-                state.Completed++;
-                if (state.Completed >= state.Required)
-                    FireOperational(state);
-            }
+            IReadOnlyList<ConstructionLifecycleStateMachine.OperationalTransition>
+                transitions = _state.AdvanceOwnerTurn(
+                    context.Faction.OwnerId,
+                    context.GlobalTurn);
+            PublishOperational(transitions);
         }
 
         public void OnTurnEnding(TurnContext context) { }
@@ -82,90 +80,159 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void OnPlaced(BuildingPlacedSignal signal)
         {
-            BuildingDefinition definition = _registry.GetById(signal.BuildingId);
-            int required = Mathf.Max(0, definition?.BuildTurns ?? 0);
-            _states[signal.Position] = new State
-            {
-                OwnerId = string.IsNullOrWhiteSpace(signal.OwnerId) ? "player_0" : signal.OwnerId.Trim(),
-                Required = required,
-                Completed = 0,
-                PlacedTurn = _turns.GlobalTurn,
-            };
+            BuildingDefinition definition =
+                _registry?.GetById(signal.BuildingId);
+            int required = Math.Max(0, definition?.BuildTurns ?? 0);
+            long globalTurn = Math.Max(0L, _turns?.GlobalTurn ?? 0L);
+            Vector2Int? relocationSource =
+                signal.HasRelocationSource
+                && signal.RelocationSourcePosition != signal.Position
+                    ? signal.RelocationSourcePosition
+                    : null;
+
+            _state.RegisterPlacement(
+                signal.Position,
+                signal.BuildingId,
+                signal.OwnerId,
+                required,
+                globalTurn,
+                relocationSource,
+                out ConstructionLifecycleStateMachine.OperationalTransition
+                    operational);
+
+            PublishOperational(operational);
         }
 
-        private void OnDemolished(BuildingDemolishedSignal signal) => _states.Remove(signal.Position);
+        private void OnDemolished(BuildingDemolishedSignal signal)
+        {
+            _state.Remove(signal.Position);
+        }
 
         public void OnSave(ISaveContext context)
         {
+            IReadOnlyList<ConstructionLifecycleStateMachine.SavedState> snapshot =
+                _state.CaptureSorted();
+
             context.Writer.Write(SaveMagic);
             context.Writer.Write(SaveVersion);
-            context.Writer.Write(_states.Count);
-            foreach (KeyValuePair<Vector2Int, State> pair in _states)
+            context.Writer.Write(snapshot.Count);
+
+            for (int index = 0; index < snapshot.Count; index++)
             {
-                context.Writer.Write(pair.Key.x);
-                context.Writer.Write(pair.Key.y);
-                context.Writer.Write(pair.Value.OwnerId ?? string.Empty);
-                context.Writer.Write(pair.Value.Required);
-                context.Writer.Write(pair.Value.Completed);
-                context.Writer.Write(pair.Value.PlacedTurn);
+                ConstructionLifecycleStateMachine.SavedState item =
+                    snapshot[index];
+                context.Writer.Write(item.Position.x);
+                context.Writer.Write(item.Position.y);
+                context.Writer.Write(item.BuildingId ?? string.Empty);
+                context.Writer.Write(item.OwnerId ?? string.Empty);
+                context.Writer.Write(item.Required);
+                context.Writer.Write(item.Completed);
+                context.Writer.Write(item.PlacedTurn);
             }
         }
 
         public void OnLoad(ISaveContext context)
         {
-            if (context.Reader.ReadInt32() != SaveMagic || context.Reader.ReadInt32() != SaveVersion)
-                throw new System.IO.InvalidDataException("Unsupported construction lifecycle save block.");
-            _states.Clear();
+            int magic = context.Reader.ReadInt32();
+            int version = context.Reader.ReadInt32();
+            if (magic != SaveMagic
+                || (version != LegacySaveVersion && version != SaveVersion))
+            {
+                throw new InvalidDataException(
+                    $"Unsupported construction lifecycle save block: magic={magic}, version={version}.");
+            }
+
             int count = context.Reader.ReadInt32();
+            if (count < 0 || count > MaxSavedStates)
+            {
+                throw new InvalidDataException(
+                    $"Construction lifecycle state count {count} is outside 0..{MaxSavedStates}.");
+            }
+
+            var restored =
+                new List<ConstructionLifecycleStateMachine.SavedState>(count);
+
             for (int index = 0; index < count; index++)
             {
-                Vector2Int position = new(context.Reader.ReadInt32(), context.Reader.ReadInt32());
-                var state = new State
-                {
-                    OwnerId = context.Reader.ReadString(),
-                    Required = context.Reader.ReadInt32(),
-                    Completed = context.Reader.ReadInt32(),
-                    PlacedTurn = context.Reader.ReadInt64(),
-                };
-                _states[position] = state;
-                if (state.Completed >= state.Required)
-                    FireOperational(state, position);
+                var position = new Vector2Int(
+                    context.Reader.ReadInt32(),
+                    context.Reader.ReadInt32());
+                string buildingId = version >= SaveVersion
+                    ? context.Reader.ReadString()
+                    : string.Empty;
+                string ownerId = context.Reader.ReadString();
+                int required = context.Reader.ReadInt32();
+                int completed = context.Reader.ReadInt32();
+                long placedTurn = context.Reader.ReadInt64();
+
+                restored.Add(
+                    new ConstructionLifecycleStateMachine.SavedState(
+                        position,
+                        buildingId,
+                        ownerId,
+                        required,
+                        completed,
+                        placedTurn));
             }
+
+            IReadOnlyList<ConstructionLifecycleStateMachine.OperationalTransition>
+                transitions = _state.Restore(
+                    restored,
+                    ResolvePlacedBuildingId);
+            PublishOperational(transitions);
         }
 
-        private void FireOperational(State state, Vector2Int? knownPosition = null)
+        private string ResolvePlacedBuildingId(Vector2Int position)
         {
-            Vector2Int position = knownPosition ?? FindPosition(state);
-            if (_registry.GetById(ResolveBuildingId(position)) is BuildingDefinition definition)
-                _signals.Fire(new BuildingOperationalSignal { BuildingId = definition.Id, Position = position, OwnerId = state.OwnerId });
-        }
-
-        private Vector2Int FindPosition(State wanted)
-        {
-            foreach (KeyValuePair<Vector2Int, State> pair in _states)
-                if (ReferenceEquals(pair.Value, wanted))
-                    return pair.Key;
-            return default;
-        }
-
-        private string ResolveBuildingId(Vector2Int position)
-        {
-            if (_registry == null)
+            IReadOnlyList<ConstructionSavedPlacement> placements =
+                _placementSnapshots?.GetSavedPlacements();
+            if (placements == null)
                 return string.Empty;
-            // Registry definitions use IDs, while placement ownership lives in ConstructionService.
-            // BuildingOperationalSignal is repaired below by looking up the saved placement.
-            return FindPlacedBuildingId(position);
+
+            for (int index = 0; index < placements.Count; index++)
+            {
+                ConstructionSavedPlacement placement = placements[index];
+                if (placement.Position == position)
+                    return placement.BuildingId ?? string.Empty;
+            }
+
+            return string.Empty;
         }
 
-        [InjectOptional] private IConstructionService _construction;
-
-        private string FindPlacedBuildingId(Vector2Int position)
+        private void PublishOperational(
+            IReadOnlyList<ConstructionLifecycleStateMachine.OperationalTransition>
+                transitions)
         {
-            if (_construction is IConstructionSaveSnapshotSource source)
-                foreach (ConstructionSavedPlacement placement in source.GetSavedPlacements())
-                    if (placement.Position == position)
-                        return placement.BuildingId;
-            return string.Empty;
+            if (transitions == null)
+                return;
+
+            for (int index = 0; index < transitions.Count; index++)
+                PublishOperational(transitions[index]);
+        }
+
+        private void PublishOperational(
+            ConstructionLifecycleStateMachine.OperationalTransition transition)
+        {
+            if (!transition.IsValid)
+                return;
+
+            BuildingDefinition definition =
+                _registry?.GetById(transition.BuildingId);
+            if (definition == null)
+            {
+                Debug.LogWarning(
+                    $"[ConstructionLifecycle] Operational transition for unknown building " +
+                    $"'{transition.BuildingId}' at {transition.Position} was deferred.");
+                return;
+            }
+
+            _signals.Fire(
+                new BuildingOperationalSignal
+                {
+                    BuildingId = definition.Id,
+                    Position = transition.Position,
+                    OwnerId = transition.OwnerId,
+                });
         }
     }
 }
