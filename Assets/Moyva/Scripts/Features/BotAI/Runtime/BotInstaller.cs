@@ -5,10 +5,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
 {
     /// <summary>
     /// Zenject MonoInstaller for bot support services.
-    ///
-    /// P10 deliberately does not bind the legacy wall-clock BotTickScheduler.
-    /// Authoritative bot actions are owned by the turn loop; P11 supplies the
-    /// IBotTurnExecutor implementation consumed by that loop.
+    /// Runtime bot mutations are turn-scoped through IBotTurnExecutor.
     /// </summary>
     public sealed class BotInstaller : MonoInstaller
     {
@@ -18,9 +15,14 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 .FromInstance(BotDifficultySettings.Normal())
                 .AsSingle();
 
-            // Do not restore BotTickScheduler here. Its Time.deltaTime loop was a
-            // second authority path that could mutate bot factions outside their turn.
+            if (!Container.HasBinding<IBotTurnExecutor>())
+            {
+                Container.Bind<IBotTurnExecutor>()
+                    .To<BotTurnExecutor>()
+                    .AsSingle();
+            }
 
+            // P10 legacy wall-clock BotTickScheduler deliberately remains unbound.
             Container.BindInterfacesTo<BotFogInitializer>()
                 .AsSingle()
                 .NonLazy();
