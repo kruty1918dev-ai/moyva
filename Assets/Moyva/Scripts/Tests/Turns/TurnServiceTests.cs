@@ -491,6 +491,245 @@ namespace Kruty1918.Moyva.Tests.Turns
             Assert.AreEqual(0, participant.EndCount, "Loading replaces live state; it must not execute gameplay turn-ending side effects.");
         }
 
+        [Test]
+        public void TryEndTurn_ReentrantFromBlocker_IsRejectedAndOuterEndsExactlyOnce()
+        {
+            bool nestedResult = true;
+            string nestedReason = null;
+            int calls = 0;
+            var blockers = new List<ITurnBlocker>
+            {
+                new DelegateBlocker(() =>
+                {
+                    calls++;
+                    nestedResult = _turns.TryEndTurn("player_0", out nestedReason);
+                    return false;
+                }),
+            };
+            CreateTurnService(blockers: blockers);
+            Start(
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true });
+
+            Assert.IsTrue(_turns.TryEndTurn("player_0", out string outerReason));
+            Assert.IsNull(outerReason);
+            Assert.IsFalse(nestedResult);
+            Assert.AreEqual("Turn end is already being evaluated.", nestedReason);
+            Assert.AreEqual(1, calls);
+            Assert.AreEqual(2, _turns.GlobalTurn);
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+        }
+
+        [Test]
+        public void TryEndTurn_BlankBlockReason_UsesStableFallback()
+        {
+            CreateTurnService(blockers: new List<ITurnBlocker>
+            {
+                new DelegateBlocker(() => true, () => "   "),
+            });
+            Start(new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false });
+
+            Assert.IsFalse(_turns.TryEndTurn("player_0", out string reason));
+            Assert.AreEqual("Turn is blocked.", reason);
+            Assert.AreEqual(1, _turns.GlobalTurn);
+        }
+
+        [Test]
+        public void TryEndTurn_BlockersRunInInjectedOrderUntilFirstBlock()
+        {
+            var order = new List<int>();
+            CreateTurnService(blockers: new List<ITurnBlocker>
+            {
+                new DelegateBlocker(() => { order.Add(1); return false; }),
+                new DelegateBlocker(() => { order.Add(2); return true; }, () => "second blocked"),
+                new DelegateBlocker(() => { order.Add(3); return false; }),
+            });
+            Start(new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false });
+
+            Assert.IsFalse(_turns.TryEndTurn("player_0", out string reason));
+            CollectionAssert.AreEqual(new[] { 1, 2 }, order);
+            Assert.AreEqual("second blocked", reason);
+        }
+
+        [Test]
+        public void TryEndTurn_BlockerRecordsAction_FailsClosedWithoutAdvancingTurn()
+        {
+            CreateTurnService(blockers: new List<ITurnBlocker>
+            {
+                new DelegateBlocker(() =>
+                {
+                    Assert.IsTrue(_turns.TryRecordAction("player_0", "blocker-side-effect"));
+                    return false;
+                }),
+            });
+            Start(
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true });
+
+            Assert.IsFalse(_turns.TryEndTurn("player_0", out string reason));
+            Assert.AreEqual("Turn state changed while evaluating blockers.", reason);
+            Assert.AreEqual(1, _turns.ActionsThisTurn);
+            Assert.AreEqual(1, _turns.GlobalTurn);
+            Assert.AreEqual("player_0", _turns.ActiveOwnerId);
+        }
+
+        [Test]
+        public void TryEndTurn_BlockerEliminatesActiveFaction_FailsClosedWithoutSecondAdvance()
+        {
+            CreateTurnService(blockers: new List<ITurnBlocker>
+            {
+                new DelegateBlocker(() =>
+                {
+                    _signals.Fire(new FactionEliminatedSignal { FactionId = "player_0" });
+                    return false;
+                }),
+            });
+            Start(
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true });
+
+            Assert.IsFalse(_turns.TryEndTurn("player_0", out string reason));
+            Assert.AreEqual("Turn state changed while evaluating blockers.", reason);
+            Assert.AreEqual(2, _turns.GlobalTurn);
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+        }
+
+        [Test]
+        public void TurnStartedCallback_CannotEndTurnOrRecordAction()
+        {
+            bool endResult = true;
+            bool actionResult = true;
+            string endReason = null;
+            var participant = new LifecycleProbeParticipant(onStart: _ =>
+            {
+                endResult = _turns.TryEndTurn("player_0", out endReason);
+                actionResult = _turns.TryRecordAction("player_0", "start-callback");
+            });
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+
+            Start(new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false });
+
+            Assert.IsFalse(endResult);
+            StringAssert.Contains("Starting", endReason);
+            Assert.IsFalse(actionResult);
+            Assert.AreEqual(0, _turns.ActionsThisTurn);
+            Assert.AreEqual(TurnPhase.AwaitingInput, _turns.Phase);
+        }
+
+        [Test]
+        public void TurnEndingCallback_CannotEndTurnOrRecordAction()
+        {
+            bool nestedEnd = true;
+            bool nestedAction = true;
+            string nestedReason = null;
+            var participant = new LifecycleProbeParticipant(onEnd: _ =>
+            {
+                nestedEnd = _turns.TryEndTurn("player_0", out nestedReason);
+                nestedAction = _turns.TryRecordAction("player_0", "end-callback");
+            });
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+            Start(
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true });
+
+            Assert.IsTrue(_turns.TryEndTurn("player_0", out _));
+            Assert.IsFalse(nestedEnd);
+            StringAssert.Contains("Ending", nestedReason);
+            Assert.IsFalse(nestedAction);
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+            Assert.AreEqual(0, _turns.ActionsThisTurn);
+        }
+
+        [Test]
+        public void RestoreDuringTurnEndingCallback_StopsStaleLifecycleBeforeSecondAdvance()
+        {
+            bool restored = false;
+            var participant = new LifecycleProbeParticipant(onEnd: _ =>
+            {
+                if (restored)
+                    return;
+                restored = true;
+                _turns.Restore(5, 20, "bot_0", 3);
+            });
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+            Start(
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true });
+
+            Assert.IsFalse(_turns.TryEndTurn("player_0", out string reason));
+            Assert.AreEqual("Turn state changed during lifecycle transition.", reason);
+            Assert.AreEqual(TurnPhase.AwaitingInput, _turns.Phase);
+            Assert.AreEqual(5, _turns.Round);
+            Assert.AreEqual(20, _turns.GlobalTurn);
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+            Assert.AreEqual(3, _turns.ActionsThisTurn);
+        }
+
+        [Test]
+        public void RestoreDuringTurnStartedCallback_StopsStaleStartLifecycle()
+        {
+            bool restored = false;
+            var participant = new LifecycleProbeParticipant(onStart: context =>
+            {
+                if (restored || context.Faction.OwnerId != "player_0")
+                    return;
+                restored = true;
+                _turns.Restore(7, 30, "bot_0", 2);
+            });
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+
+            Start(
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true });
+
+            Assert.AreEqual(TurnPhase.AwaitingInput, _turns.Phase);
+            Assert.AreEqual(7, _turns.Round);
+            Assert.AreEqual(30, _turns.GlobalTurn);
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+            Assert.AreEqual(2, _turns.ActionsThisTurn);
+        }
+
+        [Test]
+        public void RestoreDuringRoundCompletedCallback_DoesNotAdvanceCalendarAfterStateReplacement()
+        {
+            bool restored = false;
+            var participant = new LifecycleProbeParticipant(onRound: _ =>
+            {
+                if (restored)
+                    return;
+                restored = true;
+                _turns.Restore(8, 40, "player_0", 4);
+            });
+            CreateTurnService(participants: new List<ITurnParticipant> { participant });
+            Start(new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false });
+            long calendarBefore = _calendar.TotalHoursSinceEpoch;
+
+            Assert.IsFalse(_turns.TryEndTurn("player_0", out string reason));
+            Assert.AreEqual("Turn state changed during lifecycle transition.", reason);
+            Assert.AreEqual(calendarBefore, _calendar.TotalHoursSinceEpoch);
+            Assert.AreEqual(8, _turns.Round);
+            Assert.AreEqual(40, _turns.GlobalTurn);
+            Assert.AreEqual(4, _turns.ActionsThisTurn);
+            Assert.AreEqual(TurnPhase.AwaitingInput, _turns.Phase);
+        }
+
+        [Test]
+        public void ActiveEliminationDuringTurnStart_RemainsSupportedByLifecycleGuard()
+        {
+            CreateTurnService(participants: new List<ITurnParticipant>
+            {
+                new EliminateOnStartParticipant(_signals, "player_0"),
+            });
+
+            Start(
+                new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = "player_0", IsBot = false },
+                new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = "bot_0", IsBot = true });
+
+            Assert.AreEqual(TurnPhase.AwaitingInput, _turns.Phase);
+            Assert.AreEqual("bot_0", _turns.ActiveOwnerId);
+            Assert.AreEqual(2, _turns.GlobalTurn);
+        }
+
         private sealed class CountingParticipant : ITurnParticipant
         {
             public int StartCount { get; private set; }
@@ -503,7 +742,8 @@ namespace Kruty1918.Moyva.Tests.Turns
 
         private void CreateTurnService(
             ITurnLocalOwnerResolver localOwnerResolver = null,
-            List<ITurnParticipant> participants = null)
+            List<ITurnParticipant> participants = null,
+            List<ITurnBlocker> blockers = null)
         {
             _turns?.Dispose();
             _turns = new TurnService(
@@ -511,7 +751,7 @@ namespace Kruty1918.Moyva.Tests.Turns
                 _worldState,
                 _calendar,
                 participants ?? new List<ITurnParticipant>(),
-                new List<ITurnBlocker>(),
+                blockers ?? new List<ITurnBlocker>(),
                 localOwnerResolver);
             _turns.Initialize();
         }
@@ -521,6 +761,47 @@ namespace Kruty1918.Moyva.Tests.Turns
             _signals.Fire(new WorldSpawnPositionsSignal { Assignments = assignments, Source = WorldSpawnPositionsSource.DirectGameplayTest });
             _signals.Fire<WorldBuiltSignal>();
             Assert.AreEqual(TurnPhase.AwaitingInput, _turns.Phase);
+        }
+
+        private sealed class DelegateBlocker : ITurnBlocker
+        {
+            private readonly Func<bool> _callback;
+            private readonly Func<string> _reason;
+
+            public DelegateBlocker(Func<bool> callback, Func<string> reason = null)
+            {
+                _callback = callback;
+                _reason = reason;
+            }
+
+            public bool IsTurnBlocked(out string reason)
+            {
+                bool blocked = _callback?.Invoke() ?? false;
+                reason = _reason?.Invoke();
+                return blocked;
+            }
+        }
+
+        private sealed class LifecycleProbeParticipant : ITurnParticipant
+        {
+            private readonly Action<TurnContext> _onStart;
+            private readonly Action<TurnContext> _onEnd;
+            private readonly Action<int> _onRound;
+
+            public LifecycleProbeParticipant(
+                Action<TurnContext> onStart = null,
+                Action<TurnContext> onEnd = null,
+                Action<int> onRound = null)
+            {
+                _onStart = onStart;
+                _onEnd = onEnd;
+                _onRound = onRound;
+            }
+
+            public int TurnOrder => 0;
+            public void OnTurnStarted(TurnContext context) => _onStart?.Invoke(context);
+            public void OnTurnEnding(TurnContext context) => _onEnd?.Invoke(context);
+            public void OnRoundCompleted(int completedRound) => _onRound?.Invoke(completedRound);
         }
 
         private sealed class FixedLocalOwnerResolver : ITurnLocalOwnerResolver
