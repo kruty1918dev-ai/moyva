@@ -8,8 +8,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private const int Magic = unchecked((int)0x5455524E);
         private const int Version = 1;
         private readonly ITurnService _turns;
+        private readonly ITurnStateRestorer _restorer;
 
-        public TurnSaveModule(ITurnService turns) => _turns = turns;
+        public TurnSaveModule(ITurnService turns, ITurnStateRestorer restorer)
+        {
+            _turns = turns;
+            _restorer = restorer;
+        }
 
         public void OnSave(ISaveContext context)
         {
@@ -30,8 +35,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             long globalTurn = context.Reader.ReadInt64();
             string activeOwner = context.Reader.ReadString();
             int actions = context.Reader.ReadInt32();
-            if (_turns is ITurnStateRestorer restorer)
-                restorer.Restore(round, globalTurn, activeOwner, actions);
+
+            // TurnService owns restore ordering. The request is safe even when the world or
+            // faction registry is not ready yet; it will be resumed only after owner resolution.
+            _restorer.Restore(round, globalTurn, activeOwner, actions);
         }
     }
 }
