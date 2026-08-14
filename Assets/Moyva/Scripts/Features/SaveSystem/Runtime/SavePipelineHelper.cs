@@ -20,17 +20,19 @@ namespace Kruty1918.Moyva.SaveSystem
         internal const int MaxSlots = 99;
 
         /// <summary>
-        /// Збирає бінарні блоки з кожного ISaveModule.
-        /// Пропускає null-модулі, порожні та завеликі блоки з логуванням.
+        /// Збирає бінарні блоки з кожного ISaveModule у детермінованому
+        /// dependency-aware порядку. Дубльована реєстрація одного типу модуля
+        /// не створює дубльований blockId у файлі.
         /// </summary>
         internal static List<(uint blockId, byte[] payload)> CollectBlocks(
             IReadOnlyList<ISaveModule> modules)
         {
-            var blocks = new List<(uint, byte[])>(modules.Count);
+            List<ISaveModule> orderedModules = SaveModuleExecutionPlan.Build(modules);
+            var blocks = new List<(uint, byte[])>(orderedModules.Count);
 
-            for (int i = 0; i < modules.Count; i++)
+            for (int i = 0; i < orderedModules.Count; i++)
             {
-                var module = modules[i];
+                var module = orderedModules[i];
                 if (module == null)
                 {
                     Debug.LogError("[SaveSystem] Null ISaveModule instance — skipped.");
@@ -165,8 +167,9 @@ namespace Kruty1918.Moyva.SaveSystem
         }
 
         /// <summary>
-        /// Декодує байти та розподіляє блоки по відповідних ISaveModule.
-        /// Повертає true при успішному завантаженні.
+        /// Декодує байти та відновлює блоки в поточному dependency-aware порядку
+        /// модулів, а не у фізичному порядку блоків у .mvs. Це робить legacy saves
+        /// незалежними від історичного порядку Zenject/registrar реєстрації.
         /// </summary>
         internal static bool ExecuteLoad(byte[] bytes, IReadOnlyList<ISaveModule> modules,
             string contextLabel)
@@ -180,24 +183,47 @@ namespace Kruty1918.Moyva.SaveSystem
                 return false;
             }
 
-            var map = new Dictionary<uint, ISaveModule>();
-            for (int i = 0; i < modules.Count; i++)
+            var payloadByBlockId = new Dictionary<uint, byte[]>();
+            for (int index = 0; index < decodedBlocks.Count; index++)
             {
-                var module = modules[i];
-                if (module == null) continue;
-                uint id = SaveFileCodec.ComputeBlockId(module.GetType());
-                map[id] = module;
-            }
-
-            foreach (var (blockId, payload) in decodedBlocks)
-            {
-                if (!map.TryGetValue(blockId, out var module))
+                var block = decodedBlocks[index];
+                if (payloadByBlockId.ContainsKey(block.blockId))
                 {
                     Debug.LogWarning(
-                        $"[SaveSystem] Unknown blockId={blockId:X8} ({payload.Length}b). " +
-                        $"Module removed or newer format. Skipped.");
-                    continue;
+                        $"[SaveSystem] Duplicate blockId={block.blockId:X8} detected ({contextLabel}). " +
+                        "Load rejected before module mutation.");
+                    return false;
                 }
+
+                payloadByBlockId.Add(block.blockId, block.payload);
+            }
+
+            List<ISaveModule> orderedModules = SaveModuleExecutionPlan.Build(modules);
+            var moduleNamesByBlockId = new Dictionary<uint, string>();
+
+            for (int index = 0; index < orderedModules.Count; index++)
+            {
+                ISaveModule module = orderedModules[index];
+                if (module == null)
+                    continue;
+
+                Type moduleType = module.GetType();
+                string moduleName = moduleType.FullName ?? moduleType.Name;
+                uint blockId = SaveFileCodec.ComputeBlockId(moduleType);
+
+                if (moduleNamesByBlockId.TryGetValue(blockId, out string existingModuleName)
+                    && !string.Equals(existingModuleName, moduleName, StringComparison.Ordinal))
+                {
+                    Debug.LogError(
+                        $"[SaveSystem] Save block-id collision {blockId:X8}: " +
+                        $"'{existingModuleName}' vs '{moduleName}'. Load rejected.");
+                    return false;
+                }
+
+                moduleNamesByBlockId[blockId] = moduleName;
+
+                if (!payloadByBlockId.TryGetValue(blockId, out byte[] payload))
+                    continue;
 
                 try
                 {
@@ -208,14 +234,30 @@ namespace Kruty1918.Moyva.SaveSystem
                     long unread = ms.Length - ms.Position;
                     if (unread > 0)
                         Debug.LogWarning(
-                            $"[SaveSystem] '{module.GetType().FullName}' left {unread}b unread. " +
+                            $"[SaveSystem] '{moduleName}' left {unread}b unread. " +
                             $"Data version mismatch?");
                 }
                 catch (Exception e)
                 {
                     Debug.LogWarning(
-                        $"[SaveSystem] '{module.GetType().FullName}' OnLoad threw: " +
+                        $"[SaveSystem] '{moduleName}' OnLoad threw: " +
                         $"{e.GetType().Name} — {e.Message}");
+                }
+
+                payloadByBlockId.Remove(blockId);
+            }
+
+            if (payloadByBlockId.Count > 0)
+            {
+                var unknownIds = new List<uint>(payloadByBlockId.Keys);
+                unknownIds.Sort();
+                for (int index = 0; index < unknownIds.Count; index++)
+                {
+                    uint blockId = unknownIds[index];
+                    byte[] payload = payloadByBlockId[blockId];
+                    Debug.LogWarning(
+                        $"[SaveSystem] Unknown blockId={blockId:X8} ({payload.Length}b). " +
+                        $"Module removed or newer format. Skipped.");
                 }
             }
 
