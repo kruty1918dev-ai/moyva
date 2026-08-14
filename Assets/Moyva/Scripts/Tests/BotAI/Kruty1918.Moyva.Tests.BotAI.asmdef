@@ -11,9 +11,14 @@
         "Kruty1918.Moyva.Units",
         "Kruty1918.Moyva.BotAI",
         "Kruty1918.Moyva.FogOfWar",
-        "Kruty1918.Moyva.Turns"
+        "Kruty1918.Moyva.Turns",
+        "Kruty1918.Moyva.Construction",
+        "Kruty1918.Moyva.Grid",
+        "Kruty1918.Moyva.ObjectsMap"
     ],
-    "includePlatforms": ["Editor"],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
@@ -22,7 +27,9 @@
         "Zenject-usage.dll"
     ],
     "autoReferenced": false,
-    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
     "versionDefines": [],
     "noEngineReferences": false
 }
