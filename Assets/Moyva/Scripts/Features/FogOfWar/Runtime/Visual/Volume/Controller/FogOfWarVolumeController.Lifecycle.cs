@@ -5,6 +5,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     public sealed partial class FogOfWarVolumeController
     {
+        // Unity can invoke OnEnable before Zenject QueueForInject reaches Construct.
+        // Do not diagnose a missing runtime updater until dependency injection has completed.
+        private bool _runtimeInjectionCompleted;
+
         private void Awake()
         {
             LogLifecycleOnce(ref _loggedAwake, "Awake", $"settings={(_settings != null ? _settings.name : "null")}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}, clearPreview={(_settings != null && _settings.Volume.ClearPreviewOnRuntimeStart)}");
@@ -26,6 +30,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _sceneContextBuilder = sceneContextBuilder;
             _outputCleaner = outputCleaner;
             _validationService = validationService;
+            _runtimeInjectionCompleted = true;
             Debug.Log($"{StartDiagTag} VolumeController.Construct runtimeUpdater={(runtimeUpdater != null ? runtimeUpdater.GetType().Name : "null")}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}, settings={(_settings != null ? _settings.name : "null")}.");
             LogLifecycleOnce(ref _loggedConstruct, "Construct", $"runtimeUpdater={(runtimeUpdater != null ? runtimeUpdater.GetType().Name : "null")}, previewBuilder={(previewBuilder != null ? previewBuilder.GetType().Name : "null")}, sceneContextBuilder={(sceneContextBuilder != null ? sceneContextBuilder.GetType().Name : "null")}, outputCleaner={(outputCleaner != null ? outputCleaner.GetType().Name : "null")}, validationService={(validationService != null ? validationService.GetType().Name : "null")}, settings={(_settings != null ? _settings.name : "null")}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}");
             RegisterWithUpdater();
@@ -33,6 +38,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void OnEnable()
         {
+            if (!_runtimeInjectionCompleted)
+                return;
+
             RegisterWithUpdater();
         }
 
