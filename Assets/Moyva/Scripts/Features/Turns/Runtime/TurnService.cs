@@ -21,7 +21,12 @@ namespace Kruty1918.Moyva.Turns.Runtime
         private readonly List<ITurnBlocker> _explicitBlockers;
         private List<ITurnParticipant> _resolvedParticipants;
         private List<ITurnBlocker> _resolvedBlockers;
-        private readonly ITurnLocalOwnerResolver _localOwnerResolver;
+        // Owner resolution is an application-level extension graph. It may depend on
+        // construction, which depends back on ITurnService, so keep it deferred too.
+        private readonly LazyInject<ITurnLocalOwnerResolver> _lazyLocalOwnerResolver;
+        private readonly ITurnLocalOwnerResolver _explicitLocalOwnerResolver;
+        private ITurnLocalOwnerResolver _resolvedLocalOwnerResolver;
+        private bool _localOwnerResolverResolutionAttempted;
         private readonly List<TurnFaction> _factions = new();
         private readonly HashSet<string> _eliminatedOwners = new(StringComparer.Ordinal);
         private int _activeFactionIndex;
@@ -43,14 +48,14 @@ namespace Kruty1918.Moyva.Turns.Runtime
             ICalendarService calendar,
             LazyInject<List<ITurnParticipant>> participants,
             LazyInject<List<ITurnBlocker>> blockers,
-            [InjectOptional] ITurnLocalOwnerResolver localOwnerResolver = null)
+            [InjectOptional] LazyInject<ITurnLocalOwnerResolver> localOwnerResolver = null)
         {
             _signalBus = signalBus;
             _worldState = worldState;
             _calendar = calendar;
             _lazyParticipants = participants;
             _lazyBlockers = blockers;
-            _localOwnerResolver = localOwnerResolver;
+            _lazyLocalOwnerResolver = localOwnerResolver;
         }
 
         // Keep direct-construction tests deterministic without making Zenject resolve
@@ -68,7 +73,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
             _calendar = calendar;
             _explicitParticipants = participants ?? new List<ITurnParticipant>();
             _explicitBlockers = blockers ?? new List<ITurnBlocker>();
-            _localOwnerResolver = localOwnerResolver;
+            _explicitLocalOwnerResolver = localOwnerResolver;
         }
 
         public event Action StateChanged;
@@ -131,6 +136,22 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 $"[MOYVA_DIAG][TURN][INFO] blockers-resolved " +
                 $"count={_resolvedBlockers.Count}");
             return _resolvedBlockers;
+        }
+
+        private ITurnLocalOwnerResolver ResolveLocalOwnerResolver()
+        {
+            if (_localOwnerResolverResolutionAttempted)
+                return _resolvedLocalOwnerResolver;
+
+            ITurnLocalOwnerResolver resolved =
+                _explicitLocalOwnerResolver ?? _lazyLocalOwnerResolver?.Value;
+            _resolvedLocalOwnerResolver = resolved;
+            _localOwnerResolverResolutionAttempted = true;
+
+            Debug.Log(
+                $"[MOYVA_DIAG][TURN][INFO] local-owner-resolver-resolved " +
+                $"bound={resolved != null}");
+            return resolved;
         }
 
         public bool IsOwnerActive(string ownerId)
@@ -354,9 +375,11 @@ namespace Kruty1918.Moyva.Turns.Runtime
             if (_factions.Count == 0)
                 return string.Empty;
 
-            if (_localOwnerResolver != null)
+            ITurnLocalOwnerResolver localOwnerResolver =
+                ResolveLocalOwnerResolver();
+            if (localOwnerResolver != null)
             {
-                string resolved = _localOwnerResolver.ResolveLocalOwnerId(_factions)?.Trim();
+                string resolved = localOwnerResolver.ResolveLocalOwnerId(_factions)?.Trim();
                 if (string.IsNullOrWhiteSpace(resolved))
                     return string.Empty;
 
