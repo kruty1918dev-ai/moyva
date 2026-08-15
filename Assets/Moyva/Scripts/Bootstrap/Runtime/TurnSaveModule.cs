@@ -3,6 +3,7 @@ using System.IO;
 using Kruty1918.Moyva.Calendar.Core;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Turns.API;
+using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
@@ -21,12 +22,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             ITurnService turns,
             ITurnStateRestorer restorer,
             ICalendarService calendar,
-            ICalendarStateRestorer calendarRestorer)
+            [InjectOptional] ICalendarStateRestorer calendarRestorer = null)
         {
             _turns = turns ?? throw new ArgumentNullException(nameof(turns));
             _restorer = restorer ?? throw new ArgumentNullException(nameof(restorer));
             _calendar = calendar ?? throw new ArgumentNullException(nameof(calendar));
-            _calendarRestorer = calendarRestorer ?? throw new ArgumentNullException(nameof(calendarRestorer));
+            _calendarRestorer = calendarRestorer
+                ?? (_calendar as ICalendarStateRestorer)
+                ?? throw new InvalidOperationException(
+                    $"Calendar service '{_calendar.GetType().FullName}' must implement {nameof(ICalendarStateRestorer)} for save/load restoration.");
         }
 
         public void OnSave(ISaveContext context)
