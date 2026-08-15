@@ -31,6 +31,35 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
         }
 
         [Test]
+        public void UnknownContext_EditorFallbackResolvesDirectGameplayTest()
+        {
+            bool applied = GameLaunchContext.EnsureDirectGameplayTestFallback();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Assert.That(applied, Is.True);
+            Assert.That(GameLaunchContext.Mode, Is.EqualTo(GameLaunchMode.DirectGameplayTest));
+            Assert.That(GameLaunchContext.Source, Is.EqualTo(GameLaunchSource.DirectGameplayTest));
+            Assert.That(GameLaunchContext.MaxPlayers, Is.EqualTo(1));
+#else
+            Assert.That(applied, Is.False);
+            Assert.That(GameLaunchContext.Mode, Is.EqualTo(GameLaunchMode.Unknown));
+#endif
+        }
+
+        [Test]
+        public void ExistingMenuContext_IsNotOverwrittenByDirectFallback()
+        {
+            GameLaunchContext.ConfigureMenuLoadGame(3);
+
+            bool applied = GameLaunchContext.EnsureDirectGameplayTestFallback();
+
+            Assert.That(applied, Is.False);
+            Assert.That(GameLaunchContext.Mode, Is.EqualTo(GameLaunchMode.MenuLoadGame));
+            Assert.That(GameLaunchContext.Source, Is.EqualTo(GameLaunchSource.SaveLoad));
+            Assert.That(GameLaunchContext.SaveSlot, Is.EqualTo(3));
+        }
+
+        [Test]
         public void MenuNewGame_IsAttributedToHomeMenu()
         {
             GameLaunchContext.ConfigureMenuNewGame(2);
