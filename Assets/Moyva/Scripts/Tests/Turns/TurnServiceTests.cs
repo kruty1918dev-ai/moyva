@@ -128,6 +128,54 @@ namespace Kruty1918.Moyva.Tests.Turns
         }
 
         [Test]
+        public void Zenject_LocalOwnerResolverBackReference_DoesNotCreateTurnServiceCycle()
+        {
+            var container = new DiContainer();
+            Zenject.SignalBusInstaller.Install(container);
+            container.DeclareSignal<WorldSpawnPositionsSignal>().OptionalSubscriber();
+            container.DeclareSignal<WorldBuiltSignal>().OptionalSubscriber();
+            container.DeclareSignal<FactionEliminatedSignal>().OptionalSubscriber();
+
+            var calendar = new GameCalendarService(CalendarConfig.Default());
+            var worldState = new WorldGenerationSignalState();
+            container.Bind<Kruty1918.Moyva.Calendar.Core.ICalendarService>().FromInstance(calendar);
+            container.Bind<IWorldGenerationSignalState>().FromInstance(worldState);
+            container.Bind<ITurnLocalOwnerResolver>()
+                .To<TurnBackReferenceLocalOwnerResolver>()
+                .AsSingle();
+            container.BindInterfacesAndSelfTo<TurnService>().AsSingle();
+
+            TurnService turns = null;
+            Assert.DoesNotThrow(() => turns = container.Resolve<TurnService>());
+            Assert.IsNotNull(turns);
+
+            turns.Initialize();
+            try
+            {
+                SignalBus signals = container.Resolve<SignalBus>();
+                Assert.DoesNotThrow(() => signals.Fire(new WorldSpawnPositionsSignal
+                {
+                    Assignments = new[]
+                    {
+                        new SpawnPositionAssignment
+                        {
+                            SlotIndex = 0,
+                            ParticipantId = "player_0",
+                            IsBot = false,
+                        },
+                    },
+                    Source = WorldSpawnPositionsSource.DirectGameplayTest,
+                }));
+
+                Assert.AreEqual("player_0", turns.LocalOwnerId);
+            }
+            finally
+            {
+                turns.Dispose();
+            }
+        }
+
+        [Test]
         public void WorldBuiltWithoutAssignments_DoesNotInventRuntimeFaction()
         {
             _signals.Fire<WorldBuiltSignal>();
@@ -811,6 +859,25 @@ namespace Kruty1918.Moyva.Tests.Turns
             public FixedLocalOwnerResolver(string ownerId) => _ownerId = ownerId;
 
             public string ResolveLocalOwnerId(IReadOnlyList<TurnFaction> factions) => _ownerId;
+        }
+
+        private sealed class TurnBackReferenceLocalOwnerResolver : ITurnLocalOwnerResolver
+        {
+            private readonly ITurnService _turns;
+
+            public TurnBackReferenceLocalOwnerResolver(ITurnService turns)
+            {
+                _turns = turns;
+            }
+
+            public string ResolveLocalOwnerId(IReadOnlyList<TurnFaction> factions)
+            {
+                Assert.IsNotNull(_turns);
+                if (factions == null || factions.Count == 0)
+                    return string.Empty;
+
+                return factions[0].OwnerId;
+            }
         }
 
         private sealed class EliminateOnStartParticipant : ITurnParticipant
