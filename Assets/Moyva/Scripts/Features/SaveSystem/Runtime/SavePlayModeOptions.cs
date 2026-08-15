@@ -12,6 +12,14 @@ namespace Kruty1918.Moyva.SaveSystem
         MenuMultiplayerGame = 5,
     }
 
+    public enum GameLaunchSource
+    {
+        Unknown = 0,
+        DirectGameplayTest = 1,
+        HomeMenu = 2,
+        SaveLoad = 3,
+    }
+
     /// <summary>
     /// Cross-scene runtime launch context used to align startup behavior.
     /// Allows gameplay scene to differentiate direct test launch vs menu launch.
@@ -26,6 +34,7 @@ namespace Kruty1918.Moyva.SaveSystem
         private static DateTime _expiresAtUtc;
 
         public static GameLaunchMode Mode { get; private set; } = GameLaunchMode.Unknown;
+        public static GameLaunchSource Source { get; private set; } = GameLaunchSource.Unknown;
         public static int SaveSlot { get; private set; } = 0;
         public static bool HasWorldSettings { get; private set; }
         public static string WorldName { get; private set; } = string.Empty;
@@ -45,8 +54,10 @@ namespace Kruty1918.Moyva.SaveSystem
         public static void ConfigureDirectGameplayTest()
         {
             Mode = GameLaunchMode.DirectGameplayTest;
+            Source = GameLaunchSource.DirectGameplayTest;
             SaveSlot = 0;
             ClearWorldSettings();
+            MaxPlayers = 1;
             _autoLoadOverride = false;
             _autoSaveOverride = false;
             MarkConfigured(DefaultContextTtl);
@@ -55,6 +66,7 @@ namespace Kruty1918.Moyva.SaveSystem
         public static void ConfigureMenuNewGame(int saveSlot = 0)
         {
             Mode = GameLaunchMode.MenuNewGame;
+            Source = GameLaunchSource.HomeMenu;
             SaveSlot = ClampSlot(saveSlot);
             ClearWorldSettings();
             _autoLoadOverride = false;
@@ -75,6 +87,7 @@ namespace Kruty1918.Moyva.SaveSystem
             int height = 0)
         {
             Mode = GameLaunchMode.MenuNewGame;
+            Source = GameLaunchSource.HomeMenu;
             SaveSlot = ClampSlot(saveSlot);
             SetWorldSettings(worldName, seed, size, mapType, difficulty, maxPlayers, isPrivate, width, height);
             _autoLoadOverride = false;
@@ -85,6 +98,7 @@ namespace Kruty1918.Moyva.SaveSystem
         public static void ConfigureMenuLoadGame(int saveSlot)
         {
             Mode = GameLaunchMode.MenuLoadGame;
+            Source = GameLaunchSource.SaveLoad;
             SaveSlot = ClampSlot(saveSlot);
             ClearWorldSettings();
             _autoLoadOverride = true;
@@ -95,6 +109,7 @@ namespace Kruty1918.Moyva.SaveSystem
         public static void ConfigureMenuJoinGame()
         {
             Mode = GameLaunchMode.MenuJoinGame;
+            Source = GameLaunchSource.HomeMenu;
             SaveSlot = 0;
             ClearWorldSettings();
             _autoLoadOverride = false;
@@ -114,6 +129,7 @@ namespace Kruty1918.Moyva.SaveSystem
             int height = 0)
         {
             Mode = GameLaunchMode.MenuMultiplayerGame;
+            Source = GameLaunchSource.HomeMenu;
             SaveSlot = 0;
             SetWorldSettings(worldName, seed, size, mapType, difficulty, maxPlayers, isPrivate, width, height);
             _autoLoadOverride = false;
@@ -124,6 +140,7 @@ namespace Kruty1918.Moyva.SaveSystem
         public static void Reset()
         {
             Mode = GameLaunchMode.Unknown;
+            Source = GameLaunchSource.Unknown;
             SaveSlot = 0;
             ClearWorldSettings();
             _autoLoadOverride = null;
