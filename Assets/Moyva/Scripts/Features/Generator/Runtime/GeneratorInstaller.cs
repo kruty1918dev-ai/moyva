@@ -45,6 +45,15 @@ namespace Kruty1918.Moyva.Generator
 
         public override void InstallBindings()
         {
+            // Resolve direct gameplay synchronously during installer execution. Zenject IInitializable
+            // execution can occur after MonoBehaviour.Start, while this installer has a Start fallback.
+            bool startupGateApplied = GameLaunchContext.EnsureDirectGameplayTestFallback();
+            Debug.Log(
+                $"[MOYVA_DIAG][STARTUP][INFO] startup-context-gate scene={gameObject.scene.name} " +
+                $"startupGateApplied={startupGateApplied} resolvedMode={GameLaunchContext.Mode} " +
+                $"source={GameLaunchContext.Source} worldSettings={GameLaunchContext.HasWorldSettings} " +
+                $"maxPlayers={GameLaunchContext.MaxPlayers}");
+
             Debug.Log(
                 $"{GeneratorBootDiagTag} GeneratorInstaller.InstallBindings ENTER scene={gameObject.scene.name}, " +
                 $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}");
