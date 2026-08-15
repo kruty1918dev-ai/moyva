@@ -63,6 +63,24 @@ namespace Kruty1918.Moyva.SaveSystem
             MarkConfigured(DefaultContextTtl);
         }
 
+        /// <summary>
+        /// Resolves an otherwise missing launch context for a gameplay scene started directly
+        /// from the Unity Editor or a development player. Existing menu/save contexts are preserved.
+        /// </summary>
+        public static bool EnsureDirectGameplayTestFallback()
+        {
+            EnsureNotExpired();
+            if (Mode != GameLaunchMode.Unknown)
+                return false;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            ConfigureDirectGameplayTest();
+            return true;
+#else
+            return false;
+#endif
+        }
+
         public static void ConfigureMenuNewGame(int saveSlot = 0)
         {
             Mode = GameLaunchMode.MenuNewGame;
