@@ -252,6 +252,7 @@ namespace Kruty1918.Moyva.Generator
             private const string PolicyDiagTag = "[MoyvaStartPolicyDiag]";
             private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
             private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
+            private const string StartupDiagTag = "[MOYVA_DIAG][STARTUP]";
             private readonly MapVisualInstantiator _mapVisualInstantiator;
             private readonly IWorldGenerationDiagnostics _worldDiagnostics;
             private bool _buildTriggered;
@@ -336,9 +337,25 @@ namespace Kruty1918.Moyva.Generator
                     $"mapDataGenerator={mapDataGeneratorType}");
                 UnityEngine.Debug.Log($"{DirectDiagTag} GeneratorStartup.Initialize shouldBuild={shouldBuild}, mode={GameLaunchContext.Mode}.");
                 UnityEngine.Debug.Log($"{PolicyDiagTag} GeneratorStartup.Initialize shouldBuild={shouldBuild}, mode={GameLaunchContext.Mode}.");
+                UnityEngine.Debug.Log(
+                    $"{StartupDiagTag}[INFO] world-build-decision scene={UnityEngine.SceneManagement.SceneManager.GetActiveScene().name} " +
+                    $"resolvedMode={GameLaunchContext.Mode} source={GameLaunchContext.Source} " +
+                    $"worldSettings={GameLaunchContext.HasWorldSettings} maxPlayers={GameLaunchContext.MaxPlayers} " +
+                    $"shouldBuild={shouldBuild} reason={reason} hasInstantiator={hasInstantiator} " +
+                    $"hasCurrentWorld={hasCurrentWorld} hasPendingWorld={hasPendingWorld}");
 
                 if (!shouldBuild)
                 {
+                    if (GameLaunchContext.Mode == GameLaunchMode.Unknown)
+                    {
+                        UnityEngine.Debug.LogError(
+                            $"{StartupDiagTag}[CRITICAL] gameplay-start-invalid " +
+                            $"scene={UnityEngine.SceneManagement.SceneManager.GetActiveScene().name} " +
+                            $"resolvedMode={GameLaunchContext.Mode} source={GameLaunchContext.Source} " +
+                            $"worldSettings={GameLaunchContext.HasWorldSettings} maxPlayers={GameLaunchContext.MaxPlayers} " +
+                            $"shouldBuild=false reason={reason}");
+                    }
+
                     UnityEngine.Debug.LogWarning($"{GeneratorBootDiagTag} GeneratorStartup.SKIP BuildWorld reason={reason}");
                     UnityEngine.Debug.LogWarning($"{WorldGenDiagTag} GeneratorStartup.SKIP BuildWorld reason={reason}");
                     _worldDiagnostics?.ReportStartup();
@@ -361,6 +378,10 @@ namespace Kruty1918.Moyva.Generator
                 _worldDiagnostics?.MapVisualBuildWorldCalled($"source={buildSource}, caller=GeneratorStartup");
                 UnityEngine.Debug.Log($"{GeneratorBootDiagTag} GeneratorStartup.CALL MapVisual.BuildWorld");
                 UnityEngine.Debug.Log($"{WorldGenDiagTag} GeneratorStartup.CALL MapVisualInstantiator.BuildWorld source={buildSource}");
+                UnityEngine.Debug.Log(
+                    $"{StartupDiagTag}[INFO] world-build-dispatch " +
+                    $"scene={UnityEngine.SceneManagement.SceneManager.GetActiveScene().name} " +
+                    $"resolvedMode={GameLaunchContext.Mode} source={GameLaunchContext.Source} buildSource={buildSource}");
                 _mapVisualInstantiator.BuildWorld();
                 UnityEngine.Debug.Log($"{WorldGenDiagTag} GeneratorStartup.EXIT BuildWorldReturned frame={UnityEngine.Time.frameCount}, time={UnityEngine.Time.realtimeSinceStartup:F3}");
             }
