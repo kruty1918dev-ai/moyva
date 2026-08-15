@@ -13,8 +13,14 @@ namespace Kruty1918.Moyva.Turns.Runtime
         private readonly SignalBus _signalBus;
         private readonly IWorldGenerationSignalState _worldState;
         private readonly ICalendarService _calendar;
-        private readonly List<ITurnParticipant> _participants;
-        private readonly List<ITurnBlocker> _blockers;
+        // Participant and blocker graphs may depend back on ITurnService through
+        // recruitment/construction. Keep those graphs lazy until TurnService itself exists.
+        private readonly LazyInject<List<ITurnParticipant>> _lazyParticipants;
+        private readonly LazyInject<List<ITurnBlocker>> _lazyBlockers;
+        private readonly List<ITurnParticipant> _explicitParticipants;
+        private readonly List<ITurnBlocker> _explicitBlockers;
+        private List<ITurnParticipant> _resolvedParticipants;
+        private List<ITurnBlocker> _resolvedBlockers;
         private readonly ITurnLocalOwnerResolver _localOwnerResolver;
         private readonly List<TurnFaction> _factions = new();
         private readonly HashSet<string> _eliminatedOwners = new(StringComparer.Ordinal);
@@ -30,21 +36,39 @@ namespace Kruty1918.Moyva.Turns.Runtime
         private const string StateChangedDuringEvaluationReason = "Turn state changed while evaluating blockers.";
         private const string StateChangedDuringTransitionReason = "Turn state changed during lifecycle transition.";
 
+        [Inject]
         public TurnService(
             SignalBus signalBus,
             IWorldGenerationSignalState worldState,
             ICalendarService calendar,
-            [InjectOptional] List<ITurnParticipant> participants = null,
-            [InjectOptional] List<ITurnBlocker> blockers = null,
+            LazyInject<List<ITurnParticipant>> participants,
+            LazyInject<List<ITurnBlocker>> blockers,
             [InjectOptional] ITurnLocalOwnerResolver localOwnerResolver = null)
         {
             _signalBus = signalBus;
             _worldState = worldState;
             _calendar = calendar;
-            _participants = participants ?? new List<ITurnParticipant>();
-            _blockers = blockers ?? new List<ITurnBlocker>();
+            _lazyParticipants = participants;
+            _lazyBlockers = blockers;
             _localOwnerResolver = localOwnerResolver;
-            _participants.Sort((left, right) => left.TurnOrder.CompareTo(right.TurnOrder));
+        }
+
+        // Keep direct-construction tests deterministic without making Zenject resolve
+        // the runtime participant graph eagerly.
+        internal TurnService(
+            SignalBus signalBus,
+            IWorldGenerationSignalState worldState,
+            ICalendarService calendar,
+            List<ITurnParticipant> participants,
+            List<ITurnBlocker> blockers,
+            ITurnLocalOwnerResolver localOwnerResolver = null)
+        {
+            _signalBus = signalBus;
+            _worldState = worldState;
+            _calendar = calendar;
+            _explicitParticipants = participants ?? new List<ITurnParticipant>();
+            _explicitBlockers = blockers ?? new List<ITurnBlocker>();
+            _localOwnerResolver = localOwnerResolver;
         }
 
         public event Action StateChanged;
@@ -71,6 +95,42 @@ namespace Kruty1918.Moyva.Turns.Runtime
             _signalBus.TryUnsubscribe<WorldSpawnPositionsSignal>(OnSpawnPositions);
             _signalBus.TryUnsubscribe<WorldBuiltSignal>(OnWorldBuilt);
             _signalBus.TryUnsubscribe<FactionEliminatedSignal>(OnFactionEliminated);
+        }
+
+        private List<ITurnParticipant> ResolveParticipants()
+        {
+            if (_resolvedParticipants != null)
+                return _resolvedParticipants;
+
+            List<ITurnParticipant> source =
+                _explicitParticipants ?? _lazyParticipants?.Value;
+            _resolvedParticipants = source != null
+                ? new List<ITurnParticipant>(source)
+                : new List<ITurnParticipant>();
+            _resolvedParticipants.Sort(
+                (left, right) => left.TurnOrder.CompareTo(right.TurnOrder));
+
+            Debug.Log(
+                $"[MOYVA_DIAG][TURN][INFO] participants-resolved " +
+                $"count={_resolvedParticipants.Count}");
+            return _resolvedParticipants;
+        }
+
+        private List<ITurnBlocker> ResolveBlockers()
+        {
+            if (_resolvedBlockers != null)
+                return _resolvedBlockers;
+
+            List<ITurnBlocker> source =
+                _explicitBlockers ?? _lazyBlockers?.Value;
+            _resolvedBlockers = source != null
+                ? new List<ITurnBlocker>(source)
+                : new List<ITurnBlocker>();
+
+            Debug.Log(
+                $"[MOYVA_DIAG][TURN][INFO] blockers-resolved " +
+                $"count={_resolvedBlockers.Count}");
+            return _resolvedBlockers;
         }
 
         public bool IsOwnerActive(string ownerId)
@@ -123,8 +183,8 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 return false;
             }
 
+            ITurnBlocker[] blockers = ResolveBlockers().ToArray();
             TurnStateSnapshot snapshot = CaptureTurnState();
-            ITurnBlocker[] blockers = _blockers.ToArray();
             _endTurnEvaluationInProgress = true;
             try
             {
@@ -401,6 +461,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
         private bool StartCurrentTurn()
         {
+            List<ITurnParticipant> participants = ResolveParticipants();
             TurnStateSnapshot transition = CaptureTurnState();
             Phase = TurnPhase.Starting;
             ActionsThisTurn = 0;
@@ -410,9 +471,9 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 return false;
 
             TurnContext context = CurrentContext();
-            for (int index = 0; index < _participants.Count; index++)
+            for (int index = 0; index < participants.Count; index++)
             {
-                _participants[index]?.OnTurnStarted(context);
+                participants[index]?.OnTurnStarted(context);
                 if (!MatchesLifecycleState(transition, TurnPhase.Starting))
                     return false;
             }
@@ -431,6 +492,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
         private bool EndCurrentTurn()
         {
+            List<ITurnParticipant> participants = ResolveParticipants();
             TurnStateSnapshot transition = CaptureTurnState();
             Phase = TurnPhase.Ending;
             transition = transition.WithPhaseAndActions(TurnPhase.Ending, ActionsThisTurn);
@@ -439,9 +501,9 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 return false;
 
             TurnContext context = CurrentContext();
-            for (int index = _participants.Count - 1; index >= 0; index--)
+            for (int index = participants.Count - 1; index >= 0; index--)
             {
-                _participants[index]?.OnTurnEnding(context);
+                participants[index]?.OnTurnEnding(context);
                 if (!MatchesLifecycleState(transition, TurnPhase.Ending))
                     return false;
             }
@@ -463,9 +525,9 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 if (!MatchesLifecycleState(resolving, TurnPhase.Resolving))
                     return false;
 
-                for (int index = 0; index < _participants.Count; index++)
+                for (int index = 0; index < participants.Count; index++)
                 {
-                    _participants[index]?.OnRoundCompleted(completedRoundNumber);
+                    participants[index]?.OnRoundCompleted(completedRoundNumber);
                     if (!MatchesLifecycleState(resolving, TurnPhase.Resolving))
                         return false;
                 }
