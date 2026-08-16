@@ -187,6 +187,7 @@
   <Project Path="Kruty1918.Moyva.Jsonization.csproj" />
   <Project Path="Unity.Mathematics.Editor.csproj" />
   <Project Path="Unity.Services.Core.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.Turns.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Common.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.BotAI.csproj" />
@@ -197,7 +198,6 @@
   <Project Path="Kruty1918.Moyva.Recruitment.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
-  <Project Path="Kruty1918.Moyva.Tests.Turns.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Signals.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Camera.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
