@@ -227,8 +227,8 @@ namespace Kruty1918.Moyva.InfoPanel.UI
                 if (res == null || !string.Equals(res.Id, item.ResourceId, StringComparison.Ordinal))
                     continue;
 
-                if (string.IsNullOrWhiteSpace(item.DisplayName) && !string.IsNullOrWhiteSpace(res.DisplayName))
-                    displayName = res.DisplayName;
+                if (!string.IsNullOrWhiteSpace(res.DisplayName))
+                    displayName = res.DisplayName.Trim();
 
                 if (icon == null)
                     icon = res.Icon;

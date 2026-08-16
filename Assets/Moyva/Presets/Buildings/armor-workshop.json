@@ -117,8 +117,36 @@
     {
       "$type": "workforce",
       "workersRequired": 2,
-      "priority": 0,
+      "priority": 140,
       "workerTypeId": "",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "production",
+      "resourceId": "dark-armor-materials-resources",
+      "workersRequired": 2,
+      "priority": 140,
+      "recipes": [
+        {
+          "recipeId": "armor-workshop:forge-dark-armor",
+          "inputs": [
+            {
+              "resourceId": "iron-ingot-materials-resources",
+              "amount": 2
+            }
+          ],
+          "outputs": [
+            {
+              "resourceId": "dark-armor-materials-resources",
+              "amount": 1
+            }
+          ],
+          "turnsPerCycle": 2,
+          "requiresWorkers": true,
+          "requiresStorageSpace": false
+        }
+      ],
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

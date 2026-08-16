@@ -117,7 +117,7 @@
     {
       "$type": "workforce",
       "workersRequired": 1,
-      "priority": 0,
+      "priority": 400,
       "workerTypeId": "",
       "isEnabled": true,
       "singletonScope": "PerBuilding"
@@ -138,6 +138,29 @@
       "requiresInfluence": true,
       "blockOverlappingCenters": false,
       "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "production",
+      "resourceId": "wheat-bundle-food-resources",
+      "workersRequired": 1,
+      "priority": 400,
+      "recipes": [
+        {
+          "recipeId": "windmill-01:mill-food",
+          "inputs": [],
+          "outputs": [
+            {
+              "resourceId": "wheat-bundle-food-resources",
+              "amount": 6
+            }
+          ],
+          "turnsPerCycle": 1,
+          "requiresWorkers": true,
+          "requiresStorageSpace": false
+        }
+      ],
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

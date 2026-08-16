@@ -108,8 +108,8 @@
   "modules": [
     {
       "$type": "workforce",
-      "workersRequired": 4,
-      "priority": 0,
+      "workersRequired": 1,
+      "priority": 210,
       "workerTypeId": "",
       "isEnabled": true,
       "singletonScope": "PerBuilding"
@@ -117,9 +117,23 @@
     {
       "$type": "production",
       "resourceId": "stone-materials-resources",
-      "workersRequired": 0,
-      "priority": 0,
-      "recipes": [],
+      "workersRequired": 1,
+      "priority": 210,
+      "recipes": [
+        {
+          "recipeId": "stone-quarry:extract-stone",
+          "inputs": [],
+          "outputs": [
+            {
+              "resourceId": "stone-materials-resources",
+              "amount": 5
+            }
+          ],
+          "turnsPerCycle": 1,
+          "requiresWorkers": true,
+          "requiresStorageSpace": false
+        }
+      ],
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

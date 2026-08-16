@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
         private readonly SignalBus _signalBus;
         private readonly IWorldGenerationSignalState _worldState;
         private readonly ICalendarService _calendar;
+        private readonly RoundResolutionService _roundResolution;
         // Participant and blocker graphs may depend back on ITurnService through
         // recruitment/construction. Keep those graphs lazy until TurnService itself exists.
         private readonly LazyInject<List<ITurnParticipant>> _lazyParticipants;
@@ -53,6 +54,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
             _signalBus = signalBus;
             _worldState = worldState;
             _calendar = calendar;
+            _roundResolution = new RoundResolutionService(calendar);
             _lazyParticipants = participants;
             _lazyBlockers = blockers;
             _lazyLocalOwnerResolver = localOwnerResolver;
@@ -71,6 +73,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
             _signalBus = signalBus;
             _worldState = worldState;
             _calendar = calendar;
+            _roundResolution = new RoundResolutionService(calendar);
             _explicitParticipants = participants ?? new List<ITurnParticipant>();
             _explicitBlockers = blockers ?? new List<ITurnBlocker>();
             _explicitLocalOwnerResolver = localOwnerResolver;
@@ -548,14 +551,18 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 if (!MatchesLifecycleState(resolving, TurnPhase.Resolving))
                     return false;
 
-                for (int index = 0; index < participants.Count; index++)
+                if (!_roundResolution.TryResolve(
+                        completedRoundNumber,
+                        participants,
+                        () => MatchesLifecycleState(resolving, TurnPhase.Resolving),
+                        out string resolutionReason))
                 {
-                    participants[index]?.OnRoundCompleted(completedRoundNumber);
-                    if (!MatchesLifecycleState(resolving, TurnPhase.Resolving))
-                        return false;
+                    Debug.LogError(
+                        $"[Turns] Round {completedRoundNumber} resolution failed; " +
+                        $"next round will not start. Reason: {resolutionReason}");
+                    return false;
                 }
 
-                _calendar.AdvanceTurn();
                 Round++;
             }
 

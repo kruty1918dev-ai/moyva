@@ -108,8 +108,8 @@
   "modules": [
     {
       "$type": "workforce",
-      "workersRequired": 2,
-      "priority": 0,
+      "workersRequired": 1,
+      "priority": 220,
       "workerTypeId": "",
       "isEnabled": true,
       "singletonScope": "PerBuilding"
@@ -117,9 +117,23 @@
     {
       "$type": "production",
       "resourceId": "walnut-wood-materials-resources",
-      "workersRequired": 0,
-      "priority": 0,
-      "recipes": [],
+      "workersRequired": 1,
+      "priority": 220,
+      "recipes": [
+        {
+          "recipeId": "wood-camp:harvest-wood",
+          "inputs": [],
+          "outputs": [
+            {
+              "resourceId": "walnut-wood-materials-resources",
+              "amount": 6
+            }
+          ],
+          "turnsPerCycle": 1,
+          "requiresWorkers": true,
+          "requiresStorageSpace": false
+        }
+      ],
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

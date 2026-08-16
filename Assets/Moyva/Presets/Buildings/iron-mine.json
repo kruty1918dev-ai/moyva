@@ -108,8 +108,8 @@
   "modules": [
     {
       "$type": "workforce",
-      "workersRequired": 4,
-      "priority": 0,
+      "workersRequired": 1,
+      "priority": 190,
       "workerTypeId": "",
       "isEnabled": true,
       "singletonScope": "PerBuilding"
@@ -117,9 +117,23 @@
     {
       "$type": "production",
       "resourceId": "iron-ore-materials-resources",
-      "workersRequired": 0,
-      "priority": 0,
-      "recipes": [],
+      "workersRequired": 1,
+      "priority": 190,
+      "recipes": [
+        {
+          "recipeId": "iron-mine:extract-ore",
+          "inputs": [],
+          "outputs": [
+            {
+              "resourceId": "iron-ore-materials-resources",
+              "amount": 3
+            }
+          ],
+          "turnsPerCycle": 1,
+          "requiresWorkers": true,
+          "requiresStorageSpace": false
+        }
+      ],
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

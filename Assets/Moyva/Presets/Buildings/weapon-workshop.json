@@ -117,8 +117,40 @@
     {
       "$type": "workforce",
       "workersRequired": 2,
-      "priority": 0,
+      "priority": 130,
       "workerTypeId": "",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "production",
+      "resourceId": "axe-white-materials-resources",
+      "workersRequired": 2,
+      "priority": 130,
+      "recipes": [
+        {
+          "recipeId": "weapon-workshop:forge-weapon",
+          "inputs": [
+            {
+              "resourceId": "iron-ingot-materials-resources",
+              "amount": 2
+            },
+            {
+              "resourceId": "hardwood-materials-resources",
+              "amount": 1
+            }
+          ],
+          "outputs": [
+            {
+              "resourceId": "axe-white-materials-resources",
+              "amount": 1
+            }
+          ],
+          "turnsPerCycle": 2,
+          "requiresWorkers": true,
+          "requiresStorageSpace": false
+        }
+      ],
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     }

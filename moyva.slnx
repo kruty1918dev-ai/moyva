@@ -218,12 +218,12 @@
   <Project Path="Kruty1918.Moyva.Tests.Units.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.MovementPlayMode.csproj" />
   <Project Path="Unity.AppUI.InternalAPIBridge.csproj" />
+  <Project Path="Kruty1918.Moyva.Bootstrap.Editor.csproj" />
   <Project Path="Unity.2D.PixelPerfect.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetStatsReporting.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.ConstructionUI.csproj" />
   <Project Path="Unity.VisualScripting.SettingsProvider.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.HomeMenu.Editor.csproj" />
-  <Project Path="Kruty1918.Moyva.Bootstrap.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.WorldCreation.UI.csproj" />
   <Project Path="Unity.Services.Core.Scheduler.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.Editor.csproj" />
