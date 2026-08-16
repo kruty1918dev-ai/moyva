@@ -6,7 +6,8 @@
     "Kruty1918.Moyva.FogOfWar",
     "Kruty1918.Moyva.EditorShared",
     "Zenject",
-    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [
     "Editor"

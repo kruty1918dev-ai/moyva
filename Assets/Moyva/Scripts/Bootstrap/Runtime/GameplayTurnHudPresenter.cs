@@ -6,6 +6,7 @@ using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 using Zenject;
 
@@ -20,6 +21,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IConstructionService _construction;
         private readonly IBuildingRegistry _buildings;
         private readonly SignalBus _signals;
+        private readonly GameplayTurnHudView _view;
         private readonly IReadOnlyList<ITurnBlocker> _blockers;
 
         private TMP_Text _turnText;
@@ -28,8 +30,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private TMP_Text _queueText;
         private Button _endTurnButton;
         private GameObject _recruitmentPanel;
-        private RectTransform _recipeRoot;
         private readonly List<Button> _recipeButtons = new();
+        private readonly List<string> _recipeUnitTypeIds = new();
+        private readonly List<UnityAction> _recipeButtonHandlers = new();
         private string _selectedUnitId;
         private Vector2Int? _selectedBuilding;
         private string _statusOverride;
@@ -43,6 +46,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IConstructionService construction,
             IBuildingRegistry buildings,
             SignalBus signals,
+            GameplayTurnHudView view,
             [InjectOptional] List<ITurnBlocker> blockers = null)
         {
             _turns = turns;
@@ -52,17 +56,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _construction = construction;
             _buildings = buildings;
             _signals = signals;
+            _view = view ?? throw new ArgumentNullException(nameof(view));
             _blockers = blockers ?? (IReadOnlyList<ITurnBlocker>)Array.Empty<ITurnBlocker>();
         }
 
         public void Initialize()
         {
-            BuildUi();
+            BindSceneView();
             _turns.StateChanged += OnTurnStateChanged;
             _signals.Subscribe<UnitInfoPanelRequestedSignal>(OnUnitSelected);
             _signals.Subscribe<BuildingInfoPanelRequestedSignal>(OnBuildingSelected);
             _signals.Subscribe<WorldInfoPanelClosedSignal>(OnSelectionClosed);
             RefreshTurnAuthority();
+            RefreshUnit();
+            RefreshQueue();
         }
 
         public void Dispose()
@@ -71,8 +78,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.TryUnsubscribe<UnitInfoPanelRequestedSignal>(OnUnitSelected);
             _signals.TryUnsubscribe<BuildingInfoPanelRequestedSignal>(OnBuildingSelected);
             _signals.TryUnsubscribe<WorldInfoPanelClosedSignal>(OnSelectionClosed);
-            if (_turnText != null)
-                UnityEngine.Object.Destroy(_turnText.transform.root.gameObject);
+
+            if (_endTurnButton != null)
+                _endTurnButton.onClick.RemoveListener(OnEndTurn);
+
+            for (int index = 0; index < _recipeButtons.Count && index < _recipeButtonHandlers.Count; index++)
+            {
+                Button button = _recipeButtons[index];
+                UnityAction handler = _recipeButtonHandlers[index];
+                if (button != null && handler != null)
+                    button.onClick.RemoveListener(handler);
+            }
         }
 
         public void Tick()
@@ -83,53 +99,47 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             RefreshQueue();
         }
 
+        private void BindSceneView()
+        {
+            _view.ValidateConfiguration();
+
+            _turnText = _view.TurnText;
+            _statusText = _view.StatusText;
+            _unitText = _view.UnitText;
+            _queueText = _view.QueueText;
+            _endTurnButton = _view.EndTurnButton;
+            _recruitmentPanel = _view.RecruitmentPanel;
+
+            _endTurnButton.onClick.AddListener(OnEndTurn);
+
+            _recipeButtons.Clear();
+            _recipeUnitTypeIds.Clear();
+            _recipeButtonHandlers.Clear();
+
+            for (int index = 0; index < _view.RecipeSlotCount; index++)
+            {
+                Button button = _view.GetRecipeButton(index);
+                int capturedIndex = index;
+                UnityAction handler = () => OnRecipeSlotClicked(capturedIndex);
+                button.onClick.AddListener(handler);
+                button.gameObject.SetActive(false);
+
+                _recipeButtons.Add(button);
+                _recipeUnitTypeIds.Add(null);
+                _recipeButtonHandlers.Add(handler);
+            }
+
+            _recruitmentPanel.SetActive(false);
+            _queueText.text = string.Empty;
+            _unitText.text = string.Empty;
+            _unitText.transform.parent.gameObject.SetActive(false);
+        }
+
         private void OnTurnStateChanged()
         {
             _statusOverride = null;
             RefreshTurnAuthority();
             RefreshQueue();
-        }
-
-        private void BuildUi()
-        {
-            GameObject canvasObject = new("Turn HUD (Runtime)", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-            Canvas canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 210;
-            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
-
-            RectTransform bar = CreatePanel(canvasObject.transform, "TurnBar", new Color32(22, 27, 32, 242));
-            Anchor(bar, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-310f, -82f), new Vector2(620f, 64f));
-            _turnText = CreateText(bar, "Turn", 22, TextAlignmentOptions.MidlineLeft);
-            Anchor(_turnText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(20f, 0f), new Vector2(-190f, 0f));
-            _endTurnButton = CreateButton(bar, "EndTurn", "Завершити хід", OnEndTurn);
-            Anchor((RectTransform)_endTurnButton.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-85f, 0f), new Vector2(150f, 42f));
-
-            _statusText = CreateText(canvasObject.transform, "TurnStatus", 16, TextAlignmentOptions.Center);
-            Anchor(_statusText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -122f), new Vector2(620f, 30f));
-
-            _unitText = CreateText(canvasObject.transform, "UnitStamina", 18, TextAlignmentOptions.MidlineLeft);
-            Anchor(_unitText.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(190f, 48f), new Vector2(340f, 36f));
-
-            _recruitmentPanel = CreatePanel(canvasObject.transform, "RecruitmentPanel", new Color32(25, 30, 35, 248)).gameObject;
-            Anchor((RectTransform)_recruitmentPanel.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-190f, 0f), new Vector2(360f, 420f));
-            TMP_Text title = CreateText(_recruitmentPanel.transform, "Title", 22, TextAlignmentOptions.Center);
-            title.text = "Найм юнітів";
-            Anchor(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -28f), new Vector2(0f, 42f));
-            GameObject recipes = new("Recipes", typeof(RectTransform), typeof(VerticalLayoutGroup));
-            _recipeRoot = (RectTransform)recipes.transform;
-            _recipeRoot.SetParent(_recruitmentPanel.transform, false);
-            Anchor(_recipeRoot, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -150f), new Vector2(-24f, 170f));
-            VerticalLayoutGroup layout = recipes.GetComponent<VerticalLayoutGroup>();
-            layout.spacing = 8f;
-            layout.childControlHeight = false;
-            layout.childForceExpandHeight = false;
-            _queueText = CreateText(_recruitmentPanel.transform, "Queue", 16, TextAlignmentOptions.TopLeft);
-            Anchor(_queueText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 78f), new Vector2(-30f, 120f));
-            _recruitmentPanel.SetActive(false);
         }
 
         private void RefreshTurnAuthority()
@@ -139,10 +149,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string owner = string.IsNullOrWhiteSpace(_authority.ActiveOwnerId)
                 ? "—"
                 : _authority.ActiveOwnerId;
+
+            // Two compact authored rows keep the turn HUD clear of the scene-authored
+            // resource summary at the top centre of the gameplay canvas.
             _turnText.text =
-                $"{actor}: {owner}    Раунд {_turns.Round}    Хід {_turns.GlobalTurn}    " +
-                $"Фаза {GameplayTurnHudAuthorityPolicy.LocalizePhase(_authority.Phase)}    " +
-                $"Дії {_turns.ActionsThisTurn}";
+                $"{actor}: {owner}    Раунд {_turns.Round}    Хід {_turns.GlobalTurn}\n" +
+                $"Фаза {GameplayTurnHudAuthorityPolicy.LocalizePhase(_authority.Phase)}    Дії {_turns.ActionsThisTurn}";
             _endTurnButton.interactable = _authority.CanEndTurn;
 
             bool blockersTakePriority = _authority.IsLocalOwnerTurn
@@ -204,9 +216,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void BuildRecipeButtons(string buildingId)
         {
-            _recipeButtons.Clear();
-            for (int index = _recipeRoot.childCount - 1; index >= 0; index--)
-                UnityEngine.Object.Destroy(_recipeRoot.GetChild(index).gameObject);
+            ClearRecipeSlots();
 
             if (!IsSelectedBuildingOwnedByLocalPlayer())
             {
@@ -225,6 +235,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             _recruitmentPanel.SetActive(true);
+            int slotIndex = 0;
+            int skippedForCapacity = 0;
+
             if (module.Recipes != null)
             {
                 foreach (UnitRecruitmentRecipeDefinition recipe in module.Recipes)
@@ -232,20 +245,57 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     if (recipe == null || string.IsNullOrWhiteSpace(recipe.UnitTypeId))
                         continue;
 
+                    if (slotIndex >= _recipeButtons.Count)
+                    {
+                        skippedForCapacity++;
+                        continue;
+                    }
+
                     string unitTypeId = recipe.UnitTypeId.Trim();
-                    string label = $"{ResolveUnitName(unitTypeId)}  ·  {Mathf.Max(1, recipe.TrainingTurns)} х.";
-                    Button button = CreateButton(
-                        _recipeRoot,
-                        $"Recruit-{unitTypeId}",
-                        label,
-                        () => Enqueue(unitTypeId));
-                    ((RectTransform)button.transform).sizeDelta = new Vector2(320f, 44f);
-                    _recipeButtons.Add(button);
+                    Button button = _recipeButtons[slotIndex];
+                    TMP_Text label = _view.GetRecipeLabel(slotIndex);
+                    _recipeUnitTypeIds[slotIndex] = unitTypeId;
+                    label.text = $"{ResolveUnitName(unitTypeId)}  ·  {Mathf.Max(1, recipe.TrainingTurns)} х.";
+                    button.gameObject.SetActive(true);
+                    slotIndex++;
                 }
+            }
+
+            if (skippedForCapacity > 0)
+            {
+                Debug.LogWarning(
+                    $"[GameplayTurnHud] Recruitment recipes exceed authored scene slots. " +
+                    $"Visible={_recipeButtons.Count}, skipped={skippedForCapacity}. " +
+                    "Run the HUD authoring CLI with a larger slot count if needed.");
             }
 
             RefreshRecruitmentAuthority();
             RefreshQueue();
+        }
+
+        private void ClearRecipeSlots()
+        {
+            for (int index = 0; index < _recipeButtons.Count; index++)
+            {
+                _recipeUnitTypeIds[index] = null;
+                Button button = _recipeButtons[index];
+                if (button != null)
+                    button.gameObject.SetActive(false);
+
+                TMP_Text label = _view.GetRecipeLabel(index);
+                if (label != null)
+                    label.text = string.Empty;
+            }
+        }
+
+        private void OnRecipeSlotClicked(int index)
+        {
+            if (index < 0 || index >= _recipeUnitTypeIds.Count)
+                return;
+
+            string unitTypeId = _recipeUnitTypeIds[index];
+            if (!string.IsNullOrWhiteSpace(unitTypeId))
+                Enqueue(unitTypeId);
         }
 
         private void Enqueue(string unitTypeId)
@@ -257,6 +307,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!_authority.CanIssueLocalCommands)
             {
                 _statusOverride = _authority.StatusText;
+                RefreshTurnAuthority();
                 return;
             }
 
@@ -299,7 +350,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 Button button = _recipeButtons[index];
                 if (button != null)
-                    button.interactable = canRecruit;
+                {
+                    button.interactable = canRecruit
+                        && !string.IsNullOrWhiteSpace(_recipeUnitTypeIds[index]);
+                }
             }
         }
 
@@ -335,9 +389,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (string.IsNullOrWhiteSpace(_selectedUnitId))
             {
                 _unitText.text = string.Empty;
+                _unitText.transform.parent.gameObject.SetActive(false);
                 return;
             }
 
+            _unitText.transform.parent.gameObject.SetActive(true);
             string typeId = _units.GetUnitTypeId(_selectedUnitId);
             UnitClassConfig config = _unitConfigs.GetConfig(typeId);
             _unitText.text =
@@ -390,59 +446,5 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private string ResolveUnitName(string typeId)
             => _unitConfigs.GetConfig(typeId)?.DisplayName ?? typeId;
-
-        private static RectTransform CreatePanel(Transform parent, string name, Color color)
-        {
-            GameObject go = new(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            go.transform.SetParent(parent, false);
-            go.GetComponent<Image>().color = color;
-            return (RectTransform)go.transform;
-        }
-
-        private static TMP_Text CreateText(
-            Transform parent,
-            string name,
-            int size,
-            TextAlignmentOptions alignment)
-        {
-            GameObject go = new(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-            go.transform.SetParent(parent, false);
-            TMP_Text text = go.GetComponent<TMP_Text>();
-            text.fontSize = size;
-            text.alignment = alignment;
-            text.color = new Color32(238, 241, 236, 255);
-            text.enableWordWrapping = false;
-            return text;
-        }
-
-        private static Button CreateButton(
-            Transform parent,
-            string name,
-            string label,
-            UnityEngine.Events.UnityAction action)
-        {
-            RectTransform panel = CreatePanel(parent, name, new Color32(48, 96, 80, 255));
-            Button button = panel.gameObject.AddComponent<Button>();
-            button.targetGraphic = panel.GetComponent<Image>();
-            button.onClick.AddListener(action);
-            TMP_Text text = CreateText(panel, "Label", 16, TextAlignmentOptions.Center);
-            text.text = label;
-            Anchor(text.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            return button;
-        }
-
-        private static void Anchor(
-            RectTransform rect,
-            Vector2 anchorMin,
-            Vector2 anchorMax,
-            Vector2 position,
-            Vector2 size)
-        {
-            rect.anchorMin = anchorMin;
-            rect.anchorMax = anchorMax;
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = position;
-            rect.sizeDelta = size;
-        }
     }
 }
