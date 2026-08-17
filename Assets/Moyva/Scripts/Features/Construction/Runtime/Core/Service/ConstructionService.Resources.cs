@@ -330,8 +330,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         private string ResolveResourceDisplayName(string resourceId)
-            => _economyInfoMediator?.GetResourceDisplayName(resourceId)
-               ?? (string.IsNullOrWhiteSpace(resourceId) ? string.Empty : resourceId.Trim());
+        {
+            string displayName = _economyInfoMediator?.GetResourceDisplayName(resourceId);
+            if (!string.IsNullOrWhiteSpace(displayName)
+                && !string.Equals(
+                    displayName.Trim(),
+                    resourceId?.Trim(),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return displayName.Trim();
+            }
+
+            return "Ресурс";
+        }
 
         private Dictionary<string, float> BuildConstructionCostMap(string buildingId)
         {

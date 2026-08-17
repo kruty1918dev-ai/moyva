@@ -445,6 +445,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         }
 
         private string ResolveUnitName(string typeId)
-            => _unitConfigs.GetConfig(typeId)?.DisplayName ?? typeId;
+        {
+            UnitClassConfig config = _unitConfigs.GetConfig(typeId);
+            return config != null && !string.IsNullOrWhiteSpace(config.DisplayName)
+                ? config.DisplayName.Trim()
+                : "Юніт";
+        }
     }
 }

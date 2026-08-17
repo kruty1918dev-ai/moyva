@@ -834,8 +834,8 @@ namespace Kruty1918.Moyva.Construction.UI
             sb.Clear();
 
             var displayName = string.IsNullOrWhiteSpace(definition.DisplayName)
-                ? definition.Id
-                : definition.DisplayName;
+                ? "Будівля"
+                : definition.DisplayName.Trim();
 
             sb.AppendLine($"Обрано: {displayName}");
             if (_isPreviewInfoPinned)
@@ -971,7 +971,18 @@ namespace Kruty1918.Moyva.Construction.UI
         }
 
         private string ResolveResourceDisplayName(string resourceId)
-            => _economyInfoMediator?.GetResourceDisplayName(resourceId)
-               ?? (string.IsNullOrWhiteSpace(resourceId) ? "<невідомий ресурс>" : resourceId.Trim());
+        {
+            string displayName = _economyInfoMediator?.GetResourceDisplayName(resourceId);
+            if (!string.IsNullOrWhiteSpace(displayName)
+                && !string.Equals(
+                    displayName.Trim(),
+                    resourceId?.Trim(),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return displayName.Trim();
+            }
+
+            return "Ресурс";
+        }
     }
 }

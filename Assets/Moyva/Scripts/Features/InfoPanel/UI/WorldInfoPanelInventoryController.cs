@@ -354,7 +354,9 @@ namespace Kruty1918.Moyva.InfoPanel.UI
             out Sprite icon,
             out EconomyResourceCategory category)
         {
-            displayName = resourceId;
+            // Technical ResourceId is never player-facing. If the database
+            // cannot resolve presentation data, show a neutral label instead.
+            displayName = "Ресурс";
             icon = null;
             category = EconomyResourceCategory.None;
 

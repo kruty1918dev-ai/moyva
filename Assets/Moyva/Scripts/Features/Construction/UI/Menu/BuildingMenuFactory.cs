@@ -85,7 +85,9 @@ namespace Kruty1918.Moyva.Construction.UI
 		}
 
 		private static string GetDisplayName(BuildingDefinition building)
-			=> string.IsNullOrWhiteSpace(building?.DisplayName) ? building?.Id : building.DisplayName;
+			=> string.IsNullOrWhiteSpace(building?.DisplayName)
+				? "Будівля"
+				: building.DisplayName.Trim();
 
 		private void BuildCompleteSource(BuildingDefinition[] allBuildings, IBuildingRegistry buildingRegistry)
 		{
@@ -162,7 +164,8 @@ namespace Kruty1918.Moyva.Construction.UI
 			byId[id] = new BuildingDefinition
 			{
 				Id = id,
-				DisplayName = id,
+				// Synthetic fallback definitions still use a player-facing label.
+				DisplayName = isGate ? "Ворота" : "Стіна",
 				Category = BuildingCategory.Walls,
 				Icon = null,
 				Prefab = prefab,
@@ -174,6 +177,11 @@ namespace Kruty1918.Moyva.Construction.UI
 		{
 			if (building == null)
 				return null;
+
+			// Presentation.Icon comes from building JSON and is the canonical UI icon.
+			// Prefab sprites are compatibility fallback only.
+			if (building.Icon != null)
+				return building.Icon;
 
 			if (building.Category == BuildingCategory.Walls)
 			{

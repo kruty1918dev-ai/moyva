@@ -214,7 +214,13 @@ namespace Kruty1918.Moyva.InfoPanel.UI
 
         private void ResolveResourcePresentation(BuildingConstructionCostItemData item, out string displayName, out Sprite icon)
         {
-            displayName = string.IsNullOrWhiteSpace(item.DisplayName) ? item.ResourceId : item.DisplayName;
+            displayName = !string.IsNullOrWhiteSpace(item.DisplayName)
+                && !string.Equals(
+                    item.DisplayName.Trim(),
+                    item.ResourceId?.Trim(),
+                    StringComparison.OrdinalIgnoreCase)
+                ? item.DisplayName.Trim()
+                : "Ресурс";
             icon = item.Icon;
 
             if (_economyDatabase == null || string.IsNullOrWhiteSpace(item.ResourceId))
