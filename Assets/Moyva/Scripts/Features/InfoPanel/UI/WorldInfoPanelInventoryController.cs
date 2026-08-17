@@ -354,29 +354,12 @@ namespace Kruty1918.Moyva.InfoPanel.UI
             out Sprite icon,
             out EconomyResourceCategory category)
         {
-            // Technical ResourceId is never player-facing. If the database
-            // cannot resolve presentation data, show a neutral label instead.
-            displayName = "Ресурс";
-            icon = null;
-            category = EconomyResourceCategory.None;
-
-            var resources = _economyDatabase?.Resources;
-            if (resources == null)
-                return;
-
-            for (int i = 0; i < resources.Count; i++)
-            {
-                var resource = resources[i];
-                if (resource == null || !string.Equals(resource.Id, resourceId, StringComparison.Ordinal))
-                    continue;
-
-                if (!string.IsNullOrWhiteSpace(resource.DisplayName))
-                    displayName = resource.DisplayName.Trim();
-
-                icon = resource.Icon;
-                category = resource.Category;
-                return;
-            }
+            ResourcePresentationResolver.TryResolve(
+                resourceId,
+                _economyDatabase,
+                out displayName,
+                out icon,
+                out category);
         }
 
         private bool MatchesFilter(EconomyResourceCategory category)

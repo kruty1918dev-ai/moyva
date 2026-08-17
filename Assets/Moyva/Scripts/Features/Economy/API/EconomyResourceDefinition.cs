@@ -13,7 +13,11 @@ public sealed class EconomyResourceDefinition : MoyvaJsonConfigObject
         [SerializeField] private int _stackLimit;
         [SerializeField] [Min(1)] private int _weightGrams = 1000;
 
-        public string Id => _id;
+        // JSON root metadata "id" is intentionally removed before object Populate()
+        // and is stored by MoyvaJsonRuntime in MoyvaJsonConfigObject.JsonId.
+        // Keep _id as a legacy/compatibility source, but JsonId is the canonical
+        // runtime identity for migrated JSON resource definitions.
+        public string Id => string.IsNullOrWhiteSpace(_id) ? JsonId : _id;
         public string DisplayName => _displayName;
         public EconomyResourceCategory Category => _category;
         public Sprite Icon => _icon;
