@@ -578,7 +578,8 @@ namespace Kruty1918.Moyva.Construction.API
                 || moduleType == typeof(BuildingPerPlayerLimitModule)
                 || moduleType == typeof(WorkerlessBuildingModule)
                 || moduleType == typeof(WallBuildingModule)
-                || moduleType == typeof(GateBuildingModule);
+                || moduleType == typeof(GateBuildingModule)
+                || moduleType == typeof(UnitRecruitmentBuildingModule);
         }
 
         public static string GetModuleRuntimeEffectDescription(
@@ -634,6 +635,8 @@ namespace Kruty1918.Moyva.Construction.API
                 return "Nearby tile/terrain requirements.";
             if (module is BuildingPerPlayerLimitModule)
                 return "Owner/global building count limit.";
+            if (module is UnitRecruitmentBuildingModule)
+                return "Черга найму юнітів, тривалість тренування, вартість і радіус розміщення.";
 
             return "Немає зареєстрованого runtime consumer.";
         }

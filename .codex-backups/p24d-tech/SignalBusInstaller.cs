@@ -54,7 +54,6 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<UnitRecruitmentQueueChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<UnitRecruitmentReadySignal>().OptionalSubscriber();
             Container.DeclareSignal<UnitRecruitmentDeployedSignal>().OptionalSubscriber();
-            Container.DeclareSignal<UnitRecruitmentReadyIndicatorClickedSignal>().OptionalSubscriber();
 
             // Building Info Panel
             Container.DeclareSignal<WorldInfoPanelRequestedSignal>().OptionalSubscriber();

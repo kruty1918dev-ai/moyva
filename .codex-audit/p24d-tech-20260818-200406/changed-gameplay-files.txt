@@ -1,0 +1,8 @@
+Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs
+Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs
+Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs.meta
+Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs
+Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs
+Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs
+tools/p24d-ready-indicators/CAPTURE_RUNTIME_AUDIT.sh
+tools/p24d-ready-indicators/install-p24d-ready-indicators.sh

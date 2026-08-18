@@ -411,17 +411,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             => _queue.CaptureAll();
 
         public void RestoreState(IReadOnlyList<UnitRecruitmentQueueItemSnapshot> items)
-        {
-            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> before =
-                _signalBus == null
-                    ? Array.Empty<UnitRecruitmentQueueItemSnapshot>()
-                    : _queue.CaptureAll();
-
-            _queue.RestoreAll(items);
-
-            if (_signalBus != null)
-                FireRestoreQueueNotifications(before, _queue.CaptureAll());
-        }
+            => _queue.RestoreAll(items);
 
         public void OnTurnStarted(TurnContext context)
         {
@@ -562,69 +552,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             });
         }
 
-        private void FireRestoreQueueNotifications(
-            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> before,
-            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> after)
-        {
-            var keys = new List<RecruitmentQueueSignalKey>();
-            AddAffectedQueueKeys(before, keys);
-            AddAffectedQueueKeys(after, keys);
-            keys.Sort(RecruitmentQueueSignalKey.Compare);
-
-            for (int index = 0; index < keys.Count; index++)
-            {
-                RecruitmentQueueSignalKey key = keys[index];
-                IReadOnlyList<UnitRecruitmentQueueItemSnapshot> queue =
-                    _queue.GetQueue(key.OwnerId, key.Position);
-
-                if (queue != null && queue.Count > 0)
-                {
-                    FireQueueChanged(queue[0]);
-                    continue;
-                }
-
-                _signalBus?.Fire(new UnitRecruitmentQueueChangedSignal
-                {
-                    OwnerId = key.OwnerId,
-                    BuildingPosition = key.Position,
-                    QueueId = 0,
-                    UnitTypeId = string.Empty,
-                    CompletedTurns = 0,
-                    TrainingTurns = 0,
-                    IsReady = false,
-                });
-            }
-        }
-
-        private static void AddAffectedQueueKeys(
-            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> items,
-            List<RecruitmentQueueSignalKey> keys)
-        {
-            if (items == null || keys == null)
-                return;
-
-            for (int index = 0; index < items.Count; index++)
-            {
-                UnitRecruitmentQueueItemSnapshot item = items[index];
-                var key = new RecruitmentQueueSignalKey(
-                    item.OwnerId,
-                    item.RecruitingBuildingPosition);
-
-                bool exists = false;
-                for (int keyIndex = 0; keyIndex < keys.Count; keyIndex++)
-                {
-                    if (keys[keyIndex].Equals(key))
-                    {
-                        exists = true;
-                        break;
-                    }
-                }
-
-                if (!exists)
-                    keys.Add(key);
-            }
-        }
-
         private void FireDeployed(
             UnitRecruitmentQueueItemSnapshot item,
             string unitId,
@@ -650,47 +577,6 @@ namespace Kruty1918.Moyva.Units.Runtime
                 TrainingTurns = item.TrainingTurns,
                 IsReady = false,
             });
-        }
-
-        private readonly struct RecruitmentQueueSignalKey : IEquatable<RecruitmentQueueSignalKey>
-        {
-            public RecruitmentQueueSignalKey(string ownerId, Vector2Int position)
-            {
-                OwnerId = ownerId ?? string.Empty;
-                Position = position;
-            }
-
-            public string OwnerId { get; }
-            public Vector2Int Position { get; }
-
-            public bool Equals(RecruitmentQueueSignalKey other)
-                => string.Equals(OwnerId, other.OwnerId, StringComparison.Ordinal)
-                   && Position == other.Position;
-
-            public override bool Equals(object obj)
-                => obj is RecruitmentQueueSignalKey other && Equals(other);
-
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    return ((OwnerId != null
-                        ? StringComparer.Ordinal.GetHashCode(OwnerId)
-                        : 0) * 397) ^ Position.GetHashCode();
-                }
-            }
-
-            public static int Compare(
-                RecruitmentQueueSignalKey left,
-                RecruitmentQueueSignalKey right)
-            {
-                int owner = string.CompareOrdinal(left.OwnerId, right.OwnerId);
-                if (owner != 0)
-                    return owner;
-
-                int x = left.Position.x.CompareTo(right.Position.x);
-                return x != 0 ? x : left.Position.y.CompareTo(right.Position.y);
-            }
         }
 
         private bool TryResolveDeploymentModule(

@@ -1,0 +1,188 @@
+diff --git a/Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs b/Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs
+index 9fafc0ca..9241a925 100644
+--- a/Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs
++++ b/Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs
+@@ -88,6 +88,7 @@ namespace Kruty1918.Moyva.Bootstrap
+             // Scene-authored gameplay HUD: resolve the authored view instead of creating runtime UI.
+             Container.Bind<GameplayTurnHudView>().FromComponentInHierarchy().AsSingle();
+             Container.BindInterfacesTo<GameplayTurnHudPresenter>().AsSingle().NonLazy();
++            Container.BindInterfacesAndSelfTo<UnitRecruitmentReadyIndicatorPresenter>().AsSingle().NonLazy();
+             Container.BindInterfacesTo<TurnBotDriver>().AsSingle().NonLazy();
+ 
+             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
+diff --git a/Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs b/Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs
+index 97646879..c87582d7 100644
+--- a/Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs
++++ b/Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs
+@@ -42,4 +42,18 @@ namespace Kruty1918.Moyva.Signals
+         public string UnitId;
+         public Vector2Int Position;
+     }
++
++    /// <summary>
++    /// Fired when the player clicks the ready-unit indicator above the
++    /// recruiting building. This signal only identifies the ready job; later
++    /// deployment flow owns selection, preview, and confirmation.
++    /// </summary>
++    public struct UnitRecruitmentReadyIndicatorClickedSignal
++    {
++        public string OwnerId;
++        public long QueueId;
++        public string UnitTypeId;
++        public string RecruitingBuildingId;
++        public Vector2Int RecruitingBuildingPosition;
++    }
+ }
+diff --git a/Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs b/Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs
+index 1186cda3..f73d339d 100644
+--- a/Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs
++++ b/Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs
+@@ -54,6 +54,7 @@ namespace Kruty1918.Moyva.Signals
+             Container.DeclareSignal<UnitRecruitmentQueueChangedSignal>().OptionalSubscriber();
+             Container.DeclareSignal<UnitRecruitmentReadySignal>().OptionalSubscriber();
+             Container.DeclareSignal<UnitRecruitmentDeployedSignal>().OptionalSubscriber();
++            Container.DeclareSignal<UnitRecruitmentReadyIndicatorClickedSignal>().OptionalSubscriber();
+ 
+             // Building Info Panel
+             Container.DeclareSignal<WorldInfoPanelRequestedSignal>().OptionalSubscriber();
+diff --git a/Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs b/Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs
+index f9317258..6c7c295d 100644
+--- a/Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs
++++ b/Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs
+@@ -411,7 +411,17 @@ namespace Kruty1918.Moyva.Units.Runtime
+             => _queue.CaptureAll();
+ 
+         public void RestoreState(IReadOnlyList<UnitRecruitmentQueueItemSnapshot> items)
+-            => _queue.RestoreAll(items);
++        {
++            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> before =
++                _signalBus == null
++                    ? Array.Empty<UnitRecruitmentQueueItemSnapshot>()
++                    : _queue.CaptureAll();
++
++            _queue.RestoreAll(items);
++
++            if (_signalBus != null)
++                FireRestoreQueueNotifications(before, _queue.CaptureAll());
++        }
+ 
+         public void OnTurnStarted(TurnContext context)
+         {
+@@ -552,6 +562,69 @@ namespace Kruty1918.Moyva.Units.Runtime
+             });
+         }
+ 
++        private void FireRestoreQueueNotifications(
++            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> before,
++            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> after)
++        {
++            var keys = new List<RecruitmentQueueSignalKey>();
++            AddAffectedQueueKeys(before, keys);
++            AddAffectedQueueKeys(after, keys);
++            keys.Sort(RecruitmentQueueSignalKey.Compare);
++
++            for (int index = 0; index < keys.Count; index++)
++            {
++                RecruitmentQueueSignalKey key = keys[index];
++                IReadOnlyList<UnitRecruitmentQueueItemSnapshot> queue =
++                    _queue.GetQueue(key.OwnerId, key.Position);
++
++                if (queue != null && queue.Count > 0)
++                {
++                    FireQueueChanged(queue[0]);
++                    continue;
++                }
++
++                _signalBus?.Fire(new UnitRecruitmentQueueChangedSignal
++                {
++                    OwnerId = key.OwnerId,
++                    BuildingPosition = key.Position,
++                    QueueId = 0,
++                    UnitTypeId = string.Empty,
++                    CompletedTurns = 0,
++                    TrainingTurns = 0,
++                    IsReady = false,
++                });
++            }
++        }
++
++        private static void AddAffectedQueueKeys(
++            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> items,
++            List<RecruitmentQueueSignalKey> keys)
++        {
++            if (items == null || keys == null)
++                return;
++
++            for (int index = 0; index < items.Count; index++)
++            {
++                UnitRecruitmentQueueItemSnapshot item = items[index];
++                var key = new RecruitmentQueueSignalKey(
++                    item.OwnerId,
++                    item.RecruitingBuildingPosition);
++
++                bool exists = false;
++                for (int keyIndex = 0; keyIndex < keys.Count; keyIndex++)
++                {
++                    if (keys[keyIndex].Equals(key))
++                    {
++                        exists = true;
++                        break;
++                    }
++                }
++
++                if (!exists)
++                    keys.Add(key);
++            }
++        }
++
+         private void FireDeployed(
+             UnitRecruitmentQueueItemSnapshot item,
+             string unitId,
+@@ -579,6 +652,47 @@ namespace Kruty1918.Moyva.Units.Runtime
+             });
+         }
+ 
++        private readonly struct RecruitmentQueueSignalKey : IEquatable<RecruitmentQueueSignalKey>
++        {
++            public RecruitmentQueueSignalKey(string ownerId, Vector2Int position)
++            {
++                OwnerId = ownerId ?? string.Empty;
++                Position = position;
++            }
++
++            public string OwnerId { get; }
++            public Vector2Int Position { get; }
++
++            public bool Equals(RecruitmentQueueSignalKey other)
++                => string.Equals(OwnerId, other.OwnerId, StringComparison.Ordinal)
++                   && Position == other.Position;
++
++            public override bool Equals(object obj)
++                => obj is RecruitmentQueueSignalKey other && Equals(other);
++
++            public override int GetHashCode()
++            {
++                unchecked
++                {
++                    return ((OwnerId != null
++                        ? StringComparer.Ordinal.GetHashCode(OwnerId)
++                        : 0) * 397) ^ Position.GetHashCode();
++                }
++            }
++
++            public static int Compare(
++                RecruitmentQueueSignalKey left,
++                RecruitmentQueueSignalKey right)
++            {
++                int owner = string.CompareOrdinal(left.OwnerId, right.OwnerId);
++                if (owner != 0)
++                    return owner;
++
++                int x = left.Position.x.CompareTo(right.Position.x);
++                return x != 0 ? x : left.Position.y.CompareTo(right.Position.y);
++            }
++        }
++
+         private bool TryResolveDeploymentModule(
+             UnitRecruitmentQueueItemSnapshot ready,
+             out UnitRecruitmentBuildingModule module,

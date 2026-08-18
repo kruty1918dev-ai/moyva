@@ -1,0 +1,15 @@
+Assets/Moyva/Scripts/Bootstrap/Runtime/UnitsSaveModule.cs:275:                    ? _unitFactory.CreateUnit(record.TypeId, record.Position, record.OwnerId)
+Assets/Moyva/Scripts/Bootstrap/Runtime/UnitsSaveModule.cs:276:                    : _unitFactory.CreateUnitWithId(record.UnitId, record.TypeId, record.Position, record.OwnerId);
+Assets/Moyva/Scripts/Features/Units/API/IUnitFactory.cs:8:        string CreateUnit(string typeId, Vector2Int gridPosition);
+Assets/Moyva/Scripts/Features/Units/API/IUnitFactory.cs:14:        string CreateUnit(string typeId, Vector2Int gridPosition, string ownerId);
+Assets/Moyva/Scripts/Features/Units/API/IUnitFactory.cs:19:        string CreateUnitWithId(string forcedUnitId, string typeId, Vector2Int gridPosition, string ownerId);
+Assets/Moyva/Scripts/Features/Units/API/IUnitRecruitmentService.cs:136:        bool TryDeployReady(
+Assets/Moyva/Scripts/Features/Units/Runtime/UnitFactory.cs:53:		public string CreateUnit(string typeId, Vector2Int gridPosition)
+Assets/Moyva/Scripts/Features/Units/Runtime/UnitFactory.cs:54:			=> CreateUnit(typeId, gridPosition, null);
+Assets/Moyva/Scripts/Features/Units/Runtime/UnitFactory.cs:56:		public string CreateUnit(string typeId, Vector2Int gridPosition, string ownerId)
+Assets/Moyva/Scripts/Features/Units/Runtime/UnitFactory.cs:88:		public string CreateUnitWithId(string forcedUnitId, string typeId, Vector2Int gridPosition, string ownerId)
+Assets/Moyva/Scripts/Features/Units/Runtime/UnitFactory.cs:92:				Debug.LogError("[UnitFactory] CreateUnitWithId called with null/empty forcedUnitId.");
+Assets/Moyva/Scripts/Features/Units/Runtime/UnitFactory.cs:106:				Debug.LogWarning($"[UnitFactory] CreateUnitWithId: tile {gridPosition} already occupied by '{occupantId}'.");
+Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs:235:        public bool TryDeployReady(
+Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs:363:                unitId = _unitFactory.CreateUnitWithId(
+Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs:479:            // Unit creation happens only through TryDeployReady after an explicit

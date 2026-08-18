@@ -88,7 +88,6 @@ namespace Kruty1918.Moyva.Bootstrap
             // Scene-authored gameplay HUD: resolve the authored view instead of creating runtime UI.
             Container.Bind<GameplayTurnHudView>().FromComponentInHierarchy().AsSingle();
             Container.BindInterfacesTo<GameplayTurnHudPresenter>().AsSingle().NonLazy();
-            Container.BindInterfacesAndSelfTo<UnitRecruitmentReadyIndicatorPresenter>().AsSingle().NonLazy();
             Container.BindInterfacesTo<TurnBotDriver>().AsSingle().NonLazy();
 
             // Розкриває туман навколо стартової позиції і телепортує камеру туди.

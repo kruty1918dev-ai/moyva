@@ -1,0 +1,1026 @@
+diff --git a/Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs b/Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs
+index 9fafc0ca..9241a925 100644
+--- a/Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs
++++ b/Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs
+@@ -88,6 +88,7 @@ namespace Kruty1918.Moyva.Bootstrap
+             // Scene-authored gameplay HUD: resolve the authored view instead of creating runtime UI.
+             Container.Bind<GameplayTurnHudView>().FromComponentInHierarchy().AsSingle();
+             Container.BindInterfacesTo<GameplayTurnHudPresenter>().AsSingle().NonLazy();
++            Container.BindInterfacesAndSelfTo<UnitRecruitmentReadyIndicatorPresenter>().AsSingle().NonLazy();
+             Container.BindInterfacesTo<TurnBotDriver>().AsSingle().NonLazy();
+ 
+             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
+diff --git a/Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs b/Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs
+index 97646879..c87582d7 100644
+--- a/Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs
++++ b/Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs
+@@ -42,4 +42,18 @@ namespace Kruty1918.Moyva.Signals
+         public string UnitId;
+         public Vector2Int Position;
+     }
++
++    /// <summary>
++    /// Fired when the player clicks the ready-unit indicator above the
++    /// recruiting building. This signal only identifies the ready job; later
++    /// deployment flow owns selection, preview, and confirmation.
++    /// </summary>
++    public struct UnitRecruitmentReadyIndicatorClickedSignal
++    {
++        public string OwnerId;
++        public long QueueId;
++        public string UnitTypeId;
++        public string RecruitingBuildingId;
++        public Vector2Int RecruitingBuildingPosition;
++    }
+ }
+diff --git a/Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs b/Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs
+index 1186cda3..f73d339d 100644
+--- a/Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs
++++ b/Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs
+@@ -54,6 +54,7 @@ namespace Kruty1918.Moyva.Signals
+             Container.DeclareSignal<UnitRecruitmentQueueChangedSignal>().OptionalSubscriber();
+             Container.DeclareSignal<UnitRecruitmentReadySignal>().OptionalSubscriber();
+             Container.DeclareSignal<UnitRecruitmentDeployedSignal>().OptionalSubscriber();
++            Container.DeclareSignal<UnitRecruitmentReadyIndicatorClickedSignal>().OptionalSubscriber();
+ 
+             // Building Info Panel
+             Container.DeclareSignal<WorldInfoPanelRequestedSignal>().OptionalSubscriber();
+diff --git a/Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs b/Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs
+index f9317258..6c7c295d 100644
+--- a/Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs
++++ b/Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs
+@@ -411,7 +411,17 @@ namespace Kruty1918.Moyva.Units.Runtime
+             => _queue.CaptureAll();
+ 
+         public void RestoreState(IReadOnlyList<UnitRecruitmentQueueItemSnapshot> items)
+-            => _queue.RestoreAll(items);
++        {
++            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> before =
++                _signalBus == null
++                    ? Array.Empty<UnitRecruitmentQueueItemSnapshot>()
++                    : _queue.CaptureAll();
++
++            _queue.RestoreAll(items);
++
++            if (_signalBus != null)
++                FireRestoreQueueNotifications(before, _queue.CaptureAll());
++        }
+ 
+         public void OnTurnStarted(TurnContext context)
+         {
+@@ -552,6 +562,69 @@ namespace Kruty1918.Moyva.Units.Runtime
+             });
+         }
+ 
++        private void FireRestoreQueueNotifications(
++            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> before,
++            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> after)
++        {
++            var keys = new List<RecruitmentQueueSignalKey>();
++            AddAffectedQueueKeys(before, keys);
++            AddAffectedQueueKeys(after, keys);
++            keys.Sort(RecruitmentQueueSignalKey.Compare);
++
++            for (int index = 0; index < keys.Count; index++)
++            {
++                RecruitmentQueueSignalKey key = keys[index];
++                IReadOnlyList<UnitRecruitmentQueueItemSnapshot> queue =
++                    _queue.GetQueue(key.OwnerId, key.Position);
++
++                if (queue != null && queue.Count > 0)
++                {
++                    FireQueueChanged(queue[0]);
++                    continue;
++                }
++
++                _signalBus?.Fire(new UnitRecruitmentQueueChangedSignal
++                {
++                    OwnerId = key.OwnerId,
++                    BuildingPosition = key.Position,
++                    QueueId = 0,
++                    UnitTypeId = string.Empty,
++                    CompletedTurns = 0,
++                    TrainingTurns = 0,
++                    IsReady = false,
++                });
++            }
++        }
++
++        private static void AddAffectedQueueKeys(
++            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> items,
++            List<RecruitmentQueueSignalKey> keys)
++        {
++            if (items == null || keys == null)
++                return;
++
++            for (int index = 0; index < items.Count; index++)
++            {
++                UnitRecruitmentQueueItemSnapshot item = items[index];
++                var key = new RecruitmentQueueSignalKey(
++                    item.OwnerId,
++                    item.RecruitingBuildingPosition);
++
++                bool exists = false;
++                for (int keyIndex = 0; keyIndex < keys.Count; keyIndex++)
++                {
++                    if (keys[keyIndex].Equals(key))
++                    {
++                        exists = true;
++                        break;
++                    }
++                }
++
++                if (!exists)
++                    keys.Add(key);
++            }
++        }
++
+         private void FireDeployed(
+             UnitRecruitmentQueueItemSnapshot item,
+             string unitId,
+@@ -579,6 +652,47 @@ namespace Kruty1918.Moyva.Units.Runtime
+             });
+         }
+ 
++        private readonly struct RecruitmentQueueSignalKey : IEquatable<RecruitmentQueueSignalKey>
++        {
++            public RecruitmentQueueSignalKey(string ownerId, Vector2Int position)
++            {
++                OwnerId = ownerId ?? string.Empty;
++                Position = position;
++            }
++
++            public string OwnerId { get; }
++            public Vector2Int Position { get; }
++
++            public bool Equals(RecruitmentQueueSignalKey other)
++                => string.Equals(OwnerId, other.OwnerId, StringComparison.Ordinal)
++                   && Position == other.Position;
++
++            public override bool Equals(object obj)
++                => obj is RecruitmentQueueSignalKey other && Equals(other);
++
++            public override int GetHashCode()
++            {
++                unchecked
++                {
++                    return ((OwnerId != null
++                        ? StringComparer.Ordinal.GetHashCode(OwnerId)
++                        : 0) * 397) ^ Position.GetHashCode();
++                }
++            }
++
++            public static int Compare(
++                RecruitmentQueueSignalKey left,
++                RecruitmentQueueSignalKey right)
++            {
++                int owner = string.CompareOrdinal(left.OwnerId, right.OwnerId);
++                if (owner != 0)
++                    return owner;
++
++                int x = left.Position.x.CompareTo(right.Position.x);
++                return x != 0 ? x : left.Position.y.CompareTo(right.Position.y);
++            }
++        }
++
+         private bool TryResolveDeploymentModule(
+             UnitRecruitmentQueueItemSnapshot ready,
+             out UnitRecruitmentBuildingModule module,
+
+--- NEW FILE: Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs ---
+diff --git a/Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs b/Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs
+new file mode 100644
+index 00000000..eab5addf
+--- /dev/null
++++ b/Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs
+@@ -0,0 +1,424 @@
++using System;
++using System.Collections.Generic;
++using Kruty1918.Moyva.Grid.API;
++using Kruty1918.Moyva.Signals;
++using Kruty1918.Moyva.Turns.API;
++using Kruty1918.Moyva.Units.API;
++using UnityEngine;
++using UnityEngine.UI;
++using Zenject;
++using Object = UnityEngine.Object;
++
++namespace Kruty1918.Moyva.Bootstrap.Runtime
++{
++    internal sealed class UnitRecruitmentReadyIndicatorPresenter :
++        IInitializable,
++        ITickable,
++        IDisposable
++    {
++        private const string ContainerName = "RecruitmentReadyIndicators";
++        private const string IndicatorPrefix = "ReadyIndicator_";
++        private const float IndicatorWorldHeightOffset = 1.35f;
++        private const float IndicatorSize = 52f;
++
++        private readonly Dictionary<long, IndicatorHandle> _indicators = new();
++        private readonly Dictionary<string, Sprite> _spriteByUnitTypeId =
++            new(StringComparer.Ordinal);
++        private readonly HashSet<string> _missingSpriteWarnings =
++            new(StringComparer.Ordinal);
++        private readonly HashSet<long> _readyQueueIds = new();
++        private readonly List<long> _removeBuffer = new();
++
++        private readonly SignalBus _signalBus;
++        private readonly ITurnService _turns;
++        private readonly IUnitRecruitmentService _recruitment;
++        private readonly IUnitClassConfig _unitConfigs;
++        private readonly IGridProjection _gridProjection;
++        private readonly GameplayTurnHudView _hudView;
++
++        private Canvas _canvas;
++        private RectTransform _canvasRect;
++        private RectTransform _container;
++        private Camera _camera;
++        private bool _createdContainer;
++        private bool _warnedMissingCanvas;
++        private bool _warnedMissingCamera;
++
++        public UnitRecruitmentReadyIndicatorPresenter(
++            SignalBus signalBus,
++            ITurnService turns,
++            IUnitRecruitmentService recruitment,
++            IUnitClassConfig unitConfigs,
++            IGridProjection gridProjection,
++            [InjectOptional] GameplayTurnHudView hudView = null)
++        {
++            _signalBus = signalBus;
++            _turns = turns;
++            _recruitment = recruitment;
++            _unitConfigs = unitConfigs;
++            _gridProjection = gridProjection;
++            _hudView = hudView;
++        }
++
++        public void Initialize()
++        {
++            _turns.StateChanged += OnTurnStateChanged;
++            _signalBus.Subscribe<UnitRecruitmentQueueChangedSignal>(
++                OnRecruitmentQueueChanged);
++            _signalBus.Subscribe<UnitRecruitmentReadySignal>(
++                OnRecruitmentReady);
++            _signalBus.Subscribe<UnitRecruitmentDeployedSignal>(
++                OnRecruitmentDeployed);
++            _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
++
++            ReconcileReadyIndicators();
++        }
++
++        public void Dispose()
++        {
++            _turns.StateChanged -= OnTurnStateChanged;
++            _signalBus.TryUnsubscribe<UnitRecruitmentQueueChangedSignal>(
++                OnRecruitmentQueueChanged);
++            _signalBus.TryUnsubscribe<UnitRecruitmentReadySignal>(
++                OnRecruitmentReady);
++            _signalBus.TryUnsubscribe<UnitRecruitmentDeployedSignal>(
++                OnRecruitmentDeployed);
++            _signalBus.TryUnsubscribe<WorldBuiltSignal>(OnWorldBuilt);
++            ClearIndicators();
++
++            if (_createdContainer && _container != null)
++                Object.Destroy(_container.gameObject);
++
++            _container = null;
++            _canvas = null;
++            _canvasRect = null;
++            _camera = null;
++        }
++
++        public void Tick()
++        {
++            if (_indicators.Count == 0)
++                return;
++
++            UpdateIndicatorPositions();
++        }
++
++        private void OnTurnStateChanged()
++            => ReconcileReadyIndicators();
++
++        private void OnRecruitmentQueueChanged(UnitRecruitmentQueueChangedSignal _)
++            => ReconcileReadyIndicators();
++
++        private void OnRecruitmentReady(UnitRecruitmentReadySignal _)
++            => ReconcileReadyIndicators();
++
++        private void OnRecruitmentDeployed(UnitRecruitmentDeployedSignal _)
++            => ReconcileReadyIndicators();
++
++        private void OnWorldBuilt(WorldBuiltSignal _)
++            => ReconcileReadyIndicators();
++
++        private void ReconcileReadyIndicators()
++        {
++            EnsureContainer();
++
++            string ownerId = _turns.LocalOwnerId;
++            if (string.IsNullOrWhiteSpace(ownerId) || _container == null)
++            {
++                ClearIndicators();
++                return;
++            }
++
++            string normalizedOwnerId = ownerId.Trim();
++            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> readyItems =
++                _recruitment.GetReadyItems(normalizedOwnerId);
++
++            _readyQueueIds.Clear();
++            for (int index = 0; index < readyItems.Count; index++)
++            {
++                UnitRecruitmentQueueItemSnapshot ready = readyItems[index];
++                if (ready.QueueId < 1
++                    || !ready.IsReady
++                    || !string.Equals(
++                        ready.OwnerId?.Trim(),
++                        normalizedOwnerId,
++                        StringComparison.Ordinal))
++                {
++                    continue;
++                }
++
++                _readyQueueIds.Add(ready.QueueId);
++                if (_indicators.TryGetValue(
++                        ready.QueueId,
++                        out IndicatorHandle existing))
++                {
++                    existing.Snapshot = ready;
++                    ApplySprite(existing, ready.UnitTypeId);
++                    continue;
++                }
++
++                _indicators.Add(
++                    ready.QueueId,
++                    CreateIndicator(ready));
++            }
++
++            _removeBuffer.Clear();
++            foreach (long queueId in _indicators.Keys)
++            {
++                if (!_readyQueueIds.Contains(queueId))
++                    _removeBuffer.Add(queueId);
++            }
++
++            for (int index = 0; index < _removeBuffer.Count; index++)
++                RemoveIndicator(_removeBuffer[index]);
++
++            UpdateIndicatorPositions();
++        }
++
++        private void EnsureContainer()
++        {
++            if (_container != null)
++                return;
++
++            _canvas = ResolveCanvas();
++            if (_canvas == null)
++            {
++                if (!_warnedMissingCanvas)
++                {
++                    _warnedMissingCanvas = true;
++                    Debug.LogWarning(
++                        "[UnitRecruitmentReadyIndicator] Gameplay Canvas not found. Ready indicators are disabled.");
++                }
++
++                return;
++            }
++
++            _canvasRect = _canvas.transform as RectTransform;
++            Transform existing = _canvas.transform.Find(ContainerName);
++            if (existing != null)
++            {
++                _container = existing as RectTransform;
++                _createdContainer = false;
++                return;
++            }
++
++            var go = new GameObject(
++                ContainerName,
++                typeof(RectTransform));
++            _container = go.GetComponent<RectTransform>();
++            _container.SetParent(_canvas.transform, false);
++            _container.anchorMin = Vector2.zero;
++            _container.anchorMax = Vector2.one;
++            _container.offsetMin = Vector2.zero;
++            _container.offsetMax = Vector2.zero;
++            _container.SetAsLastSibling();
++            _createdContainer = true;
++        }
++
++        private Canvas ResolveCanvas()
++        {
++            Canvas canvas = _hudView != null
++                ? _hudView.GetComponentInParent<Canvas>(true)
++                : null;
++            if (canvas != null)
++                return canvas;
++
++            return Object.FindFirstObjectByType<Canvas>(
++                FindObjectsInactive.Include);
++        }
++
++        private IndicatorHandle CreateIndicator(
++            UnitRecruitmentQueueItemSnapshot snapshot)
++        {
++            var root = new GameObject(
++                $"{IndicatorPrefix}{snapshot.QueueId}",
++                typeof(RectTransform),
++                typeof(CanvasRenderer),
++                typeof(Image),
++                typeof(Button));
++            var rect = root.GetComponent<RectTransform>();
++            rect.SetParent(_container, false);
++            rect.sizeDelta = new Vector2(IndicatorSize, IndicatorSize);
++
++            Image background = root.GetComponent<Image>();
++            background.color = new Color(0.1f, 0.18f, 0.14f, 0.88f);
++            background.raycastTarget = true;
++
++            Button button = root.GetComponent<Button>();
++            button.targetGraphic = background;
++
++            var iconObject = new GameObject(
++                "Icon",
++                typeof(RectTransform),
++                typeof(CanvasRenderer),
++                typeof(Image));
++            var iconRect = iconObject.GetComponent<RectTransform>();
++            iconRect.SetParent(rect, false);
++            iconRect.anchorMin = Vector2.zero;
++            iconRect.anchorMax = Vector2.one;
++            iconRect.offsetMin = new Vector2(6f, 6f);
++            iconRect.offsetMax = new Vector2(-6f, -6f);
++
++            Image icon = iconObject.GetComponent<Image>();
++            icon.preserveAspect = true;
++            icon.raycastTarget = false;
++
++            var handle = new IndicatorHandle(snapshot, rect, icon, button);
++            button.onClick.AddListener(() => OnIndicatorClicked(snapshot.QueueId));
++            ApplySprite(handle, snapshot.UnitTypeId);
++            return handle;
++        }
++
++        private void ApplySprite(IndicatorHandle handle, string unitTypeId)
++        {
++            Sprite sprite = ResolveUnitSprite(unitTypeId);
++            handle.Icon.sprite = sprite;
++            handle.Icon.enabled = sprite != null;
++        }
++
++        private Sprite ResolveUnitSprite(string unitTypeId)
++        {
++            if (string.IsNullOrWhiteSpace(unitTypeId))
++                return null;
++
++            string key = unitTypeId.Trim();
++            if (_spriteByUnitTypeId.TryGetValue(key, out Sprite cached))
++                return cached;
++
++            Sprite sprite = _unitConfigs.GetConfig(key)?.CustomSprite;
++            _spriteByUnitTypeId[key] = sprite;
++
++            if (sprite == null && _missingSpriteWarnings.Add(key))
++            {
++                Debug.LogWarning(
++                    "[UnitRecruitmentReadyIndicator] Unit ready indicator has no CustomSprite. Neutral indicator will be shown.");
++            }
++
++            return sprite;
++        }
++
++        private void OnIndicatorClicked(long queueId)
++        {
++            if (!_indicators.TryGetValue(queueId, out IndicatorHandle handle))
++                return;
++
++            UnitRecruitmentQueueItemSnapshot snapshot = handle.Snapshot;
++            _signalBus.Fire(new UnitRecruitmentReadyIndicatorClickedSignal
++            {
++                OwnerId = snapshot.OwnerId,
++                QueueId = snapshot.QueueId,
++                UnitTypeId = snapshot.UnitTypeId,
++                RecruitingBuildingId = snapshot.RecruitingBuildingId,
++                RecruitingBuildingPosition = snapshot.RecruitingBuildingPosition,
++            });
++        }
++
++        private void UpdateIndicatorPositions()
++        {
++            Camera camera = ResolveCamera();
++            if (camera == null || _canvasRect == null || _container == null)
++            {
++                SetAllIndicatorsVisible(false);
++                return;
++            }
++
++            foreach (IndicatorHandle handle in _indicators.Values)
++            {
++                Vector3 world = ResolveIndicatorWorldPosition(
++                    handle.Snapshot.RecruitingBuildingPosition);
++                Vector3 screen = camera.WorldToScreenPoint(world);
++                Vector3 viewport = camera.WorldToViewportPoint(world);
++                bool visible = screen.z > 0f
++                    && viewport.x >= 0f
++                    && viewport.x <= 1f
++                    && viewport.y >= 0f
++                    && viewport.y <= 1f;
++
++                handle.Root.gameObject.SetActive(visible);
++                if (!visible)
++                    continue;
++
++                Camera uiCamera = _canvas.renderMode == RenderMode.ScreenSpaceOverlay
++                    ? null
++                    : (_canvas.worldCamera != null ? _canvas.worldCamera : camera);
++                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
++                        _canvasRect,
++                        screen,
++                        uiCamera,
++                        out Vector2 local))
++                {
++                    handle.Root.anchoredPosition = local;
++                }
++            }
++        }
++
++        private Vector3 ResolveIndicatorWorldPosition(Vector2Int buildingPosition)
++            => _gridProjection.GridToWorld(buildingPosition)
++               + Vector3.up * IndicatorWorldHeightOffset;
++
++        private Camera ResolveCamera()
++        {
++            if (_camera != null && _camera.isActiveAndEnabled)
++                return _camera;
++
++            _camera = Camera.main;
++            if (_camera == null && !_warnedMissingCamera)
++            {
++                _warnedMissingCamera = true;
++                Debug.LogWarning(
++                    "[UnitRecruitmentReadyIndicator] Main Camera not found. Ready indicators will stay hidden.");
++            }
++
++            return _camera;
++        }
++
++        private void SetAllIndicatorsVisible(bool visible)
++        {
++            foreach (IndicatorHandle handle in _indicators.Values)
++                handle.Root.gameObject.SetActive(visible);
++        }
++
++        private void RemoveIndicator(long queueId)
++        {
++            if (!_indicators.TryGetValue(queueId, out IndicatorHandle handle))
++                return;
++
++            handle.Button.onClick.RemoveAllListeners();
++            _indicators.Remove(queueId);
++            Object.Destroy(handle.Root.gameObject);
++        }
++
++        private void ClearIndicators()
++        {
++            _removeBuffer.Clear();
++            foreach (long queueId in _indicators.Keys)
++                _removeBuffer.Add(queueId);
++
++            for (int index = 0; index < _removeBuffer.Count; index++)
++                RemoveIndicator(_removeBuffer[index]);
++
++            _readyQueueIds.Clear();
++            _removeBuffer.Clear();
++        }
++
++        private sealed class IndicatorHandle
++        {
++            public IndicatorHandle(
++                UnitRecruitmentQueueItemSnapshot snapshot,
++                RectTransform root,
++                Image icon,
++                Button button)
++            {
++                Snapshot = snapshot;
++                Root = root;
++                Icon = icon;
++                Button = button;
++            }
++
++            public UnitRecruitmentQueueItemSnapshot Snapshot;
++            public RectTransform Root { get; }
++            public Image Icon { get; }
++            public Button Button { get; }
++        }
++    }
++}
+
+--- NEW FILE: Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs.meta ---
+diff --git a/Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs.meta b/Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs.meta
+new file mode 100644
+index 00000000..27dec935
+--- /dev/null
++++ b/Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: e237d5fcd61640ec8f42e66cb9d032dc
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+
+--- NEW FILE: tools/p24d-ready-indicators/install-p24d-ready-indicators.sh ---
+diff --git a/tools/p24d-ready-indicators/install-p24d-ready-indicators.sh b/tools/p24d-ready-indicators/install-p24d-ready-indicators.sh
+new file mode 100755
+index 00000000..7bdb2550
+--- /dev/null
++++ b/tools/p24d-ready-indicators/install-p24d-ready-indicators.sh
+@@ -0,0 +1,211 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++find_project_root() {
++  local dir="${1:-$PWD}"
++  while [[ "$dir" != "/" ]]; do
++    if [[ -f "$dir/ProjectSettings/ProjectVersion.txt" && -d "$dir/Assets/Moyva" ]]; then
++      printf '%s\n' "$dir"
++      return 0
++    fi
++    dir="$(dirname "$dir")"
++  done
++  return 1
++}
++
++PROJECT="$(find_project_root "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)")"
++PATCH="p24d-tech"
++STAMP="$(date +%Y%m%d-%H%M%S)"
++REPORT_DIR="$PROJECT/.codex-audit/$PATCH-$STAMP"
++AUDIT_FILE="$PROJECT/moyva-$PATCH-audit-$STAMP.tar.gz"
++BACKUP_DIR="$PROJECT/.codex-backups/p24d-tech"
++
++mkdir -p "$REPORT_DIR"
++
++cd "$PROJECT"
++
++TARGET_FILES=(
++  "Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs"
++  "Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs"
++  "Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs"
++  "Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs"
++  "Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs"
++  "Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs.meta"
++  "tools/p24d-ready-indicators/install-p24d-ready-indicators.sh"
++  "tools/p24d-ready-indicators/CAPTURE_RUNTIME_AUDIT.sh"
++)
++
++count_rg() {
++  local pattern="$1"
++  shift
++  { rg -n "$pattern" "$@" 2>/dev/null || true; } | wc -l | tr -d ' '
++}
++
++contains_rg() {
++  local pattern="$1"
++  shift
++  if rg -q "$pattern" "$@" 2>/dev/null; then
++    printf 'True'
++  else
++    printf 'False'
++  fi
++}
++
++branch="$(git branch --show-current 2>/dev/null || true)"
++head="$(git rev-parse HEAD 2>/dev/null || true)"
++presenter_file="Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs"
++
++{
++  printf 'patch=%s\n' "$PATCH"
++  printf 'timestamp=%s\n' "$STAMP"
++  printf 'project=%s\n' "$PROJECT"
++  printf 'branch=%s\n' "$branch"
++  printf 'HEAD=%s\n' "$head"
++  printf 'backupPath=%s\n' "$BACKUP_DIR"
++} > "$REPORT_DIR/summary.txt"
++
++git status --short > "$REPORT_DIR/git-status.txt" 2>&1 || true
++git diff -- "${TARGET_FILES[@]}" > "$REPORT_DIR/p24d-diff.patch" 2>&1 || true
++for target in "${TARGET_FILES[@]}"; do
++  if git ls-files --error-unmatch "$target" >/dev/null 2>&1; then
++    continue
++  fi
++
++  if [[ -f "$target" ]]; then
++    {
++      printf '\n--- NEW FILE: %s ---\n' "$target"
++      git diff --no-index /dev/null "$target" || true
++    } >> "$REPORT_DIR/p24d-diff.patch"
++  fi
++done
++sha256sum "${TARGET_FILES[@]}" > "$REPORT_DIR/changed-file-sha256.txt"
++printf '%s\n' "${TARGET_FILES[@]}" > "$REPORT_DIR/declared-scope-files.txt"
++git status --short -- "${TARGET_FILES[@]}" > "$REPORT_DIR/changed-scope-status.txt" 2>&1 || true
++{
++  git diff --name-only -- "${TARGET_FILES[@]}" 2>/dev/null || true
++  for target in "${TARGET_FILES[@]}"; do
++    if ! git ls-files --error-unmatch "$target" >/dev/null 2>&1 && [[ -f "$target" ]]; then
++      printf '%s\n' "$target"
++    fi
++  done
++} | sort -u > "$REPORT_DIR/changed-gameplay-files.txt"
++
++presenter_count="$({ rg --files Assets/Moyva/Scripts | rg '(^|/)(UnitRecruitmentReadyIndicatorPresenter|RecruitmentReadyIndicatorPresenter|ReadyUnitIndicator|RecruitmentReadyIcon).*\.cs$' || true; } | wc -l | tr -d ' ')"
++binding_count="$(count_rg 'BindInterfacesAndSelfTo<UnitRecruitmentReadyIndicatorPresenter>' Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs)"
++click_signal_declarations="$(count_rg 'DeclareSignal<UnitRecruitmentReadyIndicatorClickedSignal>' Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs)"
++click_signal_structs="$(count_rg 'struct UnitRecruitmentReadyIndicatorClickedSignal' Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs)"
++
++duplicate_presenters=0
++if [[ "$presenter_count" -gt 1 ]]; then
++  duplicate_presenters=$((presenter_count - 1))
++fi
++
++duplicate_bindings=0
++if [[ "$binding_count" -gt 1 ]]; then
++  duplicate_bindings=$((binding_count - 1))
++fi
++
++try_deploy_in_presenter="$(count_rg 'TryDeployReady' "$presenter_file")"
++create_unit_in_presenter="$(count_rg 'CreateUnit|CreateUnitWithId' "$presenter_file")"
++deployment_tiles_in_presenter="$(count_rg 'GetDeploymentTiles' "$presenter_file")"
++
++{
++  printf 'branchIsOptimaze=%s\n' "$([[ "$branch" == "optimaze" ]] && printf True || printf False)"
++  printf 'presenterFileCount=%s\n' "$presenter_count"
++  printf 'presenterBindings=%s\n' "$binding_count"
++  printf 'clickSignalDeclarations=%s\n' "$click_signal_declarations"
++  printf 'clickSignalStructs=%s\n' "$click_signal_structs"
++  printf 'duplicateReadyIndicatorPresenters=%s\n' "$duplicate_presenters"
++  printf 'duplicateBindings=%s\n' "$duplicate_bindings"
++  printf 'TryDeployReadyOccurrencesInPresenter=%s\n' "$try_deploy_in_presenter"
++  printf 'CreateUnitOccurrencesInPresenter=%s\n' "$create_unit_in_presenter"
++  printf 'GetDeploymentTilesOccurrencesInPresenter=%s\n' "$deployment_tiles_in_presenter"
++  printf 'GetReadyItemsUsage=%s\n' "$(contains_rg 'GetReadyItems' "$presenter_file")"
++  printf 'IGridProjectionUsage=%s\n' "$(contains_rg 'IGridProjection' "$presenter_file")"
++  printf 'CustomSpriteUsage=%s\n' "$(contains_rg 'CustomSprite' "$presenter_file")"
++  printf 'RestoreStateNotificationUsage=%s\n' "$(contains_rg 'FireRestoreQueueNotifications' Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs)"
++} > "$REPORT_DIR/static-invariants.txt"
++
++{
++  rg -n 'UnitRecruitmentReadyIndicatorPresenter|UnitRecruitmentReadyIndicatorClickedSignal|GetReadyItems' Assets/Moyva/Scripts/Bootstrap Assets/Moyva/Scripts/Features || true
++} > "$REPORT_DIR/type-and-binding-scan.txt"
++
++{
++  rg -n 'TryDeployReady|CreateUnitWithId|CreateUnit\(' Assets/Moyva/Scripts/Bootstrap Assets/Moyva/Scripts/Features/Units || true
++} > "$REPORT_DIR/create-unit-try-deploy-call-sites.txt"
++
++{
++  rg -n 'Unit creation happens only through TryDeployReady|AutoDeploy|auto deploy|TryDeployReady' Assets/Moyva/Scripts/Features/Units Assets/Moyva/Scripts/Bootstrap || true
++} > "$REPORT_DIR/forbidden-legacy-auto-deploy-scan.txt"
++
++installed_type_reflection=unknown
++compile_errors_fresh=unknown
++if command -v unity >/dev/null 2>&1; then
++  if unity command eval --project-path="$PROJECT" --format json --code 'var presenter = System.Type.GetType("Kruty1918.Moyva.Bootstrap.Runtime.UnitRecruitmentReadyIndicatorPresenter, Kruty1918.Moyva.Bootstrap") != null; var signal = System.Type.GetType("Kruty1918.Moyva.Signals.UnitRecruitmentReadyIndicatorClickedSignal, Kruty1918.Moyva.Signals") != null; return presenter && signal ? "installedTypeReflection=True" : "installedTypeReflection=False";' > "$REPORT_DIR/installed-type-reflection.json" 2>&1; then
++    if rg -q 'installedTypeReflection=True' "$REPORT_DIR/installed-type-reflection.json"; then
++      installed_type_reflection=True
++    else
++      installed_type_reflection=False
++    fi
++  else
++    installed_type_reflection=unity-command-failed
++  fi
++
++  if unity command get_console_logs --project-path="$PROJECT" --limit 500 --format json > "$REPORT_DIR/unity-console-logs.json" 2>&1; then
++    compile_errors_fresh="$(rg -c 'error CS[0-9]+' "$REPORT_DIR/unity-console-logs.json" 2>/dev/null || true)"
++    if [[ -z "$compile_errors_fresh" ]]; then
++      compile_errors_fresh=0
++    fi
++  else
++    compile_errors_fresh=unity-command-failed
++  fi
++fi
++printf 'installedTypeReflection=%s\n' "$installed_type_reflection" >> "$REPORT_DIR/static-invariants.txt"
++printf 'compileErrorsFresh=%s\n' "$compile_errors_fresh" >> "$REPORT_DIR/static-invariants.txt"
++
++if [[ "$branch" != "optimaze" ]]; then
++  printf '[P24D] ERROR branch=%s expected=optimaze\n' "$branch" | tee "$REPORT_DIR/error.txt"
++  tar -czf "$AUDIT_FILE" -C "$REPORT_DIR" .
++  printf 'AUDIT_FILE=%s\n' "$AUDIT_FILE"
++  exit 20
++fi
++
++if [[ "$duplicate_presenters" != "0" || "$duplicate_bindings" != "0" ]]; then
++  printf '[P24D] ERROR duplicate presenter/binding detected\n' | tee "$REPORT_DIR/error.txt"
++  tar -czf "$AUDIT_FILE" -C "$REPORT_DIR" .
++  printf 'AUDIT_FILE=%s\n' "$AUDIT_FILE"
++  exit 21
++fi
++
++if [[ "$binding_count" != "1" || "$click_signal_declarations" != "1" || "$click_signal_structs" != "1" ]]; then
++  printf '[P24D] ERROR signal or binding count mismatch\n' | tee "$REPORT_DIR/error.txt"
++  tar -czf "$AUDIT_FILE" -C "$REPORT_DIR" .
++  printf 'AUDIT_FILE=%s\n' "$AUDIT_FILE"
++  exit 22
++fi
++
++if [[ "$try_deploy_in_presenter" != "0" || "$create_unit_in_presenter" != "0" || "$deployment_tiles_in_presenter" != "0" ]]; then
++  printf '[P24D] ERROR presenter contains deployment/spawn calls\n' | tee "$REPORT_DIR/error.txt"
++  tar -czf "$AUDIT_FILE" -C "$REPORT_DIR" .
++  printf 'AUDIT_FILE=%s\n' "$AUDIT_FILE"
++  exit 23
++fi
++
++if [[ "$compile_errors_fresh" != "unknown" && "$compile_errors_fresh" != "0" ]]; then
++  printf '[P24D] ERROR compileErrorsFresh=%s\n' "$compile_errors_fresh" | tee "$REPORT_DIR/error.txt"
++  tar -czf "$AUDIT_FILE" -C "$REPORT_DIR" .
++  printf 'AUDIT_FILE=%s\n' "$AUDIT_FILE"
++  exit 24
++fi
++
++if [[ "$installed_type_reflection" != "unknown" && "$installed_type_reflection" != "True" ]]; then
++  printf '[P24D] ERROR installedTypeReflection=%s\n' "$installed_type_reflection" | tee "$REPORT_DIR/error.txt"
++  tar -czf "$AUDIT_FILE" -C "$REPORT_DIR" .
++  printf 'AUDIT_FILE=%s\n' "$AUDIT_FILE"
++  exit 25
++fi
++
++printf '[P24D] STATIC_AUDIT_PASS\n' > "$REPORT_DIR/result.txt"
++tar -czf "$AUDIT_FILE" -C "$REPORT_DIR" .
++printf 'AUDIT_FILE=%s\n' "$AUDIT_FILE"
++printf '[P24D] PASS\n'
+
+--- NEW FILE: tools/p24d-ready-indicators/CAPTURE_RUNTIME_AUDIT.sh ---
+diff --git a/tools/p24d-ready-indicators/CAPTURE_RUNTIME_AUDIT.sh b/tools/p24d-ready-indicators/CAPTURE_RUNTIME_AUDIT.sh
+new file mode 100755
+index 00000000..9dfd9650
+--- /dev/null
++++ b/tools/p24d-ready-indicators/CAPTURE_RUNTIME_AUDIT.sh
+@@ -0,0 +1,160 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++find_project_root() {
++  local dir="${1:-$PWD}"
++  while [[ "$dir" != "/" ]]; do
++    if [[ -f "$dir/ProjectSettings/ProjectVersion.txt" && -d "$dir/Assets/Moyva" ]]; then
++      printf '%s\n' "$dir"
++      return 0
++    fi
++    dir="$(dirname "$dir")"
++  done
++  return 1
++}
++
++PROJECT="$(find_project_root "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)")"
++STAMP="$(date +%Y%m%d-%H%M%S)"
++REPORT_DIR="$PROJECT/.codex-audit/p24d-runtime-$STAMP"
++mkdir -p "$REPORT_DIR"
++
++cd "$PROJECT"
++
++if ! command -v unity >/dev/null 2>&1; then
++  echo "[P24D Runtime] ERROR: Unity CLI is not in PATH." | tee "$REPORT_DIR/error.txt"
++  exit 10
++fi
++
++unity command editor_play --project-path="$PROJECT" --format json > "$REPORT_DIR/editor-play.json" 2>&1 || true
++sleep 1
++
++cat > "$REPORT_DIR/p24d-runtime-eval.cs" <<'CS'
++using System;
++using System.Collections.Generic;
++using System.Text;
++using Kruty1918.Moyva.Signals;
++using Kruty1918.Moyva.Turns.API;
++using Kruty1918.Moyva.Units.API;
++using UnityEngine;
++using UnityEngine.UI;
++using Zenject;
++
++var context = UnityEngine.Object.FindFirstObjectByType<SceneContext>(FindObjectsInactive.Include);
++if (context == null)
++    return "{\"pass\":false,\"reason\":\"SceneContext not found\"}";
++
++var container = context.Container;
++var turns = container.Resolve<ITurnService>();
++var recruitment = container.Resolve<IUnitRecruitmentService>();
++var units = container.Resolve<IUnitService>();
++var signalBus = container.Resolve<SignalBus>();
++
++string ownerId = turns.LocalOwnerId;
++var ready = recruitment.GetReadyItems(ownerId);
++int authoritativeBefore = units.GetAllUnitIds().Count;
++
++GameObject indicatorRoot = GameObject.Find("RecruitmentReadyIndicators");
++var buttons = indicatorRoot != null
++    ? indicatorRoot.GetComponentsInChildren<Button>(true)
++    : Array.Empty<Button>();
++
++int indicatorCount = buttons.Length;
++var queueIds = new HashSet<long>();
++int activeIndicators = 0;
++int spriteIndicators = 0;
++Button clickedButton = null;
++long clickedQueueId = 0;
++
++for (int i = 0; i < buttons.Length; i++)
++{
++    Button button = buttons[i];
++    if (button == null)
++        continue;
++
++    if (button.gameObject.activeInHierarchy)
++        activeIndicators++;
++
++    if (button.transform.Find("Icon") is Transform iconTransform
++        && iconTransform.TryGetComponent<Image>(out var icon)
++        && icon.sprite != null)
++    {
++        spriteIndicators++;
++    }
++
++    string name = button.gameObject.name;
++    if (name.StartsWith("ReadyIndicator_", StringComparison.Ordinal)
++        && long.TryParse(name.Substring("ReadyIndicator_".Length), out long id))
++    {
++        queueIds.Add(id);
++        if (clickedButton == null)
++        {
++            clickedButton = button;
++            clickedQueueId = id;
++        }
++    }
++}
++
++int clickSignals = 0;
++UnitRecruitmentReadyIndicatorClickedSignal lastSignal = default;
++Action<UnitRecruitmentReadyIndicatorClickedSignal> handler = signal =>
++{
++    clickSignals++;
++    lastSignal = signal;
++};
++
++signalBus.Subscribe(handler);
++clickedButton?.onClick.Invoke();
++signalBus.TryUnsubscribe(handler);
++
++var readyAfter = recruitment.GetReadyItems(ownerId);
++int authoritativeAfter = units.GetAllUnitIds().Count;
++
++bool hasOneReady = ready.Count == 1;
++bool identityMatches = hasOneReady
++    && clickedQueueId == ready[0].QueueId
++    && lastSignal.QueueId == ready[0].QueueId
++    && lastSignal.RecruitingBuildingPosition == ready[0].RecruitingBuildingPosition
++    && string.Equals(lastSignal.UnitTypeId, ready[0].UnitTypeId, StringComparison.Ordinal)
++    && string.Equals(lastSignal.OwnerId, ready[0].OwnerId, StringComparison.Ordinal);
++
++bool countMatch = indicatorCount == queueIds.Count && indicatorCount == ready.Count;
++bool pass = hasOneReady
++    && indicatorCount == 1
++    && queueIds.Count == 1
++    && activeIndicators == 1
++    && spriteIndicators == 1
++    && countMatch
++    && clickSignals == 1
++    && readyAfter.Count == ready.Count
++    && authoritativeAfter == authoritativeBefore
++    && identityMatches;
++
++var json = new StringBuilder();
++json.Append("{");
++json.Append("\"pass\":").Append(pass ? "true" : "false").Append(",");
++json.Append("\"readyJobs\":").Append(ready.Count).Append(",");
++json.Append("\"indicatorCount\":").Append(indicatorCount).Append(",");
++json.Append("\"uniqueIndicatorQueueIds\":").Append(queueIds.Count).Append(",");
++json.Append("\"activeIndicators\":").Append(activeIndicators).Append(",");
++json.Append("\"spriteIndicators\":").Append(spriteIndicators).Append(",");
++json.Append("\"readyIndicatorCountMatch\":").Append(countMatch ? "true" : "false").Append(",");
++json.Append("\"duplicateIndicators\":").Append(indicatorCount - queueIds.Count).Append(",");
++json.Append("\"authoritativeUnitCountBefore\":").Append(authoritativeBefore).Append(",");
++json.Append("\"clickSignalsDelta\":").Append(clickSignals).Append(",");
++json.Append("\"readyJobsAfterClick\":").Append(readyAfter.Count).Append(",");
++json.Append("\"authoritativeUnitCountAfter\":").Append(authoritativeAfter).Append(",");
++json.Append("\"indicatorQueueId\":").Append(clickedQueueId).Append(",");
++json.Append("\"readyQueueId\":").Append(hasOneReady ? ready[0].QueueId : 0).Append(",");
++json.Append("\"identityMatches\":").Append(identityMatches ? "true" : "false");
++json.Append("}");
++return json.ToString();
++CS
++
++unity command eval_file "$REPORT_DIR/p24d-runtime-eval.cs" --project-path="$PROJECT" --format json > "$REPORT_DIR/runtime-audit.json" 2>&1
++
++if rg -q '"pass"[: ]*true' "$REPORT_DIR/runtime-audit.json"; then
++  echo "[P24D Runtime] PASS"
++else
++  echo "[P24D Runtime] FAIL. See $REPORT_DIR/runtime-audit.json"
++  exit 30
++fi

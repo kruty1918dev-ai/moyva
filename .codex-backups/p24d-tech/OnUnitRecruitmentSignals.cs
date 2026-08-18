@@ -42,18 +42,4 @@ namespace Kruty1918.Moyva.Signals
         public string UnitId;
         public Vector2Int Position;
     }
-
-    /// <summary>
-    /// Fired when the player clicks the ready-unit indicator above the
-    /// recruiting building. This signal only identifies the ready job; later
-    /// deployment flow owns selection, preview, and confirmation.
-    /// </summary>
-    public struct UnitRecruitmentReadyIndicatorClickedSignal
-    {
-        public string OwnerId;
-        public long QueueId;
-        public string UnitTypeId;
-        public string RecruitingBuildingId;
-        public Vector2Int RecruitingBuildingPosition;
-    }
 }
