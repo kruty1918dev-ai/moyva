@@ -177,6 +177,12 @@ namespace Kruty1918.Moyva.Recruitment
                     if (job.RemainingTurns <= 0)
                         job.Status = RecruitmentJobStatus.ReadyToDeploy;
                 }
+                if (job.Status == RecruitmentJobStatus.ReadyToDeploy && TryFindSpawn(queue.Position, ResolveModule(queue.BuildingId)?.SpawnRadius ?? 2, out Vector2Int spawn))
+                {
+                    string unitId = _units.CreateUnit(job.UnitTypeId, spawn, queue.OwnerId);
+                    if (!string.IsNullOrWhiteSpace(unitId))
+                        queue.Jobs.RemoveAt(0);
+                }
             }
         }
 

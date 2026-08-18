@@ -260,12 +260,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _undoSnapshots.Clear();
 
-            _signalBus.Fire(new BuildingCancelledSignal());
             SetPlacementSelection(null, BuildingPlacementState.Idle);
-            ApplyBootstrapCastleSelectionIfNeeded();
+            _signalBus.Fire(new BuildingCancelledSignal());
 
             if (VerboseLogs)
-                Debug.Log($"[Construction] ResetSession completed. state={State}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
+                Debug.Log($"[Construction] ResetSession completed. state=Idle, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
         }
 
         private void ClearPendingDemolitionsPreview()

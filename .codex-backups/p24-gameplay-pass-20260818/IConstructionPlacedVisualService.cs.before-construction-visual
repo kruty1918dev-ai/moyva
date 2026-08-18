@@ -9,8 +9,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         void Select(Vector2Int position);
         void ClearSelection();
         bool ClearSelectionIfMatches(Vector2Int position);
-        void MarkUnderConstruction(Vector2Int position);
-        void MarkOperational(Vector2Int position);
         void MarkDemolitionPreview(Vector2Int position);
         void RestoreDemolitionPreview(Vector2Int position);
         void ClearDemolitionPreviewStyles();

@@ -6,7 +6,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         void ApplyGhostStyle(GameObject rootObject, bool isValid);
         void ApplyUnaffordableGhostStyle(GameObject rootObject);
-        void ApplyUnderConstructionStyle(GameObject rootObject);
         void ApplySolidStyle(GameObject rootObject);
         void EnsureBuildingSortingOrder(GameObject rootObject, int minOrder);
         void EnsureRenderersEnabled(GameObject rootObject);

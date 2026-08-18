@@ -82,41 +82,14 @@ Shader "Moyva/FogOfWar/ScreenSpace"
 
         float2 SampleFogMasks(float2 cell)
         {
-            float2 mapSize =
-                max(
-                    _MoyvaFogMapSize.xy,
-                    1.0.xx);
-
-            float2 insideLower =
-                step(
-                    0.0.xx,
-                    cell);
-
-            float2 insideUpper =
-                step(
-                    cell,
-                    mapSize - 1.0.xx);
-
-            float insideMap =
-                insideLower.x
-                * insideLower.y
-                * insideUpper.x
-                * insideUpper.y;
-
             float2 uv =
                 ResolveFogTexelUv(cell);
 
-            float2 sampled =
-                SAMPLE_TEXTURE2D_LOD(
+            return SAMPLE_TEXTURE2D_LOD(
                 _MoyvaFogStateTexture,
                 sampler_MoyvaFogStateTexture,
                 uv,
                 0).rg;
-
-            return lerp(
-                1.0.xx,
-                sampled,
-                insideMap);
         }
 
         float2 WorldToFogGrid(float3 worldPosition)

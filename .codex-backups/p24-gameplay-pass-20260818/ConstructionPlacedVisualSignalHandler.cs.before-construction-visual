@@ -18,7 +18,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IConstructionWallVisualRefreshService _wallVisuals;
         private readonly IConstructionInfluenceRadiusVisualService _radiusVisuals;
         private readonly IConstructionBuildGridOverlayService _buildGridOverlay;
-        private readonly IConstructionLifecycle _constructionLifecycle;
         private readonly int _townHallBuildRadius;
 
         [Inject]
@@ -30,8 +29,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IConstructionWallVisualRefreshService wallVisuals,
             IConstructionInfluenceRadiusVisualService radiusVisuals,
             IConstructionBuildGridOverlayService buildGridOverlay,
-            [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius,
-            [InjectOptional] IConstructionLifecycle constructionLifecycle = null)
+            [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius)
         {
             _buildingRegistry = buildingRegistry;
             _wallTopologyService = wallTopologyService;
@@ -40,7 +38,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _wallVisuals = wallVisuals;
             _radiusVisuals = radiusVisuals;
             _buildGridOverlay = buildGridOverlay;
-            _constructionLifecycle = constructionLifecycle;
             _townHallBuildRadius = Mathf.Max(0, townHallBuildRadius);
         }
 
@@ -114,12 +111,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                             signal.RotationQuarterTurns)),
                     def.VisualYOffset,
                     previewVisual);
-
-                if (_constructionLifecycle != null
-                    && !_constructionLifecycle.IsOperational(signal.Position))
-                {
-                    _placedVisuals.MarkUnderConstruction(signal.Position);
-                }
             }
             else if (previewVisual != null)
             {
@@ -181,11 +172,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_wallTopologyService.IsWallOrGate(signal.BuildingId))
                 _wallVisuals.RefreshPlacedNeighborhood(signal.Position);
-        }
-
-        public void Handle(BuildingOperationalSignal signal)
-        {
-            _placedVisuals.MarkOperational(signal.Position);
         }
 
         public void Handle(WorldInfoSelectionChangedSignal signal)

@@ -126,22 +126,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
-        public void ApplyUnderConstructionStyle(GameObject rootObject)
-        {
-            var tint = new Color(0.72f, 0.78f, 0.82f, 0.88f);
-            var emission = new Color(0.20f, 0.16f, 0.08f, 1f);
-            VisualComponentCache cache = GetCache(rootObject);
-            SpriteRenderer[] spriteRenderers = cache.SpriteRenderers;
-            for (int i = 0; i < spriteRenderers.Length; i++)
-                spriteRenderers[i].color = tint;
-
-            ApplyRendererTint(
-                cache,
-                tint,
-                isValid: true,
-                emissionColor: emission);
-        }
-
         private static void ClearRendererTint(
             VisualComponentCache cache)
         {

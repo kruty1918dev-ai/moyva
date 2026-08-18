@@ -361,7 +361,6 @@ namespace Kruty1918.Moyva.Construction.UI
             HidePreviewInfoPanel();
             if (selectionPanel != null)
                 selectionPanel.ClearSelection();
-            SynchronizeCastleBootstrapUi();
             RefreshUI();
         }
 

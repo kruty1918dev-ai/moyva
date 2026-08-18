@@ -149,7 +149,9 @@ namespace Kruty1918.Moyva.Camera.Runtime
             else
                 worldDelta.z = 0f;
 
-            ApplyNavigationDelta(worldDelta);
+            _targetPosition += worldDelta;
+            ApplyFixedPlaneAxis();
+            ClampTargetToBounds();
 
             if (!immediate)
                 return;
@@ -207,7 +209,10 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 ? dragWorldDelta
                 : ResolveFallbackScreenDelta(delta);
 
-            ApplyNavigationDelta(moveDirection * speedMultiplier);
+            _targetPosition += moveDirection * speedMultiplier;
+
+            ApplyFixedPlaneAxis();
+            ClampTargetToBounds();
 
             if (!immediate)
                 return;
@@ -287,21 +292,46 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (_boundsProvider == null || _camera == null)
                 return;
 
+            var bounds = _boundsProvider.GetWorldBounds();
+            if (!bounds.HasValue)
+                return;
+
+            Vector2 overflow = _settings.ResolveBoundsOverflowWorldUnits();
+            float minBoundX = bounds.MinX - overflow.x;
+            float maxBoundX = bounds.MaxX + overflow.x;
+            float minBoundY = bounds.MinY - overflow.y;
+            float maxBoundY = bounds.MaxY + overflow.y;
+
             if (!TryResolveNavigationPlaneCenter(_targetPosition, out var targetPlaneCenter, out float distanceToPlane))
             {
                 ApplyFixedPlaneAxis();
                 return;
             }
 
-            if (!TryResolveTargetPlaneBounds(
-                    _targetPosition,
-                    out float minX,
-                    out float maxX,
-                    out float minY,
-                    out float maxY))
+            ResolveViewportHalfExtents(_targetPosition, out float halfW, out float halfH);
+            float width = Mathf.Max(0.01f, maxBoundX - minBoundX);
+            float height = Mathf.Max(0.01f, maxBoundY - minBoundY);
+
+            float minX, maxX;
+            if (width <= halfW * 2f)
             {
-                ApplyFixedPlaneAxis();
-                return;
+                minX = maxX = (minBoundX + maxBoundX) * 0.5f;
+            }
+            else
+            {
+                minX = minBoundX + halfW;
+                maxX = maxBoundX - halfW;
+            }
+
+            float minY, maxY;
+            if (height <= halfH * 2f)
+            {
+                minY = maxY = (minBoundY + maxBoundY) * 0.5f;
+            }
+            else
+            {
+                minY = minBoundY + halfH;
+                maxY = maxBoundY - halfH;
             }
 
             Vector2 targetPlane = ToNavigationPlaneCoordinates(targetPlaneCenter);
@@ -323,108 +353,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
         }
 
         private bool UsesXzPlane => _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ;
-
-        private void ApplyNavigationDelta(Vector3 worldDelta)
-        {
-            if (UsesXzPlane)
-                worldDelta.y = 0f;
-            else
-                worldDelta.z = 0f;
-
-            if (TryFilterNavigationDeltaAgainstBounds(worldDelta, out Vector3 filteredDelta))
-                worldDelta = filteredDelta;
-
-            _targetPosition += worldDelta;
-            ApplyFixedPlaneAxis();
-            ClampTargetToBounds();
-        }
-
-        private bool TryFilterNavigationDeltaAgainstBounds(
-            Vector3 worldDelta,
-            out Vector3 filteredDelta)
-        {
-            filteredDelta = worldDelta;
-            if (!TryResolveNavigationPlaneCenter(_targetPosition, out Vector3 currentCenter, out _)
-                || !TryResolveTargetPlaneBounds(
-                    _targetPosition,
-                    out float minX,
-                    out float maxX,
-                    out float minY,
-                    out float maxY))
-            {
-                return false;
-            }
-
-            Vector2 currentPlane = ToNavigationPlaneCoordinates(currentCenter);
-            Vector2 deltaPlane = ToNavigationPlaneDelta(worldDelta);
-            deltaPlane.x = ClampDeltaAxis(currentPlane.x, deltaPlane.x, minX, maxX);
-            deltaPlane.y = ClampDeltaAxis(currentPlane.y, deltaPlane.y, minY, maxY);
-            filteredDelta = FromNavigationPlaneDelta(deltaPlane);
-            return true;
-        }
-
-        private bool TryResolveTargetPlaneBounds(
-            Vector3 cameraPosition,
-            out float minX,
-            out float maxX,
-            out float minY,
-            out float maxY)
-        {
-            minX = maxX = minY = maxY = 0f;
-            if (_boundsProvider == null || _camera == null)
-                return false;
-
-            var bounds = _boundsProvider.GetWorldBounds();
-            if (!bounds.HasValue)
-                return false;
-
-            Vector2 overflow = _settings.ResolveBoundsOverflowWorldUnits();
-            float minBoundX = bounds.MinX - overflow.x;
-            float maxBoundX = bounds.MaxX + overflow.x;
-            float minBoundY = bounds.MinY - overflow.y;
-            float maxBoundY = bounds.MaxY + overflow.y;
-
-            ResolveViewportHalfExtents(cameraPosition, out float halfW, out float halfH);
-            float width = Mathf.Max(0.01f, maxBoundX - minBoundX);
-            float height = Mathf.Max(0.01f, maxBoundY - minBoundY);
-
-            if (width <= halfW * 2f)
-            {
-                minX = maxX = (minBoundX + maxBoundX) * 0.5f;
-            }
-            else
-            {
-                minX = minBoundX + halfW;
-                maxX = maxBoundX - halfW;
-            }
-
-            if (height <= halfH * 2f)
-            {
-                minY = maxY = (minBoundY + maxBoundY) * 0.5f;
-            }
-            else
-            {
-                minY = minBoundY + halfH;
-                maxY = maxBoundY - halfH;
-            }
-
-            return true;
-        }
-
-        private static float ClampDeltaAxis(
-            float current,
-            float delta,
-            float min,
-            float max)
-        {
-            const float BoundaryEpsilon = 0.001f;
-            if (delta < 0f && current <= min + BoundaryEpsilon)
-                return 0f;
-            if (delta > 0f && current >= max - BoundaryEpsilon)
-                return 0f;
-
-            return Mathf.Clamp(current + delta, min, max) - current;
-        }
 
         private Vector3 ResolveFallbackScreenDelta(Vector3 delta)
         {
@@ -667,20 +595,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return UsesXzPlane
                 ? new Vector2(worldPosition.x, worldPosition.z)
                 : new Vector2(worldPosition.x, worldPosition.y);
-        }
-
-        private Vector2 ToNavigationPlaneDelta(Vector3 worldDelta)
-        {
-            return UsesXzPlane
-                ? new Vector2(worldDelta.x, worldDelta.z)
-                : new Vector2(worldDelta.x, worldDelta.y);
-        }
-
-        private Vector3 FromNavigationPlaneDelta(Vector2 planeDelta)
-        {
-            return UsesXzPlane
-                ? new Vector3(planeDelta.x, 0f, planeDelta.y)
-                : new Vector3(planeDelta.x, planeDelta.y, 0f);
         }
 
         private Vector3 ResolveNavigationPlaneNormal()
