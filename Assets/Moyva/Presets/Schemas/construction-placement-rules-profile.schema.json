@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/construction-placement-rules-profile.schema.json",
+  "title": "Moyva — Construction Placement Rules Profile SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Construction.API.ConstructionPlacementRulesProfileSO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.construction-placement-rules-profile"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "construction-placement-rules-profile"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "minSpacing": {
+      "type": "integer",
+      "title": "Min Spacing",
+      "description": "Глобальна мінімальна відстань у клітинках між будівлями."
+    },
+    "townHallBuildRadius": {
+      "type": "integer",
+      "title": "Town Hall Build Radius",
+      "description": "Глобальний fallback-радіус впливу поселення."
+    },
+    "enableInfluenceZoneRules": {
+      "type": "boolean",
+      "title": "Enable Influence Zone Rules"
+    },
+    "enableTerrainRules": {
+      "type": "boolean",
+      "title": "Enable Terrain Rules"
+    },
+    "allowBuildingOnWater": {
+      "type": "boolean",
+      "title": "Allow Building On Water",
+      "description": "Глобальне правило для будівель у режимі «Успадкувати». Залиште вимкненим для звичайних наземних будівель."
+    },
+    "allowBuildingOnHills": {
+      "type": "boolean",
+      "title": "Allow Building On Hills"
+    },
+    "blockEdgeTerrainTiles": {
+      "type": "boolean",
+      "title": "Block Edge Terrain Tiles"
+    },
+    "enableFogRules": {
+      "type": "boolean",
+      "title": "Enable Fog Rules"
+    },
+    "requireVisibleFogTile": {
+      "type": "boolean",
+      "title": "Require Visible Fog Tile"
+    },
+    "blockedTileIds": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "title": "Blocked Tile Ids"
+    },
+    "allowedTileIds": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "title": "Allowed Tile Ids"
+    },
+    "blockedTerrainLevelRanges": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "minLevel": {
+            "type": "integer",
+            "title": "Min Level",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          },
+          "maxLevel": {
+            "type": "integer",
+            "title": "Max Level",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Blocked Terrain Level Ranges"
+    }
+  }
+}

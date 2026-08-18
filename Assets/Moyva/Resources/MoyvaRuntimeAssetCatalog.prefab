@@ -1,0 +1,935 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6253441717916618303
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7265014200970477828}
+  - component: {fileID: 169038267036490666}
+  m_Layer: 0
+  m_Name: MoyvaRuntimeAssetCatalog
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7265014200970477828
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6253441717916618303}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &169038267036490666
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6253441717916618303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c4d8eb3e719bbfb39a7bd9fbed3bab0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.Jsonization::Kruty1918.Moyva.Jsonization.MoyvaJsonAssetCatalog
+  _entries:
+  - Key: asset.audio-clip.abstract1.5d58cc7e
+    Asset: {fileID: 8300000, guid: 5d58cc7e4c716e34d8c74b56a58904f3, type: 3}
+  - Key: asset.audio-clip.abstract2.a70a2ba4
+    Asset: {fileID: 8300000, guid: a70a2ba457f3aac47b09c7b29fb8c7a0, type: 3}
+  - Key: asset.audio-clip.tavern-music-loop.1155955e
+    Asset: {fileID: 8300000, guid: 1155955e306f54181935f3ac9156a5eb, type: 3}
+  - Key: asset.audio-mixer-group-controller.master.35a28e1f
+    Asset: {fileID: 24300002, guid: 35a28e1f08aa176529bf03c2255bc3f8, type: 2}
+  - Key: asset.game-object.archer.87b835b1
+    Asset: {fileID: 3925536428086337897, guid: 87b835b1a22a0b90583840638a5c5cb0, type: 3}
+  - Key: asset.game-object.baseblock-corner.01241bf9
+    Asset: {fileID: 1327582878135713183, guid: 01241bf96eccd2544af67614bf04a6b7, type: 3}
+  - Key: asset.game-object.baseblock-edge.ae2a5d31
+    Asset: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - Key: asset.game-object.baseblock-fill.9d579ac9
+    Asset: {fileID: 6864620678140451330, guid: 9d579ac99d1488f479c7d40ee76eef29, type: 3}
+  - Key: asset.game-object.baseblock-fill.af07a11c
+    Asset: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+  - Key: asset.game-object.beach.1e1d4f94
+    Asset: {fileID: 7203100000000003001, guid: 1e1d4f94fe6e4932b7d4173f7d25f3a1, type: 3}
+  - Key: asset.game-object.building-barracks-blue.f428515d
+    Asset: {fileID: 919132149155446097, guid: f428515d2dbd75c4ea1e2b8ec7d0eeb7, type: 3}
+  - Key: asset.game-object.building-blacksmith-blue.c0db6feb
+    Asset: {fileID: 919132149155446097, guid: c0db6febc489e3e4193a96c3a9d4577a, type: 3}
+  - Key: asset.game-object.building-lumbermill-blue.81e5f8fe
+    Asset: {fileID: 919132149155446097, guid: 81e5f8fecfba2464a994bcc5452fd31e, type: 3}
+  - Key: asset.game-object.building-market-blue.cde5c5af
+    Asset: {fileID: 919132149155446097, guid: cde5c5afa32fc5a419902e6a8bbef5c4, type: 3}
+  - Key: asset.game-object.building-mine-blue.9fab77ec
+    Asset: {fileID: 919132149155446097, guid: 9fab77ecb6c0d0340aafded7b8e7b66b, type: 3}
+  - Key: asset.game-object.building-stables-blue.49c0cff0
+    Asset: {fileID: 919132149155446097, guid: 49c0cff0949cccd488fd77e8e775d7ee, type: 3}
+  - Key: asset.game-object.building-workshop-blue.f5d290f5
+    Asset: {fileID: 919132149155446097, guid: f5d290f564dc7d7438e79949b85fce90, type: 3}
+  - Key: asset.game-object.bush.95c5bade
+    Asset: {fileID: 9113448713621649907, guid: 95c5badeee3ddb26f9a546ceeb5dcdfc, type: 3}
+  - Key: asset.game-object.castle-01.6655d3eb
+    Asset: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}
+  - Key: asset.game-object.cliff-edge-a.8ef03624
+    Asset: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - Key: asset.game-object.cliff-fill.6242e01f
+    Asset: {fileID: 5918185789254116943, guid: 6242e01fcf2943a4a8e3c28135b4dcbf, type: 3}
+  - Key: asset.game-object.cliff-interiorcorner.ab54ac39
+    Asset: {fileID: 6257598106904757255, guid: ab54ac39e5d418d4f94a3a7f0c4d9912, type: 3}
+  - Key: asset.game-object.cliff-mergedcorner.cb042459
+    Asset: {fileID: 7018083955539282771, guid: cb04245913edfeb4da5014da5be69b5c, type: 3}
+  - Key: asset.game-object.corner-tile.f32af768
+    Asset: {fileID: 7486491380029859929, guid: f32af768544365b4ea7c23d6ef4b1c86, type: 3}
+  - Key: asset.game-object.edge-tile.3d361b2b
+    Asset: {fileID: 7486491380029859929, guid: 3d361b2bfc98db248a3fee4164c1c4e4, type: 3}
+  - Key: asset.game-object.fill-tile.4b3b1230
+    Asset: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
+  - Key: asset.game-object.fill-tile.6f7566a5
+    Asset: {fileID: 7486491380029859929, guid: 6f7566a5feac92a48a18dcf6a52b544d, type: 3}
+  - Key: asset.game-object.forest-dense.d38490c7
+    Asset: {fileID: 2574010424079311619, guid: d38490c7e15db92efbcd9e52a5042f41, type: 3}
+  - Key: asset.game-object.forest-sparse.fcee0ae9
+    Asset: {fileID: 6097099620203038976, guid: fcee0ae92d400f04a9c13b628e41465f, type: 3}
+  - Key: asset.game-object.grass-coast-down-left-corner-tile-001.f47b1c64
+    Asset: {fileID: 8490716599391347654, guid: f47b1c64d319b0641950f2958c690a55, type: 3}
+  - Key: asset.game-object.grass-coast-down-left-tile-001.ef6e1912
+    Asset: {fileID: 6104147911925903919, guid: ef6e1912cc7316f4f93b916931973f1b, type: 3}
+  - Key: asset.game-object.grass-coast-down-middle-tile-001.d6ee218d
+    Asset: {fileID: 3838848985416218403, guid: d6ee218dd75cee54391c33b955d2e096, type: 3}
+  - Key: asset.game-object.grass-coast-down-right-corner-tile-001.659ecb14
+    Asset: {fileID: 5974272166638858764, guid: 659ecb1467ff16e4fb4c53ebfda0dae1, type: 3}
+  - Key: asset.game-object.grass-coast-down-right-tile-001.406204f5
+    Asset: {fileID: 8843299326333799233, guid: 406204f5107dcac45b509aa93f45d786, type: 3}
+  - Key: asset.game-object.grass-coast-left-tile-001.ef28926a
+    Asset: {fileID: 4543670961727197965, guid: ef28926aa06bc324abfbb7ad1cf46a75, type: 3}
+  - Key: asset.game-object.grass-coast-right-tile-001.d3e240d6
+    Asset: {fileID: 8203238116250168079, guid: d3e240d64e4e69d4c81a760ce7e4c720, type: 3}
+  - Key: asset.game-object.grass-coast-top-left-corner-tile-001.e846a72a
+    Asset: {fileID: 4276048738069943229, guid: e846a72a9ea5b09489b8f8b616c4c21b, type: 3}
+  - Key: asset.game-object.grass-coast-top-left-tile-001.9d63cbca
+    Asset: {fileID: 1443878925379244194, guid: 9d63cbca32a0b0745b308b6c5d866cff, type: 3}
+  - Key: asset.game-object.grass-coast-top-middle-tile-001.d0423971
+    Asset: {fileID: 603855828210582468, guid: d0423971630f3c543930778a2194e5ed, type: 3}
+  - Key: asset.game-object.grass-coast-top-right-corner-tile-001.2100a5c2
+    Asset: {fileID: 5041901718063405938, guid: 2100a5c2ae02e7840bc14ad034bedf50, type: 3}
+  - Key: asset.game-object.grass-coast-top-right-tile-001.bcacbe5d
+    Asset: {fileID: 4057833868645771702, guid: bcacbe5df8c50944189a10a0c6d1e614, type: 3}
+  - Key: asset.game-object.grass-ditch-down-end-tile-001.db9374a5
+    Asset: {fileID: 6822214225851454106, guid: db9374a558bd0c4488ab35a5e69e46e4, type: 3}
+  - Key: asset.game-object.grass-ditch-down-left-tile-001.13910118
+    Asset: {fileID: 5292286537928542648, guid: 139101180cf1c304da175bfab6104d1e, type: 3}
+  - Key: asset.game-object.grass-ditch-down-middle-tile-001.63285a5e
+    Asset: {fileID: 520210610453618771, guid: 63285a5e074bb6d42ae79d28158cf780, type: 3}
+  - Key: asset.game-object.grass-ditch-down-right-tile-001.e962d53d
+    Asset: {fileID: 4819998736290410934, guid: e962d53d6ae280d48bb3262c576623e5, type: 3}
+  - Key: asset.game-object.grass-ditch-horizontal-middle-tile-001.91e3be48
+    Asset: {fileID: 5806502547183488472, guid: 91e3be488f013924e977729d9657e327, type: 3}
+  - Key: asset.game-object.grass-ditch-left-end-tile-001.6caa7959
+    Asset: {fileID: 1805021648639239792, guid: 6caa7959bf3b3c7488edb63908c40dbf, type: 3}
+  - Key: asset.game-object.grass-ditch-middle-down-corners-tile-001.5fb1bc23
+    Asset: {fileID: 5122016433756665594, guid: 5fb1bc23450130d408e751f5ff94e82c, type: 3}
+  - Key: asset.game-object.grass-ditch-middle-left-corners-tile-001.3911d9b6
+    Asset: {fileID: 3213782176877695696, guid: 3911d9b6cd7c4cf4a8b2a45835c5e827, type: 3}
+  - Key: asset.game-object.grass-ditch-middle-right-corners-tile-001.48bf5871
+    Asset: {fileID: 9123496337824784590, guid: 48bf5871c7d754d4ca4cbf72c159022d, type: 3}
+  - Key: asset.game-object.grass-ditch-middle-tile-001.e1289d46
+    Asset: {fileID: 4831940195822427918, guid: e1289d4620c10ce41a0ca9d017748eb2, type: 3}
+  - Key: asset.game-object.grass-ditch-middle-tile-002.cf8aa417
+    Asset: {fileID: 4386391504452711267, guid: cf8aa41745491e84291a4ea7cb73b0c6, type: 3}
+  - Key: asset.game-object.grass-ditch-middle-tile-003.25f96104
+    Asset: {fileID: 4419687997890914823, guid: 25f9610409423894ba942f5319391e5e, type: 3}
+  - Key: asset.game-object.grass-ditch-middle-top-corners-tile-001.17832a19
+    Asset: {fileID: 861957613034317937, guid: 17832a19f90b85d4f9b7e75aa29a82c0, type: 3}
+  - Key: asset.game-object.grass-ditch-right-end-tile-001.672ba948
+    Asset: {fileID: 1226840645323980032, guid: 672ba948032eada4491ff177e05f666b, type: 3}
+  - Key: asset.game-object.grass-ditch-top-end-tile-001.85b0a32b
+    Asset: {fileID: 3665458289699947176, guid: 85b0a32bb2170e440900a8afc83df9d0, type: 3}
+  - Key: asset.game-object.grass-ditch-top-left-tile-001.6de63ab6
+    Asset: {fileID: 2150823426952244856, guid: 6de63ab6eb0a63243806c87e05297d4b, type: 3}
+  - Key: asset.game-object.grass-ditch-top-middle-tile-001.9760160b
+    Asset: {fileID: 7481127951450471711, guid: 9760160b2245e564ea79f41a678eb1fd, type: 3}
+  - Key: asset.game-object.grass-ditch-top-right-tile-001.3c3d85c0
+    Asset: {fileID: 4712163052196497726, guid: 3c3d85c0191854749a56b7d347900fa2, type: 3}
+  - Key: asset.game-object.grass-ditch-vertical-middle-tile-001.f1621d96
+    Asset: {fileID: 8036730323478445650, guid: f1621d96a511ce44aba100473ea55646, type: 3}
+  - Key: asset.game-object.grass-ditch-vertical-middle-tile-002.52810515
+    Asset: {fileID: 4880360109990289221, guid: 52810515f6753a5408d21c0dace5cb97, type: 3}
+  - Key: asset.game-object.grass-ditch-vertical-middle-tile-003.fa6db16c
+    Asset: {fileID: 4244167675146715900, guid: fa6db16ce29ac904c97f7b6a8155a0e0, type: 3}
+  - Key: asset.game-object.grass-filll.d81af35c
+    Asset: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
+  - Key: asset.game-object.grass-tile-001.fc3f8a45
+    Asset: {fileID: 2680998980662229933, guid: fc3f8a453dc75f242a13f8efe21956e7, type: 3}
+  - Key: asset.game-object.grass-tile-level-1-001.e82361f0
+    Asset: {fileID: 2680998980662229933, guid: e82361f05179d965b8476942dedc85d5, type: 3}
+  - Key: asset.game-object.grass-tile-level-2-001.955f6aa9
+    Asset: {fileID: 2680998980662229933, guid: 955f6aa9affbb795eafafed74c565106, type: 3}
+  - Key: asset.game-object.grass-tile-level-3-001.eb0fb5eb
+    Asset: {fileID: 2680998980662229933, guid: eb0fb5eb46a037b0c8ccceee10fd4f48, type: 3}
+  - Key: asset.game-object.grass-tile-level-4-001.4ad2fec8
+    Asset: {fileID: 2680998980662229933, guid: 4ad2fec847d647f36a4f653350e23db7, type: 3}
+  - Key: asset.game-object.grass-tile-level-5-001.f5e8775c
+    Asset: {fileID: 2680998980662229933, guid: f5e8775cfe47b07ffa82e01d86e32dfb, type: 3}
+  - Key: asset.game-object.grass-tile-level-6-001.47b18e70
+    Asset: {fileID: 2680998980662229933, guid: 47b18e70c8a3ede7db87d467b84050ab, type: 3}
+  - Key: asset.game-object.grass-water-bottom-left.8d4f4dfa
+    Asset: {fileID: 4118278881326325887, guid: 8d4f4dfa0deb129ebaea3613335aa32b, type: 3}
+  - Key: asset.game-object.grass-water-bottom-right.0c3d9e0b
+    Asset: {fileID: 1088226738644388410, guid: 0c3d9e0bbdadd461c8ae3de3e1a7d1cf, type: 3}
+  - Key: asset.game-object.grass-water-bottom.6f59c631
+    Asset: {fileID: 4507156183373196975, guid: 6f59c631e02571a03ae67af233d62202, type: 3}
+  - Key: asset.game-object.grass-water-inner-bottom-left.d8f3f3ac
+    Asset: {fileID: 12383918317676145, guid: d8f3f3ac65b8891008f17d5688ed7878, type: 3}
+  - Key: asset.game-object.grass-water-inner-bottom-right.a2e58d97
+    Asset: {fileID: 750921921374714942, guid: a2e58d97d5d1063ffba0c0fe4aded2bf, type: 3}
+  - Key: asset.game-object.grass-water-inner-top-left.b9e767a4
+    Asset: {fileID: 5795701900814297913, guid: b9e767a463b238c71807c1a06a0dfc4e, type: 3}
+  - Key: asset.game-object.grass-water-inner-top-right.f05b5caa
+    Asset: {fileID: 5594803209599506771, guid: f05b5caa11839ff4a9f6e0776c3badee, type: 3}
+  - Key: asset.game-object.grass-water-left.9e594f2e
+    Asset: {fileID: 626852646936548880, guid: 9e594f2e954cd0edb8c1313ba388be48, type: 3}
+  - Key: asset.game-object.grass-water-right.fdde62bf
+    Asset: {fileID: 4716023911369345600, guid: fdde62bf58268d6e9bb268c629fc5247, type: 3}
+  - Key: asset.game-object.grass-water-top-left-bottom.6cc76dfa
+    Asset: {fileID: 7178652274115188246, guid: 6cc76dfa68722c1bb83b40c46eef3c11, type: 3}
+  - Key: asset.game-object.grass-water-top-left.5fbb082e
+    Asset: {fileID: 7848171554230679321, guid: 5fbb082eab636847b892903182d1c49a, type: 3}
+  - Key: asset.game-object.grass-water-top-right.a8de0c37
+    Asset: {fileID: 6188331041766642613, guid: a8de0c37e1ba085ba8ccb6800c57d5fc, type: 3}
+  - Key: asset.game-object.grass-water-top.c9dfacfd
+    Asset: {fileID: 679031211546158689, guid: c9dfacfd7bc7c9139974e2e8ccc44d52, type: 3}
+  - Key: asset.game-object.grass.23151ff9
+    Asset: {fileID: 8617330532228340915, guid: 23151ff9b4d8faa368d78bfe81c8e13d, type: 3}
+  - Key: asset.game-object.green-forest-down-left-object-001.3df2b33c
+    Asset: {fileID: 15846663131727163, guid: 3df2b33c89dcb404cb336c2a4c08d17c, type: 3}
+  - Key: asset.game-object.green-forest-down-left-object-002.417664a4
+    Asset: {fileID: 8724465211921172394, guid: 417664a45af7eac4da727f0b7b474955, type: 3}
+  - Key: asset.game-object.green-forest-down-left-object-003.07fa7048
+    Asset: {fileID: 5815828181382006882, guid: 07fa70487e956414da093e8491757c3e, type: 3}
+  - Key: asset.game-object.green-forest-down-left-object-004.3d931069
+    Asset: {fileID: 2668023926754740709, guid: 3d93106948b770b44881040f84c0ce6c, type: 3}
+  - Key: asset.game-object.green-forest-down-left-object-005.61c6f154
+    Asset: {fileID: 8000727954649458179, guid: 61c6f154452bf164cb0f287d2f102fe0, type: 3}
+  - Key: asset.game-object.green-forest-down-left-object-006.f5571e68
+    Asset: {fileID: 5118281940764659179, guid: f5571e68bbcfc694996fff64638f64b0, type: 3}
+  - Key: asset.game-object.green-forest-down-middle-object-001.fe59c98b
+    Asset: {fileID: 4294786439179095706, guid: fe59c98b003452647b4265b68a3836a5, type: 3}
+  - Key: asset.game-object.green-forest-down-middle-object-002.f2824e6b
+    Asset: {fileID: 1518475176243343274, guid: f2824e6b6c94b224ab0a5aecd87644ca, type: 3}
+  - Key: asset.game-object.green-forest-down-middle-object-003.900607d4
+    Asset: {fileID: 3032412181908040486, guid: 900607d4d686d0e458362956dc7efe5d, type: 3}
+  - Key: asset.game-object.green-forest-down-middle-object-004.2cd962c1
+    Asset: {fileID: 6325323719281492034, guid: 2cd962c19822da84aadddc6bbe1825df, type: 3}
+  - Key: asset.game-object.green-forest-down-right-object-001.103077d9
+    Asset: {fileID: 3247418722637731743, guid: 103077d9c11428d48a4255ccd783d5d6, type: 3}
+  - Key: asset.game-object.green-forest-down-right-object-002.582ac6a1
+    Asset: {fileID: 5256489614003151792, guid: 582ac6a19d6c1d241ace50afeaf31702, type: 3}
+  - Key: asset.game-object.green-forest-down-right-object-003.cb531792
+    Asset: {fileID: 1962092648283508384, guid: cb531792112b08a4b96058da581126b1, type: 3}
+  - Key: asset.game-object.green-forest-down-right-object-004.95f063f3
+    Asset: {fileID: 8238658293460574500, guid: 95f063f3e5d842f4f8e0d1a467cffa79, type: 3}
+  - Key: asset.game-object.green-forest-down-right-object-005.d82af99b
+    Asset: {fileID: 4795348325801632479, guid: d82af99b390f56244a02b0bd7f1ab14c, type: 3}
+  - Key: asset.game-object.green-forest-down-right-object-006.fee20eae
+    Asset: {fileID: 3854379777033707988, guid: fee20eae68004184a93132256981fc95, type: 3}
+  - Key: asset.game-object.green-forest-left-object-001.cf6e92bc
+    Asset: {fileID: 9158331993886097986, guid: cf6e92bcba1c4724485683466ddea3ee, type: 3}
+  - Key: asset.game-object.green-forest-left-object-002.3e1f5cc2
+    Asset: {fileID: 1407461065306204482, guid: 3e1f5cc2caee2964abf46b015758b717, type: 3}
+  - Key: asset.game-object.green-forest-left-object-003.e4295a9a
+    Asset: {fileID: 3256347476173483715, guid: e4295a9a226987f499a5c03db31deaf8, type: 3}
+  - Key: asset.game-object.green-forest-left-object-004.b1895f4a
+    Asset: {fileID: 5700157337393732890, guid: b1895f4a2274c474c8d461ed044c36fa, type: 3}
+  - Key: asset.game-object.green-forest-left-object-005.94769c9d
+    Asset: {fileID: 6623726864933899256, guid: 94769c9dc96e88e4bb1a1d0790878be9, type: 3}
+  - Key: asset.game-object.green-forest-left-object-006.0a02ec6a
+    Asset: {fileID: 2697937233336065613, guid: 0a02ec6ad40b9c74097c279c2b37517c, type: 3}
+  - Key: asset.game-object.green-forest-middle-object-001.c9672a87
+    Asset: {fileID: 2000580800010984848, guid: c9672a87661d36b4ca8353f63b36adeb, type: 3}
+  - Key: asset.game-object.green-forest-middle-object-002.53f8442b
+    Asset: {fileID: 345499235931613940, guid: 53f8442b923b55743b18b4f3c713dbd4, type: 3}
+  - Key: asset.game-object.green-forest-right-object-001.e5314e88
+    Asset: {fileID: 691785529628990808, guid: e5314e883ad88b54ea2faaeff61f85b9, type: 3}
+  - Key: asset.game-object.green-forest-right-object-002.b4f34ddd
+    Asset: {fileID: 6844589419738304335, guid: b4f34ddd80dee0149a6a84125a0db99f, type: 3}
+  - Key: asset.game-object.green-forest-right-object-003.ec2472c5
+    Asset: {fileID: 7163772804439538711, guid: ec2472c535e4c3d41b8155baccd66bcc, type: 3}
+  - Key: asset.game-object.green-forest-right-object-004.3884d746
+    Asset: {fileID: 3719627705892285855, guid: 3884d746fd4d2be4c805d8c1acf2a2d8, type: 3}
+  - Key: asset.game-object.green-forest-right-object-005.adfcff9f
+    Asset: {fileID: 8880955795338898632, guid: adfcff9f3689f8f4b99aeac451a6df29, type: 3}
+  - Key: asset.game-object.green-forest-right-object-006.d253a966
+    Asset: {fileID: 4913930912848524189, guid: d253a966ffd093649bb08701dcd40b07, type: 3}
+  - Key: asset.game-object.green-forest-top-left-object-001.9ff1c6b8
+    Asset: {fileID: 6101538389291538945, guid: 9ff1c6b899afd854e81e7ea6c0d5dc03, type: 3}
+  - Key: asset.game-object.green-forest-top-left-object-002.57a5fc36
+    Asset: {fileID: 664748336234793061, guid: 57a5fc36bf3476a42afeeedfe2562d62, type: 3}
+  - Key: asset.game-object.green-forest-top-left-object-003.67a39e96
+    Asset: {fileID: 4950074757014157736, guid: 67a39e965ef1f0544972038ec6c99bad, type: 3}
+  - Key: asset.game-object.green-forest-top-left-object-004.13a2fdb4
+    Asset: {fileID: 6309869267981942897, guid: 13a2fdb49fd7c714a8b47c143bbe590a, type: 3}
+  - Key: asset.game-object.green-forest-top-left-object-005.b932007e
+    Asset: {fileID: 166115468651318619, guid: b932007e968309b45bbb44fe486fe5c6, type: 3}
+  - Key: asset.game-object.green-forest-top-left-object-006.a5c82a63
+    Asset: {fileID: 3937801680473186339, guid: a5c82a63cb800ed409123c98e624f6fd, type: 3}
+  - Key: asset.game-object.green-forest-top-middle-object-002.6ff14ceb
+    Asset: {fileID: 7793819192164222426, guid: 6ff14ceb8814ae348b084331fe1fce59, type: 3}
+  - Key: asset.game-object.green-forest-top-middle-object-003.e077748e
+    Asset: {fileID: 6433234576821063541, guid: e077748e27e383347ac9dd27b9f7d332, type: 3}
+  - Key: asset.game-object.green-forest-top-right-object-001.d654b518
+    Asset: {fileID: 1733038244347133946, guid: d654b518a8f94dd40a1a94f6d6780211, type: 3}
+  - Key: asset.game-object.green-forest-top-right-object-002.272ffe3a
+    Asset: {fileID: 4334534645182325674, guid: 272ffe3adfa4db642a7a0c24508f4a33, type: 3}
+  - Key: asset.game-object.green-forest-top-right-object-003.8f642061
+    Asset: {fileID: 4512303660882092426, guid: 8f6420610113605439206a158b910a55, type: 3}
+  - Key: asset.game-object.green-forest-top-right-object-004.b89c2dad
+    Asset: {fileID: 7773800635030371948, guid: b89c2dad622a09347b877d2244ba7713, type: 3}
+  - Key: asset.game-object.green-forest-top-right-object-005.8a64a806
+    Asset: {fileID: 7498522230187884211, guid: 8a64a8065184d984cb69fbd96d2610c1, type: 3}
+  - Key: asset.game-object.green-forest-top-right-object-006.a5157c9f
+    Asset: {fileID: 7804676267587070458, guid: a5157c9ff8d96fe4bb612e288163aba6, type: 3}
+  - Key: asset.game-object.green-tree-object-001.6f6b1251
+    Asset: {fileID: 3927238052799309785, guid: 6f6b1251cecdebd45ac85b0dd8b747da, type: 3}
+  - Key: asset.game-object.green-tree-object-002.023eb496
+    Asset: {fileID: 5936278851218418940, guid: 023eb4968e8e057439225579cee5949c, type: 3}
+  - Key: asset.game-object.green-tree-object-003.66ec5e38
+    Asset: {fileID: 6049072913180537460, guid: 66ec5e386572e1044bd37871474839d5, type: 3}
+  - Key: asset.game-object.green-tree-object-004.e13ae33a
+    Asset: {fileID: 2227409253263757779, guid: e13ae33a1c4e07b4796c0c4da9dfe0fa, type: 3}
+  - Key: asset.game-object.green-tree-object-005.0ffa5347
+    Asset: {fileID: 1128239562851633693, guid: 0ffa5347bc006e440a518c0decff5b43, type: 3}
+  - Key: asset.game-object.green-tree-object-006.fbcd364c
+    Asset: {fileID: 4642190424593835584, guid: fbcd364c65212bc459994a22e51ef532, type: 3}
+  - Key: asset.game-object.green-tree-object-007.7f95da5c
+    Asset: {fileID: 7731037750879707015, guid: 7f95da5c910b26641bb61cc8db263759, type: 3}
+  - Key: asset.game-object.green-tree-object-008.66597a88
+    Asset: {fileID: 3273783515351409119, guid: 66597a88e78cd244a83f62da8a056675, type: 3}
+  - Key: asset.game-object.green-tree-stump-object-001.f6983808
+    Asset: {fileID: 3695883313670877591, guid: f6983808e9750ea4d892758f7959ed26, type: 3}
+  - Key: asset.game-object.hill.3ef4f4f1
+    Asset: {fileID: 7203100000000005001, guid: 3ef4f4f119e14ce295c8c512a2a73a98, type: 3}
+  - Key: asset.game-object.house-01.a160b9cd
+    Asset: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
+  - Key: asset.game-object.light-cavalry.32716c4f
+    Asset: {fileID: 8475329214379649031, guid: 32716c4f2fd9817ffb4d8981530bd546, type: 3}
+  - Key: asset.game-object.lowland.c9a436dd
+    Asset: {fileID: 7203100000000004001, guid: c9a436dd242048f0ab05a8b97f3d6fb3, type: 3}
+  - Key: asset.game-object.mountain.ddc2d68d
+    Asset: {fileID: 7203100000000006001, guid: ddc2d68d0f83482c8f50f55eaed1ed53, type: 3}
+  - Key: asset.game-object.ocean-deep.9b6a0d1f
+    Asset: {fileID: 7203100000000001001, guid: 9b6a0d1f87ee4a99b01b97b46c5d1010, type: 3}
+  - Key: asset.game-object.ocean-shallow.6dcb2a7c
+    Asset: {fileID: 7203100000000002001, guid: 6dcb2a7cf65049ea9b7c67e63b43e271, type: 3}
+  - Key: asset.game-object.palm-tree-object-001.d577053c
+    Asset: {fileID: 3761141337601478537, guid: d577053cadfc4294ead2313054a19049, type: 3}
+  - Key: asset.game-object.palm-tree-object-002.b7de6940
+    Asset: {fileID: 1010891097238656744, guid: b7de6940445c9434eb85cc56c58e9444, type: 3}
+  - Key: asset.game-object.palm-tree-object-003.22f390a1
+    Asset: {fileID: 8675221335883316037, guid: 22f390a138009184aabdcb6016b86f6f, type: 3}
+  - Key: asset.game-object.palm-tree-stump-object-001.dc40df1c
+    Asset: {fileID: 3736118700552317784, guid: dc40df1cefde25f47b8c8a6d8ca15b0d, type: 3}
+  - Key: asset.game-object.sand-coast-down-left-corner-tile-001.4d212fd8
+    Asset: {fileID: 5016236995402878324, guid: 4d212fd84281f6b48af0921ef8441776, type: 3}
+  - Key: asset.game-object.sand-coast-down-left-tile-001.b4bbc204
+    Asset: {fileID: 3153905877035203641, guid: b4bbc204b30add04f927bb3069af34d6, type: 3}
+  - Key: asset.game-object.sand-coast-down-middle-tile-001.98b2f601
+    Asset: {fileID: 463206849185305108, guid: 98b2f6018b5fabe4db04d0518e173b93, type: 3}
+  - Key: asset.game-object.sand-coast-down-right-corner-tile-001.99d048a5
+    Asset: {fileID: 3692882429360919982, guid: 99d048a5f7009d9469f3df6fbe3b3d97, type: 3}
+  - Key: asset.game-object.sand-coast-down-right-tile-001.7722a021
+    Asset: {fileID: 6228035762749681458, guid: 7722a021ed668774997d7d764a7f60bb, type: 3}
+  - Key: asset.game-object.sand-coast-left-tile-001.309de44c
+    Asset: {fileID: 9014229134849913126, guid: 309de44c50fac4d45918478668da9256, type: 3}
+  - Key: asset.game-object.sand-coast-right-tile-001.cac5ccbd
+    Asset: {fileID: 5596651147222595714, guid: cac5ccbdda5fc074fb59111214ce1878, type: 3}
+  - Key: asset.game-object.sand-coast-top-left-corner-tile-001.1d38bbc1
+    Asset: {fileID: 5106347833433770820, guid: 1d38bbc1a6bbf8f4692f3e27c8a66c29, type: 3}
+  - Key: asset.game-object.sand-coast-top-left-tile-001.600e404c
+    Asset: {fileID: 1208327688107951468, guid: 600e404ca48148646a220f71eb1bb898, type: 3}
+  - Key: asset.game-object.sand-coast-top-middle-tile-001.c7dd7fd3
+    Asset: {fileID: 5666333495852899623, guid: c7dd7fd3163097d4ca9ef0f9e965d36f, type: 3}
+  - Key: asset.game-object.sand-coast-top-right-corner-tile-001.da244917
+    Asset: {fileID: 5768361142790755569, guid: da244917436edff45b1c7fdf5ca59ca4, type: 3}
+  - Key: asset.game-object.sand-coast-top-right-tile-001.a7e1b745
+    Asset: {fileID: 8026716846400549614, guid: a7e1b745f46c8fd46a7462f4c7107e5a, type: 3}
+  - Key: asset.game-object.sand-tile-001.bf91a345
+    Asset: {fileID: 8656177849464206108, guid: bf91a34517383fb49b1ab795ae34b59d, type: 3}
+  - Key: asset.game-object.sand-tile-002.0ff68684
+    Asset: {fileID: 1181542786163962797, guid: 0ff68684e9dc0ba409f771d7452e1e2a, type: 3}
+  - Key: asset.game-object.sand-tile-003.fba05ac4
+    Asset: {fileID: 4146391515631429722, guid: fba05ac4d5bd6b34e922c63c1238ec99, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-end-tile-001.339499df
+    Asset: {fileID: 5636566492159050800, guid: 339499df5ee548941821d3a763301cf9, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-end-tile-002.12ff8031
+    Asset: {fileID: 999680975475285905, guid: 12ff8031ef2f10149affc52c8f128ec2, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-left-tile-001.e91e33b6
+    Asset: {fileID: 3922645177746074446, guid: e91e33b649417ff45acc2eae661b1634, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-left-tile-002.60892be5
+    Asset: {fileID: 6599080200642321020, guid: 60892be5282d0bb42ad75aa318197794, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-left-tile-003.03879e61
+    Asset: {fileID: 655688283745363807, guid: 03879e61578b3704fa1115492908b167, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-left-tile-004.0275bfce
+    Asset: {fileID: 4436183819600037305, guid: 0275bfcee8ba0ab44bc2a73453968273, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-middle-tile-001.4d62f3f3
+    Asset: {fileID: 7096035275009942576, guid: 4d62f3f33921f8e45af2e4557bb9cc0a, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-middle-tile-002.e52fce2e
+    Asset: {fileID: 97991559224914619, guid: e52fce2ecf454164a90db4a99a70e002, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-middle-tile-003.71d967a7
+    Asset: {fileID: 7978758468233363599, guid: 71d967a73de30744e88e2f6035d1aae0, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-middle-tile-004.14772fb9
+    Asset: {fileID: 4091919012770386577, guid: 14772fb9bdd581447a291708a1ef3e74, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-right-tile-001.706e996f
+    Asset: {fileID: 6491842851725315089, guid: 706e996f906a36548bfa209df84da9cc, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-right-tile-002.a7709753
+    Asset: {fileID: 4801916524295546654, guid: a7709753df5b47f4b9cfefd6ec2153f4, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-right-tile-003.dd909ca5
+    Asset: {fileID: 4758414395409240148, guid: dd909ca5daa18534f87972765c633f6b, type: 3}
+  - Key: asset.game-object.sand-to-grass-down-right-tile-004.85422e7f
+    Asset: {fileID: 1299296669598806528, guid: 85422e7f299d1034bb55200c2f6c4a57, type: 3}
+  - Key: asset.game-object.sand-to-grass-left-end-tile-001.c38edd6c
+    Asset: {fileID: 9125726087509223910, guid: c38edd6ca01cd924d9af773b248fada5, type: 3}
+  - Key: asset.game-object.sand-to-grass-left-end-tile-002.7fc4ab9c
+    Asset: {fileID: 1645941051843639771, guid: 7fc4ab9cd011546418e5e309e4df34b1, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-corners-tile-001.4c03f15c
+    Asset: {fileID: 910966970377446237, guid: 4c03f15c5cb210b4d86becca3ded34a1, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-diagonal-corners-tile-001.1802f47f
+    Asset: {fileID: 4468068229058090034, guid: 1802f47f54539224e81d27331495159f, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-diagonal-corners-tile-002.5ca88609
+    Asset: {fileID: 5555252975964239272, guid: 5ca8860992b743c4b879b8cf62e417c1, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-diagonal-corners-tile-003.de0bb643
+    Asset: {fileID: 5949068808413550090, guid: de0bb643d82b2d642923b27059407a56, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-diagonal-corners-tile-004.307499de
+    Asset: {fileID: 5847675249604350740, guid: 307499de3de343d4aa656afb1f7fa164, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-down-corners-tile-001.a6438950
+    Asset: {fileID: 7860709186451751971, guid: a6438950e9c2823408bf7b3cff710d0e, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-down-corners-tile-002.966c9de8
+    Asset: {fileID: 1871994643826400140, guid: 966c9de82387a284d88a80890fdef578, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-left-corners-tile-001.7df2fa4d
+    Asset: {fileID: 5996007500608627517, guid: 7df2fa4dc2b4a72419841c277df90b8b, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-left-corners-tile-002.33fa8b8a
+    Asset: {fileID: 3295572384894279467, guid: 33fa8b8ad384db943941bf89ffb3c579, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-left-down-corner-tile-001.dae4fc98
+    Asset: {fileID: 8584773847636941461, guid: dae4fc98d228a34438ae562251eff04e, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-left-down-corner-tile-002.79cd920e
+    Asset: {fileID: 5777980703626470522, guid: 79cd920e5fa46964587c05021651d9b8, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-right-corners-tile-001.4c6fdf8b
+    Asset: {fileID: 5495819270255939307, guid: 4c6fdf8bf20fb7c4d8c7520dc57b9ff8, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-right-corners-tile-002.ab600d93
+    Asset: {fileID: 9116999537489260809, guid: ab600d93146515c49a1ea105db8e5a2a, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-right-down-corner-tile-001.6b33a18b
+    Asset: {fileID: 3271185035528481628, guid: 6b33a18b261c38f4bae6ac8c3b21cb1c, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-right-down-corner-tile-002.4c7eebbc
+    Asset: {fileID: 716420007958644967, guid: 4c7eebbc454c34140a4285187b01e511, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-001.e7c73fbb
+    Asset: {fileID: 3244624840252668479, guid: e7c73fbb202c1b24da7bc880a4cd74a8, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-002.f44e6d95
+    Asset: {fileID: 5386968827390818743, guid: f44e6d95961c78c44857e88202fbcec3, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-003.5c7bb5ee
+    Asset: {fileID: 8144922422758464746, guid: 5c7bb5ee144a60e48b5e1f57f3af4f2b, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-004.fc508324
+    Asset: {fileID: 6325051421056957991, guid: fc508324c03150c4c869c2566dbcb9cf, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-005.52f5a6df
+    Asset: {fileID: 1588859712071089542, guid: 52f5a6df3d70199448e56a501732b4d9, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-006.3385b50e
+    Asset: {fileID: 2597645195137040643, guid: 3385b50e5b45f0649bb5ef6754c8eb09, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-007.191bd04b
+    Asset: {fileID: 2846522228149233200, guid: 191bd04b802c11d4a8809dbb900fd773, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-008.55ad15b0
+    Asset: {fileID: 508861778910193731, guid: 55ad15b029c1d2848b8688be947d0926, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-009.253cffdb
+    Asset: {fileID: 2554571285990884251, guid: 253cffdbfb5ccb54389924f59dddc4b8, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-010.01ecf413
+    Asset: {fileID: 6274867803321517086, guid: 01ecf41398dfc28468ad95964d3db830, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-011.70a5fccf
+    Asset: {fileID: 5551675689479124830, guid: 70a5fccf0b158fc478444a82305acefd, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-012.ac3d5e12
+    Asset: {fileID: 461659255578409638, guid: ac3d5e1288bf04a4282c3e4f20231f9e, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-013.32ddec48
+    Asset: {fileID: 4604121935253849701, guid: 32ddec48e01742f439802273092756ca, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-014.3b769c62
+    Asset: {fileID: 3633401714709823644, guid: 3b769c628ba404145b38dd1239001b85, type: 3}
+  - Key: asset.game-object.sand-to-grass-middle-tile-015.a40065c3
+    Asset: {fileID: 4110502546148677766, guid: a40065c3211d04f4c8186b262f2317c0, type: 3}
+  - Key: asset.game-object.sand-to-grass-right-end-tile-001.b5aafb85
+    Asset: {fileID: 3576145811745323324, guid: b5aafb85f2270b94baca89070c6baac0, type: 3}
+  - Key: asset.game-object.sand-to-grass-right-end-tile-002.b8652d4d
+    Asset: {fileID: 3374619847767135248, guid: b8652d4d1d892df4483764cf606ed507, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-corners-tile-001.174093cd
+    Asset: {fileID: 654514546023555222, guid: 174093cdab9ddf24e97cb45750322902, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-corners-tile-002.0d01ad99
+    Asset: {fileID: 8436757319751195568, guid: 0d01ad99b9ddea74cbd66111cbcdf105, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-end-tile-001.ae40e19b
+    Asset: {fileID: 4372469631842905885, guid: ae40e19bed92c6444b5261a0cb1443df, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-end-tile-002.d1119e34
+    Asset: {fileID: 1135210677410000601, guid: d1119e34a18ec284bbac8cc4d3e3ac6e, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-left-tile-001.07d30624
+    Asset: {fileID: 5224412802286199799, guid: 07d30624a7a99e345a2f372c5508ad49, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-left-tile-002.4b9a012c
+    Asset: {fileID: 3618063328429026765, guid: 4b9a012c07bb8e54580b8041ce98207a, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-left-tile-003.31e4b053
+    Asset: {fileID: 6552308154386995562, guid: 31e4b053871218c4db3c56e545aeaf69, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-left-tile-004.eb4ee047
+    Asset: {fileID: 7179292665483497168, guid: eb4ee0478c93e424188cbd07d292eb62, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-middle-left-corner-tile-001.cb3fb94f
+    Asset: {fileID: 4097010353123050508, guid: cb3fb94f832fd4348a446722fe2184df, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-middle-left-corner-tile-002.a88b32df
+    Asset: {fileID: 149352438044915066, guid: a88b32dfde6e52144b719b521a849272, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-middle-right-corner-tile-001.402616f0
+    Asset: {fileID: 7581306157518091729, guid: 402616f0e90314a49bcf0fdc2817db3c, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-middle-right-corner-tile-002.fac98a0e
+    Asset: {fileID: 8904296205969230661, guid: fac98a0e40bf90248b252992c57dc19c, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-middle-tile-001.03bab146
+    Asset: {fileID: 941230638695561204, guid: 03bab146ecd23394d86bba5697ee7550, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-middle-tile-002.a3b2d178
+    Asset: {fileID: 3358893004357791381, guid: a3b2d1784a43d394c84f22564b3b28f2, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-middle-tile-003.908c8cfa
+    Asset: {fileID: 3425900925495790155, guid: 908c8cfa19e9a2f4683b0fe80456b424, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-middle-tile-004.fcc01518
+    Asset: {fileID: 5035370713622637156, guid: fcc015187ac2d444a801912dd8884e2f, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-right-tile-001.c0e028b4
+    Asset: {fileID: 7298113401016775202, guid: c0e028b46d89d8741951008e79e698ec, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-right-tile-002.e49a3733
+    Asset: {fileID: 795803242506239363, guid: e49a37333fe0d604cb136acb6a27cf50, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-right-tile-003.b64c9ed1
+    Asset: {fileID: 7224121603931134036, guid: b64c9ed1f311a9947b2411f90fd148a0, type: 3}
+  - Key: asset.game-object.sand-to-grass-top-right-tile-004.ff63b5f8
+    Asset: {fileID: 4283945695096645705, guid: ff63b5f86c2a7b2408a7f9dde9549425, type: 3}
+  - Key: asset.game-object.snow-tile-001.afa0ca93
+    Asset: {fileID: 3522874279653526203, guid: afa0ca93d13c8c0cfabea28dfa0f8788, type: 3}
+  - Key: asset.game-object.snow.58d1c3ca
+    Asset: {fileID: 7203100000000007001, guid: 58d1c3cafb7a4902a1a138b121f721d0, type: 3}
+  - Key: asset.game-object.spearman.cb916fee
+    Asset: {fileID: 4267310605530257900, guid: cb916fee6b164251ebf6969bcb41053f, type: 3}
+  - Key: asset.game-object.stone-hill-down-left-inner-corner-tile-001.27f30d8d
+    Asset: {fileID: 5125564611038466764, guid: 27f30d8da7be7704ab2b1f1a80409b38, type: 3}
+  - Key: asset.game-object.stone-hill-down-left-inner-corner-tile-002.47cacb89
+    Asset: {fileID: 8014433247059347383, guid: 47cacb89ad423ff4db023fd107d584b2, type: 3}
+  - Key: asset.game-object.stone-hill-down-left-tile-001.9b9ff0e9
+    Asset: {fileID: 3937541368606234260, guid: 9b9ff0e932288e64ab1f04ba4cc92575, type: 3}
+  - Key: asset.game-object.stone-hill-down-left-tile-002.fc090802
+    Asset: {fileID: 731028720540998254, guid: fc090802c206ae94693b21fe8d942520, type: 3}
+  - Key: asset.game-object.stone-hill-down-middle-tile-001.34b247ee
+    Asset: {fileID: 178533749310443018, guid: 34b247ee5420bc546a5908771c8b0f1c, type: 3}
+  - Key: asset.game-object.stone-hill-down-middle-tile-002.af2d182d
+    Asset: {fileID: 2638894580236132764, guid: af2d182dd7566b840804a0b3a6349ba3, type: 3}
+  - Key: asset.game-object.stone-hill-down-right-inner-corner-tile-001.7e7078f4
+    Asset: {fileID: 3045042461654820487, guid: 7e7078f4f4d808242bcebae987f7ff10, type: 3}
+  - Key: asset.game-object.stone-hill-down-right-inner-corner-tile-002.1c0592ec
+    Asset: {fileID: 5260450607569359327, guid: 1c0592ec8fad4c2468f43301198311ff, type: 3}
+  - Key: asset.game-object.stone-hill-down-right-tile-001.67dff318
+    Asset: {fileID: 3523975607957699629, guid: 67dff3187865f9642b6a4122f27c4f9d, type: 3}
+  - Key: asset.game-object.stone-hill-down-right-tile-002.0a7c74f7
+    Asset: {fileID: 7275181255478190052, guid: 0a7c74f74366de74d953112d748ec992, type: 3}
+  - Key: asset.game-object.stone-hill-down-road-tile-001.1c3b5860
+    Asset: {fileID: 6691491353753107640, guid: 1c3b586057f9139458002806bd4bc792, type: 3}
+  - Key: asset.game-object.stone-hill-down-stairs-tile-001.49916ac5
+    Asset: {fileID: 2735376728650599135, guid: 49916ac526725214ba070c30481952f4, type: 3}
+  - Key: asset.game-object.stone-hill-down-stairs-tile-002.05e46b90
+    Asset: {fileID: 8652731487226855501, guid: 05e46b90e9c8ebf4185907aa9fe2ff3f, type: 3}
+  - Key: asset.game-object.stone-hill-left-diagonal-corners-tile-001.8d68e24a
+    Asset: {fileID: 438145173514583080, guid: 8d68e24a17691d8469c52349daf699e1, type: 3}
+  - Key: asset.game-object.stone-hill-left-diagonal-corners-tile-002.e696d814
+    Asset: {fileID: 8561443324749846702, guid: e696d814526e3f34e90b0a84826189f1, type: 3}
+  - Key: asset.game-object.stone-hill-left-road-tile-001.1d1e975d
+    Asset: {fileID: 8341506538805041023, guid: 1d1e975d35cb34b4e88d9117416add5e, type: 3}
+  - Key: asset.game-object.stone-hill-left-stairs-tile-001.664ef374
+    Asset: {fileID: 8014855263655232645, guid: 664ef3744ae23704389e4e1ba8e79903, type: 3}
+  - Key: asset.game-object.stone-hill-left-stairs-tile-002.25a5f81f
+    Asset: {fileID: 8303560724864644040, guid: 25a5f81f56953ee44bfecc8625a5a196, type: 3}
+  - Key: asset.game-object.stone-hill-left-tile-001.994ce1e0
+    Asset: {fileID: 2384874367348932451, guid: 994ce1e08860ad44cae3045faca7d58a, type: 3}
+  - Key: asset.game-object.stone-hill-left-tile-002.0a3f1cb2
+    Asset: {fileID: 5034980109956288020, guid: 0a3f1cb2a0612ad4196fbf6afca74c0a, type: 3}
+  - Key: asset.game-object.stone-hill-right-diagonal-corners-tile-001.49d6347d
+    Asset: {fileID: 2222991831298519841, guid: 49d6347dd4e3ec0458d22701e0bd840c, type: 3}
+  - Key: asset.game-object.stone-hill-right-diagonal-corners-tile-002.c0457357
+    Asset: {fileID: 6047468666608827172, guid: c0457357fa7c58941a32208c08e75a68, type: 3}
+  - Key: asset.game-object.stone-hill-right-road-tile-001.57dc5ed3
+    Asset: {fileID: 938751401124326742, guid: 57dc5ed36c2131741b447311ae5ff90f, type: 3}
+  - Key: asset.game-object.stone-hill-right-stairs-tile-001.f4f61afa
+    Asset: {fileID: 7740245857341128638, guid: f4f61afa5866d524d8f79e086cc4dd63, type: 3}
+  - Key: asset.game-object.stone-hill-right-stairs-tile-002.59d1d5a9
+    Asset: {fileID: 4318820798857343670, guid: 59d1d5a9195cead4db33667ab06efdb1, type: 3}
+  - Key: asset.game-object.stone-hill-right-tile-001.7ffb3b84
+    Asset: {fileID: 5939572560747729176, guid: 7ffb3b84308be1f498894ac7e85daa84, type: 3}
+  - Key: asset.game-object.stone-hill-right-tile-002.9a273e02
+    Asset: {fileID: 3927224428360738579, guid: 9a273e0295c952a489079427734dbac5, type: 3}
+  - Key: asset.game-object.stone-hill-top-left-inner-corner-tile-001.ea8ac053
+    Asset: {fileID: 7442036506742536829, guid: ea8ac05365c342e438f7d5638a9b14d2, type: 3}
+  - Key: asset.game-object.stone-hill-top-left-inner-corner-tile-002.ed18a0a7
+    Asset: {fileID: 5571511734918055908, guid: ed18a0a711138784aabc9675fdec5f4e, type: 3}
+  - Key: asset.game-object.stone-hill-top-left-tile-001.8740f3d7
+    Asset: {fileID: 5410025859290603014, guid: 8740f3d761d3aad4688d4990e4ab8b92, type: 3}
+  - Key: asset.game-object.stone-hill-top-left-tile-002.a8fc8c25
+    Asset: {fileID: 6570778253217502314, guid: a8fc8c25fa6715243a138468e475b488, type: 3}
+  - Key: asset.game-object.stone-hill-top-middle-tile-001.582dd519
+    Asset: {fileID: 2024937330830930193, guid: 582dd51908159114d982fe1b3a53f5c5, type: 3}
+  - Key: asset.game-object.stone-hill-top-middle-tile-002.3fcca6b8
+    Asset: {fileID: 8385666394676573960, guid: 3fcca6b83298ec449912418d699ee56d, type: 3}
+  - Key: asset.game-object.stone-hill-top-right-inner-corner-tile-001.490ed102
+    Asset: {fileID: 4041052561470759315, guid: 490ed1020b7b5b44093e30beedadece5, type: 3}
+  - Key: asset.game-object.stone-hill-top-right-inner-corner-tile-002.98ad9506
+    Asset: {fileID: 289608340704930841, guid: 98ad9506e383ec441b71d07dba5ba416, type: 3}
+  - Key: asset.game-object.stone-hill-top-right-tile-001.3283a38f
+    Asset: {fileID: 6495588113326914491, guid: 3283a38ff86d60547a7cfee82e4d0020, type: 3}
+  - Key: asset.game-object.stone-hill-top-right-tile-002.10948789
+    Asset: {fileID: 2572808861404570386, guid: 109487896c059db47a3eaa1adf489faa, type: 3}
+  - Key: asset.game-object.stone-hill-top-road-tile-001.28b51701
+    Asset: {fileID: 3648683388896071098, guid: 28b51701b9291b44e9dea4ede91cb70a, type: 3}
+  - Key: asset.game-object.stone-hill-top-stairs-tile-001.3cef96ff
+    Asset: {fileID: 7272565306391686703, guid: 3cef96ff9e59b934d94c77b9af2a7163, type: 3}
+  - Key: asset.game-object.stone-hill-top-stairs-tile-002.52449896
+    Asset: {fileID: 824790567951215783, guid: 52449896983bd33428c5fb4d389e7dbb, type: 3}
+  - Key: asset.game-object.stone-object-001.30d96fa2
+    Asset: {fileID: 1452636942216446570, guid: 30d96fa2ffe76d54fa7c638e092e6604, type: 3}
+  - Key: asset.game-object.stone-object-002.a6ade8c5
+    Asset: {fileID: 4836699464616695333, guid: a6ade8c5d0e9c8342a5c8c02094c9ac5, type: 3}
+  - Key: asset.game-object.texture-grass-tile-001.d585bc2f
+    Asset: {fileID: 5174547079742124275, guid: d585bc2f8e1620f48b08f1fa4f3811b9, type: 3}
+  - Key: asset.game-object.texture-grass-tile-002.3734e76d
+    Asset: {fileID: 6542893024198414015, guid: 3734e76d1536cf047aacfa9bdb7b790d, type: 3}
+  - Key: asset.game-object.texture-grass-tile-003.d1036068
+    Asset: {fileID: 7653098045854199164, guid: d103606814081f44f899d0e8f0a555a1, type: 3}
+  - Key: asset.game-object.texture-grass-tile-004.1934540f
+    Asset: {fileID: 5093274277124847595, guid: 1934540faecf07648adc57a69d9a23d0, type: 3}
+  - Key: asset.game-object.texture-grass-tile-005.27d99b06
+    Asset: {fileID: 1406488201505327831, guid: 27d99b06fdcfaeb4b9343b2b9a264d32, type: 3}
+  - Key: asset.game-object.texture-grass-tile-006.85843760
+    Asset: {fileID: 889711748039786523, guid: 858437600fb6f7941a8c61e5a48f1cef, type: 3}
+  - Key: asset.game-object.texture-grass-tile-007.268293be
+    Asset: {fileID: 492550992111591437, guid: 268293bef8c33dc47b8c5625bd8ead2b, type: 3}
+  - Key: asset.game-object.texture-grass-tile-008.eaff9ec4
+    Asset: {fileID: 6237752717632887902, guid: eaff9ec43dc15cb44bf647fd31d0d2e7, type: 3}
+  - Key: asset.game-object.tree-oak.703ea305
+    Asset: {fileID: 5752514224038322538, guid: 703ea30507380d53b9e66396536e548f, type: 3}
+  - Key: asset.game-object.tree-pine.6a6b29fc
+    Asset: {fileID: 4608864207072105692, guid: 6a6b29fc17c7903caa206b7db9c123c1, type: 3}
+  - Key: asset.game-object.wall-stone-collection-0-corner-ne.9221769d
+    Asset: {fileID: 2798815301503560846, guid: 9221769dcedc85a49bc9e5f189344ee2, type: 3}
+  - Key: asset.game-object.wall-stone-collection-0-corner-nw.f0bc445a
+    Asset: {fileID: 5369125806635365810, guid: f0bc445aa9db70e92a60000db24d9151, type: 3}
+  - Key: asset.game-object.wall-stone-collection-0-corner-se.50f4088b
+    Asset: {fileID: 4434023271672679634, guid: 50f4088b57066ed6e8d721fe24e58bec, type: 3}
+  - Key: asset.game-object.wall-stone-collection-0-corner-sw.d26a187a
+    Asset: {fileID: 8085638843886374067, guid: d26a187a3ab43037eb3b243707ad1aa5, type: 3}
+  - Key: asset.game-object.wall-stone-collection-0-gate.2fc84416
+    Asset: {fileID: 4054757616884961693, guid: 2fc84416ec42ca98796010998d7561ef, type: 3}
+  - Key: asset.game-object.wall-stone-collection-0-horizontal.190f77ff
+    Asset: {fileID: 8756741331363231770, guid: 190f77ff4fd19557ebd89ef3e3e06832, type: 3}
+  - Key: asset.game-object.wall-stone-collection-0-vertical.bb393500
+    Asset: {fileID: 7852923717619784971, guid: bb393500529ac8d698da53394ba51158, type: 3}
+  - Key: asset.game-object.warrior.ad2b8f50
+    Asset: {fileID: 6725926376646028200, guid: ad2b8f501d94436369b0452412f40429, type: 3}
+  - Key: asset.game-object.water-deep-depth-tile-001.5aefd161
+    Asset: {fileID: 5741990419922707053, guid: 5aefd161106546242a5998eac16003cc, type: 3}
+  - Key: asset.game-object.water-deep-depth-tile-002.e9588994
+    Asset: {fileID: 5741990419922707053, guid: e95889946fc1f58e8ada2e14ffe5990e, type: 3}
+  - Key: asset.game-object.water-deep-depth-tile-003.0c8dcf0f
+    Asset: {fileID: 5741990419922707053, guid: 0c8dcf0fed0c0f612a446e4e4e3a4adb, type: 3}
+  - Key: asset.game-object.water-deep-depth-to-middle-down-left-corner-tile-001.b01abc46
+    Asset: {fileID: 6619627647930012721, guid: b01abc4669d7f604eab6304a292d1d3e, type: 3}
+  - Key: asset.game-object.water-deep-depth-to-middle-down-left-tile-001.de7f6bff
+    Asset: {fileID: 3114099340114191839, guid: de7f6bfff818aa54698db8b6b711b9c7, type: 3}
+  - Key: asset.game-object.water-deep-depth-to-middle-down-middle-tile-001.84aada8d
+    Asset: {fileID: 7173982184974221923, guid: 84aada8db63c6664d88175564b4babc9, type: 3}
+  - Key: asset.game-object.water-deep-depth-to-middle-down-right-corner-tile-001.29d1c17b
+    Asset: {fileID: 3710023196020745945, guid: 29d1c17b750a8ce4fa2b635e56afa251, type: 3}
+  - Key: asset.game-object.water-deep-depth-to-middle-down-right-tile-001.f87ee601
+    Asset: {fileID: 2162454649381707191, guid: f87ee601ab849f04faeb3954b9ce017a, type: 3}
+  - Key: asset.game-object.water-deep-depth-to-middle-left-tile-001.7afd3971
+    Asset: {fileID: 8814175737159397647, guid: 7afd397174f81894fb44526ac0bdea79, type: 3}
+  - Key: asset.game-object.water-deep-depth-to-middle-right-tile-001.4d5721eb
+    Asset: {fileID: 9214791630331311834, guid: 4d5721eb674825840a1ea39a83dee73c, type: 3}
+  - Key: asset.game-object.water-deep-depth-to-middle-top-left-corner-tile-001.9c0a9dfe
+    Asset: {fileID: 4742952879219921372, guid: 9c0a9dfe5c424094184a4871c5d974e9, type: 3}
+  - Key: asset.game-object.water-deep-depth-to-middle-top-left-tile-001.59c550c6
+    Asset: {fileID: 318717581506146427, guid: 59c550c6483fb774cb60cbf6e5582096, type: 3}
+  - Key: asset.game-object.water-deep-depth-to-middle-top-middle-tile-001.01635c2f
+    Asset: {fileID: 4306948394615118454, guid: 01635c2f8cdf3554793b8cab3eefc970, type: 3}
+  - Key: asset.game-object.water-deep-depth-to-middle-top-right-corner-tile-001.69264244
+    Asset: {fileID: 3958461795157234395, guid: 6926424490290684598a3153b176139a, type: 3}
+  - Key: asset.game-object.water-deep-depth-to-middle-top-right-tile-001.1ed5e8fe
+    Asset: {fileID: 4903360447409597631, guid: 1ed5e8fe1ab916d40b0bcfcada302181, type: 3}
+  - Key: asset.game-object.water-middle-depth-tile-001.e5db0b0d
+    Asset: {fileID: 9197432726090922796, guid: e5db0b0dbefbab641b5ec45787c1cffe, type: 3}
+  - Key: asset.game-object.water-middle-depth-to-shoal-down-left-corner-tile-001.a3217a17
+    Asset: {fileID: 3281451553324108632, guid: a3217a1735a901b45b5d7f789fc9ec90, type: 3}
+  - Key: asset.game-object.water-middle-depth-to-shoal-down-left-tile-001.01da10fe
+    Asset: {fileID: 821028824537946227, guid: 01da10fef12f2404fb64b853dc2fbaad, type: 3}
+  - Key: asset.game-object.water-middle-depth-to-shoal-down-middle-tile-001.b2c3b335
+    Asset: {fileID: 6306576187030525437, guid: b2c3b335b67a1564483686c7dd556085, type: 3}
+  - Key: asset.game-object.water-middle-depth-to-shoal-down-right-corner-tile-001.60b0a651
+    Asset: {fileID: 714156987787070970, guid: 60b0a6516b564e149800c85ec062f827, type: 3}
+  - Key: asset.game-object.water-middle-depth-to-shoal-down-right-tile-001.7609924f
+    Asset: {fileID: 7466711328276558737, guid: 7609924fc9d200a4da2b65305ecd1243, type: 3}
+  - Key: asset.game-object.water-middle-depth-to-shoal-left-tile-001.e9301c54
+    Asset: {fileID: 2024297660646032656, guid: e9301c54b4cfc4c4d819270bacfe6649, type: 3}
+  - Key: asset.game-object.water-middle-depth-to-shoal-right-tile-001.f8204401
+    Asset: {fileID: 4931668311585729858, guid: f820440180c545b4aad82bd154be4b23, type: 3}
+  - Key: asset.game-object.water-middle-depth-to-shoal-top-left-corner-tile-001.bd69f8c5
+    Asset: {fileID: 600844573679965026, guid: bd69f8c5bf61aed4da7aa99796911d3e, type: 3}
+  - Key: asset.game-object.water-middle-depth-to-shoal-top-left-tile-001.9591926f
+    Asset: {fileID: 2913314530069564155, guid: 9591926f628e82e41a7098898c4d7878, type: 3}
+  - Key: asset.game-object.water-middle-depth-to-shoal-top-middle-tile-001.084f495b
+    Asset: {fileID: 2087813260810114708, guid: 084f495b018e831428f212137163729c, type: 3}
+  - Key: asset.game-object.water-middle-depth-to-shoal-top-right-corner-tile-001.99a68155
+    Asset: {fileID: 213707205562423269, guid: 99a6815530ee0ef4db1035039daec3aa, type: 3}
+  - Key: asset.game-object.water-middle-depth-to-shoal-top-right-tile-001.2acd896a
+    Asset: {fileID: 2290675193045822602, guid: 2acd896aff0a5e444bb484212e905156, type: 3}
+  - Key: asset.game-object.water-shoal-depth-tile-001.c5f70021
+    Asset: {fileID: 1029532166024854157, guid: c5f700218c39da048b98e8769cfed620, type: 3}
+  - Key: asset.game-object.water.1d32aeff
+    Asset: {fileID: 1384669653051272897, guid: 1d32aeffc2c9ab6c8a53853a9910a1f3, type: 3}
+  - Key: asset.game-object.windmill-01.87bc8f20
+    Asset: {fileID: 2585797056767779472, guid: 87bc8f20c999a2d7c930c5143cc8c369, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-10.62d7684d
+    Asset: {fileID: 2043002081, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-104.62d7684d
+    Asset: {fileID: -1815320004, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-105.62d7684d
+    Asset: {fileID: -555517929, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-11.62d7684d
+    Asset: {fileID: -1542864266, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-112.62d7684d
+    Asset: {fileID: 477368185, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-113.62d7684d
+    Asset: {fileID: 109008489, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-114.62d7684d
+    Asset: {fileID: 1922278963, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-115.62d7684d
+    Asset: {fileID: 1608824613, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-116.62d7684d
+    Asset: {fileID: -347714020, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-117.62d7684d
+    Asset: {fileID: -780212090, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-12.62d7684d
+    Asset: {fileID: -245430926, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-13.62d7684d
+    Asset: {fileID: -147323449, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-14.62d7684d
+    Asset: {fileID: -2016493438, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-142.62d7684d
+    Asset: {fileID: -1543548372, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-143.62d7684d
+    Asset: {fileID: 101834564, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-15.62d7684d
+    Asset: {fileID: -1249038002, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-16.62d7684d
+    Asset: {fileID: -982856591, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-17.62d7684d
+    Asset: {fileID: 1194725956, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-18.62d7684d
+    Asset: {fileID: -1045212822, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-186.62d7684d
+    Asset: {fileID: 2068181806, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-187.62d7684d
+    Asset: {fileID: 1534047610, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-188.62d7684d
+    Asset: {fileID: 394577249, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-189.62d7684d
+    Asset: {fileID: 1923617309, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-19.62d7684d
+    Asset: {fileID: 1839679833, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-190.62d7684d
+    Asset: {fileID: 1369457224, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-191.62d7684d
+    Asset: {fileID: 1367837699, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-2.62d7684d
+    Asset: {fileID: -1768132216, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-20.62d7684d
+    Asset: {fileID: 1056939201, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-21.62d7684d
+    Asset: {fileID: -2051768838, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-22.62d7684d
+    Asset: {fileID: 653385758, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-23.62d7684d
+    Asset: {fileID: 268817316, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-232.62d7684d
+    Asset: {fileID: -935230417, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-233.62d7684d
+    Asset: {fileID: -739879170, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-234.62d7684d
+    Asset: {fileID: -1985815041, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-235.62d7684d
+    Asset: {fileID: -1273366083, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-236.62d7684d
+    Asset: {fileID: 1438883814, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-237.62d7684d
+    Asset: {fileID: -120510711, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-238.62d7684d
+    Asset: {fileID: -291674302, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-239.62d7684d
+    Asset: {fileID: 826176627, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-25.62d7684d
+    Asset: {fileID: 1441073898, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-27.62d7684d
+    Asset: {fileID: -921616715, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-28.62d7684d
+    Asset: {fileID: -163807514, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-29.62d7684d
+    Asset: {fileID: 1784735916, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-3.62d7684d
+    Asset: {fileID: 586866326, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-30.62d7684d
+    Asset: {fileID: -1599469606, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-31.62d7684d
+    Asset: {fileID: -843569825, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-32.62d7684d
+    Asset: {fileID: 650760849, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-33.62d7684d
+    Asset: {fileID: 563199231, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-34.62d7684d
+    Asset: {fileID: 173883946, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-35.62d7684d
+    Asset: {fileID: -376910634, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-4.62d7684d
+    Asset: {fileID: -1404299846, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-40.62d7684d
+    Asset: {fileID: -1145804333, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-41.62d7684d
+    Asset: {fileID: -277594306, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-42.62d7684d
+    Asset: {fileID: -247198273, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-43.62d7684d
+    Asset: {fileID: 462248344, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-44.62d7684d
+    Asset: {fileID: -480449755, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-45.62d7684d
+    Asset: {fileID: -226280218, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-46.62d7684d
+    Asset: {fileID: 320827400, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-47.62d7684d
+    Asset: {fileID: -1222114195, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-48.62d7684d
+    Asset: {fileID: 821768047, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-5.62d7684d
+    Asset: {fileID: -373596042, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-50.62d7684d
+    Asset: {fileID: -1596460865, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-56.62d7684d
+    Asset: {fileID: 1629802247, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-57.62d7684d
+    Asset: {fileID: 2026243473, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-58.62d7684d
+    Asset: {fileID: 1139815714, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-59.62d7684d
+    Asset: {fileID: 861756331, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-65.62d7684d
+    Asset: {fileID: -1588658641, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-66.62d7684d
+    Asset: {fileID: 827117130, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-67.62d7684d
+    Asset: {fileID: 654812808, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-68.62d7684d
+    Asset: {fileID: 590641355, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-69.62d7684d
+    Asset: {fileID: -659480555, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-8.62d7684d
+    Asset: {fileID: 1654260025, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-88.62d7684d
+    Asset: {fileID: -1839990009, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-89.62d7684d
+    Asset: {fileID: -1781221358, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-90.62d7684d
+    Asset: {fileID: -2070684881, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.16x16-items-sheet-91.62d7684d
+    Asset: {fileID: -140748940, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+  - Key: asset.sprite.2d-clouds-0.137c6b21
+    Asset: {fileID: 9026702686629719296, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+  - Key: asset.sprite.2d-clouds-1.137c6b21
+    Asset: {fileID: 5460574913838338161, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+  - Key: asset.sprite.2d-clouds-10.137c6b21
+    Asset: {fileID: 835994297939739400, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+  - Key: asset.sprite.2d-clouds-11.137c6b21
+    Asset: {fileID: 9181428109425497092, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+  - Key: asset.sprite.2d-clouds-2.137c6b21
+    Asset: {fileID: 8935597098142700565, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+  - Key: asset.sprite.2d-clouds-3.137c6b21
+    Asset: {fileID: -1966770584162202525, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+  - Key: asset.sprite.2d-clouds-4.137c6b21
+    Asset: {fileID: 4278469685058734327, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+  - Key: asset.sprite.2d-clouds-5.137c6b21
+    Asset: {fileID: 1295183437819781357, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+  - Key: asset.sprite.2d-clouds-6.137c6b21
+    Asset: {fileID: 1361124476698527635, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+  - Key: asset.sprite.2d-clouds-7.137c6b21
+    Asset: {fileID: -2960514239382257479, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+  - Key: asset.sprite.2d-clouds-8.137c6b21
+    Asset: {fileID: -3484542077086448108, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+  - Key: asset.sprite.2d-clouds-9.137c6b21
+    Asset: {fileID: -3866478078174537713, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+  - Key: asset.sprite.archer.e89002a4
+    Asset: {fileID: 21300000, guid: e89002a4ba1837718a7fe4a60af88364, type: 3}
+  - Key: asset.sprite.armor-workshop.e607fe0e
+    Asset: {fileID: 21300000, guid: e607fe0e574308817a21c335a33e93e0, type: 3}
+  - Key: asset.sprite.barn.39e8ec59
+    Asset: {fileID: 21300000, guid: 39e8ec593c324fc8097b8ef34e3a90ef, type: 3}
+  - Key: asset.sprite.barrack.0a0125f1
+    Asset: {fileID: 21300000, guid: 0a0125f12b2c5923783afb847bf3a1bf, type: 3}
+  - Key: asset.sprite.castle-01.467e2447
+    Asset: {fileID: 21300000, guid: 467e2447c0b3e58eb9c1a4d52c777877, type: 3}
+  - Key: asset.sprite.engineers-guild.197cd941
+    Asset: {fileID: 21300000, guid: 197cd941558120d0aa577a00bdb22dc4, type: 3}
+  - Key: asset.sprite.fog-of-war.55b14f33
+    Asset: {fileID: 21300000, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
+  - Key: asset.sprite.house-01.f9cc986b
+    Asset: {fileID: 21300000, guid: f9cc986bbaaa45bae8693609aabf23d4, type: 3}
+  - Key: asset.sprite.iron-mine.7ab2725b
+    Asset: {fileID: 21300000, guid: 7ab2725ba5ec82bb798e37738baa64de, type: 3}
+  - Key: asset.sprite.light-cavalry.0929e1c0
+    Asset: {fileID: 21300000, guid: 0929e1c01643be78380650a9ce9b2c81, type: 3}
+  - Key: asset.sprite.sawmill.4aed0b16
+    Asset: {fileID: 21300000, guid: 4aed0b166d6971c9394ee84301b954ce, type: 3}
+  - Key: asset.sprite.spearman.67220b0e
+    Asset: {fileID: 21300000, guid: 67220b0ed3a462e3284369f85c1f6928, type: 3}
+  - Key: asset.sprite.stable.2cd37eb0
+    Asset: {fileID: 21300000, guid: 2cd37eb0e4bb66b2d8e69886715e4d8a, type: 3}
+  - Key: asset.sprite.stone-gate.2e4dfea9
+    Asset: {fileID: 21300000, guid: 2e4dfea9a30bd4488bf5797a00ae468a, type: 3}
+  - Key: asset.sprite.stone-quarry.a2378cc4
+    Asset: {fileID: 21300000, guid: a2378cc49e6dde5a3b73a98ba8ef1273, type: 3}
+  - Key: asset.sprite.stone-wall.76a8f783
+    Asset: {fileID: 21300000, guid: 76a8f783f194ee3feb9d6aa9ec1bb42a, type: 3}
+  - Key: asset.sprite.storage.25b33a66
+    Asset: {fileID: 21300000, guid: 25b33a668202487ef8e734b48237974b, type: 3}
+  - Key: asset.sprite.warrior.370d453e
+    Asset: {fileID: 21300000, guid: 370d453e6891f2fe5861721dd7dca04e, type: 3}
+  - Key: asset.sprite.weapon-workshop.e57bf7bc
+    Asset: {fileID: 21300000, guid: e57bf7bc97b4c3d079dfddd573522422, type: 3}
+  - Key: asset.sprite.windmill-01.663a1b41
+    Asset: {fileID: 21300000, guid: 663a1b41a05493bffbe2ab94221d2ea7, type: 3}
+  - Key: asset.sprite.wood-camp.b87e1d3e
+    Asset: {fileID: 21300000, guid: b87e1d3eeeff1f2d99cf6aa4e6f51a62, type: 3}
+  - Key: asset.tile-preset.01-dual-grid-sand-kaykit-style.70f407af
+    Asset: {fileID: 11400000, guid: 70f407af31fda74b78b3e1c7eacd41a4, type: 2}
+  - Key: asset.tile-preset.02-dual-grid-grass-kaykit-style.05593a2d
+    Asset: {fileID: 11400000, guid: 05593a2d3b3281533bb6570af5a1c1b4, type: 2}
+  - Key: asset.tile-preset.baseblockpresetblue.74d92dbb
+    Asset: {fileID: 11400000, guid: 74d92dbbf6842b44cbaeb45c41d71898, type: 2}
+  - Key: asset.tile-preset.baseblockpresetgreenramp.53689e49
+    Asset: {fileID: 11400000, guid: 53689e490f32e294bbaf7af82b759737, type: 2}
+  - Key: asset.tile-preset.baseblockpresetwater.8829f5ee
+    Asset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+  - Key: asset.tile-preset.clifftilespreset-a.e6decb8e
+    Asset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+  - Key: asset.tile-preset.grasstilespreset.17be7ba4
+    Asset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+  - Key: asset.tile-preset.grasstobeach.ea0b1522
+    Asset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+  - Key: asset.tile-preset.sandpreset.2c3140e5
+    Asset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+  - Key: asset.tile-preset.tilewater.dfeb07ab
+    Asset: {fileID: 11400000, guid: dfeb07ab92df40308a24960fec915de2, type: 2}

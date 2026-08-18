@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Economy.API
 {
     [Serializable]
@@ -405,9 +406,8 @@ namespace Kruty1918.Moyva.Economy.API
         public bool EnableAiTradeWithPlayer => _enableAiTradeWithPlayer;
         public bool ReserveHooksForCaravanEscort => _reserveHooksForCaravanEscort;
     }
-
-    [CreateAssetMenu(menuName = "Moyva/Economy/Rules Config", fileName = "EconomyRulesConfig")]
-    public sealed class EconomyRulesConfigSO : ScriptableObject
+[System.Serializable]
+public sealed class EconomyRulesConfigSO : MoyvaJsonConfigObject
     {
         [Tooltip("Правила поселень: макс. кількість, мінімальна відстань між ратушами, поведінка без населення.")]
         [SerializeField] private EconomySettlementRules _settlement = new EconomySettlementRules();

@@ -13,10 +13,11 @@ namespace Kruty1918.Moyva.Construction.API
         [PropertyTooltip("Що робить: Вказує 3D-префаб поставленої будівлі.\nВплив у грі: Саме цей об'єкт створюється після підтвердження будівництва.")]
         public GameObject Prefab;
 
+        // MOYVA_BUILDING_ICON_PRESENTATION_PASS66
         [AssetsOnly]
-        [PreviewField(64, ObjectFieldAlignment.Left)]
-        [LabelText("Іконка")]
-        [PropertyTooltip("Що робить: Задає іконку будівлі для меню та панелей.\nВплив у грі: Допомагає гравцю швидко розпізнати споруду.")]
+        [PreviewField(96, ObjectFieldAlignment.Right)]
+        [LabelText("Іконка конструкції")]
+        [PropertyTooltip("Що робить: Задає іконку будівлі для дерева Building Designer, меню та панелей.\nВплив у грі: Допомагає швидко розпізнати споруду; якщо Sprite не задано, у дереві редактора іконка не показується.")]
         public Sprite Icon;
 
         [AssetsOnly]

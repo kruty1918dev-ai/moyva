@@ -1,6 +1,7 @@
 using GiantGrey.TileWorldCreator;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Grid.API
 {
     /// <summary>
@@ -102,8 +103,8 @@ namespace Kruty1918.Moyva.Grid.API
     /// ScriptableObject-реєстр усіх типів тайлів, доступних у проєкті.
     /// Є джерелом даних для сервісів сітки, генерації та візуалізації.
     /// </summary>
-    [CreateAssetMenu(fileName = "TileRegistry", menuName = "Moyva/Grid/TileRegistry")]
-    public class TileRegistrySO : ScriptableObject
+[System.Serializable]
+public class TileRegistrySO : MoyvaJsonConfigObject
     {
         /// <summary>
         /// Масив визначень тайлів, налаштований у інспекторі Unity.

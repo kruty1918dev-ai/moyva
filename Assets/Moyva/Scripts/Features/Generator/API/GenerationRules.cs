@@ -1,9 +1,10 @@
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Generator/GenerationRules", fileName = "GenerationRules")]
-    public class GenerationRules : ScriptableObject
+[System.Serializable]
+public class GenerationRules : MoyvaJsonConfigObject
     {
         [Tooltip("Вмикає або вимикає генерацію річок та інших водних фіч, які використовують feature generators. Коли вимкнено, карта залишиться без річкових об'єктів і пов'язаного постпроцесингу.")]
         public bool GenerateRivers = true;

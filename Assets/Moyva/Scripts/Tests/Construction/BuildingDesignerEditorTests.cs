@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ using Sirenix.OdinInspector;
 using UnityEditor;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Construction
 {
     [TestFixture]
@@ -30,6 +32,39 @@ namespace Kruty1918.Moyva.Tests.Construction
 
             CollectionAssert.AreEqual(moduleTypes, catalogTypes);
             Assert.AreEqual(catalogTypes.Length, catalogTypes.Distinct().Count());
+        }
+
+        [Test]
+        public void ModuleCatalog_EveryOptionHasRuntimeConsumer()
+        {
+            foreach (BuildingModuleEditorDescriptor descriptor
+                     in BuildingModuleEditorCatalog.Options)
+            {
+                Assert.IsTrue(
+                    BuildingDefinitionCapabilities.HasRuntimeConsumer(
+                        descriptor.ModuleType),
+                    $"Модуль '{descriptor.ModuleType.Name}' є в picker, " +
+                    "але не має runtime consumer.");
+            }
+        }
+
+        [Test]
+        public void BuildingDefinitionAsset_RuntimeRevisionChangesOnEditorMutation()
+        {
+            int before = BuildingDefinitionAsset.RuntimeRevision;
+            var asset =
+                MoyvaJsonObjectFactory.Create<BuildingDefinitionAsset>();
+            try
+            {
+                asset.NotifyEditorDataChanged();
+                Assert.AreNotEqual(
+                    before,
+                    BuildingDefinitionAsset.RuntimeRevision);
+            }
+            finally
+            {
+                MoyvaJsonObjectFactory.DestroyImmediate(asset);
+            }
         }
 
         [Test]
@@ -144,7 +179,7 @@ namespace Kruty1918.Moyva.Tests.Construction
                 assetPath = AssetDatabase.GenerateUniqueAssetPath(
                     $"{testFolder}/Migration.asset");
                 BuildingDefinitionAsset asset =
-                    ScriptableObject.CreateInstance<BuildingDefinitionAsset>();
+                    MoyvaJsonObjectFactory.Create<BuildingDefinitionAsset>();
                 asset.Identity.Id = "migration-regression";
                 asset.Identity.DisplayName = "Migration Regression";
                 asset.Placement.RequiresSettlementInfluence = true;
@@ -197,7 +232,7 @@ namespace Kruty1918.Moyva.Tests.Construction
                     ImportAssetOptions.ForceUpdate);
 
                 BuildingDefinitionAsset reloaded =
-                    AssetDatabase.LoadAssetAtPath<BuildingDefinitionAsset>(
+                    MoyvaJsonRuntime.GetLegacyResource<BuildingDefinitionAsset>(
                         assetPath);
                 Assert.NotNull(reloaded);
                 Assert.AreEqual(
@@ -240,4 +275,438 @@ namespace Kruty1918.Moyva.Tests.Construction
                    || value == "Modules";
         }
     }
+
+    [TestFixture]
+    public sealed class BuildingModuleRuntimeCapabilityRegressionTests
+    {
+        [Test]
+        public void GarrisonCapacity_UsesCastleDefenseAndHousingCapabilities()
+        {
+            var definition = new BuildingDefinition
+            {
+                Modules = new List<BuildingModuleDefinition>
+                {
+                    new CastleBuildingModule
+                    {
+                        GarrisonCapacity = 4,
+                    },
+                    new DefenseBuildingModule
+                    {
+                        GarrisonCapacity = 6,
+                    },
+                    new HousingBuildingModule
+                    {
+                        Capacity = 8,
+                        IsGarrisonCapable = true,
+                    },
+                },
+            };
+
+            Assert.AreEqual(
+                8,
+                BuildingDefinitionCapabilities.GetGarrisonCapacity(
+                    definition));
+        }
+
+        [Test]
+        public void Castle_RemainsStrictPerOwnerUniqueRegardlessOfLimitModule()
+        {
+            var definition = new BuildingDefinition
+            {
+                Modules = new List<BuildingModuleDefinition>
+                {
+                    new CastleBuildingModule
+                    {
+                        IsCapital = true,
+                    },
+                    new BuildingPerPlayerLimitModule
+                    {
+                        MaxBuildingsPerPlayer = 99,
+                        LimitScope = BuildingLimitScope.Global,
+                        OverflowPolicy = BuildingLimitOverflowPolicy.RelocateExisting,
+                    },
+                },
+            };
+
+            Assert.IsTrue(
+                BuildingDefinitionCapabilities.IsStrictPerOwnerUnique(
+                    definition));
+            Assert.AreEqual(
+                1,
+                BuildingDefinitionCapabilities.GetMaxBuildingsPerPlayer(
+                    definition));
+        }
+    }
+
+    [TestFixture]
+    public sealed class MoyvaConstructionModuleSchemaV2Tests
+    {
+        [Test]
+        public void TownHallAndCastle_ModulePresenceIsAuthoritative()
+        {
+            var townHall = new BuildingDefinition
+            {
+                Modules = new List<BuildingModuleDefinition>
+                {
+                    new TownHallBuildingModule
+                    {
+                        IsCentral = false,
+                        BuildRadius = 9,
+                    },
+                },
+            };
+            var castle = new BuildingDefinition
+            {
+                Modules = new List<BuildingModuleDefinition>
+                {
+                    new CastleBuildingModule
+                    {
+                        IsCapital = false,
+                        ExclusionRadius = 7,
+                    },
+                },
+            };
+
+            Assert.IsTrue(
+                BuildingDefinitionCapabilities.IsTownHall(townHall));
+            Assert.IsTrue(
+                BuildingDefinitionCapabilities.IsCastle(castle));
+            Assert.AreEqual(
+                9,
+                BuildingDefinitionCapabilities.GetInfluenceRadius(
+                    townHall,
+                    0));
+            Assert.AreEqual(
+                7,
+                BuildingDefinitionCapabilities.GetInfluenceRadius(
+                    castle,
+                    0));
+        }
+
+        [Test]
+        public void CanonicalGarrison_OverridesLegacyGarrisonFields()
+        {
+            var definition = new BuildingDefinition
+            {
+                Modules = new List<BuildingModuleDefinition>
+                {
+                    new CastleBuildingModule
+                    {
+                        GarrisonCapacity = 20,
+                    },
+                    new DefenseBuildingModule
+                    {
+                        GarrisonCapacity = 30,
+                    },
+                    new GarrisonBuildingModule
+                    {
+                        Capacity = 5,
+                    },
+                },
+            };
+
+            Assert.AreEqual(
+                5,
+                BuildingDefinitionCapabilities.GetGarrisonCapacity(
+                    definition));
+        }
+
+        [Test]
+        public void WorkforcePriority_IsAuthoritativeOverProductionFallback()
+        {
+            var definition = new BuildingDefinition
+            {
+                Modules = new List<BuildingModuleDefinition>
+                {
+                    new ProductionBuildingModule
+                    {
+                        Priority = 99,
+                    },
+                    new WorkforceBuildingModule
+                    {
+                        Priority = 7,
+                    },
+                },
+            };
+
+            Assert.AreEqual(
+                7,
+                BuildingDefinitionCapabilities.GetEconomyPriority(
+                    definition));
+        }
+
+        [Test]
+        public void CanonicalStorage_EmptyExplicitListDoesNotFallBackToLegacy()
+        {
+            var definition = new BuildingDefinition
+            {
+                Modules = new List<BuildingModuleDefinition>
+                {
+                    new StorageBuildingModule
+                    {
+                        StorageKind = BuildingStorageKind.Food,
+                        AcceptedResourceIds = Array.Empty<string>(),
+                    },
+                    new WarehouseBuildingModule
+                    {
+                        ResourceIds = new[] { "stone" },
+                    },
+                },
+            };
+
+            Assert.IsEmpty(
+                BuildingDefinitionCapabilities
+                    .GetAcceptedStorageResourceIds(definition));
+        }
+
+        [Test]
+        public void ProductionValidation_RejectsDuplicateRecipeIds()
+        {
+            var definition = new BuildingDefinition
+            {
+                Modules = new List<BuildingModuleDefinition>
+                {
+                    new ProductionBuildingModule
+                    {
+                        Recipes =
+                            new List<ProductionRecipeDefinition>
+                            {
+                                new ProductionRecipeDefinition
+                                {
+                                    RecipeId = "same",
+                                    RequiresWorkers = false,
+                                    Outputs =
+                                        new List<BuildingResourceAmount>
+                                        {
+                                            new BuildingResourceAmount
+                                            {
+                                                ResourceId = "wood",
+                                                Amount = 1,
+                                            },
+                                        },
+                                },
+                                new ProductionRecipeDefinition
+                                {
+                                    RecipeId = "same",
+                                    RequiresWorkers = false,
+                                    Outputs =
+                                        new List<BuildingResourceAmount>
+                                        {
+                                            new BuildingResourceAmount
+                                            {
+                                                ResourceId = "stone",
+                                                Amount = 1,
+                                            },
+                                        },
+                                },
+                            },
+                    },
+                },
+            };
+
+            IReadOnlyList<BuildingValidationIssue> issues =
+                BuildingModuleValidation.Validate(definition);
+
+            Assert.IsTrue(
+                HasIssue(
+                    issues,
+                    "INV_PRODUCTION_RECIPE_DUPLICATE_ID"));
+        }
+
+        [Test]
+        public void FogRevealValidation_RejectsEnabledModuleWithNoEffect()
+        {
+            var definition = new BuildingDefinition
+            {
+                Modules = new List<BuildingModuleDefinition>
+                {
+                    new FogRevealBuildingModule
+                    {
+                        RevealRadius = 3,
+                        RevealOnBuilt = false,
+                        RevealWhileActive = false,
+                    },
+                },
+            };
+
+            IReadOnlyList<BuildingValidationIssue> issues =
+                BuildingModuleValidation.Validate(definition);
+
+            Assert.IsTrue(
+                HasIssue(
+                    issues,
+                    "INV_FOG_REVEAL_NO_EFFECT"));
+        }
+
+        private static bool HasIssue(
+            IReadOnlyList<BuildingValidationIssue> issues,
+            string code)
+        {
+            for (int index = 0;
+                 index < (issues?.Count ?? 0);
+                 index++)
+            {
+                if (issues[index]?.Code == code)
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    [TestFixture]
+    public sealed class MoyvaConstructionModuleRuntimeRobustnessTests
+    {
+        [Test]
+        public void CanonicalPickerModules_HaveRuntimeConsumerAndEffect()
+        {
+            foreach (BuildingModuleEditorDescriptor descriptor
+                     in BuildingModuleEditorCatalog.Options)
+            {
+                if (BuildingModuleEditorCatalog.IsLegacyModule(
+                        descriptor.ModuleType))
+                {
+                    continue;
+                }
+
+                BuildingModuleDefinition module =
+                    descriptor.Create();
+                Assert.NotNull(
+                    module,
+                    $"Picker failed to create {descriptor.ModuleType.Name}.");
+
+                Assert.IsTrue(
+                    BuildingDefinitionCapabilities.HasRuntimeConsumer(
+                        descriptor.ModuleType),
+                    $"Canonical module '{descriptor.ModuleType.Name}' " +
+                    "has no runtime consumer.");
+
+                string effect =
+                    BuildingDefinitionCapabilities
+                        .GetModuleRuntimeEffectDescription(module);
+                Assert.IsFalse(
+                    string.IsNullOrWhiteSpace(effect));
+                StringAssert.DoesNotContain(
+                    "Немає зареєстрованого runtime consumer",
+                    effect);
+            }
+        }
+
+        [Test]
+        public void ConstructionSavedPlacement_PreservesOwnerIdentity()
+        {
+            var placement =
+                new ConstructionSavedPlacement(
+                    new Vector2Int(7, 9),
+                    "castle-01",
+                    "faction-a");
+
+            Assert.AreEqual(
+                new Vector2Int(7, 9),
+                placement.Position);
+            Assert.AreEqual(
+                "castle-01",
+                placement.BuildingId);
+            Assert.AreEqual(
+                "faction-a",
+                placement.OwnerId);
+        }
+
+        [Test]
+        public void ModuleStatePersistenceContract_ExposesStableKeyedPayload()
+        {
+            Type contract =
+                typeof(IConstructionModuleStatePersistence);
+
+            Assert.NotNull(
+                contract.GetProperty(
+                    nameof(IConstructionModuleStatePersistence.StateKey)));
+            Assert.NotNull(
+                contract.GetMethod(
+                    nameof(IConstructionModuleStatePersistence.CaptureState)));
+            Assert.NotNull(
+                contract.GetMethod(
+                    nameof(IConstructionModuleStatePersistence.RestoreState)));
+        }
+
+        [Test]
+        public void ProductionRecipeThatRequiresWorkers_FailsClosedAtZeroWorkers()
+        {
+            var definition = new BuildingDefinition
+            {
+                Modules = new List<BuildingModuleDefinition>
+                {
+                    new ProductionBuildingModule
+                    {
+                        Recipes =
+                            new List<ProductionRecipeDefinition>
+                            {
+                                new ProductionRecipeDefinition
+                                {
+                                    RecipeId = "worker-recipe",
+                                    RequiresWorkers = true,
+                                    Outputs =
+                                        new List<BuildingResourceAmount>
+                                        {
+                                            new BuildingResourceAmount
+                                            {
+                                                ResourceId = "wood",
+                                                Amount = 1,
+                                            },
+                                        },
+                                },
+                            },
+                    },
+                    new WorkforceBuildingModule
+                    {
+                        WorkersRequired = 0,
+                    },
+                },
+            };
+
+            IReadOnlyList<BuildingValidationIssue> issues =
+                BuildingModuleValidation.Validate(definition);
+
+            Assert.IsTrue(
+                issues.Any(
+                    issue =>
+                        issue?.Code
+                        == "INV_PRODUCTION_WORKERS_REQUIRED"));
+        }
+
+        [Test]
+        public void CanonicalGarrisonCapacity_IsIndependentFromHousingCapacity()
+        {
+            var definition = new BuildingDefinition
+            {
+                Modules = new List<BuildingModuleDefinition>
+                {
+                    new HousingBuildingModule
+                    {
+                        Capacity = 20,
+                        IsGarrisonCapable = true,
+                    },
+                    new GarrisonBuildingModule
+                    {
+                        Capacity = 4,
+                    },
+                },
+            };
+
+            Assert.AreEqual(
+                4,
+                BuildingDefinitionCapabilities
+                    .GetGarrisonCapacity(definition));
+        }
+
+        [Test]
+        public void ModuleSchema_IsVersioned()
+        {
+            Assert.GreaterOrEqual(
+                BuildingDefinitionCapabilities.ModuleSchemaVersion,
+                2);
+        }
+    }
 }
+
+#endif

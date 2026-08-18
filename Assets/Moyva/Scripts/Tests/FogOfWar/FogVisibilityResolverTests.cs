@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
@@ -5,6 +6,7 @@ using Kruty1918.Moyva.Grid.API;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.FogOfWar
 {
     /// <summary>
@@ -33,7 +35,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         [SetUp]
         public void SetUp()
         {
-            _settings = ScriptableObject.CreateInstance<FogOfWarSettings>();
+            _settings = MoyvaJsonObjectFactory.Create<FogOfWarSettings>();
             _settings.MaxVisionRange = 8;
             _settings.ElevationStep = 0.25f;
             _settings.MaxObserverHeightBonus = 4;
@@ -52,7 +54,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         [TearDown]
         public void TearDown()
         {
-            Object.DestroyImmediate(_settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(_settings);
         }
 
         // ─── 1. AlwaysIncludesOrigin ──────────────────────────────────────────
@@ -443,3 +445,5 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
     }
 }
+
+#endif

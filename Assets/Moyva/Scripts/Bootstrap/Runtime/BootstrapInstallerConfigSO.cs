@@ -1,9 +1,10 @@
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
-    [CreateAssetMenu(menuName = "Moyva/Bootstrap/Installer Config", fileName = "BootstrapInstallerConfig")]
-    public sealed class BootstrapInstallerConfigSO : ScriptableObject
+[System.Serializable]
+public sealed class BootstrapInstallerConfigSO : MoyvaJsonConfigObject
     {
         [SerializeField] private BootstrapGameSettings _gameSettings = new();
         [SerializeField] private StartingPositionInitializerSettings _startingPositionSettings = new();

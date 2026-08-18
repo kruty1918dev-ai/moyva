@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private static bool HeightTraceEnabled =>
             Application.isEditor || Debug.isDebugBuild;
 
+        [System.Diagnostics.Conditional("MOYVA_DEEP_GENERATION_DIAGNOSTICS")]
         public static void TraceUnique(
             string stage,
             string key,

@@ -226,6 +226,31 @@ namespace Kruty1918.Moyva.Construction.API
     }
 
     [Serializable]
+    public sealed class GarrisonBuildingModule : BuildingModuleDefinition
+    {
+        [Min(1)]
+        [LabelText("Місткість гарнізону")]
+        [Tooltip("Єдине authoritative налаштування гарнізону. Визначає максимальну кількість юнітів усередині будівлі.")]
+        public int Capacity = 1;
+    }
+
+    [Serializable]
+    public sealed class UnitRecruitmentBuildingModule : BuildingModuleDefinition
+    {
+        public List<UnitRecruitmentRecipeDefinition> Recipes = new List<UnitRecruitmentRecipeDefinition>();
+        [Min(1)] public int QueueCapacity = 3;
+        [Min(1)] public int SpawnRadius = 2;
+    }
+
+    [Serializable]
+    public sealed class UnitRecruitmentRecipeDefinition
+    {
+        public string UnitTypeId;
+        public List<BuildingResourceAmount> Costs = new List<BuildingResourceAmount>();
+        [Min(1)] public int TrainingTurns = 1;
+    }
+
+    [Serializable]
     public sealed class StorageBuildingModule : BuildingModuleDefinition
     {
         [LabelText("Тип сховища")]

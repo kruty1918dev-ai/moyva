@@ -1,0 +1,144 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "barrack",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 0,
+  "identity": {
+    "id": "barrack",
+    "displayName": "Казарма",
+    "category": "Military",
+    "role": "Defense",
+    "description": "Військова будівля для підтримки оборони поселення.",
+    "tags": []
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.building-barracks-blue.f428515d",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_barracks_blue.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.barrack.0a0125f1",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/barrack.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.barrack.0a0125f1",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/barrack.png",
+      "required": true
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 20
+      },
+      {
+        "resourceId": "hardwood-materials-resources",
+        "amount": 10
+      },
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 20
+      }
+    ],
+    "buildTurns": 4,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "unit-recruitment",
+      "queueCapacity": 3,
+      "spawnRadius": 2,
+      "recipes": [
+        { "unitTypeId": "warrior", "trainingTurns": 1, "costs": [
+          { "resourceId": "steak-food-resources", "amount": 10 },
+          { "resourceId": "hardwood-materials-resources", "amount": 5 }
+        ] },
+        { "unitTypeId": "spearman", "trainingTurns": 2, "costs": [
+          { "resourceId": "steak-food-resources", "amount": 12 },
+          { "resourceId": "hardwood-materials-resources", "amount": 8 }
+        ] },
+        { "unitTypeId": "archer", "trainingTurns": 2, "costs": [
+          { "resourceId": "steak-food-resources", "amount": 10 },
+          { "resourceId": "hardwood-materials-resources", "amount": 10 }
+        ] }
+      ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "606d898fad7459e1995920a8a6c1b20c",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/barrack.asset",
+    "sourceHash": "d20036182271715fa33a335e26526587dd91935dcdd3c58dbc255ec2bec9a217"
+  }
+}

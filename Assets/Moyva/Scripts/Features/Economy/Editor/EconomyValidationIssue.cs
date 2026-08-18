@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Economy.Editor
@@ -22,3 +23,5 @@ namespace Kruty1918.Moyva.Economy.Editor
         public Object Context { get; }
     }
 }
+
+#endif

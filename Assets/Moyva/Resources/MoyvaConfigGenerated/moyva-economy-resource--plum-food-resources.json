@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "plum-food-resources",
+  "model": "economy-resource",
+  "displayName": "Plum",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-43.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "539a132a3b43476cb7e3a36cc4dc98a6",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Plum.asset",
+    "sourceHash": "e4fc9423747f9a12908550bc8d05dc8f74a9248ee4adc417d5f4b2978a40e1e4"
+  }
+}

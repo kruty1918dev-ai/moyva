@@ -1,7 +1,9 @@
 using System;
 using Kruty1918.Moyva.GameMode.API;
+using Kruty1918.Moyva.InputRouting.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Zenject;
 
 namespace Kruty1918.Moyva.GameMode.Runtime
@@ -31,15 +33,39 @@ namespace Kruty1918.Moyva.GameMode.Runtime
 
         // --- Інжектується Zenject ---
         private SignalBus _signalBus;
+        private IGameplayInputPolicy _inputPolicy;
 
         // --- Внутрішній стан ---
         private GameModeType _currentMode = GameModeType.Normal;
 
         /// <summary>Точка ін'єкції Zenject. Не викликати вручну.</summary>
         [Inject]
-        public void Construct(SignalBus signalBus)
+        public void Construct(
+            SignalBus signalBus,
+            [InjectOptional] IGameplayInputPolicy inputPolicy = null)
         {
             _signalBus = signalBus;
+            _inputPolicy = inputPolicy;
+        }
+
+        private void Update()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard == null || !keyboard.bKey.wasPressedThisFrame)
+                return;
+
+            Vector2 pointerPosition = Mouse.current?.position.ReadValue() ?? Vector2.zero;
+            if (!(_inputPolicy?.CanProcess(
+                    GameplayInputKind.KeyboardNavigation,
+                    pointerPosition) ?? true))
+            {
+                return;
+            }
+
+            RequestModeChange(
+                _currentMode == GameModeType.Construction
+                    ? GameModeType.Normal
+                    : GameModeType.Construction);
         }
 
         /// <summary>Викликається Zenject після ін'єкції. Підписується на сигнали.</summary>

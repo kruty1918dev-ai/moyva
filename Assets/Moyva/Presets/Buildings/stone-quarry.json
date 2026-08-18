@@ -1,0 +1,146 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "stone-quarry",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 0,
+  "identity": {
+    "id": "stone-quarry",
+    "displayName": "Кам'яний кар'єр",
+    "category": "Industrial",
+    "role": "Production",
+    "description": "Видобуває камінь та потребує чотирьох працівників.",
+    "tags": []
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.building-mine-blue.9fab77ec",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_mine_blue.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.stone-quarry.a2378cc4",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-quarry.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.stone-quarry.a2378cc4",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-quarry.png",
+      "required": true
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 20
+      }
+    ],
+    "buildTurns": 3,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "workforce",
+      "workersRequired": 1,
+      "priority": 210,
+      "workerTypeId": "",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "production",
+      "resourceId": "stone-materials-resources",
+      "workersRequired": 1,
+      "priority": 210,
+      "recipes": [
+        {
+          "recipeId": "stone-quarry:extract-stone",
+          "inputs": [],
+          "outputs": [
+            {
+              "resourceId": "stone-materials-resources",
+              "amount": 5
+            }
+          ],
+          "turnsPerCycle": 1,
+          "requiresWorkers": true,
+          "requiresStorageSpace": false
+        }
+      ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "5adbb35606f712adaa3b9f240d9ab812",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/stone-quarry.asset",
+    "sourceHash": "f4532d671a490befda9eec8fc2e9764108358df987aef40f4119d97ce4f2cb89"
+  }
+}

@@ -1,10 +1,11 @@
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.GameMode.API
 {
     /// <summary>ScriptableObject що описує умову перемоги в сесії.</summary>
-    [CreateAssetMenu(menuName = "Moyva/Session/Win Condition", fileName = "WinCondition")]
-    public sealed class WinConditionSO : ScriptableObject
+[System.Serializable]
+public sealed class WinConditionSO : MoyvaJsonConfigObject
     {
         public enum ConditionType { EliminateAllEnemies, ControlPoints, Survival, Custom }
 

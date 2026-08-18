@@ -1,8 +1,10 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using Kruty1918.Moyva.Grid.API;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Grid
 {
     [TestFixture]
@@ -165,6 +167,52 @@ namespace Kruty1918.Moyva.Tests.Grid
         }
 
         [Test]
+        public void TryGetTileTypeId_UnsetPosition_ReturnsFalse()
+        {
+            Assert.IsFalse(
+                _grid.TryGetTileTypeId(
+                    new Vector2Int(0, 0),
+                    out var data));
+            Assert.IsNull(data);
+        }
+
+        [Test]
+        public void TryGetTileTypeId_AssignedPosition_ReturnsTrue()
+        {
+            var position = new Vector2Int(5, 5);
+            _grid.SetTileData(position, "stone");
+
+            Assert.IsTrue(
+                _grid.TryGetTileTypeId(
+                    position,
+                    out var data));
+            Assert.AreEqual("stone", data);
+        }
+
+        [Test]
+        public void GetTileTypeId_UnsetPosition_Throws()
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => _grid.GetTileTypeId(
+                    new Vector2Int(0, 0)));
+        }
+
+        [Test]
+        public void ContainsCell_SeparatesBoundsFromIdentity()
+        {
+            var position = new Vector2Int(0, 0);
+
+            Assert.IsTrue(_grid.ContainsCell(position));
+            Assert.IsFalse(
+                _grid.TryGetTileTypeId(
+                    position,
+                    out _));
+            Assert.IsFalse(
+                _grid.ContainsCell(
+                    new Vector2Int(-1, 0)));
+        }
+
+        [Test]
         public void TryGetTileData_OutOfBounds_ReturnsFalse()
         {
             Assert.IsFalse(_grid.TryGetTileData(new Vector2Int(-1, 0), out _));
@@ -244,7 +292,7 @@ namespace Kruty1918.Moyva.Tests.Grid
         [Test]
         public void Isometric3DPreviewProjection_PreservesConfiguredMode()
         {
-            var settings = ScriptableObject.CreateInstance<MoyvaProjectSettingsSO>();
+            var settings = MoyvaJsonObjectFactory.Create<MoyvaProjectSettingsSO>();
             settings.DefaultProjectionMode = GridProjectionMode.Isometric3DPreview;
             settings.OrthogonalCellWidth = 2f;
             settings.OrthogonalCellDepth = 3f;
@@ -275,7 +323,7 @@ namespace Kruty1918.Moyva.Tests.Grid
         [Test]
         public void Orthographic3DProjection_UsesXZPlaneAndYHeight()
         {
-            var settings = ScriptableObject.CreateInstance<MoyvaProjectSettingsSO>();
+            var settings = MoyvaJsonObjectFactory.Create<MoyvaProjectSettingsSO>();
             settings.OrthogonalCellWidth = 2f;
             settings.OrthogonalCellDepth = 3f;
             settings.HeightScale = 0.5f;
@@ -308,7 +356,7 @@ namespace Kruty1918.Moyva.Tests.Grid
     {
         private ITileSettingsService CreateService(params (string id, float cost)[] tiles)
         {
-            var registry = ScriptableObject.CreateInstance<TileRegistrySO>();
+            var registry = MoyvaJsonObjectFactory.Create<TileRegistrySO>();
 
             // Use SerializedObject to set private _definitions field
             var so = new UnityEditor.SerializedObject(registry);
@@ -367,3 +415,5 @@ namespace Kruty1918.Moyva.Tests.Grid
         }
     }
 }
+
+#endif

@@ -1,8 +1,11 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
+using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.GameMode
 {
     [TestFixture]
@@ -39,6 +42,12 @@ namespace Kruty1918.Moyva.Tests.GameMode
             _signalBus.Subscribe<GameStartedSignal>(() => _startedCount++);
             _signalBus.Subscribe<GamePausedSignal>(s => { _pausedCount++; _lastPausedSignal = s; });
             _signalBus.Subscribe<GameEndedSignal>(s => { _endedCount++; _lastEndedSignal = s; });
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Time.timeScale = 1f;
         }
 
         // --- Initial State ---
@@ -78,6 +87,7 @@ namespace Kruty1918.Moyva.Tests.GameMode
             _service.StartGame();
             _service.PauseGame();
             Assert.AreEqual(GameStateType.Paused, _service.CurrentState);
+            Assert.AreEqual(0f, Time.timeScale);
         }
 
         [Test]
@@ -124,6 +134,7 @@ namespace Kruty1918.Moyva.Tests.GameMode
             _service.PauseGame();
             _service.ResumeGame();
             Assert.AreEqual(GameStateType.Playing, _service.CurrentState);
+            Assert.AreEqual(1f, Time.timeScale);
         }
 
         [Test]
@@ -237,33 +248,74 @@ namespace Kruty1918.Moyva.Tests.GameMode
     }
 
     [TestFixture]
+    public sealed class MultiplayerPauseGameStateServiceTests
+        : ZenjectUnitTestFixture
+    {
+        [TearDown]
+        public void TearDownTimeScale()
+        {
+            Time.timeScale = 1f;
+        }
+
+        [Test]
+        public void PauseDuringMultiplayer_BlocksLocalStateWithoutStoppingTimeScale()
+        {
+            Zenject.SignalBusInstaller.Install(Container);
+            Container.DeclareSignal<GameStartedSignal>();
+            Container.DeclareSignal<GamePausedSignal>();
+            Container.DeclareSignal<GameEndedSignal>();
+            Container.Bind<IGamePauseModePolicy>()
+                .FromInstance(new ActiveMultiplayerPausePolicy());
+
+            var type = typeof(IGameStateService).Assembly
+                .GetType("Kruty1918.Moyva.GameMode.Runtime.GameStateService");
+            Container.BindInterfacesAndSelfTo(type).AsSingle();
+            Container.ResolveRoots();
+
+            IGameStateService service = Container.Resolve<IGameStateService>();
+            Time.timeScale = 1f;
+            service.StartGame();
+            service.PauseGame();
+
+            Assert.That(service.CurrentState, Is.EqualTo(GameStateType.Paused));
+            Assert.That(Time.timeScale, Is.EqualTo(1f));
+        }
+
+        private sealed class ActiveMultiplayerPausePolicy
+            : IGamePauseModePolicy
+        {
+            public bool IsMultiplayerSessionActive => true;
+        }
+    }
+
+    [TestFixture]
     public sealed class WinConditionSOTests
     {
         [Test]
         public void DefaultCondition_IsEliminateAllEnemies()
         {
-            var so = UnityEngine.ScriptableObject.CreateInstance<WinConditionSO>();
+            var so = MoyvaJsonObjectFactory.Create<WinConditionSO>();
             Assert.AreEqual(WinConditionSO.ConditionType.EliminateAllEnemies, so.Condition);
         }
 
         [Test]
         public void DefaultControlPoints_IsThree()
         {
-            var so = UnityEngine.ScriptableObject.CreateInstance<WinConditionSO>();
+            var so = MoyvaJsonObjectFactory.Create<WinConditionSO>();
             Assert.AreEqual(3, so.ControlPointsRequired);
         }
 
         [Test]
         public void DefaultSurvivalTime_Is300()
         {
-            var so = UnityEngine.ScriptableObject.CreateInstance<WinConditionSO>();
+            var so = MoyvaJsonObjectFactory.Create<WinConditionSO>();
             Assert.AreEqual(300f, so.SurvivalTimeSeconds);
         }
 
         [Test]
         public void SetCondition_ViaSerializedObject()
         {
-            var so = UnityEngine.ScriptableObject.CreateInstance<WinConditionSO>();
+            var so = MoyvaJsonObjectFactory.Create<WinConditionSO>();
             var serialized = new UnityEditor.SerializedObject(so);
             serialized.FindProperty("_condition").enumValueIndex = (int)WinConditionSO.ConditionType.Survival;
             serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -273,7 +325,7 @@ namespace Kruty1918.Moyva.Tests.GameMode
         [Test]
         public void SetControlPoints_ViaSerializedObject()
         {
-            var so = UnityEngine.ScriptableObject.CreateInstance<WinConditionSO>();
+            var so = MoyvaJsonObjectFactory.Create<WinConditionSO>();
             var serialized = new UnityEditor.SerializedObject(so);
             serialized.FindProperty("_controlPointsRequired").intValue = 5;
             serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -283,7 +335,7 @@ namespace Kruty1918.Moyva.Tests.GameMode
         [Test]
         public void SetSurvivalTime_ViaSerializedObject()
         {
-            var so = UnityEngine.ScriptableObject.CreateInstance<WinConditionSO>();
+            var so = MoyvaJsonObjectFactory.Create<WinConditionSO>();
             var serialized = new UnityEditor.SerializedObject(so);
             serialized.FindProperty("_survivalTimeSeconds").floatValue = 600f;
             serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -291,3 +343,5 @@ namespace Kruty1918.Moyva.Tests.GameMode
         }
     }
 }
+
+#endif

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System;
-using Kruty1918.Moyva.Calendar.Core;
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Combat.Runtime;
 using Kruty1918.Moyva.Units.API;
@@ -12,18 +12,28 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
-    internal sealed class UnitService : IUnitService, IInitializable, System.IDisposable
+    internal sealed class UnitService :
+        IUnitService,
+        IUnitOwnershipQuery,
+        IConstructionUnitGarrisonRuntime,
+        IConstructionUnitTraversalQuery,
+        IInitializable,
+        System.IDisposable
     {
         private readonly SignalBus _signalBus;
         private readonly IGridService _gridService;
         private readonly ITileSettingsService _tileSettings;
         private readonly IUnitClassConfig _unitClassConfig;
         private readonly IObjectsMapService _objectsMapService;
-        private readonly ICalendarService _calendarService;
+        private readonly IBuildingRegistry _buildingRegistry;
+        private readonly IConstructionGateStateService _gateStateService;
 
         private readonly Dictionary<string, float> _unitStamina = new();
         private readonly Dictionary<string, Vector2Int> _unitPositions = new();
         private readonly Dictionary<string, string> _unitTypeIds = new();
+        private readonly Dictionary<string, string> _unitOwnerIds = new();
+        private readonly Dictionary<string, int> _unitVisionRanges = new();
+        private readonly Dictionary<string, Vector2Int> _garrisonedUnitPositions = new();
 
         // Словник для зберігання посилань на GameObject юнітів
         private readonly Dictionary<string, GameObject> _unitObjects = new();
@@ -60,7 +70,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             IUnitClassConfig unitClassConfig,
             IObjectsMapService objectsMapService,
             IHealthRegistry healthRegistry = null,
-            ICalendarService calendarService = null)
+            [InjectOptional] IBuildingRegistry buildingRegistry = null,
+            [InjectOptional] IConstructionGateStateService gateStateService = null)
         {
             _signalBus = signalBus;
             _gridService = gridService;
@@ -68,8 +79,13 @@ namespace Kruty1918.Moyva.Units.Runtime
             _unitClassConfig = unitClassConfig;
             _objectsMapService = objectsMapService;
             _healthRegistry = healthRegistry;
-            _calendarService = calendarService;
+            _buildingRegistry = buildingRegistry;
+            _gateStateService = gateStateService;
         }
+
+        [System.Diagnostics.Conditional("MOYVA_VERBOSE_MOVEMENT")]
+        private static void LogMovementVerbose(string message)
+            => Debug.Log(message);
 
         public void Initialize()
         {
@@ -99,6 +115,12 @@ namespace Kruty1918.Moyva.Units.Runtime
             _unitStamina[signal.UnitId] = startStamina;
             _unitPositions[signal.UnitId] = signal.Position;
             _unitTypeIds[signal.UnitId] = signal.UnitTypeId;
+            _unitOwnerIds[signal.UnitId] =
+                string.IsNullOrWhiteSpace(signal.OwnerId)
+                    ? "player_0"
+                    : signal.OwnerId.Trim();
+            _unitVisionRanges[signal.UnitId] =
+                Mathf.Max(0, signal.VisionRange);
 
             // Зберігаємо GameObject
             _unitObjects[signal.UnitId] = signal.UnitObject;
@@ -109,11 +131,17 @@ namespace Kruty1918.Moyva.Units.Runtime
                 int maxHp = Math.Max(1, config.HitPoints);
                 var health = new HealthComponent();
                 health.Initialize(signal.UnitId, maxHp);
-                health.OnDestroyed += entityId => Debug.Log($"[UnitService] Юніт '{entityId}' знищений (HP = 0).");
+                health.OnDestroyed += entityId =>
+                    _signalBus.Fire(new UnitDestroyedSignal
+                    {
+                        UnitId = entityId,
+                    });
                 _healthRegistry.Register(health);
             }
 
-            Debug.Log($"[UnitService] Unit {signal.UnitId} registered and cached. Stamina: {startStamina}, Position: {signal.Position}  ");
+            LogMovementVerbose(
+                $"[UnitService] Unit {signal.UnitId} registered. " +
+                $"Stamina={startStamina}, Position={signal.Position}");
         }
 
         private void OnUnitMoved(UnitMovedSignal signal)
@@ -126,42 +154,49 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             float staminaBefore = _unitStamina[signal.UnitId];
 
-            if (!CanUnitMove(signal.UnitId, signal.NewPosition))
+            bool movementStateValid =
+                !_garrisonedUnitPositions.ContainsKey(signal.UnitId)
+                && signal.Cost >= 0f
+                && staminaBefore >= signal.Cost;
+            if (!movementStateValid)
             {
                 _signalBus.Fire(new InterruptMovementSignal
                 {
                     UnitId = signal.UnitId,
                 });
-                Debug.LogWarning($"[UnitService] Unit {signal.UnitId} не може рухатись до {signal.NewPosition}. Стаміна={staminaBefore}, вартість={signal.Cost}. Надіслано InterruptMovementSignal.");
+                Debug.LogWarning(
+                    $"[UnitService] Completed move signal rejected for " +
+                    $"{signal.UnitId}: stamina={staminaBefore}, " +
+                    $"cost={signal.Cost}, garrisoned=" +
+                    $"{_garrisonedUnitPositions.ContainsKey(signal.UnitId)}.");
                 return;
             }
 
             _unitStamina[signal.UnitId] -= signal.Cost;
             _unitPositions[signal.UnitId] = signal.NewPosition;
 
-            Debug.Log($"[UnitService] Unit {signal.UnitId} рух до {signal.NewPosition}. Стаміна: {staminaBefore} → {_unitStamina[signal.UnitId]} (витрачено {signal.Cost})");
+            LogMovementVerbose(
+                $"[UnitService] Unit {signal.UnitId} -> {signal.NewPosition}. " +
+                $"Stamina {staminaBefore} -> {_unitStamina[signal.UnitId]}");
 
-            if (_calendarService != null)
-            {
-                try
-                {
-                    _calendarService.AdvanceTurn();
-                }
-                catch (InvalidOperationException)
-                {
-                    // ClientCalendarProxy is read-only and advances only via snapshots.
-                }
-
-                var now = _calendarService.Current;
-                Debug.Log($"[Time] Після кроку {signal.UnitId}: {now.Year:D4}-{now.Month:D2}-{now.Day:D2} {now.Hour:D2}:00, фаза={_calendarService.CurrentDayPhase}, totalHours={_calendarService.TotalHoursSinceEpoch}");
-            }
         }
 
         private void OnUnitDestroyed(UnitDestroyedSignal signal)
         {
+            if (_unitObjects.TryGetValue(
+                    signal.UnitId,
+                    out GameObject unitObject)
+                && unitObject != null)
+            {
+                UnityEngine.Object.Destroy(unitObject);
+            }
+
             _unitStamina.Remove(signal.UnitId);
             _unitPositions.Remove(signal.UnitId);
             _unitTypeIds.Remove(signal.UnitId);
+            _unitOwnerIds.Remove(signal.UnitId);
+            _unitVisionRanges.Remove(signal.UnitId);
+            _garrisonedUnitPositions.Remove(signal.UnitId);
             _unitObjects.Remove(signal.UnitId); // Видаляємо посилання
             _healthRegistry?.Unregister(signal.UnitId);
         }
@@ -196,10 +231,383 @@ namespace Kruty1918.Moyva.Units.Runtime
         public string GetUnitTypeId(string unitId)
             => _unitTypeIds.TryGetValue(unitId, out var typeId) ? typeId : null;
 
+        public bool TryEnterGarrison(
+            string unitId,
+            Vector2Int buildingPosition,
+            out string reason)
+        {
+            reason = null;
+            if (string.IsNullOrWhiteSpace(unitId)
+                || !_unitPositions.TryGetValue(
+                    unitId,
+                    out Vector2Int currentPosition))
+            {
+                reason = "Юніт не зареєстрований.";
+                return false;
+            }
+
+            if (_garrisonedUnitPositions.ContainsKey(unitId))
+            {
+                reason = "Юніт уже перебуває в гарнізоні.";
+                return false;
+            }
+
+            if (!_objectsMapService.IsOccupied(buildingPosition))
+            {
+                reason = "Будівля гарнізону не зареєстрована на карті.";
+                return false;
+            }
+
+            int garrisonDistance = Mathf.Max(
+                Mathf.Abs(currentPosition.x - buildingPosition.x),
+                Mathf.Abs(currentPosition.y - buildingPosition.y));
+            if (garrisonDistance > 1)
+            {
+                reason = "Юніт має стояти поруч із будівлею гарнізону.";
+                return false;
+            }
+
+            if (_objectsMapService.TryGetOccupant(
+                    currentPosition,
+                    out string occupantId)
+                && string.Equals(
+                    occupantId,
+                    unitId,
+                    StringComparison.Ordinal))
+            {
+                if (_objectsMapService
+                is IObjectsMapSharedOccupancy sharedOccupancy)
+            {
+                sharedOccupancy.TryUnregisterOccupant(unitId);
+            }
+            else
+            {
+                _objectsMapService.Unregister(currentPosition);
+            }
+            }
+
+            _garrisonedUnitPositions[unitId] = buildingPosition;
+            if (_unitObjects.TryGetValue(unitId, out GameObject unitObject)
+                && unitObject != null)
+            {
+                unitObject.SetActive(false);
+            }
+
+            _signalBus.Fire(
+                new UnitGarrisonStateChangedSignal
+                {
+                    UnitId = unitId,
+                    IsGarrisoned = true,
+                    BuildingPosition = buildingPosition,
+                    UnitPosition = currentPosition,
+                    VisionRange = _unitVisionRanges.TryGetValue(
+                        unitId,
+                        out int visionRange)
+                        ? visionRange
+                        : 0,
+                    OwnerId = GetUnitOwnerId(unitId),
+                });
+            return true;
+        }
+
+        public bool TryRestoreGarrison(
+            string unitId,
+            Vector2Int buildingPosition,
+            out string reason)
+        {
+            reason = null;
+            if (string.IsNullOrWhiteSpace(unitId)
+                || !_unitPositions.TryGetValue(
+                    unitId,
+                    out Vector2Int currentPosition))
+            {
+                reason = "Юніт не зареєстрований.";
+                return false;
+            }
+
+            if (_garrisonedUnitPositions.TryGetValue(
+                    unitId,
+                    out Vector2Int existing))
+            {
+                if (existing == buildingPosition)
+                    return true;
+
+                reason = "Юніт уже перебуває в іншому гарнізоні.";
+                return false;
+            }
+
+            if (!_objectsMapService.IsOccupied(buildingPosition))
+            {
+                reason = "Будівля гарнізону ще не відновлена на карті.";
+                return false;
+            }
+
+            if (_objectsMapService
+                is IObjectsMapSharedOccupancy sharedOccupancy)
+            {
+                sharedOccupancy.TryUnregisterOccupant(unitId);
+            }
+            else if (_objectsMapService.TryGetOccupant(
+                         currentPosition,
+                         out string occupantId)
+                     && string.Equals(
+                         occupantId,
+                         unitId,
+                         StringComparison.Ordinal))
+            {
+                _objectsMapService.Unregister(currentPosition);
+            }
+
+            _garrisonedUnitPositions[unitId] =
+                buildingPosition;
+
+            if (_unitObjects.TryGetValue(
+                    unitId,
+                    out GameObject unitObject)
+                && unitObject != null)
+            {
+                unitObject.SetActive(false);
+            }
+
+            _signalBus.Fire(
+                new UnitGarrisonStateChangedSignal
+                {
+                    UnitId = unitId,
+                    IsGarrisoned = true,
+                    BuildingPosition = buildingPosition,
+                    UnitPosition = currentPosition,
+                    VisionRange = _unitVisionRanges.TryGetValue(
+                        unitId,
+                        out int visionRange)
+                        ? visionRange
+                        : 0,
+                    OwnerId = GetUnitOwnerId(unitId),
+                });
+
+            Debug.Log(
+                $"[MoyvaConstructionModules] garrison restore-unit " +
+                $"unit={unitId} building={buildingPosition}");
+            return true;
+        }
+
+        public bool TryExitGarrison(
+            string unitId,
+            Vector2Int targetPosition,
+            out string reason)
+        {
+            reason = null;
+            if (!_garrisonedUnitPositions.ContainsKey(unitId))
+            {
+                reason = "Юніт не перебуває в гарнізоні.";
+                return false;
+            }
+
+            if (!_gridService.TryGetTileData(
+                    targetPosition,
+                    out string tileTypeId)
+                || string.IsNullOrWhiteSpace(tileTypeId))
+            {
+                reason = "Цільовий тайл не існує.";
+                return false;
+            }
+
+            if (_objectsMapService.IsOccupied(targetPosition))
+            {
+                reason = "Цільова клітинка зайнята.";
+                return false;
+            }
+
+            _objectsMapService.Register(targetPosition, unitId);
+            _unitPositions[unitId] = targetPosition;
+            _garrisonedUnitPositions.Remove(unitId);
+
+            if (_unitObjects.TryGetValue(unitId, out GameObject unitObject)
+                && unitObject != null)
+            {
+                unitObject.SetActive(true);
+            }
+
+            _signalBus.Fire(
+                new UnitGarrisonStateChangedSignal
+                {
+                    UnitId = unitId,
+                    IsGarrisoned = false,
+                    UnitPosition = targetPosition,
+                    VisionRange = _unitVisionRanges.TryGetValue(
+                        unitId,
+                        out int visionRange)
+                        ? visionRange
+                        : 0,
+                    OwnerId = GetUnitOwnerId(unitId),
+                });
+            return true;
+        }
+
+        public bool TryExitGarrisonNear(
+            string unitId,
+            Vector2Int origin,
+            int maxRadius,
+            out Vector2Int targetPosition,
+            out string reason)
+        {
+            targetPosition = origin;
+            reason = null;
+
+            int clampedRadius =
+                Mathf.Max(0, maxRadius);
+
+            for (int radius = 0;
+                 radius <= clampedRadius;
+                 radius++)
+            {
+                if (radius == 0)
+                {
+                    if (TryExitGarrison(
+                            unitId,
+                            origin,
+                            out reason))
+                    {
+                        targetPosition = origin;
+                        return true;
+                    }
+                    continue;
+                }
+
+                int minX = origin.x - radius;
+                int maxX = origin.x + radius;
+                int minY = origin.y - radius;
+                int maxY = origin.y + radius;
+
+                // Deterministic clockwise perimeter.
+                for (int x = minX; x <= maxX; x++)
+                {
+                    var candidate = new Vector2Int(x, maxY);
+                    if (TryExitGarrison(unitId, candidate, out reason))
+                    {
+                        targetPosition = candidate;
+                        return true;
+                    }
+                }
+
+                for (int y = maxY - 1; y >= minY; y--)
+                {
+                    var candidate = new Vector2Int(maxX, y);
+                    if (TryExitGarrison(unitId, candidate, out reason))
+                    {
+                        targetPosition = candidate;
+                        return true;
+                    }
+                }
+
+                for (int x = maxX - 1; x >= minX; x--)
+                {
+                    var candidate = new Vector2Int(x, minY);
+                    if (TryExitGarrison(unitId, candidate, out reason))
+                    {
+                        targetPosition = candidate;
+                        return true;
+                    }
+                }
+
+                for (int y = minY + 1; y < maxY; y++)
+                {
+                    var candidate = new Vector2Int(minX, y);
+                    if (TryExitGarrison(unitId, candidate, out reason))
+                    {
+                        targetPosition = candidate;
+                        return true;
+                    }
+                }
+            }
+
+            reason =
+                $"Не знайдено вільну клітинку для виходу " +
+                $"з гарнізону в радіусі {clampedRadius}.";
+            return false;
+        }
+
+        public bool IsGarrisoned(string unitId)
+            => !string.IsNullOrWhiteSpace(unitId)
+               && _garrisonedUnitPositions.ContainsKey(unitId);
+
+        public string GetUnitOwnerId(string unitId)
+            => !string.IsNullOrWhiteSpace(unitId)
+               && _unitOwnerIds.TryGetValue(unitId, out string ownerId)
+                ? ownerId
+                : "player_0";
+
+        public bool CanTraverseOccupiedConstructionCell(
+            string unitId,
+            Vector2Int position,
+            bool openGateIfNeeded,
+            out string reason)
+        {
+            reason = null;
+            if (!_objectsMapService.TryGetOccupant(
+                    position,
+                    out string occupantId)
+                || occupantId == unitId)
+            {
+                return true;
+            }
+
+            BuildingDefinition building =
+                _buildingRegistry?.GetById(occupantId);
+            if (building == null)
+            {
+                reason = "Клітинка зайнята не будівлею.";
+                return false;
+            }
+
+            if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    building,
+                    out GateBuildingModule _))
+            {
+                string ownerId = GetUnitOwnerId(unitId);
+                if (_gateStateService == null)
+                {
+                    reason = "Gate runtime не підключений.";
+                    return false;
+                }
+
+                return openGateIfNeeded
+                    ? _gateStateService.TryEnsureOpenForUnit(
+                        position,
+                        ownerId,
+                        out reason)
+                    : _gateStateService.CanUnitPassGate(
+                        position,
+                        ownerId,
+                        out reason);
+            }
+
+            if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    building,
+                    out WallBuildingModule wall))
+            {
+                if (wall.IsPassable)
+                    return true;
+
+                reason = "Стіна непрохідна.";
+                return false;
+            }
+
+            if (building.Footprint?.BlocksMovement == true)
+            {
+                reason = "Будівля блокує рух.";
+                return false;
+            }
+
+            return true;
+        }
+
         private bool CanUnitMove(string unitId, Vector2Int targetPosition)
         {
-            if (!_unitStamina.ContainsKey(unitId))
+            if (!_unitStamina.ContainsKey(unitId)
+                || _garrisonedUnitPositions.ContainsKey(unitId))
+            {
                 return false;
+            }
 
             if (!_gridService.TryGetTileData(targetPosition, out var tileTypeId))
                 return false;
@@ -207,7 +615,44 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (string.IsNullOrEmpty(tileTypeId))
                 return false;
 
-            var tileCost = _tileSettings.GetTileWeight(tileTypeId);
+            if (_objectsMapService.TryGetOccupant(
+                    targetPosition,
+                    out string occupantId))
+            {
+                BuildingDefinition building =
+                    _buildingRegistry?.GetById(occupantId);
+                if (building == null)
+                    return false;
+
+                if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                        building,
+                        out WallBuildingModule wall))
+                {
+                    if (!wall.IsPassable)
+                        return false;
+                }
+                else if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                             building,
+                             out GateBuildingModule _))
+                {
+                    string ownerId = GetUnitOwnerId(unitId);
+                    if (_gateStateService == null
+                        || !_gateStateService.TryEnsureOpenForUnit(
+                            targetPosition,
+                            ownerId,
+                            out _))
+                    {
+                        return false;
+                    }
+                }
+                else if (building.Footprint?.BlocksMovement == true)
+                {
+                    return false;
+                }
+            }
+
+            var tileCost =
+                _tileSettings.GetTileWeight(tileTypeId);
             return _unitStamina[unitId] >= tileCost;
         }
 

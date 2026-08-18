@@ -1,0 +1,26 @@
+{
+  "$schema": "../../Schemas/construction-placement-rules-profile.schema.json",
+  "schema": "moyva.construction-placement-rules-profile",
+  "version": 1,
+  "id": "constructionplacementrulesprofile-gamplay",
+  "model": "construction-placement-rules-profile",
+  "minSpacing": 0,
+  "townHallBuildRadius": 25,
+  "enableInfluenceZoneRules": true,
+  "enableTerrainRules": true,
+  "allowBuildingOnWater": false,
+  "allowBuildingOnHills": true,
+  "blockEdgeTerrainTiles": false,
+  "enableFogRules": true,
+  "requireVisibleFogTile": true,
+  "blockedTileIds": [
+    "water"
+  ],
+  "allowedTileIds": [],
+  "blockedTerrainLevelRanges": [],
+  "migration": {
+    "sourceAssetGuid": "a7bfb90ca73645c3be6908d7f98dbf1d",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/ConstructionPlacementRulesProfile_Gamplay.asset",
+    "sourceHash": "8776ade3b7abcdbd3631b770d3c9f78dd796d4e667d18d1d34a3cc8e886b50df"
+  }
+}

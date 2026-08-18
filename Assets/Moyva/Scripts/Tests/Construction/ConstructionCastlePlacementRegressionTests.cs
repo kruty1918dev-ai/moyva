@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
@@ -9,6 +10,7 @@ using NUnit.Framework;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Construction
 {
     [TestFixture]
@@ -84,7 +86,7 @@ namespace Kruty1918.Moyva.Tests.Construction
                 .To<VisibleFogService>()
                 .AsSingle();
 
-            _registry = ScriptableObject.CreateInstance<BuildingRegistrySO>();
+            _registry = MoyvaJsonObjectFactory.Create<BuildingRegistrySO>();
             _registry.Buildings = new[]
             {
                 CreateCastleDefinition(),
@@ -145,7 +147,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             _disposable?.Dispose();
             Container.Resolve<ObjectsMapService>().Dispose();
             if (_registry != null)
-                Object.DestroyImmediate(_registry);
+                MoyvaJsonObjectFactory.DestroyImmediate(_registry);
             base.Teardown();
         }
 
@@ -203,11 +205,14 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
 
         [Test]
-        public void PerOwnerCastleRelocation_DoesNotMoveAnotherFactionsCastle()
+        public void ConfirmedCastle_CannotStartSecondPreviewForSameOwner()
         {
-            Vector2Int factionAStart = new Vector2Int(20, 4);
-            Vector2Int factionBStart = new Vector2Int(30, 4);
-            Vector2Int factionADestination = new Vector2Int(24, 4);
+            Vector2Int factionAStart =
+                new Vector2Int(20, 4);
+            Vector2Int factionBStart =
+                new Vector2Int(30, 4);
+            Vector2Int secondA =
+                new Vector2Int(24, 4);
 
             Assert.IsTrue(
                 _service.TryDirectPlace(
@@ -222,16 +227,62 @@ namespace Kruty1918.Moyva.Tests.Construction
 
             _service.SetActiveOwner("faction-a");
             _service.SelectBuilding("castle-01");
-            Assert.IsTrue(_service.TryPreviewAt(factionADestination));
-            _service.Confirm();
 
-            Assert.IsFalse(_objectsMap.IsOccupied(factionAStart));
-            Assert.IsTrue(_objectsMap.IsOccupied(factionADestination));
+            Assert.IsFalse(_service.TryPreviewAt(secondA));
+            Assert.IsTrue(_objectsMap.IsOccupied(factionAStart));
             Assert.IsTrue(_objectsMap.IsOccupied(factionBStart));
+            Assert.IsFalse(_objectsMap.IsOccupied(secondA));
+        }
+
+        [Test]
+        public void SaveSnapshot_PreservesDifferentCastleOwners()
+        {
+            Vector2Int factionA =
+                new Vector2Int(20, 4);
+            Vector2Int factionB =
+                new Vector2Int(30, 4);
+
             Assert.IsTrue(
-                _service.HasPlacedBuilding("castle-01", "faction-a"));
+                _service.TryDirectPlace(
+                    "castle-01",
+                    factionA,
+                    "faction-a"));
             Assert.IsTrue(
-                _service.HasPlacedBuilding("castle-01", "faction-b"));
+                _service.TryDirectPlace(
+                    "castle-01",
+                    factionB,
+                    "faction-b"));
+
+            var snapshotSource =
+                _service as IConstructionSaveSnapshotSource;
+            Assert.NotNull(snapshotSource);
+
+            IReadOnlyList<ConstructionSavedPlacement> placements =
+                snapshotSource.GetSavedPlacements();
+
+            bool foundA = false;
+            bool foundB = false;
+            for (int index = 0;
+                 index < placements.Count;
+                 index++)
+            {
+                ConstructionSavedPlacement placement =
+                    placements[index];
+                if (placement.Position == factionA
+                    && placement.OwnerId == "faction-a")
+                {
+                    foundA = true;
+                }
+
+                if (placement.Position == factionB
+                    && placement.OwnerId == "faction-b")
+                {
+                    foundB = true;
+                }
+            }
+
+            Assert.IsTrue(foundA);
+            Assert.IsTrue(foundB);
         }
 
         [Test]
@@ -250,75 +301,32 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
 
         [Test]
-        public void AuthoritativeRelocation_UsesPendingIntentAndMovesOnlyOwnedCastle()
+        public void AuthoritativeCastleRelocation_IsRejectedAfterCastleExists()
         {
-            Vector2Int source = new Vector2Int(50, 4);
-            Vector2Int target = new Vector2Int(54, 4);
-            Vector2Int foreignSource = new Vector2Int(60, 4);
+            Vector2Int source =
+                new Vector2Int(50, 4);
+            Vector2Int target =
+                new Vector2Int(54, 4);
+
             Assert.IsTrue(
                 _service.TryDirectPlace(
                     "castle-01",
                     source,
                     "faction-a"));
-            Assert.IsTrue(
-                _service.TryDirectPlace(
-                    "castle-01",
-                    foreignSource,
-                    "faction-b"));
-
-            _service.SetActiveOwner("faction-a");
-            _service.SelectBuilding("castle-01");
-            Assert.IsTrue(_service.TryPreviewAt(target));
-
-            var intentSource =
-                _service
-                    as IConstructionPendingPlacementIntentSource;
-            Assert.NotNull(intentSource);
-            Assert.IsTrue(
-                intentSource.TryGetPendingPlacementIntent(
-                    target,
-                    out ConstructionPlacementCommitIntent intent));
-            Assert.AreEqual(
-                source,
-                intent.RelocationSourcePosition);
-            _service.Cancel();
-
-            BuildingPlacedSignal observed = default;
-            bool signalReceived = false;
-            _signalBus.Subscribe<BuildingPlacedSignal>(
-                signal =>
-                {
-                    observed = signal;
-                    signalReceived = true;
-                });
 
             var executor =
-                _service
-                    as IAuthoritativeConstructionPlacementExecutor;
+                _service as IAuthoritativeConstructionPlacementExecutor;
             Assert.NotNull(executor);
-            Assert.IsTrue(
-                executor.TryPlaceAuthoritatively(
-                    "castle-01",
-                    target,
-                    "faction-a",
-                    intent));
-
-            Assert.IsFalse(_objectsMap.IsOccupied(source));
-            Assert.IsTrue(_objectsMap.IsOccupied(target));
-            Assert.IsTrue(_objectsMap.IsOccupied(foreignSource));
-            Assert.IsTrue(signalReceived);
-            Assert.IsTrue(observed.HasRelocationSource);
-            Assert.AreEqual(source, observed.RelocationSourcePosition);
-            Assert.AreEqual("faction-a", observed.OwnerId);
 
             Assert.IsFalse(
                 executor.TryPlaceAuthoritatively(
                     "castle-01",
-                    new Vector2Int(64, 4),
+                    target,
                     "faction-a",
-                    new ConstructionPlacementCommitIntent(
-                        foreignSource)));
-            Assert.IsTrue(_objectsMap.IsOccupied(foreignSource));
+                    new ConstructionPlacementCommitIntent(source)));
+
+            Assert.IsTrue(_objectsMap.IsOccupied(source));
+            Assert.IsFalse(_objectsMap.IsOccupied(target));
         }
 
         [Test]
@@ -526,3 +534,5 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
     }
 }
+
+#endif

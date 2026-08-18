@@ -1,24 +1,25 @@
 {
-    "name": "Kruty1918.Moyva.Generator.Editor",
-    "rootNamespace": "Kruty1918.Moyva.Generator.Editor",
-    "references": [
-        "Kruty1918.Moyva.Generator",
-        "Kruty1918.Moyva.GraphSystem",
-        "Kruty1918.Moyva.GraphSystem.Editor",
-        "Kruty1918.Moyva.Grid",
-        "Kruty1918.Moyva.EditorShared",
-        "GiantGrey.TileWorldCreator",
-        "Zenject"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Kruty1918.Moyva.Generator.Editor",
+  "rootNamespace": "Kruty1918.Moyva.Generator.Editor",
+  "references": [
+    "Kruty1918.Moyva.Generator",
+    "Kruty1918.Moyva.GraphSystem",
+    "Kruty1918.Moyva.GraphSystem.Editor",
+    "Kruty1918.Moyva.Grid",
+    "Kruty1918.Moyva.EditorShared",
+    "GiantGrey.TileWorldCreator",
+    "Zenject",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

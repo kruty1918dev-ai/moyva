@@ -41,7 +41,7 @@ namespace Kruty1918.Moyva.Bootstrap
 
             // Гра-bootstrap готує owner-контекст і видає стартові ресурси на старті нового світу.
             Container.BindInstance(gameSettings).AsSingle();
-            Container.Bind<IBootstrapOwnerIdResolver>().To<BootstrapOwnerIdResolver>().AsSingle();
+            Container.BindInterfacesAndSelfTo<BootstrapOwnerIdResolver>().AsSingle();
             Container.Bind<IBootstrapStarterPackDecisionService>().To<BootstrapStarterPackDecisionService>().AsSingle();
             Container.Bind<IBootstrapStarterPackPersistenceService>().To<BootstrapStarterPackPersistenceService>().AsSingle();
             Container.Bind<IBootstrapStarterPackGrantService>().To<BootstrapStarterPackGrantService>().AsSingle();
@@ -64,6 +64,11 @@ namespace Kruty1918.Moyva.Bootstrap
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInterfacesAndSelfTo<TurnSaveModule>().AsSingle();
+            Container.BindInterfacesTo<SaveModuleRegistrar<TurnSaveModule>>()
+                .AsSingle()
+                .NonLazy();
+
             // Автозбереження при виході з програми.
             Container.BindInterfacesTo<GameExitSaver>()
                 .AsSingle()
@@ -71,11 +76,22 @@ namespace Kruty1918.Moyva.Bootstrap
 
             // Ініціалізатор запуску: перевіряє наявність сейву і завантажує його.
             // Має ініціалізуватись після усіх сервісів.
-            Container.BindInterfacesTo<DirectGameplayLaunchModeInitializer>().AsSingle().NonLazy();
+            Container.BindInterfacesTo<DirectGameplayLaunchModeInitializer>()
+                .AsSingle()
+                .WithArguments(gameObject.scene.name)
+                .NonLazy();
             Container.BindExecutionOrder<DirectGameplayLaunchModeInitializer>(90);
 
             Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
             Container.BindExecutionOrder<TestUnitSpawner>(100);
+
+            // Scene-authored gameplay HUD: resolve the authored view instead of creating runtime UI.
+            Container.Bind<GameplayTurnHudView>().FromComponentInHierarchy().AsSingle();
+            Container.BindInterfacesTo<GameplayTurnHudPresenter>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<UnitRecruitmentProgressIndicatorPresenter>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<UnitRecruitmentReadyIndicatorPresenter>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<UnitRecruitmentDeploymentController>().AsSingle().NonLazy();
+            Container.BindInterfacesTo<TurnBotDriver>().AsSingle().NonLazy();
 
             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
             // Виконується після TestUnitSpawner, щоб знати чи є збереження.
@@ -189,15 +205,22 @@ namespace Kruty1918.Moyva.Bootstrap
         private const string PolicyDiagTag = "[MoyvaStartPolicyDiag]";
         private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
         private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
+        private const string StartupDiagTag = "[MOYVA_DIAG][STARTUP]";
         private readonly IWorldGenerationDiagnostics _worldDiagnostics;
+        private readonly string _sceneName;
 
-        public DirectGameplayLaunchModeInitializer([InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null)
+        public DirectGameplayLaunchModeInitializer(
+            string sceneName,
+            [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null)
         {
+            _sceneName = string.IsNullOrWhiteSpace(sceneName) ? "<unknown>" : sceneName;
             _worldDiagnostics = worldDiagnostics;
         }
 
         public void Initialize()
         {
+            GameLaunchMode requestedMode = GameLaunchContext.Mode;
+            GameLaunchSource requestedSource = GameLaunchContext.Source;
             bool expiredBeforeInitialize = GameLaunchContext.IsExpired;
             GameLaunchContext.EnsureNotExpired();
             Debug.Log($"{WorldGenDiagTag} DirectLaunch.Initialize BEFORE mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
@@ -218,11 +241,16 @@ namespace Kruty1918.Moyva.Bootstrap
                     $"{PolicyDiagTag} DirectLaunch.Initialize skip mode={GameLaunchContext.Mode}, " +
                     $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}.");
                 Debug.Log($"{DirectDiagTag} DirectLaunch.Initialize AFTER mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
+                LogStartupDecision(
+                    requestedMode,
+                    requestedSource,
+                    expiredBeforeInitialize,
+                    "existing-launch-context");
                 return;
             }
 
-#if UNITY_EDITOR
-            Debug.Log($"{DirectDiagTag} DirectLaunch.Initialize APPLY direct fallback reason=editor-direct-gameplay-mode-unknown.");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.Log($"{DirectDiagTag} DirectLaunch.Initialize APPLY direct fallback reason=debug-direct-gameplay-mode-unknown.");
             GameLaunchContext.ConfigureDirectGameplayTest();
             Debug.Log($"{WorldGenDiagTag} DirectLaunch.Initialize CONFIGURED mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
             Debug.Log(
@@ -234,7 +262,37 @@ namespace Kruty1918.Moyva.Bootstrap
             Debug.Log($"{WorldGenDiagTag} DirectLaunch.Initialize AFTER mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
             Debug.Log($"{DirectDiagTag} DirectLaunch.Initialize AFTER mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
             _worldDiagnostics?.DirectLaunchConfigured(
-                $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}");
+                $"mode={GameLaunchContext.Mode}, source={GameLaunchContext.Source}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}");
+            LogStartupDecision(
+                requestedMode,
+                requestedSource,
+                expiredBeforeInitialize,
+                GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest
+                    ? "debug-direct-gameplay-fallback"
+                    : "missing-launch-context");
+        }
+
+        private void LogStartupDecision(
+            GameLaunchMode requestedMode,
+            GameLaunchSource requestedSource,
+            bool expiredBeforeInitialize,
+            string reason)
+        {
+            GameLaunchMode resolvedMode = GameLaunchContext.Mode;
+            GameLaunchSource resolvedSource = GameLaunchContext.Source;
+            string details =
+                $"scene={_sceneName} requestedMode={requestedMode} resolvedMode={resolvedMode} " +
+                $"requestedSource={requestedSource} source={resolvedSource} expiredBefore={expiredBeforeInitialize} " +
+                $"worldSettings={GameLaunchContext.HasWorldSettings} maxPlayers={GameLaunchContext.MaxPlayers} " +
+                $"autoLoad={GameLaunchContext.IsAutoLoadEnabled()} saveSlot={GameLaunchContext.SaveSlot} reason={reason}";
+
+            if (resolvedMode == GameLaunchMode.Unknown)
+            {
+                Debug.LogError($"{StartupDiagTag}[CRITICAL] gameplay-start-invalid {details}");
+                return;
+            }
+
+            Debug.Log($"{StartupDiagTag}[INFO] launch-resolved {details}");
         }
     }
 

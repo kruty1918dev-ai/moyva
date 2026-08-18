@@ -8,6 +8,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
     internal sealed class CameraMovement : ICameraMovement, IInitializable, ILateTickable
     {
         private const string StartupChainTag = "[MoyvaStartupChain]";
+        private const float RotationEpsilon = 0.0001f;
 
         private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;
@@ -18,6 +19,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private Vector3 _currentVelocity; // Необхідно для Vector3.SmoothDamp
         private float _fixedPlaneAxisValue;
         private readonly Vector3[] _viewportWorldCorners = new Vector3[4];
+        private float _keyboardOrbitInput;
+        private float _orbitAngularVelocity;
+        private bool _pointerOrbitActive;
+        private bool _hasOrbitPivot;
+        private Vector3 _orbitPivot;
 
         private float _forceBlockTimer;
         private bool _pendingTeleportLateTickLog;
@@ -48,8 +54,91 @@ namespace Kruty1918.Moyva.Camera.Runtime
         public void MoveCamera(Vector3 delta) // delta — це чисті пікселі з Action Map
             => ApplyScreenDelta(delta, _settings.ResolveMoveSpeed(), immediate: false);
 
+        public void MoveCameraKeyboard(Vector2 direction, float unscaledDeltaTime)
+        {
+            if (_forceBlockTimer > 0f || direction.sqrMagnitude <= RotationEpsilon)
+                return;
+
+            Vector2 normalized = direction.sqrMagnitude > 1f ? direction.normalized : direction;
+            Transform cameraTransform = _camera.transform;
+            Vector3 right = Vector3.ProjectOnPlane(cameraTransform.right, ResolveNavigationPlaneNormal()).normalized;
+            Vector3 forward = Vector3.ProjectOnPlane(cameraTransform.forward, ResolveNavigationPlaneNormal()).normalized;
+
+            if (right.sqrMagnitude <= RotationEpsilon || forward.sqrMagnitude <= RotationEpsilon)
+                return;
+
+            Vector3 worldDelta = (-right * normalized.x - forward * normalized.y)
+                * _settings.ResolveMoveSpeed()
+                * Mathf.Max(0f, unscaledDeltaTime);
+            ShiftCameraWorld(worldDelta, immediate: false);
+        }
+
         public void MoveCameraImmediate(Vector3 delta, float speedMultiplier)
             => ApplyScreenDelta(delta, speedMultiplier, immediate: true);
+
+        public void RotateCameraAroundFocusPoint(float angleDegrees)
+        {
+            if (_forceBlockTimer > 0f
+                || _camera == null
+                || float.IsNaN(angleDegrees)
+                || float.IsInfinity(angleDegrees)
+                || Mathf.Abs(angleDegrees) <= RotationEpsilon)
+            {
+                return;
+            }
+
+            if (!EnsureOrbitPivot())
+                return;
+
+            ApplyOrbitAngle(angleDegrees);
+        }
+
+        public void SetCameraOrbitInput(float normalizedInput)
+        {
+            _keyboardOrbitInput = Mathf.Clamp(normalizedInput, -1f, 1f);
+            if (Mathf.Abs(_keyboardOrbitInput) > RotationEpsilon)
+                EnsureOrbitPivot();
+        }
+
+        public void BeginPointerOrbit()
+        {
+            _pointerOrbitActive = EnsureOrbitPivot();
+        }
+
+        public void RotatePointerOrbit(float horizontalScreenDelta)
+        {
+            if (!_pointerOrbitActive || Mathf.Abs(horizontalScreenDelta) <= RotationEpsilon)
+                return;
+
+            float angle = horizontalScreenDelta
+                * _settings.ResolvePointerOrbitSensitivity()
+                * ResolveOrbitZoomMultiplier();
+            ApplyOrbitAngle(angle);
+        }
+
+        public void EndPointerOrbit()
+        {
+            _pointerOrbitActive = false;
+            ReleaseOrbitPivotWhenIdle();
+        }
+
+        private void ApplyOrbitAngle(float angleDegrees)
+        {
+            if (!_hasOrbitPivot)
+                return;
+
+            Quaternion rotationDelta = Quaternion.AngleAxis(angleDegrees, ResolveNavigationPlaneNormal());
+            Transform cameraTransform = _camera.transform;
+
+            Vector3 rotatedPosition = _orbitPivot + rotationDelta * (cameraTransform.position - _orbitPivot);
+            Quaternion rotatedRotation = rotationDelta * cameraTransform.rotation;
+            cameraTransform.SetPositionAndRotation(rotatedPosition, rotatedRotation);
+
+            _targetPosition = _orbitPivot + rotationDelta * (_targetPosition - _orbitPivot);
+            _currentVelocity = rotationDelta * _currentVelocity;
+            ApplyFixedPlaneAxis();
+            ClampTargetToBounds();
+        }
 
         public void ShiftCameraWorld(Vector3 worldDelta, bool immediate)
         {
@@ -60,9 +149,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             else
                 worldDelta.z = 0f;
 
-            _targetPosition += worldDelta;
-            ApplyFixedPlaneAxis();
-            ClampTargetToBounds();
+            ApplyNavigationDelta(worldDelta);
 
             if (!immediate)
                 return;
@@ -120,10 +207,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 ? dragWorldDelta
                 : ResolveFallbackScreenDelta(delta);
 
-            _targetPosition += moveDirection * speedMultiplier;
-
-            ApplyFixedPlaneAxis();
-            ClampTargetToBounds();
+            ApplyNavigationDelta(moveDirection * speedMultiplier);
 
             if (!immediate)
                 return;
@@ -173,8 +257,10 @@ namespace Kruty1918.Moyva.Camera.Runtime
             // Зменшуємо таймер блокування
             if (_forceBlockTimer > 0f)
             {
-                _forceBlockTimer -= Time.deltaTime;
+                _forceBlockTimer -= Time.unscaledDeltaTime;
             }
+
+            UpdateKeyboardOrbit(Time.unscaledDeltaTime);
 
             // Плавно рухаємо камеру до _targetPosition
             _camera.transform.position = Vector3.SmoothDamp(
@@ -201,46 +287,21 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (_boundsProvider == null || _camera == null)
                 return;
 
-            var bounds = _boundsProvider.GetWorldBounds();
-            if (!bounds.HasValue)
-                return;
-
-            Vector2 overflow = _settings.ResolveBoundsOverflowWorldUnits();
-            float minBoundX = bounds.MinX - overflow.x;
-            float maxBoundX = bounds.MaxX + overflow.x;
-            float minBoundY = bounds.MinY - overflow.y;
-            float maxBoundY = bounds.MaxY + overflow.y;
-
             if (!TryResolveNavigationPlaneCenter(_targetPosition, out var targetPlaneCenter, out float distanceToPlane))
             {
                 ApplyFixedPlaneAxis();
                 return;
             }
 
-            ResolveViewportHalfExtents(_targetPosition, out float halfW, out float halfH);
-            float width = Mathf.Max(0.01f, maxBoundX - minBoundX);
-            float height = Mathf.Max(0.01f, maxBoundY - minBoundY);
-
-            float minX, maxX;
-            if (width <= halfW * 2f)
+            if (!TryResolveTargetPlaneBounds(
+                    _targetPosition,
+                    out float minX,
+                    out float maxX,
+                    out float minY,
+                    out float maxY))
             {
-                minX = maxX = (minBoundX + maxBoundX) * 0.5f;
-            }
-            else
-            {
-                minX = minBoundX + halfW;
-                maxX = maxBoundX - halfW;
-            }
-
-            float minY, maxY;
-            if (height <= halfH * 2f)
-            {
-                minY = maxY = (minBoundY + maxBoundY) * 0.5f;
-            }
-            else
-            {
-                minY = minBoundY + halfH;
-                maxY = maxBoundY - halfH;
+                ApplyFixedPlaneAxis();
+                return;
             }
 
             Vector2 targetPlane = ToNavigationPlaneCoordinates(targetPlaneCenter);
@@ -262,6 +323,108 @@ namespace Kruty1918.Moyva.Camera.Runtime
         }
 
         private bool UsesXzPlane => _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ;
+
+        private void ApplyNavigationDelta(Vector3 worldDelta)
+        {
+            if (UsesXzPlane)
+                worldDelta.y = 0f;
+            else
+                worldDelta.z = 0f;
+
+            if (TryFilterNavigationDeltaAgainstBounds(worldDelta, out Vector3 filteredDelta))
+                worldDelta = filteredDelta;
+
+            _targetPosition += worldDelta;
+            ApplyFixedPlaneAxis();
+            ClampTargetToBounds();
+        }
+
+        private bool TryFilterNavigationDeltaAgainstBounds(
+            Vector3 worldDelta,
+            out Vector3 filteredDelta)
+        {
+            filteredDelta = worldDelta;
+            if (!TryResolveNavigationPlaneCenter(_targetPosition, out Vector3 currentCenter, out _)
+                || !TryResolveTargetPlaneBounds(
+                    _targetPosition,
+                    out float minX,
+                    out float maxX,
+                    out float minY,
+                    out float maxY))
+            {
+                return false;
+            }
+
+            Vector2 currentPlane = ToNavigationPlaneCoordinates(currentCenter);
+            Vector2 deltaPlane = ToNavigationPlaneDelta(worldDelta);
+            deltaPlane.x = ClampDeltaAxis(currentPlane.x, deltaPlane.x, minX, maxX);
+            deltaPlane.y = ClampDeltaAxis(currentPlane.y, deltaPlane.y, minY, maxY);
+            filteredDelta = FromNavigationPlaneDelta(deltaPlane);
+            return true;
+        }
+
+        private bool TryResolveTargetPlaneBounds(
+            Vector3 cameraPosition,
+            out float minX,
+            out float maxX,
+            out float minY,
+            out float maxY)
+        {
+            minX = maxX = minY = maxY = 0f;
+            if (_boundsProvider == null || _camera == null)
+                return false;
+
+            var bounds = _boundsProvider.GetWorldBounds();
+            if (!bounds.HasValue)
+                return false;
+
+            Vector2 overflow = _settings.ResolveBoundsOverflowWorldUnits();
+            float minBoundX = bounds.MinX - overflow.x;
+            float maxBoundX = bounds.MaxX + overflow.x;
+            float minBoundY = bounds.MinY - overflow.y;
+            float maxBoundY = bounds.MaxY + overflow.y;
+
+            ResolveViewportHalfExtents(cameraPosition, out float halfW, out float halfH);
+            float width = Mathf.Max(0.01f, maxBoundX - minBoundX);
+            float height = Mathf.Max(0.01f, maxBoundY - minBoundY);
+
+            if (width <= halfW * 2f)
+            {
+                minX = maxX = (minBoundX + maxBoundX) * 0.5f;
+            }
+            else
+            {
+                minX = minBoundX + halfW;
+                maxX = maxBoundX - halfW;
+            }
+
+            if (height <= halfH * 2f)
+            {
+                minY = maxY = (minBoundY + maxBoundY) * 0.5f;
+            }
+            else
+            {
+                minY = minBoundY + halfH;
+                maxY = maxBoundY - halfH;
+            }
+
+            return true;
+        }
+
+        private static float ClampDeltaAxis(
+            float current,
+            float delta,
+            float min,
+            float max)
+        {
+            const float BoundaryEpsilon = 0.001f;
+            if (delta < 0f && current <= min + BoundaryEpsilon)
+                return 0f;
+            if (delta > 0f && current >= max - BoundaryEpsilon)
+                return 0f;
+
+            return Mathf.Clamp(current + delta, min, max) - current;
+        }
 
         private Vector3 ResolveFallbackScreenDelta(Vector3 delta)
         {
@@ -356,6 +519,83 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return true;
         }
 
+        private bool TryResolveRotationPivot(out Vector3 pivot)
+        {
+            Transform cameraTransform = _camera.transform;
+            Ray forwardRay = new Ray(cameraTransform.position, cameraTransform.forward);
+            if (Physics.Raycast(
+                    forwardRay,
+                    out RaycastHit hit,
+                    _settings.ResolveRotationPivotRaycastDistance(),
+                    _settings.ResolveRotationPivotLayerMask(),
+                    QueryTriggerInteraction.Ignore))
+            {
+                pivot = hit.point;
+                return true;
+            }
+
+            return TryResolveNavigationPlaneCenter(cameraTransform.position, out pivot, out _);
+        }
+
+        private bool EnsureOrbitPivot()
+        {
+            if (_hasOrbitPivot)
+                return true;
+
+            if (!TryResolveRotationPivot(out _orbitPivot))
+                return false;
+
+            _hasOrbitPivot = true;
+            return true;
+        }
+
+        private void UpdateKeyboardOrbit(float unscaledDeltaTime)
+        {
+            if (_forceBlockTimer > 0f)
+                return;
+
+            float targetVelocity = _keyboardOrbitInput
+                * _settings.ResolveRotationSpeed()
+                * ResolveOrbitZoomMultiplier();
+            float acceleration = Mathf.Abs(targetVelocity) > RotationEpsilon
+                ? _settings.ResolveRotationAcceleration()
+                : _settings.ResolveRotationDeceleration();
+
+            _orbitAngularVelocity = CameraOrbitMath.Advance(
+                _orbitAngularVelocity,
+                targetVelocity,
+                acceleration,
+                unscaledDeltaTime,
+                out float angleDelta);
+
+            if (Mathf.Abs(angleDelta) > RotationEpsilon && EnsureOrbitPivot())
+                ApplyOrbitAngle(angleDelta);
+
+            ReleaseOrbitPivotWhenIdle();
+        }
+
+        private float ResolveOrbitZoomMultiplier()
+        {
+            float zoom = _camera.orthographic ? _camera.orthographicSize : _camera.fieldOfView;
+            float normalized = Mathf.InverseLerp(_settings.ResolveMinZoom(), _settings.ResolveMaxZoom(), zoom);
+            return Mathf.Lerp(
+                _settings.ResolveCloseZoomRotationMultiplier(),
+                _settings.ResolveFarZoomRotationMultiplier(),
+                normalized);
+        }
+
+        private void ReleaseOrbitPivotWhenIdle()
+        {
+            if (_pointerOrbitActive
+                || Mathf.Abs(_keyboardOrbitInput) > RotationEpsilon
+                || Mathf.Abs(_orbitAngularVelocity) > RotationEpsilon)
+            {
+                return;
+            }
+
+            _hasOrbitPivot = false;
+        }
+
         private void ResolveViewportHalfExtents(Vector3 cameraPosition, out float halfWidth, out float halfHeight)
         {
             halfHeight = _camera.orthographic ? _camera.orthographicSize : 0f;
@@ -427,6 +667,20 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return UsesXzPlane
                 ? new Vector2(worldPosition.x, worldPosition.z)
                 : new Vector2(worldPosition.x, worldPosition.y);
+        }
+
+        private Vector2 ToNavigationPlaneDelta(Vector3 worldDelta)
+        {
+            return UsesXzPlane
+                ? new Vector2(worldDelta.x, worldDelta.z)
+                : new Vector2(worldDelta.x, worldDelta.y);
+        }
+
+        private Vector3 FromNavigationPlaneDelta(Vector2 planeDelta)
+        {
+            return UsesXzPlane
+                ? new Vector3(planeDelta.x, 0f, planeDelta.y)
+                : new Vector3(planeDelta.x, planeDelta.y, 0f);
         }
 
         private Vector3 ResolveNavigationPlaneNormal()

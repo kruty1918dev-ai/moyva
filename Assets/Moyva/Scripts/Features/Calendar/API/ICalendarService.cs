@@ -10,25 +10,10 @@ namespace Kruty1918.Moyva.Calendar.Core
     /// </summary>
     public interface ICalendarService
     {
-        // --- State ---
-
-        /// <summary>Current in-game date and time.</summary>
         GameDateTime Current { get; }
-
-        /// <summary>
-        /// Monotonically increasing counter of in-game hours elapsed since the epoch
-        /// (the StartDate/StartHour defined in CalendarConfig).
-        /// Used as the canonical sync value in multiplayer.
-        /// </summary>
         long TotalHoursSinceEpoch { get; }
-
-        /// <summary>Current phase of the day (Night / Dawn / Day / Dusk).</summary>
         DayPhase CurrentDayPhase { get; }
-
-        /// <summary>The config used to initialise this service instance.</summary>
         CalendarConfig Config { get; }
-
-        // --- Events ---
 
         event Action OnHourChanged;
         event Action OnDayChanged;
@@ -36,18 +21,25 @@ namespace Kruty1918.Moyva.Calendar.Core
         event Action OnYearChanged;
         event Action<DayPhase> OnDayPhaseChanged;
 
-        // --- Mutation ---
-
         /// <summary>
         /// Advances time by <see cref="CalendarConfig.HoursPerTurn"/> hours.
-        /// Called by the authoritative server/session layer once per turn.
+        /// The authoritative turn loop calls this once after a full gameplay round completes.
         /// </summary>
         void AdvanceTurn();
 
         /// <summary>
-        /// Sets calendar state to match the given canonical hour index.
-        /// Used by clients when receiving a world snapshot from the host.
+        /// Applies an authoritative live/sync value and publishes calendar change events.
+        /// Re-applying the current value is idempotent and emits no duplicate events.
         /// </summary>
         void SetByTotalHours(long totalHours);
+    }
+
+    /// <summary>
+    /// Persistence-only mutation boundary. Restores canonical calendar state without publishing
+    /// gameplay change events; this prevents save/load from replaying economy or presentation ticks.
+    /// </summary>
+    public interface ICalendarStateRestorer
+    {
+        void RestoreByTotalHours(long totalHours);
     }
 }

@@ -1,0 +1,145 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "stone-wall",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 1,
+  "identity": {
+    "id": "stone-wall",
+    "displayName": "Стіна",
+    "category": "Walls",
+    "role": "Wall",
+    "description": "Захисний сегмент, що автоматично з'єднується із сусідніми стінами.",
+    "tags": []
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.wall-stone-collection-0-horizontal.190f77ff",
+      "editorPath": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Horizontal.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.stone-wall.76a8f783",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-wall.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.stone-wall.76a8f783",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-wall.png",
+      "required": true
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 1
+      },
+      {
+        "resourceId": "hardwood-materials-resources",
+        "amount": 1
+      }
+    ],
+    "buildTurns": 1,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 1,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "wall",
+      "hitPoints": 100,
+      "isPassable": false,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "fog-reveal",
+      "revealRadius": 1,
+      "shape": "PixelCircle",
+      "revealOnBuilt": true,
+      "revealWhileActive": true,
+      "onlyAfterConstructionComplete": true,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "settlement-influence-requirement",
+      "mergeMode": "Override",
+      "requiresInfluence": true,
+      "blockOverlappingCenters": false,
+      "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "0b20337f749c4a7c8e4d575d49f0db4b",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/stone-wall.asset",
+    "sourceHash": "876ddb1e0835bd6965a89d3b462f34043120f7596507c97e5f27ff5d8ff55ec1"
+  }
+}

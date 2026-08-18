@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "root-purple-food-resources",
+  "model": "economy-resource",
+  "displayName": "Root-purple",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-42.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "ed37f7b37788436cb17cf06f4d6844f4",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Beetroot.asset",
+    "sourceHash": "7e20de3fc5c6c797714c942112d6e0406933210b9d2d61c91031b292bffe0bf6"
+  }
+}

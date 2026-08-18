@@ -1,0 +1,28 @@
+{
+  "$schema": "../../Schemas/selection-highlight-settings.schema.json",
+  "schema": "moyva.selection-highlight-settings",
+  "version": 1,
+  "id": "selectionhighlightsettings",
+  "model": "selection-highlight-settings",
+  "outlineSizePixels": 2.0,
+  "outlineColorPrimary": {
+    "r": 0.2,
+    "g": 0.95,
+    "b": 0.3,
+    "a": 1.0
+  },
+  "outlineColorSecondary": {
+    "r": 1.0,
+    "g": 1.0,
+    "b": 1.0,
+    "a": 1.0
+  },
+  "animationSpeed": 1.0,
+  "animationMin": 0.0,
+  "animationMax": 1.0,
+  "migration": {
+    "sourceAssetGuid": "59584e2dfd6f4befa0eac6d387c5cc6e",
+    "sourceAssetPath": "Assets/Moyva/Resources/SelectionHighlightSettings.asset",
+    "sourceHash": "f3f4a1cf5dd890d08b278ea1884d305fe5198cc1d71572963b478c8b9ea13f25"
+  }
+}

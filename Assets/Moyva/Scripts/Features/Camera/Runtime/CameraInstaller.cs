@@ -1,6 +1,8 @@
 using System;
 using Kruty1918.Moyva.Camera.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.InputRouting.Runtime;
+using Kruty1918.Moyva.Jsonization;
 using Kruty1918.Moyva.MapChunks.Runtime;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -33,6 +35,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         public override void InstallBindings()
         {
+            InputRoutingBindings.Install(Container);
+
             // 1. Якщо камера не призначена в інспекторі, шукаємо MainCamera
             var camera = _sceneCamera != null ? _sceneCamera : UnityEngine.Camera.main;
             if (camera == null)
@@ -100,7 +104,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (_runtimeFallbackSettings != null)
                 return _runtimeFallbackSettings;
 
-            _runtimeFallbackSettings = ScriptableObject.CreateInstance<CameraSettingsSO>();
+            _runtimeFallbackSettings = MoyvaJsonObjectFactory.Create<CameraSettingsSO>();
             _runtimeFallbackSettings.name = "RuntimeFallback_CameraSettings";
             _runtimeFallbackSettings.adaptToProject3DMode = true;
             _runtimeFallbackSettings.useOrthographicCameraIn3D = false;

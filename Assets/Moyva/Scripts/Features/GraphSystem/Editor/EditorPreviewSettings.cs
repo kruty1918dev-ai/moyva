@@ -1,8 +1,10 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.GraphSystem.Editor
 {
     /// <summary>
@@ -12,16 +14,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
     /// щоб граф міг використовувати сервіси (NoiseProvider, BiomeResolver тощо)
     /// без запуску гри.
     /// </summary>
-    [CreateAssetMenu(menuName = "Moyva/Generator/Editor Preview Settings",
-        fileName = "EditorPreviewSettings")]
-    public sealed class EditorPreviewSettings : ScriptableObject
+[System.Serializable]
+public sealed class EditorPreviewSettings : MoyvaJsonConfigObject
     {
         [Header("Preview Map Size")]
-        [Tooltip("Ширина мапи для превью (у тайлах).")]
+        [Tooltip("Legacy preview width. Map size is now controlled by GraphAsset.SharedSettings from Graph Editor.")]
+        [HideInInspector]
         [Min(4)]
         [SerializeField] private int _previewWidth = 64;
 
-        [Tooltip("Висота мапи для превью (у тайлах).")]
+        [Tooltip("Legacy preview height. Map size is now controlled by GraphAsset.SharedSettings from Graph Editor.")]
+        [HideInInspector]
         [Min(4)]
         [SerializeField] private int _previewHeight = 64;
 
@@ -60,3 +63,5 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         public BuildingRegistrySO BuildingRegistry => _buildingRegistry;
     }
 }
+
+#endif

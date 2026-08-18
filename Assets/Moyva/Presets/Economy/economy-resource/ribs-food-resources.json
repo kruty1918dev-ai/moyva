@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "ribs-food-resources",
+  "model": "economy-resource",
+  "displayName": "Ribs",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-189.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "db7fcd5f4fb74b80b8e331f928f18d33",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Ribs.asset",
+    "sourceHash": "ec712435ecb52bc3ba663e5f93e15d0b2cd757d7825a04fe9211689a179c3dc6"
+  }
+}

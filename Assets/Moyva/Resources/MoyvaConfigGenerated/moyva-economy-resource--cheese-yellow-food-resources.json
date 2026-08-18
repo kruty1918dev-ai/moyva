@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "cheese-yellow-food-resources",
+  "model": "economy-resource",
+  "displayName": "Cheese-yellow",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-236.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "0c343ac31eba4c5ab993061d1d227400",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Carrot.asset",
+    "sourceHash": "06d6d8ab7a84142e8fabab57e01f32560f2903a7a74e6678d9c15df81edee9c7"
+  }
+}

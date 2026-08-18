@@ -11,6 +11,8 @@ namespace Kruty1918.Moyva.MapChunks.API
         float CameraCullingPaddingCells { get; }
         bool EnableVisualChunkDiscovery { get; }
         bool EnableVisualChunkPartitioning { get; }
+        bool RepeatVisualChunkDiscoveryDuringStartup { get; }
+        bool RepeatVisualChunkPartitioningDuringStartup { get; }
         float VisualDiscoveryIntervalSeconds { get; }
         float VisualPartitionDurationSeconds { get; }
         LayerMask VisualDiscoveryLayerMask { get; }

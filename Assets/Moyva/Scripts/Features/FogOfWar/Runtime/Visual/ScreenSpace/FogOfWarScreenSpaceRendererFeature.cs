@@ -8,6 +8,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.Universal;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     /// <summary>
@@ -25,6 +26,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     ///
     /// Legacy world curtain у цьому режимі не використовується.
     /// </summary>
+    [System.Serializable]
     public sealed class FogOfWarScreenSpaceRendererFeature
         : ScriptableRendererFeature
     {
@@ -80,6 +82,19 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         [SerializeField]
         private bool _applyInSceneView = true;
+
+        [SerializeField]
+        [Tooltip(
+            "Якщо вимкнено, під час Play Mode Fog of War рендериться " +
+            "тільки для Game camera, а не дублюється у Scene View.")]
+        private bool _applyInSceneViewDuringPlay;
+
+        [SerializeField]
+        [Tooltip(
+            "Вмикає додаткові fullscreen Dilate/Erode passes лише для " +
+            "діагностики ClosedScreenState. Фінальна маска використовує " +
+            "RawPointState і цих проходів не потребує.")]
+        private bool _enableMorphologyDebugPasses;
 
         [SerializeField]
         private bool _logPipelineDiagnostics = true;
@@ -164,12 +179,16 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             Camera camera =
                 cameraData.camera;
 
-            if (!_applyInSceneView
-                && camera != null
+            if (camera != null
                 && camera.cameraType
                     == CameraType.SceneView)
             {
-                return;
+                if (!_applyInSceneView
+                    || (Application.isPlaying
+                        && !_applyInSceneViewDuringPlay))
+                {
+                    return;
+                }
             }
 
             float effectiveStateScale =
@@ -185,6 +204,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _surfaceDepthMaterial,
                 _fogSurfaceLayerMask,
                 effectiveStateScale,
+                _enableMorphologyDebugPasses,
                 HandleBackBufferWarning);
 
             renderer.EnqueuePass(
@@ -200,7 +220,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     "pipeline=DepthAwareScreenSpace " +
                     "surfaceDepth=DedicatedOverridePass " +
                     "stateMorphology=DebugOnly " +
-                    "edgeMode=SurfaceLockedGridEdge " +
+                    "morphologyPasses=" +
+                    (
+                        _enableMorphologyDebugPasses
+                            ? "Enabled"
+                            : "Skipped"
+                    ) +
+                    " sceneViewDuringPlay=" +
+                    _applyInSceneViewDuringPlay +
+                    " edgeMode=SurfaceLockedGridEdge " +
                     "cornerJoin=RadialSoftUnion " +
                     "diagonalCornerCaps=True " +
                     "edgeSide=UnexploredCellOnly " +
@@ -248,7 +276,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (_screenSpaceShader != null
                 || _surfaceDepthShader != null)
             {
-                EditorUtility.SetDirty(this);
+                ; // JSON source of truth: no ScriptableObject dirty flag.
             }
 #endif
         }
@@ -487,6 +515,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             private Material _surfaceDepthMaterial;
             private LayerMask _layerMask;
             private float _stateScale = 1f;
+            private bool _enableMorphologyDebugPasses;
             private System.Action _onBackBuffer;
 
             public FogScreenSpacePass()
@@ -504,6 +533,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 Material surfaceDepthMaterial,
                 LayerMask layerMask,
                 float stateScale,
+                bool enableMorphologyDebugPasses,
                 System.Action onBackBuffer)
             {
                 _screenSpaceMaterial =
@@ -520,6 +550,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         stateScale,
                         0.5f,
                         1f);
+
+                _enableMorphologyDebugPasses =
+                    enableMorphologyDebugPasses;
 
                 _onBackBuffer =
                     onBackBuffer;
@@ -625,49 +658,71 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         "Moyva Fog Raw Screen State",
                         false);
 
-                TextureHandle dilatedState =
-                    UniversalRenderer.CreateRenderGraphTexture(
+                if (_enableMorphologyDebugPasses)
+                {
+                    TextureHandle dilatedState =
+                        UniversalRenderer.CreateRenderGraphTexture(
+                            renderGraph,
+                            stateDescriptor,
+                            "Moyva Fog Dilated Screen State",
+                            false);
+
+                    TextureHandle closedState =
+                        UniversalRenderer.CreateRenderGraphTexture(
+                            renderGraph,
+                            stateDescriptor,
+                            "Moyva Fog Closed Screen State",
+                            false);
+
+                    AddBlitPass(
                         renderGraph,
-                        stateDescriptor,
-                        "Moyva Fog Dilated Screen State",
-                        false);
+                        "Moyva Fog Build Screen State",
+                        surfaceEyeDepth,
+                        rawState,
+                        _screenSpaceMaterial,
+                        BuildScreenStatePass,
+                        _stateSampler,
+                        RawStateTextureId);
 
-                TextureHandle closedState =
-                    UniversalRenderer.CreateRenderGraphTexture(
+                    AddBlitPass(
                         renderGraph,
-                        stateDescriptor,
-                        "Moyva Fog Closed Screen State",
-                        false);
+                        "Moyva Fog Dilate State",
+                        rawState,
+                        dilatedState,
+                        _screenSpaceMaterial,
+                        DilateStatePass,
+                        _dilateSampler,
+                        0);
 
-                AddBlitPass(
-                    renderGraph,
-                    "Moyva Fog Build Screen State",
-                    surfaceEyeDepth,
-                    rawState,
-                    _screenSpaceMaterial,
-                    BuildScreenStatePass,
-                    _stateSampler,
-                    RawStateTextureId);
-
-                AddBlitPass(
-                    renderGraph,
-                    "Moyva Fog Dilate State",
-                    rawState,
-                    dilatedState,
-                    _screenSpaceMaterial,
-                    DilateStatePass,
-                    _dilateSampler,
-                    0);
-
-                AddBlitPass(
-                    renderGraph,
-                    "Moyva Fog Erode State",
-                    dilatedState,
-                    closedState,
-                    _screenSpaceMaterial,
-                    ErodeStatePass,
-                    _erodeSampler,
-                    ClosedStateTextureId);
+                    AddBlitPass(
+                        renderGraph,
+                        "Moyva Fog Erode State",
+                        dilatedState,
+                        closedState,
+                        _screenSpaceMaterial,
+                        ErodeStatePass,
+                        _erodeSampler,
+                        ClosedStateTextureId);
+                }
+                else
+                {
+                    /*
+                     * Final presentation uses RawPointState.
+                     * Publish rawState under both global names so the
+                     * composite contract remains valid without allocating
+                     * two textures or running two fullscreen passes.
+                     */
+                    AddBlitPass(
+                        renderGraph,
+                        "Moyva Fog Build Screen State",
+                        surfaceEyeDepth,
+                        rawState,
+                        _screenSpaceMaterial,
+                        BuildScreenStatePass,
+                        _stateSampler,
+                        RawStateTextureId,
+                        ClosedStateTextureId);
+                }
 
                 RenderTextureDescriptor compositeDescriptor =
                     cameraDescriptor;
@@ -872,7 +927,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 Material material,
                 int materialPass,
                 ProfilingSampler sampler,
-                int globalTextureAfterPass)
+                int globalTextureAfterPass,
+                int secondaryGlobalTextureAfterPass = 0)
             {
                 using (var builder =
                     renderGraph.AddRasterRenderPass<BlitPassData>(
@@ -898,6 +954,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         builder.SetGlobalTextureAfterPass(
                             destination,
                             globalTextureAfterPass);
+                    }
+
+                    if (secondaryGlobalTextureAfterPass != 0)
+                    {
+                        builder.SetGlobalTextureAfterPass(
+                            destination,
+                            secondaryGlobalTextureAfterPass);
                     }
 
                     builder.AllowPassCulling(

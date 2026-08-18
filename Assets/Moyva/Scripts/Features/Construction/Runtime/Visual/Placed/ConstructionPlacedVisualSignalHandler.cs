@@ -7,6 +7,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class ConstructionPlacedVisualSignalHandler : IConstructionPlacedVisualSignalHandler
     {
+        private const string PerfLogTag =
+            "[MoyvaConstructionPerf]";
+        private const double SignalHandlerLogThresholdMs = 0.5d;
+        private const double SignalHandlerWarnThresholdMs = 4d;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IWallTopologyService _wallTopologyService;
         private readonly IConstructionPreviewVisualService _previewVisuals;
@@ -14,6 +18,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IConstructionWallVisualRefreshService _wallVisuals;
         private readonly IConstructionInfluenceRadiusVisualService _radiusVisuals;
         private readonly IConstructionBuildGridOverlayService _buildGridOverlay;
+        private readonly IConstructionLifecycle _constructionLifecycle;
         private readonly int _townHallBuildRadius;
 
         [Inject]
@@ -25,7 +30,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IConstructionWallVisualRefreshService wallVisuals,
             IConstructionInfluenceRadiusVisualService radiusVisuals,
             IConstructionBuildGridOverlayService buildGridOverlay,
-            [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius)
+            [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius,
+            [InjectOptional] IConstructionLifecycle constructionLifecycle = null)
         {
             _buildingRegistry = buildingRegistry;
             _wallTopologyService = wallTopologyService;
@@ -34,31 +40,136 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _wallVisuals = wallVisuals;
             _radiusVisuals = radiusVisuals;
             _buildGridOverlay = buildGridOverlay;
+            _constructionLifecycle = constructionLifecycle;
             _townHallBuildRadius = Mathf.Max(0, townHallBuildRadius);
         }
 
         public void Handle(BuildingPlacedSignal signal)
         {
-            if (signal.HasRelocationSource && signal.RelocationSourcePosition != signal.Position)
-                _placedVisuals.Remove(signal.RelocationSourcePosition);
+            double totalStartedAt =
+                Time.realtimeSinceStartupAsDouble;
+            double relocationMs = 0d;
+            double previewReleaseMs = 0d;
+            double placedVisualMs = 0d;
+            double wallRefreshMs = 0d;
 
-            _previewVisuals.TryRelease(signal.Position, out GameObject previewVisual);
+            if (signal.HasRelocationSource
+                && signal.RelocationSourcePosition != signal.Position)
+            {
+                double startedAt =
+                    Time.realtimeSinceStartupAsDouble;
+                _placedVisuals.Remove(
+                    signal.RelocationSourcePosition);
+                relocationMs +=
+                    (Time.realtimeSinceStartupAsDouble - startedAt)
+                    * 1000d;
+            }
+
+            double previewStartedAt =
+                Time.realtimeSinceStartupAsDouble;
+            _previewVisuals.TryRelease(
+                signal.Position,
+                out GameObject previewVisual);
             _radiusVisuals.HidePreview();
+            previewReleaseMs +=
+                (Time.realtimeSinceStartupAsDouble - previewStartedAt)
+                * 1000d;
 
             if (_wallTopologyService.IsWallOrGate(signal.BuildingId))
             {
                 if (previewVisual != null)
                     Object.Destroy(previewVisual);
 
-                _wallVisuals.RefreshPlacedNeighborhood(signal.Position);
+                double wallStartedAt =
+                    Time.realtimeSinceStartupAsDouble;
+                _wallVisuals.RefreshPlacedNeighborhood(
+                    signal.Position);
+                wallRefreshMs +=
+                    (Time.realtimeSinceStartupAsDouble - wallStartedAt)
+                    * 1000d;
+
+                LogPlacedSignalPerf(
+                    signal,
+                    totalStartedAt,
+                    relocationMs,
+                    previewReleaseMs,
+                    placedVisualMs,
+                    wallRefreshMs);
                 return;
             }
 
-            BuildingDefinition def = _buildingRegistry.GetById(signal.BuildingId);
+            double placedStartedAt =
+                Time.realtimeSinceStartupAsDouble;
+
+            BuildingDefinition def =
+                _buildingRegistry.GetById(signal.BuildingId);
             if (def?.Prefab != null)
-                _placedVisuals.Replace(signal.Position, signal.BuildingId, def.Prefab, Quaternion.identity, def.VisualYOffset, previewVisual);
+            {
+                _placedVisuals.Replace(
+                    signal.Position,
+                    signal.BuildingId,
+                    def.Prefab,
+                    ConstructionRotationUtility.ToWorldRotation(
+                        ConstructionRotationUtility.Normalize(
+                            signal.RotationQuarterTurns)),
+                    def.VisualYOffset,
+                    previewVisual);
+
+                if (_constructionLifecycle != null
+                    && !_constructionLifecycle.IsOperational(signal.Position))
+                {
+                    _placedVisuals.MarkUnderConstruction(signal.Position);
+                }
+            }
             else if (previewVisual != null)
+            {
                 Object.Destroy(previewVisual);
+            }
+
+            placedVisualMs +=
+                (Time.realtimeSinceStartupAsDouble - placedStartedAt)
+                * 1000d;
+
+            LogPlacedSignalPerf(
+                signal,
+                totalStartedAt,
+                relocationMs,
+                previewReleaseMs,
+                placedVisualMs,
+                wallRefreshMs);
+        }
+
+        private static void LogPlacedSignalPerf(
+            BuildingPlacedSignal signal,
+            double totalStartedAt,
+            double relocationMs,
+            double previewReleaseMs,
+            double placedVisualMs,
+            double wallRefreshMs)
+        {
+            if (!Debug.isDebugBuild)
+                return;
+
+            double totalMs =
+                (Time.realtimeSinceStartupAsDouble - totalStartedAt)
+                * 1000d;
+
+            if (totalMs < SignalHandlerLogThresholdMs)
+                return;
+
+            string message =
+                $"{PerfLogTag} placed-signal-visual " +
+                $"building={signal.BuildingId} pos={signal.Position} " +
+                $"totalMs={totalMs:F3} " +
+                $"relocation={relocationMs:F3} " +
+                $"previewRelease={previewReleaseMs:F3} " +
+                $"placedVisual={placedVisualMs:F3} " +
+                $"wallRefresh={wallRefreshMs:F3}";
+
+            if (totalMs >= SignalHandlerWarnThresholdMs)
+                Debug.LogWarning(message);
+            else
+                Debug.Log(message);
         }
 
         public void Handle(BuildingDemolishedSignal signal)
@@ -70,6 +181,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_wallTopologyService.IsWallOrGate(signal.BuildingId))
                 _wallVisuals.RefreshPlacedNeighborhood(signal.Position);
+        }
+
+        public void Handle(BuildingOperationalSignal signal)
+        {
+            _placedVisuals.MarkOperational(signal.Position);
         }
 
         public void Handle(WorldInfoSelectionChangedSignal signal)

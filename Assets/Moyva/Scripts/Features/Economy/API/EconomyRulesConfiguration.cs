@@ -1,14 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Economy.API
 {
     /// <summary>
     /// Централізована конфіг для всіх економічних правил.
     /// Зберігає дефолтні значення та метаінформацію про кожен параметр.
     /// </summary>
-    [CreateAssetMenu(menuName = "Moyva/Economy/Rules Configuration", fileName = "EconomyRulesConfiguration")]
-    public sealed class EconomyRulesConfiguration : ScriptableObject
+[System.Serializable]
+public sealed class EconomyRulesConfiguration : MoyvaJsonConfigObject
     {
         [SerializeField] private List<EconomyRuleParameter> _parameters = new List<EconomyRuleParameter>();
 
@@ -190,7 +191,7 @@ namespace Kruty1918.Moyva.Economy.API
                 EconomyRuleCategory.AIExtensibility, EconomyRuleParameterType.Boolean,
                 "false", null, null, null, false));
 
-            UnityEditor.EditorUtility.SetDirty(this);
+            ; // JSON source of truth: no ScriptableObject dirty flag.
         }
 
         /// <summary>
@@ -217,7 +218,7 @@ namespace Kruty1918.Moyva.Economy.API
                 return;
 
             _parameters.Add(parameter);
-            UnityEditor.EditorUtility.SetDirty(this);
+            ; // JSON source of truth: no ScriptableObject dirty flag.
         }
 #endif
     }

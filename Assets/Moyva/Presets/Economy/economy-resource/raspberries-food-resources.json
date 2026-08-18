@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "raspberries-food-resources",
+  "model": "economy-resource",
+  "displayName": "Raspberries",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-41.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "fcb98148a6fc432f84091f4cc82bc2bd",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Raspberries.asset",
+    "sourceHash": "2d59ed009fea9ede3ec850e8e7a4406796ac15e87eb9885b9b5f5dcc30d3c687"
+  }
+}

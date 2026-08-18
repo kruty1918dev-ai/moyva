@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "bone-fragment-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Bone-fragment",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-57.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "592d8fe6184e44018fea41d58586a6c2",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Bone-fragment.asset",
+    "sourceHash": "3771f087076edac40dfe21f9ffbdd20c690edbb60afedfd5b7e73540f299ea69"
+  }
+}

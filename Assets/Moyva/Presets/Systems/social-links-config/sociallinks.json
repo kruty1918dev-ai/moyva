@@ -1,0 +1,54 @@
+{
+  "$schema": "../../Schemas/social-links-config.schema.json",
+  "schema": "moyva.social-links-config",
+  "version": 1,
+  "id": "sociallinks",
+  "model": "social-links-config",
+  "entries": [
+    {
+      "id": "discord",
+      "displayName": "Discord",
+      "url": "",
+      "icon": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      }
+    },
+    {
+      "id": "youtube",
+      "displayName": "YouTube",
+      "url": "",
+      "icon": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      }
+    },
+    {
+      "id": "twitter",
+      "displayName": "Twitter",
+      "url": "",
+      "icon": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      }
+    },
+    {
+      "id": "website",
+      "displayName": "Website",
+      "url": "",
+      "icon": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      }
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "a1b2c3d4e5f6e0020000000000000001",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/HomeMenu/SocialLinks.asset",
+    "sourceHash": "6f41d21d05855b5b737c98e988ae76d10392001f6f8c23331fa0fa0b651eb5ed"
+  }
+}

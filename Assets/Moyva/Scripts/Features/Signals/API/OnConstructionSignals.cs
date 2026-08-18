@@ -26,6 +26,7 @@ namespace Kruty1918.Moyva.Signals
         public string SourceFactionId;
         public bool HasRelocationSource;
         public Vector2Int RelocationSourcePosition;
+        public int RotationQuarterTurns;
     }
 
     /// <summary>
@@ -43,6 +44,7 @@ namespace Kruty1918.Moyva.Signals
         public Vector2Int Position;
         public string BuildingId;
         public BuildingPreviewState PreviewState;
+        public int RotationQuarterTurns;
     }
 
     /// <summary>
@@ -53,6 +55,7 @@ namespace Kruty1918.Moyva.Signals
     {
         public string BuildingId;
         public bool IsDemolishMode;
+        public int RotationQuarterTurns;
     }
 
     /// <summary>
@@ -64,6 +67,7 @@ namespace Kruty1918.Moyva.Signals
         public Vector2Int FromPosition;
         public Vector2Int ToPosition;
         public string BuildingId;
+        public int RotationQuarterTurns;
     }
 
     /// <summary>
@@ -74,6 +78,7 @@ namespace Kruty1918.Moyva.Signals
     {
         public Vector2Int Position;
         public string BuildingId;
+        public int RotationQuarterTurns;
         public Vector3 WorldPosition;
         public bool SnapToGrid;
         public bool HasSnapTarget;
@@ -92,6 +97,7 @@ namespace Kruty1918.Moyva.Signals
         public string BuildingId;
         public bool IsPlacementValid;
         public bool IsAffordable;
+        public int RotationQuarterTurns;
         public Vector2Int[] FootprintPositions;
         public Vector2Int[] InvalidFootprintPositions;
     }

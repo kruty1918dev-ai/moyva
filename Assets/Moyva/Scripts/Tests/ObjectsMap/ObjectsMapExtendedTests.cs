@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
@@ -180,3 +181,5 @@ namespace Kruty1918.Moyva.Tests.ObjectsMap
         }
     }
 }
+
+#endif

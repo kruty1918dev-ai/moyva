@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Editor.Shared
@@ -14,3 +15,5 @@ namespace Kruty1918.Moyva.Editor.Shared
         bool OpenHubSettingsFromPreview();
     }
 }
+
+#endif

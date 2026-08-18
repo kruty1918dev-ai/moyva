@@ -1,0 +1,92 @@
+{
+  "$schema": "../../Schemas/construction-visual-profile.schema.json",
+  "schema": "moyva.construction-visual-profile",
+  "version": 1,
+  "id": "constructionvisualprofile-gamplay",
+  "model": "construction-visual-profile",
+  "buildingLayerMinSortingOrder": 5,
+  "buildingSurfaceOffsetY": 0.5,
+  "previewSurfaceOffsetY": 0.7,
+  "ghostAlpha": 0.55,
+  "blockedFlashDurationSeconds": 0.35,
+  "previewDragFollowSharpness": 28.0,
+  "previewDragCursorOffsetXZ": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "showSnapTargetHighlight": true,
+  "snapTargetHighlightLineColor": {
+    "r": 1.0,
+    "g": 0.58,
+    "b": 0.12,
+    "a": 0.9
+  },
+  "snapTargetHighlightFillColor": {
+    "r": 1.0,
+    "g": 0.58,
+    "b": 0.12,
+    "a": 0.16
+  },
+  "snapTargetHighlightLineWidthNormalized": 0.06,
+  "snapTargetHighlightInsetNormalized": 0.04,
+  "snapTargetHighlightSurfaceOffsetY": 0.16,
+  "useBuildGridOverlay": true,
+  "buildGridRenderMode": "ChunkSurfacePlane",
+  "buildGridSurfacePlaneUseBuildableFilter": true,
+  "buildGridFillAlpha": 0.045,
+  "buildGridLineAlpha": 0.22,
+  "buildGridValidLineColor": {
+    "r": 0.28,
+    "g": 1.0,
+    "b": 0.42,
+    "a": 0.9
+  },
+  "buildGridValidFillColor": {
+    "r": 0.2,
+    "g": 0.82,
+    "b": 0.32,
+    "a": 0.16
+  },
+  "buildGridUnaffordableLineColor": {
+    "r": 1.0,
+    "g": 0.68,
+    "b": 0.12,
+    "a": 0.9
+  },
+  "buildGridUnaffordableFillColor": {
+    "r": 0.95,
+    "g": 0.48,
+    "b": 0.08,
+    "a": 0.16
+  },
+  "buildGridInvalidLineColor": {
+    "r": 1.0,
+    "g": 0.26,
+    "b": 0.22,
+    "a": 0.9
+  },
+  "buildGridInvalidFillColor": {
+    "r": 0.92,
+    "g": 0.12,
+    "b": 0.1,
+    "a": 0.16
+  },
+  "buildGridLineWidthNormalized": 0.035,
+  "buildGridSurfaceOffsetY": 0.1,
+  "buildGridTileInsetNormalized": 0.0,
+  "buildGridUpdateBudgetMilliseconds": 2.0,
+  "useInfluenceRadiusOverlay": true,
+  "influenceRadiusFillAlpha": 0.055,
+  "influenceRadiusBorderWidth": 0.5,
+  "influenceRadiusShaderName2D": "Moyva/2D/InfluenceRadius",
+  "influenceRadiusShaderName3D": "Moyva/3D/InfluenceRadiusExistingMeshOverlay",
+  "buildGridShaderName": "Moyva/Overlay/ConstructionBuildGrid",
+  "previewRootName": "ConstructionPreviewRoot",
+  "placedRootName": "PlayerBuildingsRoot",
+  "radiusRootName": "ConstructionRadiusRoot",
+  "migration": {
+    "sourceAssetGuid": "7ef1a54e6d7f473f9d7108bfab3cd213",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/ConstructionVisualProfile_Gamplay.asset",
+    "sourceHash": "197ad4c7dc3247b8b5d51ed6076b07233d2148f51f5e5993250ec72aa0f7b9ca"
+  }
+}

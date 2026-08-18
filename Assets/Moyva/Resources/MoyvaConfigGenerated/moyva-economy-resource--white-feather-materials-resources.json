@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "white-feather-materials-resources",
+  "model": "economy-resource",
+  "displayName": "White-feather",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-12.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "938fcc81e44a4d71a8218d2e9e43cb1f",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Sapphire.asset",
+    "sourceHash": "d2bc8d009dd8cf857b0946dd9c4eeeec4f74125a7863bda2650ca1668a205fec"
+  }
+}

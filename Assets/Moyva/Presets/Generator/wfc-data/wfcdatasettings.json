@@ -1,0 +1,395 @@
+{
+  "$schema": "../../Schemas/wfc-data.schema.json",
+  "schema": "moyva.wfc-data",
+  "version": 1,
+  "id": "wfcdatasettings",
+  "model": "wfc-data",
+  "tileRegistry": null,
+  "tileRules": [
+    {
+      "tileID": "grass-water-right",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "Left",
+          "allowedNeighbors": [
+            "water",
+            "grass-water-top-left-bottom"
+          ]
+        }
+      ],
+      "priority": 5,
+      "matchThreshold": 1.0
+    },
+    {
+      "tileID": "grass-water-left",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "Right",
+          "allowedNeighbors": [
+            "water",
+            "grass-water-top-left-bottom"
+          ]
+        }
+      ],
+      "priority": 5,
+      "matchThreshold": 1.0
+    },
+    {
+      "tileID": "grass-water-bottom",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "Top",
+          "allowedNeighbors": [
+            "water",
+            "grass-water-top-left-bottom"
+          ]
+        }
+      ],
+      "priority": 5,
+      "matchThreshold": 1.0
+    },
+    {
+      "tileID": "grass-water-top",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "Bottom",
+          "allowedNeighbors": [
+            "water",
+            "grass-water-top-left-bottom"
+          ]
+        }
+      ],
+      "priority": 5,
+      "matchThreshold": 1.0
+    },
+    {
+      "tileID": "grass-water-top-left",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "Top",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        },
+        {
+          "direction": "Left",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        },
+        {
+          "direction": "BottomRight",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "TopLeft",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        }
+      ],
+      "priority": 2,
+      "matchThreshold": 1.0
+    },
+    {
+      "tileID": "grass-water-top-right",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "BottomLeft",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "Top",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        },
+        {
+          "direction": "TopRight",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        },
+        {
+          "direction": "Right",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        }
+      ],
+      "priority": 2,
+      "matchThreshold": 1.0
+    },
+    {
+      "tileID": "grass-water-bottom-left",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "TopRight",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "Left",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        },
+        {
+          "direction": "Bottom",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        },
+        {
+          "direction": "BottomLeft",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        }
+      ],
+      "priority": 2,
+      "matchThreshold": 1.0
+    },
+    {
+      "tileID": "grass-water-inner-bottom-right",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "TopLeft",
+          "allowedNeighbors": [
+            "water",
+            "grass-water-top-left-bottom"
+          ]
+        },
+        {
+          "direction": "Top",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "Left",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "BottomRight",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        }
+      ],
+      "priority": 100,
+      "matchThreshold": 1.0
+    },
+    {
+      "tileID": "grass-water-bottom-right",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "TopLeft",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "Bottom",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        },
+        {
+          "direction": "Right",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        },
+        {
+          "direction": "BottomRight",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        }
+      ],
+      "priority": 2,
+      "matchThreshold": 1.0
+    },
+    {
+      "tileID": "grass-water-inner-top-left",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "BottomRight",
+          "allowedNeighbors": [
+            "water",
+            "grass-water-top-left-bottom"
+          ]
+        },
+        {
+          "direction": "TopLeft",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        },
+        {
+          "direction": "Right",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "Bottom",
+          "allowedNeighbors": [
+            "water"
+          ]
+        }
+      ],
+      "priority": 100,
+      "matchThreshold": 1.0
+    },
+    {
+      "tileID": "grass-water-inner-top-right",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "BottomLeft",
+          "allowedNeighbors": [
+            "water",
+            "grass-water-top-left-bottom"
+          ]
+        },
+        {
+          "direction": "TopRight",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        },
+        {
+          "direction": "Left",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "Bottom",
+          "allowedNeighbors": [
+            "water"
+          ]
+        }
+      ],
+      "priority": 100,
+      "matchThreshold": 1.0
+    },
+    {
+      "tileID": "grass-water-inner-bottom-left",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "Top",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "Right",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "TopRight",
+          "allowedNeighbors": [
+            "water",
+            "grass-water-top-left-bottom"
+          ]
+        },
+        {
+          "direction": "BottomLeft",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        }
+      ],
+      "priority": 100,
+      "matchThreshold": 1.0
+    },
+    {
+      "tileID": "grass-water-top-left-bottom",
+      "tileCentralID": "grass",
+      "constraints": [
+        {
+          "direction": "Left",
+          "allowedNeighbors": [
+            "grass"
+          ]
+        },
+        {
+          "direction": "Top",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "Right",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "TopRight",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "BottomRight",
+          "allowedNeighbors": [
+            "water"
+          ]
+        },
+        {
+          "direction": "Bottom",
+          "allowedNeighbors": [
+            "water"
+          ]
+        }
+      ],
+      "priority": 110,
+      "matchThreshold": 1.0
+    }
+  ],
+  "virtualTileIds": null,
+  "passCount": 5,
+  "forceTileNearWaterBand": true,
+  "nearWaterTileId": "grass",
+  "nearWaterRadius": 2,
+  "includeDiagonalsForNearWater": true,
+  "waterLikeTileIds": [
+    "water",
+    "sea",
+    "coast",
+    "water-shallow",
+    "water-deep",
+    "lake",
+    "river"
+  ],
+  "borderWaterTileId": "water",
+  "migration": {
+    "sourceAssetGuid": "fea7d1c6ea24608b2b4e75e082c67e84",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/WFCDataSettings.asset",
+    "sourceHash": "b9299829b99279ac4f7a5eafbf68bd2de723dcb7bc24ca9d59edbf691897e1b5"
+  }
+}

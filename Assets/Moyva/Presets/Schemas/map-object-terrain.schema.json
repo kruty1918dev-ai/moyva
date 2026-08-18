@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/map-object-terrain.schema.json",
+  "title": "Moyva — Map Object Terrain Config",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.API.MapObjectTerrainConfig. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.map-object-terrain"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "map-object-terrain"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "rules": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "objectId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Object Id",
+            "description": "ID об'єкта, який можна спавнити за цим правилом. Має існувати в реєстрі об'єктів карти, інакше генерація створить порожнє або невалідне посилання."
+          },
+          "minHeight": {
+            "type": "number",
+            "title": "Min Height",
+            "description": "Мінімальна висота, на якій правило дозволяє розміщувати об'єкт. Допомагає відсікати низини, береги або високогір'я."
+          },
+          "maxHeight": {
+            "type": "number",
+            "title": "Max Height",
+            "description": "Максимальна висота для цього об'єкта. Разом із MinHeight описує висотний діапазон допустимого спавну."
+          },
+          "biomeIdFilter": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Biome Id Filter",
+            "description": "Необов'язковий фільтр за біомом. Якщо заповнено, об'єкт буде з'являтися тільки на клітинках із цим Tile ID біому."
+          },
+          "spawnChance": {
+            "type": "number",
+            "title": "Spawn Chance",
+            "description": "Ймовірність спавну об'єкта в допустимій клітинці. 0 означає ніколи, 1 — завжди, якщо всі інші умови виконані.",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Rules",
+      "description": "Список правил розміщення об'єктів по місцевості. Кожне правило описує, який об'єкт, на якій висоті та в якому біомі може з'явитися."
+    }
+  }
+}

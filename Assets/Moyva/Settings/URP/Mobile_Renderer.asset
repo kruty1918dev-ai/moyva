@@ -204,7 +204,7 @@ MonoBehaviour:
   - {fileID: -6911283437992747537}
   - {fileID: -3650923340913689866}
   - {fileID: -4669532212205383062}
-  m_RendererFeatureMap: 052f64f5285a565ebb2abcf02599b025fa3c9edf54668ccdf63aa89a905055cd221830b6770ea57ecd2dbed39c0bf299f4b3c85baca9a81d
+  m_RendererFeatureMap: 052f64f5285a565ea27533035c8144eebb2abcf02599b025fa3c9edf54668ccdcd2dbed39c0bf299f4b3c85baca9a81d221830b6770ea57eefdd66a8543016a0f63aa89a905055cd6a124178317d32bf
   m_UseNativeRenderPass: 1
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_AssetVersion: 3
@@ -253,6 +253,8 @@ MonoBehaviour:
   _screenStateScale: 0.5
   _forceFullResolutionState: 1
   _applyInSceneView: 1
+  _applyInSceneViewDuringPlay: 0
+  _enableMorphologyDebugPasses: 0
   _logPipelineDiagnostics: 1
 --- !u!114 &2715838963536112315
 MonoBehaviour:

@@ -1,0 +1,19 @@
+{
+  "$schema": "../../Schemas/construction-wall-profile.schema.json",
+  "schema": "moyva.construction-wall-profile",
+  "version": 1,
+  "id": "constructionwallprofile-gamplay",
+  "model": "construction-wall-profile",
+  "allowGateReplacement": true,
+  "gateRequiresHorizontalWall": true,
+  "allowWallPathThroughExistingWalls": true,
+  "allowWallPathThroughPendingWalls": true,
+  "allowWallPathThroughGates": false,
+  "wallPathMode": "OrthogonalOnly",
+  "showWallHandles": true,
+  "migration": {
+    "sourceAssetGuid": "5610c6347ea24bd0a5f671ce379c9390",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/ConstructionWallProfile_Gamplay.asset",
+    "sourceHash": "1ec1806f65f1e8599ab34e6780f8657339dff05a628a61d7e0e69e5bd67ee696"
+  }
+}

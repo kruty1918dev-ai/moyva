@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Kruty1918.Moyva.Clouds.API;
 using System.Collections.Generic;
 using UnityEditor;
@@ -864,3 +865,4 @@ namespace Kruty1918.Moyva.Clouds.Editor
         }
     }
 }
+#endif

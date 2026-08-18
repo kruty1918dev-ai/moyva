@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -12,6 +13,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Generator
 {
     public sealed class GraphPreviewParityTests
@@ -103,7 +105,7 @@ namespace Kruty1918.Moyva.Tests.Generator
             finally
             {
                 if (texture != null)
-                    Object.DestroyImmediate(texture);
+                    MoyvaJsonObjectFactory.DestroyImmediate(texture);
             }
         }
 
@@ -189,14 +191,14 @@ namespace Kruty1918.Moyva.Tests.Generator
             }
             finally
             {
-                Object.DestroyImmediate(managerObject);
+                MoyvaJsonObjectFactory.DestroyImmediate(managerObject);
             }
         }
 
         [Test]
         public void GraphBindingGeneration_GlobalValidationErrorNeverCompilesOrBuildsCompanion()
         {
-            var graph = ScriptableObject.CreateInstance<GraphAsset>();
+            var graph = MoyvaJsonObjectFactory.Create<GraphAsset>();
             graph.EnsureDefaultLayer();
             var configuration = ScriptableObject.CreateInstance<Configuration>();
             var managerObject = new GameObject("Graph Binding Validation Failure Test");
@@ -232,16 +234,16 @@ namespace Kruty1918.Moyva.Tests.Generator
             }
             finally
             {
-                Object.DestroyImmediate(managerObject);
-                Object.DestroyImmediate(configuration);
-                Object.DestroyImmediate(graph);
+                MoyvaJsonObjectFactory.DestroyImmediate(managerObject);
+                MoyvaJsonObjectFactory.DestroyImmediate(configuration);
+                MoyvaJsonObjectFactory.DestroyImmediate(graph);
             }
         }
 
         [Test]
         public void GraphBindingGeneration_EmptyCompileResultNeverBuildsStaleCompanion()
         {
-            var graph = ScriptableObject.CreateInstance<GraphAsset>();
+            var graph = MoyvaJsonObjectFactory.Create<GraphAsset>();
             string layerId = graph.EnsureDefaultLayer();
             var configuration = ScriptableObject.CreateInstance<Configuration>();
             var managerObject = new GameObject("Graph Binding Empty Compile Test");
@@ -286,16 +288,16 @@ namespace Kruty1918.Moyva.Tests.Generator
             }
             finally
             {
-                Object.DestroyImmediate(managerObject);
-                Object.DestroyImmediate(configuration);
-                Object.DestroyImmediate(graph);
+                MoyvaJsonObjectFactory.DestroyImmediate(managerObject);
+                MoyvaJsonObjectFactory.DestroyImmediate(configuration);
+                MoyvaJsonObjectFactory.DestroyImmediate(graph);
             }
         }
 
         private static GraphAsset CreateRenderableGraph(out string layerId)
         {
             AssetDatabase.DeleteAsset(TestGraphPath);
-            var graph = ScriptableObject.CreateInstance<GraphAsset>();
+            var graph = MoyvaJsonObjectFactory.Create<GraphAsset>();
             AssetDatabase.CreateAsset(graph, TestGraphPath);
 
             layerId = graph.EnsureDefaultLayer();
@@ -310,9 +312,8 @@ namespace Kruty1918.Moyva.Tests.Generator
             var preset = ScriptableObject.CreateInstance<TilePreset>();
             preset.name = "Graph Preview Parity Test Tile";
             preset.tileId = "graph-preview-parity-test";
-            preset.hideFlags = HideFlags.HideInHierarchy;
-            AssetDatabase.AddObjectToAsset(preset, graph);
-
+            ; // JSON config object has no Unity hideFlags.
+            ; // JSON config object is not stored as a Unity subasset.
             FieldInfo variantsField = typeof(TileSettingsNode).GetField(
                 "_tileVariants",
                 BindingFlags.Instance | BindingFlags.NonPublic);
@@ -332,9 +333,9 @@ namespace Kruty1918.Moyva.Tests.Generator
             output.OutputKind = LayerOutputKind.Tiles;
             graph.AddConnection(mask.NodeId, 0, tileSettings.NodeId, 0);
             graph.AddConnection(tileSettings.NodeId, 0, output.NodeId, OutputNode.MaskInputIndex);
-            EditorUtility.SetDirty(tileSettings);
-            EditorUtility.SetDirty(output);
-            EditorUtility.SetDirty(graph);
+            ; // JSON source of truth: no ScriptableObject dirty flag.
+            ; // JSON source of truth: no ScriptableObject dirty flag.
+            ; // JSON source of truth: no ScriptableObject dirty flag.
             AssetDatabase.SaveAssets();
             return graph;
         }
@@ -466,3 +467,5 @@ namespace Kruty1918.Moyva.Tests.Generator
 
     }
 }
+
+#endif

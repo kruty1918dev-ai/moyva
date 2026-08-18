@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly ChunkFirstBuildDiagnostics _diagnostics;
         private readonly Dictionary<Vector2Int, ResolvedTileComposition> _resolved = new Dictionary<Vector2Int, ResolvedTileComposition>();
         private readonly List<MapChunkCoord> _singleChunk = new List<MapChunkCoord>(1);
+        private readonly HashSet<MapChunkCoord> _activeChunkCoords = new HashSet<MapChunkCoord>();
 
         public ChunkFirstWorldBuildService(
             ITileWorldCreatorBuildEnvironment environment,
@@ -88,6 +89,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     worldData.BaseMapWorldBounds,
                     NeighborhoodHalo);
 
+                ChunkAuditRuntime.BeginBuild(
+                    worldData.Width,
+                    worldData.Height,
+                    ResolveCellSize(worldData, configuration),
+                    worldData.HasBaseMapWorldBounds,
+                    worldData.BaseMapWorldBounds);
+
+                ReconcileVisualChunkRoots(areas);
                 ResolveCompositions(worldData.LogicalTileMap, areas);
                 int objectCandidates = CountObjectLikeSamples(worldData.LogicalTileMap)
                                        + CountCells(worldData.ObjectMap)
@@ -106,6 +115,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
         }
 
+        [System.Diagnostics.Conditional("MOYVA_DEEP_GENERATION_DIAGNOSTICS")]
         private static void TraceLogicalHeightSummary(
             GraphLogicalTileMap map)
         {
@@ -258,6 +268,27 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return hasTerrain ? lowest : 0f;
         }
 
+        private void ReconcileVisualChunkRoots(IReadOnlyList<ChunkBuildArea> areas)
+        {
+            _activeChunkCoords.Clear();
+            if (areas != null)
+            {
+                for (int i = 0; i < areas.Count; i++)
+                    _activeChunkCoords.Add(areas[i].Coord);
+            }
+
+            if (_roots is not IMapVisualChunkRootPruner pruner)
+                return;
+
+            int removed = pruner.RemoveRootsOutside(_activeChunkCoords);
+            if (removed > 0)
+            {
+                Debug.Log(
+                    "[MOYVA_CHUNK_SIZE] STALE_CHUNKS_REMOVED " +
+                    $"count={removed} activeChunks={_activeChunkCoords.Count}");
+            }
+        }
+
         private int BuildTerrainMeshes(IReadOnlyList<ChunkBuildArea> areas)
         {
             int built = 0;
@@ -268,6 +299,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 RegisterChunkRenderer(chunkRoot, areas[i].Coord);
             }
 
+            ChunkAuditRuntime.CompleteBuild();
             return built;
         }
 

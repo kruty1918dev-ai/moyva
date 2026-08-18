@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "coin-gold-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Coin-gold",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-56.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "6132d589116b48b5ac83925f40b3c069",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Claw.asset",
+    "sourceHash": "4a3016f8352dfd0e6bb9e2e120999cc0e2b51c78cf61b8bb8930fe292e030ec4"
+  }
+}

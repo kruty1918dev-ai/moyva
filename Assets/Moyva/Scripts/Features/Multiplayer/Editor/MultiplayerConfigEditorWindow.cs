@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System.IO;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
@@ -347,3 +348,5 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
         }
     }
 }
+
+#endif

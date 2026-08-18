@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.GameMode.Runtime;
 using Kruty1918.Moyva.Signals;
@@ -72,3 +73,5 @@ namespace Kruty1918.Moyva.Tests.GameMode
         }
     }
 }
+
+#endif

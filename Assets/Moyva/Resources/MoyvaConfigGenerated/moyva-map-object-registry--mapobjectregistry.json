@@ -1,0 +1,486 @@
+{
+  "$schema": "../../Schemas/map-object-registry.schema.json",
+  "schema": "moyva.map-object-registry",
+  "version": 1,
+  "id": "mapobjectregistry",
+  "model": "map-object-registry",
+  "definitions": [
+    {
+      "id": "green-forest-top-left-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-left-object-001.9ff1c6b8",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-left-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-right-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-right-object-001.d654b518",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-right-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-left-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-left-object-002.57a5fc36",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-left-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-middle-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-middle-object-002.6ff14ceb",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-middle-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-right-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-right-object-002.272ffe3a",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-right-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-left-object-003",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-left-object-003.67a39e96",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-left-object-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-right-object-003",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-right-object-003.8f642061",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-right-object-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-001.6f6b1251",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-left-object-004",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-left-object-004.13a2fdb4",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-left-object-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-middle-object-003",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-middle-object-003.e077748e",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-middle-object-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-right-object-004",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-right-object-004.b89c2dad",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-right-object-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-left-object-005",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-left-object-005.b932007e",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-left-object-005.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-right-object-005",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-right-object-005.8a64a806",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-right-object-005.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-left-object-006",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-left-object-006.a5c82a63",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-left-object-006.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-top-right-object-006",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-top-right-object-006.a5157c9f",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-top-right-object-006.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-002.023eb496",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-left-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-left-object-001.cf6e92bc",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-left-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-middle-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-middle-object-001.c9672a87",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-middle-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-right-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-right-object-001.e5314e88",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-right-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-left-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-left-object-002.3e1f5cc2",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-left-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-right-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-right-object-002.b4f34ddd",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-right-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-left-object-003",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-left-object-003.e4295a9a",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-left-object-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-right-object-003",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-right-object-003.ec2472c5",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-right-object-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-003",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-003.66ec5e38",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-left-object-004",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-left-object-004.b1895f4a",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-left-object-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-middle-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-middle-object-002.53f8442b",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-middle-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-right-object-004",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-right-object-004.3884d746",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-right-object-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-left-object-005",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-left-object-005.94769c9d",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-left-object-005.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-right-object-005",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-right-object-005.adfcff9f",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-right-object-005.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-left-object-006",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-left-object-006.0a02ec6a",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-left-object-006.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-right-object-006",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-right-object-006.d253a966",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-right-object-006.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-004",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-004.e13ae33a",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-left-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-left-object-001.3df2b33c",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-left-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-right-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-right-object-001.103077d9",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-right-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-left-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-left-object-002.417664a4",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-left-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-middle-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-middle-object-001.fe59c98b",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-middle-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-middle-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-middle-object-002.f2824e6b",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-middle-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-right-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-right-object-002.582ac6a1",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-right-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-left-object-003",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-left-object-003.07fa7048",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-left-object-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-right-object-003",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-right-object-003.cb531792",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-right-object-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-005",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-005.0ffa5347",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-005.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-left-object-004",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-left-object-004.3d931069",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-left-object-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-middle-object-003",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-middle-object-003.900607d4",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-middle-object-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-right-object-004",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-right-object-004.95f063f3",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-right-object-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-left-object-005",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-left-object-005.61c6f154",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-left-object-005.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-middle-object-004",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-middle-object-004.2cd962c1",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-middle-object-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-right-object-005",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-right-object-005.d82af99b",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-right-object-005.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-left-object-006",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-left-object-006.f5571e68",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-left-object-006.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-forest-down-right-object-006",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-forest-down-right-object-006.fee20eae",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-forest-down-right-object-006.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-006",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-006.fbcd364c",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-006.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "palm-tree-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.palm-tree-object-001.d577053c",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/palm-tree-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "palm-tree-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.palm-tree-object-002.b7de6940",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/palm-tree-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-007",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-007.7f95da5c",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-007.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-008",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-008.66597a88",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-008.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "palm-tree-object-003",
+      "visualPrefab": {
+        "$asset": "asset.game-object.palm-tree-object-003.22f390a1",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/palm-tree-object-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-stump-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-stump-object-001.f6983808",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-stump-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "palm-tree-stump-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.palm-tree-stump-object-001.dc40df1c",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/palm-tree-stump-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-object-001.30d96fa2",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/stone-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.stone-object-002.a6ade8c5",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/stone-object-002.prefab",
+        "required": true
+      }
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "c602fa50e26a4d741b0f0f08a03c82e5",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/Prototype/MapObjectRegistry.asset",
+    "sourceHash": "231cd0aa75e5bbf8811ca037c39909c665b83f31a7473dcb06fe40baf09da4ac"
+  }
+}

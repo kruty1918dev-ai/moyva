@@ -1,0 +1,6 @@
+patch=p24d-tech
+timestamp=20260818-200406
+project=/home/oleksiy/Документи/Projects/Moyva/Game-Project/moyva
+branch=optimaze
+HEAD=b801d7251441ff7869a6cf539d576dd4e5917405
+backupPath=/home/oleksiy/Документи/Projects/Moyva/Game-Project/moyva/.codex-backups/p24d-tech

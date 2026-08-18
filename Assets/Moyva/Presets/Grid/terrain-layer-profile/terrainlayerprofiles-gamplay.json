@@ -1,0 +1,58 @@
+{
+  "$schema": "../../Schemas/terrain-layer-profile.schema.json",
+  "schema": "moyva.terrain-layer-profile",
+  "version": 1,
+  "id": "terrainlayerprofiles-gamplay",
+  "model": "terrain-layer-profile",
+  "profiles": [
+    {
+      "layerId": "1d3eead6-7c79-4cf9-99b0-2fbeabc8333b",
+      "displayName": "Water",
+      "walkable": false,
+      "movementCost": 0.0,
+      "buildBlocked": true,
+      "surfaceOffset": 0.0,
+      "tags": [
+        "water"
+      ]
+    },
+    {
+      "layerId": "78af69b7-740e-4a85-bad4-866f58c4c7c7",
+      "displayName": "Land",
+      "walkable": true,
+      "movementCost": 1.0,
+      "buildBlocked": false,
+      "surfaceOffset": 0.0,
+      "tags": [
+        "land"
+      ]
+    },
+    {
+      "layerId": "f904bc0b-b8b6-4fdc-b371-76921129c59b",
+      "displayName": "Elevated Land",
+      "walkable": true,
+      "movementCost": 1.0,
+      "buildBlocked": false,
+      "surfaceOffset": 0.0,
+      "tags": [
+        "land"
+      ]
+    }
+  ],
+  "fallback": {
+    "layerId": "",
+    "displayName": "Default Land",
+    "walkable": true,
+    "movementCost": 1.0,
+    "buildBlocked": false,
+    "surfaceOffset": 0.0,
+    "tags": [
+      "land"
+    ]
+  },
+  "migration": {
+    "sourceAssetGuid": "61d7022fddcf42e9be9ec8cb7c3ac85d",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/TerrainLayerProfiles_Gamplay.asset",
+    "sourceHash": "0465f9638b696f5f5aa8bc2ea73253a2a54a75b16e8caba77dcf0345c4e2e976"
+  }
+}

@@ -73,11 +73,20 @@ namespace Kruty1918.Moyva.Construction.API
         [Header("Вартість будівництва")]
         [Tooltip("Список ресурсів і кількостей, необхідних для побудови 1 екземпляра цієї будівлі.\nПорожній список означає безкоштовне будівництво.")]
         public List<BuildingConstructionCostEntry> ConstructionCost = new List<BuildingConstructionCostEntry>();
+        public int BuildTurns = 1;
 
         [Header("Модулі")]
         [Tooltip("Компонентна модель будівлі. Runtime використовує модулі для визначення можливостей.")]
         [SerializeReference]
         public List<BuildingModuleDefinition> Modules = new List<BuildingModuleDefinition>();
+
+        /// <summary>
+        /// Runtime-only marker set by BuildingDefinitionAsset.ToRuntimeDefinition.
+        /// Asset snapshots are treated as immutable until RuntimeRevision creates
+        /// a replacement object, allowing safe capability lookup caching.
+        /// </summary>
+        [System.NonSerialized]
+        internal bool IsAssetRuntimeSnapshot;
 
         [Header("Здоров'я")]
         [Tooltip("Максимальне HP будівлі. Використовується для ініціалізації компонента IHealth під час spawn.")]

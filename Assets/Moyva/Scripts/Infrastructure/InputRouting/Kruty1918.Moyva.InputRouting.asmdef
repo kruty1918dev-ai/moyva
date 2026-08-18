@@ -1,0 +1,17 @@
+{
+  "name": "Kruty1918.Moyva.InputRouting",
+  "rootNamespace": "Kruty1918.Moyva.InputRouting",
+  "references": [
+    "Zenject",
+    "Unity.TextMeshPro"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

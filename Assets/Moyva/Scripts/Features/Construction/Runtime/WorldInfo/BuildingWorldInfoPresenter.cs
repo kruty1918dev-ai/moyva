@@ -53,10 +53,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
 
                 var title = string.IsNullOrWhiteSpace(definition.DisplayName)
-                    ? definition.Id
+                    ? "Будівля"
                     : definition.DisplayName;
 
-                var subtitle = BuildSubtitle(definition, settlementContext.SettlementId, settlementContext.SettlementName);
+                var subtitle = BuildSubtitle(definition, settlementContext.SettlementName);
                 var content = hasEconomyContext
                     ? BuildResourcesText(definition, settlementContext, signal.Position)
                     : BuildFallbackText(definition);
@@ -75,11 +75,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
-        private static string BuildSubtitle(BuildingDefinition definition, string settlementId, string settlementName)
+        private static string BuildSubtitle(BuildingDefinition definition, string settlementName)
         {
-            if (string.IsNullOrWhiteSpace(settlementName))
-                settlementName = settlementId;
-
             if (string.IsNullOrWhiteSpace(settlementName))
                 settlementName = "Без поселення";
 
@@ -98,14 +95,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private string BuildFallbackText(BuildingDefinition definition)
         {
             var details = new StringBuilder();
-            details.AppendLine("Базова інформація");
-            details.AppendLine($"ID: {definition.Id}");
-            details.AppendLine($"Категорія: {definition.Category}");
+            if (!string.IsNullOrWhiteSpace(definition.Description))
+                details.AppendLine(definition.Description.Trim());
 
-            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, details, ResolveResourceDisplayName))
-                return details.ToString().TrimEnd();
+            BuildingDefaultInfoExtractor.AppendMeaningfulFacts(
+                definition,
+                details,
+                ResolveResourceDisplayName);
 
-            return details.ToString().TrimEnd();
+            return details.Length > 0
+                ? details.ToString().TrimEnd()
+                : "Додаткових відомостей немає.";
         }
 
         private string BuildResourcesText(BuildingDefinition definition, EconomySettlementContext settlementContext, Vector2Int position)
@@ -190,7 +190,27 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         private string ResolveResourceDisplayName(string resourceId)
-            => _economyInfoMediator?.GetResourceDisplayName(resourceId)
-               ?? (string.IsNullOrWhiteSpace(resourceId) ? string.Empty : resourceId.Trim());
+        {
+            string mediated = _economyInfoMediator?.GetResourceDisplayName(resourceId);
+            if (!string.IsNullOrWhiteSpace(mediated)
+                && !string.Equals(mediated, resourceId, StringComparison.OrdinalIgnoreCase))
+            {
+                return mediated;
+            }
+
+            switch ((resourceId ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "material":
+                case "materials": return "Матеріали";
+                case "food": return "Їжа";
+                case "money": return "Гроші";
+                case "wood": return "Деревина";
+                case "hardwood": return "Оброблена деревина";
+                case "stone": return "Камінь";
+                case "iron":
+                case "iron-ore": return "Залізо";
+                default: return "Ресурс";
+            }
+        }
     }
 }

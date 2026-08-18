@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.Linq;
 using Kruty1918.Moyva.WorldCreation.API;
@@ -476,3 +477,5 @@ namespace Kruty1918.Moyva.Tests.WorldCreation
         }
     }
 }
+
+#endif

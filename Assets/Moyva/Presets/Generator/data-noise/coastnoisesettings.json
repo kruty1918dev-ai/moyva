@@ -1,0 +1,20 @@
+{
+  "$schema": "../../Schemas/data-noise.schema.json",
+  "schema": "moyva.data-noise",
+  "version": 1,
+  "id": "coastnoisesettings",
+  "model": "data-noise",
+  "scale": 28.0,
+  "octaves": 4,
+  "persistance": 0.5,
+  "lacunarity": 2.3,
+  "offset": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "migration": {
+    "sourceAssetGuid": "e41ee05714c8b8a10987cb1ef493f3cf",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/CoastNoiseSettings.asset",
+    "sourceHash": "8578967a9bd04602c2e212623ccc5a752e7697b65350392320a4b5f077a1733e"
+  }
+}

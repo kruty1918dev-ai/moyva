@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Signals;
@@ -178,7 +179,7 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
         }
 
         [Test]
-        public void UnitInfoRequest_FiresWorldInfoSignal_WithUnitAndEconomyData()
+        public void UnitInfoRequest_FiresPlayerFacingWorldInfoWithoutTechnicalIds()
         {
             WorldInfoPanelRequestedSignal? payload = null;
             _signalBus.Subscribe<WorldInfoPanelRequestedSignal>(signal => payload = signal);
@@ -190,12 +191,12 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
             });
 
             Assert.IsTrue(payload.HasValue);
-            Assert.AreEqual("worker", payload.Value.Title);
+            Assert.AreEqual("Юніт", payload.Value.Title);
             StringAssert.Contains("Робітник", payload.Value.Subtitle);
-            StringAssert.Contains("ID: unit_1", payload.Value.Content);
-            StringAssert.Contains("Поточна стаміна: 42", payload.Value.Content);
-            StringAssert.Contains("Ресурси поселення", payload.Value.Content);
-            StringAssert.Contains("Food", payload.Value.Content);
+            StringAssert.Contains("Витривалість: 42 / 50", payload.Value.Content);
+            StringAssert.Contains("Огляд: 3", payload.Value.Content);
+            StringAssert.DoesNotContain("unit_1", payload.Value.Content);
+            StringAssert.DoesNotContain("TypeId", payload.Value.Content);
         }
 
         [Test]
@@ -214,3 +215,5 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
         }
     }
 }
+
+#endif

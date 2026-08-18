@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Animations.API;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Units.API
 {
     public enum UnitRole
@@ -63,7 +64,7 @@ namespace Kruty1918.Moyva.Units.API
     }
 
     [Serializable]
-    public class UnitClassConfig
+    public class UnitClassConfig : MoyvaJsonConfigObject
     {
         /// <summary>
         /// ВАЖЛИВО: У написані айді НЕ повино використовуватися нижнє підкреслення, окільки це є зарезервований символ для внутрішнього використання (наприклад, для позначення інстанцій юнітів). Рекомендується використовувати дефіси або camelCase. Наприклад: "warrior-01" або "Warrior01".

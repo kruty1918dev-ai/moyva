@@ -2,14 +2,14 @@ using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.FogOfWar.Runtime.SettingsValidation;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.FogOfWar.API
 {
     /// <summary>
-    /// Root ScriptableObject config for FogOfWar. Serialized fields live in partial files
+    /// Root MoyvaJsonConfigObject config for FogOfWar. Serialized fields live in partial files
     /// so Unity keeps existing field names while feature sections stay isolated.
     /// </summary>
-    [CreateAssetMenu(menuName = "Moyva/FogOfWarSettings", fileName = "FogOfWarSettings")]
-    public partial class FogOfWarSettings : ScriptableObject
+public partial class FogOfWarSettings : MoyvaJsonConfigObject
     {
         /// <summary>
         /// Backward-compatible wrapper for older call sites.

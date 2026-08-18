@@ -1,0 +1,302 @@
+{
+  "$schema": "../../Schemas/tile-registry.schema.json",
+  "schema": "moyva.tile-registry",
+  "version": 1,
+  "id": "tileregistry",
+  "model": "tile-registry",
+  "definitions": [
+    {
+      "id": "water",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.water.1d32aeff",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/water.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "ocean-deep",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.ocean-deep.9b6a0d1f",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/ocean-deep.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "ocean-shallow",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.ocean-shallow.6dcb2a7c",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/ocean-shallow.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "beach",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.beach.1e1d4f94",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/beach.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "lowland",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.lowland.c9a436dd",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/lowland.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass.23151ff9",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "hill",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.hill.3ef4f4f1",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/hill.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "mountain",
+      "movementCost": 3.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.mountain.ddc2d68d",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/mountain.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "snow",
+      "movementCost": 2.5,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.snow.58d1c3ca",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/snow.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "forest-sparse",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.forest-sparse.fcee0ae9",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/forest-sparse.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "forest-dense",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.forest-dense.d38490c7",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/forest-dense.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-bottom",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-bottom.6f59c631",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-bottom.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-bottom-left",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-bottom-left.8d4f4dfa",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-bottom-left.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-bottom-right",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-bottom-right.0c3d9e0b",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-bottom-right.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-inner-bottom-left",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-inner-bottom-left.d8f3f3ac",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-inner-bottom-left.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-inner-bottom-right",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-inner-bottom-right.a2e58d97",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-inner-bottom-right.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-inner-top-left",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-inner-top-left.b9e767a4",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-inner-top-left.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-inner-top-right",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-inner-top-right.f05b5caa",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-inner-top-right.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-left",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-left.9e594f2e",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-left.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-right",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-right.fdde62bf",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-right.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-top",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-top.c9dfacfd",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-top.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-top-left",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-top-left.5fbb082e",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-top-left.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-top-right",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-top-right.a8de0c37",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-top-right.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-water-top-left-bottom",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": null,
+      "tileWorldCreatorBlueprintLayerGuid": null,
+      "tileWorldCreatorBlueprintLayerName": null,
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-water-top-left-bottom.6cc76dfa",
+        "editorPath": "Assets/Moyva/Prefabs/Tiles/2D/grass-water-top-left-bottom.prefab",
+        "required": true
+      }
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "332cfa21445e1342f9c69617f297cc4a",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Tile/TileRegistry.asset",
+    "sourceHash": "3bdbe17ea2934faeac8b7acd705f41ff6d39451b6835da95e899e023ef4059c1"
+  }
+}

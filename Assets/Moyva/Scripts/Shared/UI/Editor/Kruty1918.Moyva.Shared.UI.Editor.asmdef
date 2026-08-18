@@ -1,19 +1,20 @@
 {
-    "name": "Kruty1918.Moyva.Shared.UI.Editor",
-    "rootNamespace": "Kruty1918.Moyva.Shared.UI.Editor",
-    "references": [
-        "Kruty1918.Moyva.Shared",
-        "Unity.TextMeshPro"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Kruty1918.Moyva.Shared.UI.Editor",
+  "rootNamespace": "Kruty1918.Moyva.Shared.UI.Editor",
+  "references": [
+    "Kruty1918.Moyva.Shared",
+    "Unity.TextMeshPro",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

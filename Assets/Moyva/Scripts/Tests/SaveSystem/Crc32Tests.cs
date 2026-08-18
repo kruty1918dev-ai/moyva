@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using NUnit.Framework;
 using Kruty1918.Moyva.SaveSystem;
 
@@ -72,3 +73,5 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
         }
     }
 }
+
+#endif

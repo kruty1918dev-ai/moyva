@@ -1,0 +1,140 @@
+{
+  "$schema": "../../Schemas/building-registry.schema.json",
+  "schema": "moyva.building-registry",
+  "version": 1,
+  "id": "new-building-registry-so",
+  "model": "building-registry",
+  "wallCollections": [
+    {
+      "collectionId": "wall-stone-collection-0",
+      "wallBuildingId": "stone-wall",
+      "gateBuildingId": "stone-gate",
+      "horizontalPrefab": {
+        "$asset": "asset.game-object.wall-stone-collection-0-horizontal.190f77ff",
+        "editorPath": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Horizontal.prefab",
+        "required": true
+      },
+      "verticalPrefab": {
+        "$asset": "asset.game-object.wall-stone-collection-0-vertical.bb393500",
+        "editorPath": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Vertical.prefab",
+        "required": true
+      },
+      "cornerNorthEastPrefab": {
+        "$asset": "asset.game-object.wall-stone-collection-0-corner-ne.9221769d",
+        "editorPath": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Corner_NE.prefab",
+        "required": true
+      },
+      "cornerNorthWestPrefab": {
+        "$asset": "asset.game-object.wall-stone-collection-0-corner-nw.f0bc445a",
+        "editorPath": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Corner_NW.prefab",
+        "required": true
+      },
+      "cornerSouthEastPrefab": {
+        "$asset": "asset.game-object.wall-stone-collection-0-corner-se.50f4088b",
+        "editorPath": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Corner_SE.prefab",
+        "required": true
+      },
+      "cornerSouthWestPrefab": {
+        "$asset": "asset.game-object.wall-stone-collection-0-corner-sw.d26a187a",
+        "editorPath": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Corner_SW.prefab",
+        "required": true
+      },
+      "gatePrefab": {
+        "$asset": "asset.game-object.wall-stone-collection-0-gate.2fc84416",
+        "editorPath": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Gate.prefab",
+        "required": true
+      },
+      "topologyBindings": [
+        {
+          "caseType": "Horizontal",
+          "variantBuildingIds": [
+            "stone-wall_horizontal"
+          ]
+        },
+        {
+          "caseType": "Vertical",
+          "variantBuildingIds": [
+            "stone-wall_vertical"
+          ]
+        },
+        {
+          "caseType": "CornerNorthEast",
+          "variantBuildingIds": [
+            "stone-wall_corner_ne"
+          ]
+        },
+        {
+          "caseType": "CornerNorthWest",
+          "variantBuildingIds": [
+            "stone-wall_corner_nw"
+          ]
+        },
+        {
+          "caseType": "CornerSouthEast",
+          "variantBuildingIds": [
+            "stone-wall_corner_se"
+          ]
+        },
+        {
+          "caseType": "CornerSouthWest",
+          "variantBuildingIds": [
+            "stone-wall_corner_sw"
+          ]
+        },
+        {
+          "caseType": "VerticalLeft",
+          "variantBuildingIds": [
+            "wall_stone_collection_0_vertical_left"
+          ]
+        },
+        {
+          "caseType": "VerticalRight",
+          "variantBuildingIds": [
+            "wall_stone_collection_0_vertical_right"
+          ]
+        },
+        {
+          "caseType": "HorizontalTop",
+          "variantBuildingIds": [
+            "wall_stone_collection_0_horizontal_top"
+          ]
+        },
+        {
+          "caseType": "HorizontalBottom",
+          "variantBuildingIds": [
+            "wall_stone_collection_0_horizontal_bottom"
+          ]
+        },
+        {
+          "caseType": "EndNorth",
+          "variantBuildingIds": [
+            "wall_stone_collection_0_end_north"
+          ]
+        },
+        {
+          "caseType": "EndSouth",
+          "variantBuildingIds": [
+            "wall_stone_collection_0_end_south"
+          ]
+        },
+        {
+          "caseType": "EndEast",
+          "variantBuildingIds": [
+            "wall_stone_collection_0_end_east"
+          ]
+        },
+        {
+          "caseType": "EndWest",
+          "variantBuildingIds": [
+            "wall_stone_collection_0_end_west"
+          ]
+        }
+      ]
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "10b50407045da99758fd720b41437642",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/New Building Registry SO.asset",
+    "sourceHash": "365118700305bc70d7d3b1aae6523460a45e44412fd02cdcead34cc9856a5d70"
+  }
+}

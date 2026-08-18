@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using System.Reflection;
 using GiantGrey.TileWorldCreator;
@@ -7,6 +8,7 @@ using Kruty1918.Moyva.Grid.API;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.FogOfWar
 {
     [TestFixture]
@@ -31,7 +33,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Assert.IsFalse(updater.DebugHasUnexploredCell(new Vector2Int(2, 0)));
             Assert.IsFalse(updater.DebugHasExploredCell(new Vector2Int(2, 0)));
 
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
             updater.Dispose();
         }
 
@@ -57,7 +59,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Assert.IsFalse(updater.DebugHasExploredCell(new Vector2Int(0, 0)));
             Assert.IsTrue(updater.DebugHasExploredCell(new Vector2Int(1, 0)));
 
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
             updater.Dispose();
         }
 
@@ -91,9 +93,9 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
 
             updater.Dispose();
             Assert.AreSame(sourceConfiguration, manager.configuration);
-            Object.DestroyImmediate(managerObject);
-            Object.DestroyImmediate(sourceConfiguration);
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(managerObject);
+            MoyvaJsonObjectFactory.DestroyImmediate(sourceConfiguration);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
         }
 
         [Test]
@@ -121,8 +123,8 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Assert.AreEqual(1, updater.DebugRuntimeConfiguration.blueprintLayerFolders[0].blueprintLayers.Count);
 
             updater.Dispose();
-            Object.DestroyImmediate(managerObject);
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(managerObject);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
         }
 
         [Test]
@@ -153,8 +155,8 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
                 updater.DebugRuntimeConfiguration.blueprintLayerFolders[0].blueprintLayers[1].defaultLayerHeight);
 
             updater.Dispose();
-            Object.DestroyImmediate(managerObject);
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(managerObject);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
         }
 
         [Test]
@@ -191,13 +193,13 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Assert.LessOrEqual(updater.DebugRuntimeConfiguration.buildLayerFolders[0].buildLayers.Count, 9);
 
             updater.Dispose();
-            Object.DestroyImmediate(managerObject);
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(managerObject);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
         }
 
         private static FogOfWarSettings CreateSettings()
         {
-            var settings = ScriptableObject.CreateInstance<FogOfWarSettings>();
+            var settings = MoyvaJsonObjectFactory.Create<FogOfWarSettings>();
             settings.EnableStartupFallbackReveal = false;
             settings.Volume.EnsureDefaults();
             settings.Volume.Unexplored.Enabled = true;
@@ -264,3 +266,5 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
     }
 }
+
+#endif

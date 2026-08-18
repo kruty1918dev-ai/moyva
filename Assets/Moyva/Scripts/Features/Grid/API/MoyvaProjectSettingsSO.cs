@@ -1,9 +1,10 @@
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Grid.API
 {
-    [CreateAssetMenu(fileName = "MoyvaProjectSettings", menuName = "Moyva/Project Settings", order = 0)]
-    public sealed class MoyvaProjectSettingsSO : ScriptableObject
+[System.Serializable]
+public sealed class MoyvaProjectSettingsSO : MoyvaJsonConfigObject
     {
         public const string DefaultAssetPath = "Assets/Moyva/Data/ScriptableObjects/ProjectDefaults/MoyvaProjectSettings.asset";
 
@@ -101,7 +102,7 @@ namespace Kruty1918.Moyva.Grid.API
 
         public static MoyvaProjectSettingsSO CreateRuntimeDefault()
         {
-            var settings = CreateInstance<MoyvaProjectSettingsSO>();
+            var settings = MoyvaJsonObjectFactory.Create<MoyvaProjectSettingsSO>();
             settings.name = "Runtime Moyva Project Settings";
             settings.Normalize();
             return settings;

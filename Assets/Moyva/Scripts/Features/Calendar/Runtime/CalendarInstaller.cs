@@ -6,16 +6,6 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Calendar.Runtime
 {
-    /// <summary>
-    /// Zenject MonoInstaller для модуля календаря.
-    ///
-    /// Installer завжди піднімає локальний авторитетний календар.
-    /// Рішення про host/client не приймається тут і має походити з відповідальних
-    /// session/network сервісів. Для соло-гри це означає, що календар завжди доступний.
-    ///
-    /// Підключіть цей installer у сцені. Якщо <see cref="_sessionConfig"/> не призначено,
-    /// буде використано <see cref="CalendarConfig.Default()"/> (рік = <see cref="CalendarConfig.PeakUkraineYear"/> — 1054 р.).
-    /// </summary>
     public sealed class CalendarInstaller : MonoInstaller
     {
         [SerializeField]
@@ -35,6 +25,7 @@ namespace Kruty1918.Moyva.Calendar.Runtime
             var service = new GameCalendarService(config);
             Container.BindInstance(service).AsSingle();
             Container.Bind<ICalendarService>().FromInstance(service).AsSingle();
+            Container.Bind<ICalendarStateRestorer>().FromInstance(service).AsSingle();
 
             var adapter = new CalendarSyncAdapter(service);
             Container.BindInstance(adapter).AsSingle();

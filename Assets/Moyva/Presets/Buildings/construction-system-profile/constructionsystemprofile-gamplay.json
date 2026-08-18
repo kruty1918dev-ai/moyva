@@ -1,0 +1,61 @@
+{
+  "$schema": "../../Schemas/construction-system-profile.schema.json",
+  "schema": "moyva.construction-system-profile",
+  "version": 1,
+  "id": "constructionsystemprofile-gamplay",
+  "model": "construction-system-profile",
+  "buildingRegistry": {
+    "$config": {
+      "model": "building-registry",
+      "id": "new-building-registry-so"
+    }
+  },
+  "placementRulesProfile": {
+    "$config": {
+      "model": "construction-placement-rules-profile",
+      "id": "constructionplacementrulesprofile-gamplay"
+    }
+  },
+  "visualProfile": {
+    "$config": {
+      "model": "construction-visual-profile",
+      "id": "constructionvisualprofile-gamplay"
+    }
+  },
+  "inputProfile": {
+    "$config": {
+      "model": "construction-input-profile",
+      "id": "constructioninputprofile-gamplay"
+    }
+  },
+  "wallProfile": {
+    "$config": {
+      "model": "construction-wall-profile",
+      "id": "constructionwallprofile-gamplay"
+    }
+  },
+  "diagnosticsProfile": {
+    "$config": {
+      "model": "construction-diagnostics-profile",
+      "id": "constructiondiagnosticsprofile-gamplay"
+    }
+  },
+  "economyRulesProfile": {
+    "$config": {
+      "model": "economy-rules-config",
+      "id": "economyrulesconfig"
+    }
+  },
+  "fogOfWarSettings": {
+    "$config": {
+      "model": "fog-of-war",
+      "id": "fogofwarsettings"
+    }
+  },
+  "highlightedDefinitions": [],
+  "migration": {
+    "sourceAssetGuid": "1ec8fb00ceb9412896b7aef5e42fd827",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/ConstructionSystemProfile_Gamplay.asset",
+    "sourceHash": "09b717271cb226796c016ef9a79da447427dc9a1918a428b5a67c5c60d28303b"
+  }
+}

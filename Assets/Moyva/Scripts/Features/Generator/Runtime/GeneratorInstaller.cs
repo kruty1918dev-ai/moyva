@@ -11,6 +11,7 @@ using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator
 {
     /// <summary>
@@ -44,6 +45,15 @@ namespace Kruty1918.Moyva.Generator
 
         public override void InstallBindings()
         {
+            // Resolve direct gameplay synchronously during installer execution. Zenject IInitializable
+            // execution can occur after MonoBehaviour.Start, while this installer has a Start fallback.
+            bool startupGateApplied = GameLaunchContext.EnsureDirectGameplayTestFallback();
+            Debug.Log(
+                $"[MOYVA_DIAG][STARTUP][INFO] startup-context-gate scene={gameObject.scene.name} " +
+                $"startupGateApplied={startupGateApplied} resolvedMode={GameLaunchContext.Mode} " +
+                $"source={GameLaunchContext.Source} worldSettings={GameLaunchContext.HasWorldSettings} " +
+                $"maxPlayers={GameLaunchContext.MaxPlayers}");
+
             Debug.Log(
                 $"{GeneratorBootDiagTag} GeneratorInstaller.InstallBindings ENTER scene={gameObject.scene.name}, " +
                 $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}");
@@ -208,6 +218,21 @@ namespace Kruty1918.Moyva.Generator
 
             if (_tileWorldCreatorManager == null)
                 _tileWorldCreatorManager = FindFirst<TileWorldCreatorManager>();
+
+            EnsureRuntimeConfiguration();
+        }
+
+        private void EnsureRuntimeConfiguration()
+        {
+            if (_tileWorldCreatorManager == null || _tileWorldCreatorManager.configuration != null)
+                return;
+
+            var configuration = ScriptableObject.CreateInstance<Configuration>();
+            configuration.name = "Moyva Runtime TWC Configuration";
+            _tileWorldCreatorManager.configuration = configuration;
+            Debug.Log(
+                $"{GeneratorBootDiagTag} Created transient TileWorldCreator configuration because the scene reference was missing.",
+                _tileWorldCreatorManager);
         }
 
         private TileRegistrySO ResolveTileRegistry()
@@ -219,7 +244,7 @@ namespace Kruty1918.Moyva.Generator
                 return _graphAsset.TileRegistry;
 
             Debug.LogError("[GeneratorInstaller] TileRegistrySO не знайдено. Створено runtime empty registry, але gameplay tile definitions будуть порожні.", this);
-            var empty = ScriptableObject.CreateInstance<TileRegistrySO>();
+            var empty = MoyvaJsonObjectFactory.Create<TileRegistrySO>();
             empty.name = "RuntimeEmptyTileRegistry";
             return empty;
         }
@@ -236,6 +261,7 @@ namespace Kruty1918.Moyva.Generator
             private const string PolicyDiagTag = "[MoyvaStartPolicyDiag]";
             private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
             private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
+            private const string StartupDiagTag = "[MOYVA_DIAG][STARTUP]";
             private readonly MapVisualInstantiator _mapVisualInstantiator;
             private readonly IWorldGenerationDiagnostics _worldDiagnostics;
             private bool _buildTriggered;
@@ -320,9 +346,25 @@ namespace Kruty1918.Moyva.Generator
                     $"mapDataGenerator={mapDataGeneratorType}");
                 UnityEngine.Debug.Log($"{DirectDiagTag} GeneratorStartup.Initialize shouldBuild={shouldBuild}, mode={GameLaunchContext.Mode}.");
                 UnityEngine.Debug.Log($"{PolicyDiagTag} GeneratorStartup.Initialize shouldBuild={shouldBuild}, mode={GameLaunchContext.Mode}.");
+                UnityEngine.Debug.Log(
+                    $"{StartupDiagTag}[INFO] world-build-decision scene={UnityEngine.SceneManagement.SceneManager.GetActiveScene().name} " +
+                    $"resolvedMode={GameLaunchContext.Mode} source={GameLaunchContext.Source} " +
+                    $"worldSettings={GameLaunchContext.HasWorldSettings} maxPlayers={GameLaunchContext.MaxPlayers} " +
+                    $"shouldBuild={shouldBuild} reason={reason} hasInstantiator={hasInstantiator} " +
+                    $"hasCurrentWorld={hasCurrentWorld} hasPendingWorld={hasPendingWorld}");
 
                 if (!shouldBuild)
                 {
+                    if (GameLaunchContext.Mode == GameLaunchMode.Unknown)
+                    {
+                        UnityEngine.Debug.LogError(
+                            $"{StartupDiagTag}[CRITICAL] gameplay-start-invalid " +
+                            $"scene={UnityEngine.SceneManagement.SceneManager.GetActiveScene().name} " +
+                            $"resolvedMode={GameLaunchContext.Mode} source={GameLaunchContext.Source} " +
+                            $"worldSettings={GameLaunchContext.HasWorldSettings} maxPlayers={GameLaunchContext.MaxPlayers} " +
+                            $"shouldBuild=false reason={reason}");
+                    }
+
                     UnityEngine.Debug.LogWarning($"{GeneratorBootDiagTag} GeneratorStartup.SKIP BuildWorld reason={reason}");
                     UnityEngine.Debug.LogWarning($"{WorldGenDiagTag} GeneratorStartup.SKIP BuildWorld reason={reason}");
                     _worldDiagnostics?.ReportStartup();
@@ -345,6 +387,10 @@ namespace Kruty1918.Moyva.Generator
                 _worldDiagnostics?.MapVisualBuildWorldCalled($"source={buildSource}, caller=GeneratorStartup");
                 UnityEngine.Debug.Log($"{GeneratorBootDiagTag} GeneratorStartup.CALL MapVisual.BuildWorld");
                 UnityEngine.Debug.Log($"{WorldGenDiagTag} GeneratorStartup.CALL MapVisualInstantiator.BuildWorld source={buildSource}");
+                UnityEngine.Debug.Log(
+                    $"{StartupDiagTag}[INFO] world-build-dispatch " +
+                    $"scene={UnityEngine.SceneManagement.SceneManager.GetActiveScene().name} " +
+                    $"resolvedMode={GameLaunchContext.Mode} source={GameLaunchContext.Source} buildSource={buildSource}");
                 _mapVisualInstantiator.BuildWorld();
                 UnityEngine.Debug.Log($"{WorldGenDiagTag} GeneratorStartup.EXIT BuildWorldReturned frame={UnityEngine.Time.frameCount}, time={UnityEngine.Time.realtimeSinceStartup:F3}");
             }

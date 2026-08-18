@@ -1,0 +1,30 @@
+{
+  "$schema": "../../Schemas/height-map.schema.json",
+  "schema": "moyva.height-map",
+  "version": 1,
+  "id": "height-map-generation-heightmapsettings",
+  "model": "height-map",
+  "heightLayers": [
+    {
+      "tileID": "water",
+      "tileIDChance": 1.0,
+      "weightedVariants": null,
+      "variantTileIDs": null,
+      "minHeight": 0.0,
+      "maxHeight": 0.1
+    },
+    {
+      "tileID": "grass",
+      "tileIDChance": 1.0,
+      "weightedVariants": null,
+      "variantTileIDs": null,
+      "minHeight": 0.1,
+      "maxHeight": 1.0
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "c3d295a14e0ab800893230f6b49661e2",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/HeightMapSettings.asset",
+    "sourceHash": "137624cb9243961923eecb5629d615e671547803f3ced1bbdc6d9dee49d388bc"
+  }
+}

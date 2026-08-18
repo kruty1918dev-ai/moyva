@@ -1,0 +1,39 @@
+{
+  "$schema": "../../Schemas/graphics-startup-settings.schema.json",
+  "schema": "moyva.graphics-startup-settings",
+  "version": 1,
+  "id": "moyvastartupgraphics",
+  "model": "graphics-startup-settings",
+  "startupSettings": {
+    "profile": "Auto",
+    "targetFrameRate": 60,
+    "renderScale": 1.0,
+    "dynamicRenderScale": false,
+    "closeZoomOptimization": false,
+    "textureMipmapLimit": 0,
+    "antiAliasing": 0,
+    "vSync": false,
+    "shadows": true,
+    "anisotropicFiltering": true,
+    "lodBias": 1.0
+  },
+  "zoomSettings": {
+    "closeZoomFullPressureOrthographicSize": 7.5,
+    "closeZoomNoPressureOrthographicSize": 18.0,
+    "closeZoomFullPressureFieldOfView": 22.0,
+    "closeZoomNoPressureFieldOfView": 45.0,
+    "closeZoomRenderScaleMin": 0.48
+  },
+  "developerPixelOptimization": {
+    "enabled": false,
+    "renderScaleCap": 0.56,
+    "minimumTextureMipmapLimit": 1,
+    "forceDisableAntiAliasing": true,
+    "forceDisableAnisotropicFiltering": true
+  },
+  "migration": {
+    "sourceAssetGuid": "c03dec00585dbd4b5bb4adbd569bc7de",
+    "sourceAssetPath": "Assets/Moyva/Resources/MoyvaStartupGraphics.asset",
+    "sourceHash": "c4ac7379a82497ce2496a9d2d319490a4d1987a569093694b12f3bed70d559f3"
+  }
+}

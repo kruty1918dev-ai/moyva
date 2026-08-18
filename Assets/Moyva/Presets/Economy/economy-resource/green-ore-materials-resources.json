@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "green-ore-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Green-ore",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-23.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "51bd2aa2d56944ad8826ceab7469081c",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Gold-ore.asset",
+    "sourceHash": "7ad4f59ed1247710e724caed998187e9b4e20a01a6b4e3b6e13b8c2ee094f9fc"
+  }
+}

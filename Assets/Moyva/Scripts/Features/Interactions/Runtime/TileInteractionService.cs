@@ -6,6 +6,7 @@ using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.Turns.API;
 using UnityEngine;
 using Zenject;
 using System;
@@ -31,7 +32,10 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly IMapObjectRegistryService _mapObjectRegistryService;
         private readonly IMapObjectEconomyService _mapObjectEconomyService;
         private readonly IUnitMovementService _unitMovementService;
+        private readonly IUnitOwnershipQuery _unitOwnershipQuery;
+        private readonly IConstructionService _constructionService;
         private readonly SignalBus _signalBus;
+        private readonly ITurnService _turns;
         private GameModeType _currentMode = GameModeType.Normal;
         
         private string _selectedUnitId;
@@ -52,6 +56,9 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             [InjectOptional] IMapObjectRegistryService mapObjectRegistryService,
             [InjectOptional] IMapObjectEconomyService mapObjectEconomyService,
             [InjectOptional] IUnitMovementService unitMovementService,
+            [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery,
+            [InjectOptional] IConstructionService constructionService,
+            [InjectOptional] ITurnService turns,
             SignalBus signalBus)
         {
             _gridService = gridService;
@@ -60,6 +67,9 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _mapObjectRegistryService = mapObjectRegistryService;
             _mapObjectEconomyService = mapObjectEconomyService;
             _unitMovementService = unitMovementService;
+            _unitOwnershipQuery = unitOwnershipQuery;
+            _constructionService = constructionService;
+            _turns = turns;
             _signalBus = signalBus;
         }
 
@@ -116,7 +126,10 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         private void OnTileClicked(TileClickedSignal signal)
         {
-            HandleTileClick(signal.Position);
+            if (signal.Button == TilePointerButton.Secondary)
+                HandleSecondaryTileClick(signal.Position);
+            else
+                HandleTileClick(signal.Position);
         }
 
         public void HandleTileClick(Vector2Int position)
@@ -218,31 +231,41 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 }
 
                 // Вибрати нового юніта (замість попереднього)
-                _selectedUnitId = occupantId;
+                _selectedUnitId = CanCommandUnit(occupantId)
+                    ? occupantId
+                    : null;
                 _signalBus.Fire(new UnitInfoPanelRequestedSignal
                 {
                     UnitId = occupantId,
                     Position = position,
                 });
-                Debug.Log($"[Interaction] Вибрано юніта: {_selectedUnitId} на позиції {position}");
+                Debug.Log(_selectedUnitId != null
+                    ? $"[Interaction] Вибрано власного юніта: {_selectedUnitId} на позиції {position}"
+                    : $"[Interaction] Іноземний юніт '{occupantId}' відкритий лише для огляду.");
+                return;
+            }
+        }
+
+        private void HandleSecondaryTileClick(Vector2Int position)
+        {
+            if (!_isActive
+                || string.IsNullOrWhiteSpace(_selectedUnitId)
+                || !_gridService.TryGetTileData(position, out _)
+                || !CanCommandUnit(_selectedUnitId))
+            {
                 return;
             }
 
-            // --- Клік на порожній тайл ---
-            if (!string.IsNullOrEmpty(_selectedUnitId))
-            {
-                string unitToMove = _selectedUnitId;
-                _selectedUnitId = null;
+            _objectsMapService.TryGetOccupant(position, out string occupantId);
+            if (!string.IsNullOrWhiteSpace(occupantId))
+                return;
 
-                Debug.Log($"[Interaction] Наказ для {unitToMove}: рух до {position}");
-
-                StartMove(unitToMove, position);
-            }
+            StartMove(_selectedUnitId, position);
         }
 
         private void StartMove(string unitId, Vector2Int target)
         {
-            if (string.IsNullOrEmpty(unitId))
+            if (string.IsNullOrEmpty(unitId) || !CanCommandUnit(unitId))
                 return;
 
             // Скасовуємо попередній рух (InterruptMovementSignal надіслано в CancelMovement).
@@ -255,11 +278,32 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             // Маршрутизуємо через MultiplayerAuthorityService:
             // офлайн/хост → виконає MoveUnitAsync локально;
             // клієнт → надішле Request до хоста.
-            _signalBus.Fire(new MoveUnitRequestSignal { UnitId = unitId, TargetPosition = target });
+            _signalBus.Fire(new MoveUnitRequestSignal
+            {
+                UnitId = unitId,
+                TargetPosition = target,
+                RequesterOwnerId = GetLocalOwnerId(),
+            });
 
             if (VerboseLogs)
                 Debug.Log($"[Interaction] Move requested for {unitId} to {target}");
         }
+
+        private bool CanCommandUnit(string unitId)
+        {
+            if (_unitOwnershipQuery == null || string.IsNullOrWhiteSpace(unitId))
+                return false;
+
+            return string.Equals(
+                _unitOwnershipQuery.GetUnitOwnerId(unitId)?.Trim(),
+                GetLocalOwnerId(),
+                StringComparison.Ordinal);
+        }
+
+        private string GetLocalOwnerId()
+            => _turns?.LocalOwnerId?.Trim()
+               ?? _constructionService?.GetActiveOwner()?.Trim()
+               ?? string.Empty;
 
         private void OnWorldInfoSelectionChanged(WorldInfoSelectionChangedSignal signal)
         {

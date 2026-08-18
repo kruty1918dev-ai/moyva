@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Economy.API
 {
     /// <summary>
     /// Переопредяління параметрів економічних правил для конкретного світу / слоту збереження.
     /// Зберігає тільки змінені параметри (спільно з базовою конфіг).
     /// </summary>
-    [CreateAssetMenu(menuName = "Moyva/Economy/World Economy Override", fileName = "WorldEconomyOverride")]
-    public sealed class WorldEconomyOverride : ScriptableObject
+[System.Serializable]
+public sealed class WorldEconomyOverride : MoyvaJsonConfigObject
     {
         /// <summary>
         /// Пара: ID параметра -> нове значення.

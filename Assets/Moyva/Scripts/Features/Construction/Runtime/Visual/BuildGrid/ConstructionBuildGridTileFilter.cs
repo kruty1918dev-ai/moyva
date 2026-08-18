@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using Zenject;
@@ -15,18 +16,21 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IConstructionPlacementQuery _placementQuery;
         private readonly BuildModeGridStateController _stateController;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
+        private readonly IFogStateReader _fogStateReader;
 
         [Inject]
         public ConstructionBuildGridTileFilter(
             IGridService gridService,
             IConstructionPlacementQuery placementQuery,
             BuildModeGridStateController stateController,
-            [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)
+            [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null,
+            [InjectOptional] IFogStateReader fogStateReader = null)
         {
             _gridService = gridService;
             _placementQuery = placementQuery;
             _stateController = stateController;
             _settingsProvider = settingsProvider;
+            _fogStateReader = fogStateReader;
         }
 
         public bool ShouldRender(Vector2Int position)
@@ -36,6 +40,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (_gridService == null || !_gridService.TryGetTileData(position, out _))
                 return ConstructionBuildGridTileVisualState.Missing;
+
+            /*
+             * Construction requires the tile to be currently Visible.
+             * Reject hidden cells before mode dispatch and before the
+             * expensive placement query.
+             */
+            if (_fogStateReader != null
+                && !_fogStateReader.IsVisible(position))
+            {
+                return ConstructionBuildGridTileVisualState.Missing;
+            }
 
             // An unfiltered chunk surface is a neutral grid. Its mask is independent
             // from selection and placement state, so it can be prepared off-screen.
@@ -67,6 +82,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (_gridService == null
                 || !_gridService.TryGetTileData(position, out _)
+                || (_fogStateReader != null
+                    && !_fogStateReader.IsVisible(position))
                 || _placementQuery == null
                 || string.IsNullOrWhiteSpace(buildingId))
             {
@@ -80,12 +97,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 buildingId,
                 position,
                 ignoredPendingPosition,
-                includeResources: true,
+                includeResources: false,
                 includePendingPlacements: true,
                 attemptSource:
                     ConstructionPlacementAttemptSource.GridTileFilter,
                 allowUniquePreviewRelocation: true);
-            return _placementQuery.EvaluatePlacement(request).CanPreview;
+
+            /*
+             * CanPreview ignores resource affordability by contract.
+             * Avoid the economy query on this boolean render path.
+             */
+            return _placementQuery
+                .EvaluatePlacement(request)
+                .CanPreview;
         }
 
         private ConstructionBuildGridTileVisualState ResolvePlacementVisualState(

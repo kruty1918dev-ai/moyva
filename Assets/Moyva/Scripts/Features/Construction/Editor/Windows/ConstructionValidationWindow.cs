@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System.Collections.Generic;
 using System.Text;
 using Kruty1918.Moyva.Construction.API;
@@ -84,3 +85,5 @@ namespace Kruty1918.Moyva.Construction.Editor
         }
     }
 }
+
+#endif

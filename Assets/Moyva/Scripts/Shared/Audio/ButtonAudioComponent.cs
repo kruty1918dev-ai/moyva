@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Audio.Runtime
 {
     /// <summary>
@@ -70,7 +71,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
             if (_cachedRegistry != null)
                 return;
 
-            _cachedRegistry = Resources.Load<AudioRegistrySO>("MoyvaAudioRegistry");
+            _cachedRegistry = MoyvaJsonRuntime.GetLegacyResource<AudioRegistrySO>("MoyvaAudioRegistry");
         }
     }
 }

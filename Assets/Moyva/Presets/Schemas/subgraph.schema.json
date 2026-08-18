@@ -1,0 +1,733 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/subgraph.schema.json",
+  "title": "Moyva — Subgraph Node",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.Runtime.Nodes.SubgraphNode. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.subgraph"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "subgraph"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "subgraph": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "$config": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "$config"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "nodes": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "$config": {
+                        "type": "object",
+                        "required": [
+                          "id"
+                        ],
+                        "properties": {
+                          "model": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    },
+                    "required": [
+                      "$config"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "$type": {
+                        "type": "string",
+                        "enum": [
+                          "add",
+                          "base-noise",
+                          "bool-and",
+                          "bool-invert",
+                          "bool-or",
+                          "bool-subtract",
+                          "bool-value",
+                          "bool-xor",
+                          "cluster-scatter",
+                          "constant-cell-mask",
+                          "distance-field",
+                          "edge-mask",
+                          "float-value",
+                          "graph-preview-full-map-mask",
+                          "grass-card-generator",
+                          "int-value",
+                          "layer-mask-reference",
+                          "mask-morphology",
+                          "mask-relay",
+                          "noise-map",
+                          "normalize-map",
+                          "null-output",
+                          "object-layer",
+                          "object-output-to-twc",
+                          "object-scatter",
+                          "output",
+                          "perlin-noise-mask",
+                          "placement-mask",
+                          "range-mask",
+                          "remap-map",
+                          "required-relay",
+                          "seed",
+                          "shape-mask",
+                          "shared-settings",
+                          "slope-mask",
+                          "smooth-map",
+                          "string-value",
+                          "subgraph",
+                          "subgraph-input",
+                          "terrace-map",
+                          "texture-mask",
+                          "threshold-mask",
+                          "tile-settings",
+                          "twc-modifier",
+                          "wave-function-collapse",
+                          "wrong-output-count",
+                          "wrong-output-size",
+                          "wrong-output-type"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "$type"
+                    ],
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type."
+              },
+              "title": "Nodes"
+            },
+            "connections": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "connectionId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Connection Id"
+                  },
+                  "sourceNodeId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Source Node Id"
+                  },
+                  "sourcePortIndex": {
+                    "type": "integer",
+                    "title": "Source Port Index"
+                  },
+                  "targetNodeId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Target Node Id"
+                  },
+                  "targetPortIndex": {
+                    "type": "integer",
+                    "title": "Target Port Index"
+                  },
+                  "sourceElementIndex": {
+                    "type": "integer",
+                    "title": "Source Element Index"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Connections"
+            },
+            "version": {
+              "type": "integer",
+              "title": "Version"
+            },
+            "sharedSettings": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "mapWidth": {
+                  "type": "integer",
+                  "title": "Map Width",
+                  "description": "Authoritative ширина мапи у тайлах. Коли > 0, це значення використовується і Graph Preview, і gameplay generation. 0 = дозволити runtime/menu визначати розмір.",
+                  "minimum": 0.0,
+                  "x-moyva-editorMinimum": 0.0
+                },
+                "mapHeight": {
+                  "type": "integer",
+                  "title": "Map Height",
+                  "description": "Authoritative висота мапи у тайлах. Коли > 0, це значення використовується і Graph Preview, і gameplay generation. 0 = дозволити runtime/menu визначати розмір.",
+                  "minimum": 0.0,
+                  "x-moyva-editorMinimum": 0.0
+                },
+                "gridTopology": {
+                  "type": "string",
+                  "pattern": "^(?:-?\\d+|(?:Orthogonal|HexAxial|Layered))$",
+                  "x-enumNames": [
+                    "Orthogonal",
+                    "HexAxial",
+                    "Layered"
+                  ],
+                  "x-flags": false,
+                  "title": "Grid Topology"
+                },
+                "projectionMode": {
+                  "type": "string",
+                  "pattern": "^(?:-?\\d+|(?:Isometric3DPreview|Orthographic3D))$",
+                  "x-enumNames": [
+                    "Isometric3DPreview",
+                    "Orthographic3D"
+                  ],
+                  "x-flags": false,
+                  "title": "Projection Mode"
+                },
+                "renderMode": {
+                  "type": "string",
+                  "pattern": "^(?:-?\\d+|(?:Mesh3DPreview|Mesh3D))$",
+                  "x-enumNames": [
+                    "Mesh3DPreview",
+                    "Mesh3D"
+                  ],
+                  "x-flags": false,
+                  "title": "Render Mode"
+                },
+                "neighborhoodMode": {
+                  "type": "string",
+                  "pattern": "^(?:-?\\d+|(?:Auto|Moore8|VonNeumann4|HexAxial6))$",
+                  "x-enumNames": [
+                    "Auto",
+                    "Moore8",
+                    "VonNeumann4",
+                    "HexAxial6"
+                  ],
+                  "x-flags": false,
+                  "title": "Neighborhood Mode"
+                }
+              },
+              "additionalProperties": false,
+              "title": "Shared Settings"
+            },
+            "globalGraphState": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "graphId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "title": "Graph Id"
+                },
+                "layerId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "title": "Layer Id"
+                },
+                "version": {
+                  "type": "integer",
+                  "title": "Version"
+                },
+                "nodeIds": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "title": "Node Ids"
+                },
+                "connectionIds": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "title": "Connection Ids"
+                }
+              },
+              "additionalProperties": false,
+              "title": "Global Graph State"
+            },
+            "layers": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Id"
+                  },
+                  "name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Name"
+                  },
+                  "color": {
+                    "type": "object",
+                    "properties": {
+                      "r": {
+                        "type": "number"
+                      },
+                      "g": {
+                        "type": "number"
+                      },
+                      "b": {
+                        "type": "number"
+                      },
+                      "a": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "r",
+                      "g",
+                      "b",
+                      "a"
+                    ],
+                    "additionalProperties": false,
+                    "title": "Color"
+                  },
+                  "sortingOrder": {
+                    "type": "integer",
+                    "title": "Sorting Order"
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "title": "Enabled"
+                  },
+                  "defaultHeight": {
+                    "type": "number",
+                    "title": "Default Height"
+                  },
+                  "useZeroLayerPadding": {
+                    "type": "boolean",
+                    "title": "Use Zero Layer Padding"
+                  },
+                  "extraWidthCells": {
+                    "type": "integer",
+                    "title": "Extra Width Cells",
+                    "minimum": 0.0,
+                    "x-moyva-editorMinimum": 0.0
+                  },
+                  "extraLengthCells": {
+                    "type": "integer",
+                    "title": "Extra Length Cells",
+                    "minimum": 0.0,
+                    "x-moyva-editorMinimum": 0.0
+                  },
+                  "generateFlatSurface": {
+                    "type": "boolean",
+                    "title": "Generate Flat Surface"
+                  },
+                  "flatSurfaceMaterial": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Flat Surface Material"
+                  },
+                  "tileGeometryMode": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:SolidTerrain|SurfaceOnly))$",
+                    "x-enumNames": [
+                      "SolidTerrain",
+                      "SurfaceOnly"
+                    ],
+                    "x-flags": false,
+                    "title": "Tile Geometry Mode"
+                  },
+                  "authoredClosurePolicy": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:PreserveAuthored|GeneratedClosure|TopOnlyTemplate))$",
+                    "x-enumNames": [
+                      "PreserveAuthored",
+                      "GeneratedClosure",
+                      "TopOnlyTemplate"
+                    ],
+                    "x-flags": false,
+                    "title": "Authored Closure Policy"
+                  },
+                  "buildLayerKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Build Layer Key"
+                  },
+                  "blueprintLayerGuid": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Blueprint Layer Guid"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Layers",
+              "description": "Шари генератора. Кожен шар має власний підграф і компілюється в blueprint-шар TileWorldCreator."
+            },
+            "layerGraphStates": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "graphId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Graph Id"
+                  },
+                  "layerId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Layer Id"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "title": "Version"
+                  },
+                  "nodeIds": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "title": "Node Ids"
+                  },
+                  "connectionIds": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "title": "Connection Ids"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Layer Graph States"
+            },
+            "tileRegistry": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "$config": {
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "properties": {
+                        "model": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "$config"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "definitions": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Id"
+                          },
+                          "movementCost": {
+                            "type": "number",
+                            "title": "Movement Cost"
+                          },
+                          "tileWorldCreatorPreset": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                            "properties": {
+                              "$asset": {
+                                "type": "string",
+                                "title": "Asset ID"
+                              },
+                              "editorPath": {
+                                "type": "string",
+                                "description": "Editor-only path для діагностики/регенерації catalog."
+                              },
+                              "required": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            },
+                            "required": [
+                              "$asset"
+                            ],
+                            "title": "Tile World Creator Preset"
+                          },
+                          "tileWorldCreatorBlueprintLayerGuid": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Tile World Creator Blueprint Layer Guid"
+                          },
+                          "tileWorldCreatorBlueprintLayerName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Tile World Creator Blueprint Layer Name"
+                          },
+                          "visualPrefab": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                            "properties": {
+                              "$asset": {
+                                "type": "string",
+                                "title": "Asset ID"
+                              },
+                              "editorPath": {
+                                "type": "string",
+                                "description": "Editor-only path для діагностики/регенерації catalog."
+                              },
+                              "required": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            },
+                            "required": [
+                              "$asset"
+                            ],
+                            "title": "Visual Prefab"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "title": "Definitions"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Реєстр тайлів цього графа.",
+              "title": "Tile Registry"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type.",
+      "title": "Subgraph"
+    },
+    "outputLayerId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Output Layer Id",
+      "description": "ID шару підграфа, Output якого потрібно повернути. Для графа з одним Output визначається автоматично."
+    },
+    "nodeId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Node Id"
+    },
+    "editorPosition": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Editor Position"
+    },
+    "layerId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Layer Id"
+    }
+  }
+}

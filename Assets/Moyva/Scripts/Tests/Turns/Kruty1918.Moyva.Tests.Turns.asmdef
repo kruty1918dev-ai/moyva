@@ -1,0 +1,22 @@
+{
+  "name": "Kruty1918.Moyva.Tests.Turns",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Turns",
+  "references": [
+    "Zenject",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.Calendar",
+    "Kruty1918.Moyva.Turns",
+    "Kruty1918.Moyva.Bootstrap"
+  ],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll"],
+  "autoReferenced": false,
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,729 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/building.schema.json",
+  "title": "Moyva — Building Definition Asset",
+  "description": "JSON source of truth для Kruty1918.Moyva.Construction.API.BuildingDefinitionAsset. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.building"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "building-definition"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "placementModuleMigrationVersion": {
+      "type": "integer",
+      "title": "Placement Module Migration Version"
+    },
+    "identity": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Id"
+        },
+        "displayName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Display Name"
+        },
+        "category": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Military|Civilian|Industrial|Walls))$",
+          "x-enumNames": [
+            "Military",
+            "Civilian",
+            "Industrial",
+            "Walls"
+          ],
+          "x-flags": false,
+          "title": "Category"
+        },
+        "role": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:None|Housing|Production|Storage|SettlementCenter|Defense|Wall|Gate|Decoration|Support))$",
+          "x-enumNames": [
+            "None",
+            "Housing",
+            "Production",
+            "Storage",
+            "SettlementCenter",
+            "Defense",
+            "Wall",
+            "Gate",
+            "Decoration",
+            "Support"
+          ],
+          "x-flags": false,
+          "title": "Role"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Description"
+        },
+        "tags": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": "Tags"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Identity"
+    },
+    "presentation": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "prefab": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Prefab"
+        },
+        "icon": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Icon"
+        },
+        "runtimePreview": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Runtime Preview"
+        },
+        "uiTint": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Ui Tint"
+        },
+        "visualYOffset": {
+          "type": "number",
+          "title": "Visual Y Offset"
+        },
+        "previewSettings": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "cameraOffset": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "z": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "z"
+              ],
+              "additionalProperties": false,
+              "title": "Camera Offset"
+            },
+            "cameraEulerAngles": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "z": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "z"
+              ],
+              "additionalProperties": false,
+              "title": "Camera Euler Angles"
+            },
+            "orthographicSize": {
+              "type": "number",
+              "title": "Orthographic Size",
+              "minimum": 1.0,
+              "x-moyva-editorMinimum": 1.0
+            },
+            "backgroundColor": {
+              "type": "object",
+              "properties": {
+                "r": {
+                  "type": "number"
+                },
+                "g": {
+                  "type": "number"
+                },
+                "b": {
+                  "type": "number"
+                },
+                "a": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b",
+                "a"
+              ],
+              "additionalProperties": false,
+              "title": "Background Color"
+            }
+          },
+          "additionalProperties": false,
+          "title": "Preview Settings"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Presentation"
+    },
+    "footprint": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "size": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false,
+          "title": "Size"
+        },
+        "anchor": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Center|SouthWest|Custom))$",
+          "x-enumNames": [
+            "Center",
+            "SouthWest",
+            "Custom"
+          ],
+          "x-flags": false,
+          "title": "Anchor"
+        },
+        "customAnchor": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false,
+          "title": "Custom Anchor"
+        },
+        "blocksMovement": {
+          "type": "boolean",
+          "title": "Blocks Movement"
+        },
+        "blocksConstruction": {
+          "type": "boolean",
+          "title": "Blocks Construction"
+        },
+        "requiresFlatGround": {
+          "type": "boolean",
+          "title": "Requires Flat Ground"
+        },
+        "occupiedCells": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "additionalProperties": false
+          },
+          "title": "Occupied Cells"
+        },
+        "entranceCells": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "additionalProperties": false
+          },
+          "title": "Entrance Cells"
+        },
+        "roadConnectionCells": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "additionalProperties": false
+          },
+          "title": "Road Connection Cells"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Footprint"
+    },
+    "placement": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "canPlaceInFog": {
+          "type": "boolean",
+          "title": "Can Place In Fog"
+        },
+        "requiresSettlementInfluence": {
+          "type": "boolean",
+          "title": "Requires Settlement Influence"
+        },
+        "createsSettlementInfluence": {
+          "type": "boolean",
+          "title": "Creates Settlement Influence"
+        },
+        "blockIfSettlementCenterInRange": {
+          "type": "boolean",
+          "title": "Block If Settlement Center In Range"
+        },
+        "influenceRadius": {
+          "type": "integer",
+          "title": "Influence Radius"
+        },
+        "minDistanceFromSettlementCenters": {
+          "type": "integer",
+          "title": "Min Distance From Settlement Centers"
+        },
+        "requiredTerrainIds": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": "Required Terrain Ids"
+        },
+        "requiredNeighborOffsets": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "additionalProperties": false
+          },
+          "title": "Required Neighbor Offsets"
+        },
+        "requiresWaterNearby": {
+          "type": "boolean",
+          "title": "Requires Water Nearby"
+        },
+        "requiresForestNearby": {
+          "type": "boolean",
+          "title": "Requires Forest Nearby"
+        },
+        "requiresMountainNearby": {
+          "type": "boolean",
+          "title": "Requires Mountain Nearby"
+        },
+        "requiresRoadNearby": {
+          "type": "boolean",
+          "title": "Requires Road Nearby"
+        },
+        "nearbyTileRequirements": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "tileId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Tile Id",
+                "description": "ID потрібного тайла або біому.\nСаме це поле каже системі, який тип місцевості шукати навколо будівлі.\nПриклади: forest-dense для лісу, water для води, grass для відкритої рівнини."
+              },
+              "terrainTag": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Terrain Tag",
+                "description": "Альтернатива точному TileId: семантичний terrain-тег, наприклад water або forest."
+              },
+              "radius": {
+                "type": "integer",
+                "title": "Radius",
+                "description": "Радіус пошуку тайла в клітинках.\nВизначає, наскільки далеко від будівлі дозволено шукати потрібну місцевість.\nЗбільшуйте значення для споруд, що використовують широку околицю, і зменшуйте для локальних залежностей.",
+                "minimum": 1.0,
+                "x-moyva-editorMinimum": 1.0
+              },
+              "minimumTileCount": {
+                "type": "integer",
+                "title": "Minimum Tile Count",
+                "description": "Мінімальна кількість клітинок цього типу, яку треба знайти в заданому радіусі.\nПоле задає поріг достатності місцевості для роботи будівлі.\nНаприклад, мисливська хатина може вимагати кілька лісових клітин, а місту вистачає однієї водної.",
+                "minimum": 1.0,
+                "x-moyva-editorMinimum": 1.0
+              }
+            },
+            "additionalProperties": false
+          },
+          "title": "Nearby Tile Requirements"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Placement"
+    },
+    "construction": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "cost": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "resourceId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Resource Id",
+                "description": "ID ресурсу з EconomyDatabaseSO, який потрібен для будівництва.\nВибирається зі списку ресурсів через dropdown."
+              },
+              "amount": {
+                "type": "integer",
+                "title": "Amount",
+                "description": "Кількість ресурсу, яка витрачається на будівництво 1 одиниці цієї споруди.",
+                "minimum": 1.0,
+                "x-moyva-editorMinimum": 1.0
+              }
+            },
+            "additionalProperties": false
+          },
+          "title": "Cost"
+        },
+        "buildTurns": {
+          "type": "integer",
+          "title": "Build Turns"
+        },
+        "requiresBuilder": {
+          "type": "boolean",
+          "title": "Requires Builder"
+        },
+        "workRequired": {
+          "type": "integer",
+          "title": "Work Required"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Construction"
+    },
+    "runtimeStats": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "maxHp": {
+          "type": "integer",
+          "title": "Max Hp"
+        },
+        "armor": {
+          "type": "integer",
+          "title": "Armor"
+        },
+        "flags": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:None|BlocksPath|Selectable|Damageable|RequiresCompletion)(?:, (?:None|BlocksPath|Selectable|Damageable|RequiresCompletion))*)$",
+          "x-enumNames": [
+            "None",
+            "BlocksPath",
+            "Selectable",
+            "Damageable",
+            "RequiresCompletion"
+          ],
+          "x-flags": true,
+          "title": "Flags"
+        },
+        "runtimeTags": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": "Runtime Tags"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Runtime Stats"
+    },
+    "modules": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "$type": {
+            "type": "string",
+            "enum": [
+              "barn",
+              "building-per-player-limit-module",
+              "building-prerequisite-module",
+              "castle",
+              "defense",
+              "fog-placement-rule-module",
+              "fog-reveal",
+              "garrison",
+              "gate",
+              "housing",
+              "production",
+              "replacement-placement-rule-module",
+              "settlement-center",
+              "settlement-influence-requirement",
+              "spacing-placement-rule-module",
+              "storage",
+              "terrain-placement-rule-module",
+              "tile-requirement",
+              "town-hall",
+              "wall",
+              "warehouse",
+              "workerless",
+              "workforce"
+            ]
+          }
+        },
+        "required": [
+          "$type"
+        ],
+        "additionalProperties": true
+      },
+      "title": "Modules"
+    }
+  }
+}

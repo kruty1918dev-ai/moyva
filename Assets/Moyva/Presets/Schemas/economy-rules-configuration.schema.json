@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/economy-rules-configuration.schema.json",
+  "title": "Moyva — Economy Rules Configuration",
+  "description": "JSON source of truth для Kruty1918.Moyva.Economy.API.EconomyRulesConfiguration. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.economy-rules-configuration"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "economy-rules-configuration"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "parameters": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Id"
+          },
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Display Name"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Description"
+          },
+          "category": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:SettlementRules|PopulationRules|WorkforceRules|ProductionRules|StorageRules|CaravanRules|MarketRules|ConsumptionNeeds|DeathMortality|BuildingRules|AIExtensibility))$",
+            "x-enumNames": [
+              "SettlementRules",
+              "PopulationRules",
+              "WorkforceRules",
+              "ProductionRules",
+              "StorageRules",
+              "CaravanRules",
+              "MarketRules",
+              "ConsumptionNeeds",
+              "DeathMortality",
+              "BuildingRules",
+              "AIExtensibility"
+            ],
+            "x-flags": false,
+            "title": "Category"
+          },
+          "parameterType": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:Integer|Float|Boolean|String))$",
+            "x-enumNames": [
+              "Integer",
+              "Float",
+              "Boolean",
+              "String"
+            ],
+            "x-flags": false,
+            "title": "Parameter Type"
+          },
+          "defaultValue": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Default Value"
+          },
+          "minValue": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Min Value"
+          },
+          "maxValue": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Max Value"
+          },
+          "step": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Step"
+          },
+          "isOverridable": {
+            "type": "boolean",
+            "title": "Is Overridable"
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Parameters"
+    }
+  }
+}

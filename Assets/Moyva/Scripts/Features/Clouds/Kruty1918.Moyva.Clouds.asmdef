@@ -1,17 +1,18 @@
 {
-    "name": "Kruty1918.Moyva.Clouds",
-    "rootNamespace": "Kruty1918.Moyva.Clouds",
-    "references": [
-        "Kruty1918.Moyva.Grid",
-        "Zenject"
-    ],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Kruty1918.Moyva.Clouds",
+  "rootNamespace": "Kruty1918.Moyva.Clouds",
+  "references": [
+    "Kruty1918.Moyva.Grid",
+    "Zenject",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

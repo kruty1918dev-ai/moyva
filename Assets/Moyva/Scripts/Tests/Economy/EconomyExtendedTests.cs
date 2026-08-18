@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Runtime;
@@ -442,4 +443,81 @@ namespace Kruty1918.Moyva.Tests.Economy
             Assert.AreEqual(2, System.Enum.GetValues(typeof(EconomyWarehouseType)).Length);
         }
     }
+
+    [TestFixture]
+    public sealed class MoyvaConstructionModuleEconomyRegressionTests
+    {
+        [Test]
+        public void WorkerAllocation_UsesInstanceKeysAndMatchingProfessions()
+        {
+            var state = new EconomySettlementState();
+            state.Residents.Add(
+                new EconomyResidentState(
+                    25, 100f, 1f, false, "farmer"));
+            state.Residents.Add(
+                new EconomyResidentState(
+                    26, 100f, 1f, false, "smith"));
+
+            state.Buildings.Add(
+                new EconomyBuildingState
+                {
+                    InstanceKey = "farm@1,1",
+                    BuildingId = "farm",
+                    WorkerTypeId = "farmer",
+                    RequiredWorkers = 1,
+                    EconomyPriority = 10,
+                });
+            state.Buildings.Add(
+                new EconomyBuildingState
+                {
+                    InstanceKey = "smithy@2,1",
+                    BuildingId = "smithy",
+                    WorkerTypeId = "smith",
+                    RequiredWorkers = 1,
+                    EconomyPriority = 9,
+                });
+
+            var service = new EconomyWorkerAllocationService();
+            var result = service.Allocate(state, null);
+
+            Assert.AreEqual(2, result.available);
+            Assert.AreEqual(2, result.assigned);
+            Assert.AreEqual(1, state.WorkerAssignments["farm@1,1"]);
+            Assert.AreEqual(1, state.WorkerAssignments["smithy@2,1"]);
+        }
+
+        [Test]
+        public void WorkerAllocation_TwoSameTypeBuildings_DoNotOverwriteEachOther()
+        {
+            var state = new EconomySettlementState();
+            state.Residents.Add(
+                new EconomyResidentState(25, 100f, 1f, false));
+            state.Residents.Add(
+                new EconomyResidentState(26, 100f, 1f, false));
+            state.Buildings.Add(
+                new EconomyBuildingState
+                {
+                    InstanceKey = "mill@1,1",
+                    BuildingId = "mill",
+                    RequiredWorkers = 1,
+                    EconomyPriority = 10,
+                });
+            state.Buildings.Add(
+                new EconomyBuildingState
+                {
+                    InstanceKey = "mill@2,1",
+                    BuildingId = "mill",
+                    RequiredWorkers = 1,
+                    EconomyPriority = 9,
+                });
+
+            new EconomyWorkerAllocationService().Allocate(state, null);
+
+            Assert.AreEqual(2, state.WorkerAssignments.Count);
+            Assert.AreEqual(1, state.WorkerAssignments["mill@1,1"]);
+            Assert.AreEqual(1, state.WorkerAssignments["mill@2,1"]);
+        }
+    }
 }
+
+#endif

@@ -1,23 +1,24 @@
 {
-    "name": "Kruty1918.Moyva.Economy.Editor",
-    "rootNamespace": "Kruty1918.Moyva.Economy.Editor",
-    "references": [
-        "Kruty1918.Moyva.Economy",
-        "Kruty1918.Moyva.EditorShared",
-        "Kruty1918.Moyva.Construction",
-        "Kruty1918.Moyva.Units",
-        "Kruty1918.Moyva.Grid",
-        "Kruty1918.Moyva.Generator"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": false,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Kruty1918.Moyva.Economy.Editor",
+  "rootNamespace": "Kruty1918.Moyva.Economy.Editor",
+  "references": [
+    "Kruty1918.Moyva.Economy",
+    "Kruty1918.Moyva.EditorShared",
+    "Kruty1918.Moyva.Construction",
+    "Kruty1918.Moyva.Units",
+    "Kruty1918.Moyva.Grid",
+    "Kruty1918.Moyva.Generator",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

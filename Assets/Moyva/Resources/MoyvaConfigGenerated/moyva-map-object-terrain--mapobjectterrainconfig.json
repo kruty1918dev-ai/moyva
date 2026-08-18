@@ -1,0 +1,13 @@
+{
+  "$schema": "../../Schemas/map-object-terrain.schema.json",
+  "schema": "moyva.map-object-terrain",
+  "version": 1,
+  "id": "mapobjectterrainconfig",
+  "model": "map-object-terrain",
+  "rules": [],
+  "migration": {
+    "sourceAssetGuid": "284b60d4324dd7995abbf40740c66e9c",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/MapObjectTerrainConfig.asset",
+    "sourceHash": "da506c8a9c8a9f31aa00eaeef23d49764b9ace97158a1a0a7aa628e6d446b0fb"
+  }
+}

@@ -11,8 +11,46 @@ namespace Kruty1918.Moyva.Construction.Runtime
             out bool placementSucceeded)
         {
             placementSucceeded = false;
-            if (!TryGetSelectedDefinition(out BuildingDefinition definition))
+            if (!TryGetSelectedDefinition(
+                    out BuildingDefinition definition))
+            {
                 return false;
+            }
+
+            if (BuildingDefinitionCapabilities
+                    .IsStrictPerOwnerUnique(definition))
+            {
+                if (TryFindPendingPlacementByBuildingId(
+                        _selectedBuildingId,
+                        out int strictPendingIndex))
+                {
+                    Vector2Int pendingPosition =
+                        _pendingPlacements[strictPendingIndex].Position;
+                    placementSucceeded =
+                        pendingPosition == targetPosition
+                        || TryMovePendingPlacement(
+                            pendingPosition,
+                            targetPosition);
+                    return true;
+                }
+
+                if (TryFindOwnedPlacedBuildingPosition(
+                        _selectedBuildingId,
+                        _activeOwnerId,
+                        out Vector2Int existingCastlePosition))
+                {
+                    _lastActionMessage =
+                        $"Замок уже побудований на {existingCastlePosition}. " +
+                        "Другий замок для цього гравця заборонений.";
+                    Debug.Log(
+                        $"{ModuleLogTag} castle-placement blocked " +
+                        $"owner={_activeOwnerId} " +
+                        $"existing={existingCastlePosition}");
+                    return true;
+                }
+
+                return false;
+            }
 
             bool hasExplicitLimit =
                 BuildingDefinitionCapabilities.TryGetEnabledModule(
@@ -347,6 +385,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             _playerPlacedBuildings.Remove(position);
             _factionPlacedBuildings.Remove(position);
+            _placedRotationByOrigin.Remove(position);
         }
     }
 }

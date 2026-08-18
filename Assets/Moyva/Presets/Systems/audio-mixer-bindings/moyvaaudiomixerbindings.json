@@ -1,0 +1,25 @@
+{
+  "$schema": "../../Schemas/audio-mixer-bindings.schema.json",
+  "schema": "moyva.audio-mixer-bindings",
+  "version": 1,
+  "id": "moyvaaudiomixerbindings",
+  "model": "audio-mixer-bindings",
+  "mixer": {
+    "$asset": "",
+    "editorPath": "",
+    "required": false
+  },
+  "masterParameter": "MasterVolume",
+  "musicParameter": "MusicVolume",
+  "sfxParameter": "SfxVolume",
+  "uiParameter": "UiVolume",
+  "defaultMaster": 0.8,
+  "defaultMusic": 0.7,
+  "defaultSfx": 0.9,
+  "defaultUi": 0.9,
+  "migration": {
+    "sourceAssetGuid": "9ae0fdb473469977ba435b4eb7bc09d7",
+    "sourceAssetPath": "Assets/Moyva/Resources/MoyvaAudioMixerBindings.asset",
+    "sourceHash": "4792911d9a0f4c294cda92281704dfb74785c5b78156bcc768e0c68b45688ccd"
+  }
+}

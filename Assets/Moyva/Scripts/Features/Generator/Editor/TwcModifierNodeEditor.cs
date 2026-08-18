@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using Kruty1918.Moyva.Generator.Runtime.Nodes.Twc;
 using Kruty1918.Moyva.GraphSystem.API;
@@ -268,3 +269,4 @@ namespace Kruty1918.Moyva.Generator.Editor
         }
     }
 }
+#endif

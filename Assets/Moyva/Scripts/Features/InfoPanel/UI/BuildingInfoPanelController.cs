@@ -214,27 +214,25 @@ namespace Kruty1918.Moyva.InfoPanel.UI
 
         private void ResolveResourcePresentation(BuildingConstructionCostItemData item, out string displayName, out Sprite icon)
         {
-            displayName = string.IsNullOrWhiteSpace(item.DisplayName) ? item.ResourceId : item.DisplayName;
-            icon = item.Icon;
-
-            if (_economyDatabase == null || string.IsNullOrWhiteSpace(item.ResourceId))
-                return;
-
-            var resources = _economyDatabase.Resources;
-            for (int i = 0; i < resources.Count; i++)
+            if (ResourcePresentationResolver.TryResolve(
+                    item.ResourceId,
+                    _economyDatabase,
+                    out string resolvedDisplayName,
+                    out Sprite resolvedIcon,
+                    out _))
             {
-                var res = resources[i];
-                if (res == null || !string.Equals(res.Id, item.ResourceId, StringComparison.Ordinal))
-                    continue;
-
-                if (string.IsNullOrWhiteSpace(item.DisplayName) && !string.IsNullOrWhiteSpace(res.DisplayName))
-                    displayName = res.DisplayName;
-
-                if (icon == null)
-                    icon = res.Icon;
-
+                displayName = resolvedDisplayName;
+                icon = resolvedIcon != null ? resolvedIcon : item.Icon;
                 return;
             }
+
+            // Do not expose ResourceId to the player. Keep a real upstream
+            // display name when one exists; otherwise use a clear neutral fallback.
+            displayName = !string.IsNullOrWhiteSpace(item.DisplayName)
+                          && !string.Equals(item.DisplayName.Trim(), "Ресурс", StringComparison.OrdinalIgnoreCase)
+                ? item.DisplayName.Trim()
+                : "Невідомий ресурс";
+            icon = item.Icon;
         }
 
         private void OnPanelClosed(WorldInfoPanelClosedSignal _)

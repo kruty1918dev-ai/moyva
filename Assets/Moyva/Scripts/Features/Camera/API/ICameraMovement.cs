@@ -5,7 +5,13 @@ namespace Kruty1918.Moyva.Camera.API
     public interface ICameraMovement
     {
         void MoveCamera(Vector3 direction);
+        void MoveCameraKeyboard(Vector2 direction, float unscaledDeltaTime);
         void MoveCameraImmediate(Vector3 direction, float speedMultiplier);
+        void RotateCameraAroundFocusPoint(float angleDegrees);
+        void SetCameraOrbitInput(float normalizedInput);
+        void BeginPointerOrbit();
+        void RotatePointerOrbit(float horizontalScreenDelta);
+        void EndPointerOrbit();
         void ShiftCameraWorld(Vector3 worldDelta, bool immediate);
         void MoveCameraFocusToWorldPoint(Vector3 focusPoint, bool immediate);
         void SetCameraDistanceToNavigationPlane(float distance, bool immediate);

@@ -1,0 +1,31 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "format": "json",
+      "code": "var presenter = System.Type.GetType(\"Kruty1918.Moyva.Bootstrap.Runtime.UnitRecruitmentReadyIndicatorPresenter, Kruty1918.Moyva.Bootstrap\") != null; var signal = System.Type.GetType(\"Kruty1918.Moyva.Signals.UnitRecruitmentReadyIndicatorClickedSignal, Kruty1918.Moyva.Signals\") != null; return presenter && signal ? \"installedTypeReflection=True\" : \"installedTypeReflection=False\";"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "command": null,
+      "result": "installedTypeReflection=False",
+      "executionTimeMs": 6470,
+      "message": null,
+      "error": null,
+      "errorDetails": null,
+      "executedAt": "0001-01-01T00:00:00"
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/home/oleksiy/Документи/Projects/Moyva/Game-Project/moyva"
+    },
+    "success": true
+  },
+  "errors": [],
+  "warnings": []
+}

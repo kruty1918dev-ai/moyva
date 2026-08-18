@@ -20,29 +20,69 @@ namespace Kruty1918.Moyva.Construction.API
         }
 
         public static Vector2Int GetOccupiedCellOffset(BuildingDefinition definition, int index)
+            => GetOccupiedCellOffset(
+                definition,
+                index,
+                ConstructionRotation.Degrees0);
+
+        public static Vector2Int GetOccupiedCellOffset(
+            BuildingDefinition definition,
+            int index,
+            ConstructionRotation rotation)
         {
             BuildingFootprint footprint = definition?.Footprint;
             Vector2Int anchor = ResolveAnchor(footprint);
             if (footprint?.OccupiedCells != null && footprint.OccupiedCells.Length > 0)
             {
                 int safeIndex = Mathf.Clamp(index, 0, footprint.OccupiedCells.Length - 1);
-                return footprint.OccupiedCells[safeIndex] - anchor;
+                return ConstructionRotationUtility.RotateOffset(
+                    footprint.OccupiedCells[safeIndex] - anchor,
+                    rotation);
             }
 
             Vector2Int size = ResolveSize(footprint);
             int safeCellIndex = Mathf.Clamp(index, 0, size.x * size.y - 1);
-            return new Vector2Int(safeCellIndex % size.x, safeCellIndex / size.x) - anchor;
+            return ConstructionRotationUtility.RotateOffset(
+                new Vector2Int(
+                    safeCellIndex % size.x,
+                    safeCellIndex / size.x) - anchor,
+                rotation);
         }
 
         public static Vector2Int GetOccupiedCell(BuildingDefinition definition, Vector2Int origin, int index)
             => origin + GetOccupiedCellOffset(definition, index);
 
+        public static Vector2Int GetOccupiedCell(
+            BuildingDefinition definition,
+            Vector2Int origin,
+            int index,
+            ConstructionRotation rotation)
+            => origin + GetOccupiedCellOffset(
+                definition,
+                index,
+                rotation);
+
         public static bool Contains(BuildingDefinition definition, Vector2Int origin, Vector2Int position)
+            => Contains(
+                definition,
+                origin,
+                position,
+                ConstructionRotation.Degrees0);
+
+        public static bool Contains(
+            BuildingDefinition definition,
+            Vector2Int origin,
+            Vector2Int position,
+            ConstructionRotation rotation)
         {
             int count = GetOccupiedCellCount(definition);
             for (int index = 0; index < count; index++)
             {
-                if (GetOccupiedCell(definition, origin, index) == position)
+                if (GetOccupiedCell(
+                        definition,
+                        origin,
+                        index,
+                        rotation) == position)
                     return true;
             }
 

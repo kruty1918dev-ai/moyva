@@ -1,0 +1,125 @@
+{
+  "$schema": "../../Schemas/audio-registry.schema.json",
+  "schema": "moyva.audio-registry",
+  "version": 1,
+  "id": "moyvaaudioregistry",
+  "model": "audio-registry",
+  "sounds": [
+    {
+      "key": "tavern-music-loop",
+      "clip": {
+        "$asset": "asset.audio-clip.tavern-music-loop.1155955e",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Bonus Music/Tavern Music Loop.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Music",
+      "mixerGroup": {
+        "$asset": "asset.audio-mixer-group-controller.master.35a28e1f",
+        "editorPath": "Assets/Moyva/Audio/MoyvaMixer.mixer",
+        "required": true
+      },
+      "volume": 1.0,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 0.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "loop": true,
+      "poolWarmup": 1,
+      "maxSimultaneous": 8,
+      "effects": {
+        "enableLowPass": false,
+        "lowPassCutoff": 5000.0,
+        "lowPassResonance": 1.0,
+        "enableHighPass": false,
+        "highPassCutoff": 120.0,
+        "highPassResonance": 1.0,
+        "enableEcho": false,
+        "echoDelay": 220.0,
+        "echoDecayRatio": 0.35,
+        "echoWetMix": 0.28,
+        "echoDryMix": 1.0,
+        "enableReverb": false,
+        "reverbPreset": "Off",
+        "enableDistortion": false,
+        "distortionLevel": 0.18,
+        "enableChorus": false,
+        "chorusDryMix": 0.5,
+        "chorusWetMix1": 0.5,
+        "chorusWetMix2": 0.5,
+        "chorusWetMix3": 0.5,
+        "chorusDelay": 20.0,
+        "chorusRate": 0.8,
+        "chorusDepth": 0.03
+      }
+    },
+    {
+      "key": "click-01",
+      "clip": {
+        "$asset": "asset.audio-clip.abstract2.a70a2ba4",
+        "editorPath": "Assets/ThirdParty/Audio/UI Soundpack/MP3/Abstract2.mp3",
+        "required": true
+      },
+      "variants": [
+        {
+          "$asset": "asset.audio-clip.abstract1.5d58cc7e",
+          "editorPath": "Assets/ThirdParty/Audio/UI Soundpack/MP3/Abstract1.mp3",
+          "required": true
+        }
+      ],
+      "bus": "Ui",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 1.0,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 0.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 8,
+      "effects": {
+        "enableLowPass": false,
+        "lowPassCutoff": 5000.0,
+        "lowPassResonance": 1.0,
+        "enableHighPass": false,
+        "highPassCutoff": 120.0,
+        "highPassResonance": 1.0,
+        "enableEcho": false,
+        "echoDelay": 220.0,
+        "echoDecayRatio": 0.35,
+        "echoWetMix": 0.28,
+        "echoDryMix": 1.0,
+        "enableReverb": false,
+        "reverbPreset": "Off",
+        "enableDistortion": false,
+        "distortionLevel": 0.18,
+        "enableChorus": false,
+        "chorusDryMix": 0.5,
+        "chorusWetMix1": 0.5,
+        "chorusWetMix2": 0.5,
+        "chorusWetMix3": 0.5,
+        "chorusDelay": 20.0,
+        "chorusRate": 0.8,
+        "chorusDepth": 0.03
+      }
+    }
+  ],
+  "defaultPoolSize": 12,
+  "dontDestroyOnLoad": true,
+  "verboseLogs": true,
+  "migration": {
+    "sourceAssetGuid": "904efd62d2795ab879e2d2ce5c770413",
+    "sourceAssetPath": "Assets/Moyva/Resources/MoyvaAudioRegistry.asset",
+    "sourceHash": "7b3a0578d50244595124c8603c84bf4ee725274ca7f2af7751f75fa32e901af7"
+  }
+}

@@ -93,6 +93,13 @@ namespace Kruty1918.Moyva.InfoPanel.UI
 
             Container.Bind<Transform>().WithId("ConstructionCostContainer").FromInstance(costContainerTransform).AsTransient();
 
+            // P20: structured, filterable, scrollable warehouse inventory.
+            WorldInfoPanelInventoryUiBuilder.Ensure(
+                panelInstance,
+                resources,
+                closeButton,
+                costContainerTransform);
+
             var controllerType = Type.GetType("Kruty1918.Moyva.InfoPanel.UI.WorldInfoPanelController, Kruty1918.Moyva.InfoPanel");
             if (controllerType == null)
             {
@@ -101,6 +108,12 @@ namespace Kruty1918.Moyva.InfoPanel.UI
             }
 
             Container.BindInterfacesAndSelfTo(controllerType)
+                .AsSingle()
+                .NonLazy();
+
+            // Subscribe after the legacy controller so structured inventory/description
+            // becomes the final presentation for WorldInfoPanelRequestedSignal.
+            Container.BindInterfacesAndSelfTo<WorldInfoPanelInventoryController>()
                 .AsSingle()
                 .NonLazy();
         }

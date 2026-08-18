@@ -22,6 +22,8 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<UnitCreatedSignal>();
             Container.DeclareSignal<UnitMovedSignal>();
             Container.DeclareSignal<UnitDestroyedSignal>();
+            Container.DeclareSignal<UnitGarrisonStateChangedSignal>()
+                .OptionalSubscriber();
             Container.DeclareSignal<InterruptMovementSignal>();
             Container.DeclareSignal<OnMapObjectSpawnedSignal>();
             Container.DeclareSignal<OnObjectsMapChangedSignal>().OptionalSubscriber();
@@ -43,9 +45,16 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<BuildingPreviewDragVisualSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildGridHoverChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildingDemolishedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<BuildingOperationalSignal>().OptionalSubscriber();
             Container.DeclareSignal<ShowWallHandlesSignal>();
             Container.DeclareSignal<PlaceBuildingConfirmRequestSignal>().OptionalSubscriber();
             Container.DeclareSignal<MoveUnitRequestSignal>().OptionalSubscriber();
+
+            // Unit recruitment
+            Container.DeclareSignal<UnitRecruitmentQueueChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<UnitRecruitmentReadySignal>().OptionalSubscriber();
+            Container.DeclareSignal<UnitRecruitmentDeployedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<UnitRecruitmentReadyIndicatorClickedSignal>().OptionalSubscriber();
 
             // Building Info Panel
             Container.DeclareSignal<WorldInfoPanelRequestedSignal>().OptionalSubscriber();

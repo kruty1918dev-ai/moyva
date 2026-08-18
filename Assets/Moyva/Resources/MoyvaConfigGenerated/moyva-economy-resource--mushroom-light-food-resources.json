@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "mushroom-light-food-resources",
+  "model": "economy-resource",
+  "displayName": "Mushroom-light",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-112.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "bf64386917214800a7bd8b59324e8940",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Mushroom-light.asset",
+    "sourceHash": "2f01b79dba3305f8bc80c785aac37ee081396e7e15ac33481453400db4bbd2fb"
+  }
+}

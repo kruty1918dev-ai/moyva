@@ -1,0 +1,8 @@
+error: Uncaught (in promise) Error: EROFS: read-only file system, mkdir '/home/oleksiy/.cache/unityhub/tmp'
+		if (os.platform() === "linux") fs.mkdirSync(this.getTempPath(), { recursive: true });
+		                                  ^
+    at fixMkdirError (ext:deno_node/fs.ts:1:26599)
+    at Object.mkdirSync (ext:deno_node/fs.ts:1:28841)
+    at Paths.init (file:///tmp/deno-compile-unity/index.js:3418:37)
+    at Container.instantiate (file:///tmp/deno-compile-unity/container-Dgr-4yqF.js:497:18)
+    at file:///tmp/deno-compile-unity/index.js:3573:39

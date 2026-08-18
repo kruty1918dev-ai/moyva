@@ -1,10 +1,11 @@
 using Sirenix.OdinInspector;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Construction.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Construction/Profiles/Walls", fileName = "ConstructionWallProfile")]
-    public sealed class ConstructionWallProfileSO : ScriptableObject
+[System.Serializable]
+public sealed class ConstructionWallProfileSO : MoyvaJsonConfigObject
     {
         [BoxGroup("Behavior")]
         [SerializeField] private bool _allowGateReplacement = true;

@@ -1,0 +1,52 @@
+{
+  "$schema": "../../Schemas/scene-music-profile.schema.json",
+  "schema": "moyva.scene-music-profile",
+  "version": 1,
+  "id": "globalmusicprofile",
+  "model": "scene-music-profile",
+  "targetScenes": [],
+  "isGlobal": false,
+  "defaultMusic": {
+    "clip": {
+      "$asset": "",
+      "editorPath": "",
+      "required": false
+    },
+    "mixerGroup": {
+      "$asset": "",
+      "editorPath": "",
+      "required": false
+    },
+    "volume": 0.7,
+    "loop": true,
+    "startDelay": 0.0,
+    "fadeInDuration": 1.5,
+    "fadeOutDuration": 1.5,
+    "useCrossfade": true
+  },
+  "epicMusic": {
+    "clip": {
+      "$asset": "",
+      "editorPath": "",
+      "required": false
+    },
+    "mixerGroup": {
+      "$asset": "",
+      "editorPath": "",
+      "required": false
+    },
+    "volume": 0.7,
+    "loop": true,
+    "startDelay": 0.0,
+    "fadeInDuration": 1.5,
+    "fadeOutDuration": 1.5,
+    "useCrossfade": true
+  },
+  "preserveMusicBetweenScenes": false,
+  "sceneTransitionDuration": 2.0,
+  "migration": {
+    "sourceAssetGuid": "b4b6ba523a1ba1e8da7ce4eddbade8e8",
+    "sourceAssetPath": "Assets/Moyva/Resources/MusicProfiles/GlobalMusicProfile.asset",
+    "sourceHash": "e0a3e88fe0d970cf3264bd1383dceb5ec61404df6e43bf98d5b1232e3a0985c5"
+  }
+}

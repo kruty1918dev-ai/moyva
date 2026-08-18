@@ -1,128 +1,65 @@
-using Kruty1918.Moyva.Construction.API;
 using System;
 using System.Collections.Generic;
-using UnityEngine;
+using System.Linq;
+using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Jsonization;
+using Newtonsoft.Json;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    [CreateAssetMenu(menuName = "Moyva/Construction/BuildingRegistry")]
-    public class BuildingRegistrySO : ScriptableObject, IBuildingRegistry
+    /// <summary>JSON-backed compatibility facade. Definitions are auto-discovered from JSON.</summary>
+    [Serializable]
+    public sealed class BuildingRegistrySO : MoyvaJsonConfigObject, IBuildingRegistry
     {
-        [SerializeField] private BuildingDefinitionAsset[] _buildingAssets = Array.Empty<BuildingDefinitionAsset>();
+        public WallCollectionDefinition[] WallCollections = Array.Empty<WallCollectionDefinition>();
 
-        [Header("Legacy Inline Definitions")]
-        [Tooltip("Legacy data kept only for migration. New runtime/editor flows should use Building Definition assets above.")]
-        public API.BuildingDefinition[] Buildings;
+        [JsonIgnore]
+        public BuildingDefinitionAsset[] BuildingAssets =>
+            MoyvaJsonRuntime.GetAll<BuildingDefinitionAsset>().ToArray();
 
-        public API.WallCollectionDefinition[] WallCollections;
-
-        public BuildingDefinitionAsset[] BuildingAssets => _buildingAssets ?? Array.Empty<BuildingDefinitionAsset>();
-        public API.BuildingDefinition[] LegacyBuildings => Buildings ?? Array.Empty<API.BuildingDefinition>();
+        [JsonIgnore]
+        public BuildingDefinition[] LegacyBuildings => Array.Empty<BuildingDefinition>();
 
         public void SetBuildingAssets(IEnumerable<BuildingDefinitionAsset> assets)
         {
-            if (assets == null)
-            {
-                _buildingAssets = Array.Empty<BuildingDefinitionAsset>();
-                return;
-            }
-
-            var unique = new List<BuildingDefinitionAsset>();
-            var seen = new HashSet<BuildingDefinitionAsset>();
-            foreach (var asset in assets)
-            {
-                if (asset == null || !seen.Add(asset))
-                    continue;
-
-                unique.Add(asset);
-            }
-
-            _buildingAssets = unique.ToArray();
+            throw new InvalidOperationException(
+                "Building registry is JSON-discovered. Add/remove Assets/Moyva/Presets/Buildings/*.json instead of mutating an Inspector list.");
         }
 
-        /// <summary>Отримати всі будівлі реєстру.</summary>
-        public API.BuildingDefinition[] GetAll()
+        public BuildingDefinition[] GetAll()
         {
-            var result = new List<API.BuildingDefinition>();
-            var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            var assets = BuildingAssets;
-            for (int i = 0; i < assets.Length; i++)
-            {
-                var asset = assets[i];
-                if (asset == null)
-                    continue;
-
-                var definition = asset.ToRuntimeDefinition();
-                result.Add(definition);
-                if (!string.IsNullOrWhiteSpace(definition.Id))
-                    ids.Add(definition.Id);
-            }
-
-            var legacy = LegacyBuildings;
-            for (int i = 0; i < legacy.Length; i++)
-            {
-                var definition = legacy[i];
-                if (definition == null)
-                    continue;
-
-                if (!string.IsNullOrWhiteSpace(definition.Id) && ids.Contains(definition.Id))
-                    continue;
-
-                result.Add(definition);
-            }
-
-            return result.ToArray();
+            return MoyvaJsonRuntime.GetAll<BuildingDefinitionAsset>()
+                .Where(asset => asset != null)
+                .Select(asset => asset.ToRuntimeDefinition())
+                .Where(definition => definition != null)
+                .ToArray();
         }
 
-        public API.WallCollectionDefinition[] GetWallCollections() => WallCollections ?? System.Array.Empty<API.WallCollectionDefinition>();
-
-        /// <summary>Знайти будівлю за її ID. Повертає null якщо не знайдено.</summary>
-        public API.BuildingDefinition GetById(string id)
+        public BuildingDefinition GetById(string id)
         {
-            if (string.IsNullOrWhiteSpace(id))
-                return null;
-
-            var asset = GetAssetById(id);
-            if (asset != null)
-                return asset.ToRuntimeDefinition();
-
-            return System.Array.Find(LegacyBuildings, b => b != null && b.Id == id);
+            if (string.IsNullOrWhiteSpace(id)) return null;
+            BuildingDefinitionAsset asset = MoyvaJsonRuntime.Get<BuildingDefinitionAsset>(id);
+            return asset?.ToRuntimeDefinition();
         }
 
         public BuildingDefinitionAsset GetAssetById(string id)
         {
-            if (string.IsNullOrWhiteSpace(id))
-                return null;
-
-            var assets = BuildingAssets;
-            for (int i = 0; i < assets.Length; i++)
-            {
-                if (assets[i] != null && string.Equals(assets[i].Id, id, StringComparison.OrdinalIgnoreCase))
-                    return assets[i];
-            }
-
-            return null;
+            return string.IsNullOrWhiteSpace(id)
+                ? null
+                : MoyvaJsonRuntime.Get<BuildingDefinitionAsset>(id);
         }
 
-        /// <summary>Отримати всі будівлі заданої категорії.</summary>
-        public API.BuildingDefinition[] GetByCategory(API.BuildingCategory category) =>
-            System.Array.FindAll(GetAll(), b => b != null && b.Category == category);
+        public BuildingDefinition[] GetByCategory(BuildingCategory category)
+            => GetAll().Where(x => x != null && x.Category == category).ToArray();
 
-        public API.WallCollectionDefinition GetWallCollectionByBuildingId(string buildingId)
+        public WallCollectionDefinition[] GetWallCollections()
+            => WallCollections ?? Array.Empty<WallCollectionDefinition>();
+
+        public WallCollectionDefinition GetWallCollectionByBuildingId(string buildingId)
         {
-            if (string.IsNullOrWhiteSpace(buildingId))
-                return null;
-
-            var source = WallCollections ?? System.Array.Empty<API.WallCollectionDefinition>();
-            for (int i = 0; i < source.Length; i++)
-            {
-                var collection = source[i];
-                if (collection != null && collection.ContainsBuilding(buildingId))
-                    return collection;
-            }
-
-            return null;
+            if (string.IsNullOrWhiteSpace(buildingId)) return null;
+            return GetWallCollections().FirstOrDefault(collection =>
+                collection != null && collection.ContainsBuilding(buildingId));
         }
     }
 }

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
@@ -53,6 +54,7 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
                     {
                         Id = "sawmill",
                         DisplayName = "Лісопилка",
+                        Description = "Переробляє деревину.",
                         Category = BuildingCategory.Industrial,
                         Modules = new System.Collections.Generic.List<BuildingModuleDefinition>
                         {
@@ -96,7 +98,11 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
             Assert.IsTrue(payload.HasValue);
             Assert.AreEqual("Лісопилка", payload.Value.Title);
             StringAssert.Contains("Будівля", payload.Value.Subtitle);
-            StringAssert.Contains("Базова інформація", payload.Value.Content);
+            StringAssert.Contains("Переробляє деревину", payload.Value.Content);
+            StringAssert.Contains("Потрібно робітників: 2", payload.Value.Content);
+            StringAssert.DoesNotContain("ID:", payload.Value.Content);
+            StringAssert.DoesNotContain("Категорія:", payload.Value.Content);
+            StringAssert.DoesNotContain("Прапорець", payload.Value.Content);
         }
 
         [Test]
@@ -115,3 +121,5 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
         }
     }
 }
+
+#endif

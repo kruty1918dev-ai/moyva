@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
@@ -130,3 +131,4 @@ namespace Kruty1918.Moyva.Generator.Editor
         }
     }
 }
+#endif

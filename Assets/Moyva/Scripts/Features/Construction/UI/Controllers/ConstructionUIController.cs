@@ -6,6 +6,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using TMPro;
 using UnityEngine;
+using Unity.Profiling;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.UI
@@ -33,6 +34,8 @@ namespace Kruty1918.Moyva.Construction.UI
     /// </summary>
     public class ConstructionUIController : MonoBehaviour, IInitializable, IDisposable
     {
+        private const string ModuleLogTag =
+            "[MoyvaConstructionModules]";
         [Header("Підпанелі (перетягни в Inspector)")]
         [Tooltip("Панель вибору будівель.")]
         [SerializeField] private BuildingSelectionPanelUI selectionPanel;
@@ -52,9 +55,9 @@ namespace Kruty1918.Moyva.Construction.UI
         private const string previewInfoPanelTextLabelKeyWord = "Label";
         private const string previewInfoPanelTextInfoKeyWord = "Info";
         private const int previewInfoMaxResourcesLines = 6;
-        private const float previewInfoHeaderFontSize = 20f;
-        private const float previewInfoBodyFontSize = 14f;
-        private const float previewInfoBodyLineSpacing = 8f;
+        private const float previewInfoHeaderFontSize = 24f; // MOYVA_GAMEPLAY_UI_PASS73
+        private const float previewInfoBodyFontSize = 18f; // MOYVA_GAMEPLAY_UI_PASS73
+        private const float previewInfoBodyLineSpacing = 4f; // MOYVA_GAMEPLAY_UI_PASS73
 
         // --- Інжектується Zenject ---
         private IConstructionService _constructionService;
@@ -79,6 +82,12 @@ namespace Kruty1918.Moyva.Construction.UI
         private readonly Dictionary<string, string>
             _buildingUnavailableReasons =
                 new Dictionary<string, string>(StringComparer.Ordinal);
+        private bool _buildingListRefreshRequested;
+        private readonly StringBuilder _previewInfoBuilder =
+            new StringBuilder(512);
+        private readonly List<KeyValuePair<string, float>>
+            _previewResourceScratch =
+                new List<KeyValuePair<string, float>>(16);
 
         /// <summary>Точка ін'єкції Zenject. Не викликати вручну.</summary>
         [Inject]
@@ -112,6 +121,7 @@ namespace Kruty1918.Moyva.Construction.UI
             _signalBus.Subscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
             _signalBus.Subscribe<BuildingSelectionChangedSignal>(OnBuildingSelectionChanged);
             _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
+            _signalBus.Subscribe<SettlementResourceChangedSignal>(OnSettlementResourceChanged);
             _signalBus.Subscribe<TileClickedSignal>(OnTileClicked);
 
             if (selectionPanel != null)
@@ -155,6 +165,7 @@ namespace Kruty1918.Moyva.Construction.UI
                 _signalBus.TryUnsubscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
                 _signalBus.TryUnsubscribe<BuildingSelectionChangedSignal>(OnBuildingSelectionChanged);
                 _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
+                _signalBus.TryUnsubscribe<SettlementResourceChangedSignal>(OnSettlementResourceChanged);
                 _signalBus.TryUnsubscribe<TileClickedSignal>(OnTileClicked);
             }
 
@@ -177,6 +188,20 @@ namespace Kruty1918.Moyva.Construction.UI
                 Destroy(_previewInfoPanelInstance);
             }
         }
+
+        private void LateUpdate()
+        {
+            if (!_buildingListRefreshRequested)
+                return;
+
+            _buildingListRefreshRequested = false;
+            PopulateBuildingList();
+            SynchronizeCastleBootstrapUi();
+            RefreshUI();
+        }
+
+        private void RequestBuildingListRefresh()
+            => _buildingListRefreshRequested = true;
 
         // -----------------------------------------------------------------------
         // Публічні методи дій — підключи до Button.onClick через Inspector або код
@@ -237,16 +262,47 @@ namespace Kruty1918.Moyva.Construction.UI
         /// </summary>
         public void OnBuildingSelected(string buildingId)
         {
-            _selectedBuildingId = buildingId;
+            if (TryGetSelectionAvailability(
+                    buildingId,
+                    out ConstructionSelectionAvailabilityResult availability)
+                && !availability.CanSelect)
+            {
+                string reason = string.IsNullOrWhiteSpace(availability.Reason)
+                    ? "Будівля зараз недоступна."
+                    : availability.Reason;
+                Debug.LogWarning(
+                    $"[MoyvaConstructionAvailability] ui-selection-rejected " +
+                    $"building='{buildingId}' code='{availability.ReasonCode ?? "unavailable"}' " +
+                    $"reason='{reason}'",
+                    this);
+                RequestBuildingListRefresh();
+                return;
+            }
+
             _constructionService.SelectBuilding(buildingId);
+            string acceptedBuildingId = _constructionService.GetSelectedBuildingId();
+            if (!string.Equals(
+                    acceptedBuildingId,
+                    buildingId,
+                    StringComparison.Ordinal))
+            {
+                Debug.LogWarning(
+                    $"[MoyvaConstructionAvailability] ui-selection-service-rejected " +
+                    $"building='{buildingId}' accepted='{acceptedBuildingId ?? "none"}'",
+                    this);
+                RequestBuildingListRefresh();
+                return;
+            }
+
+            _selectedBuildingId = acceptedBuildingId;
             _isPreviewInfoPinned = false;
             _pinnedPreviewBuildingId = null;
 
             if (selectionPanel != null)
-                selectionPanel.SetSelectedBuilding(buildingId);
+                selectionPanel.SetSelectedBuilding(_selectedBuildingId);
 
-            if (_isConstructionModeActive && !string.IsNullOrWhiteSpace(buildingId))
-                ShowPreviewInfoPanel(buildingId, _lastPreviewPosition, pinToPreviewObject: false);
+            if (_isConstructionModeActive && !string.IsNullOrWhiteSpace(_selectedBuildingId))
+                ShowPreviewInfoPanel(_selectedBuildingId, _lastPreviewPosition, pinToPreviewObject: false);
 
             RefreshUI();
         }
@@ -270,16 +326,31 @@ namespace Kruty1918.Moyva.Construction.UI
         // Обробники сигналів
         // -----------------------------------------------------------------------
 
+        private void OnSettlementResourceChanged(
+            SettlementResourceChangedSignal signal)
+        {
+            RequestBuildingListRefresh();
+            Debug.Log(
+                $"[MoyvaConstructionAvailability] resource-change " +
+                $"owner='{signal.OwnerId}' resource='{signal.ResourceId}' " +
+                $"new={signal.NewAmount:0.###} delta={signal.Delta:0.###}",
+                this);
+        }
+
+        private static readonly ProfilerMarker BuildingPlacedUiMarker =
+            new("Moyva.BuildCommit.Subscriber.ConstructionUI");
+
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
-            PopulateBuildingList();
+            using var marker = BuildingPlacedUiMarker.Auto();
+            RequestBuildingListRefresh();
             RefreshUI();
         }
 
         private void OnBuildingDemolished(
             BuildingDemolishedSignal signal)
         {
-            PopulateBuildingList();
+            RequestBuildingListRefresh();
             RefreshUI();
         }
 
@@ -290,11 +361,14 @@ namespace Kruty1918.Moyva.Construction.UI
             HidePreviewInfoPanel();
             if (selectionPanel != null)
                 selectionPanel.ClearSelection();
+            SynchronizeCastleBootstrapUi();
             RefreshUI();
         }
 
         private void OnBuildingPreviewChanged(BuildingPreviewChangedSignal signal)
         {
+            // Pass 61: pending budget changes are reflected in toolbar.
+            RequestBuildingListRefresh();
             _lastPreviewState = signal.PreviewState;
             _lastPreviewPosition = signal.Position;
 
@@ -345,9 +419,19 @@ namespace Kruty1918.Moyva.Construction.UI
             {
                 HidePreviewInfoPanel();
             }
-            else if (!string.IsNullOrWhiteSpace(_selectedBuildingId))
+            else
             {
-                ShowPreviewInfoPanel(_selectedBuildingId, _lastPreviewPosition, pinToPreviewObject: false);
+                PopulateBuildingList();
+                SynchronizeCastleBootstrapUi();
+
+                if (!string.IsNullOrWhiteSpace(
+                        _selectedBuildingId))
+                {
+                    ShowPreviewInfoPanel(
+                        _selectedBuildingId,
+                        _lastPreviewPosition,
+                        pinToPreviewObject: false);
+                }
             }
 
             RefreshUI();
@@ -380,6 +464,8 @@ namespace Kruty1918.Moyva.Construction.UI
 
         private void PopulateBuildingList()
         {
+            _buildingListRefreshRequested = false;
+
             if (selectionPanel == null || _buildingRegistry == null)
                 return;
 
@@ -390,13 +476,107 @@ namespace Kruty1918.Moyva.Construction.UI
                 _buildingRegistry,
                 this,
                 IsBuildingAvailable,
-                includeSelector: null,
+                includeSelector:
+                    ShouldIncludeBuildingInMenu,
                 unavailableReasonSelector:
                     GetBuildingUnavailableReason);
 
-            Debug.Log($"[Construction UI] Ініціалізовано меню будівель. Знайдено елементів: {items.Count}.", this);
+            if (Debug.isDebugBuild)
+            {
+                Debug.Log(
+                    $"{ModuleLogTag} menu rebuilt " +
+                    $"items={items.Count} " +
+                    $"owner={_constructionService?.GetActiveOwner()}",
+                    this);
+            }
+
+            int disabledCount = items.Count(item => !item.IsInteractable);
+            Debug.Log(
+                $"[MoyvaConstructionAvailability] menu-summary " +
+                $"items={items.Count} enabled={items.Count - disabledCount} " +
+                $"disabled={disabledCount} owner='{_constructionService.GetActiveOwner()}' " +
+                $"pending={_constructionService.GetPendingPlacements().Count}",
+                this);
 
             selectionPanel.Populate(items);
+        }
+
+        private bool ShouldIncludeBuildingInMenu(
+            BuildingDefinition definition)
+        {
+            if (definition == null
+                || string.IsNullOrWhiteSpace(definition.Id))
+            {
+                return false;
+            }
+
+            if (_constructionService
+                is not IConstructionBootstrapQuery bootstrap)
+            {
+                return true;
+            }
+
+            string ownerId =
+                _constructionService.GetActiveOwner();
+            if (bootstrap.RequiresInitialCastle(
+                    ownerId,
+                    out string requiredCastleId))
+            {
+                return string.Equals(
+                    definition.Id,
+                    requiredCastleId,
+                    StringComparison.Ordinal);
+            }
+
+            return !bootstrap.IsCastleBuilding(
+                definition.Id);
+        }
+
+        private void SynchronizeCastleBootstrapUi()
+        {
+            if (_constructionService
+                is not IConstructionBootstrapQuery bootstrap)
+            {
+                return;
+            }
+
+            string ownerId =
+                _constructionService.GetActiveOwner();
+            if (bootstrap.RequiresInitialCastle(
+                    ownerId,
+                    out string castleBuildingId))
+            {
+                _selectedBuildingId =
+                    _constructionService.GetSelectedBuildingId();
+
+                if (string.IsNullOrWhiteSpace(_selectedBuildingId))
+                {
+                    _constructionService.SelectBuilding(castleBuildingId);
+                    _selectedBuildingId =
+                        _constructionService.GetSelectedBuildingId();
+                }
+
+                selectionPanel?.SetSelectedBuilding(
+                    _selectedBuildingId);
+
+                if (Debug.isDebugBuild)
+                {
+                    Debug.Log(
+                        $"{ModuleLogTag} castle-bootstrap-ui " +
+                        $"owner={ownerId} required=true " +
+                        $"selected={_selectedBuildingId ?? "none"}",
+                        this);
+                }
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_selectedBuildingId)
+                && bootstrap.IsCastleBuilding(_selectedBuildingId))
+            {
+                _selectedBuildingId = null;
+                selectionPanel?.ClearSelection();
+                HidePreviewInfoPanel();
+            }
         }
 
         private bool IsBuildingAvailable(BuildingDefinition definition)
@@ -407,27 +587,57 @@ namespace Kruty1918.Moyva.Construction.UI
                 return false;
             }
 
-            if (_placementQuery == null)
-                return true;
+            if (!TryGetSelectionAvailability(
+                    definition.Id,
+                    out ConstructionSelectionAvailabilityResult result))
+            {
+                // Compatibility fallback if an isolated test scene binds an
+                // older construction service without the optional query.
+                if (_placementQuery == null)
+                    return true;
 
-            ConstructionPlacementQueryResult result =
-                _placementQuery.EvaluatePlacement(
-                    new ConstructionPlacementQueryRequest(
-                        definition.Id,
-                        _lastPreviewPosition,
-                        includeResources: false,
-                        ownerId:
-                            _constructionService?.GetActiveOwner(),
-                        attemptSource:
-                            ConstructionPlacementAttemptSource.Unknown,
-                        allowUniquePreviewRelocation: true));
+                ConstructionPlacementQueryResult legacy =
+                    _placementQuery.EvaluatePlacement(
+                        new ConstructionPlacementQueryRequest(
+                            definition.Id,
+                            _lastPreviewPosition,
+                            includeResources: false,
+                            ownerId: _constructionService?.GetActiveOwner(),
+                            attemptSource:
+                                ConstructionPlacementAttemptSource.Unknown,
+                            allowUniquePreviewRelocation: false));
+                _buildingUnavailableReasons[definition.Id] =
+                    legacy.CanSelect ? null : legacy.Reason;
+                return legacy.CanSelect;
+            }
+
             _buildingUnavailableReasons[definition.Id] =
                 result.CanSelect
                     ? null
-                    : string.IsNullOrWhiteSpace(result.Reason)
-                        ? "Не виконано глобальні умови."
-                        : result.Reason;
+                    : ConstructionPlacementReasonText.Resolve(
+                        result.ReasonCode,
+                        result.Reason);
+
             return result.CanSelect;
+        }
+
+        private bool TryGetSelectionAvailability(
+            string buildingId,
+            out ConstructionSelectionAvailabilityResult result)
+        {
+            if (_constructionService
+                is IConstructionSelectionAvailabilityQuery availabilityQuery)
+            {
+                result = availabilityQuery.EvaluateSelectionAvailability(
+                    buildingId,
+                    _constructionService.GetActiveOwner(),
+                    _lastPreviewPosition,
+                    includePendingPlacements: true);
+                return true;
+            }
+
+            result = default;
+            return false;
         }
 
         private string GetBuildingUnavailableReason(
@@ -617,13 +827,16 @@ namespace Kruty1918.Moyva.Construction.UI
             _pinnedPreviewBuildingId = null;
         }
 
-        private string BuildPreviewInfoText(BuildingDefinition definition, Vector2Int position)
+        private string BuildPreviewInfoText(
+            BuildingDefinition definition,
+            Vector2Int position)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = _previewInfoBuilder;
+            sb.Clear();
 
             var displayName = string.IsNullOrWhiteSpace(definition.DisplayName)
-                ? definition.Id
-                : definition.DisplayName;
+                ? "Будівля"
+                : definition.DisplayName.Trim();
 
             sb.AppendLine($"Обрано: {displayName}");
             if (_isPreviewInfoPinned)
@@ -639,7 +852,15 @@ namespace Kruty1918.Moyva.Construction.UI
             AppendConstructionCostBlock(sb, definition);
             AppendPendingDeficitBlock(sb, position);
             AppendOwnerResourcesBlock(sb);
-            return sb.ToString().TrimEnd();
+
+            while (sb.Length > 0
+                   && (sb[sb.Length - 1] == '\n'
+                       || sb[sb.Length - 1] == '\r'))
+            {
+                sb.Length--;
+            }
+
+            return sb.ToString();
         }
 
         private void AppendPendingDeficitBlock(
@@ -710,22 +931,59 @@ namespace Kruty1918.Moyva.Construction.UI
                 return;
             }
 
-            var topResources = totals
-                .OrderByDescending(x => x.Value)
-                .ThenBy(x => x.Key, StringComparer.Ordinal)
-                .Take(previewInfoMaxResourcesLines)
-                .ToList();
+            _previewResourceScratch.Clear();
+            foreach (KeyValuePair<string, float> pair in totals)
+                _previewResourceScratch.Add(pair);
 
-            foreach (var resource in topResources)
-                sb.AppendLine($"• {ResolveResourceDisplayName(resource.Key)}: {resource.Value:0.#}");
+            _previewResourceScratch.Sort(
+                ComparePreviewResources);
 
-            int hiddenCount = totals.Count - topResources.Count;
+            int visibleCount = Mathf.Min(
+                previewInfoMaxResourcesLines,
+                _previewResourceScratch.Count);
+            for (int index = 0;
+                 index < visibleCount;
+                 index++)
+            {
+                KeyValuePair<string, float> resource =
+                    _previewResourceScratch[index];
+                sb.AppendLine(
+                    $"• {ResolveResourceDisplayName(resource.Key)}: " +
+                    $"{resource.Value:0.#}");
+            }
+
+            int hiddenCount =
+                totals.Count - visibleCount;
             if (hiddenCount > 0)
                 sb.AppendLine($"• + ще {hiddenCount}");
         }
 
+        private static int ComparePreviewResources(
+            KeyValuePair<string, float> left,
+            KeyValuePair<string, float> right)
+        {
+            int byValue =
+                right.Value.CompareTo(left.Value);
+            return byValue != 0
+                ? byValue
+                : StringComparer.Ordinal.Compare(
+                    left.Key,
+                    right.Key);
+        }
+
         private string ResolveResourceDisplayName(string resourceId)
-            => _economyInfoMediator?.GetResourceDisplayName(resourceId)
-               ?? (string.IsNullOrWhiteSpace(resourceId) ? "<невідомий ресурс>" : resourceId.Trim());
+        {
+            string displayName = _economyInfoMediator?.GetResourceDisplayName(resourceId);
+            if (!string.IsNullOrWhiteSpace(displayName)
+                && !string.Equals(
+                    displayName.Trim(),
+                    resourceId?.Trim(),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return displayName.Trim();
+            }
+
+            return "Ресурс";
+        }
     }
 }

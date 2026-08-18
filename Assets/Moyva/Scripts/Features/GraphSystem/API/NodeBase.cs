@@ -1,9 +1,11 @@
 using System;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.GraphSystem.API
 {
-    public abstract class NodeBase : ScriptableObject
+    [System.Serializable]
+    public abstract class NodeBase : MoyvaJsonConfigObject
     {
         [HideInInspector, SerializeField] private string _nodeId;
         [HideInInspector, SerializeField] private Vector2 _editorPosition;

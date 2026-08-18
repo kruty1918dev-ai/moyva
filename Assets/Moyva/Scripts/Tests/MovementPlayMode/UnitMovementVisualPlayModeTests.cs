@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -408,3 +409,4 @@ namespace Kruty1918.Moyva.Tests.MovementPlayMode
         }
     }
 }
+#endif

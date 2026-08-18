@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "gem-red-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Gem-red",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-16.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "fc8c8452101d40f996fd0a52beb6dfda",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Emerald.asset",
+    "sourceHash": "349760dd86f5ee10d3d2e37bb665551c91f2f125a5bfb4d174dcc037f4f3dd4f"
+  }
+}

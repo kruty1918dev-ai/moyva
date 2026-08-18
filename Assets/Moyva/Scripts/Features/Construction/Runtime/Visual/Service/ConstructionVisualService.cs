@@ -96,6 +96,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus.Subscribe<BuildingPlacedSignal>(HandleBuildGridStateChanged);
             _signalBus.Subscribe<BuildingDemolishedSignal>(_placedSignals.Handle);
             _signalBus.Subscribe<BuildingDemolishedSignal>(HandleBuildGridStateChanged);
+            _signalBus.Subscribe<BuildingOperationalSignal>(_placedSignals.Handle);
+            _signalBus.Subscribe<BuildingOperationalSignal>(HandleBuildGridStateChanged);
             _signalBus.Subscribe<WorldInfoSelectionChangedSignal>(_placedSignals.Handle);
             _signalBus.Subscribe<GameModeChangedSignal>(_placedSignals.Handle);
             _signalBus.Subscribe<WorldGeneratedDataSignal>(HandleWorldGenerated);
@@ -118,6 +120,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(HandleBuildGridStateChanged);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(_placedSignals.Handle);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(HandleBuildGridStateChanged);
+            _signalBus.TryUnsubscribe<BuildingOperationalSignal>(_placedSignals.Handle);
+            _signalBus.TryUnsubscribe<BuildingOperationalSignal>(HandleBuildGridStateChanged);
             _signalBus.TryUnsubscribe<WorldInfoSelectionChangedSignal>(_placedSignals.Handle);
             _signalBus.TryUnsubscribe<GameModeChangedSignal>(_placedSignals.Handle);
             _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(HandleWorldGenerated);
@@ -162,6 +166,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ResolveGridInvalidationRadius(signal.BuildingId));
         }
 
+        private void HandleBuildGridStateChanged(BuildingOperationalSignal signal)
+        {
+            _buildGridOverlay.MarkDirty(
+                signal.Position,
+                ResolveGridInvalidationRadius(signal.BuildingId));
+        }
+
         private void HandleBuildGridStateChanged(GridTileChangedSignal signal)
         {
             _buildGridOverlay.MarkDirty(signal.Position, _gridInvalidationRadius);
@@ -169,7 +180,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void HandleBuildGridStateChanged(FogStateChangedSignal _)
         {
-            _buildGridOverlay.MarkDirty();
+            _buildGridOverlay.MarkFogDirty();
         }
 
         private void HandleBuildGridStateChanged(SettlementResourceChangedSignal _)

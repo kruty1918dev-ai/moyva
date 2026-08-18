@@ -3,11 +3,13 @@ using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.WorldCreation.API;
+using Kruty1918.Moyva.InputRouting.Runtime;
 using System;
 using System.Reflection;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     public sealed class ConstructionInstaller : MonoInstaller
@@ -25,6 +27,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public override void InstallBindings()
         {
+            InputRoutingBindings.Install(Container);
+
             _sceneContext ??= GetComponent<ConstructionSceneContext>();
             if (buildingRegistry == null && _sceneContext?.BuildingRegistry != null)
                 buildingRegistry = _sceneContext.BuildingRegistry;
@@ -102,6 +106,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInterfacesTo<ConstructionTurnParticipant>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<ConstructionLifecycleService>()
+                .AsSingle()
+                .NonLazy();
+
+            Container.BindInterfacesTo<SaveModuleRegistrar<ConstructionLifecycleService>>()
+                .AsSingle()
+                .NonLazy();
+
             Container.BindInterfacesTo<ConstructionAuthorityEndpointRegistration>()
                 .AsSingle()
                 .NonLazy();
@@ -114,8 +129,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            Container.Bind<IWallTopologyService>()
-                .To<WallTopologyService>()
+            Container.BindInterfacesAndSelfTo<WallTopologyService>()
                 .AsSingle();
 
             Container.Bind<IWallGateReplacementValidator>()
@@ -181,6 +195,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Container.BindInterfacesAndSelfTo<BuildingHealthService>()
                 .AsSingle()
                 .NonLazy();
+
+            if (Application.isEditor || Debug.isDebugBuild)
+            {
+                Container.BindInterfacesAndSelfTo<FirstCastlePerformanceRecorder>()
+                    .AsSingle()
+                    .NonLazy();
+            }
 
             QueueSceneDebugViewInjection();
 
@@ -284,7 +305,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return resolved;
         }
 
-        private static bool TryResolveTownHallBuildRadiusFromProfile(ScriptableObject economyRulesProfile, out int radius)
+        private static bool TryResolveTownHallBuildRadiusFromProfile(MoyvaJsonConfigObject economyRulesProfile, out int radius)
         {
             radius = 0;
             if (economyRulesProfile == null)

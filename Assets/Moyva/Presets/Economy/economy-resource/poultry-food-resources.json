@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "poultry-food-resources",
+  "model": "economy-resource",
+  "displayName": "Poultry",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-188.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "b26dc85780fa4dc7bdeefd61eeeb4660",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Poultry.asset",
+    "sourceHash": "590b2f8c5df59bb9f6f2d9254797a213aba317cc78bd655318b40d79344f4e20"
+  }
+}

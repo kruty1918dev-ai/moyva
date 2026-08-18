@@ -70,8 +70,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         {
             int before = results.Count;
             // TWC dual grid creates four half-offset fragments around a source cell.
-            // We keep that shape selection, but assign each fragment to one source cell
-            // so neighboring chunks do not duplicate border geometry.
+            // This provider emits each physical fragment exactly once. The terrain
+            // builder performs final chunk assignment from TileCenterXZ.
             TryAddDualGridSource(
                 composition,
                 buildLayer,
@@ -161,10 +161,23 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 return;
 
             int configuration = BuildDualConfiguration(topLeft, topRight, bottomLeft, bottomRight);
+            /*
+             * TWC dual-grid topology is evaluated around half-offset corners,
+             * but chunk-first rendering uses the same canonical physical
+             * lattice as the gameplay grid.
+             *
+             * +0.5 converts dual centers:
+             *   -0.5, 0.5, 1.5 ... -> 0, 1, 2 ...
+             *
+             * An 8-tile physical chunk can therefore occupy exactly the same
+             * nominal CoreRect as 8 gameplay cells without clipping or scale.
+             */
             var tileData = new BuildLayer.TileData
             {
                 configuration = configuration,
-                tilePosition = new Vector2(composition.Cell.x + offset.x, composition.Cell.y + offset.y)
+                tilePosition = new Vector2(
+                    composition.Cell.x + offset.x + 0.5f,
+                    composition.Cell.y + offset.y + 0.5f)
             };
             var tileType = ResolveTileType(preset.gridtype, configuration, out int yRotation);
             if (tileType == TilePreset.TileType.none)

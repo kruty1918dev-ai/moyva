@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 // -----------------------------------------------------------------------------
 //  FolderSetupMenu
 //  Створює стандартну структуру теки фічі Moyva (API / Runtime / Editor),
@@ -486,3 +487,5 @@ namespace Kruty1918.Moyva.EditorTools.FolderSetup
         }
     }
 }
+
+#endif

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Signals
 {
     /// <summary>
@@ -163,7 +164,7 @@ namespace Kruty1918.Moyva.Signals
         {
             if (!_settingsLoaded)
             {
-                _settingsAsset = Resources.Load<SelectionHighlightSettingsSO>(SettingsResourcePath);
+                _settingsAsset = MoyvaJsonRuntime.GetLegacyResource<SelectionHighlightSettingsSO>(SettingsResourcePath);
                 _settingsLoaded = true;
             }
 

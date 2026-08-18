@@ -1,10 +1,12 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using UnityEngine;
 using Kruty1918.Moyva.GraphSystem.API;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.GraphSystem.Editor
 {
-    [CreateAssetMenu(fileName = "GraphEditorWindowSettings", menuName = "Moyva/Graph Editor Settings", order = 1)]
-    public sealed class GraphEditorWindowSettings : ScriptableObject
+[System.Serializable]
+public sealed class GraphEditorWindowSettings : MoyvaJsonConfigObject
     {
         // Backwards-compatible storage: GUIDs (string) and direct references to assets.
         public string graphAssetGuid;
@@ -30,3 +32,5 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         public Vector3 cameraScale = Vector3.one;
     }
 }
+
+#endif

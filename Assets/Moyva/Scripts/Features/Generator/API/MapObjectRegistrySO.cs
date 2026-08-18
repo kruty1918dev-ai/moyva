@@ -1,9 +1,10 @@
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator.API
 {
-    [CreateAssetMenu(fileName = "MapObjectRegistry", menuName = "Moyva/Generator/MapObjectRegistry")]
-    public class MapObjectRegistrySO : ScriptableObject
+[System.Serializable]
+public class MapObjectRegistrySO : MoyvaJsonConfigObject
     {
         [SerializeField] private MapObjectDefinition[] _definitions;
         public MapObjectDefinition[] Definitions => _definitions;

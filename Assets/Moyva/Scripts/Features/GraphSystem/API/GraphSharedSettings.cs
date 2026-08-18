@@ -15,11 +15,11 @@ namespace Kruty1918.Moyva.GraphSystem.API
     {
         [Header("Map Size")]
         [Sirenix.OdinInspector.BoxGroup("Map Size")]
-        [Tooltip("Ширина мапи (у тайлах). 0 = брати розмір із GridService (зовнішнє джерело).")]
+        [Tooltip("Authoritative ширина мапи у тайлах. Коли > 0, це значення використовується і Graph Preview, і gameplay generation. 0 = дозволити runtime/menu визначати розмір.")]
         [Min(0)]
         [SerializeField] private int _mapWidth;
 
-        [Tooltip("Висота мапи (у тайлах). 0 = брати розмір із GridService (зовнішнє джерело).")]
+        [Tooltip("Authoritative висота мапи у тайлах. Коли > 0, це значення використовується і Graph Preview, і gameplay generation. 0 = дозволити runtime/menu визначати розмір.")]
         [Sirenix.OdinInspector.BoxGroup("Map Size")]
         [Min(0)]
         [SerializeField] private int _mapHeight;
@@ -48,6 +48,25 @@ namespace Kruty1918.Moyva.GraphSystem.API
         /// використовує ці значення.
         /// </summary>
         public bool HasMapSize => _mapWidth > 0 && _mapHeight > 0;
+
+        /// <summary>
+        /// Задає єдиний authoritative розмір карти для Graph Preview
+        /// та gameplay generation.
+        /// </summary>
+        public void SetMapSize(int width, int height)
+        {
+            _mapWidth = Mathf.Max(4, width);
+            _mapHeight = Mathf.Max(4, height);
+        }
+
+        /// <summary>
+        /// Повертає керування розміром runtime/menu launch context.
+        /// </summary>
+        public void ClearMapSize()
+        {
+            _mapWidth = 0;
+            _mapHeight = 0;
+        }
 
         public GridNeighborhoodMode ResolveNeighborhoodMode()
         {

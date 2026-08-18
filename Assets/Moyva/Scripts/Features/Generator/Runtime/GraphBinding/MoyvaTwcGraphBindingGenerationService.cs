@@ -8,6 +8,7 @@ using Kruty1918.Moyva.MapChunks.Runtime;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal sealed class MoyvaTwcGraphBindingGenerationService : IMoyvaTwcGraphBindingGenerationService
@@ -251,7 +252,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             GiantGrey.TileWorldCreator.TileWorldCreatorManager manager,
             GeneratedWorldData worldData)
         {
-            var mapping = ScriptableObject.CreateInstance<TileWorldCreatorIdMappingSO>();
+            var mapping = MoyvaJsonObjectFactory.Create<TileWorldCreatorIdMappingSO>();
             mapping.name = "RuntimeEmptyTileWorldCreatorIdMapping";
             try
             {
@@ -289,7 +290,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
             finally
             {
-                DestroyUnityObject(mapping);
+                MoyvaJsonObjectFactory.DestroyImmediate(mapping);
             }
         }
 

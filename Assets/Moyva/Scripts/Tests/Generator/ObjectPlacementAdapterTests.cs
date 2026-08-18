@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using GiantGrey.TileWorldCreator.Components;
@@ -115,3 +116,5 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
     }
 }
+
+#endif

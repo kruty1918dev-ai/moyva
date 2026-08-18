@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System.Collections.Generic;
 using System.IO;
 using Kruty1918.Moyva.Generator.Runtime.ObjectPlacement;
@@ -1232,3 +1233,5 @@ namespace Kruty1918.Moyva.Generator.Editor.ObjectPlacement
         }
     }
 }
+
+#endif

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Grid.API
 {
     /// <summary>
@@ -64,8 +65,8 @@ namespace Kruty1918.Moyva.Grid.API
     /// Реєстр gameplay-профілів шарів. Замінює залежність від класичного TileRegistry:
     /// сітка зберігає id шару у клітинці, а цей ассет визначає правила руху/будівництва.
     /// </summary>
-    [CreateAssetMenu(fileName = "TerrainLayerProfiles", menuName = "Moyva/Grid/Terrain Layer Profiles")]
-    public class TerrainLayerProfileSO : ScriptableObject
+[System.Serializable]
+public class TerrainLayerProfileSO : MoyvaJsonConfigObject
     {
         [SerializeField] private TerrainLayerProfile[] _profiles = System.Array.Empty<TerrainLayerProfile>();
 

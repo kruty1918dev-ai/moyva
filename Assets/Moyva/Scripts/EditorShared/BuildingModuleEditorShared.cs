@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
@@ -16,6 +17,7 @@ namespace Kruty1918.Moyva.Editor.Shared
             private readonly List<BuildingModuleDefinition> _currentModules;
             private Vector2 _scroll;
             private string _search = string.Empty;
+            private bool _showLegacy;
 
             public ModulePickerPopup(SerializedProperty modulesProp, Action onChanged)
             {
@@ -39,6 +41,10 @@ namespace Kruty1918.Moyva.Editor.Shared
                     new GUIContent("Пошук", "Шукає за українською назвою, описом і C#-типом модуля."),
                     _search);
 
+                _showLegacy = EditorGUILayout.ToggleLeft(
+                    "Показати застарілі compatibility-модулі",
+                    _showLegacy);
+
                 _scroll = EditorGUILayout.BeginScrollView(_scroll);
                 IReadOnlyList<BuildingModuleEditorDescriptor> options = BuildingModuleEditorCatalog.Options;
                 string lastCategory = null;
@@ -47,6 +53,12 @@ namespace Kruty1918.Moyva.Editor.Shared
                     BuildingModuleEditorDescriptor option = options[i];
                     if (!option.MatchesSearch(_search))
                         continue;
+                    if (!_showLegacy
+                        && BuildingModuleEditorCatalog
+                            .IsLegacyModule(option.ModuleType))
+                    {
+                        continue;
+                    }
 
                     if (!string.Equals(lastCategory, option.Category, StringComparison.Ordinal))
                     {
@@ -441,3 +453,5 @@ namespace Kruty1918.Moyva.Editor.Shared
         }
     }
 }
+
+#endif

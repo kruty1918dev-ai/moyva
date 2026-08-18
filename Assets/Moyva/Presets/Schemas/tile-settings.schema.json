@@ -1,0 +1,318 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/tile-settings.schema.json",
+  "title": "Moyva — Tile Settings Node",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.Runtime.Nodes.TileSettingsNode. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.tile-settings"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "tile-settings"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "tileVariants": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "preset": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Preset"
+          },
+          "slot": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:Top|Middle|Bottom))$",
+            "x-enumNames": [
+              "Top",
+              "Middle",
+              "Bottom"
+            ],
+            "x-flags": false,
+            "title": "Slot"
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "tileHeight": {
+            "type": "number",
+            "title": "Tile Height",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Tile Variants",
+      "description": "Список tileset/preset варіантів для цього шару. TWC вибирає варіант випадково за Weight у межах одного Slot."
+    },
+    "tilePreset": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "title": "Tile Preset"
+    },
+    "slot": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Top|Middle|Bottom))$",
+      "x-enumNames": [
+        "Top",
+        "Middle",
+        "Bottom"
+      ],
+      "x-flags": false,
+      "title": "Slot"
+    },
+    "weight": {
+      "type": "number",
+      "title": "Weight"
+    },
+    "tileHeight": {
+      "type": "number",
+      "title": "Tile Height"
+    },
+    "useDualGrid": {
+      "type": "boolean",
+      "title": "Use Dual Grid",
+      "description": "Якщо увімкнено, TWC використовує Dual Grid. Для dual TilePreset це увімкнеться автоматично під час застосування."
+    },
+    "scaleTileToCellSize": {
+      "type": "boolean",
+      "title": "Scale Tile To Cell Size",
+      "description": "Масштабувати prefab-тайли до розміру клітинки TWC."
+    },
+    "layerYOffset": {
+      "type": "number",
+      "title": "Layer Y Offset",
+      "description": "Y offset усього build-шару відносно BlueprintLayer.defaultLayerHeight."
+    },
+    "scaleOffset": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "additionalProperties": false,
+      "title": "Scale Offset",
+      "description": "Scale offset для TWC TilesBuildLayer."
+    },
+    "generateFlatSurface": {
+      "type": "boolean",
+      "title": "Generate Flat Surface",
+      "description": "Замість TilePreset prefabs створити одну пласку grid-поверхню для цього шару."
+    },
+    "flatSurfaceMaterial": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Матеріал для Flat Surface режиму.",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "title": "Flat Surface Material"
+    },
+    "tileLayerHeightOffset": {
+      "type": "number",
+      "title": "Tile Layer Height Offset",
+      "description": "Height offset першого tile layer у TWC build-шарі."
+    },
+    "ignoreFillTiles": {
+      "type": "boolean",
+      "title": "Ignore Fill Tiles",
+      "description": "Ігнорувати fill tiles у першому tile layer."
+    },
+    "meshGenerationOverride": {
+      "type": "boolean",
+      "title": "Mesh Generation Override"
+    },
+    "mergeTiles": {
+      "type": "boolean",
+      "title": "Merge Tiles"
+    },
+    "shadowCastingMode": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Off|On|TwoSided|ShadowsOnly))$",
+      "x-enumNames": [
+        "Off",
+        "On",
+        "TwoSided",
+        "ShadowsOnly"
+      ],
+      "x-flags": false,
+      "title": "Shadow Casting Mode"
+    },
+    "objectLayer": {
+      "type": "integer",
+      "title": "Object Layer"
+    },
+    "renderingLayer": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "title": "Rendering Layer"
+    },
+    "colliderType": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:none|meshCollider|tileCollider))$",
+      "x-enumNames": [
+        "none",
+        "meshCollider",
+        "tileCollider"
+      ],
+      "x-flags": false,
+      "title": "Collider Type"
+    },
+    "tileColliderHeight": {
+      "type": "number",
+      "title": "Tile Collider Height",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "tileColliderExtrusionHeight": {
+      "type": "number",
+      "title": "Tile Collider Extrusion Height",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "invertCollisionWalls": {
+      "type": "boolean",
+      "title": "Invert Collision Walls"
+    },
+    "nodeId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Node Id"
+    },
+    "editorPosition": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Editor Position"
+    },
+    "layerId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Layer Id"
+    }
+  }
+}

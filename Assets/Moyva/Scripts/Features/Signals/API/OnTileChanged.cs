@@ -35,6 +35,23 @@ namespace Kruty1918.Moyva.Signals
         public string FactionId;
     }
 
+    public struct UnitGarrisonStateChangedSignal
+    {
+        public string UnitId;
+        public bool IsGarrisoned;
+        public Vector2Int BuildingPosition;
+        public Vector2Int UnitPosition;
+        public int VisionRange;
+        public string OwnerId;
+    }
+
+    public struct BuildingOperationalSignal
+    {
+        public string BuildingId;
+        public Vector2Int Position;
+        public string OwnerId;
+    }
+
     // Викликається, коли юніт перемістився
     public struct UnitMovedSignal
     {
@@ -42,6 +59,14 @@ namespace Kruty1918.Moyva.Signals
         public UnityEngine.Vector2Int NewPosition;
         public float Cost;
         public string SourceFactionId;
+
+        /// <summary>
+        /// True only when movement already validated that the destination's
+        /// primary occupant allows unit traversal (for example a friendly Gate).
+        /// ObjectsMap keeps the primary building and tracks the unit as a
+        /// transient/shared occupant.
+        /// </summary>
+        public bool AllowSharedOccupancy;
     }
 
     // Викликається при смерті/видаленні
@@ -64,6 +89,7 @@ namespace Kruty1918.Moyva.Signals
     {
         public string UnitId;
         public Vector2Int TargetPosition;
+        public string RequesterOwnerId;
     }
 
     /// <summary>

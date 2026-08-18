@@ -1,0 +1,20 @@
+{
+  "$schema": "../../Schemas/construction-diagnostics-profile.schema.json",
+  "schema": "moyva.construction-diagnostics-profile",
+  "version": 1,
+  "id": "constructiondiagnosticsprofile-gamplay",
+  "model": "construction-diagnostics-profile",
+  "enableVerboseLogs": false,
+  "enablePlacementDebug": false,
+  "enableResourceDebug": true,
+  "enableVisualDebug": false,
+  "enableWallDebug": true,
+  "drawSceneGizmos": true,
+  "drawBlockedTiles": false,
+  "drawInfluenceZones": true,
+  "migration": {
+    "sourceAssetGuid": "5b26cb9cd7d54ea4b6373a64a5ba590d",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/ConstructionDiagnosticsProfile_Gamplay.asset",
+    "sourceHash": "27955dac7fef94aaaa91648c95d0b400f548a339c9fb7e93caa8549c97f71e81"
+  }
+}

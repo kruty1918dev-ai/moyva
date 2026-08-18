@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEditor;
@@ -226,3 +227,4 @@ namespace Kruty1918.Moyva.Generator.Editor
         }
     }
 }
+#endif

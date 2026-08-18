@@ -1,0 +1,56 @@
+{
+  "$schema": "../../Schemas/scene-audio-overrides.schema.json",
+  "schema": "moyva.scene-audio-overrides",
+  "version": 1,
+  "id": "moyvasceneaudiooverrides",
+  "model": "scene-audio-overrides",
+  "overrides": [
+    {
+      "sceneName": "HomeMenu",
+      "soundKey": "tavern-music-loop",
+      "overrideVolume": false,
+      "volume": 1.0,
+      "overridePitch": false,
+      "pitch": 1.0,
+      "overrideMixerGroup": false,
+      "mixerGroup": {
+        "$asset": "asset.audio-mixer-group-controller.master.35a28e1f",
+        "editorPath": "Assets/Moyva/Audio/MoyvaMixer.mixer",
+        "required": true
+      },
+      "overrideLoop": true,
+      "loop": true,
+      "overrideSpatialBlend": false,
+      "spatialBlend": 0.0,
+      "overridePriority": false,
+      "priority": 128,
+      "playOnAwake": true
+    },
+    {
+      "sceneName": "Gamplay_Scene",
+      "soundKey": "tavern-music-loop",
+      "overrideVolume": true,
+      "volume": 0.343,
+      "overridePitch": false,
+      "pitch": 1.0,
+      "overrideMixerGroup": false,
+      "mixerGroup": {
+        "$asset": "asset.audio-mixer-group-controller.master.35a28e1f",
+        "editorPath": "Assets/Moyva/Audio/MoyvaMixer.mixer",
+        "required": true
+      },
+      "overrideLoop": true,
+      "loop": true,
+      "overrideSpatialBlend": false,
+      "spatialBlend": 0.0,
+      "overridePriority": false,
+      "priority": 128,
+      "playOnAwake": true
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "63222adc83dc38d349d2948a48680087",
+    "sourceAssetPath": "Assets/Moyva/Resources/MoyvaSceneAudioOverrides.asset",
+    "sourceHash": "12fb88b88f1852d94003b9f4b9e52c5b87d1abd472757fc295f4e9e2affe11e1"
+  }
+}

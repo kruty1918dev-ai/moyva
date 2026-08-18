@@ -1,0 +1,1072 @@
+{
+  "$schema": "../Schemas/economy-resources.schema.json",
+  "schema": "moyva.economy-resources",
+  "version": 1,
+  "databaseAsset": "Assets/Moyva/Data/ScriptableObjects/Economy/EconomyDatabase.asset",
+  "resources": [
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Aloe-herb.asset",
+      "id": "aloe-herb-food-resources",
+      "displayName": "Aloe-herb",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_115",
+        "localId": 1608824613
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Amber-crystal.asset",
+      "id": "pearl-white-materials-resources",
+      "displayName": "Pearl-white",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_20",
+        "localId": 1056939201
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Amethyst.asset",
+      "id": "amethyst-materials-resources",
+      "displayName": "Amethyst",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_13",
+        "localId": -147323449
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Bark.asset",
+      "id": "hide-materials-resources",
+      "displayName": "Hide",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_2",
+        "localId": -1768132216
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Barrel.asset",
+      "id": "barrel-materials-resources",
+      "displayName": "Barrel",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_142",
+        "localId": -1543548372
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Beef-cut.asset",
+      "id": "beef-cut-food-resources",
+      "displayName": "Beef-cut",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_187",
+        "localId": 1534047610
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Beetroot.asset",
+      "id": "root-purple-food-resources",
+      "displayName": "Root-purple",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_42",
+        "localId": -247198273
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Berry-bunch.asset",
+      "id": "bolt-blue-food-resources",
+      "displayName": "Bolt-blue",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_44",
+        "localId": -480449755
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Blue-gem.asset",
+      "id": "green-gem-materials-resources",
+      "displayName": "Green-gem",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_17",
+        "localId": 1194725956
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Blueberries.asset",
+      "id": "axe-silver-food-resources",
+      "displayName": "Axe-silver",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_40",
+        "localId": -1145804333
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Bone-fragment.asset",
+      "id": "bone-fragment-materials-resources",
+      "displayName": "Bone-fragment",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_57",
+        "localId": 2026243473
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Bowl.asset",
+      "id": "cup-gold-materials-resources",
+      "displayName": "Cup-gold",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_143",
+        "localId": 101834564
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Bread-loaf.asset",
+      "id": "sticks-brown-food-resources",
+      "displayName": "Sticks-brown",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_45",
+        "localId": -226280218
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Brick.asset",
+      "id": "brick-materials-resources",
+      "displayName": "Brick",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_31",
+        "localId": -843569825
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Bronze-block.asset",
+      "id": "bronze-block-materials-resources",
+      "displayName": "Bronze-block",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_32",
+        "localId": 650760849
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Cabbage.asset",
+      "id": "cabbage-food-resources",
+      "displayName": "Cabbage",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_46",
+        "localId": 320827400
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Carrot.asset",
+      "id": "cheese-yellow-food-resources",
+      "displayName": "Cheese-yellow",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_236",
+        "localId": 1438883814
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Cherries.asset",
+      "id": "cherries-food-resources",
+      "displayName": "Cherries",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_239",
+        "localId": 826176627
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Claw.asset",
+      "id": "coin-gold-materials-resources",
+      "displayName": "Coin-gold",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_56",
+        "localId": 1629802247
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Cloth-blue.asset",
+      "id": "axe-white-materials-resources",
+      "displayName": "Axe-white",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_88",
+        "localId": -1839990009
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Cloth-green.asset",
+      "id": "cloth-magenta-materials-resources",
+      "displayName": "Cloth-magenta",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_90",
+        "localId": -2070684881
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Cloth-orange.asset",
+      "id": "cloth-red-materials-resources",
+      "displayName": "Cloth-red",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_89",
+        "localId": -1781221358
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Cloth-yellow.asset",
+      "id": "cloth-purple-materials-resources",
+      "displayName": "Cloth-purple",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_91",
+        "localId": -140748940
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Coal.asset",
+      "id": "dark-armor-materials-resources",
+      "displayName": "Dark-armor",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_4",
+        "localId": -1404299846
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Copper-chunks.asset",
+      "id": "pants-magenta-materials-resources",
+      "displayName": "Pants-magenta",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_66",
+        "localId": 827117130
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Copper-nuggets.asset",
+      "id": "pants-violet-materials-resources",
+      "displayName": "Pants-violet",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_67",
+        "localId": 654812808
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Corn.asset",
+      "id": "milk-bottle-food-resources",
+      "displayName": "Milk-bottle",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_235",
+        "localId": -1273366083
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Cotton.asset",
+      "id": "cotton-materials-resources",
+      "displayName": "Cotton",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_29",
+        "localId": 1784735916
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Crystal-cluster.asset",
+      "id": "crystal-cluster-materials-resources",
+      "displayName": "Crystal-cluster",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_11",
+        "localId": -1542864266
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Diamond.asset",
+      "id": "crystal-purple-materials-resources",
+      "displayName": "Crystal-purple",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_14",
+        "localId": -2016493438
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Emerald.asset",
+      "id": "gem-red-materials-resources",
+      "displayName": "Gem-red",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_16",
+        "localId": -982856591
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Flower-herb.asset",
+      "id": "flower-herb-food-resources",
+      "displayName": "Flower-herb",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_114",
+        "localId": 1922278963
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Gold-chunks.asset",
+      "id": "gold-chunks-materials-resources",
+      "displayName": "Gold-chunks",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_69",
+        "localId": -659480555
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Gold-nugget.asset",
+      "id": "gold-coins-materials-resources",
+      "displayName": "Gold-coins",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_59",
+        "localId": 861756331
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Gold-ore.asset",
+      "id": "green-ore-materials-resources",
+      "displayName": "Green-ore",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_23",
+        "localId": 268817316
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Green-crystal.asset",
+      "id": "violet-crystal-materials-resources",
+      "displayName": "Violet-crystal",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_21",
+        "localId": -2051768838
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Ham.asset",
+      "id": "ham-food-resources",
+      "displayName": "Ham",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_191",
+        "localId": 1367837699
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Hardwood.asset",
+      "id": "hardwood-materials-resources",
+      "displayName": "Hardwood",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_25",
+        "localId": 1441073898
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Herbs.asset",
+      "id": "herbs-food-resources",
+      "displayName": "Herbs",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_232",
+        "localId": -935230417
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Honeycomb.asset",
+      "id": "herb-green-food-resources",
+      "displayName": "Herb-green",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_234",
+        "localId": -1985815041
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Iron-block.asset",
+      "id": "iron-block-materials-resources",
+      "displayName": "Iron-block",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_30",
+        "localId": -1599469606
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Iron-ingot.asset",
+      "id": "iron-ingot-materials-resources",
+      "displayName": "Iron-ingot",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_8",
+        "localId": 1654260025
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Iron-ore.asset",
+      "id": "iron-ore-materials-resources",
+      "displayName": "Iron-ore",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_5",
+        "localId": -373596042
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Iron-shard.asset",
+      "id": "iron-shard-materials-resources",
+      "displayName": "Iron-shard",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_58",
+        "localId": 1139815714
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Leather.asset",
+      "id": "leather-materials-resources",
+      "displayName": "Leather",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_3",
+        "localId": 586866326
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Milk-bucket.asset",
+      "id": "banana-food-resources",
+      "displayName": "Banana",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_233",
+        "localId": -739879170
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Mushroom-light.asset",
+      "id": "mushroom-light-food-resources",
+      "displayName": "Mushroom-light",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_112",
+        "localId": 477368185
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Mushroom-red.asset",
+      "id": "mushroom-red-food-resources",
+      "displayName": "Mushroom-red",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_113",
+        "localId": 109008489
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Pearl.asset",
+      "id": "red-cloth-materials-resources",
+      "displayName": "Red-cloth",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_65",
+        "localId": -1588658641
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Plum.asset",
+      "id": "plum-food-resources",
+      "displayName": "Plum",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_43",
+        "localId": 462248344
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Poultry.asset",
+      "id": "poultry-food-resources",
+      "displayName": "Poultry",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_188",
+        "localId": 394577249
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Raspberries.asset",
+      "id": "raspberries-food-resources",
+      "displayName": "Raspberries",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_41",
+        "localId": -277594306
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Raw-meat.asset",
+      "id": "raw-meat-food-resources",
+      "displayName": "Raw-meat",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_186",
+        "localId": 2068181806
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Red-gem.asset",
+      "id": "blue-gem-materials-resources",
+      "displayName": "Blue-gem",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_18",
+        "localId": -1045212822
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Resin.asset",
+      "id": "resin-materials-resources",
+      "displayName": "Resin",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_50",
+        "localId": -1596460865
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Ribs.asset",
+      "id": "ribs-food-resources",
+      "displayName": "Ribs",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_189",
+        "localId": 1923617309
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Root-herb.asset",
+      "id": "root-herb-food-resources",
+      "displayName": "Root-herb",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_117",
+        "localId": -780212090
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Rope.asset",
+      "id": "rope-materials-resources",
+      "displayName": "Rope",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_28",
+        "localId": -163807514
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Ruby.asset",
+      "id": "cyan-gem-materials-resources",
+      "displayName": "Cyan-gem",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_15",
+        "localId": -1249038002
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Sapphire.asset",
+      "id": "white-feather-materials-resources",
+      "displayName": "White-feather",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_12",
+        "localId": -245430926
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Silver-chunks.asset",
+      "id": "silver-chunks-materials-resources",
+      "displayName": "Silver-chunks",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_68",
+        "localId": 590641355
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Silver-ingot.asset",
+      "id": "silver-ingot-materials-resources",
+      "displayName": "Silver-ingot",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_27",
+        "localId": -921616715
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Sprout.asset",
+      "id": "acorn-food-resources",
+      "displayName": "Acorn",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_116",
+        "localId": -347714020
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Steak.asset",
+      "id": "steak-food-resources",
+      "displayName": "Steak",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_190",
+        "localId": 1369457224
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Steel-block.asset",
+      "id": "steel-block-materials-resources",
+      "displayName": "Steel-block",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_33",
+        "localId": 563199231
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Stick.asset",
+      "id": "bone-materials-resources",
+      "displayName": "Bone",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_104",
+        "localId": -1815320004
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Stone.asset",
+      "id": "stone-materials-resources",
+      "displayName": "Stone",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_10",
+        "localId": 2043002081
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Sulfur.asset",
+      "id": "sulfur-materials-resources",
+      "displayName": "Sulfur",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_22",
+        "localId": 653385758
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Tin-block.asset",
+      "id": "tin-block-materials-resources",
+      "displayName": "Tin-block",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_34",
+        "localId": 173883946
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Tomato.asset",
+      "id": "tomato-food-resources",
+      "displayName": "Tomato",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_238",
+        "localId": -291674302
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Twigs.asset",
+      "id": "twigs-materials-resources",
+      "displayName": "Twigs",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_105",
+        "localId": -555517929
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Violet-crystal.asset",
+      "id": "red-crystal-materials-resources",
+      "displayName": "Red-crystal",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_19",
+        "localId": 1839679833
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Walnut-wood.asset",
+      "id": "walnut-wood-materials-resources",
+      "displayName": "Walnut-wood",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_48",
+        "localId": 821768047
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Wheat-bundle.asset",
+      "id": "wheat-bundle-food-resources",
+      "displayName": "Wheat-bundle",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_47",
+        "localId": -1222114195
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Wheat.asset",
+      "id": "corn-cob-food-resources",
+      "displayName": "Corn-cob",
+      "category": "Food",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_237",
+        "localId": -120510711
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    },
+    {
+      "asset": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Zinc-block.asset",
+      "id": "zinc-block-materials-resources",
+      "displayName": "Zinc-block",
+      "category": "Materials",
+      "icon": {
+        "path": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+        "guid": "62d7684d3d2d286709a275989698a69d",
+        "subAsset": "16x16 items sheet_35",
+        "localId": -376910634
+      },
+      "stackLimit": 32,
+      "weightGrams": 1000
+    }
+  ]
+}

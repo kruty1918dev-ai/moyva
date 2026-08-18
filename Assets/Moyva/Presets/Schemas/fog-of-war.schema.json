@@ -1,0 +1,1436 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/fog-of-war.schema.json",
+  "title": "Moyva — Fog Of War Settings",
+  "description": "JSON source of truth для Kruty1918.Moyva.FogOfWar.API.FogOfWarSettings. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.fog-of-war"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "fog-of-war"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "unexploredColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Unexplored Color"
+    },
+    "exploredColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Explored Color"
+    },
+    "fogTileSprite": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "title": "Fog Tile Sprite"
+    },
+    "fogTileSpritePixelSize": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Fog Tile Sprite Pixel Size"
+    },
+    "fogTileSizeInCells": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Fog Tile Size In Cells"
+    },
+    "fogTileSeamOverlapPixels": {
+      "type": "number",
+      "title": "Fog Tile Seam Overlap Pixels"
+    },
+    "fogMapEdgePaddingPixels": {
+      "type": "number",
+      "title": "Fog Map Edge Padding Pixels"
+    },
+    "fogMapEdgeOverhangCells": {
+      "type": "number",
+      "title": "Fog Map Edge Overhang Cells"
+    },
+    "fogTileTiling": {
+      "type": "number",
+      "title": "Fog Tile Tiling"
+    },
+    "fogIconSprites": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+        "properties": {
+          "$asset": {
+            "type": "string",
+            "title": "Asset ID"
+          },
+          "editorPath": {
+            "type": "string",
+            "description": "Editor-only path для діагностики/регенерації catalog."
+          },
+          "required": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "$asset"
+        ]
+      },
+      "title": "Fog Icon Sprites"
+    },
+    "fogIconSpritePixelSize": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Fog Icon Sprite Pixel Size"
+    },
+    "fogIconGridSize": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Fog Icon Grid Size"
+    },
+    "fogIconScale": {
+      "type": "number",
+      "title": "Fog Icon Scale"
+    },
+    "centerIcon": {
+      "type": "boolean",
+      "title": "Center Icon"
+    },
+    "fullyTransparentWhenVisible": {
+      "type": "boolean",
+      "title": "Fully Transparent When Visible"
+    },
+    "fog3DTopClearance": {
+      "type": "number",
+      "title": "Fog 3D Top Clearance"
+    },
+    "enableShaderFogCulling": {
+      "type": "boolean",
+      "title": "Enable Shader Fog Culling"
+    },
+    "shaderFogCullThreshold": {
+      "type": "number",
+      "title": "Shader Fog Cull Threshold"
+    },
+    "enableRendererCulling": {
+      "type": "boolean",
+      "title": "Enable Renderer Culling",
+      "description": "Disables world renderers that are fully covered by unexplored fog."
+    },
+    "requireOpaqueUnexploredForCulling": {
+      "type": "boolean",
+      "title": "Require Opaque Unexplored For Culling",
+      "description": "If enabled, renderer culling works only when UnexploredAlpha is close to opaque (>= 0.99)."
+    },
+    "rendererCullingLayerMask": {
+      "type": "integer",
+      "title": "Renderer Culling Layer Mask",
+      "description": "Layers affected by fog renderer culling."
+    },
+    "rendererCullingMaxRenderersPerFrame": {
+      "type": "integer",
+      "title": "Renderer Culling Max Renderers Per Frame",
+      "description": "Maximum tracked renderers evaluated per frame. Lower values spread work across more frames."
+    },
+    "rendererCullingDiscoveryInterval": {
+      "type": "number",
+      "title": "Renderer Culling Discovery Interval",
+      "description": "How often the culling service searches for newly spawned world renderers."
+    },
+    "rendererCullingBoundsPaddingCells": {
+      "type": "number",
+      "title": "Renderer Culling Bounds Padding Cells",
+      "description": "Small bounds padding in map cells to avoid edge flicker when sprites move between cells."
+    },
+    "unexploredAlpha": {
+      "type": "number",
+      "title": "Unexplored Alpha",
+      "description": "Alpha for fully unexplored fog; still used by renderer culling safety checks.",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "exploredAlpha": {
+      "type": "number",
+      "title": "Explored Alpha",
+      "description": "Alpha for explored fog; kept for preset migration and tuning notes.",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "presentationMode": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:ScreenSpace|LegacyTwcVolume))$",
+      "x-enumNames": [
+        "ScreenSpace",
+        "LegacyTwcVolume"
+      ],
+      "x-flags": false,
+      "title": "Presentation Mode"
+    },
+    "screenSpace": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "cornerJoinRevision": {
+          "type": "integer",
+          "title": "Corner Join Revision"
+        },
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "flipTextureY": {
+          "type": "boolean",
+          "title": "Flip Texture Y",
+          "description": "Інвертує координату Y fog texture. Увімкни лише якщо reveal віддзеркалений по осі Z."
+        },
+        "transparentFallbackPlaneOffsetY": {
+          "type": "number",
+          "title": "Transparent Fallback Plane Offset Y",
+          "description": "Y-offset базової world-площини для transparent shaders, які не записують scene depth. Для поточного TerrainMesh/Water правильне значення близьке до 0.50–0.53. Нуль зміщує fog майже на половину клітинки при перспективній камері.",
+          "minimum": -1.0,
+          "maximum": 3.0,
+          "x-moyva-editorMinimum": -1.0,
+          "x-moyva-editorMaximum": 3.0
+        },
+        "unexploredColor": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Unexplored Color"
+        },
+        "unexploredOpacity": {
+          "type": "number",
+          "title": "Unexplored Opacity",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "unexploredSaturation": {
+          "type": "number",
+          "title": "Unexplored Saturation",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "exploredColor": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Explored Color"
+        },
+        "exploredOpacity": {
+          "type": "number",
+          "title": "Explored Opacity",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "exploredSaturation": {
+          "type": "number",
+          "title": "Explored Saturation",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "edgeSoftness": {
+          "type": "number",
+          "title": "Edge Softness",
+          "description": "М'якість верхньої fullscreen-межі у частках клітинки.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "edgeNoiseStrength": {
+          "type": "number",
+          "title": "Edge Noise Strength",
+          "minimum": 0.0,
+          "maximum": 0.5,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.5
+        },
+        "depthAwareEdgeEnabled": {
+          "type": "boolean",
+          "title": "Depth Aware Edge Enabled",
+          "description": "Темний кант на стороні дискретної Unexplored клітинки. Він обчислюється з world-grid меж, лише на реальній поверхні, без screen-neighbour sampling та fallback-площини."
+        },
+        "useLegacyWorldCurtain": {
+          "type": "boolean",
+          "title": "Use Legacy World Curtain",
+          "description": "Тимчасово вмикає старий геометричний curtain для порівняння. У нормальному режимі має бути вимкнено."
+        },
+        "depthAwareEdgeColor": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Depth Aware Edge Color"
+        },
+        "depthAwareEdgeOpacity": {
+          "type": "number",
+          "title": "Depth Aware Edge Opacity",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "depthAwareEdgeWorldDepth": {
+          "type": "number",
+          "title": "Depth Aware Edge World Depth",
+          "description": "Legacy-параметр. Inner Fog Bevel не використовує world-space екструзію або напрямок Vector3.down.",
+          "minimum": 0.1,
+          "maximum": 5.0,
+          "x-moyva-editorMinimum": 0.1,
+          "x-moyva-editorMaximum": 5.0
+        },
+        "depthAwareEdgeMinPixels": {
+          "type": "number",
+          "title": "Depth Aware Edge Min Pixels",
+          "description": "Legacy-параметр, збережений для сумісності serialized asset. Нова фаска використовує лише Max Pixels як ширину.",
+          "minimum": 1.0,
+          "maximum": 16.0,
+          "x-moyva-editorMinimum": 1.0,
+          "x-moyva-editorMaximum": 16.0
+        },
+        "depthAwareEdgeMaxPixels": {
+          "type": "number",
+          "title": "Depth Aware Edge Max Pixels",
+          "description": "Ширина surface-locked канту в screen pixels. Логічна межа при цьому залишається у world-grid.",
+          "minimum": 2.0,
+          "maximum": 10.0,
+          "x-moyva-editorMinimum": 2.0,
+          "x-moyva-editorMaximum": 10.0
+        },
+        "depthAwareEdgeSamples": {
+          "type": "integer",
+          "title": "Depth Aware Edge Samples",
+          "description": "Legacy-параметр. SurfaceLockedGridEdge не виконує радіальні screen-space вибірки.",
+          "minimum": 4.0,
+          "maximum": 12.0,
+          "x-moyva-editorMinimum": 4.0,
+          "x-moyva-editorMaximum": 12.0
+        },
+        "depthAwareEdgeOcclusionBias": {
+          "type": "number",
+          "title": "Depth Aware Edge Occlusion Bias",
+          "description": "Legacy-параметр. Нова фаска не виконує camera-depth оклюзію, оскільки ніколи не виходить на Visible side.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "depthAwareEdgeGradientPower": {
+          "type": "number",
+          "title": "Depth Aware Edge Gradient Power",
+          "description": "Форма згасання фаски вглиб туману. Більше значення робить темну частину вужчою.",
+          "minimum": 0.25,
+          "maximum": 4.0,
+          "x-moyva-editorMinimum": 0.25,
+          "x-moyva-editorMaximum": 4.0
+        },
+        "depthAwareStateCloseRadiusPixels": {
+          "type": "integer",
+          "title": "Depth Aware State Close Radius Pixels",
+          "description": "Використовується лише для debug ClosedScreenState. Фінальна форма fog береться з RawScreenState.",
+          "minimum": 0.0,
+          "maximum": 3.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 3.0
+        },
+        "depthAwareBoundarySoftnessPixels": {
+          "type": "number",
+          "title": "Depth Aware Boundary Softness Pixels",
+          "description": "М'якість внутрішньої фаски. Не впливає на логічну форму основної fog mask.",
+          "minimum": 0.0,
+          "maximum": 4.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 4.0
+        },
+        "curtainEnabled": {
+          "type": "boolean",
+          "title": "Curtain Enabled",
+          "description": "Створює реальну вертикальну world-space стінку по межі Unexplored."
+        },
+        "curtainWorldDepth": {
+          "type": "number",
+          "title": "Curtain World Depth",
+          "description": "Фіксована вертикальна довжина кожного curtain-сегмента. Якщо верх fog піднімається на високий тайл, низ піднімається разом із ним, тому товщина всюди залишається однаковою."
+        },
+        "curtainBottomPadding": {
+          "type": "number",
+          "title": "Curtain Bottom Padding",
+          "description": "Наскільки нижче нижньої terrain-поверхні має доходити стінка."
+        },
+        "curtainTopOffset": {
+          "type": "number",
+          "title": "Curtain Top Offset",
+          "description": "Невелике вертикальне зміщення верхнього краю. Використовуй лише для усунення z-fighting.",
+          "minimum": -0.25,
+          "maximum": 0.5,
+          "x-moyva-editorMinimum": -0.25,
+          "x-moyva-editorMaximum": 0.5
+        },
+        "curtainHiddenSideOffsetCells": {
+          "type": "number",
+          "title": "Curtain Hidden Side Offset Cells",
+          "description": "Дуже малий зсув стінки у бік Unexplored. Не дозволяє їй заходити на відкриту поверхню.",
+          "minimum": 0.0,
+          "maximum": 0.05,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.05
+        },
+        "curtainEdgeOverlapCells": {
+          "type": "number",
+          "title": "Curtain Edge Overlap Cells",
+          "description": "Невелике перекриття сусідніх вертикальних curtain edges. Закриває мікрощілини у grid corners без підняття одного кінця сегмента на висоту сусіднього terrain level.",
+          "minimum": 0.0,
+          "maximum": 0.05,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.05
+        },
+        "curtainUseHighestAdjacentSurface": {
+          "type": "boolean",
+          "title": "Curtain Use Highest Adjacent Surface",
+          "description": "Верх кожного boundary edge береться з найвищої із двох сусідніх terrain-поверхонь. Прибирає стінки, які прорізають високий тайл."
+        },
+        "curtainAnchorToRevealedSurface": {
+          "type": "boolean",
+          "title": "Curtain Anchor To Revealed Surface",
+          "description": "Legacy-параметр. У поточному height-aware режимі верх curtain завжди піднімається до найвищої з двох сусідніх поверхонь. Поле збережене лише для сумісності зі старими asset-файлами."
+        },
+        "curtainPerEdgeSurfaceProbe": {
+          "type": "boolean",
+          "title": "Curtain Per Edge Surface Probe",
+          "description": "Виконує окремий downward raycast для кожного boundary edge. Верх стінки співпадає з реальною поверхнею меша, а не лише з logical height + глобальним median offset."
+        },
+        "curtainUseSharedBottomPlane": {
+          "type": "boolean",
+          "title": "Curtain Use Shared Bottom Plane",
+          "description": "Legacy-параметр для сумісності зі старими asset-файлами. Поточний runtime завжди використовує однакову локальну Curtain World Depth для кожного сегмента."
+        },
+        "curtainDoubleSided": {
+          "type": "boolean",
+          "title": "Curtain Double Sided",
+          "description": "Малює обидві сторони world curtain. Для перспективної камери це необхідно: інакше ближня або дальня половина 3D-краю зникає через back-face culling."
+        },
+        "curtainForceDoubleSidedInNormalMode": {
+          "type": "boolean",
+          "title": "Curtain Force Double Sided In Normal Mode",
+          "description": "Примусово використовує Cull Off у normal mode навіть для старого serialized asset, де Curtain Double Sided ще false."
+        },
+        "curtainUseOpaqueDepthOcclusion": {
+          "type": "boolean",
+          "title": "Curtain Use Opaque Depth Occlusion",
+          "description": "Legacy-параметр. Height-aware curtain тепер завжди малюється поверх world-геометрії. Перекриття високих тайлів усувається не depth-discard, а підняттям верхньої межі fog до їхньої реальної поверхні."
+        },
+        "curtainOpaqueDepthBias": {
+          "type": "number",
+          "title": "Curtain Opaque Depth Bias",
+          "description": "Допуск depth-порівняння у camera-space world units. Збільшити, якщо край мерехтить на стику з тайлом. Зменшити, якщо curtain трохи заходить поверх близької геометрії.",
+          "minimum": 0.0,
+          "maximum": 0.25,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.25
+        },
+        "curtainAutoCalibrateSurfaceOffset": {
+          "type": "boolean",
+          "title": "Curtain Auto Calibrate Surface Offset",
+          "description": "Автоматично вимірює різницю між logical height map і реальною поверхнею TerrainMesh через downward raycasts."
+        },
+        "curtainSurfaceOffsetY": {
+          "type": "number",
+          "title": "Curtain Surface Offset Y",
+          "description": "Fallback або ручний Y-offset поверхні. За поточними логами Moyva реальне значення близьке до 0.51–0.53.",
+          "minimum": -2.0,
+          "maximum": 2.0,
+          "x-moyva-editorMinimum": -2.0,
+          "x-moyva-editorMaximum": 2.0
+        },
+        "curtainSurfaceCalibrationSamples": {
+          "type": "integer",
+          "title": "Curtain Surface Calibration Samples",
+          "minimum": 4.0,
+          "maximum": 64.0,
+          "x-moyva-editorMinimum": 4.0,
+          "x-moyva-editorMaximum": 64.0
+        },
+        "curtainSurfaceProbeHeight": {
+          "type": "number",
+          "title": "Curtain Surface Probe Height"
+        },
+        "curtainSurfaceProbeDistance": {
+          "type": "number",
+          "title": "Curtain Surface Probe Distance"
+        },
+        "curtainSurfaceCalibrationMaxOffset": {
+          "type": "number",
+          "title": "Curtain Surface Calibration Max Offset",
+          "description": "Відкидає raycast hits, які надто далеко від logical height. Це не дозволяє будівлям і юнітам псувати калібрування.",
+          "minimum": 0.1,
+          "maximum": 3.0,
+          "x-moyva-editorMinimum": 0.1,
+          "x-moyva-editorMaximum": 3.0
+        },
+        "curtainSurfaceProbeMask": {
+          "type": "integer",
+          "title": "Curtain Surface Probe Mask"
+        },
+        "curtainTopCapEnabled": {
+          "type": "boolean",
+          "title": "Curtain Top Cap Enabled",
+          "description": "Будує вузьку горизонтальну верхню кромку у бік Unexplored. Вона створює відчуття товщини fog-volume. Після розділення committed/preview mask цей lip більше не утворює внутрішні кільця."
+        },
+        "curtainTopCapWidthCells": {
+          "type": "number",
+          "title": "Curtain Top Cap Width Cells",
+          "minimum": 0.02,
+          "maximum": 0.4,
+          "x-moyva-editorMinimum": 0.02,
+          "x-moyva-editorMaximum": 0.4
+        },
+        "curtainTopCapCornerOverlapCells": {
+          "type": "number",
+          "title": "Curtain Top Cap Corner Overlap Cells",
+          "minimum": 0.0,
+          "maximum": 0.1,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.1
+        },
+        "curtainTopCapLift": {
+          "type": "number",
+          "title": "Curtain Top Cap Lift",
+          "minimum": 0.0,
+          "maximum": 0.05,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.05
+        },
+        "curtainTopDarkness": {
+          "type": "number",
+          "title": "Curtain Top Darkness",
+          "description": "Наскільки темнішим є низ вертикальної стінки. Верхній край збігається з Unexplored Color, тому біля води не виникає чорного шва, схожого на пробивання water shader.",
+          "minimum": 0.0,
+          "maximum": 0.95,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.95
+        },
+        "curtainTopBandFraction": {
+          "type": "number",
+          "title": "Curtain Top Band Fraction",
+          "description": "Частка висоти, яку займає найтемніший верхній кант.",
+          "minimum": 0.01,
+          "maximum": 0.35,
+          "x-moyva-editorMinimum": 0.01,
+          "x-moyva-editorMaximum": 0.35
+        },
+        "curtainGradientPower": {
+          "type": "number",
+          "title": "Curtain Gradient Power",
+          "description": "Форма вертикального градієнта. Більше значення довше тримає нижній колір.",
+          "minimum": 0.25,
+          "maximum": 4.0,
+          "x-moyva-editorMinimum": 0.25,
+          "x-moyva-editorMaximum": 4.0
+        },
+        "revealDuration": {
+          "type": "number",
+          "title": "Reveal Duration"
+        },
+        "hideDuration": {
+          "type": "number",
+          "title": "Hide Duration"
+        },
+        "applyInSceneView": {
+          "type": "boolean",
+          "title": "Apply In Scene View"
+        },
+        "logCurtainDiagnostics": {
+          "type": "boolean",
+          "title": "Log Curtain Diagnostics",
+          "description": "Пише summary та boundary-сегменти у Console з префіксом [MOYVA_FOG_CURTAIN_DIAG]."
+        },
+        "logShaderDiagnostics": {
+          "type": "boolean",
+          "title": "Log Shader Diagnostics",
+          "description": "Пише camera/world-to-grid probes у Console з префіксом [MOYVA_FOG_SHADER_DIAG]."
+        },
+        "diagnosticLogIntervalSeconds": {
+          "type": "number",
+          "title": "Diagnostic Log Interval Seconds"
+        },
+        "diagnosticMaxSegmentLogs": {
+          "type": "integer",
+          "title": "Diagnostic Max Segment Logs",
+          "minimum": 1.0,
+          "maximum": 64.0,
+          "x-moyva-editorMinimum": 1.0,
+          "x-moyva-editorMaximum": 64.0
+        },
+        "diagnosticCenterRadiusCells": {
+          "type": "integer",
+          "title": "Diagnostic Center Radius Cells",
+          "description": "Радіус навколо центра відкритої області, з якого boundary-сегменти потрапляють у детальний лог.",
+          "minimum": 1.0,
+          "maximum": 30.0,
+          "x-moyva-editorMinimum": 1.0,
+          "x-moyva-editorMaximum": 30.0
+        },
+        "diagnosticMaskRadiusCells": {
+          "type": "integer",
+          "title": "Diagnostic Mask Radius Cells",
+          "description": "Радіус ASCII-знімка fog mask. V=Visible, e=Explored, B=boundary, #=Unexplored.",
+          "minimum": 3.0,
+          "maximum": 20.0,
+          "x-moyva-editorMinimum": 3.0,
+          "x-moyva-editorMaximum": 20.0
+        },
+        "diagnosticMaxComponentLogs": {
+          "type": "integer",
+          "title": "Diagnostic Max Component Logs",
+          "minimum": 1.0,
+          "maximum": 16.0,
+          "x-moyva-editorMinimum": 1.0,
+          "x-moyva-editorMaximum": 16.0
+        },
+        "curtainDebugVisualMode": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Off|BoundaryDirection|HeightBands|SegmentParity|HeightRelation))$",
+          "x-enumNames": [
+            "Off",
+            "BoundaryDirection",
+            "HeightBands",
+            "SegmentParity",
+            "HeightRelation"
+          ],
+          "x-flags": false,
+          "title": "Curtain Debug Visual Mode",
+          "description": "BoundaryDirection: Left=red, Right=green, Down=blue, Up=yellow."
+        },
+        "shaderDebugMode": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Off|FogState|GridCoordinates|SceneDepth|WorldGridPosition|FogSurfaceDepth|RawScreenState|ClosedScreenState|ScreenBoundary|VirtualDepth))$",
+          "x-enumNames": [
+            "Off",
+            "FogState",
+            "GridCoordinates",
+            "SceneDepth",
+            "WorldGridPosition",
+            "FogSurfaceDepth",
+            "RawScreenState",
+            "ClosedScreenState",
+            "ScreenBoundary",
+            "VirtualDepth"
+          ],
+          "x-flags": false,
+          "title": "Shader Debug Mode"
+        },
+        "shaderDebugGridLineWidthPixels": {
+          "type": "number",
+          "title": "Shader Debug Grid Line Width Pixels",
+          "minimum": 0.5,
+          "maximum": 6.0,
+          "x-moyva-editorMinimum": 0.5,
+          "x-moyva-editorMaximum": 6.0
+        },
+        "shaderDiagnosticRaycastMask": {
+          "type": "integer",
+          "title": "Shader Diagnostic Raycast Mask"
+        },
+        "shaderDiagnosticRaycastDistance": {
+          "type": "number",
+          "title": "Shader Diagnostic Raycast Distance"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Screen Space"
+    },
+    "enableStartupFallbackReveal": {
+      "type": "boolean",
+      "title": "Enable Startup Fallback Reveal",
+      "description": "If no bootstrap startup reveal arrives for a fresh non-load world, FogOfWarService opens a random visible start area so the map never starts fully black."
+    },
+    "startupFallbackRevealRadius": {
+      "type": "integer",
+      "title": "Startup Fallback Reveal Radius",
+      "description": "Radius used by FogOfWarService when bootstrap did not provide a startup reveal."
+    },
+    "startupFallbackMinMarginFromBorder": {
+      "type": "integer",
+      "title": "Startup Fallback Min Margin From Border",
+      "description": "Minimum margin from map edge for the fallback random start point."
+    },
+    "startupFallbackRelativeMarginFactor": {
+      "type": "number",
+      "title": "Startup Fallback Relative Margin Factor",
+      "description": "Additional map-relative margin for the fallback random start point.",
+      "minimum": 0.0,
+      "maximum": 0.45,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 0.45
+    },
+    "startupFallbackRevealShape": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:PixelCircle|Diamond|Square))$",
+      "x-enumNames": [
+        "PixelCircle",
+        "Diamond",
+        "Square"
+      ],
+      "x-flags": false,
+      "title": "Startup Fallback Reveal Shape",
+      "description": "Shape used by FogOfWarService fallback startup reveal."
+    },
+    "elevationStep": {
+      "type": "number",
+      "title": "Elevation Step"
+    },
+    "observerHeightBonusPerStep": {
+      "type": "integer",
+      "title": "Observer Height Bonus Per Step"
+    },
+    "downhillVisionBonusPerStep": {
+      "type": "integer",
+      "title": "Downhill Vision Bonus Per Step"
+    },
+    "uphillVisionPenaltyPerStep": {
+      "type": "integer",
+      "title": "Uphill Vision Penalty Per Step"
+    },
+    "maxObserverHeightBonus": {
+      "type": "integer",
+      "title": "Max Observer Height Bonus"
+    },
+    "maxDownhillVisionBonus": {
+      "type": "integer",
+      "title": "Max Downhill Vision Bonus"
+    },
+    "maxUphillVisionPenalty": {
+      "type": "integer",
+      "title": "Max Uphill Vision Penalty"
+    },
+    "occlusionSlopeBias": {
+      "type": "number",
+      "title": "Occlusion Slope Bias"
+    },
+    "terrainRaySamplesPerTile": {
+      "type": "integer",
+      "title": "Terrain Ray Samples Per Tile",
+      "minimum": 1.0,
+      "maximum": 9.0,
+      "x-moyva-editorMinimum": 1.0,
+      "x-moyva-editorMaximum": 9.0
+    },
+    "terrainVisibilityThreshold": {
+      "type": "number",
+      "title": "Terrain Visibility Threshold",
+      "minimum": 0.01,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.01,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "partialVisibilityDetectionMultiplier": {
+      "type": "number",
+      "title": "Partial Visibility Detection Multiplier",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "terrainRayStepTiles": {
+      "type": "number",
+      "title": "Terrain Ray Step Tiles",
+      "minimum": 0.25,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.25,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "observerEyeHeightOffset": {
+      "type": "number",
+      "title": "Observer Eye Height Offset"
+    },
+    "targetSampleHeightOffset": {
+      "type": "number",
+      "title": "Target Sample Height Offset"
+    },
+    "terrainFarSampleDistanceRatio": {
+      "type": "number",
+      "title": "Terrain Far Sample Distance Ratio",
+      "minimum": 0.1,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.1,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "terrainVisibilityCacheCapacity": {
+      "type": "integer",
+      "title": "Terrain Visibility Cache Capacity"
+    },
+    "enableTerrainEdgeLineOfSight": {
+      "type": "boolean",
+      "title": "Enable Terrain Edge Line Of Sight"
+    },
+    "terrainEdgeHeightThreshold": {
+      "type": "number",
+      "title": "Terrain Edge Height Threshold"
+    },
+    "terrainEdgePeekDistanceTiles": {
+      "type": "integer",
+      "title": "Terrain Edge Peek Distance Tiles"
+    },
+    "terrainEdgeBlindZoneTiles": {
+      "type": "integer",
+      "title": "Terrain Edge Blind Zone Tiles"
+    },
+    "terrainEdgeBlindZoneDistanceScale": {
+      "type": "number",
+      "title": "Terrain Edge Blind Zone Distance Scale"
+    },
+    "terrainEdgeMaxBlindZoneTiles": {
+      "type": "integer",
+      "title": "Terrain Edge Max Blind Zone Tiles"
+    },
+    "terrainEdgeUphillPeekStrength": {
+      "type": "number",
+      "title": "Terrain Edge Uphill Peek Strength",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "defaultVisionRange": {
+      "type": "integer",
+      "title": "Default Vision Range"
+    },
+    "minVisionRange": {
+      "type": "integer",
+      "title": "Min Vision Range"
+    },
+    "maxVisionRange": {
+      "type": "integer",
+      "title": "Max Vision Range"
+    },
+    "volume": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "updateMode": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:DebouncePerFrame|Interval|Immediate))$",
+          "x-enumNames": [
+            "DebouncePerFrame",
+            "Interval",
+            "Immediate"
+          ],
+          "x-flags": false,
+          "title": "Update Mode"
+        },
+        "rebuildIntervalSeconds": {
+          "type": "number",
+          "title": "Rebuild Interval Seconds"
+        },
+        "useClusteredRuntimeFogRenderer": {
+          "type": "boolean",
+          "title": "Use Clustered Runtime Fog Renderer"
+        },
+        "clusterSize": {
+          "type": "integer",
+          "title": "Cluster Size"
+        },
+        "clusterPaddingCells": {
+          "type": "integer",
+          "title": "Cluster Padding Cells"
+        },
+        "horizontalTileOverlap": {
+          "type": "number",
+          "title": "Horizontal Tile Overlap",
+          "description": "Extra X/Z scale overlap for runtime fog volume tiles. Helps close visible gaps between neighboring fog cells."
+        },
+        "verticalLayerSpacing": {
+          "type": "number",
+          "title": "Vertical Layer Spacing",
+          "description": "Extra vertical gap between fog layers on different heights. Leave at 0 to keep layers tight."
+        },
+        "allowFullRebuildFallback": {
+          "type": "boolean",
+          "title": "Allow Full Rebuild Fallback"
+        },
+        "fullRebuildDirtyClusterRatioThreshold": {
+          "type": "number",
+          "title": "Full Rebuild Dirty Cluster Ratio Threshold",
+          "minimum": 0.01,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.01,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "logClusterUpdates": {
+          "type": "boolean",
+          "title": "Log Cluster Updates"
+        },
+        "topClearance": {
+          "type": "number",
+          "title": "Top Clearance"
+        },
+        "useWorldCellSize": {
+          "type": "boolean",
+          "title": "Use World Cell Size"
+        },
+        "cellSizeOverride": {
+          "type": "number",
+          "title": "Cell Size Override"
+        },
+        "heightSource": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:TerrainLevelMapThenHeightMap|HeightMapThenTerrainLevelMap|Flat))$",
+          "x-enumNames": [
+            "TerrainLevelMapThenHeightMap",
+            "HeightMapThenTerrainLevelMap",
+            "Flat"
+          ],
+          "x-flags": false,
+          "title": "Height Source"
+        },
+        "terrainLevelHeightStep": {
+          "type": "number",
+          "title": "Terrain Level Height Step",
+          "description": "World units per TerrainLevelMap step when the generated world provides integer terrain levels."
+        },
+        "heightLayerSnap": {
+          "type": "number",
+          "title": "Height Layer Snap",
+          "description": "Height values closer than this are built on the same TWC layer. Keeps runtime layer count stable for noisy HeightMap data."
+        },
+        "clearPreviewOnRuntimeStart": {
+          "type": "boolean",
+          "title": "Clear Preview On Runtime Start",
+          "description": "Editor preview uses the current scene TWC grid when available. It is cleared automatically at runtime and rebuilt from generated world data."
+        },
+        "previewFallbackWidth": {
+          "type": "integer",
+          "title": "Preview Fallback Width"
+        },
+        "previewFallbackHeight": {
+          "type": "integer",
+          "title": "Preview Fallback Height"
+        },
+        "unexplored": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "title": "Enabled"
+            },
+            "layerName": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "title": "Layer Name"
+            },
+            "tileVariants": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "preset": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Preset"
+                  },
+                  "slot": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:Top|Middle|Bottom))$",
+                    "x-enumNames": [
+                      "Top",
+                      "Middle",
+                      "Bottom"
+                    ],
+                    "x-flags": false,
+                    "title": "Slot"
+                  },
+                  "weight": {
+                    "type": "number",
+                    "title": "Weight",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "x-moyva-editorMinimum": 0.0,
+                    "x-moyva-editorMaximum": 1.0
+                  },
+                  "tileHeight": {
+                    "type": "number",
+                    "title": "Tile Height"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Tile Variants"
+            },
+            "layerYOffset": {
+              "type": "number",
+              "title": "Layer Y Offset"
+            },
+            "scaleOffset": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "z": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "z"
+              ],
+              "additionalProperties": false,
+              "title": "Scale Offset"
+            },
+            "shadowCastingMode": {
+              "type": "string",
+              "pattern": "^(?:-?\\d+|(?:Off|On|TwoSided|ShadowsOnly))$",
+              "x-enumNames": [
+                "Off",
+                "On",
+                "TwoSided",
+                "ShadowsOnly"
+              ],
+              "x-flags": false,
+              "title": "Shadow Casting Mode"
+            },
+            "objectLayer": {
+              "type": "integer",
+              "title": "Object Layer"
+            },
+            "renderingLayer": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false,
+              "title": "Rendering Layer"
+            },
+            "colliderType": {
+              "type": "string",
+              "pattern": "^(?:-?\\d+|(?:none|meshCollider|tileCollider))$",
+              "x-enumNames": [
+                "none",
+                "meshCollider",
+                "tileCollider"
+              ],
+              "x-flags": false,
+              "title": "Collider Type"
+            },
+            "tileColliderHeight": {
+              "type": "number",
+              "title": "Tile Collider Height"
+            },
+            "tileColliderExtrusionHeight": {
+              "type": "number",
+              "title": "Tile Collider Extrusion Height"
+            },
+            "invertCollisionWalls": {
+              "type": "boolean",
+              "title": "Invert Collision Walls"
+            }
+          },
+          "additionalProperties": false,
+          "title": "Unexplored"
+        },
+        "explored": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "title": "Enabled"
+            },
+            "layerName": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "title": "Layer Name"
+            },
+            "tileVariants": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "preset": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Preset"
+                  },
+                  "slot": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:Top|Middle|Bottom))$",
+                    "x-enumNames": [
+                      "Top",
+                      "Middle",
+                      "Bottom"
+                    ],
+                    "x-flags": false,
+                    "title": "Slot"
+                  },
+                  "weight": {
+                    "type": "number",
+                    "title": "Weight",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "x-moyva-editorMinimum": 0.0,
+                    "x-moyva-editorMaximum": 1.0
+                  },
+                  "tileHeight": {
+                    "type": "number",
+                    "title": "Tile Height"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Tile Variants"
+            },
+            "layerYOffset": {
+              "type": "number",
+              "title": "Layer Y Offset"
+            },
+            "scaleOffset": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "z": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "z"
+              ],
+              "additionalProperties": false,
+              "title": "Scale Offset"
+            },
+            "shadowCastingMode": {
+              "type": "string",
+              "pattern": "^(?:-?\\d+|(?:Off|On|TwoSided|ShadowsOnly))$",
+              "x-enumNames": [
+                "Off",
+                "On",
+                "TwoSided",
+                "ShadowsOnly"
+              ],
+              "x-flags": false,
+              "title": "Shadow Casting Mode"
+            },
+            "objectLayer": {
+              "type": "integer",
+              "title": "Object Layer"
+            },
+            "renderingLayer": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false,
+              "title": "Rendering Layer"
+            },
+            "colliderType": {
+              "type": "string",
+              "pattern": "^(?:-?\\d+|(?:none|meshCollider|tileCollider))$",
+              "x-enumNames": [
+                "none",
+                "meshCollider",
+                "tileCollider"
+              ],
+              "x-flags": false,
+              "title": "Collider Type"
+            },
+            "tileColliderHeight": {
+              "type": "number",
+              "title": "Tile Collider Height"
+            },
+            "tileColliderExtrusionHeight": {
+              "type": "number",
+              "title": "Tile Collider Extrusion Height"
+            },
+            "invertCollisionWalls": {
+              "type": "boolean",
+              "title": "Invert Collision Walls"
+            }
+          },
+          "additionalProperties": false,
+          "title": "Explored"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Volume"
+    }
+  }
+}

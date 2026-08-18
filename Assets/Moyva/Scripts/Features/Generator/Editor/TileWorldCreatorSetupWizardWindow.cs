@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
@@ -11,8 +12,10 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator.Editor
 {
+    [System.Serializable]
     public sealed class TileWorldCreatorSetupWizardWindow : EditorWindow
     {
         public enum TileWorldCreatorSetupPreset
@@ -102,7 +105,7 @@ namespace Kruty1918.Moyva.Generator.Editor
             if (manager == null)
                 return;
 
-            var window = CreateInstance<TileWorldCreatorSetupWizardWindow>();
+            var window = MoyvaJsonObjectFactory.Create<TileWorldCreatorSetupWizardWindow>();
             window._manager = manager;
             window._selectedPreset = preset;
             window.AutoFindReferences();
@@ -1075,3 +1078,4 @@ namespace Kruty1918.Moyva.Generator.Editor
         }
     }
 }
+#endif

@@ -14,6 +14,7 @@ using Zenject;
 
 #if UNITY_EDITOR
 using UnityEditor;
+using Kruty1918.Moyva.Jsonization;
 #endif
 
 namespace Kruty1918.Moyva.HomeMenu.UI
@@ -807,7 +808,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_graphAsset == null)
                 return;
 
-            string graphPath = AssetDatabase.GetAssetPath(_graphAsset);
+            string graphPath = string.Empty;
             if (string.IsNullOrEmpty(graphPath))
                 return;
 
@@ -818,7 +819,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             bool changed = false;
             if (_projectSettings == null)
             {
-                var settings = AssetDatabase.LoadAssetAtPath<MoyvaProjectSettingsSO>(MoyvaProjectSettingsSO.DefaultAssetPath);
+                var settings = MoyvaJsonRuntime.GetLegacyResource<MoyvaProjectSettingsSO>(MoyvaProjectSettingsSO.DefaultAssetPath);
                 if (settings != null)
                 {
                     _projectSettings = settings;
@@ -835,7 +836,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                     if (_mapObjectRegistry == null)
                     {
                         var mapObjectRegistryProperty = serializedPreviewSettings.FindProperty("_mapObjectRegistry");
-                        if (mapObjectRegistryProperty?.objectReferenceValue is MapObjectRegistrySO mapObjectRegistry)
+                        MapObjectRegistrySO mapObjectRegistry = null; if (false)
                         {
                             _mapObjectRegistry = mapObjectRegistry;
                             changed = true;
@@ -845,7 +846,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                     if (_buildingRegistry == null)
                     {
                         var buildingRegistryProperty = serializedPreviewSettings.FindProperty("_buildingRegistry");
-                        if (buildingRegistryProperty?.objectReferenceValue is BuildingRegistrySO buildingRegistry)
+                        BuildingRegistrySO buildingRegistry = null; if (false)
                         {
                             _buildingRegistry = buildingRegistry;
                             changed = true;
@@ -856,7 +857,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
             if (_mapObjectRegistry == null)
             {
-                var siblingRegistry = AssetDatabase.LoadAssetAtPath<MapObjectRegistrySO>($"{graphDirectory}/MapObjectRegistry.asset");
+                var siblingRegistry = MoyvaJsonRuntime.GetLegacyResource<MapObjectRegistrySO>($"{graphDirectory}/MapObjectRegistry.asset");
                 if (siblingRegistry != null)
                 {
                     _mapObjectRegistry = siblingRegistry;
@@ -870,7 +871,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 if (buildingRegistryGuids.Length > 0)
                 {
                     string assetPath = AssetDatabase.GUIDToAssetPath(buildingRegistryGuids[0]);
-                    var registry = AssetDatabase.LoadAssetAtPath<BuildingRegistrySO>(assetPath);
+                    var registry = MoyvaJsonRuntime.GetLegacyResource<BuildingRegistrySO>(assetPath);
                     if (registry != null)
                     {
                         _buildingRegistry = registry;
@@ -880,7 +881,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             }
 
             if (changed)
-                EditorUtility.SetDirty(this);
+                ; // JSON source of truth: no ScriptableObject dirty flag.
         }
 #endif
 

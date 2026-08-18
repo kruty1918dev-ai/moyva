@@ -1,9 +1,11 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
 using Kruty1918.Moyva.Grid.API;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.FogOfWar
 {
     [TestFixture]
@@ -30,9 +32,9 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
 
             Assert.Greater(steppedMesh.vertexCount, flatMesh.vertexCount);
 
-            Object.DestroyImmediate(flatMesh);
-            Object.DestroyImmediate(steppedMesh);
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(flatMesh);
+            MoyvaJsonObjectFactory.DestroyImmediate(steppedMesh);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
         }
 
         [Test]
@@ -50,13 +52,13 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
 
             Assert.LessOrEqual(mesh.bounds.min.y, 0f);
 
-            Object.DestroyImmediate(mesh);
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(mesh);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
         }
 
         private static FogOfWarSettings CreateSettings()
         {
-            var settings = ScriptableObject.CreateInstance<FogOfWarSettings>();
+            var settings = MoyvaJsonObjectFactory.Create<FogOfWarSettings>();
             settings.Volume.ClusterSize = 16;
             settings.Volume.LogClusterUpdates = false;
             settings.Volume.TopClearance = 0.08f;
@@ -117,3 +119,5 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
     }
 }
+
+#endif

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Kruty1918.Moyva.Bootstrap.Runtime;
 using System.Collections.Generic;
 using UnityEditor;
@@ -489,3 +490,5 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
         }
     }
 }
+
+#endif

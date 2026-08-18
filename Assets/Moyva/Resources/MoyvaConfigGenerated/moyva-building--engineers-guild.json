@@ -1,0 +1,126 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "engineers-guild",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 0,
+  "identity": {
+    "id": "engineers-guild",
+    "displayName": "Гільдія інженерів",
+    "category": "Military",
+    "role": "Support",
+    "description": "Будівля військової підтримки для роботи інженерів.",
+    "tags": []
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.building-workshop-blue.f5d290f5",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_workshop_blue.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.engineers-guild.197cd941",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/engineers-guild.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.engineers-guild.197cd941",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/engineers-guild.png",
+      "required": true
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 50
+      },
+      {
+        "resourceId": "hardwood-materials-resources",
+        "amount": 40
+      },
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 40
+      },
+      {
+        "resourceId": "iron-ingot-materials-resources",
+        "amount": 20
+      }
+    ],
+    "buildTurns": 5,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [],
+  "migration": {
+    "sourceAssetGuid": "61163c815ddb0909595e83b807ecc759",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/engineers-guild.asset",
+    "sourceHash": "74f337e412424e4f40e4dad2650c80481bff2d9ccf7978911fb15457a731a290"
+  }
+}

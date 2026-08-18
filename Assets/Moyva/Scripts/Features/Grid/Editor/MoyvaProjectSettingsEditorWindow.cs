@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System.IO;
 using Kruty1918.Moyva.Grid.API;
 using UnityEditor;
@@ -419,3 +420,4 @@ namespace Kruty1918.Moyva.Grid.Editor
         }
     }
 }
+#endif

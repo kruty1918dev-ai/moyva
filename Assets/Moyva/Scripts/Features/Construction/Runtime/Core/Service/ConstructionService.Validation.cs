@@ -71,9 +71,48 @@ namespace Kruty1918.Moyva.Construction.Runtime
             out bool influenceZoneBlocked,
             out bool terrainBlocked,
             Vector2Int? ignoredOccupiedPosition = null,
-            string satisfiedReplacementBuildingId = null)
+            string satisfiedReplacementBuildingId = null,
+            ConstructionRotation rotation =
+                ConstructionRotation.Degrees0)
         {
-            var query = new ConstructionPlacementQueryRequest(
+            var fastQuery = new ConstructionPlacementQueryRequest(
+                buildingId,
+                position,
+                ignoredPendingPosition,
+                ignoredOccupiedPosition,
+                includeResources: false,
+                includeDetails: false,
+                ownerId: _activeOwnerId,
+                attemptSource:
+                    ConstructionPlacementAttemptSource.Confirm,
+                allowUniquePreviewRelocation: false,
+                satisfiedReplacementBuildingId:
+                    satisfiedReplacementBuildingId,
+                rotation: rotation);
+
+            ConstructionPlacementQueryResult fastResult =
+                EvaluatePlacement(fastQuery);
+
+            bool fastAccepted =
+                fastResult.AvailabilityValid
+                && fastResult.SpatialValid
+                && fastResult.AuthorityValid;
+
+            if (fastAccepted)
+            {
+                tileOccupied = false;
+                spacingBlocked = false;
+                fogBlocked = false;
+                influenceZoneBlocked = false;
+                terrainBlocked = false;
+
+                LogPlacementAttempt(
+                    fastResult,
+                    emitRejectedAction: false);
+                return true;
+            }
+
+            var detailedQuery = new ConstructionPlacementQueryRequest(
                 buildingId,
                 position,
                 ignoredPendingPosition,
@@ -85,21 +124,32 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ConstructionPlacementAttemptSource.Confirm,
                 allowUniquePreviewRelocation: false,
                 satisfiedReplacementBuildingId:
-                    satisfiedReplacementBuildingId);
-            ConstructionPlacementQueryResult result = EvaluatePlacement(query);
+                    satisfiedReplacementBuildingId,
+                rotation: rotation);
 
-            BuildingPlacementEvaluationResult evaluation = result.EvaluationResult;
+            ConstructionPlacementQueryResult result =
+                EvaluatePlacement(detailedQuery);
+
+            BuildingPlacementEvaluationResult evaluation =
+                result.EvaluationResult;
+
             tileOccupied = evaluation?.TileOccupied
-                ?? (!result.IsSpatiallyValid && _objectsMapService.IsOccupied(position));
-            spacingBlocked = evaluation?.SpacingBlocked ?? false;
-            fogBlocked = evaluation?.FogBlocked ?? false;
-            influenceZoneBlocked = evaluation?.InfluenceZoneBlocked ?? false;
+                ?? (!result.IsSpatiallyValid
+                    && _objectsMapService.IsOccupied(position));
+            spacingBlocked =
+                evaluation?.SpacingBlocked ?? false;
+            fogBlocked =
+                evaluation?.FogBlocked ?? false;
+            influenceZoneBlocked =
+                evaluation?.InfluenceZoneBlocked ?? false;
             terrainBlocked = evaluation?.TerrainBlocked
-                ?? (!result.IsSpatiallyValid && IsBlockedByTerrain(position, out _));
+                ?? (!result.IsSpatiallyValid
+                    && IsBlockedByTerrain(position, out _));
 
             LogPlacementAttempt(
                 result,
                 emitRejectedAction: !result.CanCommit);
+
             return result.AvailabilityValid
                 && result.SpatialValid
                 && result.AuthorityValid;
@@ -129,10 +179,39 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     new BuildingPlacementSimulationEntry(
                         placement.Position,
                         placement.BuildingId,
-                        NormalizeOwnerId(_activeOwnerId)));
+                        NormalizeOwnerId(_activeOwnerId),
+                        placement.Rotation));
             }
 
             return _placementSimulationSnapshot;
+        }
+
+        private IReadOnlyList<BuildingPlacementSimulationEntry>
+            BuildPlacedBuildingSimulationEntries()
+        {
+            _placedBuildingSimulationSnapshot.Clear();
+
+            foreach (var pair in _factionPlacedBuildings)
+            {
+                _placedBuildingSimulationSnapshot.Add(
+                    new BuildingPlacementSimulationEntry(
+                        pair.Key,
+                        pair.Value.BuildingId,
+                        NormalizeOwnerId(pair.Value.FactionId),
+                        ResolvePlacedRotation(pair.Key)));
+            }
+
+            foreach (var pair in _playerPlacedBuildings)
+            {
+                _placedBuildingSimulationSnapshot.Add(
+                    new BuildingPlacementSimulationEntry(
+                        pair.Key,
+                        pair.Value,
+                        NormalizeOwnerId(_activeOwnerId),
+                        ResolvePlacedRotation(pair.Key)));
+            }
+
+            return _placedBuildingSimulationSnapshot;
         }
     }
 }

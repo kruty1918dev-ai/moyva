@@ -151,6 +151,184 @@ namespace Kruty1918.Moyva.Construction.API
     }
 
     /// <summary>
+    /// Optional high-frequency mutation batching contract used by interactive
+    /// construction gestures. A batch stores at most one Undo snapshot.
+    /// </summary>
+    public interface IConstructionPendingUndoBatch
+    {
+        void BeginPendingUndoBatch(string reason = null);
+        void EndPendingUndoBatch();
+    }
+
+    /// <summary>
+    /// Optional PC placement rotation contract. Keeping it separate preserves
+    /// compatibility for integrations that only implement IConstructionService.
+    /// </summary>
+    public interface IConstructionRotationService
+    {
+        ConstructionRotation SelectedRotation { get; }
+        bool RotateSelectedClockwise();
+        bool TryGetPendingRotation(
+            Vector2Int position,
+            out ConstructionRotation rotation);
+    }
+
+    /// <summary>
+    /// Optional bootstrap query used by construction UI and runtime guards.
+    /// </summary>
+    public interface IConstructionBootstrapQuery
+    {
+        bool RequiresInitialCastle(
+            string ownerId,
+            out string castleBuildingId);
+
+        bool IsCastleBuilding(string buildingId);
+    }
+
+    public readonly struct ConstructionSavedPlacement
+    {
+        public ConstructionSavedPlacement(
+            Vector2Int position,
+            string buildingId,
+            string ownerId,
+            ConstructionRotation rotation =
+                ConstructionRotation.Degrees0)
+        {
+            Position = position;
+            BuildingId = buildingId;
+            OwnerId = ownerId;
+            Rotation = rotation;
+        }
+
+        public Vector2Int Position { get; }
+        public string BuildingId { get; }
+        public string OwnerId { get; }
+        public ConstructionRotation Rotation { get; }
+    }
+
+    public interface IConstructionSaveSnapshotSource
+    {
+        IReadOnlyList<ConstructionSavedPlacement>
+            GetSavedPlacements();
+    }
+
+    public interface IConstructionSaveRestorer
+    {
+        void RestoreFromSave(
+            Vector2Int position,
+            string buildingId,
+            string ownerId,
+            ConstructionRotation rotation =
+                ConstructionRotation.Degrees0);
+    }
+
+    public interface IConstructionModuleStatePersistence
+    {
+        string StateKey { get; }
+        byte[] CaptureState();
+        void RestoreState(byte[] payload);
+    }
+
+    public interface IConstructionPlacedBuildingDestruction
+    {
+        bool TryDestroyPlacedBuilding(
+            Vector2Int position,
+            string cause = null);
+    }
+
+    public interface IConstructionRuntimeAuthorityQuery
+    {
+        bool IsAuthoritativeRuntime { get; }
+    }
+
+    public interface IConstructionBuildingOwnershipQuery
+    {
+        bool TryGetPlacedBuildingOwner(
+            Vector2Int position,
+            out string ownerId);
+    }
+
+    public interface IConstructionGateStateService
+    {
+        bool IsGateOpen(Vector2Int position);
+
+        bool TrySetGateOpen(
+            Vector2Int position,
+            bool isOpen,
+            out float transitionSeconds,
+            out string reason);
+
+        bool CanUnitPassGate(
+            Vector2Int position,
+            string unitOwnerId,
+            out string reason);
+
+        bool TryEnsureOpenForUnit(
+            Vector2Int position,
+            string unitOwnerId,
+            out string reason);
+    }
+
+    public interface IConstructionUnitTraversalQuery
+    {
+        bool CanTraverseOccupiedConstructionCell(
+            string unitId,
+            Vector2Int position,
+            bool openGateIfNeeded,
+            out string reason);
+    }
+
+    public interface IConstructionUnitGarrisonRuntime
+    {
+        bool TryEnterGarrison(
+            string unitId,
+            Vector2Int buildingPosition,
+            out string reason);
+
+        bool TryExitGarrison(
+            string unitId,
+            Vector2Int targetPosition,
+            out string reason);
+
+        bool TryRestoreGarrison(
+            string unitId,
+            Vector2Int buildingPosition,
+            out string reason);
+
+        bool TryExitGarrisonNear(
+            string unitId,
+            Vector2Int origin,
+            int maxRadius,
+            out Vector2Int targetPosition,
+            out string reason);
+
+        bool IsGarrisoned(string unitId);
+        string GetUnitOwnerId(string unitId);
+    }
+
+    public interface IBuildingGarrisonService
+    {
+        bool TryGarrisonUnit(
+            Vector2Int buildingPosition,
+            string unitId,
+            out string reason);
+
+        bool TryUngarrisonUnit(
+            Vector2Int buildingPosition,
+            string unitId,
+            Vector2Int targetPosition,
+            out string reason);
+
+        IReadOnlyList<string> GetGarrisonedUnits(
+            Vector2Int buildingPosition);
+
+        bool TryGetGarrisonStatus(
+            Vector2Int buildingPosition,
+            out int occupied,
+            out int capacity);
+    }
+
+    /// <summary>
     /// Applies an already host-authorized placement to a replica.
     /// This path never validates affordability or consumes resources and is
     /// idempotent for the same building, owner and origin.
@@ -159,6 +337,18 @@ namespace Kruty1918.Moyva.Construction.API
     {
         bool TryApplyConfirmedPlacement(
             string buildingId,
+            Vector2Int position,
+            string ownerId);
+    }
+
+    /// <summary>
+    /// Applies an already host-authorized demolition to a replica.
+    /// This is a state-convergence path and intentionally does not require the
+    /// replica's local owner to be the active faction.
+    /// </summary>
+    public interface IConfirmedConstructionDemolitionApplier
+    {
+        bool TryApplyConfirmedDemolition(
             Vector2Int position,
             string ownerId);
     }
@@ -173,17 +363,22 @@ namespace Kruty1918.Moyva.Construction.API
     {
         public ConstructionPlacementCommitIntent(
             Vector2Int? relocationSourcePosition = null,
-            string satisfiedReplacementBuildingId = null)
+            string satisfiedReplacementBuildingId = null,
+            ConstructionRotation rotation =
+                ConstructionRotation.Degrees0)
         {
             RelocationSourcePosition = relocationSourcePosition;
             SatisfiedReplacementBuildingId =
                 satisfiedReplacementBuildingId;
+            Rotation = ConstructionRotationUtility.Normalize(
+                (int)rotation);
         }
 
         public Vector2Int? RelocationSourcePosition { get; }
         public bool HasRelocationSource =>
             RelocationSourcePosition.HasValue;
         public string SatisfiedReplacementBuildingId { get; }
+        public ConstructionRotation Rotation { get; }
 
         public static ConstructionPlacementCommitIntent None =>
             new ConstructionPlacementCommitIntent();

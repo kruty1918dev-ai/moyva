@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 #if UNITY_EDITOR
 using Kruty1918.Moyva.Construction.API;
 using Sirenix.OdinInspector.Editor;
@@ -81,4 +82,6 @@ namespace Kruty1918.Moyva.Construction.Editor
         }
     }
 }
+#endif
+
 #endif

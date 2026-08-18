@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/slope-mask.schema.json",
+  "title": "Moyva — Slope Mask Node",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.Runtime.Nodes.SlopeMaskNode. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.slope-mask"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "slope-mask"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "minimumSlope": {
+      "type": "number",
+      "title": "Minimum Slope",
+      "description": "Мінімальний кут нахилу у градусах.",
+      "minimum": 0.0,
+      "maximum": 90.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 90.0
+    },
+    "maximumSlope": {
+      "type": "number",
+      "title": "Maximum Slope",
+      "description": "Максимальний кут нахилу у градусах.",
+      "minimum": 0.0,
+      "maximum": 90.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 90.0
+    },
+    "cellSize": {
+      "type": "number",
+      "title": "Cell Size",
+      "description": "Горизонтальний розмір однієї клітини для обчислення кута.",
+      "minimum": 0.0001,
+      "x-moyva-editorMinimum": 0.0001
+    },
+    "nodeId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Node Id"
+    },
+    "editorPosition": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Editor Position"
+    },
+    "layerId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Layer Id"
+    }
+  }
+}

@@ -6,6 +6,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         void Handle(BuildingPlacedSignal signal);
         void Handle(BuildingDemolishedSignal signal);
+        void Handle(BuildingOperationalSignal signal);
         void Handle(WorldInfoSelectionChangedSignal signal);
         void Handle(GameModeChangedSignal signal);
     }

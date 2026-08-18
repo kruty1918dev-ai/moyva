@@ -1,0 +1,201 @@
+{
+  "$schema": "../../Schemas/economy-rules-config.schema.json",
+  "schema": "moyva.economy-rules-config",
+  "version": 1,
+  "id": "economyrulesconfig",
+  "model": "economy-rules-config",
+  "settlement": {
+    "maxSettlements": 3,
+    "minTownHallDistance": 25,
+    "allowSettlementWithoutPopulation": false,
+    "deactivateSettlementWhenPopulationIsZero": true
+  },
+  "population": {
+    "newResidentsArrivalIntervalTurns": 10,
+    "requireHousingForFamilyCreation": true,
+    "enableWarMortality": true,
+    "enableDiseaseMortality": true
+  },
+  "workforce": {
+    "foodChainPriority": 400,
+    "heatAndClothingPriority": 300,
+    "materialsPriority": 200,
+    "otherPriority": 100
+  },
+  "production": {
+    "stopProductionWhenInputMissing": true,
+    "enableTileDependencyModifiers": true,
+    "enableFoodDecay": true,
+    "foodDecayPerTurn": 0.02
+  },
+  "storage": {
+    "unlimitedCapacity": true,
+    "singleBarnPerSettlement": true,
+    "singleWarehousePerSettlement": true,
+    "sharedSettlementResourcePool": true
+  },
+  "caravan": {
+    "manualControlOnly": true,
+    "maxCaravansPerSettlement": 1,
+    "maxWeightGrams": 50000,
+    "offRoadRangeMultiplier": 0.7,
+    "roadRangeMultiplier": 1.2,
+    "enableInstantCombatInterceptionFallback": true
+  },
+  "market": {
+    "stockExponent": 0.35,
+    "volumeExponent": 0.2,
+    "minPriceMultiplier": 0.5,
+    "maxPriceMultiplier": 2.5,
+    "targetStock": 200.0,
+    "referenceTradeVolume": 50.0,
+    "resourceBasePrices": [
+      {
+        "resourceId": "Wood",
+        "basePrice": 5
+      },
+      {
+        "resourceId": "Stone",
+        "basePrice": 6
+      },
+      {
+        "resourceId": "Grain",
+        "basePrice": 5
+      },
+      {
+        "resourceId": "Meat",
+        "basePrice": 8
+      },
+      {
+        "resourceId": "Berries",
+        "basePrice": 6
+      },
+      {
+        "resourceId": "Water",
+        "basePrice": 3
+      },
+      {
+        "resourceId": "Coal",
+        "basePrice": 9
+      },
+      {
+        "resourceId": "Clothing",
+        "basePrice": 12
+      },
+      {
+        "resourceId": "Planks",
+        "basePrice": 8
+      },
+      {
+        "resourceId": "Tools",
+        "basePrice": 14
+      }
+    ]
+  },
+  "consumption": {
+    "comfortWeights": {
+      "foodWeight": 0.35,
+      "heatWeight": 0.25,
+      "lightWeight": 0.1,
+      "clothingWeight": 0.1,
+      "taxWeight": 0.1,
+      "lawWeight": 0.1
+    },
+    "ageConsumption": [
+      {
+        "label": "Child",
+        "minAge": 0,
+        "maxAge": 15,
+        "foodPerTurn": 0.6,
+        "waterPerTurn": 0.7,
+        "firewoodPerTurn": 0.4,
+        "clothingPerTurn": 0.2
+      },
+      {
+        "label": "Adult",
+        "minAge": 16,
+        "maxAge": 59,
+        "foodPerTurn": 1.0,
+        "waterPerTurn": 1.0,
+        "firewoodPerTurn": 0.7,
+        "clothingPerTurn": 0.3
+      },
+      {
+        "label": "Elder",
+        "minAge": 60,
+        "maxAge": 200,
+        "foodPerTurn": 0.8,
+        "waterPerTurn": 0.9,
+        "firewoodPerTurn": 0.8,
+        "clothingPerTurn": 0.35
+      }
+    ],
+    "deficitPenalties": {
+      "foodOrWaterHpDelta": -2,
+      "foodOrWaterComfortDelta": -4,
+      "firewoodHpDelta": -1,
+      "firewoodComfortDelta": -3,
+      "clothingComfortDelta": -2
+    }
+  },
+  "mortality": {
+    "ageTiers": [
+      {
+        "minAge": 0,
+        "maxAge": 44,
+        "baseDeathChance": 0.0
+      },
+      {
+        "minAge": 45,
+        "maxAge": 54,
+        "baseDeathChance": 0.0005
+      },
+      {
+        "minAge": 55,
+        "maxAge": 64,
+        "baseDeathChance": 0.0015
+      },
+      {
+        "minAge": 65,
+        "maxAge": 74,
+        "baseDeathChance": 0.004
+      },
+      {
+        "minAge": 75,
+        "maxAge": 200,
+        "baseDeathChance": 0.01
+      }
+    ],
+    "hungerWeight": 0.015,
+    "coldWeight": 0.01,
+    "diseaseWeight": 0.012,
+    "warWeight": 0.02,
+    "hungerCap": 0.15,
+    "coldCap": 0.1,
+    "diseaseCap": 0.12,
+    "warCap": 0.2,
+    "collapseDeathChance": 1.0
+  },
+  "building": {
+    "enableMaintenance": false,
+    "allowBuildingPause": true,
+    "buildingDamageStopsProduction": false,
+    "validateTownHallHousingConflict": true,
+    "validateWorkerlessHousingConflict": true,
+    "validateWorkerlessProductionConflict": true,
+    "requireProductionResourceId": true,
+    "requireTileRequirementEntries": true,
+    "warnWorkerlessProductionWorkers": true,
+    "enforceSingletonModules": true
+  },
+  "aiExtensibility": {
+    "enableAutonomousAiEconomy": false,
+    "enableAiTradeWithPlayer": false,
+    "reserveHooksForCaravanEscort": true
+  },
+  "migration": {
+    "sourceAssetGuid": "35071a3ae4fbc232a96169cc2e4e3e00",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/EconomyRulesConfig.asset",
+    "sourceHash": "f90be836ea1fa3320ff0170381cb81018ffbfb3439de9d24fbeb242b0117be8e"
+  }
+}

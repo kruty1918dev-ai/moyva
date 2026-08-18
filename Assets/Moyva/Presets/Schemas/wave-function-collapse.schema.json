@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/wave-function-collapse.schema.json",
+  "title": "Moyva — Wave Function Collapse Node",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.Runtime.Nodes.WFC.WaveFunctionCollapseNode. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.wave-function-collapse"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "wave-function-collapse"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "patternSize": {
+      "type": "integer",
+      "title": "Pattern Size",
+      "description": "Розмір патерна, який WFC аналізує у вхідному зразку. Більший розмір краще зберігає складні мотиви, але значно збільшує складність генерації.",
+      "minimum": 2.0,
+      "maximum": 5.0,
+      "x-moyva-editorMinimum": 2.0,
+      "x-moyva-editorMaximum": 5.0
+    },
+    "periodicInput": {
+      "type": "boolean",
+      "title": "Periodic Input",
+      "description": "Чи вважати вхідний зразок циклічним по краях. Корисно, якщо sample може повторюватися без швів і ти хочеш врахувати сусідство через межі прикладу."
+    },
+    "periodicOutput": {
+      "type": "boolean",
+      "title": "Periodic Output",
+      "description": "Чи має вихідна карта циклічно зшиватися по краях. Це важливо для безшовних текстур або топологічно замкнених карт."
+    },
+    "maxAttempts": {
+      "type": "integer",
+      "title": "Max Attempts",
+      "description": "Максимальна кількість спроб побудувати валідний результат до визнання генерації невдалою. Більше значення підвищує шанс успіху на складних патернах.",
+      "minimum": 1.0,
+      "maximum": 50.0,
+      "x-moyva-editorMinimum": 1.0,
+      "x-moyva-editorMaximum": 50.0
+    },
+    "outputWidth": {
+      "type": "integer",
+      "title": "Output Width"
+    },
+    "outputHeight": {
+      "type": "integer",
+      "title": "Output Height"
+    },
+    "nodeId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Node Id"
+    },
+    "editorPosition": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Editor Position"
+    },
+    "layerId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Layer Id"
+    }
+  }
+}

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
@@ -5,6 +6,7 @@ using Kruty1918.Moyva.Grid.API;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.FogOfWar
 {
     [TestFixture]
@@ -24,7 +26,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             var clusters = new HashSet<FogClusterKey>(tracker.ConsumeDirtyClusters());
 
             Assert.IsTrue(clusters.Contains(new FogClusterKey(0, 0)));
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
         }
 
         [Test]
@@ -44,7 +46,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Assert.IsTrue(clusters.Contains(new FogClusterKey(1, 0)));
             Assert.IsTrue(clusters.Contains(new FogClusterKey(0, 1)));
             Assert.IsTrue(clusters.Contains(new FogClusterKey(1, 1)));
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
         }
 
         [Test]
@@ -60,7 +62,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
 
             Assert.AreEqual(1, clusters.Count);
             Assert.AreEqual(new FogClusterKey(1, 1), clusters[0]);
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
         }
 
         [Test]
@@ -84,7 +86,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             }, CreateContext(40, 40));
 
             Assert.AreEqual(0, tracker.ConsumeDirtyClusters().Count);
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
         }
 
         [Test]
@@ -102,12 +104,12 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
 
             Assert.AreEqual(1, clusters.Count);
             Assert.IsTrue(clusters.Contains(new FogClusterKey(0, 0)));
-            Object.DestroyImmediate(settings);
+            MoyvaJsonObjectFactory.DestroyImmediate(settings);
         }
 
         private static FogOfWarSettings CreateSettings()
         {
-            var settings = ScriptableObject.CreateInstance<FogOfWarSettings>();
+            var settings = MoyvaJsonObjectFactory.Create<FogOfWarSettings>();
             settings.Volume.ClusterSize = 16;
             settings.Volume.ClusterPaddingCells = 1;
             settings.Volume.LogClusterUpdates = false;
@@ -132,3 +134,5 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
     }
 }
+
+#endif

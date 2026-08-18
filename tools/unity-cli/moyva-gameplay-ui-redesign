@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+set -euo pipefail
+PROJECT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+export PATH="$HOME/.local/bin:$PATH"
+STAMP="$(date +%Y%m%d_%H%M%S)"
+OUT="${XDG_DATA_HOME:-$HOME/.local/share}/moyva-cli/reports/gameplay-ui-redesign/$STAMP"
+mkdir -p "$OUT"
+
+echo "[GameplayUI73] PROJECT=$PROJECT"
+echo "[GameplayUI73] REPORT_DIR=$OUT"
+
+wait_pipeline() {
+  for i in $(seq 1 90); do
+    CATALOG="$(unity command --project-path="$PROJECT" --format json 2>/dev/null || true)"
+    if grep -q 'moyva-gameplay-ui-redesign-apply' <<<"$CATALOG"; then return 0; fi
+    sleep 2
+  done
+  return 1
+}
+
+capture_view() {
+  local name="$1" width="${2:-1280}" height="${3:-720}"
+  local path="$OUT/$name.png"
+  if unity command screenshot --project-path="$PROJECT" --view game --output "$path" --width "$width" --height "$height" --format json >"$OUT/$name.screenshot.json" 2>&1; then
+    [[ -s "$path" ]] && return 0
+  fi
+  unity command capture_game_view --project-path="$PROJECT" --width "$width" --height "$height" --save_path "$path" --format json >"$OUT/$name.capture.json" 2>&1 || true
+  [[ -s "$path" ]]
+}
+
+wait_pipeline || { echo '[GameplayUI73] ERROR Pipeline unavailable'; exit 20; }
+
+unity command moyva-gameplay-ui-prepare --project-path="$PROJECT" --format json | tee "$OUT/prepare.json"
+unity command moyva-gameplay-ui-redesign-plan --project-path="$PROJECT" --format json | tee "$OUT/plan_before.json"
+if grep -q '"ok"[[:space:]]*:[[:space:]]*false' "$OUT/plan_before.json"; then
+  echo '[GameplayUI73] ERROR plan blocked'; exit 21
+fi
+
+# Baseline visual, using built-in Pipeline screenshot support discovered by Pass72.
+unity command moyva-gameplay-ui-redesign-preview --project-path="$PROJECT" --mode normal --format json >/dev/null
+capture_view before_normal 1280 720 || true
+
+unity command moyva-gameplay-ui-redesign-apply --project-path="$PROJECT" --confirm APPLY --format json | tee "$OUT/apply.json"
+if grep -q '"ok"[[:space:]]*:[[:space:]]*false' "$OUT/apply.json"; then
+  echo '[GameplayUI73] ERROR apply failed'; exit 22
+fi
+
+unity command moyva-gameplay-ui-redesign-validate --project-path="$PROJECT" --format json | tee "$OUT/validate.json"
+if grep -q '"ok"[[:space:]]*:[[:space:]]*false' "$OUT/validate.json"; then
+  echo '[GameplayUI73] validation failed; undoing one Pass73 group'
+  unity command moyva-ui-undo --project-path="$PROJECT" --format json >"$OUT/undo_after_failed_validate.json" 2>&1 || true
+  exit 23
+fi
+
+unity command moyva-gameplay-ui-redesign-preview --project-path="$PROJECT" --mode normal --format json >/dev/null
+capture_view after_normal_1280x720 1280 720 || true
+capture_view after_normal_1920x1080 1920 1080 || true
+
+unity command moyva-gameplay-ui-redesign-preview --project-path="$PROJECT" --mode construction --format json >/dev/null
+capture_view after_construction_shell_1280x720 1280 720 || true
+capture_view after_construction_shell_1920x1080 1920 1080 || true
+
+unity command moyva-gameplay-ui-redesign-preview --project-path="$PROJECT" --mode restore --format json >/dev/null
+
+# Save only after validation and screenshots. Existing Pass70 save command creates an external scene backup.
+unity command moyva-ui-save-scene --project-path="$PROJECT" --format json | tee "$OUT/save.json"
+
+# Re-audit the saved scene.
+unity command moyva-gameplay-ui-audit --project-path="$PROJECT" --output-dir "$OUT/post_audit" --format json >"$OUT/post_audit_command.json" 2>&1 || true
+
+# Best-effort runtime captures. Failure does not invalidate the serialized redesign.
+if unity command editor_play --project-path="$PROJECT" --format json >"$OUT/editor_play.json" 2>&1; then
+  sleep 8
+  capture_view runtime_normal_1280x720 1280 720 || true
+  unity command eval --project-path="$PROJECT" --code 'var go=GameObject.Find("ConstructionUI"); if(go==null) go=GameObject.Find("Canvas/ConstructionUI"); var c=go!=null?go.GetComponent<Kruty1918.Moyva.Construction.UI.ConstructionUIController>():null; if(c!=null){c.EnterConstructionMode(); return "construction-requested";} return "controller-not-found";' --timeout 10000 --format json >"$OUT/runtime_enter_construction.json" 2>&1 || true
+  sleep 3
+  capture_view runtime_construction_1280x720 1280 720 || true
+  unity command editor_stop --project-path="$PROJECT" --format json >"$OUT/editor_stop.json" 2>&1 || true
+fi
+
+{
+  echo "branch=$(git -C "$PROJECT" branch --show-current 2>/dev/null || true)"
+  echo "head=$(git -C "$PROJECT" rev-parse HEAD 2>/dev/null || true)"
+  echo
+  git -C "$PROJECT" status --short 2>/dev/null || true
+} >"$OUT/git_state.txt"
+git -C "$PROJECT" diff -- Assets/Moyva/Scenes/Gamplay_Scene.unity Assets/Moyva/Scripts/Features/Construction/UI/Controllers/ConstructionUIController.cs >"$OUT/pass73.diff" 2>/dev/null || true
+
+DOWNLOAD=''
+for d in "$HOME/Завантажене" "$HOME/Завантаження" "$HOME/Downloads"; do [[ -d "$d" ]] && { DOWNLOAD="$d"; break; }; done
+[[ -n "$DOWNLOAD" ]] || DOWNLOAD="$HOME"
+ZIP="$DOWNLOAD/Moyva_GameplayUI_Pass73_Result_${STAMP}.zip"
+python3 - "$OUT" "$ZIP" <<'PY'
+from pathlib import Path
+import sys,zipfile
+src=Path(sys.argv[1]); dst=Path(sys.argv[2])
+with zipfile.ZipFile(dst,'w',zipfile.ZIP_DEFLATED) as z:
+    for p in sorted(src.rglob('*')):
+        if p.is_file(): z.write(p,p.relative_to(src))
+PY
+
+echo
+echo '=============================================================='
+echo '[GameplayUI73] ГОТОВО'
+echo "[GameplayUI73] RESULT_DIR=$OUT"
+echo "[GameplayUI73] UPLOAD_THIS_FILE=$ZIP"
+echo '=============================================================='

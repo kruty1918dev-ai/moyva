@@ -10,13 +10,14 @@ using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Pathfinding.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
+using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
-	internal sealed class UnitMovementService : IUnitMovementService, IInitializable, IDisposable
+	internal sealed class UnitMovementService : IUnitMovementService, ITurnBlocker, IInitializable, IDisposable
 	{
 		private readonly IUnitService _unitService;
 		private readonly IPathfinder _pathfinder;
@@ -31,6 +32,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 		private readonly WorldCreationDefaultsSO _worldDefaults;
 		private readonly IGridProjection _gridProjection;
 		private readonly TileRegistrySO _tileRegistry;
+		private readonly ITurnService _turns;
+		private readonly IUnitOwnershipQuery _ownership;
+		private readonly IUnitPlacementValidator _placementValidator;
 
 		private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
 		private readonly Dictionary<string, float> _tileSurfaceOffsetYById = new();
@@ -48,7 +52,10 @@ namespace Kruty1918.Moyva.Units.Runtime
 			[InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null,
 			[InjectOptional] WorldCreationDefaultsSO worldDefaults = null,
 			[InjectOptional] IGridProjection gridProjection = null,
-			[InjectOptional] TileRegistrySO tileRegistry = null)
+			[InjectOptional] TileRegistrySO tileRegistry = null,
+			[InjectOptional] ITurnService turns = null,
+			[InjectOptional] IUnitOwnershipQuery ownership = null,
+			[InjectOptional] IUnitPlacementValidator placementValidator = null)
 		{
 			_unitService = unitService;
 			_pathfinder = pathfinder;
@@ -63,16 +70,27 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_worldDefaults = worldDefaults;
 			_gridProjection = gridProjection;
 			_tileRegistry = tileRegistry;
+			_turns = turns;
+			_ownership = ownership;
+			_placementValidator = placementValidator;
 		}
+
+		[System.Diagnostics.Conditional("MOYVA_VERBOSE_MOVEMENT")]
+		private static void LogMovementVerbose(string message)
+			=> Debug.Log(message);
 
 		public void Initialize()
 		{
 			_signalBus.Subscribe<InterruptMovementSignal>(OnInterruptRequested);
+			_signalBus.Subscribe<UnitGarrisonStateChangedSignal>(
+				OnUnitGarrisonStateChanged);
 		}
 
 		public void Dispose()
 		{
 			_signalBus.TryUnsubscribe<InterruptMovementSignal>(OnInterruptRequested);
+			_signalBus.TryUnsubscribe<UnitGarrisonStateChangedSignal>(
+				OnUnitGarrisonStateChanged);
 
 			foreach (var cts in _activeMovements.Values)
 			{
@@ -80,6 +98,26 @@ namespace Kruty1918.Moyva.Units.Runtime
 				cts.Dispose();
 			}
 			_activeMovements.Clear();
+		}
+
+		private void OnUnitGarrisonStateChanged(
+			UnitGarrisonStateChangedSignal signal)
+		{
+			if (signal.IsGarrisoned
+				|| string.IsNullOrWhiteSpace(signal.UnitId))
+			{
+				return;
+			}
+
+			GameObject unitObject =
+				_unitService.GetUnitObject(signal.UnitId);
+			if (unitObject == null)
+				return;
+
+			unitObject.transform.position =
+				ResolveMovementWorldPosition(
+					signal.UnitPosition,
+					GridSurfacePlacementUtility.DefaultSurfaceClearance);
 		}
 
 		private void OnInterruptRequested(InterruptMovementSignal signal)
@@ -93,6 +131,13 @@ namespace Kruty1918.Moyva.Units.Runtime
 			if (string.IsNullOrEmpty(unitId))
 			{
 				Debug.LogWarning("[UnitMovement] MoveUnitAsync: unitId пустий або null. Рух скасовано.");
+				return;
+			}
+
+			string ownerId = _ownership?.GetUnitOwnerId(unitId);
+			if (_turns != null && !_turns.CanOwnerAct(ownerId, out string turnReason))
+			{
+				Debug.LogWarning($"[UnitMovement] Move rejected for '{unitId}': {turnReason}");
 				return;
 			}
 
@@ -117,14 +162,31 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 			if (_objectsMapService.IsOccupied(targetPosition)
 				&& _objectsMapService.TryGetOccupant(targetPosition, out var targetOccupantId)
-				&& targetOccupantId != unitId)
+				&& targetOccupantId != unitId
+				&& !CanPathTraverseOccupiedConstructionCell(
+					unitId,
+					targetPosition))
 			{
-				Debug.LogWarning($"[UnitMovement] MoveUnitAsync: цільовий тайл {targetPosition} вже зайнятий '{targetOccupantId}'. Рух для '{unitId}' скасовано.");
+				Debug.LogWarning(
+					$"[UnitMovement] MoveUnitAsync: ціль {targetPosition} " +
+					$"зайнята '{targetOccupantId}' і не є прохідною.");
 				return;
 			}
 
-			Debug.Log($"[UnitMovement] Пошук шляху для '{unitId}': {startPosition} → {targetPosition}");
-			var path = _pathfinder.FindPath(startPosition, targetPosition);
+			LogMovementVerbose(
+				$"[UnitMovement] path {unitId}: {startPosition} -> {targetPosition}");
+			List<Vector2Int> path =
+				_pathfinder is IOccupiedCellPathfinder occupiedPathfinder
+					? occupiedPathfinder.FindPath(
+						startPosition,
+						targetPosition,
+						position =>
+							CanPathTraverseOccupiedConstructionCell(
+								unitId,
+								position))
+					: _pathfinder.FindPath(
+						startPosition,
+						targetPosition);
 			if (path == null || path.Count <= 1)
 			{
 				Debug.LogWarning($"[UnitMovement] MoveUnitAsync: шлях не знайдено або занадто короткий для '{unitId}' ({startPosition} → {targetPosition}). path={path?.Count ?? 0} точок.");
@@ -143,6 +205,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 			using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(externalToken, internalCts.Token);
 
+			int completedSteps = 0;
 			try
 			{
 				var unitTypeId = _unitService.GetUnitTypeId(unitId);
@@ -152,7 +215,11 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 				var settings = _unitGameplayProfileService.ResolveMovementAnimationSettings(unitTypeId);
 				settings.CanPerformStep = stepPos => CanMakeStep(unitId, stepPos);
-				settings.OnStepCompleted = stepPos => OnStepCompleted(unitId, stepPos);
+					settings.OnStepCompleted = stepPos =>
+					{
+						OnStepCompleted(unitId, stepPos);
+						completedSteps++;
+					};
 				float unitSurfacePivotOffsetY = ResolveUnitSurfacePivotOffsetY(unitObj, startPosition);
 				settings.ResolveWorldPosition = stepPos => ResolveMovementWorldPosition(stepPos, unitSurfacePivotOffsetY);
 
@@ -171,17 +238,36 @@ namespace Kruty1918.Moyva.Units.Runtime
 				if (_activeMovements.TryGetValue(unitId, out var currentCts) && currentCts == internalCts)
 					_activeMovements.Remove(unitId);
 
-				internalCts.Dispose();
+					internalCts.Dispose();
+				}
+
+			if (completedSteps > 0)
+				_turns?.TryRecordAction(ownerId, "unit-move");
+		}
+
+		public bool IsTurnBlocked(out string reason)
+		{
+			if (_activeMovements.Count > 0)
+			{
+				reason = "Дочекайтеся завершення руху юніта.";
+				return true;
 			}
+
+			reason = null;
+			return false;
 		}
 
 		private bool CanMakeStep(string unitId, Vector2Int stepPos)
 		{
 			if (_objectsMapService.IsOccupied(stepPos)
 				&& _objectsMapService.TryGetOccupant(stepPos, out var occupantId)
-				&& occupantId != unitId)
+				&& occupantId != unitId
+				&& !CanTraverseOccupiedConstructionCell(
+					unitId,
+					stepPos,
+					occupantId,
+					out _))
 			{
-				Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: тайл зайнятий '{occupantId}'.");
 				return false;
 			}
 
@@ -195,7 +281,23 @@ namespace Kruty1918.Moyva.Units.Runtime
 					return false;
 				}
 
-				if (IsBlockedByUnitPlacementRules(stepPos, tileTypeId, out string blockReason))
+				bool terrainBlocked;
+				string blockReason;
+				if (_placementValidator != null)
+				{
+					terrainBlocked = !_placementValidator.IsTerrainAllowed(
+						stepPos,
+						out blockReason);
+				}
+				else
+				{
+					terrainBlocked = IsBlockedByUnitPlacementRules(
+						stepPos,
+						tileTypeId,
+						out blockReason);
+				}
+
+				if (terrainBlocked)
 				{
 					Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: BLOCKED ({blockReason}).");
 					return false;
@@ -203,11 +305,44 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 				float cost = _tileSettings.GetTileWeight(tileTypeId);
 				bool canStep = currentStamina >= cost;
-				Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: стаміна={currentStamina}, вартість={cost}, результат={canStep}");
+				LogMovementVerbose(
+					$"[UnitMovement] step {unitId}@{stepPos}: " +
+					$"stamina={currentStamina} cost={cost} ok={canStep}");
 				return canStep;
 			}
 
 			Debug.LogWarning($"[UnitMovement] CanMakeStep: тайл {stepPos} не знайдено в грід-сервісі.");
+			return false;
+		}
+
+		private bool CanPathTraverseOccupiedConstructionCell(
+			string unitId,
+			Vector2Int position)
+		{
+			return _unitService is IConstructionUnitTraversalQuery traversal
+				&& traversal.CanTraverseOccupiedConstructionCell(
+					unitId,
+					position,
+					openGateIfNeeded: false,
+					out _);
+		}
+
+		private bool CanTraverseOccupiedConstructionCell(
+			string unitId,
+			Vector2Int position,
+			string occupantId,
+			out string reason)
+		{
+			if (_unitService is IConstructionUnitTraversalQuery traversal)
+			{
+				return traversal.CanTraverseOccupiedConstructionCell(
+					unitId,
+					position,
+					openGateIfNeeded: true,
+					out reason);
+			}
+
+			reason = "Construction traversal query не підключений.";
 			return false;
 		}
 
@@ -220,11 +355,23 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 			float stepCost = _tileSettings.GetTileWeight(tileTypeId);
 
+			bool sharedOccupancy =
+				_objectsMapService.TryGetOccupant(
+					stepPos,
+					out string primaryOccupant)
+				&& primaryOccupant != unitId
+				&& CanTraverseOccupiedConstructionCell(
+					unitId,
+					stepPos,
+					primaryOccupant,
+					out _);
+
 			_signalBus.Fire(new UnitMovedSignal
 			{
 				UnitId = unitId,
 				NewPosition = stepPos,
-				Cost = stepCost
+				Cost = stepCost,
+				AllowSharedOccupancy = sharedOccupancy,
 			});
 		}
 

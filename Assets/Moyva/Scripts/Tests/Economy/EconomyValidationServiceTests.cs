@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Linq;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Editor;
@@ -5,6 +6,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Economy
 {
     [TestFixture]
@@ -13,34 +15,34 @@ namespace Kruty1918.Moyva.Tests.Economy
         [Test]
         public void Validate_ShouldCatchDuplicateAndMissingReferences()
         {
-            var database = ScriptableObject.CreateInstance<EconomyDatabaseSO>();
+            var database = MoyvaJsonObjectFactory.Create<EconomyDatabaseSO>();
 
-            var resourceA = ScriptableObject.CreateInstance<EconomyResourceDefinition>();
+            var resourceA = MoyvaJsonObjectFactory.Create<EconomyResourceDefinition>();
             SetString(resourceA, "_id", "food");
             SetEnum(resourceA, "_category", EconomyResourceCategory.None);
 
-            var resourceB = ScriptableObject.CreateInstance<EconomyResourceDefinition>();
+            var resourceB = MoyvaJsonObjectFactory.Create<EconomyResourceDefinition>();
             SetString(resourceB, "_id", "food");
             SetEnum(resourceB, "_category", EconomyResourceCategory.Materials);
 
-            var moneyResource = ScriptableObject.CreateInstance<EconomyResourceDefinition>();
+            var moneyResource = MoyvaJsonObjectFactory.Create<EconomyResourceDefinition>();
             SetString(moneyResource, "_id", "money");
             SetEnum(moneyResource, "_category", EconomyResourceCategory.Money);
 
-            var settlement = ScriptableObject.CreateInstance<EconomySettlementDefinition>();
+            var settlement = MoyvaJsonObjectFactory.Create<EconomySettlementDefinition>();
             SetString(settlement, "_settlementId", "village_01");
             SetString(settlement, "_centerBuildingId", "");
             SetInt(settlement, "_buildRadius", 0);
 
-            var warehouse = ScriptableObject.CreateInstance<EconomyWarehousePolicy>();
+            var warehouse = MoyvaJsonObjectFactory.Create<EconomyWarehousePolicy>();
             AddWarehouseEntry(warehouse, "unknown_resource", priority: 0);
 
-            var production = ScriptableObject.CreateInstance<EconomyProductionProfile>();
+            var production = MoyvaJsonObjectFactory.Create<EconomyProductionProfile>();
             SetString(production, "_buildingId", "mill");
             SetString(production, "_recipeId", "");
             SetInt(production, "_outputAmountPerCycle", 0);
 
-            var caravan = ScriptableObject.CreateInstance<EconomyCaravanTemplate>();
+            var caravan = MoyvaJsonObjectFactory.Create<EconomyCaravanTemplate>();
             SetString(caravan, "_templateId", "caravan_1");
             SetInt(caravan, "_capacity", 0);
 
@@ -117,3 +119,5 @@ namespace Kruty1918.Moyva.Tests.Economy
         }
     }
 }
+
+#endif

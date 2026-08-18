@@ -15,6 +15,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void UndoLast()
         {
+            if (!CanActiveOwnerMutate(
+                    "undo construction preview",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                return;
+            }
+
+            EndPendingUndoBatch();
+
             if (_undoSnapshots.Count == 0)
             {
                 if (VerboseLogs)
@@ -39,6 +49,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void RedoLast()
         {
+            if (!CanActiveOwnerMutate(
+                    "redo construction preview",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                return;
+            }
+
+            EndPendingUndoBatch();
+
             if (_redoSnapshots.Count == 0)
             {
                 if (VerboseLogs)
@@ -78,6 +98,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public bool TryDemolishAt(Vector2Int position)
         {
+            if (!CanActiveOwnerAct(out string turnReason))
+            {
+                Debug.LogWarning($"[Construction] Demolition rejected: {turnReason}");
+                return false;
+            }
+
             if (!_isActive || !IsDemolishMode)
             {
                 if (VerboseLogs)
@@ -86,9 +112,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             position = ResolvePlacedOrigin(position);
-            if (!_playerPlacedBuildings.TryGetValue(position, out var buildingId))
+            if (!TryResolveCommittedBuildingForOwner(
+                    position,
+                    _activeOwnerId,
+                    out Vector2Int origin,
+                    out string buildingId,
+                    out string ownershipReason))
             {
-                Debug.LogWarning($"[Construction] TryDemolishAt({position}): будівля не була розміщена гравцем.");
+                _lastActionMessage = ownershipReason;
+                Debug.LogWarning(
+                    $"[Construction] TryDemolishAt({position}) rejected: {ownershipReason}");
                 return false;
             }
 
@@ -138,7 +171,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         public IReadOnlyDictionary<Vector2Int, string> GetPlayerPlacedBuildings()
-            => new ReadOnlyDictionary<Vector2Int, string>(_playerPlacedBuildings);
+        {
+            string activeOwner = NormalizeOwnerId(_activeOwnerId);
+            var snapshot = new Dictionary<Vector2Int, string>();
+            foreach (var pair in _factionPlacedBuildings)
+            {
+                if (string.Equals(
+                        NormalizeOwnerId(pair.Value.FactionId),
+                        activeOwner,
+                        System.StringComparison.Ordinal))
+                {
+                    snapshot[pair.Key] = pair.Value.BuildingId;
+                }
+            }
+
+            foreach (var pair in _playerPlacedBuildings)
+            {
+                if (!snapshot.ContainsKey(pair.Key))
+                    snapshot[pair.Key] = pair.Value;
+            }
+
+            return new ReadOnlyDictionary<Vector2Int, string>(snapshot);
+        }
 
         private void ConfirmPendingDemolitions()
         {
@@ -151,17 +205,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 var pos = demolition.Position;
                 var id = demolition.BuildingId;
 
-                if (!_playerPlacedBuildings.ContainsKey(pos))
-                    continue;
-
-                UnregisterBuildingFootprint(pos, id);
-                _playerPlacedBuildings.Remove(pos);
-                _signalBus.Fire(new BuildingDemolishedSignal
+                if (!TryDemolishByFaction(
+                        pos,
+                        _activeOwnerId))
                 {
-                    BuildingId = id,
-                    Position = pos,
-                    OwnerId = _activeOwnerId,
-                });
+                    continue;
+                }
 
                 if (VerboseLogs)
                     Debug.Log($"[Construction] Confirm demolished '{id}' at {pos}");
@@ -176,6 +225,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void ResetSession(bool clearRedoHistory)
         {
+            ResetPendingUndoBatchState();
+
             if (VerboseLogs)
                 Debug.Log($"[Construction] ResetSession requested. pendingCount={_pendingPlacements.Count}, redoCount={_redoSnapshots.Count}, clearRedoHistory={clearRedoHistory}");
 
@@ -190,14 +241,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 var placement = _pendingPlacements[i];
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
-                    Position = placement.Position,
-                    BuildingId = placement.BuildingId,
-                    PreviewState = BuildingPreviewState.None
+                        Position = placement.Position,
+                        BuildingId = placement.BuildingId,
+                        RotationQuarterTurns =
+                            (int)placement.Rotation,
+                        PreviewState = BuildingPreviewState.None
                 });
             }
 
             _pendingPlacements.Clear();
             _pendingPositions.Clear();
+            _pendingPlacementByPosition.Clear();
             MarkPendingPlacementsChanged();
             if (clearRedoHistory)
                 _redoSnapshots.Clear();
@@ -206,11 +260,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _undoSnapshots.Clear();
 
-            SetPlacementSelection(null, BuildingPlacementState.Idle);
             _signalBus.Fire(new BuildingCancelledSignal());
+            SetPlacementSelection(null, BuildingPlacementState.Idle);
+            ApplyBootstrapCastleSelectionIfNeeded();
 
             if (VerboseLogs)
-                Debug.Log($"[Construction] ResetSession completed. state=Idle, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
+                Debug.Log($"[Construction] ResetSession completed. state={State}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
         }
 
         private void ClearPendingDemolitionsPreview()
@@ -230,8 +285,92 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _pendingDemolitionPositions.Clear();
         }
 
+        public void BeginPendingUndoBatch(string reason = null)
+        {
+            if (_pendingUndoBatchDepth == 0)
+            {
+                _pendingUndoBatchSnapshot = ClonePendingSnapshot();
+                _pendingUndoBatchChanged = false;
+                _pendingUndoBatchClearRedoHistory = false;
+                _pendingUndoBatchStartCount =
+                    _pendingPlacements.Count;
+                _pendingUndoBatchReason =
+                    string.IsNullOrWhiteSpace(reason)
+                        ? "unspecified"
+                        : reason;
+
+                if (VerboseLogs)
+                {
+                    Debug.Log(
+                        $"{PerfLogTag} undo-batch begin " +
+                        $"reason={_pendingUndoBatchReason} " +
+                        $"pending={_pendingUndoBatchStartCount}");
+                }
+            }
+
+            _pendingUndoBatchDepth++;
+        }
+
+        public void EndPendingUndoBatch()
+        {
+            if (_pendingUndoBatchDepth <= 0)
+                return;
+
+            _pendingUndoBatchDepth--;
+            if (_pendingUndoBatchDepth > 0)
+                return;
+
+            if (_pendingUndoBatchChanged)
+            {
+                _undoSnapshots.Add(
+                    _pendingUndoBatchSnapshot
+                    ?? new List<PendingPlacement>());
+
+                if (_pendingUndoBatchClearRedoHistory)
+                    _redoSnapshots.Clear();
+
+                if (VerboseLogs)
+                {
+                    int finalCount = _pendingPlacements.Count;
+                    Debug.Log(
+                        $"{PerfLogTag} undo-batch commit " +
+                        $"reason={_pendingUndoBatchReason} " +
+                        $"start={_pendingUndoBatchStartCount} " +
+                        $"end={finalCount} " +
+                        $"delta={finalCount - _pendingUndoBatchStartCount} " +
+                        $"undoCount={_undoSnapshots.Count}");
+                }
+            }
+            else if (VerboseLogs)
+            {
+                Debug.Log(
+                    $"{PerfLogTag} undo-batch end-no-change " +
+                    $"reason={_pendingUndoBatchReason}");
+            }
+
+            ResetPendingUndoBatchState();
+        }
+
+        private void ResetPendingUndoBatchState()
+        {
+            _pendingUndoBatchDepth = 0;
+            _pendingUndoBatchSnapshot = null;
+            _pendingUndoBatchChanged = false;
+            _pendingUndoBatchClearRedoHistory = false;
+            _pendingUndoBatchStartCount = 0;
+            _pendingUndoBatchReason = null;
+        }
+
         private void SaveSnapshotForUndo(bool clearRedoHistory)
         {
+            if (_pendingUndoBatchDepth > 0)
+            {
+                _pendingUndoBatchChanged = true;
+                _pendingUndoBatchClearRedoHistory |=
+                    clearRedoHistory;
+                return;
+            }
+
             _undoSnapshots.Add(ClonePendingSnapshot());
             if (clearRedoHistory)
                 _redoSnapshots.Clear();
@@ -248,14 +387,24 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _pendingPlacements.Clear();
             _pendingPositions.Clear();
+            _pendingPlacementByPosition.Clear();
 
             for (int i = 0; i < snapshot.Count; i++)
             {
                 var placement = snapshot[i];
                 _pendingPlacements.Add(placement);
                 _pendingPositions.Add(placement.Position);
+                _pendingPlacementByPosition[placement.Position] =
+                    placement;
             }
             MarkPendingPlacementsChanged();
+
+            if (VerboseLogs)
+            {
+                Debug.Log(
+                    $"{PerfLogTag} pending-index rebuilt after snapshot: " +
+                    $"count={_pendingPlacementByPosition.Count}");
+            }
 
             var previousByPosition = new Dictionary<Vector2Int, PendingPlacement>();
             for (int i = 0; i < previous.Count; i++)
@@ -267,12 +416,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             foreach (var pair in previousByPosition)
             {
-                if (!currentByPosition.TryGetValue(pair.Key, out var current) || current.BuildingId != pair.Value.BuildingId)
+                if (!currentByPosition.TryGetValue(pair.Key, out var current)
+                    || current.BuildingId != pair.Value.BuildingId
+                    || current.Rotation != pair.Value.Rotation)
                 {
                     _signalBus.Fire(new BuildingPreviewChangedSignal
                     {
                         Position = pair.Key,
                         BuildingId = pair.Value.BuildingId,
+                        RotationQuarterTurns =
+                            (int)pair.Value.Rotation,
                         PreviewState = BuildingPreviewState.None
                     });
                 }
@@ -280,12 +433,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             foreach (var pair in currentByPosition)
             {
-                if (!previousByPosition.TryGetValue(pair.Key, out var previousPlacement) || previousPlacement.BuildingId != pair.Value.BuildingId)
+                if (!previousByPosition.TryGetValue(pair.Key, out var previousPlacement)
+                    || previousPlacement.BuildingId != pair.Value.BuildingId
+                    || previousPlacement.Rotation != pair.Value.Rotation)
                 {
                     _signalBus.Fire(new BuildingPreviewChangedSignal
                     {
                         Position = pair.Key,
                         BuildingId = pair.Value.BuildingId,
+                        RotationQuarterTurns =
+                            (int)pair.Value.Rotation,
                         PreviewState = BuildingPreviewState.Valid
                     });
                 }

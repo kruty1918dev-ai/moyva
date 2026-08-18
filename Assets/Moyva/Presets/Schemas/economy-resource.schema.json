@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/economy-resource.schema.json",
+  "title": "Moyva — Economy Resource Definition",
+  "description": "JSON source of truth для Kruty1918.Moyva.Economy.API.EconomyResourceDefinition. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.economy-resource"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "title": "Id"
+    },
+    "model": {
+      "const": "economy-resource"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "displayName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Display Name"
+    },
+    "category": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:None|Food|Materials|Money))$",
+      "x-enumNames": [
+        "None",
+        "Food",
+        "Materials",
+        "Money"
+      ],
+      "x-flags": false,
+      "title": "Category"
+    },
+    "icon": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "title": "Icon"
+    },
+    "stackLimit": {
+      "type": "integer",
+      "title": "Stack Limit"
+    },
+    "weightGrams": {
+      "type": "integer",
+      "title": "Weight Grams",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "axe-white-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Axe-white",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-88.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "895e1f686ec74d28bf927b6a0fc8aae7",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Cloth-blue.asset",
+    "sourceHash": "91d4bc65f95aeefd65242b732c1c000ffce3771935595ce0f88a02883d4b64cd"
+  }
+}

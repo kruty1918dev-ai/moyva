@@ -12,17 +12,26 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private readonly struct RegisteredFootprint
         {
-            public RegisteredFootprint(string buildingId, Vector2Int[] cells)
+            public RegisteredFootprint(
+                string buildingId,
+                Vector2Int[] cells,
+                ConstructionRotation rotation)
             {
                 BuildingId = buildingId;
                 Cells = cells;
+                Rotation = rotation;
             }
 
             public string BuildingId { get; }
             public Vector2Int[] Cells { get; }
+            public ConstructionRotation Rotation { get; }
         }
 
-        private bool TryRegisterBuildingFootprint(Vector2Int origin, string buildingId)
+        private bool TryRegisterBuildingFootprint(
+            Vector2Int origin,
+            string buildingId,
+            ConstructionRotation rotation =
+                ConstructionRotation.Degrees0)
         {
             BuildingDefinition definition = _placementBuildingRegistry.GetById(buildingId);
             if (!BuildingFootprintUtility.TryValidate(definition, out string configurationReason))
@@ -37,7 +46,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             for (int index = 0; index < cellCount; index++)
             {
-                Vector2Int cell = BuildingFootprintUtility.GetOccupiedCell(definition, origin, index);
+                Vector2Int cell = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    origin,
+                    index,
+                    rotation);
                 cells[index] = cell;
                 if (_gridService != null && !_gridService.TryGetTileData(cell, out _))
                     return false;
@@ -46,7 +59,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             int registeredCount = 0;
-            _registeredFootprintsByOrigin[origin] = new RegisteredFootprint(buildingId, cells);
+            _registeredFootprintsByOrigin[origin] =
+                new RegisteredFootprint(buildingId, cells, rotation);
             for (int index = 0; index < cells.Length; index++)
                 _placedOriginByOccupiedTile[cells[index]] = origin;
 
@@ -96,7 +110,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 int cellCount = BuildingFootprintUtility.GetOccupiedCellCount(definition);
                 cells = new Vector2Int[cellCount];
                 for (int index = 0; index < cellCount; index++)
-                    cells[index] = BuildingFootprintUtility.GetOccupiedCell(definition, origin, index);
+                    cells[index] = BuildingFootprintUtility.GetOccupiedCell(
+                        definition,
+                        origin,
+                        index,
+                        ResolvePlacedRotation(origin));
             }
 
             for (int index = 0; index < cells.Length; index++)
@@ -138,6 +156,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             => _placedOriginByOccupiedTile.TryGetValue(occupiedCell, out Vector2Int origin)
                 ? origin
                 : occupiedCell;
+
+        private ConstructionRotation ResolvePlacedRotation(
+            Vector2Int origin)
+            => _placedRotationByOrigin.TryGetValue(
+                origin,
+                out ConstructionRotation rotation)
+                ? rotation
+                : ConstructionRotation.Degrees0;
 
         private bool TryResolveGateReplacement(
             Vector2Int position,
@@ -314,7 +340,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void RestoreBuildingFootprintOrLog(Vector2Int origin, string buildingId, string context)
         {
-            if (TryRegisterBuildingFootprint(origin, buildingId))
+            if (TryRegisterBuildingFootprint(
+                    origin,
+                    buildingId,
+                    ResolvePlacedRotation(origin)))
                 return;
 
             Debug.LogError(

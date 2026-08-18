@@ -1,0 +1,17 @@
+{
+  "$schema": "../../Schemas/river-data.schema.json",
+  "schema": "moyva.river-data",
+  "version": 1,
+  "id": "riverdataconfig",
+  "model": "river-data",
+  "baseObjectId": "river",
+  "riversCount": 2,
+  "usedCellPenalty": 120.0,
+  "nearRiverPenalty": 35.0,
+  "nearRiverRadius": 1,
+  "migration": {
+    "sourceAssetGuid": "78e042253c1f803fd95ad78bfadd8312",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/RiverDataConfig.asset",
+    "sourceHash": "8a5838d460b2dcb1ba7cfe03ea7c87e7c8fed1a175e4c55d870c119bed8a6843"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "../../Schemas/calendar-session-config.schema.json",
+  "schema": "moyva.calendar-session-config",
+  "version": 1,
+  "id": "calendarsessionconfig",
+  "model": "calendar-session-config",
+  "startYear": 1054,
+  "startMonth": 1,
+  "startDay": 1,
+  "startHour": 6,
+  "migration": {
+    "sourceAssetGuid": "c43f8817fa72f7c3ba21db4e4b8f8a5e",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Environment/CalendarSessionConfig.asset",
+    "sourceHash": "1b5b3b04ba70d58058a2e5b0b967826e194b71707ab0955077cb4c2b38d4b355"
+  }
+}

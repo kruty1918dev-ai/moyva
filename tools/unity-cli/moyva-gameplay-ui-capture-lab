@@ -1,0 +1,313 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+export PATH="$HOME/.local/bin:$PATH"
+
+STAMP="$(date +%Y%m%d_%H%M%S)"
+ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/moyva-cli/reports/gameplay-ui-capture"
+OUT="$ROOT/$STAMP"
+mkdir -p "$OUT/edit" "$OUT/runtime" "$OUT/scene" "$OUT/data" "$OUT/logs"
+
+echo "[GameplayUICapture74] PROJECT=$PROJECT"
+echo "[GameplayUICapture74] OUT=$OUT"
+
+activate_unity() {
+  if command -v wmctrl >/dev/null 2>&1; then
+    wmctrl -a "Unity" >/dev/null 2>&1 || true
+  elif command -v xdotool >/dev/null 2>&1; then
+    local wid
+    wid="$(xdotool search --class unity 2>/dev/null | tail -n 1 || true)"
+    [[ -n "$wid" ]] && xdotool windowactivate --sync "$wid" >/dev/null 2>&1 || true
+  fi
+  sleep 0.5
+}
+
+wait_pipeline() {
+  for i in $(seq 1 120); do
+    local catalog
+    catalog="$(unity command --project-path="$PROJECT" --format json 2>/dev/null || true)"
+    if grep -q 'moyva-gameplay-ui-capture-window' <<<"$catalog" \
+       && grep -q 'moyva-gameplay-ui-capture-runtime' <<<"$catalog"; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
+wait_file() {
+  local path="$1" timeout="${2:-30}"
+  for i in $(seq 1 "$timeout"); do
+    [[ -s "$path" ]] && return 0
+    [[ -s "$path.error.txt" ]] && return 2
+    sleep 1
+  done
+  return 1
+}
+
+capture_window() {
+  local path="$1" view="$2" preset="${3:-current}"
+  rm -f "$path" "$path.error.txt" "$path.meta.json"
+  activate_unity
+  unity command moyva-gameplay-ui-capture-window \
+    --project-path="$PROJECT" --path "$path" --view "$view" --preset "$preset" --delay 10 --format json \
+    >"$path.command.json" 2>&1 || return 1
+  if wait_file "$path" 35; then
+    echo "[GameplayUICapture74] WINDOW_OK $(basename "$path")"
+    return 0
+  fi
+  echo "[GameplayUICapture74] WINDOW_FAIL $(basename "$path")"
+  [[ -f "$path.error.txt" ]] && cat "$path.error.txt"
+  return 1
+}
+
+capture_runtime() {
+  local path="$1" supersize="${2:-1}"
+  rm -f "$path"
+  unity command moyva-gameplay-ui-capture-runtime \
+    --project-path="$PROJECT" --path "$path" --supersize "$supersize" --format json \
+    >"$path.command.json" 2>&1 || return 1
+  if wait_file "$path" 35; then
+    echo "[GameplayUICapture74] RUNTIME_SCREEN_OK $(basename "$path")"
+    return 0
+  fi
+  echo "[GameplayUICapture74] RUNTIME_SCREEN_FAIL $(basename "$path")"
+  return 1
+}
+
+capture_camera_reference() {
+  local path="$1" width="$2" height="$3"
+  unity command screenshot \
+    --project-path="$PROJECT" --view game --output "$path" \
+    --width "$width" --height "$height" --format json >"$path.command.json" 2>&1 || true
+}
+
+safe_cli() {
+  local file="$1"; shift
+  "$@" >"$file" 2>&1 || true
+}
+
+wait_pipeline || { echo "[GameplayUICapture74] ERROR: capture commands unavailable"; exit 20; }
+
+# Canonical gameplay scene and baseline state.
+unity command moyva-gameplay-ui-prepare --project-path="$PROJECT" --format json \
+  >"$OUT/data/prepare.json" 2>&1 || true
+unity command moyva-gameplay-ui-capture-state --project-path="$PROJECT" --format json \
+  >"$OUT/data/edit_normal_state.json" 2>&1 || true
+unity command moyva-gameplay-ui-redesign-validate --project-path="$PROJECT" --format json \
+  >"$OUT/data/pass73_validate.json" 2>&1 || true
+unity command moyva-ui-audit --project-path="$PROJECT" --format json \
+  >"$OUT/data/pass70_ui_audit.json" 2>&1 || true
+unity command moyva-scene-tree --project-path="$PROJECT" --format json \
+  >"$OUT/data/scene_tree.json" 2>&1 || true
+unity command moyva-project-status --project-path="$PROJECT" --format json \
+  >"$OUT/data/project_status.json" 2>&1 || true
+
+# Actual visible GameView capture. This is the primary fix for the missing ScreenSpaceOverlay UI.
+capture_window "$OUT/edit/gameview_normal_actual_window.png" game current || true
+
+# Camera-only references retained intentionally so we can compare camera output vs composited/visible UI.
+capture_camera_reference "$OUT/edit/gameview_normal_camera_only_1280x720.png" 1280 720
+capture_camera_reference "$OUT/edit/gameview_normal_camera_only_1920x1080.png" 1920 1080
+
+# Scene context from several non-destructive SceneView camera positions.
+capture_window "$OUT/scene/scene_current_actual_window.png" scene current || true
+capture_window "$OUT/scene/scene_top_actual_window.png" scene top || true
+capture_window "$OUT/scene/scene_iso_actual_window.png" scene iso || true
+capture_window "$OUT/scene/scene_low_actual_window.png" scene low || true
+capture_window "$OUT/scene/scene_close_actual_window.png" scene close || true
+unity command moyva-gameplay-ui-capture-restore-sceneview --project-path="$PROJECT" --format json \
+  >"$OUT/data/sceneview_restore.json" 2>&1 || true
+
+# Corrected post-audit location: Pass72 restricts output to the gameplay-ui report root.
+AUDIT_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/moyva-cli/reports/gameplay-ui"
+AUDIT_DIR="$AUDIT_ROOT/${STAMP}_pass74"
+mkdir -p "$AUDIT_DIR"
+unity command moyva-gameplay-ui-audit \
+  --project-path="$PROJECT" --output-dir "$AUDIT_DIR" --format json \
+  >"$OUT/data/post_audit_command.json" 2>&1 || true
+if [[ -d "$AUDIT_DIR" ]]; then
+  mkdir -p "$OUT/post_audit"
+  cp -a "$AUDIT_DIR"/. "$OUT/post_audit"/ 2>/dev/null || true
+fi
+
+# Runtime phase: allows the real controllers to populate dynamic cards and state.
+EDITOR_LOG="$HOME/.config/unity3d/Editor.log"
+RUNTIME_LOG_START=0
+[[ -f "$EDITOR_LOG" ]] && RUNTIME_LOG_START="$(stat -c %s "$EDITOR_LOG" 2>/dev/null || echo 0)"
+
+safe_cli "$OUT/logs/console_before_play.json" \
+  unity command get_console_logs --project-path="$PROJECT" --format json
+
+if unity command editor_play --project-path="$PROJECT" --format json >"$OUT/data/editor_play.json" 2>&1; then
+  sleep 10
+  wait_pipeline || true
+
+  unity command moyva-gameplay-ui-capture-state --project-path="$PROJECT" --format json \
+    >"$OUT/data/runtime_normal_state.json" 2>&1 || true
+
+  capture_runtime "$OUT/runtime/runtime_normal_screencapture.png" 1 || true
+  capture_runtime "$OUT/runtime/runtime_normal_screencapture_2x.png" 2 || true
+  capture_window "$OUT/runtime/runtime_normal_actual_window.png" game current || true
+  capture_camera_reference "$OUT/runtime/runtime_normal_camera_only_1280x720.png" 1280 720
+
+  # Enter Construction through the actual controller / GameMode request path.
+  unity command eval --project-path="$PROJECT" \
+    --code 'var go=GameObject.Find("ConstructionUI"); if(go==null) go=GameObject.Find("Canvas/ConstructionUI"); var c=go!=null?go.GetComponent<Kruty1918.Moyva.Construction.UI.ConstructionUIController>():null; if(c!=null){c.EnterConstructionMode(); return "construction-requested";} return "controller-not-found";' \
+    --timeout 10000 --format json >"$OUT/data/runtime_enter_construction.json" 2>&1 || true
+  sleep 4
+
+  unity command moyva-gameplay-ui-capture-state --project-path="$PROJECT" --format json \
+    >"$OUT/data/runtime_construction_state.json" 2>&1 || true
+  capture_runtime "$OUT/runtime/runtime_construction_screencapture.png" 1 || true
+  capture_window "$OUT/runtime/runtime_construction_actual_window.png" game current || true
+  capture_camera_reference "$OUT/runtime/runtime_construction_camera_only_1280x720.png" 1280 720
+
+  # Two representative building selections; Play Mode changes are temporary.
+  unity command moyva-gameplay-ui-capture-select-building \
+    --project-path="$PROJECT" --id castle-01 --format json >"$OUT/data/select_castle.json" 2>&1 || true
+  sleep 2
+  unity command moyva-gameplay-ui-capture-state --project-path="$PROJECT" --format json \
+    >"$OUT/data/runtime_castle_state.json" 2>&1 || true
+  capture_runtime "$OUT/runtime/runtime_construction_castle_screencapture.png" 1 || true
+  capture_window "$OUT/runtime/runtime_construction_castle_actual_window.png" game current || true
+
+  unity command moyva-gameplay-ui-capture-select-building \
+    --project-path="$PROJECT" --id house-01 --format json >"$OUT/data/select_house.json" 2>&1 || true
+  sleep 2
+  unity command moyva-gameplay-ui-capture-state --project-path="$PROJECT" --format json \
+    >"$OUT/data/runtime_house_state.json" 2>&1 || true
+  capture_runtime "$OUT/runtime/runtime_construction_house_screencapture.png" 1 || true
+  capture_window "$OUT/runtime/runtime_construction_house_actual_window.png" game current || true
+
+  safe_cli "$OUT/logs/console_after_runtime.json" \
+    unity command get_console_logs --project-path="$PROJECT" --format json
+
+  unity command editor_stop --project-path="$PROJECT" --format json >"$OUT/data/editor_stop.json" 2>&1 || true
+  sleep 4
+fi
+
+# Isolate new Editor.log diagnostics from the runtime capture phase.
+if [[ -f "$EDITOR_LOG" ]]; then
+  python3 - "$EDITOR_LOG" "$RUNTIME_LOG_START" "$OUT/logs" <<'PY'
+from pathlib import Path
+import collections, re, sys
+path = Path(sys.argv[1])
+start = int(sys.argv[2])
+out = Path(sys.argv[3])
+data = path.read_bytes()
+chunk = data[start:] if 0 <= start <= len(data) else data
+text = chunk.decode("utf-8", errors="replace")
+(out / "editor_log_runtime_delta.txt").write_text(text, encoding="utf-8")
+
+tile = re.findall(r"\[MOYVA_CHUNK_AUDIT\] ERROR TILE_WITHOUT_OWNER cell=\((\d+),(\d+)\)", text)
+cs = re.findall(r"^.*error CS\d+.*$", text, flags=re.M)
+ui = [line for line in text.splitlines() if re.search(r"ConstructionUI|GameplayUI|EconomyPlayer|GameModeUI|WorldInfoPanel", line, re.I)]
+other_error_lines = []
+for line in text.splitlines():
+    if ("Error" in line or "ERROR" in line or "Exception" in line) and "TILE_WITHOUT_OWNER" not in line:
+        other_error_lines.append(line)
+
+summary = [
+    f"TILE_WITHOUT_OWNER_count={len(tile)}",
+    f"CSharp_compile_error_count={len(cs)}",
+    f"UI_related_log_line_count={len(ui)}",
+    f"other_errorish_line_count={len(other_error_lines)}",
+]
+if tile:
+    xs = [int(x) for x,y in tile]
+    ys = [int(y) for x,y in tile]
+    summary += [
+        f"tile_x_range={min(xs)}..{max(xs)}",
+        f"tile_y_range={min(ys)}..{max(ys)}",
+    ]
+(out / "runtime_error_summary.txt").write_text("\n".join(summary) + "\n", encoding="utf-8")
+(out / "ui_related_runtime_log.txt").write_text("\n".join(ui[-1000:]) + "\n", encoding="utf-8")
+(out / "other_errorish_runtime_log.txt").write_text("\n".join(other_error_lines[-1000:]) + "\n", encoding="utf-8")
+PY
+fi
+
+# Preserve sources/state needed to understand the result without another round-trip.
+mkdir -p "$OUT/source"
+for rel in \
+  "Assets/Moyva/Scenes/Gamplay_Scene.unity" \
+  "Assets/Moyva/Scripts/Features/Construction/UI/Controllers/ConstructionUIController.cs" \
+  "Assets/Moyva/Scripts/Features/Construction/UI/Panels/BuildingSelectionPanelUI.cs" \
+  "Assets/Moyva/Scripts/Features/Construction/UI/Panels/ConstructionActionBarUI.cs" \
+  "Assets/Moyva/Scripts/Features/Construction/UI/Panels/ConstructionStatusUI.cs"
+do
+  if [[ -f "$PROJECT/$rel" ]]; then
+    dest="$OUT/source/$rel"
+    mkdir -p "$(dirname "$dest")"
+    cp -a "$PROJECT/$rel" "$dest"
+  fi
+done
+
+{
+  echo "branch=$(git -C "$PROJECT" branch --show-current 2>/dev/null || true)"
+  echo "head=$(git -C "$PROJECT" rev-parse HEAD 2>/dev/null || true)"
+  echo
+  git -C "$PROJECT" status --short 2>/dev/null || true
+} >"$OUT/data/git_state.txt"
+
+git -C "$PROJECT" diff -- \
+  Assets/Moyva/Scenes/Gamplay_Scene.unity \
+  Assets/Moyva/Scripts/Features/Construction/UI \
+  >"$OUT/data/gameplay_ui.diff" 2>/dev/null || true
+
+cat >"$OUT/README_CAPTURE_RESULT.txt" <<'EOF'
+Moyva Gameplay UI Visual Capture Pass74
+
+IMPORTANT CAPTURE GROUPS
+
+edit/gameview_normal_actual_window.png
+  Actual visible Unity GameView editor-window pixels.
+  This is the main fallback for Screen Space Overlay UI.
+
+runtime/*_screencapture.png
+  Unity ScreenCapture.CaptureScreenshot during Play Mode.
+  This should contain the final frame including runtime UI.
+
+runtime/*_actual_window.png
+  Actual visible GameView window pixels during Play Mode.
+  Independent second method for runtime UI.
+
+*_camera_only_*.png
+  Unity Pipeline camera-only references.
+  These are intentionally retained to demonstrate why earlier screenshots
+  could contain the world but omit a Screen Space Overlay Canvas.
+
+scene/
+  Current, top, isometric, low-angle and closer SceneView context.
+
+data/
+  Canvas/RectTransform visual-state snapshots at each important runtime state.
+
+logs/runtime_error_summary.txt
+  Separates world ChunkAudit TILE_WITHOUT_OWNER spam from C# / UI diagnostics.
+EOF
+
+DOWNLOAD=''
+for d in "$HOME/Завантажене" "$HOME/Завантаження" "$HOME/Downloads"; do
+  [[ -d "$d" ]] && { DOWNLOAD="$d"; break; }
+done
+[[ -n "$DOWNLOAD" ]] || DOWNLOAD="$HOME"
+ZIP="$DOWNLOAD/Moyva_GameplayUI_VisualCapture_Pass74_Result_${STAMP}.zip"
+
+python3 - "$OUT" "$ZIP" <<'PY'
+from pathlib import Path
+import sys, zipfile
+src = Path(sys.argv[1]); dst = Path(sys.argv[2])
+with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
+    for p in sorted(src.rglob("*")):
+        if p.is_file():
+            z.write(p, p.relative_to(src))
+PY
+
+echo
+echo "=============================================================="
+echo "[GameplayUICapture74] ГОТОВО"
+echo "[GameplayUICapture74] RESULT_DIR=$OUT"
+echo "[GameplayUICapture74] UPLOAD_THIS_FILE=$ZIP"
+echo "=============================================================="

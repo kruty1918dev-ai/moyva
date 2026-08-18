@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "cloth-red-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Cloth-red",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-89.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "297a8e6149cd48fc87d6abd0f3352bc4",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Cloth-orange.asset",
+    "sourceHash": "8421ad8c3b653ba16268882383ba8739e46f450c4454d1fcf9204d8de0618df1"
+  }
+}

@@ -1,9 +1,10 @@
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Economy.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Economy/Settlement Definition", fileName = "EconomySettlementDefinition")]
-    public sealed class EconomySettlementDefinition : ScriptableObject
+[System.Serializable]
+public sealed class EconomySettlementDefinition : MoyvaJsonConfigObject
     {
         [SerializeField] private string _settlementId;
         [SerializeField] private EconomySettlementType _settlementType;

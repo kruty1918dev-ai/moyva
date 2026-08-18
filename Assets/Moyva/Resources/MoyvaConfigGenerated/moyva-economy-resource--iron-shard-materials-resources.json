@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "iron-shard-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Iron-shard",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-58.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "a91be8f2b7754978898fe48dfcc842e8",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Iron-shard.asset",
+    "sourceHash": "b56f263e7a048d70bc63c1caf2adb9154c0b836abbcdf1e689e7e85ec6a1cbe6"
+  }
+}

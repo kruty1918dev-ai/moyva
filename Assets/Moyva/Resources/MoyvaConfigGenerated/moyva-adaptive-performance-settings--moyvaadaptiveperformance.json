@@ -1,0 +1,88 @@
+{
+  "$schema": "../../Schemas/adaptive-performance-settings.schema.json",
+  "schema": "moyva.adaptive-performance-settings",
+  "version": 1,
+  "id": "moyvaadaptiveperformance",
+  "model": "adaptive-performance-settings",
+  "frameBudget": {
+    "targetFps": 60.0,
+    "cpuFrameBudgetMs": 16.6,
+    "gpuFrameBudgetMs": 16.6,
+    "alertCpuFrameMs": 19.0,
+    "alertGpuFrameMs": 19.0,
+    "percentileWindow": 180
+  },
+  "renderScalePolicy": {
+    "minimumScale": 0.42,
+    "maximumScale": 1.0,
+    "step": 0.06,
+    "cooldownSeconds": 2.0
+  },
+  "mobileThresholds": {
+    "lowFpsThreshold": 59.0,
+    "healthyFpsThreshold": 59.7,
+    "healthySamplesBeforeUpscale": 6
+  },
+  "tierProfiles": {
+    "low": {
+      "profile": "Performance",
+      "targetFrameRate": 60,
+      "renderScale": 0.6,
+      "dynamicRenderScale": false,
+      "closeZoomOptimization": false,
+      "textureMipmapLimit": 1,
+      "antiAliasing": 0,
+      "vSync": false,
+      "shadows": false,
+      "anisotropicFiltering": false,
+      "lodBias": 0.7
+    },
+    "mid": {
+      "profile": "Balanced",
+      "targetFrameRate": 60,
+      "renderScale": 0.75,
+      "dynamicRenderScale": false,
+      "closeZoomOptimization": false,
+      "textureMipmapLimit": 0,
+      "antiAliasing": 0,
+      "vSync": false,
+      "shadows": false,
+      "anisotropicFiltering": true,
+      "lodBias": 0.9
+    },
+    "high": {
+      "profile": "Quality",
+      "targetFrameRate": 60,
+      "renderScale": 0.9,
+      "dynamicRenderScale": false,
+      "closeZoomOptimization": false,
+      "textureMipmapLimit": 0,
+      "antiAliasing": 0,
+      "vSync": false,
+      "shadows": false,
+      "anisotropicFiltering": true,
+      "lodBias": 1.15
+    }
+  },
+  "prewarmSettings": {
+    "warmupAllShaders": false,
+    "shaderResourcePaths": [],
+    "materialResourcePaths": [],
+    "criticalSpriteAtlasResourcePaths": []
+  },
+  "gcMonitor": {
+    "enabled": true,
+    "sampleIntervalSeconds": 2.0,
+    "burstThresholdBytes": 524288
+  },
+  "hotspotSampling": {
+    "enabled": true,
+    "sampleIntervalSeconds": 10.0,
+    "hotspotThresholdMs": 3.0
+  },
+  "migration": {
+    "sourceAssetGuid": "32908535a964b22c8b34b4137b8545d5",
+    "sourceAssetPath": "Assets/Moyva/Resources/MoyvaAdaptivePerformance.asset",
+    "sourceHash": "1f5c6ea2a66be379b73f53eb9038626cc065ec336ae9944eabb3a62aab101a72"
+  }
+}

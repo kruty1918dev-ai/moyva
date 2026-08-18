@@ -1,0 +1,453 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/audio-registry.schema.json",
+  "title": "Moyva — Audio Registry SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.audio-registry"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "audio-registry"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "sounds": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Key",
+            "description": "Унікальний ключ звуку. Використовується у коді: audio.Play(\"ui-click\")."
+          },
+          "clip": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Основний AudioClip. Якщо задано Variants, система випадково обере один із них.",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Clip"
+          },
+          "variants": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+              "properties": {
+                "$asset": {
+                  "type": "string",
+                  "title": "Asset ID"
+                },
+                "editorPath": {
+                  "type": "string",
+                  "description": "Editor-only path для діагностики/регенерації catalog."
+                },
+                "required": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "required": [
+                "$asset"
+              ]
+            },
+            "title": "Variants",
+            "description": "Опційні варіанти цього звуку для менш повторюваного SFX."
+          },
+          "bus": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:Master|Music|Sfx|Ui|Ambience))$",
+            "x-enumNames": [
+              "Master",
+              "Music",
+              "Sfx",
+              "Ui",
+              "Ambience"
+            ],
+            "x-flags": false,
+            "title": "Bus"
+          },
+          "mixerGroup": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Mixer Group"
+          },
+          "volume": {
+            "type": "number",
+            "title": "Volume",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "volumeRandom": {
+            "type": "number",
+            "title": "Volume Random",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "pitch": {
+            "type": "number",
+            "title": "Pitch",
+            "minimum": -3.0,
+            "maximum": 3.0,
+            "x-moyva-editorMinimum": -3.0,
+            "x-moyva-editorMaximum": 3.0
+          },
+          "pitchRandom": {
+            "type": "number",
+            "title": "Pitch Random",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "spatialBlend": {
+            "type": "number",
+            "title": "Spatial Blend",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "dopplerLevel": {
+            "type": "number",
+            "title": "Doppler Level",
+            "minimum": 0.0,
+            "maximum": 5.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 5.0
+          },
+          "reverbZoneMix": {
+            "type": "number",
+            "title": "Reverb Zone Mix",
+            "minimum": 0.0,
+            "maximum": 1.1,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.1
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority",
+            "minimum": 0.0,
+            "maximum": 256.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 256.0
+          },
+          "loop": {
+            "type": "boolean",
+            "title": "Loop"
+          },
+          "poolWarmup": {
+            "type": "integer",
+            "title": "Pool Warmup",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
+          },
+          "maxSimultaneous": {
+            "type": "integer",
+            "title": "Max Simultaneous",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          },
+          "effects": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "enableLowPass": {
+                "type": "boolean",
+                "title": "Enable Low Pass"
+              },
+              "lowPassCutoff": {
+                "type": "number",
+                "title": "Low Pass Cutoff",
+                "minimum": 10.0,
+                "maximum": 22000.0,
+                "x-moyva-editorMinimum": 10.0,
+                "x-moyva-editorMaximum": 22000.0
+              },
+              "lowPassResonance": {
+                "type": "number",
+                "title": "Low Pass Resonance",
+                "minimum": 1.0,
+                "maximum": 10.0,
+                "x-moyva-editorMinimum": 1.0,
+                "x-moyva-editorMaximum": 10.0
+              },
+              "enableHighPass": {
+                "type": "boolean",
+                "title": "Enable High Pass"
+              },
+              "highPassCutoff": {
+                "type": "number",
+                "title": "High Pass Cutoff",
+                "minimum": 10.0,
+                "maximum": 22000.0,
+                "x-moyva-editorMinimum": 10.0,
+                "x-moyva-editorMaximum": 22000.0
+              },
+              "highPassResonance": {
+                "type": "number",
+                "title": "High Pass Resonance",
+                "minimum": 1.0,
+                "maximum": 10.0,
+                "x-moyva-editorMinimum": 1.0,
+                "x-moyva-editorMaximum": 10.0
+              },
+              "enableEcho": {
+                "type": "boolean",
+                "title": "Enable Echo"
+              },
+              "echoDelay": {
+                "type": "number",
+                "title": "Echo Delay",
+                "minimum": 10.0,
+                "maximum": 5000.0,
+                "x-moyva-editorMinimum": 10.0,
+                "x-moyva-editorMaximum": 5000.0
+              },
+              "echoDecayRatio": {
+                "type": "number",
+                "title": "Echo Decay Ratio",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "echoWetMix": {
+                "type": "number",
+                "title": "Echo Wet Mix",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "echoDryMix": {
+                "type": "number",
+                "title": "Echo Dry Mix",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "enableReverb": {
+                "type": "boolean",
+                "title": "Enable Reverb"
+              },
+              "reverbPreset": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:Off|Generic|PaddedCell|Room|Bathroom|Livingroom|Stoneroom|Auditorium|Concerthall|Cave|Arena|Hangar|CarpetedHallway|Hallway|StoneCorridor|Alley|Forest|City|Mountains|Quarry|Plain|ParkingLot|SewerPipe|Underwater|Drugged|Dizzy|Psychotic|User))$",
+                "x-enumNames": [
+                  "Off",
+                  "Generic",
+                  "PaddedCell",
+                  "Room",
+                  "Bathroom",
+                  "Livingroom",
+                  "Stoneroom",
+                  "Auditorium",
+                  "Concerthall",
+                  "Cave",
+                  "Arena",
+                  "Hangar",
+                  "CarpetedHallway",
+                  "Hallway",
+                  "StoneCorridor",
+                  "Alley",
+                  "Forest",
+                  "City",
+                  "Mountains",
+                  "Quarry",
+                  "Plain",
+                  "ParkingLot",
+                  "SewerPipe",
+                  "Underwater",
+                  "Drugged",
+                  "Dizzy",
+                  "Psychotic",
+                  "User"
+                ],
+                "x-flags": false,
+                "title": "Reverb Preset"
+              },
+              "enableDistortion": {
+                "type": "boolean",
+                "title": "Enable Distortion"
+              },
+              "distortionLevel": {
+                "type": "number",
+                "title": "Distortion Level",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "enableChorus": {
+                "type": "boolean",
+                "title": "Enable Chorus"
+              },
+              "chorusDryMix": {
+                "type": "number",
+                "title": "Chorus Dry Mix",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "chorusWetMix1": {
+                "type": "number",
+                "title": "Chorus Wet Mix 1",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "chorusWetMix2": {
+                "type": "number",
+                "title": "Chorus Wet Mix 2",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "chorusWetMix3": {
+                "type": "number",
+                "title": "Chorus Wet Mix 3",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "chorusDelay": {
+                "type": "number",
+                "title": "Chorus Delay",
+                "minimum": 0.0,
+                "maximum": 20.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 20.0
+              },
+              "chorusRate": {
+                "type": "number",
+                "title": "Chorus Rate",
+                "minimum": 0.0,
+                "maximum": 20.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 20.0
+              },
+              "chorusDepth": {
+                "type": "number",
+                "title": "Chorus Depth",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              }
+            },
+            "additionalProperties": false,
+            "title": "Effects"
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Sounds"
+    },
+    "defaultPoolSize": {
+      "type": "integer",
+      "title": "Default Pool Size",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "dontDestroyOnLoad": {
+      "type": "boolean",
+      "title": "Dont Destroy On Load"
+    },
+    "verboseLogs": {
+      "type": "boolean",
+      "title": "Verbose Logs"
+    }
+  }
+}

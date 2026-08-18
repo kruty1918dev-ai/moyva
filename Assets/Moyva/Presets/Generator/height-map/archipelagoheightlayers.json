@@ -1,0 +1,135 @@
+{
+  "$schema": "../../Schemas/height-map.schema.json",
+  "schema": "moyva.height-map",
+  "version": 1,
+  "id": "archipelagoheightlayers",
+  "model": "height-map",
+  "heightLayers": [
+    {
+      "tileID": "water-deep-depth-tile-001",
+      "tileIDChance": 1.0,
+      "weightedVariants": [],
+      "variantTileIDs": [],
+      "minHeight": 0.0,
+      "maxHeight": 0.09090909
+    },
+    {
+      "tileID": "water-deep-depth-tile-002",
+      "tileIDChance": 1.0,
+      "weightedVariants": [],
+      "variantTileIDs": [],
+      "minHeight": 0.09090909,
+      "maxHeight": 0.181818187
+    },
+    {
+      "tileID": "water-middle-depth-tile-001",
+      "tileIDChance": 1.0,
+      "weightedVariants": [],
+      "variantTileIDs": [],
+      "minHeight": 0.181818187,
+      "maxHeight": 0.272727281
+    },
+    {
+      "tileID": "sand-tile-003",
+      "tileIDChance": 1.0,
+      "weightedVariants": [],
+      "variantTileIDs": [],
+      "minHeight": 0.272727281,
+      "maxHeight": 0.363636374
+    },
+    {
+      "tileID": "grass-tile-001",
+      "tileIDChance": 0.5,
+      "weightedVariants": [
+        {
+          "tileID": "texture-grass-tile-001",
+          "chance": 0.06
+        },
+        {
+          "tileID": "texture-grass-tile-002",
+          "chance": 0.06
+        },
+        {
+          "tileID": "texture-grass-tile-003",
+          "chance": 0.06
+        },
+        {
+          "tileID": "texture-grass-tile-004",
+          "chance": 0.07
+        },
+        {
+          "tileID": "texture-grass-tile-005",
+          "chance": 0.06999999
+        },
+        {
+          "tileID": "texture-grass-tile-006",
+          "chance": 0.07
+        },
+        {
+          "tileID": "texture-grass-tile-007",
+          "chance": 0.06
+        },
+        {
+          "tileID": "texture-grass-tile-008",
+          "chance": 0.05
+        }
+      ],
+      "variantTileIDs": [],
+      "minHeight": 0.363636374,
+      "maxHeight": 0.454545468
+    },
+    {
+      "tileID": "grass-tile-level-1-001",
+      "tileIDChance": 1.0,
+      "weightedVariants": [],
+      "variantTileIDs": [],
+      "minHeight": 0.454545468,
+      "maxHeight": 0.545454562
+    },
+    {
+      "tileID": "grass-tile-level-2-001",
+      "tileIDChance": 1.0,
+      "weightedVariants": [],
+      "variantTileIDs": [],
+      "minHeight": 0.545454562,
+      "maxHeight": 0.6363636
+    },
+    {
+      "tileID": "grass-tile-level-3-001",
+      "tileIDChance": 1.0,
+      "weightedVariants": [],
+      "variantTileIDs": [],
+      "minHeight": 0.6363636,
+      "maxHeight": 0.727272749
+    },
+    {
+      "tileID": "snow-tile-001",
+      "tileIDChance": 1.0,
+      "weightedVariants": [],
+      "variantTileIDs": [],
+      "minHeight": 0.727272749,
+      "maxHeight": 0.8181819
+    },
+    {
+      "tileID": "snow-tile-001",
+      "tileIDChance": 1.0,
+      "weightedVariants": [],
+      "variantTileIDs": [],
+      "minHeight": 0.8181819,
+      "maxHeight": 0.909090936
+    },
+    {
+      "tileID": "snow-tile-001",
+      "tileIDChance": 1.0,
+      "weightedVariants": [],
+      "variantTileIDs": [],
+      "minHeight": 0.909090936,
+      "maxHeight": 1.0
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "7858e000ef64a05ce8383f19fce7752c",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/ArchipelagoHeightLayers.asset",
+    "sourceHash": "4102a68e4c05cec329991fc971972d3bc3330ef716aa10042461771a922b4000"
+  }
+}

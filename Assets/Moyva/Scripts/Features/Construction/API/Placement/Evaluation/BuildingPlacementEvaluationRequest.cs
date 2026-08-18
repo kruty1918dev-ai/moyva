@@ -23,6 +23,7 @@ namespace Kruty1918.Moyva.Construction.API
         public string BuildingId;
         public string OwnerId;
         public Vector2Int Position;
+        public ConstructionRotation Rotation;
         public Vector2Int? IgnoredPendingPosition;
         public Vector2Int? IgnoredOccupiedPosition;
         public int MinSpacing;
@@ -39,6 +40,10 @@ namespace Kruty1918.Moyva.Construction.API
         public Func<Vector2Int, string> GetTileId;
         public Func<Vector2Int, string, bool> HasTerrainTag;
         public IReadOnlyList<BuildingPlacementSimulationEntry> PendingPlacements;
+        public IReadOnlyList<BuildingPlacementSimulationEntry> PlacedBuildings;
+        public HashSet<Vector2Int> TileMatchWorkspace;
+        public bool? HasInfluenceCenterDefinitions;
+        public int MaxInfluenceRadius = -1;
         public IReadOnlyList<IBuildingPlacementRuleEvaluator> RuleEvaluators;
         public bool SkipInfluenceRules;
     }

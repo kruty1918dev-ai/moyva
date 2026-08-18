@@ -1,0 +1,1138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/world-creation.schema.json",
+  "title": "Moyva — World Creation Defaults SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.WorldCreation.API.WorldCreationDefaultsSO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.world-creation"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "world-creation-defaults"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "defaultWorldName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Default World Name",
+      "description": "Назва нового світу за замовчуванням."
+    },
+    "appendIndexWhenSaveExists": {
+      "type": "boolean",
+      "title": "Append Index When Save Exists",
+      "description": "Якщо увімкнено, меню створення світу додасть індекс до стартової назви, коли існують попередні збереження."
+    },
+    "firstWorldIndex": {
+      "type": "integer",
+      "title": "First World Index",
+      "description": "Індекс першого світу, який додається до назви, якщо потрібно уникнути дублювання.",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "defaultSizePreset": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Small|Medium|Large|Custom))$",
+      "x-enumNames": [
+        "Small",
+        "Medium",
+        "Large",
+        "Custom"
+      ],
+      "x-flags": false,
+      "title": "Default Size Preset",
+      "description": "Розмір карти за замовчуванням."
+    },
+    "defaultCustomWidth": {
+      "type": "integer",
+      "title": "Default Custom Width",
+      "description": "Ширина (тайли) коли вибрано Custom. Мін: 16.",
+      "minimum": 16.0,
+      "x-moyva-editorMinimum": 16.0
+    },
+    "defaultCustomHeight": {
+      "type": "integer",
+      "title": "Default Custom Height",
+      "description": "Висота (тайли) коли вибрано Custom. Мін: 16.",
+      "minimum": 16.0,
+      "x-moyva-editorMinimum": 16.0
+    },
+    "smallWorld": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "title": "Width",
+          "minimum": 16.0,
+          "x-moyva-editorMinimum": 16.0
+        },
+        "height": {
+          "type": "integer",
+          "title": "Height",
+          "minimum": 16.0,
+          "x-moyva-editorMinimum": 16.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Small World"
+    },
+    "mediumWorld": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "title": "Width",
+          "minimum": 16.0,
+          "x-moyva-editorMinimum": 16.0
+        },
+        "height": {
+          "type": "integer",
+          "title": "Height",
+          "minimum": 16.0,
+          "x-moyva-editorMinimum": 16.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Medium World"
+    },
+    "largeWorld": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "title": "Width",
+          "minimum": 16.0,
+          "x-moyva-editorMinimum": 16.0
+        },
+        "height": {
+          "type": "integer",
+          "title": "Height",
+          "minimum": 16.0,
+          "x-moyva-editorMinimum": 16.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Large World"
+    },
+    "defaultMapType": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Balanced|Continental|Island|Mountain|Plains))$",
+      "x-enumNames": [
+        "Balanced",
+        "Continental",
+        "Island",
+        "Mountain",
+        "Plains"
+      ],
+      "x-flags": false,
+      "title": "Default Map Type",
+      "description": "Тип карти за замовчуванням."
+    },
+    "defaultDifficulty": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Easy|Normal|Hard|Brutal))$",
+      "x-enumNames": [
+        "Easy",
+        "Normal",
+        "Hard",
+        "Brutal"
+      ],
+      "x-flags": false,
+      "title": "Default Difficulty",
+      "description": "Складність за замовчуванням."
+    },
+    "defaultEnableBots": {
+      "type": "boolean",
+      "title": "Default Enable Bots",
+      "description": "Чи увімкнені боти за замовчуванням."
+    },
+    "defaultHumanPlayerCount": {
+      "type": "integer",
+      "title": "Default Human Player Count",
+      "description": "Кількість людських гравців. Мін: 1, Макс: 4.",
+      "minimum": 1.0,
+      "maximum": 4.0,
+      "x-moyva-editorMinimum": 1.0,
+      "x-moyva-editorMaximum": 4.0
+    },
+    "defaultBotCount": {
+      "type": "integer",
+      "title": "Default Bot Count",
+      "description": "Кількість ботів за замовчуванням. Мін: 0, Макс: 4.",
+      "minimum": 0.0,
+      "maximum": 4.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 4.0
+    },
+    "defaultStartingGold": {
+      "type": "integer",
+      "title": "Default Starting Gold",
+      "description": "Стартове золото на фракцію.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "defaultStartingFood": {
+      "type": "integer",
+      "title": "Default Starting Food",
+      "description": "Стартова їжа на фракцію.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "defaultForestDensity": {
+      "type": "number",
+      "title": "Default Forest Density",
+      "description": "Щільність лісів [0..1].",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "defaultMountainDensity": {
+      "type": "number",
+      "title": "Default Mountain Density",
+      "description": "Щільність гір [0..1].",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "defaultWaterDensity": {
+      "type": "number",
+      "title": "Default Water Density",
+      "description": "Щільність водних зон [0..1].",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "defaultVillageDensity": {
+      "type": "number",
+      "title": "Default Village Density",
+      "description": "Щільність POI (сіл, таборів) [0..1].",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "defaultGenerateRivers": {
+      "type": "boolean",
+      "title": "Default Generate Rivers",
+      "description": "Генерувати річки за замовчуванням."
+    },
+    "defaultGenerateBiomes": {
+      "type": "boolean",
+      "title": "Default Generate Biomes",
+      "description": "Генерувати біоми за замовчуванням."
+    },
+    "defaultApplyWFC": {
+      "type": "boolean",
+      "title": "Default Apply WFC",
+      "description": "Застосовувати WFC-полірування тайлів за замовчуванням."
+    },
+    "placementRulesGraph": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "$config": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "$config"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "nodes": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "$config": {
+                        "type": "object",
+                        "required": [
+                          "id"
+                        ],
+                        "properties": {
+                          "model": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    },
+                    "required": [
+                      "$config"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "$type": {
+                        "type": "string",
+                        "enum": [
+                          "add",
+                          "base-noise",
+                          "bool-and",
+                          "bool-invert",
+                          "bool-or",
+                          "bool-subtract",
+                          "bool-value",
+                          "bool-xor",
+                          "cluster-scatter",
+                          "constant-cell-mask",
+                          "distance-field",
+                          "edge-mask",
+                          "float-value",
+                          "graph-preview-full-map-mask",
+                          "grass-card-generator",
+                          "int-value",
+                          "layer-mask-reference",
+                          "mask-morphology",
+                          "mask-relay",
+                          "noise-map",
+                          "normalize-map",
+                          "null-output",
+                          "object-layer",
+                          "object-output-to-twc",
+                          "object-scatter",
+                          "output",
+                          "perlin-noise-mask",
+                          "placement-mask",
+                          "range-mask",
+                          "remap-map",
+                          "required-relay",
+                          "seed",
+                          "shape-mask",
+                          "shared-settings",
+                          "slope-mask",
+                          "smooth-map",
+                          "string-value",
+                          "subgraph",
+                          "subgraph-input",
+                          "terrace-map",
+                          "texture-mask",
+                          "threshold-mask",
+                          "tile-settings",
+                          "twc-modifier",
+                          "wave-function-collapse",
+                          "wrong-output-count",
+                          "wrong-output-size",
+                          "wrong-output-type"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "$type"
+                    ],
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type."
+              },
+              "title": "Nodes"
+            },
+            "connections": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "connectionId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Connection Id"
+                  },
+                  "sourceNodeId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Source Node Id"
+                  },
+                  "sourcePortIndex": {
+                    "type": "integer",
+                    "title": "Source Port Index"
+                  },
+                  "targetNodeId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Target Node Id"
+                  },
+                  "targetPortIndex": {
+                    "type": "integer",
+                    "title": "Target Port Index"
+                  },
+                  "sourceElementIndex": {
+                    "type": "integer",
+                    "title": "Source Element Index"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Connections"
+            },
+            "version": {
+              "type": "integer",
+              "title": "Version"
+            },
+            "sharedSettings": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "mapWidth": {
+                  "type": "integer",
+                  "title": "Map Width",
+                  "description": "Authoritative ширина мапи у тайлах. Коли > 0, це значення використовується і Graph Preview, і gameplay generation. 0 = дозволити runtime/menu визначати розмір.",
+                  "minimum": 0.0,
+                  "x-moyva-editorMinimum": 0.0
+                },
+                "mapHeight": {
+                  "type": "integer",
+                  "title": "Map Height",
+                  "description": "Authoritative висота мапи у тайлах. Коли > 0, це значення використовується і Graph Preview, і gameplay generation. 0 = дозволити runtime/menu визначати розмір.",
+                  "minimum": 0.0,
+                  "x-moyva-editorMinimum": 0.0
+                },
+                "gridTopology": {
+                  "type": "string",
+                  "pattern": "^(?:-?\\d+|(?:Orthogonal|HexAxial|Layered))$",
+                  "x-enumNames": [
+                    "Orthogonal",
+                    "HexAxial",
+                    "Layered"
+                  ],
+                  "x-flags": false,
+                  "title": "Grid Topology"
+                },
+                "projectionMode": {
+                  "type": "string",
+                  "pattern": "^(?:-?\\d+|(?:Isometric3DPreview|Orthographic3D))$",
+                  "x-enumNames": [
+                    "Isometric3DPreview",
+                    "Orthographic3D"
+                  ],
+                  "x-flags": false,
+                  "title": "Projection Mode"
+                },
+                "renderMode": {
+                  "type": "string",
+                  "pattern": "^(?:-?\\d+|(?:Mesh3DPreview|Mesh3D))$",
+                  "x-enumNames": [
+                    "Mesh3DPreview",
+                    "Mesh3D"
+                  ],
+                  "x-flags": false,
+                  "title": "Render Mode"
+                },
+                "neighborhoodMode": {
+                  "type": "string",
+                  "pattern": "^(?:-?\\d+|(?:Auto|Moore8|VonNeumann4|HexAxial6))$",
+                  "x-enumNames": [
+                    "Auto",
+                    "Moore8",
+                    "VonNeumann4",
+                    "HexAxial6"
+                  ],
+                  "x-flags": false,
+                  "title": "Neighborhood Mode"
+                }
+              },
+              "additionalProperties": false,
+              "title": "Shared Settings"
+            },
+            "globalGraphState": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "graphId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "title": "Graph Id"
+                },
+                "layerId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "title": "Layer Id"
+                },
+                "version": {
+                  "type": "integer",
+                  "title": "Version"
+                },
+                "nodeIds": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "title": "Node Ids"
+                },
+                "connectionIds": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "title": "Connection Ids"
+                }
+              },
+              "additionalProperties": false,
+              "title": "Global Graph State"
+            },
+            "layers": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Id"
+                  },
+                  "name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Name"
+                  },
+                  "color": {
+                    "type": "object",
+                    "properties": {
+                      "r": {
+                        "type": "number"
+                      },
+                      "g": {
+                        "type": "number"
+                      },
+                      "b": {
+                        "type": "number"
+                      },
+                      "a": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "r",
+                      "g",
+                      "b",
+                      "a"
+                    ],
+                    "additionalProperties": false,
+                    "title": "Color"
+                  },
+                  "sortingOrder": {
+                    "type": "integer",
+                    "title": "Sorting Order"
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "title": "Enabled"
+                  },
+                  "defaultHeight": {
+                    "type": "number",
+                    "title": "Default Height"
+                  },
+                  "useZeroLayerPadding": {
+                    "type": "boolean",
+                    "title": "Use Zero Layer Padding"
+                  },
+                  "extraWidthCells": {
+                    "type": "integer",
+                    "title": "Extra Width Cells",
+                    "minimum": 0.0,
+                    "x-moyva-editorMinimum": 0.0
+                  },
+                  "extraLengthCells": {
+                    "type": "integer",
+                    "title": "Extra Length Cells",
+                    "minimum": 0.0,
+                    "x-moyva-editorMinimum": 0.0
+                  },
+                  "generateFlatSurface": {
+                    "type": "boolean",
+                    "title": "Generate Flat Surface"
+                  },
+                  "flatSurfaceMaterial": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Flat Surface Material"
+                  },
+                  "tileGeometryMode": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:SolidTerrain|SurfaceOnly))$",
+                    "x-enumNames": [
+                      "SolidTerrain",
+                      "SurfaceOnly"
+                    ],
+                    "x-flags": false,
+                    "title": "Tile Geometry Mode"
+                  },
+                  "authoredClosurePolicy": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:PreserveAuthored|GeneratedClosure|TopOnlyTemplate))$",
+                    "x-enumNames": [
+                      "PreserveAuthored",
+                      "GeneratedClosure",
+                      "TopOnlyTemplate"
+                    ],
+                    "x-flags": false,
+                    "title": "Authored Closure Policy"
+                  },
+                  "buildLayerKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Build Layer Key"
+                  },
+                  "blueprintLayerGuid": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Blueprint Layer Guid"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Layers",
+              "description": "Шари генератора. Кожен шар має власний підграф і компілюється в blueprint-шар TileWorldCreator."
+            },
+            "layerGraphStates": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "graphId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Graph Id"
+                  },
+                  "layerId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Layer Id"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "title": "Version"
+                  },
+                  "nodeIds": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "title": "Node Ids"
+                  },
+                  "connectionIds": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "title": "Connection Ids"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Layer Graph States"
+            },
+            "tileRegistry": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "$config": {
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "properties": {
+                        "model": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "$config"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "definitions": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Id"
+                          },
+                          "movementCost": {
+                            "type": "number",
+                            "title": "Movement Cost"
+                          },
+                          "tileWorldCreatorPreset": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                            "properties": {
+                              "$asset": {
+                                "type": "string",
+                                "title": "Asset ID"
+                              },
+                              "editorPath": {
+                                "type": "string",
+                                "description": "Editor-only path для діагностики/регенерації catalog."
+                              },
+                              "required": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            },
+                            "required": [
+                              "$asset"
+                            ],
+                            "title": "Tile World Creator Preset"
+                          },
+                          "tileWorldCreatorBlueprintLayerGuid": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Tile World Creator Blueprint Layer Guid"
+                          },
+                          "tileWorldCreatorBlueprintLayerName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Tile World Creator Blueprint Layer Name"
+                          },
+                          "visualPrefab": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                            "properties": {
+                              "$asset": {
+                                "type": "string",
+                                "title": "Asset ID"
+                              },
+                              "editorPath": {
+                                "type": "string",
+                                "description": "Editor-only path для діагностики/регенерації catalog."
+                              },
+                              "required": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            },
+                            "required": [
+                              "$asset"
+                            ],
+                            "title": "Visual Prefab"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "title": "Definitions"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Реєстр тайлів цього графа.",
+              "title": "Tile Registry"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Граф генерації (GraphAsset), який використовується для читання TileRegistry та параметрів HillGenerator у World Defaults Editor.",
+      "title": "Placement Rules Graph"
+    },
+    "tileRegistry": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "$config": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "$config"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "definitions": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Id"
+                  },
+                  "movementCost": {
+                    "type": "number",
+                    "title": "Movement Cost"
+                  },
+                  "tileWorldCreatorPreset": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Tile World Creator Preset"
+                  },
+                  "tileWorldCreatorBlueprintLayerGuid": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Tile World Creator Blueprint Layer Guid"
+                  },
+                  "tileWorldCreatorBlueprintLayerName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Tile World Creator Blueprint Layer Name"
+                  },
+                  "visualPrefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Visual Prefab"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Definitions"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Реєстр тайлів для обмежень розміщення. Якщо задано — перекриває TileRegistry з GraphAsset.",
+      "title": "Tile Registry"
+    },
+    "blockedBuildingTileIds": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "title": "Blocked Building Tile Ids",
+      "description": "Tile ID, на яких не можна будувати."
+    },
+    "blockedBuildingHillLevelRanges": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "minLevel": {
+            "type": "integer",
+            "title": "Min Level",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          },
+          "maxLevel": {
+            "type": "integer",
+            "title": "Max Level",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Blocked Building Hill Level Ranges",
+      "description": "Діапазони рівнів HillGenerator, на яких не можна будувати (включно)."
+    },
+    "blockedUnitTileIds": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "title": "Blocked Unit Tile Ids",
+      "description": "Tile ID, на яких не можна розміщувати/рухати юнітів."
+    },
+    "blockedUnitHillLevelRanges": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "minLevel": {
+            "type": "integer",
+            "title": "Min Level",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          },
+          "maxLevel": {
+            "type": "integer",
+            "title": "Max Level",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Blocked Unit Hill Level Ranges",
+      "description": "Діапазони рівнів HillGenerator, на яких не можна розміщувати/рухати юнітів (включно)."
+    }
+  }
+}

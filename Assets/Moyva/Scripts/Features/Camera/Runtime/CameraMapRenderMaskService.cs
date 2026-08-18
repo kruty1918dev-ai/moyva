@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Camera.Runtime
 {
     internal sealed class CameraMapRenderMaskService : IInitializable, ITickable, IDisposable
@@ -183,7 +184,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             _maskSprite = Sprite.Create(_maskTexture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 1f);
             _maskSprite.name = "GameplayMapRenderMaskSprite";
-            _maskSprite.hideFlags = HideFlags.HideAndDontSave;
+            ; // JSON config object has no Unity hideFlags.
             return _maskSprite;
         }
 

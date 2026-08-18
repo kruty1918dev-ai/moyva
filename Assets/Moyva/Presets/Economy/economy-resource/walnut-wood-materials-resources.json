@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "walnut-wood-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Walnut-wood",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-48.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "dff157eb1a7440808bd4b1b58dba85c6",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Walnut-wood.asset",
+    "sourceHash": "20be6adffc152b502d1d2653530e47df954c91595a86163182eb1ee66028f92f"
+  }
+}

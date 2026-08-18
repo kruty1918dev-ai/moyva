@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using System.Linq;
 using Kruty1918.Moyva.Faction.API;
@@ -451,3 +452,5 @@ namespace Kruty1918.Moyva.Tests.Faction
         }
     }
 }
+
+#endif

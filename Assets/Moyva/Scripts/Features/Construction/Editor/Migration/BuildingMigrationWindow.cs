@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Kruty1918.Moyva.Construction.Runtime;
 using Sirenix.OdinInspector;
 using Sirenix.OdinInspector.Editor;
@@ -36,3 +37,5 @@ namespace Kruty1918.Moyva.Construction.Editor
         }
     }
 }
+
+#endif

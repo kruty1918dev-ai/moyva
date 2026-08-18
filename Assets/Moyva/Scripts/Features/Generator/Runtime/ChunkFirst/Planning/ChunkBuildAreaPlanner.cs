@@ -16,19 +16,37 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         public IReadOnlyList<ChunkBuildArea> Build(int width, int height, float cellSize, bool hasWorldBounds, Bounds worldBounds, int halo)
         {
-            int safeWidth = Mathf.Max(1, width);
-            int safeHeight = Mathf.Max(1, height);
+            int requestedWidth = Mathf.Max(1, width);
+            int requestedHeight = Mathf.Max(1, height);
             int safeHalo = Mathf.Max(0, halo);
 
-            _layout.Configure(safeWidth, safeHeight, Mathf.Max(0.0001f, cellSize), hasWorldBounds, worldBounds);
+            _layout.Configure(
+                requestedWidth,
+                requestedHeight,
+                Mathf.Max(0.0001f, cellSize),
+                hasWorldBounds,
+                worldBounds);
+
             _areas.Clear();
+
+            int effectiveWidth = Mathf.Max(1, _layout.Width);
+            int effectiveHeight = Mathf.Max(1, _layout.Height);
+            float effectiveCellSize = Mathf.Max(0.0001f, _layout.CellSize);
 
             var chunks = _layout.Chunks;
             for (int i = 0; i < chunks.Count; i++)
             {
                 RectInt core = chunks[i].TileRect;
-                RectInt sample = Expand(core, safeHalo, safeWidth, safeHeight);
-                _areas.Add(new ChunkBuildArea(chunks[i].Coord, core, sample, Mathf.Max(0.0001f, cellSize)));
+                RectInt sample = Expand(
+                    core,
+                    safeHalo,
+                    effectiveWidth,
+                    effectiveHeight);
+                _areas.Add(new ChunkBuildArea(
+                    chunks[i].Coord,
+                    core,
+                    sample,
+                    effectiveCellSize));
             }
 
             return _areas;

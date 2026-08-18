@@ -2,10 +2,11 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 using Kruty1918.Moyva.WorldCreation.API;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Construction.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Construction/Profiles/Placement Rules", fileName = "ConstructionPlacementRulesProfile")]
-    public sealed class ConstructionPlacementRulesProfileSO : ScriptableObject
+[System.Serializable]
+public sealed class ConstructionPlacementRulesProfileSO : MoyvaJsonConfigObject
     {
         [BoxGroup("Відступ")]
         [MinValue(0)]

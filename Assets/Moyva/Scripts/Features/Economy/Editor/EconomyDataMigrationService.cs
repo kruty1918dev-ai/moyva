@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System.Collections.Generic;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Runtime;
@@ -69,3 +70,5 @@ namespace Kruty1918.Moyva.Economy.Editor
         }
     }
 }
+
+#endif

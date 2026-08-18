@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "aloe-herb-food-resources",
+  "model": "economy-resource",
+  "displayName": "Aloe-herb",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-115.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "a0474060c4514280acfa386d2f07bfde",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Aloe-herb.asset",
+    "sourceHash": "09bdabbb8a65bb4f3f109fd524e32d6972a2e94965fe3b15a3eba0ad89315230"
+  }
+}

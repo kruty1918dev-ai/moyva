@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Kruty1918.Moyva.Combat.API;
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using Zenject;
@@ -13,17 +15,46 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IUnitClassConfig _unitClassConfig;
         private readonly IUnitService _unitService;
         private readonly IEconomyInfoMediator _economyInfoMediator;
+        private readonly IHealthRegistry _healthRegistry;
+        private readonly IUnitOwnershipQuery _ownershipQuery;
+        private readonly IConstructionService _constructionService;
+        private readonly IConstructionUnitGarrisonRuntime _garrisonRuntime;
 
         public UnitWorldInfoPresenter(
             SignalBus signalBus,
             IUnitClassConfig unitClassConfig,
             IUnitService unitService,
-            [InjectOptional] IEconomyInfoMediator economyInfoMediator)
+            [InjectOptional] IEconomyInfoMediator economyInfoMediator,
+            [InjectOptional] IHealthRegistry healthRegistry = null,
+            [InjectOptional] IUnitOwnershipQuery ownershipQuery = null,
+            [InjectOptional] IConstructionService constructionService = null,
+            [InjectOptional] IConstructionUnitGarrisonRuntime garrisonRuntime = null)
         {
             _signalBus = signalBus;
             _unitClassConfig = unitClassConfig;
             _unitService = unitService;
             _economyInfoMediator = economyInfoMediator;
+            _healthRegistry = healthRegistry;
+            _ownershipQuery = ownershipQuery;
+            _constructionService = constructionService;
+            _garrisonRuntime = garrisonRuntime;
+        }
+
+        public UnitWorldInfoPresenter(
+            SignalBus signalBus,
+            IUnitClassConfig unitClassConfig,
+            IUnitService unitService,
+            IEconomyInfoMediator economyInfoMediator)
+            : this(
+                signalBus,
+                unitClassConfig,
+                unitService,
+                economyInfoMediator,
+                null,
+                null,
+                null,
+                null)
+        {
         }
 
         public void Initialize()
@@ -47,8 +78,8 @@ namespace Kruty1918.Moyva.Units.Runtime
                 : _unitClassConfig?.GetConfig(unitTypeId);
 
             var title = ResolveTitle(signal.UnitId, unitTypeId, config);
-            var subtitle = BuildSubtitle(config, signal.Position);
-            var content = BuildContent(signal.UnitId, unitTypeId, config, signal.Position);
+            var subtitle = BuildSubtitle(signal.UnitId, config, signal.Position);
+            var content = BuildContent(signal.UnitId, config);
 
             _signalBus.Fire(new WorldInfoPanelRequestedSignal
             {
@@ -63,62 +94,53 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (!string.IsNullOrWhiteSpace(config?.DisplayName))
                 return config.DisplayName;
 
-            if (!string.IsNullOrWhiteSpace(config?.TypeId))
-                return config.TypeId;
-
-            if (!string.IsNullOrWhiteSpace(unitTypeId))
-                return unitTypeId;
-
-            return unitId;
+            return "Юніт";
         }
 
-        private string BuildSubtitle(UnitClassConfig config, UnityEngine.Vector2Int position)
+        private string BuildSubtitle(
+            string unitId,
+            UnitClassConfig config,
+            UnityEngine.Vector2Int position)
         {
             var roleText = ResolveRoleText(config);
+            string ownershipText = ResolveOwnershipText(unitId);
 
             if (_economyInfoMediator != null
                 && _economyInfoMediator.TryGetSettlementContext(position, out var settlementContext))
             {
                 var settlementName = string.IsNullOrWhiteSpace(settlementContext.SettlementName)
-                    ? settlementContext.SettlementId
+                    ? "Поселення"
                     : settlementContext.SettlementName;
 
                 if (!string.IsNullOrWhiteSpace(settlementName))
-                    return $"{roleText} • {settlementName}";
+                    return $"{roleText} • {ownershipText} • {settlementName}";
             }
 
-            return roleText;
+            return $"{roleText} • {ownershipText}";
         }
 
-        private string BuildContent(string unitId, string unitTypeId, UnitClassConfig config, UnityEngine.Vector2Int position)
+        private string BuildContent(string unitId, UnitClassConfig config)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Базова інформація");
-            sb.AppendLine($"ID: {unitId}");
-
-            if (!string.IsNullOrWhiteSpace(unitTypeId))
-                sb.AppendLine($"Тип: {ResolveUnitDisplayName(unitTypeId, config)}");
-
-            int beforeFacts = sb.Length;
-            if (config != null && AppendMeaningfulFacts(config, sb))
-                sb.Insert(beforeFacts, Environment.NewLine);
-            else
-                sb.AppendLine($"Роль: {ResolveRoleText(config)}");
-
-            sb.AppendLine($"Поточна стаміна: {_unitService.GetStamina(unitId):0.#}");
-
-            if (_economyInfoMediator != null
-                && _economyInfoMediator.TryGetSettlementContext(position, out var settlementContext))
+            if (_healthRegistry != null
+                && _healthRegistry.TryGet(unitId, out IHealth health))
             {
-                sb.AppendLine();
-                sb.AppendLine(FormatResources(
-                    _economyInfoMediator.GetSettlementResourceTotals(settlementContext.SettlementId),
-                    "Ресурси поселення"));
-                sb.AppendLine();
-                sb.AppendLine(FormatResources(
-                    _economyInfoMediator.GetOwnerResourceTotals(settlementContext.OwnerId),
-                    "Ресурси власника"));
+                sb.AppendLine($"Здоров'я: {health.CurrentHp} / {health.MaxHp}");
             }
+            else if (config?.HitPoints > 0)
+                sb.AppendLine($"Здоров'я: {config.HitPoints}");
+
+            float stamina = _unitService.GetStamina(unitId);
+            sb.AppendLine(config?.BaseStamina > 0f
+                ? $"Витривалість: {stamina:0.#} / {config.BaseStamina:0.#}"
+                : $"Витривалість: {stamina:0.#}");
+
+            AppendMeaningfulFacts(config, sb);
+
+            if (_garrisonRuntime != null)
+                sb.AppendLine(_garrisonRuntime.IsGarrisoned(unitId)
+                    ? "Стан: у гарнізоні"
+                    : "Стан: у полі");
 
             return sb.ToString().TrimEnd();
         }
@@ -130,23 +152,8 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             int startLength = output.Length;
 
-            if (!string.IsNullOrWhiteSpace(config.TypeId))
-                output.AppendLine($"TypeId: {config.TypeId}");
-
-            output.AppendLine(config.Role == UnitRole.Military
-                ? "Прапорець: бойовий юніт"
-                : "Прапорець: економічний юніт");
-
-            if (config.BaseStamina > 0f)
-                output.AppendLine($"Базова стаміна: {config.BaseStamina:0.#}");
-
             if (config.VisionRange > 0)
-                output.AppendLine($"Дальність огляду: {config.VisionRange}");
-
-            if (config.HitPoints > 0)
-                output.AppendLine($"HP: {config.HitPoints}");
-
-            output.AppendLine($"Тип бою: {config.CombatType}");
+                output.AppendLine($"Огляд: {config.VisionRange}");
 
             int totalDamage = config.CuttingDamage + config.PenetratingDamage + config.CrushingDamage;
             if (totalDamage > 0)
@@ -156,13 +163,26 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (totalDefense > 0)
                 output.AppendLine($"Захист: {UnitCombatCalculator.FormatDefenseTriplet(config)}");
 
-            if (config.StaminaRandomRange != UnityEngine.Vector2.zero)
-                output.AppendLine($"Рандом стаміни: {config.StaminaRandomRange.x:0.#} .. {config.StaminaRandomRange.y:0.#}");
-
-            if (config.Prefab != null)
-                output.AppendLine("Прапорець: має prefab");
-
             return output.Length > startLength;
+        }
+
+        private string ResolveOwnershipText(string unitId)
+        {
+            string ownerId = _ownershipQuery?.GetUnitOwnerId(unitId);
+            string localOwnerId = _constructionService?.GetActiveOwner();
+            if (string.IsNullOrWhiteSpace(ownerId)
+                || string.IsNullOrWhiteSpace(localOwnerId))
+            {
+                return "власник невідомий";
+            }
+
+            return !string.IsNullOrWhiteSpace(ownerId)
+                   && string.Equals(
+                       ownerId.Trim(),
+                       localOwnerId?.Trim(),
+                       StringComparison.Ordinal)
+                ? "ваш юніт"
+                : "чужий юніт";
         }
 
         private static string ResolveRoleText(UnitClassConfig config)
@@ -191,18 +211,34 @@ namespace Kruty1918.Moyva.Units.Runtime
         }
 
         private string ResolveResourceDisplayName(string resourceId)
-            => _economyInfoMediator?.GetResourceDisplayName(resourceId)
-               ?? (string.IsNullOrWhiteSpace(resourceId) ? string.Empty : resourceId.Trim());
+        {
+            string mediated = _economyInfoMediator?.GetResourceDisplayName(resourceId);
+            if (!string.IsNullOrWhiteSpace(mediated)
+                && !string.Equals(mediated, resourceId, StringComparison.OrdinalIgnoreCase))
+            {
+                return mediated;
+            }
+
+            switch ((resourceId ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "material":
+                case "materials": return "Матеріали";
+                case "food": return "Їжа";
+                case "money": return "Гроші";
+                case "wood": return "Деревина";
+                case "stone": return "Камінь";
+                case "iron":
+                case "iron-ore": return "Залізо";
+                default: return "Ресурс";
+            }
+        }
 
         private static string ResolveUnitDisplayName(string unitTypeId, UnitClassConfig config)
         {
             if (!string.IsNullOrWhiteSpace(config?.DisplayName))
                 return config.DisplayName;
 
-            if (!string.IsNullOrWhiteSpace(config?.TypeId))
-                return config.TypeId;
-
-            return unitTypeId;
+            return "Юніт";
         }
     }
 }

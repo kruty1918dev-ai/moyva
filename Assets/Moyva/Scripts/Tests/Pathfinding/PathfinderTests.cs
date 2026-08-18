@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -272,6 +273,34 @@ namespace Kruty1918.Moyva.Tests.Pathfinding
             Assert.Greater(path.Count, 0);
         }
 
+        [Test]
+        public void FindPath_OccupiedTarget_ExtensionAllowsExplicitTraversal()
+        {
+            FillGrid(5, 3);
+            Vector2Int start = new Vector2Int(0, 1);
+            Vector2Int target = new Vector2Int(4, 1);
+            _objectsMap.SetOccupied(target);
+
+            List<Vector2Int> legacy =
+                _pathfinder.FindPath(start, target);
+            Assert.IsEmpty(
+                legacy,
+                "Legacy IPathfinder must keep occupied-target blocking.");
+
+            var extended =
+                _pathfinder as IOccupiedCellPathfinder;
+            Assert.NotNull(extended);
+
+            List<Vector2Int> allowed = extended.FindPath(
+                start,
+                target,
+                position => position == target);
+
+            Assert.IsNotEmpty(allowed);
+            Assert.AreEqual(start, allowed[0]);
+            Assert.AreEqual(target, allowed[allowed.Count - 1]);
+        }
+
         // --- FindPath - tile weights ---
         [Test]
         public void FindPath_PrefersLowWeight()
@@ -406,3 +435,5 @@ namespace Kruty1918.Moyva.Tests.Pathfinding
         }
     }
 }
+
+#endif

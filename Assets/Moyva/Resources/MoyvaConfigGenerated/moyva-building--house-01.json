@@ -1,0 +1,149 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "house-01",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 1,
+  "identity": {
+    "id": "house-01",
+    "displayName": "Будинок",
+    "category": "Civilian",
+    "role": "Housing",
+    "description": "Житлова будівля для мешканців поселення.",
+    "tags": []
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.house-01.a160b9cd",
+      "editorPath": "Assets/Moyva/Prefabs/Buildings/house-01.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.house-01.f9cc986b",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/house-01.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.house-01.f9cc986b",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/house-01.png",
+      "required": true
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 1
+      },
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 1
+      },
+      {
+        "resourceId": "hardwood-materials-resources",
+        "amount": 1
+      }
+    ],
+    "buildTurns": 1,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "housing",
+      "capacity": 4,
+      "isGarrisonCapable": false,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "fog-reveal",
+      "revealRadius": 2,
+      "shape": "PixelCircle",
+      "revealOnBuilt": true,
+      "revealWhileActive": true,
+      "onlyAfterConstructionComplete": true,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "settlement-influence-requirement",
+      "mergeMode": "Override",
+      "requiresInfluence": true,
+      "blockOverlappingCenters": false,
+      "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "3c49c2b4920e42c1abe92caab7210221",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/house-01.asset",
+    "sourceHash": "50576e489cdc8d6b025fb4dd5c41ca3f1a3a864771f856fcb7ce696302d27922"
+  }
+}

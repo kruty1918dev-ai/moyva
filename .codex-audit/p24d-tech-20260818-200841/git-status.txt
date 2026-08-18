@@ -1,0 +1,28 @@
+ M Assets/Moyva/Scenes/Gamplay_Scene.unity
+ M Assets/Moyva/Scripts/Bootstrap/Kruty1918.Moyva.Bootstrap.asmdef
+ M Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs
+ M Assets/Moyva/Scripts/Bootstrap/Runtime/GameplayTurnHudPresenter.cs
+ M Assets/Moyva/Scripts/Features/Construction/API/Data/Building/BuildingDefinitionCapabilities.cs
+ M Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs
+ M Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs
+ M Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs
+ M "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset"
+?? .codex-audit/
+?? .codex-backups/
+?? Assets/Moyva/Scripts/Bootstrap/Editor/RecruitmentHudP24BAuthoring.cs
+?? Assets/Moyva/Scripts/Bootstrap/Editor/RecruitmentHudP24BAuthoring.cs.meta
+?? Assets/Moyva/Scripts/Bootstrap/Editor/RecruitmentHudP24CAuthoring.cs
+?? Assets/Moyva/Scripts/Bootstrap/Editor/RecruitmentHudP24CAuthoring.cs.meta
+?? Assets/Moyva/Scripts/Bootstrap/Editor/RecruitmentPanelVisualPolishAuthoring.cs
+?? Assets/Moyva/Scripts/Bootstrap/Editor/RecruitmentPanelVisualPolishAuthoring.cs.meta
+?? Assets/Moyva/Scripts/Bootstrap/Runtime/GameplayRecruitmentPanelView.cs
+?? Assets/Moyva/Scripts/Bootstrap/Runtime/GameplayRecruitmentPanelView.cs.meta
+?? Assets/Moyva/Scripts/Bootstrap/Runtime/RecruitmentPanelVisualPolishLayout.cs
+?? Assets/Moyva/Scripts/Bootstrap/Runtime/RecruitmentPanelVisualPolishLayout.cs.meta
+?? Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs
+?? Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs.meta
+?? Moyva_P24D_TECH_ReadyIndicators_v1.zip
+?? moyva-p24d-tech-audit-20260818-200333.tar.gz
+?? moyva-p24d-tech-audit-20260818-200406.tar.gz
+?? moyva-p24d-tech-audit-20260818-200530.tar.gz
+?? tools/p24d-ready-indicators/

@@ -11,6 +11,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         public bool TryPreviewAt(Vector2Int position)
         {
+            if (!CanActiveOwnerMutate(
+                    "create construction preview",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                return false;
+            }
+
             if (State != BuildingPlacementState.Placing)
             {
                 if (VerboseLogs)
@@ -21,6 +29,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (string.IsNullOrWhiteSpace(_selectedBuildingId))
             {
                 Debug.LogWarning("[Construction] TryPreviewAt: _selectedBuildingId порожній або null");
+                return false;
+            }
+
+            if (!RevalidateActiveSelectionAvailability(
+                    "pointer-click",
+                    position))
+            {
+                Debug.LogWarning(
+                    $"[MoyvaConstructionAvailability] placement-rejected-stale-selection " +
+                    $"origin={position}");
                 return false;
             }
 
@@ -68,7 +86,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ownerId: _activeOwnerId,
                     attemptSource:
                         ConstructionPlacementAttemptSource.PointerClick,
-                    allowUniquePreviewRelocation: true));
+                    allowUniquePreviewRelocation: true,
+                    rotation: _selectedRotation));
             if (!placementResult.CanPreview)
             {
                 _lastActionMessage = placementResult.Reason;
@@ -84,6 +103,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
+            if (!placementResult.ResourcesValid)
+            {
+                _lastActionMessage = placementResult.Reason;
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = position,
+                    BuildingId = _selectedBuildingId,
+                    PreviewState = BuildingPreviewState.Unaffordable
+                });
+                LogPlacementAttempt(
+                    placementResult,
+                    emitRejectedAction: true);
+                Debug.LogWarning(
+                    $"[MoyvaConstructionAvailability] pending-rejected " +
+                    $"building='{_selectedBuildingId}' owner='{NormalizeOwnerId(_activeOwnerId)}' " +
+                    $"origin={position} code='resources' reason='{placementResult.Reason}'");
+                return false;
+            }
+
             LogPlacementAttempt(
                 placementResult,
                 emitRejectedAction: false);
@@ -94,7 +132,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 position,
                 _selectedBuildingId,
                 clearRedoHistory: true,
-                isAffordable: placementResult.ResourcesValid);
+                isAffordable: true);
         }
 
         public bool HasPendingPlacementAt(Vector2Int position)
@@ -104,14 +142,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public bool TryGetPendingBuildingIdAt(Vector2Int position, out string buildingId)
         {
-            int index = FindPendingPlacementIndex(position);
-            if (index < 0)
+            if (!_pendingPlacementByPosition.TryGetValue(
+                    position,
+                    out PendingPlacement placement))
             {
                 buildingId = null;
                 return false;
             }
 
-            buildingId = _pendingPlacements[index].BuildingId;
+            buildingId = placement.BuildingId;
             return !string.IsNullOrWhiteSpace(buildingId);
         }
 
@@ -134,22 +173,31 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Vector2Int position,
             out ConstructionPlacementCommitIntent intent)
         {
-            int index = FindPendingPlacementIndex(position);
-            if (index < 0)
+            if (!_pendingPlacementByPosition.TryGetValue(
+                    position,
+                    out PendingPlacement placement))
             {
                 intent = ConstructionPlacementCommitIntent.None;
                 return false;
             }
 
-            PendingPlacement placement = _pendingPlacements[index];
             intent = new ConstructionPlacementCommitIntent(
                 placement.OriginalPosition,
-                placement.ReplacedPendingBuildingId);
+                placement.ReplacedPendingBuildingId,
+                placement.Rotation);
             return true;
         }
 
         public bool TryMovePendingPlacement(Vector2Int fromPosition, Vector2Int toPosition)
         {
+            if (!CanActiveOwnerMutate(
+                    "move construction preview",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                return false;
+            }
+
             if (State != BuildingPlacementState.Placing)
             {
                 if (VerboseLogs)
@@ -189,13 +237,27 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ownerId: _activeOwnerId,
                     attemptSource:
                         ConstructionPlacementAttemptSource.PreviewMove,
-                    allowUniquePreviewRelocation: false));
+                    allowUniquePreviewRelocation: false,
+                    rotation: placement.Rotation));
             if (!moveResult.CanPreview)
             {
                 _lastActionMessage = moveResult.Reason;
                 LogPlacementAttempt(
                     moveResult,
                     emitRejectedAction: true);
+                return false;
+            }
+
+            if (!moveResult.ResourcesValid)
+            {
+                _lastActionMessage = moveResult.Reason;
+                LogPlacementAttempt(
+                    moveResult,
+                    emitRejectedAction: true);
+                Debug.LogWarning(
+                    $"[MoyvaConstructionAvailability] pending-move-rejected " +
+                    $"building='{placement.BuildingId}' from={fromPosition} to={toPosition} " +
+                    $"code='resources' reason='{moveResult.Reason}'");
                 return false;
             }
 
@@ -206,18 +268,23 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _pendingPositions.Remove(fromPosition);
             _pendingPositions.Add(toPosition);
-            _pendingPlacements[index] = new PendingPlacement(
+            _pendingPlacementByPosition.Remove(fromPosition);
+            PendingPlacement movedPlacement = new PendingPlacement(
                 toPosition,
                 placement.BuildingId,
                 placement.OriginalPosition,
-                placement.ReplacedPendingBuildingId);
+                placement.ReplacedPendingBuildingId,
+                placement.Rotation);
+            _pendingPlacements[index] = movedPlacement;
+            _pendingPlacementByPosition[toPosition] = movedPlacement;
             MarkPendingPlacementsChanged();
 
             _signalBus.Fire(new BuildingPreviewMovedSignal
             {
                 FromPosition = fromPosition,
                 ToPosition = toPosition,
-                BuildingId = placement.BuildingId
+                BuildingId = placement.BuildingId,
+                RotationQuarterTurns = (int)placement.Rotation,
             });
 
             _signalBus.Fire(new BuildingPreviewChangedSignal
@@ -231,6 +298,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 Position = toPosition,
                 BuildingId = placement.BuildingId,
+                RotationQuarterTurns = (int)placement.Rotation,
                 PreviewState = ResolvePreviewState(
                     moveResult.ResourcesValid)
             });
@@ -254,6 +322,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _pendingPlacements.RemoveAt(index);
             _pendingPositions.Remove(position);
+            _pendingPlacementByPosition.Remove(position);
             MarkPendingPlacementsChanged();
 
             _signalBus.Fire(new BuildingPreviewChangedSignal
@@ -279,6 +348,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Vector2Int? originalPosition = null,
             bool isAffordable = true)
         {
+            if (!isAffordable)
+            {
+                _lastActionMessage =
+                    "Недостатньо ресурсів: pending-розміщення не створено.";
+                Debug.LogWarning(
+                    $"[MoyvaConstructionAvailability] pending-invariant-rejected " +
+                    $"building='{buildingId}' origin={position} code='resources'");
+                return false;
+            }
+
             if (string.IsNullOrWhiteSpace(buildingId))
             {
                 Debug.LogError($"[Construction] AddPendingPlacement: buildingId порожній на позиції {position}");
@@ -301,16 +380,29 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 SaveSnapshotForUndo(clearRedoHistory);
 
-                _pendingPlacements.Add(new PendingPlacement(position, buildingId, originalPosition));
+                PendingPlacement placement =
+                    new PendingPlacement(
+                        position,
+                        buildingId,
+                        originalPosition,
+                        rotation: _selectedRotation);
+                _pendingPlacements.Add(placement);
                 _pendingPositions.Add(position);
+                _pendingPlacementByPosition[position] = placement;
                 MarkPendingPlacementsChanged();
 
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
                     Position = position,
                     BuildingId = buildingId,
+                    RotationQuarterTurns = (int)placement.Rotation,
                     PreviewState = ResolvePreviewState(isAffordable)
                 });
+
+                Debug.Log(
+                    $"[MoyvaConstructionAvailability] pending-added " +
+                    $"building='{buildingId}' origin={position} " +
+                    $"pending={_pendingPlacements.Count}");
 
                 if (VerboseLogs)
                     Debug.Log($"[Construction] ✓ Pending placement додана для '{buildingId}' at {position}. relocationFrom={originalPosition?.ToString() ?? "none"}, pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
@@ -443,7 +535,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                                     .PointerClick,
                             allowUniquePreviewRelocation: false,
                             satisfiedReplacementBuildingId:
-                                current.BuildingId));
+                                current.BuildingId,
+                            rotation: _selectedRotation));
                 if (!placement.CanPreview)
                 {
                     _lastActionMessage = placement.Reason;
@@ -453,13 +546,30 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     return false;
                 }
 
+                if (!placement.ResourcesValid)
+                {
+                    _lastActionMessage = placement.Reason;
+                    LogPlacementAttempt(
+                        placement,
+                        emitRejectedAction: true);
+                    Debug.LogWarning(
+                        $"[MoyvaConstructionAvailability] pending-replacement-rejected " +
+                        $"building='{replacementBuildingId}' origin={position} " +
+                        $"code='resources' reason='{placement.Reason}'");
+                    return false;
+                }
+
                 SaveSnapshotForUndo(clearRedoHistory: true);
 
-                _pendingPlacements[index] = new PendingPlacement(
-                    position,
-                    replacementBuildingId,
-                    current.OriginalPosition,
-                    current.BuildingId);
+                PendingPlacement replacement =
+                    new PendingPlacement(
+                        position,
+                        replacementBuildingId,
+                        current.OriginalPosition,
+                        current.BuildingId,
+                        _selectedRotation);
+                _pendingPlacements[index] = replacement;
+                _pendingPlacementByPosition[position] = replacement;
                 MarkPendingPlacementsChanged();
                 SetPlacementSelection(
                     replacementBuildingId,
@@ -469,6 +579,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     Position = position,
                     BuildingId = replacementBuildingId,
+                    RotationQuarterTurns =
+                        (int)replacement.Rotation,
                     PreviewState = ResolvePreviewState(
                         placement.ResourcesValid)
                 });

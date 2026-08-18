@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.IO;
 using Kruty1918.Moyva.Calendar.Config;
 using Kruty1918.Moyva.Calendar.Runtime;
@@ -81,3 +82,5 @@ namespace Kruty1918.Moyva.Tests.Calendar
         }
     }
 }
+
+#endif

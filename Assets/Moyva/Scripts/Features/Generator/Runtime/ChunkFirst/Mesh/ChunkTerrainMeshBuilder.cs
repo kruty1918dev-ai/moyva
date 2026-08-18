@@ -17,6 +17,36 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly List<CombineInstance> _finalCombine = new List<CombineInstance>(16);
         private readonly List<Material> _materials = new List<Material>(16);
         private readonly List<TileMeshSource> _cellSources = new List<TileMeshSource>(4);
+        private readonly HashSet<Vector2Int> _auditProviderEmittedCells =
+            new HashSet<Vector2Int>();
+
+        /*
+         * Every provider source is generated exactly once for the whole map,
+         * then assigned to the chunk containing its physical TileCenterXZ.
+         */
+        private readonly Dictionary<
+            MapChunkCoord,
+            List<CanonicalTileMeshSource>>
+            _canonicalSourcesByChunk =
+                new Dictionary<
+                    MapChunkCoord,
+                    List<CanonicalTileMeshSource>>();
+
+        private readonly Stack<List<CanonicalTileMeshSource>>
+            _canonicalSourceListPool =
+                new Stack<List<CanonicalTileMeshSource>>();
+
+        private IReadOnlyDictionary<
+            Vector2Int,
+            ResolvedTileComposition>
+            _canonicalResolvedCells;
+
+        private IResolvedTileMeshSource
+            _canonicalMeshSource;
+
+        private int _canonicalChunkSize;
+        private int _canonicalMapWidth;
+        private int _canonicalMapHeight;
         private readonly HashSet<string> _chunkAuditLayerIds =
             new HashSet<string>(System.StringComparer.Ordinal);
         private readonly Dictionary<TileVerticalFillMeshKey, Mesh> _verticalMeshCache =
@@ -59,12 +89,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (chunkRoot == null || resolvedCells == null || meshSource == null)
                 return 0;
 
+            ChunkAuditRuntime.BeginChunk(area);
+
             var terrainRoot = EnsureTerrainRoot(chunkRoot);
             ClearExistingMesh(terrainRoot);
             RecycleCombineLists();
             _finalCombine.Clear();
             _materials.Clear();
             _chunkAuditLayerIds.Clear();
+            _auditProviderEmittedCells.Clear();
             _sourceVertices = 0;
             _sourceIndices = 0;
             _sourceTriangles = 0;
@@ -75,9 +108,26 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _unreferencedVerticesRemoved = 0;
             _exactDuplicateVerticesRemoved = 0;
 
-            int fragmentCount = CollectFragments(area.CoreRect, resolvedCells, meshSource);
+            EnsureCanonicalSourcePlan(
+                area,
+                resolvedCells,
+                meshSource);
+
+            int fragmentCount =
+                CollectFragments(
+                    area,
+                    resolvedCells,
+                    meshSource);
             if (fragmentCount == 0)
             {
+                ChunkAuditRuntime.CompleteChunk(
+                    chunkRoot,
+                    terrainRoot,
+                    area,
+                    resolvedCells,
+                    _auditProviderEmittedCells,
+                    null);
+
                 LogChunkMetrics(chunkRoot, null);
                 return 0;
             }
@@ -85,6 +135,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Mesh combined = CombineByMaterial(terrainRoot.name, area);
             if (combined == null || combined.vertexCount == 0)
             {
+                ChunkAuditRuntime.CompleteChunk(
+                    chunkRoot,
+                    terrainRoot,
+                    area,
+                    resolvedCells,
+                    _auditProviderEmittedCells,
+                    null);
+
                 LogChunkMetrics(chunkRoot, null);
                 return 0;
             }
@@ -92,21 +150,30 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             var filter = terrainRoot.GetComponent<MeshFilter>();
             if (filter == null)
                 filter = terrainRoot.gameObject.AddComponent<MeshFilter>();
+
             var renderer = terrainRoot.GetComponent<MeshRenderer>();
             if (renderer == null)
                 renderer = terrainRoot.gameObject.AddComponent<MeshRenderer>();
-            var collider = terrainRoot.GetComponent<MeshCollider>();
-            if (collider == null)
-                collider = terrainRoot.gameObject.AddComponent<MeshCollider>();
 
-            filter.sharedMesh = combined;
-            renderer.sharedMaterials = _materials.ToArray();
-            // Rendering and physics must consume the exact same optimized mesh;
-            // assigning null first forces Unity to recook a regenerated chunk.
-            collider.sharedMesh = null;
-            collider.cookingOptions = MeshColliderCookingOptions.None;
-            collider.sharedMesh = combined;
+            filter.sharedMesh =
+                combined;
+
+            renderer.sharedMaterials =
+                _materials.ToArray();
+
+            ConfigureTerrainCollider(
+                terrainRoot,
+                combined);
+
             _meshRegistry.Register(combined);
+
+            ChunkAuditRuntime.CompleteChunk(
+                chunkRoot,
+                terrainRoot,
+                area,
+                resolvedCells,
+                _auditProviderEmittedCells,
+                combined);
 
             LogChunkMetrics(chunkRoot, combined);
             return 1;
@@ -131,28 +198,509 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         }
 
         private int CollectFragments(
-            RectInt coreRect,
+            ChunkBuildArea area,
             IReadOnlyDictionary<Vector2Int, ResolvedTileComposition> resolvedCells,
             IResolvedTileMeshSource meshSource)
         {
-            int count = 0;
-            for (int y = coreRect.yMin; y < coreRect.yMax; y++)
-                for (int x = coreRect.xMin; x < coreRect.xMax; x++)
-                {
-                    var cell = new Vector2Int(x, y);
-                    if (!resolvedCells.TryGetValue(cell, out var composition))
-                        continue;
+            if (!_canonicalSourcesByChunk.TryGetValue(
+                    area.Coord,
+                    out List<CanonicalTileMeshSource> plannedSources)
+                || plannedSources == null)
+            {
+                return 0;
+            }
 
-                    _cellSources.Clear();
-                    int sourceCount = meshSource.CollectMeshSources(composition, _cellSources);
-                    for (int i = 0; i < sourceCount; i++)
-                    {
-                        AddSource(_cellSources[i]);
-                        count++;
-                    }
+            int count = 0;
+
+            for (int i = 0;
+                 i < plannedSources.Count;
+                 i++)
+            {
+                CanonicalTileMeshSource planned =
+                    plannedSources[i];
+
+                ChunkAuditRuntime.RecordSource(
+                    area,
+                    planned.PhysicalCell,
+                    planned.Source);
+
+                if (planned.Source.IsValid)
+                {
+                    _auditProviderEmittedCells.Add(
+                        planned.PhysicalCell);
                 }
 
+                AddSource(
+                    planned.Source);
+
+                count++;
+            }
+
             return count;
+        }
+
+        private void EnsureCanonicalSourcePlan(
+            ChunkBuildArea area,
+            IReadOnlyDictionary<Vector2Int, ResolvedTileComposition> resolvedCells,
+            IResolvedTileMeshSource meshSource)
+        {
+            int chunkSize =
+                ResolveCanonicalChunkSize(
+                    area);
+
+            bool firstChunkOfBuild =
+                area.Coord.X == 0
+                && area.Coord.Y == 0;
+
+            bool planIsCurrent =
+                object.ReferenceEquals(
+                    _canonicalResolvedCells,
+                    resolvedCells)
+                && object.ReferenceEquals(
+                    _canonicalMeshSource,
+                    meshSource)
+                && _canonicalChunkSize
+                   == chunkSize
+                && _canonicalSourcesByChunk.Count > 0;
+
+            if (!firstChunkOfBuild
+                && planIsCurrent)
+            {
+                return;
+            }
+
+            BuildCanonicalSourcePlan(
+                resolvedCells,
+                meshSource,
+                area.CellSize,
+                chunkSize);
+        }
+
+        private static int ResolveCanonicalChunkSize(
+            ChunkBuildArea area)
+        {
+            /*
+             * MOYVA_FULL_CHUNKS_16_PASS76: map dimensions are cropped before
+             * logical generation, so runtime CoreRects are full 16x16 chunks.
+             * Keep stride recovery defensive for legacy/dev data.
+             */
+            int resolved =
+                Mathf.Max(
+                    1,
+                    Mathf.Max(
+                        area.CoreRect.width,
+                        area.CoreRect.height));
+
+            resolved =
+                Mathf.Max(
+                    resolved,
+                    ResolveAxisStride(
+                        area.Coord.X,
+                        area.CoreRect.xMin));
+
+            resolved =
+                Mathf.Max(
+                    resolved,
+                    ResolveAxisStride(
+                        area.Coord.Y,
+                        area.CoreRect.yMin));
+
+            return resolved;
+        }
+
+        private static int ResolveAxisStride(
+            int chunkCoordinate,
+            int coreMinimum)
+        {
+            if (chunkCoordinate <= 0
+                || coreMinimum <= 0)
+            {
+                return 0;
+            }
+
+            int stride =
+                coreMinimum
+                / chunkCoordinate;
+
+            if (stride <= 0
+                || stride * chunkCoordinate
+                   != coreMinimum)
+            {
+                return 0;
+            }
+
+            return stride;
+        }
+
+        private void BuildCanonicalSourcePlan(
+            IReadOnlyDictionary<Vector2Int, ResolvedTileComposition> resolvedCells,
+            IResolvedTileMeshSource meshSource,
+            float cellSize,
+            int chunkSize)
+        {
+            RecycleCanonicalSourcePlan();
+
+            _canonicalResolvedCells =
+                resolvedCells;
+
+            _canonicalMeshSource =
+                meshSource;
+
+            _canonicalChunkSize =
+                Mathf.Max(
+                    1,
+                    chunkSize);
+
+            ResolveMapDimensions(
+                resolvedCells,
+                out _canonicalMapWidth,
+                out _canonicalMapHeight);
+
+            if (_canonicalMapWidth <= 0
+                || _canonicalMapHeight <= 0)
+            {
+                Debug.LogError(
+                    "[MOYVA_CHUNK_OWNERSHIP] PLAN_FAILED " +
+                    "reason=empty-resolved-map");
+
+                return;
+            }
+
+            int chunkCountX =
+                Mathf.CeilToInt(
+                    _canonicalMapWidth
+                    / (float)_canonicalChunkSize);
+
+            int chunkCountY =
+                Mathf.CeilToInt(
+                    _canonicalMapHeight
+                    / (float)_canonicalChunkSize);
+
+            int resolvedCellCount = 0;
+            int sourceCount = 0;
+            int validSourceCount = 0;
+            int invalidSourceCount = 0;
+            int reassignedSourceCount = 0;
+            int outOfMapSourceCount = 0;
+
+            /*
+             * Preserve the old generation order:
+             * chunk row -> chunk column -> local row -> local column.
+             */
+            for (int chunkY = 0;
+                 chunkY < chunkCountY;
+                 chunkY++)
+            {
+                int yMin =
+                    chunkY
+                    * _canonicalChunkSize;
+
+                int yMax =
+                    Mathf.Min(
+                        yMin + _canonicalChunkSize,
+                        _canonicalMapHeight);
+
+                for (int chunkX = 0;
+                     chunkX < chunkCountX;
+                     chunkX++)
+                {
+                    int xMin =
+                        chunkX
+                        * _canonicalChunkSize;
+
+                    int xMax =
+                        Mathf.Min(
+                            xMin + _canonicalChunkSize,
+                            _canonicalMapWidth);
+
+                    for (int y = yMin;
+                         y < yMax;
+                         y++)
+                    {
+                        for (int x = xMin;
+                             x < xMax;
+                             x++)
+                        {
+                            var logicalCell =
+                                new Vector2Int(
+                                    x,
+                                    y);
+
+                            if (!resolvedCells.TryGetValue(
+                                    logicalCell,
+                                    out ResolvedTileComposition composition))
+                            {
+                                continue;
+                            }
+
+                            resolvedCellCount++;
+
+                            _cellSources.Clear();
+
+                            int collected =
+                                meshSource.CollectMeshSources(
+                                    composition,
+                                    _cellSources);
+
+                            int safeCount =
+                                Mathf.Min(
+                                    collected,
+                                    _cellSources.Count);
+
+                            MapChunkCoord logicalOwner =
+                                ResolveChunkCoord(
+                                    logicalCell,
+                                    _canonicalChunkSize);
+
+                            for (int sourceIndex = 0;
+                                 sourceIndex < safeCount;
+                                 sourceIndex++)
+                            {
+                                TileMeshSource source =
+                                    _cellSources[sourceIndex];
+
+                                sourceCount++;
+
+                                if (source.IsValid)
+                                    validSourceCount++;
+                                else
+                                    invalidSourceCount++;
+
+                                if (!TryResolvePhysicalCell(
+                                        logicalCell,
+                                        source,
+                                        cellSize,
+                                        _canonicalMapWidth,
+                                        _canonicalMapHeight,
+                                        out Vector2Int physicalCell))
+                                {
+                                    outOfMapSourceCount++;
+                                    continue;
+                                }
+
+                                MapChunkCoord physicalOwner =
+                                    ResolveChunkCoord(
+                                        physicalCell,
+                                        _canonicalChunkSize);
+
+                                if (!physicalOwner.Equals(
+                                        logicalOwner))
+                                {
+                                    reassignedSourceCount++;
+                                }
+
+                                GetCanonicalSourceBucket(
+                                        physicalOwner)
+                                    .Add(
+                                        new CanonicalTileMeshSource(
+                                            logicalCell,
+                                            physicalCell,
+                                            source));
+                            }
+                        }
+                    }
+                }
+            }
+
+            int assignedSourceCount = 0;
+
+            foreach (KeyValuePair<
+                         MapChunkCoord,
+                         List<CanonicalTileMeshSource>> pair
+                     in _canonicalSourcesByChunk)
+            {
+                assignedSourceCount +=
+                    pair.Value?.Count ?? 0;
+            }
+
+            Debug.Log(
+                "[MOYVA_CHUNK_OWNERSHIP] PLAN " +
+                $"map={_canonicalMapWidth}x{_canonicalMapHeight} " +
+                $"chunkSize={_canonicalChunkSize} " +
+                $"chunkSizeSource=CoreStride " +
+                $"chunks={chunkCountX}x{chunkCountY} " +
+                $"resolvedCells={resolvedCellCount} " +
+                $"sources={sourceCount} " +
+                $"assignedSources={assignedSourceCount} " +
+                $"validSources={validSourceCount} " +
+                $"invalidSources={invalidSourceCount} " +
+                $"reassignedSources={reassignedSourceCount} " +
+                $"outOfMapSources={outOfMapSourceCount} " +
+                $"lattice=CanonicalCellCenters " +
+                $"dualPhaseOffset=+0.5 " +
+                $"buckets={_canonicalSourcesByChunk.Count}");
+        }
+
+        private List<CanonicalTileMeshSource>
+            GetCanonicalSourceBucket(
+                MapChunkCoord coord)
+        {
+            if (_canonicalSourcesByChunk.TryGetValue(
+                    coord,
+                    out List<CanonicalTileMeshSource> bucket)
+                && bucket != null)
+            {
+                return bucket;
+            }
+
+            bucket =
+                _canonicalSourceListPool.Count > 0
+                    ? _canonicalSourceListPool.Pop()
+                    : new List<CanonicalTileMeshSource>(128);
+
+            _canonicalSourcesByChunk[coord] =
+                bucket;
+
+            return bucket;
+        }
+
+        private void RecycleCanonicalSourcePlan()
+        {
+            foreach (KeyValuePair<
+                         MapChunkCoord,
+                         List<CanonicalTileMeshSource>> pair
+                     in _canonicalSourcesByChunk)
+            {
+                List<CanonicalTileMeshSource> bucket =
+                    pair.Value;
+
+                if (bucket == null)
+                    continue;
+
+                bucket.Clear();
+                _canonicalSourceListPool.Push(
+                    bucket);
+            }
+
+            _canonicalSourcesByChunk.Clear();
+        }
+
+        private static void ResolveMapDimensions(
+            IReadOnlyDictionary<Vector2Int, ResolvedTileComposition> resolvedCells,
+            out int width,
+            out int height)
+        {
+            width = 0;
+            height = 0;
+
+            if (resolvedCells == null)
+                return;
+
+            foreach (KeyValuePair<
+                         Vector2Int,
+                         ResolvedTileComposition> pair
+                     in resolvedCells)
+            {
+                width =
+                    Mathf.Max(
+                        width,
+                        pair.Key.x + 1);
+
+                height =
+                    Mathf.Max(
+                        height,
+                        pair.Key.y + 1);
+            }
+        }
+
+        private static bool TryResolvePhysicalCell(
+            Vector2Int logicalCell,
+            TileMeshSource source,
+            float cellSize,
+            int mapWidth,
+            int mapHeight,
+            out Vector2Int physicalCell)
+        {
+            float safeCellSize =
+                Mathf.Max(
+                    0.0001f,
+                    cellSize);
+
+            if (!source.HasTileFootprint
+                || !IsFinite(source.TileCenterXZ.x)
+                || !IsFinite(source.TileCenterXZ.y))
+            {
+                physicalCell = logicalCell;
+
+                return physicalCell.x >= 0
+                    && physicalCell.y >= 0
+                    && physicalCell.x < mapWidth
+                    && physicalCell.y < mapHeight;
+            }
+
+            int x =
+                Mathf.FloorToInt(
+                    (
+                        source.TileCenterXZ.x
+                        + safeCellSize * 0.5f
+                    )
+                    / safeCellSize);
+
+            int y =
+                Mathf.FloorToInt(
+                    (
+                        source.TileCenterXZ.y
+                        + safeCellSize * 0.5f
+                    )
+                    / safeCellSize);
+
+            physicalCell =
+                new Vector2Int(
+                    x,
+                    y);
+
+            /*
+             * Never clamp a border source back into the last chunk.
+             * A dual source centered exactly at width/height is outside the
+             * requested map after phase alignment and must be discarded.
+             */
+            return x >= 0
+                && y >= 0
+                && x < mapWidth
+                && y < mapHeight;
+        }
+
+        private static MapChunkCoord ResolveChunkCoord(
+            Vector2Int cell,
+            int chunkSize)
+        {
+            int safeChunkSize =
+                Mathf.Max(
+                    1,
+                    chunkSize);
+
+            return new MapChunkCoord(
+                cell.x / safeChunkSize,
+                cell.y / safeChunkSize);
+        }
+
+        private static bool IsFinite(
+            float value)
+        {
+            return !float.IsNaN(value)
+                && !float.IsInfinity(value);
+        }
+
+        private readonly struct CanonicalTileMeshSource
+        {
+            public CanonicalTileMeshSource(
+                Vector2Int logicalCell,
+                Vector2Int physicalCell,
+                TileMeshSource source)
+            {
+                LogicalCell =
+                    logicalCell;
+
+                PhysicalCell =
+                    physicalCell;
+
+                Source =
+                    source;
+            }
+
+            public Vector2Int LogicalCell { get; }
+            public Vector2Int PhysicalCell { get; }
+            public TileMeshSource Source { get; }
         }
 
         private void AddSource(TileMeshSource source)
@@ -425,25 +973,55 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 indexFormat = vertexCount > 65535 ? IndexFormat.UInt32 : IndexFormat.UInt16
             };
             mesh.CombineMeshes(_finalCombine.ToArray(), false, false);
-            int referencedVerticesBeforeOptimization =
-                CountReferencedVertices(mesh);
-            if (ExactVertexWeldMeshUtility.TryCreate(
-                    mesh,
-                    out Mesh welded))
+            /*
+             * ExactVertexWeldMeshUtility preserves the final appearance,
+             * but it must read every vertex stream and every submesh index,
+             * allocate remap tables, and create a second complete mesh.
+             *
+             * Imported tile meshes already contain their authored normals,
+             * UV seams and topology. During Editor Play Mode, keep the
+             * combined mesh directly and avoid this expensive duplicate
+             * optimization for every generated chunk.
+             *
+             * Standalone/player builds, Edit Mode generation and tests keep
+             * the original exact-weld path. Define
+             * MOYVA_EDITOR_RUNTIME_VERTEX_WELD to restore it in Play Mode.
+             */
+#if UNITY_EDITOR && !MOYVA_EDITOR_RUNTIME_VERTEX_WELD
+            bool shouldRunExactVertexWeld =
+                !Application.isPlaying;
+#else
+            const bool shouldRunExactVertexWeld =
+                true;
+#endif
+
+            if (shouldRunExactVertexWeld)
             {
-                _unreferencedVerticesRemoved += Mathf.Max(
-                    0,
-                    mesh.vertexCount
-                    - referencedVerticesBeforeOptimization);
-                _exactDuplicateVerticesRemoved += Mathf.Max(
-                    0,
-                    referencedVerticesBeforeOptimization
-                    - welded.vertexCount);
-                if (Application.isPlaying)
-                    UnityEngine.Object.Destroy(mesh);
-                else
-                    UnityEngine.Object.DestroyImmediate(mesh);
-                mesh = welded;
+                int referencedVerticesBeforeOptimization =
+                    CountReferencedVertices(mesh);
+
+                if (ExactVertexWeldMeshUtility.TryCreate(
+                        mesh,
+                        out Mesh welded))
+                {
+                    _unreferencedVerticesRemoved += Mathf.Max(
+                        0,
+                        mesh.vertexCount
+                        - referencedVerticesBeforeOptimization);
+
+                    _exactDuplicateVerticesRemoved += Mathf.Max(
+                        0,
+                        referencedVerticesBeforeOptimization
+                        - welded.vertexCount);
+
+                    if (Application.isPlaying)
+                        UnityEngine.Object.Destroy(mesh);
+                    else
+                        UnityEngine.Object.DestroyImmediate(mesh);
+
+                    mesh =
+                        welded;
+                }
             }
 
             mesh.RecalculateBounds();
@@ -572,14 +1150,83 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return transform;
         }
 
+        private static void ConfigureTerrainCollider(
+            Transform terrainRoot,
+            Mesh combined)
+        {
+#if UNITY_EDITOR && !MOYVA_EDITOR_RUNTIME_TERRAIN_COLLIDERS
+            /*
+             * Construction pointer mapping and tile clicks use the
+             * generated terrain-height map and mathematical grid planes.
+             * They do not require a cooked PhysX representation.
+             *
+             * Skip the expensive per-chunk MeshCollider cooking during
+             * ordinary Editor Play Mode. Player builds remain unchanged.
+             */
+            if (Application.isPlaying)
+            {
+                var editorCollider =
+                    terrainRoot.GetComponent<MeshCollider>();
+
+                if (editorCollider != null)
+                {
+                    editorCollider.sharedMesh =
+                        null;
+
+                    editorCollider.enabled =
+                        false;
+                }
+
+                return;
+            }
+#endif
+
+            var collider =
+                terrainRoot.GetComponent<MeshCollider>();
+
+            if (collider == null)
+            {
+                collider =
+                    terrainRoot.gameObject
+                        .AddComponent<MeshCollider>();
+            }
+
+            collider.enabled =
+                true;
+
+            if (collider.sharedMesh != null)
+            {
+                collider.sharedMesh =
+                    null;
+            }
+
+            collider.cookingOptions =
+                MeshColliderCookingOptions.None;
+
+            collider.sharedMesh =
+                combined;
+        }
+
         private static void ClearExistingMesh(Transform terrainRoot)
         {
-            var filter = terrainRoot.GetComponent<MeshFilter>();
-            var collider = terrainRoot.GetComponent<MeshCollider>();
-            if (collider != null)
-                collider.sharedMesh = null;
-            if (filter == null || filter.sharedMesh == null)
+            var filter =
+                terrainRoot.GetComponent<MeshFilter>();
+
+            var collider =
+                terrainRoot.GetComponent<MeshCollider>();
+
+            if (collider != null
+                && collider.sharedMesh != null)
+            {
+                collider.sharedMesh =
+                    null;
+            }
+
+            if (filter == null
+                || filter.sharedMesh == null)
+            {
                 return;
+            }
 
             if (Application.isPlaying)
                 UnityEngine.Object.Destroy(filter.sharedMesh);

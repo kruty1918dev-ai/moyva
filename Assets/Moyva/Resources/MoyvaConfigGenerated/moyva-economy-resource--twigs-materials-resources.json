@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "twigs-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Twigs",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-105.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "2bf358de103742b0a929cc682bb5e31d",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Twigs.asset",
+    "sourceHash": "4253edcac7c83e822fb1c56fefb4cc83bbef755eefed285cc4fa8b37328c7efc"
+  }
+}

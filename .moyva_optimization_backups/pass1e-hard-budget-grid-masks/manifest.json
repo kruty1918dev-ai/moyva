@@ -1,0 +1,7 @@
+{
+  "pass": "pass1e-hard-budget-grid-masks",
+  "files": [
+    "Assets/Moyva/Scripts/Features/Construction/Runtime/Visual/BuildGrid/ConstructionBuildGridChunkSurfaceHandle.cs",
+    "Assets/Moyva/Scripts/Features/Construction/Runtime/Visual/BuildGrid/ConstructionBuildGridChunkSurfaceService.cs"
+  ]
+}

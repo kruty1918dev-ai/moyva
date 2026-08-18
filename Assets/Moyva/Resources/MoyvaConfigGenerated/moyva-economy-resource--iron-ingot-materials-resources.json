@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "iron-ingot-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Iron-ingot",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-8.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "76aa641866e24ec498183ab0d3940c81",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Iron-ingot.asset",
+    "sourceHash": "2c99a1556f9888e916924d26d30c893cf8f43b04865d567bae797c9dbc9cdaa9"
+  }
+}

@@ -158,7 +158,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         ownerId: _constructionService.GetActiveOwner(),
                         attemptSource:
                             ConstructionPlacementAttemptSource.PointerClick,
-                        allowUniquePreviewRelocation: true));
+                        allowUniquePreviewRelocation: true,
+                        rotation: ResolveSelectedRotation()));
             if (result.CanPreview)
                 return true;
 

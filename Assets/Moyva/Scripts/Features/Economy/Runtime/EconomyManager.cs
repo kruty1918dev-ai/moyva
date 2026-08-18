@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
+using Unity.Profiling;
 using Zenject;
 
 namespace Kruty1918.Moyva.Economy.Runtime
@@ -18,6 +19,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
     /// </summary>
     public sealed class EconomyManager : IInitializable, IDisposable
     {
+        private static readonly ProfilerMarker BuildingPlacedMarker =
+            new("Moyva.BuildCommit.Subscriber.Economy");
         public const string DefaultOwnerId = "player_0";
         private const string StarterPackLogTag = "[Bootstrap][StarterPack]";
 
@@ -29,6 +32,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly ISettlementRegistry _settlementRegistry;
         private readonly IEconomyBuildingIntegration _buildingIntegration;
         private readonly IEconomyTurnProcessor _turnProcessor;
+        private EconomyRuntimeSaveSnapshot
+            _pendingRuntimeSaveSnapshot;
 
         private EconomyRulesConfigSO Rules => _database?.RulesConfig;
 
@@ -71,16 +76,22 @@ namespace Kruty1918.Moyva.Economy.Runtime
         {
             _calendar.OnHourChanged += OnTurnAdvanced;
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+            _signalBus.Subscribe<BuildingOperationalSignal>(OnBuildingOperational);
             _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
             _signalBus.Subscribe<GrantStarterPackResourcesSignal>(OnGrantStarterPackResources);
+            BuildingDefinitionAsset.RuntimeRevisionChanged +=
+                OnBuildingDefinitionRuntimeRevisionChanged;
         }
 
         public void Dispose()
         {
             _calendar.OnHourChanged -= OnTurnAdvanced;
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+            _signalBus.TryUnsubscribe<BuildingOperationalSignal>(OnBuildingOperational);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
             _signalBus.TryUnsubscribe<GrantStarterPackResourcesSignal>(OnGrantStarterPackResources);
+            BuildingDefinitionAsset.RuntimeRevisionChanged -=
+                OnBuildingDefinitionRuntimeRevisionChanged;
         }
 
         // ───────────────────────── Turn Processing
@@ -97,7 +108,17 @@ namespace Kruty1918.Moyva.Economy.Runtime
         // ───────────────────────── Construction Events
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
+            => ProcessBuildingPlaced(signal, allowTimedBuilding: false);
+
+        private void ProcessBuildingPlaced(BuildingPlacedSignal signal, bool allowTimedBuilding)
         {
+            var definition = string.IsNullOrWhiteSpace(signal.BuildingId)
+                ? null
+                : _buildingRegistry?.GetById(signal.BuildingId);
+            if (!allowTimedBuilding && definition != null && definition.BuildTurns > 0)
+                return;
+
+            using var marker = BuildingPlacedMarker.Auto();
             _buildingIntegration.OnBuildingPlaced(
                 signal,
                 _settlementRegistry,
@@ -105,12 +126,20 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 _database,
                 _buildingRegistry);
 
-            var definition = string.IsNullOrWhiteSpace(signal.BuildingId)
-                ? null
-                : _buildingRegistry?.GetById(signal.BuildingId);
-
             if (definition != null && BuildingDefinitionCapabilities.IsWarehouse(definition))
                 _ownerResourcePoolService.TransferOwnerResourcesToFirstWarehouse(signal.OwnerId, _settlementRegistry.AllSettlements, _signalBus, StarterPackLogTag);
+
+            TryApplyPendingRuntimeSaveSnapshot();
+        }
+
+        private void OnBuildingOperational(BuildingOperationalSignal signal)
+        {
+            ProcessBuildingPlaced(new BuildingPlacedSignal
+            {
+                BuildingId = signal.BuildingId,
+                Position = signal.Position,
+                OwnerId = signal.OwnerId,
+            }, allowTimedBuilding: true);
         }
 
         private void OnBuildingDemolished(BuildingDemolishedSignal signal)
@@ -194,6 +223,152 @@ namespace Kruty1918.Moyva.Economy.Runtime
             }
 
             return parts.Count == 0 ? "none" : string.Join(", ", parts);
+        }
+
+        private void OnBuildingDefinitionRuntimeRevisionChanged(
+            int revision)
+        {
+            int refreshedBuildings = 0;
+            int refreshedSettlements = 0;
+
+            foreach (var settlementPair
+                     in _settlementRegistry.AllSettlements)
+            {
+                EconomySettlementState state =
+                    settlementPair.Value;
+                if (state == null || !state.IsActive)
+                    continue;
+
+                int housingCapacity = 0;
+
+                for (int index = 0;
+                     index < state.Buildings.Count;
+                     index++)
+                {
+                    EconomyBuildingState building =
+                        state.Buildings[index];
+                    if (building == null
+                        || string.IsNullOrWhiteSpace(
+                            building.BuildingId))
+                    {
+                        continue;
+                    }
+
+                    BuildingDefinition definition =
+                        _buildingRegistry.GetById(
+                            building.BuildingId);
+                    if (definition == null)
+                        continue;
+
+                    building.RequiredWorkers =
+                        BuildingDefinitionCapabilities
+                            .GetRequiredWorkers(definition);
+                    building.EconomyPriority =
+                        BuildingDefinitionCapabilities
+                            .GetEconomyPriority(definition);
+                    building.WorkerTypeId =
+                        BuildingDefinitionCapabilities
+                            .GetWorkerTypeId(definition);
+
+                    if (building.AssignedWorkers
+                        > building.RequiredWorkers)
+                    {
+                        building.AssignedWorkers =
+                            building.RequiredWorkers;
+                    }
+
+                    if (BuildingDefinitionCapabilities
+                            .TryGetEnabledModule(
+                                definition,
+                                out ProductionBuildingModule production))
+                    {
+                        building.ProductionRecipes =
+                            new List<ProductionRecipeDefinition>();
+
+                        if (production.Recipes != null
+                            && production.Recipes.Count > 0)
+                        {
+                            building.ProductionRecipes.AddRange(
+                                production.Recipes);
+                        }
+                        else if (!string.IsNullOrWhiteSpace(
+                                     production.ResourceId))
+                        {
+                            building.ProductionRecipes.Add(
+                                new ProductionRecipeDefinition
+                                {
+                                    RecipeId =
+                                        $"{building.BuildingId}:legacy",
+                                    TurnsPerCycle = 1,
+                                    RequiresWorkers =
+                                        building.RequiredWorkers > 0,
+                                    RequiresStorageSpace = false,
+                                    Outputs =
+                                        new List<BuildingResourceAmount>
+                                        {
+                                            new BuildingResourceAmount
+                                            {
+                                                ResourceId =
+                                                    production.ResourceId.Trim(),
+                                                Amount = 1,
+                                            },
+                                        },
+                                });
+                        }
+
+                        building.ProductionProfileId =
+                            building.BuildingId;
+                    }
+                    else
+                    {
+                        building.ProductionProfileId = null;
+                        building.ProductionRecipes?.Clear();
+                        building.RecipeProgress?.Clear();
+                        building.ProductionProgress = 0f;
+                    }
+
+                    if (BuildingDefinitionCapabilities
+                            .TryGetEnabledModule(
+                                definition,
+                                out HousingBuildingModule housing))
+                    {
+                        housingCapacity +=
+                            Math.Max(0, housing.Capacity);
+                    }
+
+                    string warehouseKey =
+                        ToWarehouseKey(building.GridPosition);
+                    if (BuildingDefinitionCapabilities
+                            .IsWarehouse(definition))
+                    {
+                        state.EnsureWarehousePool(warehouseKey);
+                        state.ConfigureWarehousePolicy(
+                            warehouseKey,
+                            BuildingDefinitionCapabilities
+                                .GetStorageCapacity(definition),
+                            BuildingDefinitionCapabilities
+                                .GetAcceptedStorageResourceIds(definition));
+                    }
+                    else if (state.WarehousePolicies.ContainsKey(
+                                 warehouseKey))
+                    {
+                        state.RemoveWarehousePool(warehouseKey);
+                    }
+
+                    refreshedBuildings++;
+                }
+
+                state.TotalHousingCapacity =
+                    housingCapacity;
+                state.EnsureWarehouseConsistency();
+                refreshedSettlements++;
+            }
+
+            Debug.Log(
+                $"[MoyvaConstructionModules] live-refresh economy " +
+                $"revision={revision} " +
+                $"settlements={refreshedSettlements} " +
+                $"buildings={refreshedBuildings}");
         }
 
         // ───────────────────────── Public API for UI / other systems
@@ -288,6 +463,14 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 out errorMessage);
         }
 
+        public void RefundOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resources)
+        {
+            if (resources == null)
+                return;
+            foreach (KeyValuePair<string, float> pair in resources)
+                _ownerResourcePoolService.AddOwnerResource(ownerId, pair.Key, pair.Value, _signalBus);
+        }
+
         public bool TryGetBuildingAtPosition(Vector2Int position, out string buildingId, out string ownerId)
         {
             return _settlementRegistry.TryGetBuildingAtPosition(position, out buildingId, out ownerId);
@@ -356,6 +539,303 @@ namespace Kruty1918.Moyva.Economy.Runtime
         {
             _ownerResourcePoolService.RestoreOwnerResourcePools(snapshot, _signalBus);
             _ownerResourcePoolService.TransferOwnerResourcesToExistingWarehouses(_settlementRegistry.AllSettlements, _signalBus, StarterPackLogTag);
+        }
+
+        internal EconomyRuntimeSaveSnapshot
+            CaptureRuntimeSaveSnapshot()
+        {
+            var result =
+                new EconomyRuntimeSaveSnapshot();
+
+            foreach (var settlementPair
+                     in _settlementRegistry.AllSettlements)
+            {
+                EconomySettlementState state =
+                    settlementPair.Value;
+                if (state == null)
+                    continue;
+
+                var saved =
+                    new EconomySettlementRuntimeSnapshot
+                    {
+                        SettlementId =
+                            state.SettlementId,
+                        CurrentTurn =
+                            state.CurrentTurn,
+                    };
+
+                foreach (var resource
+                         in state.ResourcePool)
+                {
+                    saved.ResourcePool[
+                        resource.Key] = resource.Value;
+                }
+
+                foreach (var warehouse
+                         in state.WarehouseResourcePools)
+                {
+                    var pool =
+                        new Dictionary<string, float>(
+                            StringComparer.Ordinal);
+                    if (warehouse.Value != null)
+                    {
+                        foreach (var resource
+                                 in warehouse.Value)
+                        {
+                            pool[resource.Key] =
+                                resource.Value;
+                        }
+                    }
+                    saved.Warehouses[
+                        warehouse.Key] = pool;
+                }
+
+                foreach (var assignment
+                         in state.WorkerAssignments)
+                {
+                    saved.WorkerAssignments[
+                        assignment.Key] =
+                        assignment.Value;
+                }
+
+                for (int buildingIndex = 0;
+                     buildingIndex < state.Buildings.Count;
+                     buildingIndex++)
+                {
+                    EconomyBuildingState building =
+                        state.Buildings[buildingIndex];
+                    if (building == null)
+                        continue;
+
+                    var savedBuilding =
+                        new EconomyBuildingRuntimeSnapshot
+                        {
+                            InstanceKey =
+                                building.InstanceKey,
+                            BuildingId =
+                                building.BuildingId,
+                            GridPosition =
+                                building.GridPosition,
+                            AssignedWorkers =
+                                building.AssignedWorkers,
+                            ProductionProgress =
+                                building.ProductionProgress,
+                        };
+
+                    if (building.RecipeProgress != null)
+                    {
+                        foreach (var progress
+                                 in building.RecipeProgress)
+                        {
+                            savedBuilding.RecipeProgress[
+                                progress.Key] =
+                                progress.Value;
+                        }
+                    }
+
+                    saved.Buildings.Add(
+                        savedBuilding);
+                }
+
+                result.Settlements.Add(saved);
+            }
+
+            return result;
+        }
+
+        internal void RestoreRuntimeSaveSnapshot(
+            EconomyRuntimeSaveSnapshot snapshot)
+        {
+            _pendingRuntimeSaveSnapshot = snapshot;
+            TryApplyPendingRuntimeSaveSnapshot();
+        }
+
+        private void TryApplyPendingRuntimeSaveSnapshot()
+        {
+            if (_pendingRuntimeSaveSnapshot == null
+                || _pendingRuntimeSaveSnapshot.Settlements.Count == 0)
+            {
+                return;
+            }
+
+            int applied = 0;
+            int deferred = 0;
+
+            for (int settlementIndex =
+                     _pendingRuntimeSaveSnapshot
+                         .Settlements.Count - 1;
+                 settlementIndex >= 0;
+                 settlementIndex--)
+            {
+                EconomySettlementRuntimeSnapshot saved =
+                    _pendingRuntimeSaveSnapshot
+                        .Settlements[settlementIndex];
+                EconomySettlementState state =
+                    _settlementRegistry.GetSettlement(
+                        saved.SettlementId);
+
+                if (state == null
+                    || !HasAllSavedBuildingInstances(
+                        state,
+                        saved))
+                {
+                    deferred++;
+                    continue;
+                }
+
+                ApplyRuntimeSnapshot(
+                    state,
+                    saved);
+                _pendingRuntimeSaveSnapshot
+                    .Settlements.RemoveAt(
+                        settlementIndex);
+                applied++;
+            }
+
+            if (_pendingRuntimeSaveSnapshot.Settlements.Count == 0)
+                _pendingRuntimeSaveSnapshot = null;
+
+            Debug.Log(
+                $"[MoyvaConstructionModules] economy-runtime-restore " +
+                $"applied={applied} deferred={deferred}");
+        }
+
+        private static bool HasAllSavedBuildingInstances(
+            EconomySettlementState state,
+            EconomySettlementRuntimeSnapshot saved)
+        {
+            for (int savedIndex = 0;
+                 savedIndex < saved.Buildings.Count;
+                 savedIndex++)
+            {
+                EconomyBuildingRuntimeSnapshot savedBuilding =
+                    saved.Buildings[savedIndex];
+                bool found = false;
+
+                for (int currentIndex = 0;
+                     currentIndex < state.Buildings.Count;
+                     currentIndex++)
+                {
+                    if (IsSameBuildingInstance(
+                            state.Buildings[currentIndex],
+                            savedBuilding))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static void ApplyRuntimeSnapshot(
+            EconomySettlementState state,
+            EconomySettlementRuntimeSnapshot saved)
+        {
+            state.CurrentTurn = saved.CurrentTurn;
+
+            state.ResourcePool.Clear();
+            foreach (var resource in saved.ResourcePool)
+                state.ResourcePool[resource.Key] = resource.Value;
+
+            state.WarehouseResourcePools.Clear();
+            foreach (var warehouse in saved.Warehouses)
+            {
+                state.WarehouseResourcePools[
+                    warehouse.Key] =
+                    new Dictionary<string, float>(
+                        warehouse.Value,
+                        StringComparer.Ordinal);
+            }
+
+            state.WorkerAssignments.Clear();
+            foreach (var assignment
+                     in saved.WorkerAssignments)
+            {
+                state.WorkerAssignments[
+                    assignment.Key] =
+                    assignment.Value;
+            }
+
+            for (int savedIndex = 0;
+                 savedIndex < saved.Buildings.Count;
+                 savedIndex++)
+            {
+                EconomyBuildingRuntimeSnapshot savedBuilding =
+                    saved.Buildings[savedIndex];
+
+                for (int currentIndex = 0;
+                     currentIndex < state.Buildings.Count;
+                     currentIndex++)
+                {
+                    EconomyBuildingState building =
+                        state.Buildings[currentIndex];
+                    if (!IsSameBuildingInstance(
+                            building,
+                            savedBuilding))
+                    {
+                        continue;
+                    }
+
+                    building.AssignedWorkers =
+                        Math.Max(
+                            0,
+                            Math.Min(
+                                building.RequiredWorkers,
+                                savedBuilding.AssignedWorkers));
+                    building.ProductionProgress =
+                        Math.Max(
+                            0f,
+                            savedBuilding.ProductionProgress);
+
+                    building.RecipeProgress?.Clear();
+                    if (building.RecipeProgress != null)
+                    {
+                        foreach (var progress
+                                 in savedBuilding.RecipeProgress)
+                        {
+                            building.RecipeProgress[
+                                progress.Key] =
+                                Math.Max(
+                                    0f,
+                                    progress.Value);
+                        }
+                    }
+
+                    break;
+                }
+            }
+
+            state.EnsureWarehouseConsistency();
+        }
+
+        private static bool IsSameBuildingInstance(
+            EconomyBuildingState current,
+            EconomyBuildingRuntimeSnapshot saved)
+        {
+            if (current == null || saved == null)
+                return false;
+
+            if (!string.IsNullOrWhiteSpace(
+                    saved.InstanceKey)
+                && string.Equals(
+                    current.InstanceKey,
+                    saved.InstanceKey,
+                    StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return string.Equals(
+                       current.BuildingId,
+                       saved.BuildingId,
+                       StringComparison.Ordinal)
+                   && current.GridPosition
+                       == saved.GridPosition;
         }
 
         /// <summary>Додати ресурс до поселення вручну (караван, чіт, тестування).</summary>

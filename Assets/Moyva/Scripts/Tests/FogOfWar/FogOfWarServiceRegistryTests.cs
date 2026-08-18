@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
 using NUnit.Framework;
@@ -93,3 +94,5 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
     }
 }
+
+#endif

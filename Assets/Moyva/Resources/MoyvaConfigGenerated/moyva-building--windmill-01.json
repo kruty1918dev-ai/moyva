@@ -1,0 +1,173 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "windmill-01",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 1,
+  "identity": {
+    "id": "windmill-01",
+    "displayName": "Вітряк",
+    "category": "Industrial",
+    "role": "Production",
+    "description": "Переробляє зерно за допомогою вітряного механізму.",
+    "tags": []
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.windmill-01.87bc8f20",
+      "editorPath": "Assets/Moyva/Prefabs/Buildings/windmill-01.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.windmill-01.663a1b41",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/windmill-01.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.windmill-01.663a1b41",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/windmill-01.png",
+      "required": true
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 1
+      },
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 1
+      },
+      {
+        "resourceId": "hardwood-materials-resources",
+        "amount": 1
+      }
+    ],
+    "buildTurns": 1,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "workforce",
+      "workersRequired": 1,
+      "priority": 400,
+      "workerTypeId": "",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "fog-reveal",
+      "revealRadius": 3,
+      "shape": "PixelCircle",
+      "revealOnBuilt": true,
+      "revealWhileActive": true,
+      "onlyAfterConstructionComplete": true,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "settlement-influence-requirement",
+      "mergeMode": "Override",
+      "requiresInfluence": true,
+      "blockOverlappingCenters": false,
+      "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "production",
+      "resourceId": "wheat-bundle-food-resources",
+      "workersRequired": 1,
+      "priority": 400,
+      "recipes": [
+        {
+          "recipeId": "windmill-01:mill-food",
+          "inputs": [],
+          "outputs": [
+            {
+              "resourceId": "wheat-bundle-food-resources",
+              "amount": 6
+            }
+          ],
+          "turnsPerCycle": 1,
+          "requiresWorkers": true,
+          "requiresStorageSpace": false
+        }
+      ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "229418570327446a8e81031091c506a0",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/windmill-01.asset",
+    "sourceHash": "4c32003e0e38e18273f40e76d8db97b8a04ad7fe97e36e052dfa7710114d8298"
+  }
+}

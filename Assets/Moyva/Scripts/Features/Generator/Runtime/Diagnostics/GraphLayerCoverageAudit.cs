@@ -22,6 +22,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private static bool Enabled =>
             Application.isEditor || Debug.isDebugBuild;
 
+        [System.Diagnostics.Conditional("MOYVA_DEEP_GENERATION_DIAGNOSTICS")]
         public static void LogEvaluation(
             GraphAsset graph,
             GraphEvaluationSnapshot snapshot)
@@ -84,6 +85,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Debug.Log(builder.ToString());
         }
 
+        [System.Diagnostics.Conditional("MOYVA_DEEP_GENERATION_DIAGNOSTICS")]
         public static void LogCompilerMasks(
     GraphAsset graph,
     IReadOnlyDictionary<string, bool[,]> masks)
@@ -176,6 +178,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 builder.ToString());
         }
 
+        [System.Diagnostics.Conditional("MOYVA_DEEP_GENERATION_DIAGNOSTICS")]
         public static void LogBlueprintPositions(
             GraphAsset graph,
             TileWorldCreatorManager manager,
@@ -277,6 +280,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Debug.Log(builder.ToString());
         }
 
+        [System.Diagnostics.Conditional("MOYVA_DEEP_GENERATION_DIAGNOSTICS")]
         public static void LogLogicalMap(
             GraphAsset graph,
             GraphLogicalTileMap map)
@@ -370,6 +374,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Debug.Log(builder.ToString());
         }
 
+        [System.Diagnostics.Conditional("MOYVA_DEEP_GENERATION_DIAGNOSTICS")]
         public static void LogResolvedWinners(
             GraphLogicalTileMap map,
             IReadOnlyDictionary<

@@ -4737,7 +4737,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &233218937
 GameObject:
   m_ObjectHideFlags: 0
@@ -4873,7 +4877,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &235180089
 GameObject:
   m_ObjectHideFlags: 0
@@ -5724,7 +5732,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &254789275
 GameObject:
   m_ObjectHideFlags: 0
@@ -7776,7 +7788,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &329635219
 GameObject:
   m_ObjectHideFlags: 0
@@ -8341,7 +8357,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &352495796
 GameObject:
   m_ObjectHideFlags: 0
@@ -8477,7 +8497,292 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
+--- !u!1 &361590620
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 361590622}
+  - component: {fileID: 361590621}
+  m_Layer: 0
+  m_Name: __MoyvaJsonBindings
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &361590621
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 361590620}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea688967269dbc51aa030e7381716f56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.Jsonization::Kruty1918.Moyva.Jsonization.MoyvaJsonBindingMarker
+  _bindings:
+  - Target: {fileID: 678375842}
+    PropertyPath: _graphAsset
+    ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
+    ConfigId: testgeneratorgraph
+  - Target: {fileID: 678375842}
+    PropertyPath: _projectSettings
+    ConfigType: Kruty1918.Moyva.Grid.API.MoyvaProjectSettingsSO
+    ConfigId: moyvaprojectsettings
+  - Target: {fileID: 678375842}
+    PropertyPath: _tileRegistryOverride
+    ConfigType: Kruty1918.Moyva.Grid.API.TileRegistrySO
+    ConfigId: tile3dregistry
+  - Target: {fileID: 678375842}
+    PropertyPath: _mapObjectRegistry
+    ConfigType: Kruty1918.Moyva.Generator.API.MapObjectRegistrySO
+    ConfigId: mapobjectregistry
+  - Target: {fileID: 678375842}
+    PropertyPath: _buildingRegistry
+    ConfigType: Kruty1918.Moyva.Construction.Runtime.BuildingRegistrySO
+    ConfigId: new-building-registry-so
+  - Target: {fileID: 678375842}
+    PropertyPath: _cloudsSettings
+    ConfigType: Kruty1918.Moyva.Clouds.API.CloudsSettings
+    ConfigId: cloudssettings
+  - Target: {fileID: 429876364}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1827957274}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 708577336}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2126115994}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1549643411}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1391855618}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2144015534}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2039796958}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2026830664}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1071735479}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1316308756}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1290484283}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1415812550}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2143226278}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 709592911}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1225398777}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 233092239}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 348544268}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 537050249}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1920223995}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1461487383}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2021469319}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1486479234}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1703230491}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1659762366}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1649478609}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1145700848}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 827738559}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 829916996}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1167575359}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1783245605}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1155678258}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 396159002}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 233218942}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 1243697399}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2105000206}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 976000054}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2105000077}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2105000105}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2105000125}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2035747930}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 329567565}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 2093891340}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 969977535}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 746021222}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 684164734}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 601570575}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 604988764}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 254606370}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 352495801}
+    PropertyPath: _cachedRegistry
+    ConfigType: Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
+    ConfigId: moyvaaudioregistry
+  - Target: {fileID: 610174634}
+    PropertyPath: _audioMixerBindings
+    ConfigType: Kruty1918.Moyva.HomeMenu.Runtime.AudioMixerBindingsSO
+    ConfigId: moyvaaudiomixerbindings
+  - Target: {fileID: 610174634}
+    PropertyPath: _config
+    ConfigType: Kruty1918.Moyva.HomeMenu.Runtime.HomeMenuConfigSO
+    ConfigId: homemenuconfig
+  - Target: {fileID: 610174634}
+    PropertyPath: _worldCreationDefaults
+    ConfigType: Kruty1918.Moyva.WorldCreation.API.WorldCreationDefaultsSO
+    ConfigId: worldcreationdefaults
+--- !u!4 &361590622
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 361590620}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &365489598
 GameObject:
   m_ObjectHideFlags: 0
@@ -9366,7 +9671,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &399940577
 GameObject:
   m_ObjectHideFlags: 0
@@ -10011,7 +10320,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &431089925
 GameObject:
   m_ObjectHideFlags: 0
@@ -12278,7 +12591,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &542466450
 GameObject:
   m_ObjectHideFlags: 0
@@ -14279,7 +14596,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &602324401
 GameObject:
   m_ObjectHideFlags: 0
@@ -14752,7 +15073,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &610174632
 GameObject:
   m_ObjectHideFlags: 0
@@ -14804,9 +15129,77 @@ MonoBehaviour:
   _kickPlayerPanelName: KickPlayerPanel
   _infoPanelName: InfoPanel
   _multiplayerTypePanelName: SelectMultiplayerType
-  _audioMixerBindings: {fileID: 11400000, guid: 9ae0fdb473469977ba435b4eb7bc09d7, type: 2}
-  _config: {fileID: 11400000, guid: a1b2c3d4e5f6e0010000000000000001, type: 2}
-  _worldCreationDefaults: {fileID: 11400000, guid: b6ced9580bc9ed9459d63ae34dcf05e4, type: 2}
+  _audioMixerBindings:
+    mixer: {fileID: 0}
+    masterParameter: MasterVolume
+    musicParameter: MusicVolume
+    sfxParameter: SfxVolume
+    uiParameter: UiVolume
+    defaultMaster: 0.8
+    defaultMusic: 0.7
+    defaultSfx: 0.9
+    defaultUi: 0.9
+  _config:
+    gameplaySceneName: Gamplay_Scene
+    homeMenuSceneName: HomeMenu
+    minPreloadSeconds: 0.8
+    sceneActivationDelay: 0.2
+  _worldCreationDefaults:
+    DefaultWorldName: "\u041C\u0456\u0439 \u0441\u0432\u0456\u0442"
+    AppendIndexWhenSaveExists: 1
+    FirstWorldIndex: 1
+    DefaultSizePreset: 1
+    DefaultCustomWidth: 64
+    DefaultCustomHeight: 64
+    SmallWorld:
+      Width: 32
+      Height: 32
+    MediumWorld:
+      Width: 64
+      Height: 64
+    LargeWorld:
+      Width: 128
+      Height: 128
+    DefaultMapType: 0
+    DefaultDifficulty: 1
+    DefaultEnableBots: 1
+    DefaultHumanPlayerCount: 1
+    DefaultBotCount: 1
+    DefaultStartingGold: 200
+    DefaultStartingFood: 100
+    DefaultForestDensity: 0.4
+    DefaultMountainDensity: 0.3
+    DefaultWaterDensity: 0.25
+    DefaultVillageDensity: 0.2
+    DefaultGenerateRivers: 1
+    DefaultGenerateBiomes: 1
+    DefaultApplyWFC: 1
+    PlacementRulesGraph:
+      _connections: []
+      _version: 2
+      _sharedSettings:
+        _mapWidth: 0
+        _mapHeight: 0
+        _gridTopology: 0
+        _projectionMode: 5
+        _renderMode: 3
+        _neighborhoodMode: 0
+      _globalGraphState:
+        _graphId: 
+        _layerId: 
+        _version: 1
+        _nodeIds: []
+        _connectionIds: []
+      _layers: []
+      _layerGraphStates: []
+      _tileRegistry:
+        _definitions: []
+    TileRegistry:
+      _definitions: []
+    BlockedBuildingTileIds: []
+    BlockedBuildingHillLevelRanges: []
+    BlockedUnitTileIds: []
+    BlockedUnitHillLevelRanges: []
   _confirmOnBackMenuNames: []
   _menuRevealFade:
     Enabled: 1
@@ -16285,11 +16678,99 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.HomeMenuBackgroundPreviewController
   _targetImage: {fileID: 678375843}
-  _graphAsset: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
-  _projectSettings: {fileID: 11400000, guid: 62c207fc5c1497db8a5ea98c4f27f42b, type: 2}
-  _tileRegistryOverride: {fileID: 11400000, guid: 5a57832fb61b869c4a38191aa4236799, type: 2}
-  _mapObjectRegistry: {fileID: 11400000, guid: 1aa3411356147585fb2c8534e5b707b8, type: 2}
-  _buildingRegistry: {fileID: 11400000, guid: 10b50407045da99758fd720b41437642, type: 2}
+  _graphAsset:
+    _connections: []
+    _version: 2
+    _sharedSettings:
+      _mapWidth: 0
+      _mapHeight: 0
+      _gridTopology: 0
+      _projectionMode: 5
+      _renderMode: 3
+      _neighborhoodMode: 0
+    _globalGraphState:
+      _graphId: 
+      _layerId: 
+      _version: 1
+      _nodeIds: []
+      _connectionIds: []
+    _layers: []
+    _layerGraphStates: []
+    _tileRegistry:
+      _definitions: []
+  _projectSettings:
+    ProjectVisualMode: 0
+    UseAdvancedProjectSettings: 0
+    DefaultGridTopology: 0
+    DefaultProjectionMode: 5
+    DefaultRenderMode: 3
+    DefaultNeighborhood: 0
+    OrthogonalCellWidth: 1
+    OrthogonalCellHeight: 1
+    OrthogonalCellDepth: 1
+    IsometricTileWidth: 1
+    IsometricTileHeight: 0.5
+    HexOrientation: 0
+    HexRadius: 0.5
+    HeightScale: 0.25
+    UseHeightForPreview: 1
+    EnableMeshPrefabPreviews: 1
+    PreviewTextureSize: 96
+    PreviewPadding: 1.35
+    GeneratePreviewMipmaps: 0
+    PreviewFilterMode: 1
+    PreviewRenderTextureFormat: 0
+    PreviewRenderTextureReadWrite: 1
+    Orthographic3DPreviewEuler: {x: 90, y: 0, z: 0}
+    Isometric3DPreviewEuler: {x: 50, y: 45, z: 0}
+    UsePerspectivePreviewCameraIn3D: 1
+    PreviewPerspectiveFieldOfView: 55
+    PreviewLightEuler: {x: 50, y: -30, z: 0}
+    PreviewLightIntensity: 1.35
+    UseLiveHomeMenuMeshPreview: 1
+    HomeMenuPreviewIncludeObjects: 1
+    HomeMenuPreviewIncludeBuildings: 1
+    HomeMenuPreviewCombineMeshesByMaterial: 1
+    HomeMenuPreviewTileStride: 1
+    HomeMenuPreviewMaxTerrainTiles: 30000
+    HomeMenuPreviewMaxVerticesPerBatch: 60000
+    HomeMenuPreviewMaxMaterialBatches: 128
+    HomeMenuPreviewCameraPadding: 1.2
+    HomeMenuPreviewCameraDepth: 100
+    HomeMenuPreviewLayer: 30
+    HomeMenuPreviewDisableFog: 1
+    HomeMenuPreviewUploadMeshData: 1
+    HomeMenuPreviewCastShadows: 0
+    HomeMenuPreviewReceiveShadows: 0
+    HomeMenuPreviewBackgroundColor: {r: 0.05, g: 0.07, b: 0.08, a: 1}
+    AutoConfigure3DLighting: 1
+    CreateDirectionalLightIn3D: 1
+    Project3DLightEuler: {x: 50, y: -35, z: 0}
+    Project3DLightColor: {r: 1, g: 0.96, b: 0.88, a: 1}
+    Project3DLightIntensity: 1.35
+    Project3DLightShadows: 1
+    Project3DAmbientSkyColor: {r: 0.46, g: 0.54, b: 0.64, a: 1}
+    Project3DAmbientEquatorColor: {r: 0.42, g: 0.38, b: 0.32, a: 1}
+    Project3DAmbientGroundColor: {r: 0.18, g: 0.16, b: 0.14, a: 1}
+    Enable3DAtmosphericFog: 1
+    Project3DAtmosphericFogColor: {r: 0.62, g: 0.68, b: 0.72, a: 1}
+    Project3DAtmosphericFogDensity: 0.012
+    CameraPolicy: 0
+    CameraAnglePolicy: 0
+    Custom3DCameraEuler: {x: 50, y: 45, z: 0}
+    Project3DCameraDistance: 20
+    Project3DOrthographicSize: 20
+    Project3DFieldOfView: 30
+    EnsureStartupCameraShowsRevealedArea: 1
+    StartupCameraPaddingTiles: 2
+    StartupCameraRadiusSource: 0
+    ManualStartupCameraRadius: 15
+  _tileRegistryOverride:
+    _definitions: []
+  _mapObjectRegistry:
+    _definitions: []
+  _buildingRegistry:
+    WallCollections: []
   _mapTileCount: {x: 192, y: 108}
   _pixelsPerTile: 2
   _maxTextureEdge: 1024
@@ -16524,7 +17005,55 @@ MonoBehaviour:
   _stretchTargetToParent: 1
   _regenerateOnEnable: 1
   _cloudsLayer: {fileID: 678375839}
-  _cloudsSettings: {fileID: 11400000, guid: 1791697a3240b51ddadc7bae72cf33e3, type: 2}
+  _cloudsSettings:
+    Enabled: 1
+    MaxActiveClouds: 10
+    InitialClouds: 3
+    InitialCloudsStartInView: 1
+    SpawnIntervalRange: {x: 1.5, y: 4}
+    SpawnAreaMode: 1
+    MinimumSpawnDistance: 5
+    SpawnPlacementAttempts: 10
+    CloudSprites: []
+    SpeedRange: {x: 0.35, y: 0.9}
+    ScaleRange: {x: 0.85, y: 1.35}
+    AltitudeScaleJitter: 0.12
+    LowAltitudeMipBias: 1.2
+    HighAltitudeMipBias: 0.15
+    LowAltitudeHeightMultiplier: 0.7
+    HighAltitudeHeightMultiplier: 1.35
+    LeftToRightChance: 0.5
+    SpawnHorizontalPadding: 3
+    SpawnVerticalPadding: 1.5
+    DespawnHorizontalPadding: 4
+    FadeDuration: 1.2
+    MapMaskEnabled: 1
+    ManualMapSize: {x: 32, y: 32}
+    ManualMapCenter: {x: 15.5, y: 15.5}
+    MaskEdgeFadeWidth: 1.5
+    MaskEdgeFadeSteps: 5
+    LifetimeDissolveEnabled: 0
+    LifetimeRange: {x: 12, y: 24}
+    DissolveDuration: 3
+    CloudColor: {r: 1, g: 1, b: 1, a: 1}
+    CloudAlpha: 0.85
+    SpriteMaterial: {fileID: 0}
+    CameraProximityFadeEnabled: 1
+    CameraFadeOrthographicRange: {x: 5, y: 14}
+    CloseCameraAlphaMultiplier: 0.28
+    CameraFadeSteps: 4
+    SortingLayerName: Default
+    SortingOrder: 50
+    ShadowsEnabled: 1
+    CloudHeight: 2
+    ShadowOffset: {x: 0, y: -0.45}
+    ShadowOffsetPerHeight: {x: 0.08, y: -0.18}
+    ShadowColor: {r: 0, g: 0, b: 0, a: 1}
+    ShadowAlphaMultiplier: 0.35
+    ShadowScaleMultiplier: 1.03
+    ShadowScalePerHeight: 0.04
+    ShadowAlphaHeightFade: 0.08
+    ShadowSortingOrderOffset: -1
   _menuMaxClouds: 4
   _menuInitialClouds: 3
   _cloudHeightRatio: 0.12
@@ -16833,7 +17362,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &684286548
 GameObject:
   m_ObjectHideFlags: 0
@@ -17783,7 +18316,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &709592905
 GameObject:
   m_ObjectHideFlags: 0
@@ -17919,7 +18456,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &709907757
 GameObject:
   m_ObjectHideFlags: 0
@@ -18683,7 +19224,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &749823206
 GameObject:
   m_ObjectHideFlags: 0
@@ -20832,7 +21377,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &829916990
 GameObject:
   m_ObjectHideFlags: 0
@@ -20968,7 +21517,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &830315464
 GameObject:
   m_ObjectHideFlags: 0
@@ -24045,7 +24598,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &976000048
 GameObject:
   m_ObjectHideFlags: 0
@@ -24181,7 +24738,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &976452950
 GameObject:
   m_ObjectHideFlags: 0
@@ -25659,7 +26220,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!114 &1071735480
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27274,7 +27839,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1147083825
 GameObject:
   m_ObjectHideFlags: 0
@@ -27970,7 +28539,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1157227176
 GameObject:
   m_ObjectHideFlags: 0
@@ -28644,7 +29217,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1168926931
 GameObject:
   m_ObjectHideFlags: 0
@@ -29924,7 +30501,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1233861983
 GameObject:
   m_ObjectHideFlags: 0
@@ -30367,7 +30948,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1246246053
 GameObject:
   m_ObjectHideFlags: 0
@@ -31778,7 +32363,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1295903553
 GameObject:
   m_ObjectHideFlags: 0
@@ -32700,7 +33289,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1319665903
 GameObject:
   m_ObjectHideFlags: 0
@@ -34198,7 +34791,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1393020174
 GameObject:
   m_ObjectHideFlags: 0
@@ -34858,7 +35455,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1418592882
 GameObject:
   m_ObjectHideFlags: 0
@@ -35936,7 +36537,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1470086817
 GameObject:
   m_ObjectHideFlags: 0
@@ -36606,7 +37211,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1487205405
 GameObject:
   m_ObjectHideFlags: 0
@@ -38111,7 +38720,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1553890512
 GameObject:
   m_ObjectHideFlags: 0
@@ -41072,7 +41685,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1659248849
 GameObject:
   m_ObjectHideFlags: 0
@@ -41502,7 +42119,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1663554643
 GameObject:
   m_ObjectHideFlags: 0
@@ -42600,7 +43221,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1707944974
 GameObject:
   m_ObjectHideFlags: 0
@@ -44596,7 +45221,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1786882769
 GameObject:
   m_ObjectHideFlags: 0
@@ -45607,7 +46236,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1828203842
 GameObject:
   m_ObjectHideFlags: 0
@@ -47626,7 +48259,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &1923974564
 GameObject:
   m_ObjectHideFlags: 0
@@ -50505,7 +51142,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &2024725731
 GameObject:
   m_ObjectHideFlags: 0
@@ -50677,7 +51318,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!114 &2026830665
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -50778,7 +51423,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &2036073086
 GameObject:
   m_ObjectHideFlags: 0
@@ -50989,7 +51638,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &2041793097
 GameObject:
   m_ObjectHideFlags: 0
@@ -52499,7 +53152,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &2095778970
 GameObject:
   m_ObjectHideFlags: 0
@@ -53960,7 +54617,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &2105000080
 GameObject:
   m_ObjectHideFlags: 0
@@ -54370,7 +55031,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &2105000110
 GameObject:
   m_ObjectHideFlags: 0
@@ -54643,7 +55308,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &2105000130
 GameObject:
   m_ObjectHideFlags: 0
@@ -54932,7 +55601,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &2105000210
 GameObject:
   m_ObjectHideFlags: 0
@@ -55978,7 +56651,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &2130615855
 GameObject:
   m_ObjectHideFlags: 0
@@ -56352,7 +57029,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &2143417893
 GameObject:
   m_ObjectHideFlags: 0
@@ -56642,7 +57323,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.ButtonAudioComponent
   _soundKey: click-01
-  _cachedRegistry: {fileID: 11400000, guid: 904efd62d2795ab879e2d2ce5c770413, type: 2}
+  _cachedRegistry:
+    _sounds: []
+    _defaultPoolSize: 12
+    _dontDestroyOnLoad: 1
+    _verboseLogs: 0
 --- !u!1 &2144829845
 GameObject:
   m_ObjectHideFlags: 0
@@ -57103,3 +57788,4 @@ SceneRoots:
   - {fileID: 1372784659}
   - {fileID: 1240876895}
   - {fileID: 1751531049}
+  - {fileID: 361590622}

@@ -1,11 +1,13 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Construction.Editor
 {
-    [CreateAssetMenu(menuName = "Moyva/Construction/Templates/Building Template Library", fileName = "BuildingTemplateLibrary")]
-    public sealed class BuildingTemplateLibrarySO : ScriptableObject
+[System.Serializable]
+public sealed class BuildingTemplateLibrarySO : MoyvaJsonConfigObject
     {
         [FolderPath(RequireExistingPath = true)]
         public string DefaultOutputFolder = "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings";
@@ -15,3 +17,5 @@ namespace Kruty1918.Moyva.Construction.Editor
         public List<BuildingArchetypeSO> Archetypes = new List<BuildingArchetypeSO>();
     }
 }
+
+#endif

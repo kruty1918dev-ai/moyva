@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -144,14 +145,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             [AssetsOnly]
             public EditorPreviewSettings PreviewSettings;
 
-            [TitleGroup("Editor Preview")]
-            [MinValue(4)]
-            [LabelText("Preview Width")]
+            [HideInInspector]
             public int PreviewWidth = 64;
 
-            [TitleGroup("Editor Preview")]
-            [MinValue(4)]
-            [LabelText("Preview Height")]
+            [HideInInspector]
             public int PreviewHeight = 64;
 
             [TitleGroup("Editor Preview")]
@@ -490,6 +487,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         [SerializeField] private bool _autoRunOnChange = true;
         [SerializeField] private int _previewResolution = 2; // 0=64,1=128,2=full (1 px = 1 tile)
         [SerializeField] private bool _previewHeatmap;
+
+        // Canonical map-size controls. They write to GraphAsset.SharedSettings
+        // and therefore drive both preview and gameplay generation.
+        private IntegerField _mapSizeWidthField;
+        private IntegerField _mapSizeHeightField;
+        private ToolbarMenu _mapSizePresetsMenu;
+        private Button _mapSizeToolbarButton;
+        private Label _mapSizeAuthorityLabel;
+        private Label _mapSizeSummaryLabel;
+        private VisualElement _mapSizeSettingsCard;
+        private bool _suppressMapSizeUiCallbacks;
 
         private readonly GraphPreviewRevisionScheduler _revisionScheduler = new();
         private Hash128 _observedGraphDependencyHash;
@@ -1940,6 +1948,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _nodeInspectorSection.Add(tabHeaderRow);
 
             _tabSettingsContent = new VisualElement();
+            ConstructMapSizeSettingsCard(_tabSettingsContent);
+
             _graphSettingsGui = new IMGUIContainer(DrawGeneralInspectorTab)
             {
                 style = { marginBottom = 10 }
@@ -2072,40 +2082,20 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             });
             toolbar.Add(settingsField);
 
-            // Map size fields
-            var widthField = new IntegerField("W")
+            // Compact indicator only. Editing lives in General -> Map Size.
+            _mapSizeToolbarButton = new ToolbarButton(() =>
             {
-                value = _previewWidth,
-                style = { width = 60 },
-                tooltip = "Ширина карти для preview/run, якщо її не перевизначено в налаштуваннях графа."
+                SetInspectorVisible(true);
+                SetInspectorTab(InspectorTab.Settings);
+                _mapSizeSettingsCard?.Focus();
+                _mapSizeWidthField?.Focus();
+            })
+            {
+                text = "Map: —",
+                tooltip = "Відкрити налаштування розміру карти у правій вкладці «Загальні»."
             };
-            widthField.RegisterValueChangedCallback(evt =>
-            {
-                int nextWidth = Mathf.Max(4, evt.newValue);
-                if (_previewWidth == nextWidth)
-                    return;
-
-                _previewWidth = nextWidth;
-                RequestAutoRun();
-            });
-            toolbar.Add(widthField);
-
-            var heightField = new IntegerField("H")
-            {
-                value = _previewHeight,
-                style = { width = 60 },
-                tooltip = "Висота карти для preview/run, якщо її не перевизначено в налаштуваннях графа."
-            };
-            heightField.RegisterValueChangedCallback(evt =>
-            {
-                int nextHeight = Mathf.Max(4, evt.newValue);
-                if (_previewHeight == nextHeight)
-                    return;
-
-                _previewHeight = nextHeight;
-                RequestAutoRun();
-            });
-            toolbar.Add(heightField);
+            _mapSizeToolbarButton.style.minWidth = 92;
+            toolbar.Add(_mapSizeToolbarButton);
 
             toolbar.Add(new ToolbarSpacer());
 
@@ -2279,6 +2269,452 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             rootVisualElement.Insert(0, toolbar);
         }
 
+        private void ConstructMapSizeSettingsCard(
+            VisualElement parent)
+        {
+            if (parent == null)
+                return;
+
+            _mapSizeSettingsCard = new VisualElement
+            {
+                focusable = true,
+                style =
+                {
+                    marginTop = 6, marginBottom = 12,
+                    paddingLeft = 12, paddingRight = 12,
+                    paddingTop = 10, paddingBottom = 12,
+                    backgroundColor = new Color(0.105f, 0.115f, 0.135f),
+                    borderLeftWidth = 1, borderRightWidth = 1,
+                    borderTopWidth = 1, borderBottomWidth = 1,
+                    borderLeftColor = new Color(0.28f, 0.31f, 0.36f),
+                    borderRightColor = new Color(0.28f, 0.31f, 0.36f),
+                    borderTopColor = new Color(0.28f, 0.31f, 0.36f),
+                    borderBottomColor = new Color(0.28f, 0.31f, 0.36f),
+                    borderTopLeftRadius = 6, borderTopRightRadius = 6,
+                    borderBottomLeftRadius = 6, borderBottomRightRadius = 6
+                }
+            };
+
+            var titleRow = new VisualElement
+            {
+                style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 3 }
+            };
+            titleRow.Add(new Label("Розмір карти")
+            {
+                style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 14, flexGrow = 1 }
+            });
+            _mapSizeAuthorityLabel = new Label("—")
+            {
+                style =
+                {
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    unityTextAlign = TextAnchor.MiddleCenter,
+                    minWidth = 74, paddingLeft = 7, paddingRight = 7,
+                    paddingTop = 2, paddingBottom = 2,
+                    borderTopLeftRadius = 8, borderTopRightRadius = 8,
+                    borderBottomLeftRadius = 8, borderBottomRightRadius = 8
+                }
+            };
+            titleRow.Add(_mapSizeAuthorityLabel);
+            _mapSizeSettingsCard.Add(titleRow);
+
+            _mapSizeSummaryLabel = new Label("Один розмір використовується для preview та ігрової карти.")
+            {
+                style = { color = new Color(0.68f,0.72f,0.78f), whiteSpace = WhiteSpace.Normal, marginBottom = 10 }
+            };
+            _mapSizeSettingsCard.Add(_mapSizeSummaryLabel);
+
+            _mapSizeWidthField = new IntegerField("Ширина")
+            {
+                isDelayed = true,
+                tooltip = "Ширина карти в тайлах. Натисни Enter після введення."
+            };
+            _mapSizeWidthField.style.marginBottom = 5;
+            _mapSizeWidthField.RegisterValueChangedCallback(evt =>
+            {
+                if (_suppressMapSizeUiCallbacks) return;
+                int height = _mapSizeHeightField != null ? _mapSizeHeightField.value : evt.newValue;
+                ApplyAuthoritativeMapSize(evt.newValue, height, "General Panel Width");
+            });
+            _mapSizeSettingsCard.Add(_mapSizeWidthField);
+
+            _mapSizeHeightField = new IntegerField("Висота")
+            {
+                isDelayed = true,
+                tooltip = "Висота карти в тайлах. Натисни Enter після введення."
+            };
+            _mapSizeHeightField.style.marginBottom = 9;
+            _mapSizeHeightField.RegisterValueChangedCallback(evt =>
+            {
+                if (_suppressMapSizeUiCallbacks) return;
+                int width = _mapSizeWidthField != null ? _mapSizeWidthField.value : evt.newValue;
+                ApplyAuthoritativeMapSize(width, evt.newValue, "General Panel Height");
+            });
+            _mapSizeSettingsCard.Add(_mapSizeHeightField);
+
+            _mapSizeSettingsCard.Add(new Label("Швидкий вибір")
+            {
+                style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 5 }
+            });
+
+            var rowA = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 4 } };
+            rowA.Add(CreateMapSizePresetButton("32×32", 32, 32));
+            rowA.Add(CreateMapSizePresetButton("48×48", 48, 48));
+            rowA.Add(CreateMapSizePresetButton("64×64", 64, 64));
+            _mapSizeSettingsCard.Add(rowA);
+
+            var rowB = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 10 } };
+            rowB.Add(CreateMapSizePresetButton("80×80", 80, 80));
+            rowB.Add(CreateMapSizePresetButton("96×96", 96, 96));
+            rowB.Add(CreateMapSizePresetButton("128×128", 128, 128));
+            _mapSizeSettingsCard.Add(rowB);
+
+            var runtimeButton = new Button(ClearAuthoritativeMapSize)
+            {
+                text = "Використовувати розмір Runtime / Menu",
+                tooltip = "Прибрати override з Graph. Тоді розмір може задавати меню запуску."
+            };
+            runtimeButton.style.height = 28;
+            _mapSizeSettingsCard.Add(runtimeButton);
+
+            parent.Add(_mapSizeSettingsCard);
+            RefreshMapSizeControls();
+        }
+
+        private void NormalizeStoredMapSizeToFullChunks()
+        {
+            if (_graphAsset?.SharedSettings == null || !_graphAsset.SharedSettings.HasMapSize)
+                return;
+
+            Vector2Int requested = _graphAsset.SharedSettings.MapSize;
+            Vector2Int effective = ChunkAlignedMapSizeUtility.CropToSceneChunks(
+                requested,
+                "GraphEditorStored",
+                _graphAsset);
+            if (effective == requested)
+                return;
+
+            Undo.RecordObject(_graphAsset, "Crop Map Size To Full Chunks");
+            _graphAsset.SharedSettings.SetMapSize(effective.x, effective.y);
+            EditorUtility.SetDirty(_graphAsset);
+
+            if (_statusLabel != null)
+            {
+                int chunkSize = ChunkAlignedMapSizeUtility.ResolveSceneChunkSize();
+                _statusLabel.text =
+                    $"Map {requested.x}×{requested.y} обрізано до {effective.x}×{effective.y}: " +
+                    $"тільки повні чанки {chunkSize}×{chunkSize}.";
+            }
+        }
+
+        private Button CreateMapSizePresetButton(string label, int width, int height)
+        {
+            var button = new Button(() => ApplyAuthoritativeMapSize(width, height, $"General Preset {label}"))
+            {
+                text = label
+            };
+            button.style.flexGrow = 1;
+            button.style.height = 25;
+            button.style.marginRight = 3;
+            return button;
+        }
+
+        private void AddMapSizePreset(
+            ToolbarMenu menu,
+            string label,
+            int width,
+            int height)
+        {
+            if (menu == null)
+                return;
+
+            menu.menu.AppendAction(
+                label,
+                _ => ApplyAuthoritativeMapSize(
+                    width,
+                    height,
+                    $"Preset {label}"),
+                _ => _graphAsset != null
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled);
+        }
+
+        private void ApplyAuthoritativeMapSize(
+            int width,
+            int height,
+            string source)
+        {
+            int nextWidth = Mathf.Max(4, width);
+            int nextHeight = Mathf.Max(4, height);
+
+            Vector2Int requestedMapSize = new Vector2Int(nextWidth, nextHeight);
+            Vector2Int croppedMapSize = ChunkAlignedMapSizeUtility.CropToSceneChunks(
+                requestedMapSize,
+                "GraphEditor",
+                _graphAsset);
+            nextWidth = croppedMapSize.x;
+            nextHeight = croppedMapSize.y;
+
+            if (_graphAsset == null)
+            {
+                _previewWidth = nextWidth;
+                _previewHeight = nextHeight;
+                RefreshMapSizeControls();
+                return;
+            }
+
+            Vector2Int current =
+                _graphAsset.SharedSettings.MapSize;
+
+            if (_graphAsset.SharedSettings.HasMapSize
+                && current.x == nextWidth
+                && current.y == nextHeight)
+            {
+                RefreshMapSizeControls();
+                return;
+            }
+
+            Undo.RecordObject(
+                _graphAsset,
+                "Change Moyva Map Size");
+
+            _graphAsset.SharedSettings.SetMapSize(
+                nextWidth,
+                nextHeight);
+
+            // Legacy window values stay synchronized only for compatibility.
+            _previewWidth = nextWidth;
+            _previewHeight = nextHeight;
+
+            EditorUtility.SetDirty(_graphAsset);
+
+            SyncMapSizeToSceneTargets(
+                nextWidth,
+                nextHeight);
+
+            RefreshMapSizeControls();
+            SaveWindowSettings();
+
+            _lastExecutionMapSize =
+                new Vector2Int(
+                    nextWidth,
+                    nextHeight);
+
+            RequestAutoRun();
+            GraphPreviewWindow.RequestRepaint();
+
+            if (_statusLabel != null)
+            {
+                _statusLabel.text =
+                    $"Map Size {nextWidth}×{nextHeight} — preview + gameplay";
+            }
+
+            Debug.Log(
+                "[MOYVA_MAP_SIZE] SET " +
+                $"size={nextWidth}x{nextHeight} " +
+                $"source={source} " +
+                "authority=GraphSharedSettings " +
+                "preview=SYNC gameplay=SYNC");
+        }
+
+        private void ClearAuthoritativeMapSize()
+        {
+            if (_graphAsset == null)
+                return;
+
+            if (!_graphAsset.SharedSettings.HasMapSize)
+            {
+                RefreshMapSizeControls();
+                return;
+            }
+
+            Undo.RecordObject(
+                _graphAsset,
+                "Use Runtime Map Size");
+
+            _graphAsset.SharedSettings.ClearMapSize();
+            EditorUtility.SetDirty(_graphAsset);
+
+            RefreshMapSizeControls();
+            SaveWindowSettings();
+            RequestAutoRun();
+
+            Debug.Log(
+                "[MOYVA_MAP_SIZE] CLEAR " +
+                "authority=RuntimeOrMenu");
+        }
+
+        private void RefreshMapSizeControls()
+        {
+            NormalizeStoredMapSizeToFullChunks();
+            Vector2Int size = new Vector2Int(Mathf.Max(4, _previewWidth), Mathf.Max(4, _previewHeight));
+            bool graphControlled = _graphAsset?.SharedSettings != null && _graphAsset.SharedSettings.HasMapSize;
+            if (graphControlled) size = _graphAsset.SharedSettings.MapSize;
+
+            _suppressMapSizeUiCallbacks = true;
+            try
+            {
+                if (_mapSizeWidthField != null)
+                {
+                    _mapSizeWidthField.SetValueWithoutNotify(Mathf.Max(4, size.x));
+                    _mapSizeWidthField.SetEnabled(_graphAsset != null);
+                }
+                if (_mapSizeHeightField != null)
+                {
+                    _mapSizeHeightField.SetValueWithoutNotify(Mathf.Max(4, size.y));
+                    _mapSizeHeightField.SetEnabled(_graphAsset != null);
+                }
+                if (_mapSizePresetsMenu != null)
+                {
+                    _mapSizePresetsMenu.SetEnabled(_graphAsset != null);
+                    _mapSizePresetsMenu.text = graphControlled ? $"Graph ✓ {size.x}×{size.y}" : "Runtime / Menu";
+                }
+                if (_mapSizeToolbarButton != null)
+                {
+                    _mapSizeToolbarButton.SetEnabled(_graphAsset != null);
+                    _mapSizeToolbarButton.text = graphControlled ? $"Map: {size.x}×{size.y}" : "Map: Runtime";
+                }
+                if (_mapSizeAuthorityLabel != null)
+                {
+                    _mapSizeAuthorityLabel.text = graphControlled ? "GRAPH" : "RUNTIME";
+                    _mapSizeAuthorityLabel.style.backgroundColor = graphControlled ? new Color(0.12f,0.31f,0.18f) : new Color(0.27f,0.24f,0.12f);
+                    _mapSizeAuthorityLabel.style.color = graphControlled ? new Color(0.68f,1f,0.74f) : new Color(1f,0.82f,0.42f);
+                }
+                if (_mapSizeSummaryLabel != null)
+                {
+                    _mapSizeSummaryLabel.text = graphControlled
+                        ? $"Активно: {size.x}×{size.y} тайлів. Preview і gameplay використовують цей самий розмір."
+                        : "Graph override вимкнено. Розмір визначає Runtime / Menu.";
+                }
+                if (_mapSizeSettingsCard != null)
+                    _mapSizeSettingsCard.SetEnabled(_graphAsset != null);
+            }
+            finally
+            {
+                _suppressMapSizeUiCallbacks = false;
+            }
+        }
+
+        private void SyncMapSizeToSceneTargets(
+            int width,
+            int height)
+        {
+            MonoBehaviour graphBinding =
+                FindRuntimeGraphBindingForActiveGraph();
+
+            MonoBehaviour gridInstaller =
+                FindGridInstallerInSameScene(
+                    graphBinding);
+
+            if (gridInstaller != null)
+            {
+                var gridObject =
+                    new SerializedObject(
+                        gridInstaller);
+
+                SerializedProperty widthProperty =
+                    gridObject.FindProperty(
+                        "gridWidth");
+
+                SerializedProperty heightProperty =
+                    gridObject.FindProperty(
+                        "gridHeight");
+
+                if (widthProperty != null
+                    && heightProperty != null)
+                {
+                    Undo.RecordObject(
+                        gridInstaller,
+                        "Sync Moyva Map Size");
+
+                    widthProperty.intValue = width;
+                    heightProperty.intValue = height;
+
+                    gridObject.ApplyModifiedProperties();
+                    EditorUtility.SetDirty(gridInstaller);
+                }
+            }
+
+            if (graphBinding == null)
+                return;
+
+            UnityEngine.Object manager = null;
+
+            var bindingObject =
+                new SerializedObject(
+                    graphBinding);
+
+            SerializedProperty managerProperty =
+                bindingObject.FindProperty(
+                    "_manager");
+
+            if (managerProperty != null)
+            {
+                manager =
+                    managerProperty.objectReferenceValue;
+            }
+
+            if (manager == null)
+            {
+                PropertyInfo runtimeManagerProperty =
+                    graphBinding
+                        .GetType()
+                        .GetProperty(
+                            "Manager",
+                            BindingFlags.Instance
+                            | BindingFlags.Public
+                            | BindingFlags.NonPublic);
+
+                manager =
+                    runtimeManagerProperty
+                        ?.GetValue(graphBinding)
+                    as UnityEngine.Object;
+            }
+
+            if (manager == null)
+                return;
+
+            var managerObject =
+                new SerializedObject(
+                    manager);
+
+            UnityEngine.Object configuration =
+                managerObject
+                    .FindProperty("configuration")
+                    ?.objectReferenceValue;
+
+            if (configuration == null)
+                return;
+
+            var configurationObject =
+                new SerializedObject(
+                    configuration);
+
+            SerializedProperty configWidth =
+                configurationObject.FindProperty(
+                    "width");
+
+            SerializedProperty configHeight =
+                configurationObject.FindProperty(
+                    "height");
+
+            if (configWidth == null
+                || configHeight == null)
+            {
+                return;
+            }
+
+            Undo.RecordObject(
+                configuration,
+                "Sync Moyva Map Size");
+
+            configWidth.intValue = width;
+            configHeight.intValue = height;
+
+            configurationObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(configuration);
+        }
+
         private void ConstructStatusBar()
         {
             var statusContainer = new VisualElement
@@ -2374,6 +2810,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void UpdateStatusBar()
         {
+            RefreshMapSizeControls();
+
             if (_statusLabel == null) return;
 
             if (_graphAsset == null)
@@ -2383,8 +2821,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             string mode = EditorApplication.isPlaying ? " | READ-ONLY (Play Mode)" : "";
+            string mapSizeText =
+                _graphAsset.SharedSettings.HasMapSize
+                    ? $"{_graphAsset.SharedSettings.MapWidth}×{_graphAsset.SharedSettings.MapHeight}"
+                    : "Runtime/Menu";
+
             _statusLabel.text =
-                $"Graph: {_graphAsset.name} | Nodes: {_graphAsset.Nodes.Count} | Connections: {_graphAsset.Connections.Count}{mode}";
+                $"Graph: {_graphAsset.name} | Map: {mapSizeText} | Nodes: {_graphAsset.Nodes.Count} | Connections: {_graphAsset.Connections.Count}{mode}";
         }
 
         private void CleanGraph()
@@ -3695,12 +4138,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private Vector2Int ResolveExecutionMapSize(RuntimeExecutionSettings runtimeSettings)
         {
-            if (TryGetLaunchWorldDimensions(out int launchWidth, out int launchHeight))
-                return ClampMapSize(new Vector2Int(launchWidth, launchHeight));
-
             var sharedSettings = _graphAsset?.SharedSettings;
             if (sharedSettings != null && sharedSettings.HasMapSize)
                 return ClampMapSize(sharedSettings.MapSize);
+
+            if (TryGetLaunchWorldDimensions(out int launchWidth, out int launchHeight))
+                return ClampMapSize(new Vector2Int(launchWidth, launchHeight));
 
             if (runtimeSettings != null && runtimeSettings.HasTwcConfigurationSize)
             {
@@ -5162,3 +5605,5 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         }
     }
 }
+
+#endif

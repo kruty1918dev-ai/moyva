@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/economy-resources.schema.json",
+  "title": "Moyva Economy Resources",
+  "description": "Authoritative resource definitions synchronized into existing EconomyResourceDefinition assets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "databaseAsset", "resources"],
+  "properties": {
+    "$schema": { "type": "string", "description": "Relative schema path used for IDE completion and validation." },
+    "schema": { "const": "moyva.economy-resources" },
+    "version": { "const": 1 },
+    "databaseAsset": { "type": "string", "pattern": "^Assets/.+\\.asset$" },
+    "resources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/resource" }
+    }
+  },
+  "$defs": {
+    "assetReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^Assets/" },
+        "guid": { "type": "string", "pattern": "^[0-9a-fA-F]{32}$", "description": "Unity asset GUID used if the readable path changes." },
+        "subAsset": { "type": "string", "minLength": 1 },
+        "localId": { "type": "integer" }
+      }
+    },
+    "nullableAssetReference": {
+      "oneOf": [
+        { "$ref": "#/$defs/assetReference" },
+        { "type": "null" }
+      ]
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset", "id", "displayName", "category", "icon", "stackLimit", "weightGrams"],
+      "properties": {
+        "asset": {
+          "type": "string",
+          "pattern": "^Assets/Moyva/Data/ScriptableObjects/Economy/Resources/.+\\.asset$",
+          "description": "Existing target asset, or the path where a new resource will be created."
+        },
+        "id": { "type": "string", "minLength": 1, "description": "Stable ID used by saves, buildings and recipes." },
+        "displayName": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["None", "Food", "Materials", "Money"] },
+        "icon": { "$ref": "#/$defs/nullableAssetReference" },
+        "stackLimit": { "type": "integer", "minimum": 0, "description": "0 means unlimited." },
+        "weightGrams": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

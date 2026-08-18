@@ -1,18 +1,19 @@
 {
-    "name": "Kruty1918.Moyva.Pathfinding",
-    "rootNamespace": "Kruty1918.Moyva.Pathfinding",
-    "references": [
-        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
-        "GUID:c1642f5cae15ed69da041d910650a38e",
-        "Kruty1918.Moyva.ObjectsMap"
-    ],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Kruty1918.Moyva.Pathfinding",
+  "rootNamespace": "Kruty1918.Moyva.Pathfinding",
+  "references": [
+    "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
+    "GUID:c1642f5cae15ed69da041d910650a38e",
+    "Kruty1918.Moyva.ObjectsMap",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

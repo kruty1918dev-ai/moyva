@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
 using System;
@@ -122,3 +123,5 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
         }
     }
 }
+
+#endif

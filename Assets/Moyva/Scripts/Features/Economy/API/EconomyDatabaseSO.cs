@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Economy.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Economy/Economy Catalog", fileName = "EconomyCatalog")]
-    public sealed class EconomyDatabaseSO : ScriptableObject
+[System.Serializable]
+public sealed class EconomyDatabaseSO : MoyvaJsonConfigObject
     {
         [SerializeField] private int _schemaVersion = 1;
         [SerializeField] private List<EconomyResourceDefinition> _resources = new List<EconomyResourceDefinition>();

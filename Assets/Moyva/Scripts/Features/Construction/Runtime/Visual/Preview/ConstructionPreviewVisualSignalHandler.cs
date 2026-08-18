@@ -64,7 +64,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
             {
-                _previewVisuals.Show(signal, def);
+                GameObject preview = _previewVisuals.Show(signal, def);
+                ApplyRotation(
+                    preview,
+                    signal.RotationQuarterTurns);
                 ShowOrHidePreviewRadius(def, signal.Position);
                 RefreshWallPreviewIfNeeded(signal);
             }
@@ -73,13 +76,36 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public void Handle(BuildingPreviewMovedSignal signal)
         {
             if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
+            {
                 _previewVisuals.TryMove(signal.FromPosition, signal.ToPosition, signal.BuildingId, def.VisualYOffset);
+                if (_previewVisuals.TryGet(
+                        signal.ToPosition,
+                        out GameObject preview))
+                {
+                    ApplyRotation(
+                        preview,
+                        signal.RotationQuarterTurns);
+                }
+            }
+        }
+
+        private static void ApplyRotation(
+            GameObject visual,
+            int rotationQuarterTurns)
+        {
+            if (visual == null)
+                return;
+
+            visual.transform.rotation =
+                ConstructionRotationUtility.ToWorldRotation(
+                    ConstructionRotationUtility.Normalize(
+                        rotationQuarterTurns));
         }
 
         public void Handle(BuildingPreviewDragVisualSignal signal)
         {
             if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
-                _previewVisuals.MoveDragVisual(signal.Position, signal.BuildingId, signal.WorldPosition, signal.SnapToGrid, signal.HasSnapTarget, signal.SnapTargetPosition, def.VisualYOffset);
+                _previewVisuals.MoveDragVisual(signal.Position, signal.BuildingId, signal.WorldPosition, signal.SnapToGrid, signal.HasSnapTarget, signal.SnapTargetPosition, signal.IsSnapTargetValid, def.VisualYOffset);
         }
 
         public void Handle(BuildGridHoverChangedSignal signal)

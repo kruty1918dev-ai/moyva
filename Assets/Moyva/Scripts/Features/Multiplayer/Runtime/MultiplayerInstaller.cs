@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Multiplayer.Config;
@@ -17,6 +18,33 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// Zenject MonoInstaller для мультиплеєрної підсистеми.
     /// Підключіть у сцені для реєстрації всіх мережевих сервісів.
     /// </summary>
+    internal sealed class MultiplayerConstructionRuntimeAuthority :
+        IConstructionRuntimeAuthorityQuery
+    {
+        private readonly ISessionManager _sessionManager;
+
+        public MultiplayerConstructionRuntimeAuthority(
+            ISessionManager sessionManager)
+        {
+            _sessionManager = sessionManager;
+        }
+
+        public bool IsAuthoritativeRuntime
+        {
+            get
+            {
+                if (_sessionManager == null)
+                    return true;
+
+                IReadOnlyList<Participant> participants =
+                    _sessionManager.Participants;
+                return participants == null
+                    || participants.Count <= 1
+                    || _sessionManager.IsLocalPlayerHost;
+            }
+        }
+    }
+
     public sealed class MultiplayerInstaller : MonoInstaller
     {
         private const string Prefix = "[MultiplayerInstaller]";
@@ -78,6 +106,14 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
 
             EnsureAuthorityCoreBindings(Container);
+
+            if (!Container.HasBinding(
+                    typeof(IConstructionRuntimeAuthorityQuery)))
+            {
+                Container.Bind<IConstructionRuntimeAuthorityQuery>()
+                    .To<MultiplayerConstructionRuntimeAuthority>()
+                    .AsSingle();
+            }
 
             if (!Container.HasBinding(typeof(StartingPositionSyncService)))
             {
@@ -141,6 +177,14 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     container.Bind<IGameCommandSyncService>().To<GameCommandSyncService>().AsSingle();
 
                 EnsureAuthorityCoreBindings(container);
+
+                if (!container.HasBinding(
+                        typeof(IConstructionRuntimeAuthorityQuery)))
+                {
+                    container.Bind<IConstructionRuntimeAuthorityQuery>()
+                        .To<MultiplayerConstructionRuntimeAuthority>()
+                        .AsSingle();
+                }
 
                 if (!container.HasBinding(typeof(StartingPositionSyncService)))
                     container.BindInterfacesTo<StartingPositionSyncService>().AsSingle().NonLazy();
@@ -460,6 +504,24 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             {
                 container.Bind<ISessionManager>()
                     .To<SessionManager>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(
+                    typeof(Kruty1918.Moyva.GameMode.API.IExitMatchDisconnectHandler)))
+            {
+                container.Bind<
+                        Kruty1918.Moyva.GameMode.API.IExitMatchDisconnectHandler>()
+                    .To<ExitMatchDisconnectHandler>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(
+                    typeof(Kruty1918.Moyva.GameMode.API.IGamePauseModePolicy)))
+            {
+                container.Bind<
+                        Kruty1918.Moyva.GameMode.API.IGamePauseModePolicy>()
+                    .To<MultiplayerGamePauseModePolicy>()
                     .AsSingle();
             }
 

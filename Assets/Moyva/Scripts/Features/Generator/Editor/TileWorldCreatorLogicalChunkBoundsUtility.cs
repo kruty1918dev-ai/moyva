@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using UnityEngine;
@@ -97,3 +98,5 @@ namespace Kruty1918.Moyva.Generator.Editor
         }
     }
 }
+
+#endif

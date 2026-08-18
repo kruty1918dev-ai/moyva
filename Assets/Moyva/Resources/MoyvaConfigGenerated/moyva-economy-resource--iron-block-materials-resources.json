@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "iron-block-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Iron-block",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-30.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "f1782a0660ae47f28d9643cb09f5481b",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Iron-block.asset",
+    "sourceHash": "55543cadfa8c650673a16d50c4160d851b2f854583b06a77ab80578f4442c68c"
+  }
+}

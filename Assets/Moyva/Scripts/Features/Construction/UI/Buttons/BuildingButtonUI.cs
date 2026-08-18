@@ -28,32 +28,33 @@ namespace Kruty1918.Moyva.Construction.UI
         [Tooltip("Button компонент. Знаходиться автоматично у Awake якщо не призначений.")]
         [SerializeField] private Button button;
 
-        [Tooltip("Масштаб кнопки у вибраному стані (щоб виділялась в меню).")]
-        [SerializeField] private Vector3 selectedScale = new Vector3(1.15f, 1.15f, 1f);
+        [Tooltip("Колір картки у вибраному стані.")]
+        [SerializeField] private Color selectedColor = new Color(0.82f, 0.66f, 0.28f, 1f);
 
-        [Header("Анімація натиску (DOTween)")]
-        [Tooltip("Множник масштабу для анімації натиску кнопки.")]
-        [SerializeField] private float pressScaleMultiplier = 1.08f;
-
-        [Tooltip("Тривалість анімації натиску у секундах.")]
-        [SerializeField] private float pressDuration = 0.16f;
-
-        [Tooltip("Інтенсивність поштовху (кількість коливань).")]
-        [SerializeField] private int pressVibrato = 8;
-
-        [Tooltip("Пружність анімації натиску (0..1).")]
-        [SerializeField] private float pressElasticity = 0.8f;
+        [Header("Недоступний стан")]
+        [SerializeField, Range(0.15f, 1f)]
+        private float disabledVisualAlpha = 0.45f;
+        private CanvasGroup _availabilityCanvasGroup;
 
         private string _buildingId;
         private Action<string> _onClick;
         private Vector3 _defaultScale;
+        private Image _background;
+        private Color _defaultColor = Color.white;
 
         private void Awake()
         {
             if (button == null)
                 button = GetComponent<Button>();
 
+            _availabilityCanvasGroup = GetComponent<CanvasGroup>();
+            if (_availabilityCanvasGroup == null)
+                _availabilityCanvasGroup = gameObject.AddComponent<CanvasGroup>();
+
             _defaultScale = transform.localScale;
+            _background = GetComponent<Image>();
+            if (_background != null)
+                _defaultColor = _background.color;
 
             if (label == null)
                 Debug.LogWarning($"[BuildingButtonUI] Поле 'label' не призначено на '{name}'. Назва будівлі не відображатиметься.", this);
@@ -72,10 +73,7 @@ namespace Kruty1918.Moyva.Construction.UI
 
             if (label != null)
             {
-                label.text = data.IsInteractable
-                    || string.IsNullOrWhiteSpace(data.UnavailableReason)
-                    ? data.DisplayName
-                    : $"{data.DisplayName}\n{data.UnavailableReason}";
+                label.text = data.DisplayName;
             }
 
             if (iconImage != null)
@@ -88,15 +86,23 @@ namespace Kruty1918.Moyva.Construction.UI
 
             if (button != null)
             {
+                if (_availabilityCanvasGroup != null)
+                    _availabilityCanvasGroup.alpha = data.IsInteractable
+                        ? 1f
+                        : disabledVisualAlpha;
+
                 button.interactable = data.IsInteractable;
+                button.onClick.RemoveListener(HandleClick);
                 button.onClick.AddListener(HandleClick);
             }
         }
 
-        /// <summary>Встановлює або знімає виділення кнопки (збільшення масштабу).</summary>
+        /// <summary>Встановлює або знімає колірне виділення картки.</summary>
         public void SetSelected(bool selected)
         {
-            transform.localScale = selected ? selectedScale : _defaultScale;
+            transform.localScale = _defaultScale;
+            if (_background != null)
+                _background.color = selected ? selectedColor : _defaultColor;
         }
 
         private void HandleClick()
@@ -104,7 +110,6 @@ namespace Kruty1918.Moyva.Construction.UI
             if (button != null && !button.interactable)
                 return;
 
-            ConstructionButtonPressAnimator.AnimatePress(transform, pressScaleMultiplier, pressDuration, pressVibrato, pressElasticity);
             _onClick?.Invoke(_buildingId);
         }
 

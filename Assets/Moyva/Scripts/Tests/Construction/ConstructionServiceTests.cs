@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
@@ -9,6 +10,7 @@ using NUnit.Framework;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Construction
 {
     /// <summary>
@@ -153,7 +155,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             Container.Bind<IFogOfWarService>().To<FakeFogOfWarService>().AsSingle();
             Container.BindInterfacesTo<FakeWallPlacementService>().AsSingle();
 
-            _buildingRegistry = ScriptableObject.CreateInstance<BuildingRegistrySO>();
+            _buildingRegistry = MoyvaJsonObjectFactory.Create<BuildingRegistrySO>();
             _buildingRegistry.Buildings = CreateUnrestrictedDefinitions(
                 "house",
                 "barracks",
@@ -197,7 +199,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             _serviceDisposable.Dispose();
             Container.Resolve<ObjectsMapService>().Dispose();
             if (_buildingRegistry != null)
-                Object.DestroyImmediate(_buildingRegistry);
+                MoyvaJsonObjectFactory.DestroyImmediate(_buildingRegistry);
             base.Teardown();
         }
 
@@ -803,3 +805,5 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
     }
 }
+
+#endif

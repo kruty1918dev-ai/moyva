@@ -129,6 +129,7 @@ Moyva - це покрокова 2D-стратегія про розбудову 
 - [Unit Designer Pre-Save Validation](standarts/unit-designer-pre-save-validation.md)
 - [Unit Designer Batch Operations](standarts/unit-designer-batch-operations.md)
 - [Designer Preset System](standarts/designer-preset-system.md)
+- [JSON Authoring Data](standarts/json-authoring-data.md)
 - [Semantic Folders для Editor Tools](standarts/editor-tools-semantic-folders.md)
 - [Dependency Map фіч-модулів](architecture/feature-dependency-map.md)
 - [ADR Journal](architecture/adr/README.md)
@@ -157,4 +158,3 @@ Moyva - це покрокова 2D-стратегія про розбудову 
 
 Якщо потрібен швидкий старт - починайте з systems.
 Якщо потрібне глибоке впровадження в модуль - переходьте в modules.
-

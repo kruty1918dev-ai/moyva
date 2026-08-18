@@ -4,8 +4,8 @@ using Zenject;
 namespace Kruty1918.Moyva.BotAI.Runtime
 {
     /// <summary>
-    /// Zenject MonoInstaller для AI-ботів.
-    /// Підключіть у сцені після FactionInstaller та FogOfWarInstaller.
+    /// Zenject MonoInstaller for bot support services.
+    /// Runtime bot mutations are turn-scoped through IBotTurnExecutor.
     /// </summary>
     public sealed class BotInstaller : MonoInstaller
     {
@@ -15,10 +15,14 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 .FromInstance(BotDifficultySettings.Normal())
                 .AsSingle();
 
-            Container.BindInterfacesAndSelfTo<BotTickScheduler>()
-                .AsSingle()
-                .NonLazy();
+            if (!Container.HasBinding<IBotTurnExecutor>())
+            {
+                Container.Bind<IBotTurnExecutor>()
+                    .To<BotTurnExecutor>()
+                    .AsSingle();
+            }
 
+            // P10 legacy wall-clock BotTickScheduler deliberately remains unbound.
             Container.BindInterfacesTo<BotFogInitializer>()
                 .AsSingle()
                 .NonLazy();

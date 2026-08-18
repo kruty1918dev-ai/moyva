@@ -1,0 +1,427 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/construction-visual-profile.schema.json",
+  "title": "Moyva — Construction Visual Profile SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Construction.API.ConstructionVisualProfileSO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.construction-visual-profile"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "construction-visual-profile"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "buildingLayerMinSortingOrder": {
+      "type": "integer",
+      "title": "Building Layer Min Sorting Order"
+    },
+    "buildingSurfaceOffsetY": {
+      "type": "number",
+      "title": "Building Surface Offset Y"
+    },
+    "previewSurfaceOffsetY": {
+      "type": "number",
+      "title": "Preview Surface Offset Y"
+    },
+    "ghostAlpha": {
+      "type": "number",
+      "title": "Ghost Alpha",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "blockedFlashDurationSeconds": {
+      "type": "number",
+      "title": "Blocked Flash Duration Seconds"
+    },
+    "previewDragFollowSharpness": {
+      "type": "number",
+      "title": "Preview Drag Follow Sharpness"
+    },
+    "previewDragCursorOffsetXZ": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Preview Drag Cursor Offset XZ"
+    },
+    "showSnapTargetHighlight": {
+      "type": "boolean",
+      "title": "Show Snap Target Highlight"
+    },
+    "snapTargetHighlightLineColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Snap Target Highlight Line Color"
+    },
+    "snapTargetHighlightFillColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Snap Target Highlight Fill Color"
+    },
+    "snapTargetHighlightLineWidthNormalized": {
+      "type": "number",
+      "title": "Snap Target Highlight Line Width Normalized",
+      "minimum": 0.005,
+      "maximum": 0.49,
+      "x-moyva-editorMinimum": 0.005,
+      "x-moyva-editorMaximum": 0.49
+    },
+    "snapTargetHighlightInsetNormalized": {
+      "type": "number",
+      "title": "Snap Target Highlight Inset Normalized",
+      "minimum": 0.0,
+      "maximum": 0.45,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 0.45
+    },
+    "snapTargetHighlightSurfaceOffsetY": {
+      "type": "number",
+      "title": "Snap Target Highlight Surface Offset Y"
+    },
+    "useBuildGridOverlay": {
+      "type": "boolean",
+      "title": "Use Build Grid Overlay"
+    },
+    "buildGridRenderMode": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:LegacyDrawMeshPerTile|ChunkSurfacePlane))$",
+      "x-enumNames": [
+        "LegacyDrawMeshPerTile",
+        "ChunkSurfacePlane"
+      ],
+      "x-flags": false,
+      "title": "Build Grid Render Mode"
+    },
+    "buildGridSurfacePlaneUseBuildableFilter": {
+      "type": "boolean",
+      "title": "Build Grid Surface Plane Use Buildable Filter"
+    },
+    "buildGridFillAlpha": {
+      "type": "number",
+      "title": "Build Grid Fill Alpha",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "buildGridLineAlpha": {
+      "type": "number",
+      "title": "Build Grid Line Alpha",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "buildGridValidLineColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Build Grid Valid Line Color"
+    },
+    "buildGridValidFillColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Build Grid Valid Fill Color"
+    },
+    "buildGridUnaffordableLineColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Build Grid Unaffordable Line Color"
+    },
+    "buildGridUnaffordableFillColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Build Grid Unaffordable Fill Color"
+    },
+    "buildGridInvalidLineColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Build Grid Invalid Line Color"
+    },
+    "buildGridInvalidFillColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Build Grid Invalid Fill Color"
+    },
+    "buildGridLineWidthNormalized": {
+      "type": "number",
+      "title": "Build Grid Line Width Normalized",
+      "minimum": 0.005,
+      "maximum": 0.49,
+      "x-moyva-editorMinimum": 0.005,
+      "x-moyva-editorMaximum": 0.49
+    },
+    "buildGridSurfaceOffsetY": {
+      "type": "number",
+      "title": "Build Grid Surface Offset Y"
+    },
+    "buildGridTileInsetNormalized": {
+      "type": "number",
+      "title": "Build Grid Tile Inset Normalized",
+      "minimum": 0.0,
+      "maximum": 0.45,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 0.45
+    },
+    "buildGridUpdateBudgetMilliseconds": {
+      "type": "number",
+      "title": "Build Grid Update Budget Milliseconds"
+    },
+    "useInfluenceRadiusOverlay": {
+      "type": "boolean",
+      "title": "Use Influence Radius Overlay"
+    },
+    "influenceRadiusFillAlpha": {
+      "type": "number",
+      "title": "Influence Radius Fill Alpha",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "influenceRadiusBorderWidth": {
+      "type": "number",
+      "title": "Influence Radius Border Width"
+    },
+    "influenceRadiusShaderName2D": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Influence Radius Shader Name 2D"
+    },
+    "influenceRadiusShaderName3D": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Influence Radius Shader Name 3D"
+    },
+    "buildGridShaderName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Build Grid Shader Name"
+    },
+    "previewRootName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Preview Root Name"
+    },
+    "placedRootName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Placed Root Name"
+    },
+    "radiusRootName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Radius Root Name"
+    }
+  }
+}

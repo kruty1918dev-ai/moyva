@@ -1,0 +1,308 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/bootstrap-installer-config.schema.json",
+  "title": "Moyva — Bootstrap Installer Config SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Bootstrap.Runtime.BootstrapInstallerConfigSO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.bootstrap-installer-config"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "bootstrap-installer-config"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "gameSettings": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "initialResources": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "resourceId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Resource Id"
+              },
+              "amount": {
+                "type": "number",
+                "title": "Amount",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          },
+          "title": "Initial Resources",
+          "description": "Список ресурсів, які гравець отримує на старт нової гри."
+        },
+        "worldRevealFade": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "title": "Enabled",
+              "description": "Увімкнути плавне проявлення світу після сигналу готовності карти."
+            },
+            "durationSeconds": {
+              "type": "number",
+              "title": "Duration Seconds",
+              "description": "Тривалість fade з чорного в прозорий (сек).",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
+            },
+            "startDelaySeconds": {
+              "type": "number",
+              "title": "Start Delay Seconds",
+              "description": "Додаткова затримка перед стартом fade (сек).",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
+            },
+            "startAlpha": {
+              "type": "number",
+              "title": "Start Alpha",
+              "description": "Стартова непрозорість чорного екрану.",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "x-moyva-editorMinimum": 0.0,
+              "x-moyva-editorMaximum": 1.0
+            }
+          },
+          "additionalProperties": false,
+          "title": "World Reveal Fade",
+          "description": "Налаштування плавного проявлення світу після генерації/завантаження."
+        }
+      },
+      "additionalProperties": false,
+      "title": "Game Settings"
+    },
+    "startingPositionSettings": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "minMarginFromBorder": {
+          "type": "integer",
+          "title": "Min Margin From Border",
+          "description": "Мінімальний відступ стартової точки від краю мапи в тайлах.\nБільше значення зменшує шанс старту біля краю і робить старт безпечнішим.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "relativeMarginFactor": {
+          "type": "number",
+          "title": "Relative Margin Factor",
+          "description": "Додатковий відступ від краю як частка від меншої сторони мапи.\nНаприклад 0.1667 ≈ 1/6 мапи. Підсумковий відступ = max(minMarginFromBorder, відносний відступ).",
+          "minimum": 0.0,
+          "maximum": 0.45,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.45
+        },
+        "startMinHeight": {
+          "type": "number",
+          "title": "Start Min Height",
+          "description": "Мінімальна висота тайла, який може бути обраний як стартовий. Використовується HeightMap зі згенерованого світу, щоб старт не потрапляв у воду.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "startMaxHeight": {
+          "type": "number",
+          "title": "Start Max Height",
+          "description": "Максимальна висота тайла, який може бути обраний як стартовий. Дозволяє відсікти надто високі гори або інші небажані зони.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "requireHeightMapForStart": {
+          "type": "boolean",
+          "title": "Require Height Map For Start",
+          "description": "Якщо увімкнено, старт не буде обрано без валідної HeightMap. Якщо вимкнено, за відсутності HeightMap використовується звичайний випадковий fallback."
+        },
+        "revealedCircleRadius": {
+          "type": "integer",
+          "title": "Revealed Circle Radius",
+          "description": "Радіус стартового кола розсіювання туману в тайлах. Усі тайли всередині кола відкриваються рівномірно, без випадкового шуму.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "revealShape": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:PixelCircle|Diamond|Square))$",
+          "x-enumNames": [
+            "PixelCircle",
+            "Diamond",
+            "Square"
+          ],
+          "x-flags": false,
+          "title": "Reveal Shape",
+          "description": "Форма області, яку туман відкриває на старті нового світу або при ремонті пошкодженого сейву."
+        },
+        "minimumExploredTilesBeforeRepair": {
+          "type": "integer",
+          "title": "Minimum Explored Tiles Before Repair",
+          "description": "Мінімальна кількість розвіданих тайлів у завантаженому сейві. Якщо менше — туман вважається пошкодженим і стартова область відновлюється.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "useMapSizeScaledFog": {
+          "type": "boolean",
+          "title": "Use Map Size Scaled Fog",
+          "description": "Якщо увімкнено, стартовий туман масштабується за таблицею залежно від меншої сторони мапи."
+        },
+        "fogScaleByMapSize": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "mapSideTiles": {
+                "type": "integer",
+                "title": "Map Side Tiles",
+                "description": "Менша сторона мапи у тайлах, для якої задано це значення.",
+                "minimum": 16.0,
+                "x-moyva-editorMinimum": 16.0
+              },
+              "revealedRadius": {
+                "type": "integer",
+                "title": "Revealed Radius",
+                "description": "Радіус стартового розкриття туману для цього розміру мапи.",
+                "minimum": 1.0,
+                "x-moyva-editorMinimum": 1.0
+              },
+              "coreVisibleRadius": {
+                "type": "integer",
+                "title": "Core Visible Radius",
+                "description": "Радіус постійно видимого ядра для цього розміру. 0 = використати RevealedRadius.",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          },
+          "title": "Fog Scale By Map Size",
+          "description": "Опорні точки масштабування туману. Між найближчими точками значення інтерполюється лінійно."
+        },
+        "keepCoreFullyVisible": {
+          "type": "boolean",
+          "title": "Keep Core Fully Visible",
+          "description": "Якщо увімкнено, ядро підтримується повністю видимим (без туману)\nчерез службовий стартовий огляд.\nЯкщо вимкнено, ядро буде лише розвіданим і з часом стане сірим без юнітів."
+        },
+        "coreVisibleRadiusOverride": {
+          "type": "integer",
+          "title": "Core Visible Radius Override",
+          "description": "Радіус службового стартового огляду.\n0 або менше = використовувати revealedCircleRadius.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "multiplayerStartSlots": {
+          "type": "integer",
+          "title": "Multiplayer Start Slots",
+          "description": "Скільки стартових позицій резервувати, коли світ генерує хост. Якщо учасників у сесії більше, використовується фактична кількість учасників.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "minAStarDistanceBetweenPlayers": {
+          "type": "integer",
+          "title": "Min A Star Distance Between Players",
+          "description": "Мінімальна відстань між стартовими позиціями гравців у тайлах за A* шляхом. Якщо A* не прив'язаний у сцені, використовується fallback за евклідовою відстанню.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "startCandidateAttempts": {
+          "type": "integer",
+          "title": "Start Candidate Attempts",
+          "description": "Кількість спроб знайти валідну стартову позицію перед fallback. Більше значення корисне для малих або складних мап.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "cameraZ": {
+          "type": "number",
+          "title": "Camera Z",
+          "description": "Позиція Z для різкого перенесення камери в стартову точку.\nДля 2D зазвичай -10, щоб камера залишалась на правильній глибині."
+        },
+        "ensureStartupCameraShowsRevealedArea": {
+          "type": "boolean",
+          "title": "Ensure Startup Camera Shows Revealed Area",
+          "description": "Якщо увімкнено, стартова камера підбирає фокус і зум так, щоб показати відкриту стартову зону."
+        },
+        "startupCameraPaddingTiles": {
+          "type": "number",
+          "title": "Startup Camera Padding Tiles",
+          "description": "Додатковий відступ навколо відкритої стартової зони в тайлах.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "startupCameraRadiusSource": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:RevealedFogRadius|CoreVisibleRadius|ManualRadius))$",
+          "x-enumNames": [
+            "RevealedFogRadius",
+            "CoreVisibleRadius",
+            "ManualRadius"
+          ],
+          "x-flags": false,
+          "title": "Startup Camera Radius Source",
+          "description": "Який радіус використовувати як стартову зону для кадрування камери."
+        },
+        "manualStartupCameraRadius": {
+          "type": "integer",
+          "title": "Manual Startup Camera Radius",
+          "description": "Ручний радіус стартової зони, якщо Startup Camera Radius Source = Manual Radius.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Starting Position Settings"
+    }
+  }
+}

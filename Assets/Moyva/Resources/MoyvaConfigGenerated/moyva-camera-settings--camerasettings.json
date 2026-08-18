@@ -1,0 +1,73 @@
+{
+  "$schema": "../../Schemas/camera-settings.schema.json",
+  "schema": "moyva.camera-settings",
+  "version": 1,
+  "id": "camerasettings",
+  "model": "camera-settings",
+  "controlProfile": {
+    "moveSpeed": 4.0,
+    "smoothTime": 0.4,
+    "zoomSpeed": 5.0,
+    "rotationSpeed": 90.0,
+    "rotationAcceleration": 540.0,
+    "rotationDeceleration": 720.0,
+    "pointerOrbitSensitivity": 0.25,
+    "closeZoomRotationMultiplier": 0.65,
+    "farZoomRotationMultiplier": 1.15,
+    "minZoom": 4.0,
+    "maxZoom": 50.0,
+    "touchMoveSpeed": 1.0,
+    "touchPinchZoomSensitivity": 1.0,
+    "touchDragDeadZonePixels": 0.5,
+    "touchPinchDeadZonePixels": 2.0,
+    "maxTouchDeltaPixels": 96.0,
+    "useImmediateTouchGestures": true,
+    "keepPinchFocusUnderFingers": true
+  },
+  "boundsOverflowTiles": {
+    "x": 25.0,
+    "y": 25.0
+  },
+  "defaultCameraZ": -10.0,
+  "adaptToProject3DMode": true,
+  "useOrthographicCameraIn3D": false,
+  "default3DCameraDistance": 20.0,
+  "default3DOrthographicSize": 20.0,
+  "default3DFieldOfView": 30.0,
+  "orthographic3DEuler": {
+    "x": 90.0,
+    "y": 0.0,
+    "z": 0.0
+  },
+  "isometric3DEuler": {
+    "x": 50.0,
+    "y": 45.0,
+    "z": 0.0
+  },
+  "rotationPivotRaycastDistance": 1000.0,
+  "rotationPivotLayers": -5,
+  "edgeScrollEnabled": false,
+  "edgeScrollMarginPixels": 12.0,
+  "edgeScrollSpeedMultiplier": 1.0,
+  "enableAutomaticMipBias": false,
+  "automaticMipBiasMax": 0.75,
+  "mapRenderMaskEnabled": true,
+  "mapMaskRefreshSeconds": 0.5,
+  "mapMaskLayers": -1,
+  "mapMaskSortingLayerName": "Default",
+  "mapMaskBackSortingOrder": -32768,
+  "mapMaskFrontSortingOrder": 32767,
+  "manualMapMaskCenter": {
+    "x": 4.5,
+    "y": 4.5
+  },
+  "manualMapMaskSize": {
+    "x": 10.0,
+    "y": 10.0
+  },
+  "migration": {
+    "sourceAssetGuid": "ae01871e620443b0fbd19bd93dfd1388",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Player/CameraSettings.asset",
+    "sourceHash": "9e40f25fa1b2899ccdd54d7800c1274fcbbb3ac5a843e3b72dcbe8d1c31721de"
+  }
+}

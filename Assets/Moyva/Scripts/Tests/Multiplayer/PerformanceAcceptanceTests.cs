@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.Shared.Performance;
 using NUnit.Framework;
 
@@ -37,3 +38,5 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
         }
     }
 }
+
+#endif

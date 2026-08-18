@@ -58,7 +58,10 @@ namespace Kruty1918.Moyva.Construction.UI
             string unavailableReason = null)
         {
             Id = id;
-            DisplayName = string.IsNullOrWhiteSpace(displayName) ? id : displayName;
+            // Id is internal identity only; never expose it as a UI label.
+            DisplayName = string.IsNullOrWhiteSpace(displayName)
+                ? "Будівля"
+                : displayName.Trim();
             Category = category;
             Icon = icon;
             PreviewSprite = previewSprite;

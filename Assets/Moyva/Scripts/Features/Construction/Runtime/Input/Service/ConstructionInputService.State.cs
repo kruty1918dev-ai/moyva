@@ -61,6 +61,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private void OnGameModeChanged(GameModeChangedSignal signal)
         {
             _isActive = signal.NewMode == GameModeType.Construction;
+            _mandatoryCastlePreviewBootstrapPending = _isActive;
             if (!_isActive)
             {
                 ClearBuildGridHover();

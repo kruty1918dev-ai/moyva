@@ -1,0 +1,55 @@
+{
+  "$schema": "../../Schemas/world-creation.schema.json",
+  "schema": "moyva.world-creation",
+  "version": 1,
+  "id": "worldcreationdefaults",
+  "model": "world-creation-defaults",
+  "defaultWorldName": "Мій світ",
+  "appendIndexWhenSaveExists": true,
+  "firstWorldIndex": 1,
+  "defaultSizePreset": "Medium",
+  "defaultCustomWidth": 64,
+  "defaultCustomHeight": 64,
+  "smallWorld": {
+    "width": 64,
+    "height": 64
+  },
+  "mediumWorld": {
+    "width": 128,
+    "height": 128
+  },
+  "largeWorld": {
+    "width": 256,
+    "height": 256
+  },
+  "defaultMapType": "Balanced",
+  "defaultDifficulty": "Normal",
+  "defaultEnableBots": true,
+  "defaultHumanPlayerCount": 1,
+  "defaultBotCount": 1,
+  "defaultStartingGold": 200,
+  "defaultStartingFood": 100,
+  "defaultForestDensity": 0.4,
+  "defaultMountainDensity": 0.3,
+  "defaultWaterDensity": 0.25,
+  "defaultVillageDensity": 0.2,
+  "defaultGenerateRivers": true,
+  "defaultGenerateBiomes": true,
+  "defaultApplyWFC": true,
+  "placementRulesGraph": {
+    "$config": {
+      "model": "graph",
+      "id": "testgeneratorgraph"
+    }
+  },
+  "tileRegistry": null,
+  "blockedBuildingTileIds": [],
+  "blockedBuildingHillLevelRanges": [],
+  "blockedUnitTileIds": [],
+  "blockedUnitHillLevelRanges": [],
+  "migration": {
+    "sourceAssetGuid": "b6ced9580bc9ed9459d63ae34dcf05e4",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/WorldCreation/WorldCreationDefaults.asset",
+    "sourceHash": "7480d9045457004bb177ce12f22788f9dede5c6914d09d5a134b410ccbb2308c"
+  }
+}

@@ -2,10 +2,11 @@ using System;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Generator/TileHeightTable", fileName = "TileHeightTable")]
-    public class TileHeightTableSO : ScriptableObject
+[System.Serializable]
+public class TileHeightTableSO : MoyvaJsonConfigObject
     {
         [Tooltip("Таблиця тайлів з висотними діапазонами та спрайтами. Описує, який тайл відповідає якому діапазону висот на карті.")]
         public TileHeightEntry[] Entries;

@@ -1,0 +1,15 @@
+{
+  "$schema": "../../Schemas/generation-rules.schema.json",
+  "schema": "moyva.generation-rules",
+  "version": 1,
+  "id": "generationrules",
+  "model": "generation-rules",
+  "generateRivers": true,
+  "generateBiomes": true,
+  "applyWFC": true,
+  "migration": {
+    "sourceAssetGuid": "e0c22aa5069af828e929cfd46e69b5e5",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/GenerationRules.asset",
+    "sourceHash": "99b1d591721ce34cc2a3a23d13661cd2be9080756f36c481cba7a59e550eabb5"
+  }
+}

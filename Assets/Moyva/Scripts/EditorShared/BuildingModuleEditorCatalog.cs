@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
@@ -110,6 +111,11 @@ namespace Kruty1918.Moyva.Editor.Shared
                 "Позначає будівлю як таку, що працює без призначеного населення.",
                 "workerless", "без робітників"),
 
+            Option<GarrisonBuildingModule>(
+                "Оборона", "Гарнізон",
+                "Єдине місце для налаштування місткості гарнізону будь-якої будівлі.",
+                "garrison", "гарнізон", "захисники"),
+
             Option<DefenseBuildingModule>(
                 "Оборона", "Оборонний модуль",
                 "Задає броню, гарнізон, дальність, шкоду та бонус огляду.",
@@ -192,6 +198,11 @@ namespace Kruty1918.Moyva.Editor.Shared
             return null;
         }
 
+        public static bool IsLegacyModule(Type moduleType)
+            => moduleType == typeof(WarehouseBuildingModule)
+                || moduleType == typeof(BarnBuildingModule)
+                || moduleType == typeof(WorkerlessBuildingModule);
+
         public static string GetConflictReason(
             IReadOnlyList<BuildingModuleDefinition> currentModules,
             Type candidateType)
@@ -199,47 +210,68 @@ namespace Kruty1918.Moyva.Editor.Shared
             if (candidateType == null)
                 return "Невідомий тип модуля.";
 
-            bool hasTownHall = Has<TownHallBuildingModule>(currentModules);
-            bool hasHousing = Has<HousingBuildingModule>(currentModules);
-            bool hasWorkerless = Has<WorkerlessBuildingModule>(currentModules);
-            bool hasWall = Has<WallBuildingModule>(currentModules);
-            bool hasGate = Has<GateBuildingModule>(currentModules);
-            bool hasProduction = Has<ProductionBuildingModule>(currentModules);
+            bool hasWall =
+                Has<WallBuildingModule>(currentModules);
+            bool hasGate =
+                Has<GateBuildingModule>(currentModules);
+            bool hasProduction =
+                Has<ProductionBuildingModule>(currentModules);
+            bool hasGarrison =
+                Has<GarrisonBuildingModule>(currentModules);
 
-            for (int index = 0; index < (currentModules?.Count ?? 0); index++)
+            for (int index = 0;
+                 index < (currentModules?.Count ?? 0);
+                 index++)
             {
-                BuildingModuleDefinition existing = currentModules[index];
-                if (existing != null && existing.GetType() == candidateType)
+                BuildingModuleDefinition existing =
+                    currentModules[index];
+                if (existing != null
+                    && existing.GetType() == candidateType)
+                {
                     return "Цей модуль вже додано до будівлі.";
+                }
             }
 
-            if (candidateType == typeof(TownHallBuildingModule) && hasHousing)
-                return "Модуль ратуші несумісний із житловим модулем.";
-            if (candidateType == typeof(HousingBuildingModule))
+            // Housing, TownHall and Workerless are orthogonal capabilities.
+            // Workerless may coexist with Production when recipes themselves
+            // do not require workers; runtime validation owns that rule.
+
+            if (candidateType == typeof(WallBuildingModule)
+                && hasGate)
             {
-                if (hasTownHall)
-                    return "Житловий модуль несумісний із модулем ратуші.";
-                if (hasWorkerless || hasWall || hasGate)
-                    return "Житловий модуль несумісний із модулем без робітників, стіною або воротами.";
+                return "Будівля не може одночасно бути стіною і воротами.";
             }
-            if ((candidateType == typeof(WorkerlessBuildingModule)
-                 || candidateType == typeof(WallBuildingModule)
+
+            if (candidateType == typeof(GateBuildingModule)
+                && hasWall)
+            {
+                return "Будівля не може одночасно бути воротами і стіною.";
+            }
+
+            if (candidateType == typeof(GarrisonBuildingModule)
+                && (hasWall || hasGate))
+            {
+                return "Гарнізон не додається до сегмента стіни або воріт.";
+            }
+
+            if ((candidateType == typeof(WallBuildingModule)
                  || candidateType == typeof(GateBuildingModule))
-                && hasHousing)
+                && hasGarrison)
             {
-                return "Цей модуль несумісний із житловим модулем.";
+                return "Стіна або ворота несумісні з окремим модулем гарнізону.";
             }
-            if ((candidateType == typeof(WorkerlessBuildingModule)
-                 || candidateType == typeof(WallBuildingModule)
+
+            if ((candidateType == typeof(WallBuildingModule)
                  || candidateType == typeof(GateBuildingModule))
                 && hasProduction)
             {
-                return "Цей модуль несумісний із виробничим модулем.";
+                return "Стіна або ворота несумісні з виробничим модулем.";
             }
+
             if (candidateType == typeof(ProductionBuildingModule)
-                && (hasWorkerless || hasWall || hasGate))
+                && (hasWall || hasGate))
             {
-                return "Виробничий модуль несумісний із модулем без робітників, стіною або воротами.";
+                return "Виробничий модуль несумісний зі стіною або воротами.";
             }
 
             return null;
@@ -266,11 +298,16 @@ namespace Kruty1918.Moyva.Editor.Shared
         {
             for (int index = 0; index < (modules?.Count ?? 0); index++)
             {
-                if (modules[index] is TModule)
+                if (modules[index] is TModule typed
+                    && typed.IsEnabled)
+                {
                     return true;
+                }
             }
 
             return false;
         }
     }
 }
+
+#endif

@@ -33,5 +33,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public byte[] CellMaskBuffer { get; }
         public int AppliedMaskRevision { get; set; } = -1;
         public bool MaskDirty { get; set; } = true;
+
+        /// <summary>
+        /// True after the first complete CPU mask has been atomically
+        /// uploaded to the Texture2D. Dirty updates may continue while the
+        /// previous complete texture remains visible.
+        /// </summary>
+        public bool MaskReady { get; set; }
     }
 }

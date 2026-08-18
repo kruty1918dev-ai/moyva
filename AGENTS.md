@@ -1,3 +1,17 @@
+
+## JSON Configuration Policy
+
+All Moyva-owned gameplay configuration, definitions, registries, presets, balance data, system settings and generator graphs MUST be authored in JSON under `Assets/Moyva/Presets/`.
+
+- JSON is the single editable source of truth.
+- Do not introduce new project-owned ScriptableObject configuration assets.
+- Runtime loads JSON once through Load -> Validate -> Resolve -> Freeze and consumes plain C# snapshots/repositories.
+- Unity assets are referenced through stable asset IDs resolved by the generated runtime asset catalog.
+- Do not use `AssetDatabase` in runtime configuration loading.
+- Do not generate ScriptableObject caches from JSON.
+- New data-driven entities are added by adding JSON; no inspector registry list is maintained manually.
+- Polymorphic module/node IDs are allow-listed stable IDs, never unrestricted CLR type names.
+
 # Moyva Agent Instructions
 
 ## Project Context

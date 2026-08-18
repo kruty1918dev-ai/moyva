@@ -1,0 +1,12 @@
+{
+  "$schema": "../../Schemas/unit-registry.schema.json",
+  "schema": "moyva.unit-registry",
+  "version": 1,
+  "id": "unitregistry",
+  "model": "unit-registry",
+  "migration": {
+    "sourceAssetGuid": "f076d9b7569345691a79c3cf6e0a3eea",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Units/UnitRegistry.asset",
+    "sourceHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+  }
+}

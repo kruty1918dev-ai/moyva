@@ -8,6 +8,14 @@ namespace Kruty1918.Moyva.Construction.API
 
     public static class BuildingPlacementEvaluator
     {
+        private static readonly Vector2Int[] CardinalDirections =
+        {
+            Vector2Int.up,
+            Vector2Int.right,
+            Vector2Int.down,
+            Vector2Int.left,
+        };
+
         public static BuildingPlacementEvaluationResult Evaluate(BuildingPlacementEvaluationRequest request)
         {
             var result = new BuildingPlacementEvaluationResult();
@@ -69,7 +77,11 @@ namespace Kruty1918.Moyva.Construction.API
             if (result != null)
             {
                 for (int index = 0; index < footprintCellCount; index++)
-                    result.AddFootprintPosition(BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index));
+                    result.AddFootprintPosition(BuildingFootprintUtility.GetOccupiedCell(
+                        definition,
+                        request.Position,
+                        index,
+                        request.Rotation));
             }
 
             bool footprintOutsideMap =
@@ -258,7 +270,8 @@ namespace Kruty1918.Moyva.Construction.API
                 Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
                     definition,
                     request.Position,
-                    index);
+                    index,
+                    request.Rotation);
                 if (request.TileExists(position))
                     continue;
 
@@ -316,7 +329,8 @@ namespace Kruty1918.Moyva.Construction.API
                 Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
                     definition,
                     request.Position,
-                    index);
+                    index,
+                    request.Rotation);
                 string tileId = request.GetTileId?.Invoke(position);
                 int? level = request.GetTerrainLevel?.Invoke(position);
 
@@ -424,16 +438,10 @@ namespace Kruty1918.Moyva.Construction.API
                 return false;
 
             int current = request.GetTerrainLevel(position).GetValueOrDefault();
-            Vector2Int[] directions =
+            for (int index = 0; index < CardinalDirections.Length; index++)
             {
-                Vector2Int.up,
-                Vector2Int.right,
-                Vector2Int.down,
-                Vector2Int.left,
-            };
-            for (int index = 0; index < directions.Length; index++)
-            {
-                Vector2Int neighbor = position + directions[index];
+                Vector2Int neighbor =
+                    position + CardinalDirections[index];
                 if (request.TileExists != null
                     && !request.TileExists(neighbor))
                 {
@@ -467,7 +475,11 @@ namespace Kruty1918.Moyva.Construction.API
             int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int index = 0; index < count; index++)
             {
-                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    index,
+                    request.Rotation);
                 string tileId = request.GetTileId(position);
                 if (ContainsTileId(requiredTerrainIds, tileId))
                     continue;
@@ -668,7 +680,10 @@ namespace Kruty1918.Moyva.Construction.API
             TileRequirementDefinition requirement)
         {
             int radius = Mathf.Max(0, requirement.Radius);
-            var matches = new HashSet<Vector2Int>();
+            HashSet<Vector2Int> matches =
+                request.TileMatchWorkspace
+                ?? new HashSet<Vector2Int>();
+            matches.Clear();
             int footprintCount =
                 BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int cellIndex = 0;
@@ -679,7 +694,8 @@ namespace Kruty1918.Moyva.Construction.API
                     .GetOccupiedCell(
                         definition,
                         request.Position,
-                        cellIndex);
+                        cellIndex,
+                        request.Rotation);
                 for (int offsetX = -radius;
                      offsetX <= radius;
                      offsetX++)
@@ -708,7 +724,9 @@ namespace Kruty1918.Moyva.Construction.API
                 }
             }
 
-            return matches.Count;
+            int matchCount = matches.Count;
+            matches.Clear();
+            return matchCount;
         }
 
         private static bool MatchesTileRequirement(
@@ -786,7 +804,11 @@ namespace Kruty1918.Moyva.Construction.API
             int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int index = 0; index < count; index++)
             {
-                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    index,
+                    request.Rotation);
                 if (!request.IsTerrainBlocked(position))
                     continue;
 
@@ -833,7 +855,11 @@ namespace Kruty1918.Moyva.Construction.API
             int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int index = 0; index < count; index++)
             {
-                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    index,
+                    request.Rotation);
                 int? level = request.GetTerrainLevel(position);
                 if (!level.HasValue)
                     continue;
@@ -902,7 +928,11 @@ namespace Kruty1918.Moyva.Construction.API
             int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int index = 0; index < count; index++)
             {
-                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    index,
+                    request.Rotation);
                 bool occupied = request.IsOccupied != null && request.IsOccupied(position);
                 bool pending = HasPendingAt(request, position, request.IgnoredPendingPosition, out var pendingEntry);
                 if (!occupied && !pending)
@@ -933,7 +963,11 @@ namespace Kruty1918.Moyva.Construction.API
             int footprintCount = BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int cellIndex = 0; cellIndex < footprintCount; cellIndex++)
             {
-                Vector2Int footprintCell = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, cellIndex);
+                Vector2Int footprintCell = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    cellIndex,
+                    request.Rotation);
                 for (int offsetX = -spacing; offsetX <= spacing; offsetX++)
                 {
                     for (int offsetY = -spacing; offsetY <= spacing; offsetY++)
@@ -942,7 +976,11 @@ namespace Kruty1918.Moyva.Construction.API
                             continue;
 
                         var neighbor = new Vector2Int(footprintCell.x + offsetX, footprintCell.y + offsetY);
-                        if (BuildingFootprintUtility.Contains(definition, request.Position, neighbor))
+                        if (BuildingFootprintUtility.Contains(
+                                definition,
+                                request.Position,
+                                neighbor,
+                                request.Rotation))
                             continue;
 
                         bool occupied = request.IsOccupied != null && request.IsOccupied(neighbor);
@@ -1025,7 +1063,11 @@ namespace Kruty1918.Moyva.Construction.API
             int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int index = 0; index < count; index++)
             {
-                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    index,
+                    request.Rotation);
                 if (!request.IsFogBlocked(position))
                     continue;
 
@@ -1054,7 +1096,8 @@ namespace Kruty1918.Moyva.Construction.API
                     .GetOccupiedCell(
                         definition,
                         request.Position,
-                        index);
+                        index,
+                        request.Rotation);
                 FogStateType? state = request.GetFogState?.Invoke(position);
                 bool allowed = !state.HasValue
                     || state.Value == FogStateType.Visible
@@ -1100,7 +1143,8 @@ namespace Kruty1918.Moyva.Construction.API
                     .GetOccupiedCell(
                         definition,
                         request.Position,
-                        index);
+                        index,
+                        request.Rotation);
                 if (!request.IsFogBlocked(position))
                     continue;
 
@@ -1229,7 +1273,34 @@ namespace Kruty1918.Moyva.Construction.API
                 result?.AddNote($"Позицію покриває центр '{coveringCenter.Value.BuildingId}' на {coveringCenter.Value.Position}.");
             }
 
-            int candidateRadius = ResolveInfluenceRadius(candidate, Mathf.Max(0, request.TownHallBuildRadius));
+            int candidateRadius = ResolveInfluenceRadius(
+                candidate,
+                Mathf.Max(0, request.TownHallBuildRadius));
+
+            if (IsInfluenceCenter(candidate)
+                && HasInfluenceCenterTooClose(
+                    request,
+                    request.Position,
+                    candidate,
+                    out var tooClose))
+            {
+                int minimumDistance =
+                    BuildingDefinitionCapabilities
+                        .GetMinimumSettlementCenterDistance(candidate);
+                result?.AddBlocker(new BuildingPlacementBlocker
+                {
+                    Kind = BuildingPlacementBlockerKind.InfluenceOverlap,
+                    Message =
+                        $"Центр поселення надто близько до " +
+                        $"'{tooClose.BuildingId}' на {tooClose.Position}. " +
+                        $"Мінімальна відстань: {minimumDistance}.",
+                    Position = tooClose.Position,
+                    BuildingId = tooClose.BuildingId,
+                    Radius = minimumDistance,
+                });
+                return true;
+            }
+
             if (blockWhenInfluenceCenterExists
                 && HasOverlappingInfluenceCenter(request, request.Position, candidateRadius, out var overlap))
             {
@@ -1303,6 +1374,9 @@ namespace Kruty1918.Moyva.Construction.API
 
         private static bool AnyInfluenceCenterDefined(BuildingPlacementEvaluationRequest request)
         {
+            if (request.HasInfluenceCenterDefinitions.HasValue)
+                return request.HasInfluenceCenterDefinitions.Value;
+
             var definitions = request.BuildingRegistry.GetAll() ?? Array.Empty<BuildingDefinition>();
             for (int index = 0; index < definitions.Length; index++)
             {
@@ -1322,55 +1396,127 @@ namespace Kruty1918.Moyva.Construction.API
             coveringCenter = null;
             int candidateLimit = ResolveCandidateProximityLimit(candidate);
 
-            int searchRadius = ResolvePlacedCenterSearchRadius(request, candidateLimit);
-            for (int offsetX = -searchRadius; offsetX <= searchRadius; offsetX++)
+            IReadOnlyList<BuildingPlacementSimulationEntry> placedBuildings =
+                request.PlacedBuildings;
+            if (placedBuildings != null)
             {
-                for (int offsetY = -searchRadius; offsetY <= searchRadius; offsetY++)
+                for (int index = 0; index < placedBuildings.Count; index++)
                 {
-                    var centerPosition = new Vector2Int(position.x + offsetX, position.y + offsetY);
-                    if (centerPosition == request.IgnoredPendingPosition)
+                    BuildingPlacementSimulationEntry placed =
+                        placedBuildings[index];
+                    if (placed.Position == request.IgnoredOccupiedPosition)
                         continue;
-
-                    string occupantId = GetOccupantId(request, centerPosition);
-                    if (string.IsNullOrWhiteSpace(occupantId))
-                        continue;
-
-                    Vector2Int resolvedOrigin = ResolveOccupantOrigin(request, centerPosition);
-                    if (!IsOwnedByPlacementOwner(
-                            request,
-                            resolvedOrigin))
+                    if (!IsSameOwnerOrUnknown(
+                            request.OwnerId,
+                            placed.OwnerId))
                     {
                         continue;
                     }
 
-                    var definition = request.BuildingRegistry.GetById(occupantId);
+                    BuildingDefinition definition =
+                        request.BuildingRegistry.GetById(
+                            placed.BuildingId);
                     if (!IsInfluenceCenter(definition))
                         continue;
 
-                    int allowedRadius = ResolveCoverageRadius(definition, candidateLimit, request.TownHallBuildRadius);
-                    if (allowedRadius <= 0)
-                        continue;
-
-                    if (GetChebyshevDistance(resolvedOrigin, position) <= allowedRadius)
+                    int allowedRadius = ResolveCoverageRadius(
+                        definition,
+                        candidateLimit,
+                        request.TownHallBuildRadius);
+                    if (allowedRadius <= 0
+                        || GetChebyshevDistance(
+                            placed.Position,
+                            position) > allowedRadius)
                     {
-                        coveringCenter =
-                            new BuildingPlacementSimulationEntry(
+                        continue;
+                    }
+
+                    coveringCenter = placed;
+                    return true;
+                }
+            }
+            else
+            {
+                int searchRadius =
+                    ResolvePlacedCenterSearchRadius(
+                        request,
+                        candidateLimit);
+                for (int offsetX = -searchRadius;
+                     offsetX <= searchRadius;
+                     offsetX++)
+                {
+                    for (int offsetY = -searchRadius;
+                         offsetY <= searchRadius;
+                         offsetY++)
+                    {
+                        var centerPosition = new Vector2Int(
+                            position.x + offsetX,
+                            position.y + offsetY);
+                        if (centerPosition
+                            == request.IgnoredPendingPosition)
+                        {
+                            continue;
+                        }
+
+                        string occupantId =
+                            GetOccupantId(
+                                request,
+                                centerPosition);
+                        if (string.IsNullOrWhiteSpace(occupantId))
+                            continue;
+
+                        Vector2Int resolvedOrigin =
+                            ResolveOccupantOrigin(
+                                request,
+                                centerPosition);
+                        if (!IsOwnedByPlacementOwner(
+                                request,
+                                resolvedOrigin))
+                        {
+                            continue;
+                        }
+
+                        BuildingDefinition definition =
+                            request.BuildingRegistry.GetById(
+                                occupantId);
+                        if (!IsInfluenceCenter(definition))
+                            continue;
+
+                        int allowedRadius =
+                            ResolveCoverageRadius(
+                                definition,
+                                candidateLimit,
+                                request.TownHallBuildRadius);
+                        if (allowedRadius <= 0)
+                            continue;
+
+                        if (GetChebyshevDistance(
                                 resolvedOrigin,
-                                occupantId,
-                                request.GetOccupantOwnerId?.Invoke(
-                                    resolvedOrigin));
-                        return true;
+                                position) <= allowedRadius)
+                        {
+                            coveringCenter =
+                                new BuildingPlacementSimulationEntry(
+                                    resolvedOrigin,
+                                    occupantId,
+                                    request.GetOccupantOwnerId?.Invoke(
+                                        resolvedOrigin));
+                            return true;
+                        }
                     }
                 }
             }
 
-            var pendingPlacements = request.PendingPlacements;
+            IReadOnlyList<BuildingPlacementSimulationEntry>
+                pendingPlacements = request.PendingPlacements;
             if (pendingPlacements == null)
                 return false;
 
-            for (int index = 0; index < pendingPlacements.Count; index++)
+            for (int index = 0;
+                 index < pendingPlacements.Count;
+                 index++)
             {
-                var pending = pendingPlacements[index];
+                BuildingPlacementSimulationEntry pending =
+                    pendingPlacements[index];
                 if (pending.Position == request.IgnoredPendingPosition)
                     continue;
                 if (!IsSameOwnerOrUnknown(
@@ -1380,17 +1526,172 @@ namespace Kruty1918.Moyva.Construction.API
                     continue;
                 }
 
-                var pendingDefinition = request.BuildingRegistry.GetById(pending.BuildingId);
+                BuildingDefinition pendingDefinition =
+                    request.BuildingRegistry.GetById(
+                        pending.BuildingId);
                 if (!IsInfluenceCenter(pendingDefinition))
                     continue;
 
-                int allowedRadius = ResolveCoverageRadius(pendingDefinition, candidateLimit, request.TownHallBuildRadius);
+                int allowedRadius = ResolveCoverageRadius(
+                    pendingDefinition,
+                    candidateLimit,
+                    request.TownHallBuildRadius);
                 if (allowedRadius <= 0)
                     continue;
 
-                if (GetChebyshevDistance(pending.Position, position) <= allowedRadius)
+                if (GetChebyshevDistance(
+                        pending.Position,
+                        position) <= allowedRadius)
                 {
                     coveringCenter = pending;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasInfluenceCenterTooClose(
+            BuildingPlacementEvaluationRequest request,
+            Vector2Int candidatePosition,
+            BuildingDefinition candidate,
+            out BuildingPlacementOverlap overlap)
+        {
+            overlap = default;
+            int candidateMinimum =
+                BuildingDefinitionCapabilities
+                    .GetMinimumSettlementCenterDistance(candidate);
+
+            IReadOnlyList<BuildingPlacementSimulationEntry> placed =
+                request.PlacedBuildings;
+            if (placed != null)
+            {
+                for (int index = 0; index < placed.Count; index++)
+                {
+                    BuildingPlacementSimulationEntry entry = placed[index];
+                    if (entry.Position == request.IgnoredOccupiedPosition)
+                        continue;
+
+                    BuildingDefinition existing =
+                        request.BuildingRegistry.GetById(entry.BuildingId);
+                    if (!IsInfluenceCenter(existing))
+                        continue;
+
+                    int requiredDistance = Mathf.Max(
+                        candidateMinimum,
+                        BuildingDefinitionCapabilities
+                            .GetMinimumSettlementCenterDistance(existing));
+                    if (requiredDistance <= 0)
+                        continue;
+
+                    if (GetChebyshevDistance(
+                            entry.Position,
+                            candidatePosition)
+                        < requiredDistance)
+                    {
+                        overlap = new BuildingPlacementOverlap(
+                            entry.Position,
+                            entry.BuildingId,
+                            requiredDistance);
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                // Compatibility fallback for tests/external callers that do not
+                // provide the Pass-2 placed-building snapshot. Runtime service
+                // does provide it, so gameplay avoids this radius^2 path.
+                int searchRadius = candidateMinimum;
+                BuildingDefinition[] definitions =
+                    request.BuildingRegistry?.GetAll()
+                    ?? Array.Empty<BuildingDefinition>();
+                for (int index = 0; index < definitions.Length; index++)
+                {
+                    BuildingDefinition definition = definitions[index];
+                    if (IsInfluenceCenter(definition))
+                    {
+                        searchRadius = Mathf.Max(
+                            searchRadius,
+                            BuildingDefinitionCapabilities
+                                .GetMinimumSettlementCenterDistance(definition));
+                    }
+                }
+
+                for (int offsetX = -searchRadius;
+                     offsetX <= searchRadius;
+                     offsetX++)
+                {
+                    for (int offsetY = -searchRadius;
+                         offsetY <= searchRadius;
+                         offsetY++)
+                    {
+                        Vector2Int probe = new Vector2Int(
+                            candidatePosition.x + offsetX,
+                            candidatePosition.y + offsetY);
+                        string occupantId = GetOccupantId(request, probe);
+                        if (string.IsNullOrWhiteSpace(occupantId))
+                            continue;
+
+                        Vector2Int origin = ResolveOccupantOrigin(request, probe);
+                        if (origin == request.IgnoredOccupiedPosition)
+                            continue;
+
+                        BuildingDefinition existing =
+                            request.BuildingRegistry.GetById(occupantId);
+                        if (!IsInfluenceCenter(existing))
+                            continue;
+
+                        int requiredDistance = Mathf.Max(
+                            candidateMinimum,
+                            BuildingDefinitionCapabilities
+                                .GetMinimumSettlementCenterDistance(existing));
+                        if (requiredDistance > 0
+                            && GetChebyshevDistance(origin, candidatePosition)
+                                < requiredDistance)
+                        {
+                            overlap = new BuildingPlacementOverlap(
+                                origin,
+                                occupantId,
+                                requiredDistance);
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            IReadOnlyList<BuildingPlacementSimulationEntry> pending =
+                request.PendingPlacements;
+            if (pending == null)
+                return false;
+
+            for (int index = 0; index < pending.Count; index++)
+            {
+                BuildingPlacementSimulationEntry entry = pending[index];
+                if (entry.Position == request.IgnoredPendingPosition)
+                    continue;
+
+                BuildingDefinition existing =
+                    request.BuildingRegistry.GetById(entry.BuildingId);
+                if (!IsInfluenceCenter(existing))
+                    continue;
+
+                int requiredDistance = Mathf.Max(
+                    candidateMinimum,
+                    BuildingDefinitionCapabilities
+                        .GetMinimumSettlementCenterDistance(existing));
+                if (requiredDistance <= 0)
+                    continue;
+
+                if (GetChebyshevDistance(
+                        entry.Position,
+                        candidatePosition)
+                    < requiredDistance)
+                {
+                    overlap = new BuildingPlacementOverlap(
+                        entry.Position,
+                        entry.BuildingId,
+                        requiredDistance);
                     return true;
                 }
             }
@@ -1408,57 +1709,145 @@ namespace Kruty1918.Moyva.Construction.API
             if (candidateRadius <= 0)
                 return false;
 
-            int searchRadius = candidateRadius + ResolveMaxInfluenceRadius(request);
-            for (int offsetX = -searchRadius; offsetX <= searchRadius; offsetX++)
+            IReadOnlyList<BuildingPlacementSimulationEntry> placedBuildings =
+                request.PlacedBuildings;
+            if (placedBuildings != null)
             {
-                for (int offsetY = -searchRadius; offsetY <= searchRadius; offsetY++)
+                for (int index = 0; index < placedBuildings.Count; index++)
                 {
-                    var centerPosition = new Vector2Int(candidatePosition.x + offsetX, candidatePosition.y + offsetY);
-                    if (centerPosition == request.IgnoredPendingPosition)
+                    BuildingPlacementSimulationEntry placed =
+                        placedBuildings[index];
+                    if (placed.Position == request.IgnoredOccupiedPosition)
                         continue;
 
-                    string occupantId = GetOccupantId(request, centerPosition);
-                    if (string.IsNullOrWhiteSpace(occupantId))
-                        continue;
-
-                    Vector2Int resolvedOrigin = ResolveOccupantOrigin(request, centerPosition);
-                    var definition = request.BuildingRegistry.GetById(occupantId);
+                    BuildingDefinition definition =
+                        request.BuildingRegistry.GetById(
+                            placed.BuildingId);
                     if (!IsInfluenceCenter(definition))
                         continue;
 
-                    int existingRadius = ResolveInfluenceRadius(definition, Mathf.Max(0, request.TownHallBuildRadius));
-                    if (existingRadius <= 0)
+                    int existingRadius = ResolveInfluenceRadius(
+                        definition,
+                        Mathf.Max(
+                            0,
+                            request.TownHallBuildRadius));
+                    if (existingRadius <= 0
+                        || GetChebyshevDistance(
+                            placed.Position,
+                            candidatePosition)
+                            > candidateRadius + existingRadius)
+                    {
                         continue;
+                    }
 
-                    if (GetChebyshevDistance(resolvedOrigin, candidatePosition) > candidateRadius + existingRadius)
-                        continue;
-
-                    overlap = new BuildingPlacementOverlap(resolvedOrigin, occupantId, existingRadius);
+                    overlap = new BuildingPlacementOverlap(
+                        placed.Position,
+                        placed.BuildingId,
+                        existingRadius);
                     return true;
                 }
             }
+            else
+            {
+                int searchRadius =
+                    candidateRadius
+                    + ResolveMaxInfluenceRadius(request);
+                for (int offsetX = -searchRadius;
+                     offsetX <= searchRadius;
+                     offsetX++)
+                {
+                    for (int offsetY = -searchRadius;
+                         offsetY <= searchRadius;
+                         offsetY++)
+                    {
+                        var centerPosition = new Vector2Int(
+                            candidatePosition.x + offsetX,
+                            candidatePosition.y + offsetY);
+                        if (centerPosition
+                            == request.IgnoredPendingPosition)
+                        {
+                            continue;
+                        }
 
-            var pendingPlacements = request.PendingPlacements;
+                        string occupantId =
+                            GetOccupantId(
+                                request,
+                                centerPosition);
+                        if (string.IsNullOrWhiteSpace(occupantId))
+                            continue;
+
+                        Vector2Int resolvedOrigin =
+                            ResolveOccupantOrigin(
+                                request,
+                                centerPosition);
+                        BuildingDefinition definition =
+                            request.BuildingRegistry.GetById(
+                                occupantId);
+                        if (!IsInfluenceCenter(definition))
+                            continue;
+
+                        int existingRadius = ResolveInfluenceRadius(
+                            definition,
+                            Mathf.Max(
+                                0,
+                                request.TownHallBuildRadius));
+                        if (existingRadius <= 0)
+                            continue;
+
+                        if (GetChebyshevDistance(
+                                resolvedOrigin,
+                                candidatePosition)
+                            > candidateRadius + existingRadius)
+                        {
+                            continue;
+                        }
+
+                        overlap = new BuildingPlacementOverlap(
+                            resolvedOrigin,
+                            occupantId,
+                            existingRadius);
+                        return true;
+                    }
+                }
+            }
+
+            IReadOnlyList<BuildingPlacementSimulationEntry>
+                pendingPlacements = request.PendingPlacements;
             if (pendingPlacements == null)
                 return false;
 
-            for (int index = 0; index < pendingPlacements.Count; index++)
+            for (int index = 0;
+                 index < pendingPlacements.Count;
+                 index++)
             {
-                var pending = pendingPlacements[index];
+                BuildingPlacementSimulationEntry pending =
+                    pendingPlacements[index];
                 if (pending.Position == request.IgnoredPendingPosition)
                     continue;
 
-                var pendingDefinition = request.BuildingRegistry.GetById(pending.BuildingId);
+                BuildingDefinition pendingDefinition =
+                    request.BuildingRegistry.GetById(
+                        pending.BuildingId);
                 if (!IsInfluenceCenter(pendingDefinition))
                     continue;
 
-                int existingRadius = ResolveInfluenceRadius(pendingDefinition, Mathf.Max(0, request.TownHallBuildRadius));
+                int existingRadius = ResolveInfluenceRadius(
+                    pendingDefinition,
+                    Mathf.Max(
+                        0,
+                        request.TownHallBuildRadius));
                 if (existingRadius <= 0)
                     continue;
 
-                if (GetChebyshevDistance(pending.Position, candidatePosition) <= candidateRadius + existingRadius)
+                if (GetChebyshevDistance(
+                        pending.Position,
+                        candidatePosition)
+                    <= candidateRadius + existingRadius)
                 {
-                    overlap = new BuildingPlacementOverlap(pending.Position, pending.BuildingId, existingRadius);
+                    overlap = new BuildingPlacementOverlap(
+                        pending.Position,
+                        pending.BuildingId,
+                        existingRadius);
                     return true;
                 }
             }
@@ -1466,7 +1855,7 @@ namespace Kruty1918.Moyva.Construction.API
             return false;
         }
 
-        private static int ResolveCoverageRadius(BuildingDefinition centerDefinition, int candidateLimit, int fallbackRadius)
+private static int ResolveCoverageRadius(BuildingDefinition centerDefinition, int candidateLimit, int fallbackRadius)
         {
             int sourceRadius = ResolveInfluenceRadius(centerDefinition, Mathf.Max(0, fallbackRadius));
             if (sourceRadius <= 0)
@@ -1487,6 +1876,9 @@ namespace Kruty1918.Moyva.Construction.API
 
         private static int ResolveMaxInfluenceRadius(BuildingPlacementEvaluationRequest request)
         {
+            if (request.MaxInfluenceRadius >= 0)
+                return request.MaxInfluenceRadius;
+
             int maxRadius = 0;
             var definitions = request.BuildingRegistry.GetAll() ?? Array.Empty<BuildingDefinition>();
             for (int index = 0; index < definitions.Length; index++)
@@ -1535,7 +1927,11 @@ namespace Kruty1918.Moyva.Construction.API
                     continue;
 
                 BuildingDefinition pendingDefinition = request.BuildingRegistry?.GetById(pending.BuildingId);
-                if (!BuildingFootprintUtility.Contains(pendingDefinition, pending.Position, position))
+                if (!BuildingFootprintUtility.Contains(
+                        pendingDefinition,
+                        pending.Position,
+                        position,
+                        pending.Rotation))
                     continue;
 
                 pendingEntry = pending;

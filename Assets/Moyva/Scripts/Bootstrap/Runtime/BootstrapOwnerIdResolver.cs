@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.Turns.API;
 using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
@@ -13,11 +14,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         bool CanRunBootstrapLogic();
     }
 
-    internal sealed class BootstrapOwnerIdResolver : IBootstrapOwnerIdResolver
+    internal sealed class BootstrapOwnerIdResolver : IBootstrapOwnerIdResolver, ITurnLocalOwnerResolver
     {
         private const string DefaultOwnerId = "player_0";
 
-        private readonly IConstructionService _constructionService;
+        // Construction can depend back on ITurnService. Active-owner fallback is
+        // only needed when ResolveActiveOwnerId runs, not while this resolver is created.
+        private readonly LazyInject<IConstructionService> _constructionService;
         private readonly IStartingPositionState _startingPositionState;
 
     #pragma warning disable CS0649
@@ -25,7 +28,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     #pragma warning restore CS0649
 
         public BootstrapOwnerIdResolver(
-            IConstructionService constructionService,
+            LazyInject<IConstructionService> constructionService,
             [InjectOptional] IStartingPositionState startingPositionState = null)
         {
             _constructionService = constructionService;
@@ -41,7 +44,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
                 return NormalizeOwnerId(_sessionManager.LocalPlayerId);
 
-            return NormalizeOwnerId(_constructionService.GetActiveOwner());
+            return NormalizeOwnerId(_constructionService.Value.GetActiveOwner());
         }
 
         public bool CanRunBootstrapLogic()
@@ -51,6 +54,37 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return true;
 
             return _startingPositionState?.IsSet ?? false;
+        }
+
+        public string ResolveLocalOwnerId(IReadOnlyList<TurnFaction> factions)
+        {
+            if (factions == null || factions.Count == 0)
+                return string.Empty;
+
+            var participants = _sessionManager?.Participants;
+            bool hasAuthoritativeSession = participants != null && participants.Count > 0;
+            if (hasAuthoritativeSession)
+            {
+                string localPlayerId = _sessionManager.LocalPlayerId?.Trim();
+                if (string.IsNullOrWhiteSpace(localPlayerId))
+                    return string.Empty;
+
+                for (int index = 0; index < factions.Count; index++)
+                {
+                    if (string.Equals(factions[index].OwnerId, localPlayerId, StringComparison.Ordinal))
+                        return factions[index].OwnerId;
+                }
+
+                return string.Empty;
+            }
+
+            for (int index = 0; index < factions.Count; index++)
+            {
+                if (!factions[index].IsBot && !string.IsNullOrWhiteSpace(factions[index].OwnerId))
+                    return factions[index].OwnerId;
+            }
+
+            return factions[0].OwnerId ?? string.Empty;
         }
 
         private string ResolveLocalActiveOwnerId(IReadOnlyList<SpawnPositionAssignment> targets)

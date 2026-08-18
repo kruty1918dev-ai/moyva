@@ -1,0 +1,692 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/moyva-project-settings.schema.json",
+  "title": "Moyva — Moyva Project Settings SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Grid.API.MoyvaProjectSettingsSO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.moyva-project-settings"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "moyva-project-settings"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "projectVisualMode": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Auto|Full3D))$",
+      "x-enumNames": [
+        "Auto",
+        "Full3D"
+      ],
+      "x-flags": false,
+      "title": "Project Visual Mode"
+    },
+    "useAdvancedProjectSettings": {
+      "type": "boolean",
+      "title": "Use Advanced Project Settings"
+    },
+    "defaultGridTopology": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Orthogonal|HexAxial|Layered))$",
+      "x-enumNames": [
+        "Orthogonal",
+        "HexAxial",
+        "Layered"
+      ],
+      "x-flags": false,
+      "title": "Default Grid Topology"
+    },
+    "defaultProjectionMode": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Isometric3DPreview|Orthographic3D))$",
+      "x-enumNames": [
+        "Isometric3DPreview",
+        "Orthographic3D"
+      ],
+      "x-flags": false,
+      "title": "Default Projection Mode"
+    },
+    "defaultRenderMode": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Mesh3DPreview|Mesh3D))$",
+      "x-enumNames": [
+        "Mesh3DPreview",
+        "Mesh3D"
+      ],
+      "x-flags": false,
+      "title": "Default Render Mode"
+    },
+    "defaultNeighborhood": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Auto|Moore8|VonNeumann4|HexAxial6))$",
+      "x-enumNames": [
+        "Auto",
+        "Moore8",
+        "VonNeumann4",
+        "HexAxial6"
+      ],
+      "x-flags": false,
+      "title": "Default Neighborhood"
+    },
+    "orthogonalCellWidth": {
+      "type": "number",
+      "title": "Orthogonal Cell Width",
+      "minimum": 0.01,
+      "x-moyva-editorMinimum": 0.01
+    },
+    "orthogonalCellHeight": {
+      "type": "number",
+      "title": "Orthogonal Cell Height",
+      "minimum": 0.01,
+      "x-moyva-editorMinimum": 0.01
+    },
+    "orthogonalCellDepth": {
+      "type": "number",
+      "title": "Orthogonal Cell Depth",
+      "minimum": 0.01,
+      "x-moyva-editorMinimum": 0.01
+    },
+    "isometricTileWidth": {
+      "type": "number",
+      "title": "Isometric Tile Width",
+      "minimum": 0.01,
+      "x-moyva-editorMinimum": 0.01
+    },
+    "isometricTileHeight": {
+      "type": "number",
+      "title": "Isometric Tile Height",
+      "minimum": 0.01,
+      "x-moyva-editorMinimum": 0.01
+    },
+    "hexOrientation": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:PointyTop|FlatTop))$",
+      "x-enumNames": [
+        "PointyTop",
+        "FlatTop"
+      ],
+      "x-flags": false,
+      "title": "Hex Orientation"
+    },
+    "hexRadius": {
+      "type": "number",
+      "title": "Hex Radius",
+      "minimum": 0.01,
+      "x-moyva-editorMinimum": 0.01
+    },
+    "heightScale": {
+      "type": "number",
+      "title": "Height Scale",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "useHeightForPreview": {
+      "type": "boolean",
+      "title": "Use Height For Preview"
+    },
+    "enableMeshPrefabPreviews": {
+      "type": "boolean",
+      "title": "Enable Mesh Prefab Previews"
+    },
+    "previewTextureSize": {
+      "type": "integer",
+      "title": "Preview Texture Size",
+      "minimum": 16.0,
+      "x-moyva-editorMinimum": 16.0
+    },
+    "previewPadding": {
+      "type": "number",
+      "title": "Preview Padding",
+      "minimum": 1.0,
+      "maximum": 3.0,
+      "x-moyva-editorMinimum": 1.0,
+      "x-moyva-editorMaximum": 3.0
+    },
+    "generatePreviewMipmaps": {
+      "type": "boolean",
+      "title": "Generate Preview Mipmaps"
+    },
+    "previewFilterMode": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Point|Bilinear|Trilinear))$",
+      "x-enumNames": [
+        "Point",
+        "Bilinear",
+        "Trilinear"
+      ],
+      "x-flags": false,
+      "title": "Preview Filter Mode"
+    },
+    "previewRenderTextureFormat": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:ARGB32|Depth|ARGBHalf|Shadowmap|RGB565|ARGB4444|ARGB1555|Default|ARGB2101010|DefaultHDR|ARGB64|ARGBFloat|RGFloat|RGHalf|RFloat|RHalf|R8|ARGBInt|RGInt|RInt|BGRA32|RGB111110Float|RG32|RGBAUShort|RG16|BGRA10101010_XR|BGR101010_XR|R16))$",
+      "x-enumNames": [
+        "ARGB32",
+        "Depth",
+        "ARGBHalf",
+        "Shadowmap",
+        "RGB565",
+        "ARGB4444",
+        "ARGB1555",
+        "Default",
+        "ARGB2101010",
+        "DefaultHDR",
+        "ARGB64",
+        "ARGBFloat",
+        "RGFloat",
+        "RGHalf",
+        "RFloat",
+        "RHalf",
+        "R8",
+        "ARGBInt",
+        "RGInt",
+        "RInt",
+        "BGRA32",
+        "RGB111110Float",
+        "RG32",
+        "RGBAUShort",
+        "RG16",
+        "BGRA10101010_XR",
+        "BGR101010_XR",
+        "R16"
+      ],
+      "x-flags": false,
+      "title": "Preview Render Texture Format"
+    },
+    "previewRenderTextureReadWrite": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Default|Linear|sRGB))$",
+      "x-enumNames": [
+        "Default",
+        "Linear",
+        "sRGB"
+      ],
+      "x-flags": false,
+      "title": "Preview Render Texture Read Write"
+    },
+    "orthographic3DPreviewEuler": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "additionalProperties": false,
+      "title": "Orthographic 3D Preview Euler"
+    },
+    "isometric3DPreviewEuler": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "additionalProperties": false,
+      "title": "Isometric 3D Preview Euler"
+    },
+    "usePerspectivePreviewCameraIn3D": {
+      "type": "boolean",
+      "title": "Use Perspective Preview Camera In 3D"
+    },
+    "previewPerspectiveFieldOfView": {
+      "type": "number",
+      "title": "Preview Perspective Field Of View",
+      "minimum": 1.0,
+      "maximum": 179.0,
+      "x-moyva-editorMinimum": 1.0,
+      "x-moyva-editorMaximum": 179.0
+    },
+    "previewLightEuler": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "additionalProperties": false,
+      "title": "Preview Light Euler"
+    },
+    "previewLightIntensity": {
+      "type": "number",
+      "title": "Preview Light Intensity",
+      "minimum": 0.0,
+      "maximum": 5.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 5.0
+    },
+    "useLiveHomeMenuMeshPreview": {
+      "type": "boolean",
+      "title": "Use Live Home Menu Mesh Preview"
+    },
+    "homeMenuPreviewIncludeObjects": {
+      "type": "boolean",
+      "title": "Home Menu Preview Include Objects"
+    },
+    "homeMenuPreviewIncludeBuildings": {
+      "type": "boolean",
+      "title": "Home Menu Preview Include Buildings"
+    },
+    "homeMenuPreviewCombineMeshesByMaterial": {
+      "type": "boolean",
+      "title": "Home Menu Preview Combine Meshes By Material"
+    },
+    "homeMenuPreviewTileStride": {
+      "type": "integer",
+      "title": "Home Menu Preview Tile Stride",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "homeMenuPreviewMaxTerrainTiles": {
+      "type": "integer",
+      "title": "Home Menu Preview Max Terrain Tiles",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "homeMenuPreviewMaxVerticesPerBatch": {
+      "type": "integer",
+      "title": "Home Menu Preview Max Vertices Per Batch",
+      "minimum": 1024.0,
+      "x-moyva-editorMinimum": 1024.0
+    },
+    "homeMenuPreviewMaxMaterialBatches": {
+      "type": "integer",
+      "title": "Home Menu Preview Max Material Batches",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "homeMenuPreviewCameraPadding": {
+      "type": "number",
+      "title": "Home Menu Preview Camera Padding",
+      "minimum": 0.75,
+      "maximum": 3.0,
+      "x-moyva-editorMinimum": 0.75,
+      "x-moyva-editorMaximum": 3.0
+    },
+    "homeMenuPreviewCameraDepth": {
+      "type": "number",
+      "title": "Home Menu Preview Camera Depth",
+      "minimum": -1000.0,
+      "maximum": 1000.0,
+      "x-moyva-editorMinimum": -1000.0,
+      "x-moyva-editorMaximum": 1000.0
+    },
+    "homeMenuPreviewLayer": {
+      "type": "integer",
+      "title": "Home Menu Preview Layer",
+      "minimum": 0.0,
+      "maximum": 31.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 31.0
+    },
+    "homeMenuPreviewDisableFog": {
+      "type": "boolean",
+      "title": "Home Menu Preview Disable Fog"
+    },
+    "homeMenuPreviewUploadMeshData": {
+      "type": "boolean",
+      "title": "Home Menu Preview Upload Mesh Data"
+    },
+    "homeMenuPreviewCastShadows": {
+      "type": "boolean",
+      "title": "Home Menu Preview Cast Shadows"
+    },
+    "homeMenuPreviewReceiveShadows": {
+      "type": "boolean",
+      "title": "Home Menu Preview Receive Shadows"
+    },
+    "homeMenuPreviewBackgroundColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Home Menu Preview Background Color"
+    },
+    "autoConfigure3DLighting": {
+      "type": "boolean",
+      "title": "Auto Configure 3D Lighting"
+    },
+    "createDirectionalLightIn3D": {
+      "type": "boolean",
+      "title": "Create Directional Light In 3D"
+    },
+    "project3DLightEuler": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "additionalProperties": false,
+      "title": "Project 3D Light Euler"
+    },
+    "project3DLightColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Project 3D Light Color"
+    },
+    "project3DLightIntensity": {
+      "type": "number",
+      "title": "Project 3D Light Intensity",
+      "minimum": 0.0,
+      "maximum": 8.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 8.0
+    },
+    "project3DLightShadows": {
+      "type": "boolean",
+      "title": "Project 3D Light Shadows"
+    },
+    "project3DAmbientSkyColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Project 3D Ambient Sky Color"
+    },
+    "project3DAmbientEquatorColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Project 3D Ambient Equator Color"
+    },
+    "project3DAmbientGroundColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Project 3D Ambient Ground Color"
+    },
+    "enable3DAtmosphericFog": {
+      "type": "boolean",
+      "title": "Enable 3D Atmospheric Fog"
+    },
+    "project3DAtmosphericFogColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Project 3D Atmospheric Fog Color"
+    },
+    "project3DAtmosphericFogDensity": {
+      "type": "number",
+      "title": "Project 3D Atmospheric Fog Density",
+      "minimum": 0.0,
+      "maximum": 0.1,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 0.1
+    },
+    "cameraPolicy": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:AutoFromGrid|Force3DOrthographic|Force3DPerspective))$",
+      "x-enumNames": [
+        "AutoFromGrid",
+        "Force3DOrthographic",
+        "Force3DPerspective"
+      ],
+      "x-flags": false,
+      "title": "Camera Policy"
+    },
+    "cameraAnglePolicy": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Auto|OrthographicTopDown|Isometric|Custom))$",
+      "x-enumNames": [
+        "Auto",
+        "OrthographicTopDown",
+        "Isometric",
+        "Custom"
+      ],
+      "x-flags": false,
+      "title": "Camera Angle Policy"
+    },
+    "custom3DCameraEuler": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "additionalProperties": false,
+      "title": "Custom 3D Camera Euler"
+    },
+    "project3DCameraDistance": {
+      "type": "number",
+      "title": "Project 3D Camera Distance",
+      "minimum": 0.1,
+      "x-moyva-editorMinimum": 0.1
+    },
+    "project3DOrthographicSize": {
+      "type": "number",
+      "title": "Project 3D Orthographic Size",
+      "minimum": 0.1,
+      "x-moyva-editorMinimum": 0.1
+    },
+    "project3DFieldOfView": {
+      "type": "number",
+      "title": "Project 3D Field Of View",
+      "minimum": 1.0,
+      "maximum": 179.0,
+      "x-moyva-editorMinimum": 1.0,
+      "x-moyva-editorMaximum": 179.0
+    },
+    "ensureStartupCameraShowsRevealedArea": {
+      "type": "boolean",
+      "title": "Ensure Startup Camera Shows Revealed Area"
+    },
+    "startupCameraPaddingTiles": {
+      "type": "number",
+      "title": "Startup Camera Padding Tiles",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "startupCameraRadiusSource": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:RevealedFogRadius|CoreVisibleRadius|ManualRadius))$",
+      "x-enumNames": [
+        "RevealedFogRadius",
+        "CoreVisibleRadius",
+        "ManualRadius"
+      ],
+      "x-flags": false,
+      "title": "Startup Camera Radius Source"
+    },
+    "manualStartupCameraRadius": {
+      "type": "integer",
+      "title": "Manual Startup Camera Radius",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    }
+  }
+}

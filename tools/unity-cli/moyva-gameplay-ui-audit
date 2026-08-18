@@ -1,0 +1,397 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+export PATH="$HOME/.local/bin:$PATH"
+
+if ! command -v unity >/dev/null 2>&1; then
+  echo "[GameplayUIAudit] ERROR: Unity CLI is not in PATH." >&2
+  exit 10
+fi
+
+STAMP="$(date +%Y%m%d_%H%M%S)"
+REPORT_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/moyva-cli/reports/gameplay-ui"
+REPORT_DIR="$REPORT_ROOT/$STAMP"
+mkdir -p "$REPORT_DIR/cli_existing" "$REPORT_DIR/local_source" "$REPORT_DIR/diagnostics"
+
+echo "[GameplayUIAudit] PROJECT=$PROJECT"
+echo "[GameplayUIAudit] REPORT_DIR=$REPORT_DIR"
+
+DOWNLOAD_DIR=''
+for candidate in "$HOME/Завантажене" "$HOME/Завантаження" "$HOME/Downloads"; do
+  if [[ -d "$candidate" ]]; then
+    DOWNLOAD_DIR="$candidate"
+    break
+  fi
+done
+[[ -n "$DOWNLOAD_DIR" ]] || DOWNLOAD_DIR="$HOME"
+
+zip_directory() {
+  local src="$1"
+  local dst="$2"
+  python3 - "$src" "$dst" <<'PY'
+from pathlib import Path
+import sys, zipfile
+src = Path(sys.argv[1])
+dst = Path(sys.argv[2])
+with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
+    for p in sorted(src.rglob("*")):
+        if p.is_file():
+            z.write(p, p.relative_to(src))
+print(dst)
+PY
+}
+
+collect_connection_diagnostics() {
+  {
+    echo "date=$(date -Is)"
+    echo "project=$PROJECT"
+    echo
+    echo "=== unity --version ==="
+    unity --version 2>&1 || true
+    echo
+    echo "=== auth status ==="
+    unity auth status --format json 2>&1 || true
+    echo
+    echo "=== pipeline list ==="
+    unity pipeline list --format json 2>&1 || true
+    echo
+    echo "=== unity processes ==="
+    pgrep -a -f 'Unity|unityhub|UnityHub' 2>&1 || true
+  } >"$REPORT_DIR/diagnostics/connection_state.txt"
+
+  unity command --project-path="$PROJECT" --format json \
+    >"$REPORT_DIR/diagnostics/command_probe.json" 2>&1 || true
+
+  local editor_log="$HOME/.config/unity3d/Editor.log"
+  if [[ -f "$editor_log" ]]; then
+    tail -n 8000 "$editor_log" >"$REPORT_DIR/diagnostics/editor_log_tail_8000.txt" || true
+    grep -E \
+      'Pipeline|pipeline|127\.0\.0\.1|7800|7801|domain reload|Domain Reload|Assembly Reload|error CS[0-9]+|Exception|crash|Crash' \
+      "$REPORT_DIR/diagnostics/editor_log_tail_8000.txt" \
+      >"$REPORT_DIR/diagnostics/editor_log_pipeline_relevant.txt" || true
+  fi
+}
+
+editor_process_present() {
+  # Do not attempt to start a second Editor. This is only a diagnostic guard.
+  pgrep -f '[U]nity.*moyva|/Editor/[U]nity' >/dev/null 2>&1
+}
+
+wait_for_pipeline_stable() {
+  local consecutive=0
+  local max_attempts=90
+
+  echo "[GameplayUIAudit] Waiting for stable Unity Pipeline connection..."
+
+  for attempt in $(seq 1 "$max_attempts"); do
+    if ! editor_process_present; then
+      consecutive=0
+      if (( attempt % 5 == 0 )); then
+        echo "[GameplayUIAudit] waiting: Unity Editor process not detected ($attempt/$max_attempts)"
+      fi
+      sleep 2
+      continue
+    fi
+
+    local probe
+    probe="$(unity command --project-path="$PROJECT" --format json 2>/dev/null || true)"
+
+    if [[ -n "$probe" ]] \
+       && grep -q 'moyva-gameplay-ui-prepare' <<<"$probe" \
+       && grep -q 'moyva-gameplay-ui-audit' <<<"$probe"; then
+      consecutive=$((consecutive + 1))
+      if [[ "$consecutive" -ge 3 ]]; then
+        printf '%s\n' "$probe" >"$REPORT_DIR/cli_existing/command_catalog.json"
+        echo "[GameplayUIAudit] PIPELINE_STABLE_OK consecutive=$consecutive"
+        return 0
+      fi
+      sleep 1
+    else
+      consecutive=0
+      if (( attempt % 5 == 0 )); then
+        echo "[GameplayUIAudit] waiting: Pipeline unavailable/domain reload in progress ($attempt/$max_attempts)"
+        unity pipeline list --format json 2>&1 | head -n 40 || true
+      fi
+      sleep 2
+    fi
+  done
+
+  collect_connection_diagnostics
+  local diagnostic_zip="$DOWNLOAD_DIR/Moyva_GameplayUI_Pipeline_Diagnostics_${STAMP}.zip"
+  zip_directory "$REPORT_DIR/diagnostics" "$diagnostic_zip" >/dev/null
+
+  echo "[GameplayUIAudit] ERROR: Pipeline did not become stable." >&2
+  echo "[GameplayUIAudit] DIAGNOSTICS_FILE=$diagnostic_zip" >&2
+  return 1
+}
+
+run_required_command() {
+  local output_file="$1"
+  shift
+
+  local attempts=10
+  local tmp="${output_file}.tmp"
+  rm -f "$tmp"
+
+  for attempt in $(seq 1 "$attempts"); do
+    if "$@" >"$tmp" 2>&1; then
+      mv "$tmp" "$output_file"
+      cat "$output_file"
+      return 0
+    fi
+
+    if grep -qiE \
+      'Cannot connect to Unity Editor Pipeline server|Connection refused|Pipeline server|127\.0\.0\.1' \
+      "$tmp" 2>/dev/null; then
+      echo "[GameplayUIAudit] Pipeline connection dropped; retrying required command ($attempt/$attempts)..." >&2
+      sleep 3
+      wait_for_pipeline_stable >/dev/null 2>&1 || true
+      continue
+    fi
+
+    # Non-connection command failure should not be hidden behind retries.
+    mv "$tmp" "$output_file"
+    cat "$output_file"
+    return 1
+  done
+
+  mv "$tmp" "$output_file" 2>/dev/null || true
+  [[ -f "$output_file" ]] && cat "$output_file"
+  return 1
+}
+
+run_optional() {
+  local name="$1"
+  shift
+  echo "[GameplayUIAudit] optional: $name"
+
+  # Skip absent Pass71/project commands rather than making Pipeline log errors.
+  if [[ "${1:-}" == "unity" && "${2:-}" == "command" && -n "${3:-}" ]]; then
+    local command_name="$3"
+    if [[ "$command_name" == moyva-* ]] \
+       && ! grep -qF "$command_name" "$REPORT_DIR/cli_existing/command_catalog.json" 2>/dev/null; then
+      printf 'skipped: command is not installed: %s\n' "$command_name" \
+        >"$REPORT_DIR/cli_existing/$name.stderr"
+      return 0
+    fi
+  fi
+
+  for attempt in 1 2 3; do
+    if "$@" >"$REPORT_DIR/cli_existing/$name.json" \
+             2>"$REPORT_DIR/cli_existing/$name.stderr"; then
+      return 0
+    fi
+
+    if grep -qiE \
+      'Cannot connect to Unity Editor Pipeline server|Connection refused|Pipeline server|127\.0\.0\.1' \
+      "$REPORT_DIR/cli_existing/$name.stderr" 2>/dev/null; then
+      sleep 2
+      wait_for_pipeline_stable >/dev/null 2>&1 || true
+      continue
+    fi
+    break
+  done
+
+  echo "unavailable or failed" >>"$REPORT_DIR/cli_existing/$name.stderr"
+  return 0
+}
+
+# Save static CLI state before live calls.
+unity --version >"$REPORT_DIR/cli_existing/unity_version.txt" 2>&1 || true
+unity auth status --format json >"$REPORT_DIR/cli_existing/auth_status.json" 2>&1 || true
+unity pipeline list --format json >"$REPORT_DIR/cli_existing/pipeline_list_initial.json" 2>&1 || true
+
+if ! wait_for_pipeline_stable; then
+  exit 30
+fi
+
+PREPARE_OUT="$REPORT_DIR/prepare.json"
+if ! run_required_command "$PREPARE_OUT" \
+    unity command moyva-gameplay-ui-prepare \
+      --project-path="$PROJECT" \
+      --format json; then
+  echo "[GameplayUIAudit] ERROR: Gameplay scene preparation command failed." >&2
+  collect_connection_diagnostics
+  exit 31
+fi
+
+if grep -q '"ok"[[:space:]]*:[[:space:]]*false' "$PREPARE_OUT" \
+   || grep -q '"success"[[:space:]]*:[[:space:]]*false' "$PREPARE_OUT"; then
+  echo "[GameplayUIAudit] ERROR: Gameplay scene preparation refused/failed." >&2
+  echo "[GameplayUIAudit] See $PREPARE_OUT" >&2
+  exit 32
+fi
+
+# Opening/switching the scene can cause additional Editor work. Require stable
+# connectivity again before the heavy audit.
+if ! wait_for_pipeline_stable; then
+  exit 33
+fi
+
+AUDIT_OUT="$REPORT_DIR/audit_command_result.json"
+if ! run_required_command "$AUDIT_OUT" \
+    unity command moyva-gameplay-ui-audit \
+      --project-path="$PROJECT" \
+      --output-dir "$REPORT_DIR" \
+      --format json; then
+  echo "[GameplayUIAudit] ERROR: live audit command failed." >&2
+  collect_connection_diagnostics
+  exit 34
+fi
+
+if grep -q '"ok"[[:space:]]*:[[:space:]]*false' "$AUDIT_OUT" \
+   || grep -q '"success"[[:space:]]*:[[:space:]]*false' "$AUDIT_OUT"; then
+  echo "[GameplayUIAudit] ERROR: live audit command returned failure." >&2
+  exit 35
+fi
+
+# Supplemental live snapshots.
+run_optional project_status \
+  unity command moyva-project-status --project-path="$PROJECT" --format json
+run_optional scene_tree \
+  unity command moyva-scene-tree --project-path="$PROJECT" --format json
+run_optional pass70_ui_audit \
+  unity command moyva-ui-audit --project-path="$PROJECT" --format json
+run_optional project_overview \
+  unity command moyva-core-overview --project-path="$PROJECT" --format json
+run_optional project_health \
+  unity command moyva-safety-project-health --project-path="$PROJECT" --format json
+run_optional construction_summary \
+  unity command moyva-construction-summary --project-path="$PROJECT" --format json
+run_optional economy_summary \
+  unity command moyva-economy-summary --project-path="$PROJECT" --format json
+run_optional gamemode_summary \
+  unity command moyva-gamemode-summary --project-path="$PROJECT" --format json
+run_optional infopanel_summary \
+  unity command moyva-infopanel-summary --project-path="$PROJECT" --format json
+run_optional interactions_summary \
+  unity command moyva-interactions-summary --project-path="$PROJECT" --format json
+
+# Wait for the asynchronous custom GameView capture.
+for i in $(seq 1 30); do
+  if [[ -s "$REPORT_DIR/gameview.png" ]]; then
+    echo "[GameplayUIAudit] GAMEVIEW_SCREENSHOT_OK"
+    break
+  fi
+  sleep 1
+done
+
+if [[ ! -s "$REPORT_DIR/gameview.png" ]]; then
+  cat >"$REPORT_DIR/GAMEVIEW_SCREENSHOT_NOTE.txt" <<'EOF'
+GameView screenshot was requested by the custom Gameplay UI audit but no PNG
+appeared within 30 seconds. The JSON and SceneView capture remain valid.
+The Unity Pipeline package also exposes built-in capture_game_view and
+capture_scene_view commands; their exact installed schemas can be inspected
+from the command catalog before a later capture pass.
+EOF
+  echo "[GameplayUIAudit] WARNING: custom GameView screenshot not produced within 30 seconds."
+fi
+
+# Git/local project state.
+{
+  echo "branch=$(git -C "$PROJECT" branch --show-current 2>/dev/null || true)"
+  echo "head=$(git -C "$PROJECT" rev-parse HEAD 2>/dev/null || true)"
+  echo
+  git -C "$PROJECT" status --short 2>/dev/null || true
+} >"$REPORT_DIR/git_state.txt"
+
+git -C "$PROJECT" diff --stat >"$REPORT_DIR/git_diff_stat.txt" 2>/dev/null || true
+
+git -C "$PROJECT" diff -- \
+  Assets/Moyva/Scripts/Features/Construction/UI \
+  Assets/Moyva/Scripts/Features/Economy/UI \
+  Assets/Moyva/Scripts/Features/InfoPanel \
+  Assets/Moyva/Scripts/Features/GameMode \
+  Assets/Moyva/Scripts/Features/WorldCreation/UI \
+  Assets/Moyva/Scripts/Features/Interactions \
+  >"$REPORT_DIR/relevant_ui_git_diff.patch" 2>/dev/null || true
+
+copy_tree_files() {
+  local rel="$1"
+  local src="$PROJECT/$rel"
+  [[ -d "$src" ]] || return 0
+
+  while IFS= read -r -d '' file; do
+    local relative="${file#$PROJECT/}"
+    local dest="$REPORT_DIR/local_source/$relative"
+    mkdir -p "$(dirname "$dest")"
+    cp -a "$file" "$dest"
+  done < <(find "$src" -type f \( \
+      -name '*.cs' -o -name '*.asmdef' -o -name '*.md' \
+    \) -print0 2>/dev/null)
+}
+
+copy_tree_files "Assets/Moyva/Scripts/Features/Construction/UI"
+copy_tree_files "Assets/Moyva/Scripts/Features/Economy/UI"
+copy_tree_files "Assets/Moyva/Scripts/Features/InfoPanel"
+copy_tree_files "Assets/Moyva/Scripts/Features/GameMode"
+copy_tree_files "Assets/Moyva/Scripts/Features/WorldCreation/UI"
+copy_tree_files "Assets/Moyva/Scripts/Features/Interactions"
+
+for rel in \
+  "ProjectSettings/EditorBuildSettings.asset" \
+  "docs/systems/construction/ui.md" \
+  "Assets/Moyva/Scenes/Gamplay_Scene.unity"
+do
+  src="$PROJECT/$rel"
+  if [[ -f "$src" ]]; then
+    size="$(stat -c %s "$src" 2>/dev/null || echo 0)"
+    if [[ "$rel" == *.unity && "$size" -gt 30000000 ]]; then
+      echo "$rel omitted because size=$size > 30MB" >>"$REPORT_DIR/raw_copy_notes.txt"
+      continue
+    fi
+    dest="$REPORT_DIR/local_source/$rel"
+    mkdir -p "$(dirname "$dest")"
+    cp -a "$src" "$dest"
+  fi
+done
+
+find "$PROJECT/Assets/Moyva" -type f \( \
+    -iname '*ui*.prefab' -o \
+    -iname '*panel*.prefab' -o \
+    -iname '*button*.prefab' -o \
+    -iname '*hud*.prefab' -o \
+    -iname '*menu*.prefab' \
+  \) -printf '%P\n' 2>/dev/null | sort >"$REPORT_DIR/ui_prefab_filename_index.txt"
+
+EDITOR_LOG="$HOME/.config/unity3d/Editor.log"
+if [[ -f "$EDITOR_LOG" ]]; then
+  tail -n 7000 "$EDITOR_LOG" >"$REPORT_DIR/editor_log_tail_7000.txt" || true
+  grep -E \
+    'error CS[0-9]+|NullReferenceException|MissingReferenceException|ConstructionUI|GameModeUI|WorldInfoPanel|EconomyPlayerResource|MoyvaGameplayUiAudit|Pipeline' \
+    "$REPORT_DIR/editor_log_tail_7000.txt" \
+    >"$REPORT_DIR/editor_log_ui_relevant.txt" || true
+fi
+
+cat >"$REPORT_DIR/UPLOAD_ME.txt" <<EOF
+Moyva Gameplay UI Audit
+Generated: $STAMP
+Project: $PROJECT
+
+Primary:
+  gameplay_ui_audit.json
+
+Visual:
+  gameview.png
+  sceneview.png
+
+Local source:
+  local_source/
+
+CLI snapshots:
+  cli_existing/
+
+Upload the final ZIP printed by the terminal to ChatGPT.
+EOF
+
+FINAL_ZIP="$DOWNLOAD_DIR/Moyva_GameplayUI_Audit_${STAMP}.zip"
+zip_directory "$REPORT_DIR" "$FINAL_ZIP" >/dev/null
+
+echo
+echo "=============================================================="
+echo "[GameplayUIAudit] ГОТОВО"
+echo "[GameplayUIAudit] REPORT_JSON=$REPORT_DIR/gameplay_ui_audit.json"
+echo "[GameplayUIAudit] REPORT_DIR=$REPORT_DIR"
+echo "[GameplayUIAudit] UPLOAD_THIS_FILE=$FINAL_ZIP"
+echo "=============================================================="

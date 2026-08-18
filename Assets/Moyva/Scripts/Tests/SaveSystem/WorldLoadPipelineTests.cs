@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using System.IO;
 using Kruty1918.Moyva.Bootstrap.Runtime;
@@ -11,6 +12,7 @@ using NUnit.Framework;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.SaveSystem
 {
     [TestFixture]
@@ -161,7 +163,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             foreach (var unityObject in _createdUnityObjects)
             {
                 if (unityObject != null)
-                    Object.DestroyImmediate(unityObject);
+                    MoyvaJsonObjectFactory.DestroyImmediate(unityObject);
             }
 
             base.Teardown();
@@ -172,7 +174,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
         {
             _signalBus = Container.Resolve<SignalBus>();
     
-            var tileRegistry = ScriptableObject.CreateInstance<TileRegistrySO>();
+            var tileRegistry = MoyvaJsonObjectFactory.Create<TileRegistrySO>();
             _createdUnityObjects.Add(tileRegistry);
             SetTileDefinitions(tileRegistry, "grass", "river");
 
@@ -245,7 +247,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
         {
             _signalBus = Container.Resolve<SignalBus>();
 
-            var tileRegistry = ScriptableObject.CreateInstance<TileRegistrySO>();
+            var tileRegistry = MoyvaJsonObjectFactory.Create<TileRegistrySO>();
             _createdUnityObjects.Add(tileRegistry);
             SetTileDefinitions(tileRegistry, "grass", "river");
 
@@ -336,3 +338,4 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
         }
     }
 }
+#endif

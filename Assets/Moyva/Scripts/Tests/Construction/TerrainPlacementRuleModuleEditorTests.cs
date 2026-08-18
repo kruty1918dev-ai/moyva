@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Linq;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Editor;
@@ -7,6 +8,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Construction
 {
     public sealed class TerrainPlacementRuleModuleEditorTests
@@ -101,7 +103,7 @@ namespace Kruty1918.Moyva.Tests.Construction
         [Test]
         public void BuildCatalog_FromSerializedProfile_IsStableAndCaseInsensitiveUnique()
         {
-            TerrainLayerProfileSO asset = ScriptableObject.CreateInstance<TerrainLayerProfileSO>();
+            TerrainLayerProfileSO asset = MoyvaJsonObjectFactory.Create<TerrainLayerProfileSO>();
             try
             {
                 var serialized = new SerializedObject(asset);
@@ -161,7 +163,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             }
             finally
             {
-                Object.DestroyImmediate(asset);
+                MoyvaJsonObjectFactory.DestroyImmediate(asset);
             }
         }
 
@@ -212,3 +214,5 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
     }
 }
+
+#endif

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
@@ -5,6 +6,7 @@ using Kruty1918.Moyva.Generator.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Generator
 {
     [TestFixture]
@@ -18,7 +20,7 @@ namespace Kruty1918.Moyva.Tests.Generator
             for (int i = 0; i < _createdObjects.Count; i++)
             {
                 if (_createdObjects[i] != null)
-                    Object.DestroyImmediate(_createdObjects[i]);
+                    MoyvaJsonObjectFactory.DestroyImmediate(_createdObjects[i]);
             }
 
             _createdObjects.Clear();
@@ -35,7 +37,7 @@ namespace Kruty1918.Moyva.Tests.Generator
             config.clusterCellSize = 5;
             config.buildLayerFolders = new List<BuildLayerFolder> { new BuildLayerFolder("Root") };
 
-            var layer = ScriptableObject.CreateInstance<MoyvaTerrainHeightAwareTilesBuildLayer>();
+            var layer = MoyvaJsonObjectFactory.Create<MoyvaTerrainHeightAwareTilesBuildLayer>();
             _createdObjects.Add(layer);
             layer.isEnabled = true;
             layer.meshGenerationOverride = false;
@@ -78,3 +80,5 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
     }
 }
+
+#endif

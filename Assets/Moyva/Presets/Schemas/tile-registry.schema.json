@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/tile-registry.schema.json",
+  "title": "Moyva — Tile Registry SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Grid.API.TileRegistrySO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.tile-registry"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "tile-registry"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "definitions": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Id"
+          },
+          "movementCost": {
+            "type": "number",
+            "title": "Movement Cost"
+          },
+          "tileWorldCreatorPreset": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Tile World Creator Preset"
+          },
+          "tileWorldCreatorBlueprintLayerGuid": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Tile World Creator Blueprint Layer Guid"
+          },
+          "tileWorldCreatorBlueprintLayerName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Tile World Creator Blueprint Layer Name"
+          },
+          "visualPrefab": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Visual Prefab"
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Definitions"
+    }
+  }
+}

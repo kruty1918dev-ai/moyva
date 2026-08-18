@@ -25,6 +25,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                 Container.Bind<WorldCreationDefaultsSO>()
                     .FromInstance(_worldDefaults)
                     .WhenInjectedInto<UnitMovementService>();
+
+                Container.Bind<WorldCreationDefaultsSO>()
+                    .FromInstance(_worldDefaults)
+                    .WhenInjectedInto<UnitPlacementValidator>();
             }
 
             Container.BindInterfacesAndSelfTo<UnitService>()
@@ -35,11 +39,29 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .To<UnitFactory>()
                 .AsSingle();
 
+            Container.Bind<IUnitPlacementValidator>()
+                .To<UnitPlacementValidator>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<UnitMovementService>()
+                .AsSingle();
+
+            // P04: all command-facing movement resolutions receive the authoritative
+            // turn/owner lease decorator. The raw UnitMovementService remains the
+            // ITurnBlocker so end-turn waits for its active movement set.
+            Container.Decorate<IUnitMovementService>()
+                .With<UnitTurnAuthorityMovementService>();
+
+            Container.BindInterfacesTo<UnitTurnParticipant>()
                 .AsSingle();
 
             Container.Bind<IUnitClassConfig>()
                 .To<UnitClassConfigService>()
+                .AsSingle();
+
+            // P07: recruitment queue consumes data-driven building recipes and
+            // advances as a deterministic turn participant. Deployment is P08.
+            Container.BindInterfacesAndSelfTo<UnitRecruitmentService>()
                 .AsSingle();
 
             Container.Bind<IUnitGameplayProfileService>()

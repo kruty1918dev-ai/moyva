@@ -1,0 +1,64 @@
+{
+  "$schema": "../../Schemas/object-connection-rules.schema.json",
+  "schema": "moyva.object-connection-rules",
+  "version": 1,
+  "id": "objectconnectionrules",
+  "model": "object-connection-rules",
+  "groups": [
+    {
+      "baseObjectId": "river",
+      "fallbackId": "river",
+      "variants": [
+        {
+          "neighborMask": 5,
+          "variantId": "river-vertical"
+        },
+        {
+          "neighborMask": 10,
+          "variantId": "river-horizontal"
+        },
+        {
+          "neighborMask": 3,
+          "variantId": "river-corner-ne"
+        },
+        {
+          "neighborMask": 6,
+          "variantId": "river-corner-se"
+        },
+        {
+          "neighborMask": 12,
+          "variantId": "river-corner-sw"
+        },
+        {
+          "neighborMask": 9,
+          "variantId": "river-corner-nw"
+        },
+        {
+          "neighborMask": 7,
+          "variantId": "river-t-east"
+        },
+        {
+          "neighborMask": 11,
+          "variantId": "river-t-north"
+        },
+        {
+          "neighborMask": 13,
+          "variantId": "river-t-west"
+        },
+        {
+          "neighborMask": 14,
+          "variantId": "river-t-south"
+        },
+        {
+          "neighborMask": 15,
+          "variantId": "river-cross"
+        }
+      ]
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "383706c016f2e3cd9953b8a5fd2bdfd7",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/ObjectConnectionRules.asset",
+    "sourceHash": "b598805772307ace37e704b43e58eb4bc9f24755d509400664eb313804fcdefa"
+  }
+}

@@ -3,14 +3,62 @@ using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Construction.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Construction/Building Definition", fileName = "NewBuildingDefinition")]
-    public sealed class BuildingDefinitionAsset : ScriptableObject
+[System.Serializable]
+public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
     {
         [NonSerialized] private BuildingDefinition _editorRuntimeCache;
         [NonSerialized] private IReadOnlyList<BuildingValidationIssue> _editorValidationCache;
         [NonSerialized] private string _editorPreviewSummaryCache;
+
+        private static int _runtimeRevision;
+
+        public static int RuntimeRevision => _runtimeRevision;
+
+        public static event Action<int>
+            RuntimeRevisionChanged;
+
+        private static void PublishRuntimeRevisionChanged()
+        {
+            Action<int> handlers =
+                RuntimeRevisionChanged;
+            if (handlers == null)
+                return;
+
+            Delegate[] invocationList =
+                handlers.GetInvocationList();
+            for (int index = 0;
+                 index < invocationList.Length;
+                 index++)
+            {
+                try
+                {
+                    ((Action<int>)invocationList[index])(
+                        _runtimeRevision);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError(
+                        $"[MoyvaConstructionModules] live-refresh " +
+                        $"subscriber-failed revision={_runtimeRevision} " +
+                        $"handler={invocationList[index].Method?.DeclaringType?.Name}." +
+                        $"{invocationList[index].Method?.Name} " +
+                        $"error={ex.GetType().Name}:{ex.Message}");
+                }
+            }
+        }
+
+        public static void NotifyRuntimeRegistryChanged()
+        {
+            unchecked
+            {
+                _runtimeRevision++;
+            }
+
+            PublishRuntimeRevisionChanged();
+        }
 
         [SerializeField]
         [HideInInspector]
@@ -117,6 +165,13 @@ namespace Kruty1918.Moyva.Construction.API
             _editorRuntimeCache = null;
             _editorValidationCache = null;
             _editorPreviewSummaryCache = null;
+
+            unchecked
+            {
+                _runtimeRevision++;
+            }
+
+            PublishRuntimeRevisionChanged();
         }
 
         public BuildingDefinition ToRuntimeDefinition()
@@ -142,7 +197,9 @@ namespace Kruty1918.Moyva.Construction.API
                 Footprint = CloneFootprint(Footprint),
                 VisualYOffset = Presentation.VisualYOffset,
                 ConstructionCost = CloneCost(Construction.Cost),
+                BuildTurns = Mathf.Max(0, Construction.BuildTurns),
                 Modules = CloneModuleList(Modules),
+                IsAssetRuntimeSnapshot = true,
                 MaxHp = Mathf.Max(1, RuntimeStats.MaxHp),
                 Armor = Mathf.Max(0, RuntimeStats.Armor),
                 RuntimeFlags = RuntimeStats.Flags,
