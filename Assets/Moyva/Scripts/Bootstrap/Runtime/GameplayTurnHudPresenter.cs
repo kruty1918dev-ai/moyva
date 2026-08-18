@@ -42,10 +42,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly List<UnitRecruitmentQueueItemSnapshot> _visibleQueueItems = new();
 
         private UnityAction _hireButtonHandler;
+        private UnityAction _closeButtonHandler;
         private string _selectedUnitId;
         private Vector2Int? _selectedBuilding;
+        private string _selectedBuildingId;
         private UnitRecruitmentBuildingModule _selectedRecruitmentModule;
         private UnitRecruitmentRecipeDefinition _selectedRecruitmentRecipe;
+        private int _selectedRecipeIndex = -1;
         private bool _selectionFromQueue;
         private long _selectedQueueId;
         private string _statusOverride;
@@ -108,6 +111,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 && _hireButtonHandler != null)
             {
                 _recruitmentView.HireButton.onClick.RemoveListener(_hireButtonHandler);
+            }
+
+            if (_recruitmentView != null
+                && _recruitmentView.CloseButton != null
+                && _closeButtonHandler != null)
+            {
+                _recruitmentView.CloseButton.onClick.RemoveListener(_closeButtonHandler);
             }
 
             for (int index = 0; index < _recipeButtons.Count && index < _recipeButtonHandlers.Count; index++)
@@ -180,7 +190,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 Image icon = _recruitmentView.GetRecipeIcon(index);
                 icon.sprite = null;
                 icon.enabled = false;
+                _recruitmentView.GetRecipeNameText(index).text = string.Empty;
+                _recruitmentView.SetRecipeTrainingText(index, string.Empty);
             }
+
+            _recruitmentView.SetSelectedRecipeIndex(-1);
 
             _queueButtonHandlers.Clear();
             for (int index = 0; index < _recruitmentView.QueueRowCount; index++)
@@ -195,12 +209,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             _hireButtonHandler = OnHireClicked;
             _recruitmentView.HireButton.onClick.AddListener(_hireButtonHandler);
+            _closeButtonHandler = CloseRecruitmentPanel;
+            _recruitmentView.CloseButton.onClick.AddListener(_closeButtonHandler);
             _recruitmentView.SelectionPanel.SetActive(false);
             _recruitmentPanel.SetActive(false);
+            _recruitmentView.SetHeader(string.Empty, string.Empty);
+            _recruitmentView.SetStateChip(string.Empty, Color.clear);
+            _recruitmentView.SetActionHint(string.Empty);
+            _recruitmentView.SetQueueSummary("Черга", "0/0", empty: true);
             _queueText.text = string.Empty;
             _unitText.text = string.Empty;
             _unitText.transform.parent.gameObject.SetActive(false);
             ClearCostRows();
+            _recruitmentView.ClearStatRows();
             ClearBuildingRecruitmentState();
         }
 
@@ -302,18 +323,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             _selectedUnitId = signal.UnitId;
             _selectedBuilding = null;
+            _selectedBuildingId = null;
             _selectedRecruitmentModule = null;
             _selectedRecruitmentRecipe = null;
+            _selectedRecipeIndex = -1;
             _selectionFromQueue = false;
             _selectedQueueId = 0;
             _statusOverride = null;
             _recruitmentPanel.SetActive(false);
+            _recruitmentView.SetSelectedRecipeIndex(-1);
+            _recruitmentView.SetHeader(string.Empty, string.Empty);
         }
 
         private void OnBuildingSelected(BuildingInfoPanelRequestedSignal signal)
         {
             _selectedUnitId = null;
             _selectedBuilding = signal.Position;
+            _selectedBuildingId = signal.BuildingId;
             _statusOverride = null;
             BuildRecipeButtons(signal.BuildingId);
         }
@@ -322,13 +348,36 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             _selectedUnitId = null;
             _selectedBuilding = null;
+            _selectedBuildingId = null;
             _selectedRecruitmentModule = null;
             _selectedRecruitmentRecipe = null;
+            _selectedRecipeIndex = -1;
             _selectionFromQueue = false;
             _selectedQueueId = 0;
             _statusOverride = null;
             _recruitmentPanel.SetActive(false);
+            _recruitmentView.SetSelectedRecipeIndex(-1);
+            _recruitmentView.SetHeader(string.Empty, string.Empty);
             ClearBuildingRecruitmentState();
+        }
+
+        private void CloseRecruitmentPanel()
+        {
+            _selectedBuilding = null;
+            _selectedBuildingId = null;
+            _selectedRecruitmentModule = null;
+            _selectedRecruitmentRecipe = null;
+            _selectedRecipeIndex = -1;
+            _selectionFromQueue = false;
+            _selectedQueueId = 0;
+            _statusOverride = null;
+            _recruitmentPanel.SetActive(false);
+            _recruitmentView.SetSelectedRecipeIndex(-1);
+            _recruitmentView.SetHeader(string.Empty, string.Empty);
+            ClearBuildingRecruitmentState();
+            HideQueueRows();
+            ClearCostRows();
+            _recruitmentView.ClearStatRows();
         }
 
         private void BuildRecipeButtons(string buildingId)
@@ -354,6 +403,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             _selectedRecruitmentModule = module;
             _recruitmentPanel.SetActive(true);
+            _recruitmentView.SetHeader(ResolveBuildingName(definition), "Найм військ");
             int slotIndex = 0;
             int skippedForCapacity = 0;
 
@@ -378,9 +428,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                     _recipeUnitTypeIds[slotIndex] = unitTypeId;
                     _recipeDefinitions[slotIndex] = recipe;
-                    label.text =
-                        $"{ResolveUnitName(unitTypeId)}\n" +
-                        $"Навчання: {Mathf.Max(1, recipe.TrainingTurns)} {RoundWord(recipe.TrainingTurns)}";
+                    label.text = ResolveUnitName(unitTypeId);
+                    _recruitmentView.GetRecipeNameText(slotIndex).text =
+                        ResolveUnitName(unitTypeId);
+                    _recruitmentView.SetRecipeTrainingText(
+                        slotIndex,
+                        $"{Mathf.Max(1, recipe.TrainingTurns)} р.");
 
                     icon.sprite = config?.CustomSprite;
                     icon.enabled = icon.sprite != null;
@@ -420,14 +473,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     Image icon = _recruitmentView.GetRecipeIcon(index);
                     icon.sprite = null;
                     icon.enabled = false;
+                    _recruitmentView.GetRecipeNameText(index).text = string.Empty;
+                    _recruitmentView.SetRecipeTrainingText(index, string.Empty);
                 }
             }
 
             _selectedRecruitmentRecipe = null;
+            _selectedRecipeIndex = -1;
             _selectionFromQueue = false;
             _selectedQueueId = 0;
             if (_recruitmentView != null)
+            {
                 _recruitmentView.SelectionPanel.SetActive(false);
+                _recruitmentView.SetSelectedRecipeIndex(-1);
+                _recruitmentView.ClearStatRows();
+                _recruitmentView.SetActionHint(string.Empty);
+            }
             ClearCostRows();
         }
 
@@ -441,8 +502,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
 
             _selectedRecruitmentRecipe = recipe;
+            _selectedRecipeIndex = index;
             _selectionFromQueue = false;
             _selectedQueueId = 0;
+            _recruitmentView.SetSelectedRecipeIndex(index);
             RefreshSelectionDetails(recipe.UnitTypeId, recipe, null);
             RefreshRecruitmentAuthority();
         }
@@ -457,6 +520,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _selectedRecruitmentRecipe = recipe;
             _selectionFromQueue = true;
             _selectedQueueId = job.QueueId;
+            _selectedRecipeIndex = FindRecipeIndex(job.UnitTypeId);
+            _recruitmentView.SetSelectedRecipeIndex(_selectedRecipeIndex);
             RefreshSelectionDetails(job.UnitTypeId, recipe, job);
             RefreshRecruitmentAuthority();
         }
@@ -561,20 +626,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             bool ownsBuilding = IsSelectedBuildingOwnedByLocalPlayer();
             bool operational = IsSelectedBuildingOperational();
+            bool queueFull = false;
+            if (_selectedBuilding.HasValue && _selectedRecruitmentModule != null)
+            {
+                IReadOnlyList<UnitRecruitmentQueueItemSnapshot> queue =
+                    _recruitment.GetQueue(_turns.LocalOwnerId, _selectedBuilding.Value);
+                queueFull = (queue?.Count ?? 0)
+                    >= Mathf.Max(1, _selectedRecruitmentModule.QueueCapacity);
+            }
+
             bool canRecruit = _authority.CanIssueLocalCommands
                 && ownsBuilding
                 && operational
                 && !_selectionFromQueue
-                && _selectedRecruitmentRecipe != null;
-
-            if (canRecruit
-                && _selectedBuilding.HasValue
-                && _selectedRecruitmentModule != null)
-            {
-                IReadOnlyList<UnitRecruitmentQueueItemSnapshot> queue =
-                    _recruitment.GetQueue(_turns.LocalOwnerId, _selectedBuilding.Value);
-                canRecruit = (queue?.Count ?? 0) < Mathf.Max(1, _selectedRecruitmentModule.QueueCapacity);
-            }
+                && _selectedRecruitmentRecipe != null
+                && !queueFull;
 
             for (int index = 0; index < _recipeButtons.Count; index++)
             {
@@ -590,46 +656,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_recruitmentView != null)
             {
                 _recruitmentView.HireButton.interactable = canRecruit;
-
-                if (_selectionFromQueue)
-                {
-                    UnitRecruitmentQueueItemSnapshot? selected =
-                        FindVisibleQueueItem(_selectedQueueId);
-                    _recruitmentView.HireButtonLabel.text =
-                        selected.HasValue && selected.Value.IsReady
-                            ? "Готовий до розміщення"
-                            : (_selectedQueueId > 0 ? "Навчається / у черзі" : "Недоступно");
-                }
-                else if (!ownsBuilding)
-                {
-                    _recruitmentView.HireButtonLabel.text = "Чужа будівля";
-                }
-                else if (!operational)
-                {
-                    _recruitmentView.HireButtonLabel.text = "Будівля будується";
-                }
-                else if (!_authority.CanIssueLocalCommands)
-                {
-                    _recruitmentView.HireButtonLabel.text = "Зараз недоступно";
-                }
-                else if (!canRecruit
-                    && _selectedBuilding.HasValue
-                    && _selectedRecruitmentModule != null)
-                {
-                    IReadOnlyList<UnitRecruitmentQueueItemSnapshot> queue =
-                        _recruitment.GetQueue(
-                            _turns.LocalOwnerId,
-                            _selectedBuilding.Value);
-                    int capacity = Mathf.Max(1, _selectedRecruitmentModule.QueueCapacity);
-                    _recruitmentView.HireButtonLabel.text =
-                        (queue?.Count ?? 0) >= capacity
-                            ? "Черга заповнена"
-                            : "Найняти";
-                }
-                else
-                {
-                    _recruitmentView.HireButtonLabel.text = "Найняти";
-                }
+                _recruitmentView.HireButtonLabel.text = "Найняти";
+                _recruitmentView.SetActionHint(ResolveRecruitmentActionHint(
+                    ownsBuilding,
+                    operational,
+                    queueFull,
+                    canRecruit));
             }
         }
 
@@ -688,9 +720,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 || !IsSelectedBuildingOwnedByLocalPlayer())
             {
                 HideQueueRows();
+                _recruitmentView.SetQueueSummary("Черга", "0/0", empty: true);
                 ClearBuildingRecruitmentState();
                 return;
             }
+
+            int selectedCapacity = Mathf.Max(1, _selectedRecruitmentModule?.QueueCapacity ?? 1);
 
             if (_construction is IConstructionLifecycle lifecycle
                 && lifecycle.TryGetProgress(
@@ -699,12 +734,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     out int required)
                 && completed < required)
             {
-                _queueText.text = $"Будівництво: {completed}/{required}";
+                _queueText.text = $"Черга 0/{selectedCapacity}";
+                _recruitmentView.SetQueueSummary("Черга", $"0/{selectedCapacity}", empty: true);
                 HideQueueRows();
                 SetBuildingRecruitmentState(
                     "Будівля будується",
-                    $"Будівництво: {completed}/{required}. Найм поки недоступний.",
-                    required > 0 ? Mathf.Clamp01((float)completed / required) : 0f);
+                    $"{completed}/{required}",
+                    required > 0 ? Mathf.Clamp01((float)completed / required) : 0f,
+                    "БУДУЄТЬСЯ",
+                    new Color32(142, 158, 174, 255));
                 return;
             }
 
@@ -713,12 +751,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             // so never present a non-operational building as "free".
             if (!IsSelectedBuildingOperational())
             {
-                _queueText.text = "Найм недоступний · будівництво";
+                _queueText.text = $"Черга 0/{selectedCapacity}";
+                _recruitmentView.SetQueueSummary("Черга", $"0/{selectedCapacity}", empty: true);
                 HideQueueRows();
                 SetBuildingRecruitmentState(
                     "Будівля будується",
                     "Найм стане доступний одразу після завершення будівництва.",
-                    0f);
+                    0f,
+                    "БУДУЄТЬСЯ",
+                    new Color32(142, 158, 174, 255));
                 return;
             }
 
@@ -728,7 +769,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     _selectedBuilding.Value);
 
             _visibleQueueItems.Clear();
-            int capacity = Mathf.Max(1, _selectedRecruitmentModule?.QueueCapacity ?? 1);
+            int capacity = selectedCapacity;
             int queueCount = queue?.Count ?? 0;
             int readyCount = 0;
 
@@ -742,8 +783,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             _queueText.text = queueCount == 0
-                ? $"Черга: 0/{capacity} · порожня"
-                : $"Черга: {queueCount}/{capacity}" + (readyCount > 0 ? $" · готово {readyCount}" : string.Empty);
+                ? $"Черга 0/{capacity}"
+                : $"Черга {queueCount}/{capacity}" + (readyCount > 0 ? $" · готово {readyCount}" : string.Empty);
+            _recruitmentView.SetQueueSummary("Черга", $"{queueCount}/{capacity}", queueCount == 0);
 
             RefreshBuildingRecruitmentState(queue, capacity);
 
@@ -773,17 +815,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                 if (job.IsReady)
                 {
-                    label.text =
-                        $"{index + 1}. {ResolveUnitName(job.UnitTypeId)}\n" +
-                        "ГОТОВИЙ • натисніть, щоб переглянути";
+                    label.text = $"{ResolveUnitName(job.UnitTypeId)}   Готовий";
                     if (progressFill != null)
                         progressFill.fillAmount = 1f;
                 }
                 else if (index == 0)
                 {
                     label.text =
-                        $"{index + 1}. {ResolveUnitName(job.UnitTypeId)}\n" +
-                        $"НАВЧАЄТЬСЯ • {job.CompletedTurns}/{job.TrainingTurns} • ще {job.RemainingTurns}";
+                        $"{ResolveUnitName(job.UnitTypeId)}   Навчання {job.CompletedTurns}/{job.TrainingTurns}";
                     if (progressFill != null)
                     {
                         progressFill.fillAmount = job.TrainingTurns > 0
@@ -793,9 +832,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
                 else
                 {
-                    label.text =
-                        $"{index + 1}. {ResolveUnitName(job.UnitTypeId)}\n" +
-                        $"ОЧІКУЄ • позиція {index + 1} у черзі";
+                    label.text = $"{ResolveUnitName(job.UnitTypeId)}   Очікує";
                     if (progressFill != null)
                         progressFill.fillAmount = 0f;
                 }
@@ -827,9 +864,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (count == 0)
             {
                 SetBuildingRecruitmentState(
-                    "Казарма вільна",
-                    $"Черга 0/{capacity}. Оберіть юніта та натисніть «Найняти».",
-                    0f);
+                    "Вільна",
+                    $"Черга 0/{capacity}",
+                    0f,
+                    "ВІЛЬНА",
+                    new Color32(92, 154, 98, 255));
                 return;
             }
 
@@ -840,10 +879,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 SetBuildingRecruitmentState(
                     $"{ResolveUnitName(head.UnitTypeId)} готовий",
-                    waiting > 0
-                        ? $"Очікує розміщення. Ще {waiting} у черзі."
-                        : "Очікує розміщення. Заберіть юніта з казарми.",
-                    1f);
+                    waiting > 0 ? $"Очікує розміщення · у черзі {waiting}" : "Очікує розміщення",
+                    1f,
+                    "ГОТОВО",
+                    new Color32(91, 176, 96, 255));
                 return;
             }
 
@@ -856,15 +895,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             SetBuildingRecruitmentState(
                 $"Навчається: {ResolveUnitName(head.UnitTypeId)}",
-                $"{head.CompletedTurns}/{head.TrainingTurns} раундів • " +
+                $"{head.CompletedTurns}/{head.TrainingTurns} раунди · " +
                 $"залишилось {head.RemainingTurns}{suffix}",
-                progress);
+                progress,
+                "НАВЧАННЯ",
+                new Color32(190, 132, 62, 255));
         }
 
         private void SetBuildingRecruitmentState(
             string title,
             string detail,
-            float progress)
+            float progress,
+            string chipLabel,
+            Color chipColor)
         {
             if (_recruitmentView == null
                 || _recruitmentView.BuildingStatePanel == null)
@@ -878,6 +921,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_recruitmentView.BuildingStateProgressFill != null)
                 _recruitmentView.BuildingStateProgressFill.fillAmount =
                     Mathf.Clamp01(progress);
+            _recruitmentView.SetStateChip(chipLabel, chipColor);
         }
 
         private void ClearBuildingRecruitmentState()
@@ -895,6 +939,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _recruitmentView.BuildingStateDetail.text = string.Empty;
             if (_recruitmentView.BuildingStateProgressFill != null)
                 _recruitmentView.BuildingStateProgressFill.fillAmount = 0f;
+            _recruitmentView.SetStateChip(string.Empty, Color.clear);
         }
 
         private UnitRecruitmentQueueItemSnapshot? FindVisibleQueueItem(long queueId)
@@ -937,8 +982,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     continue;
 
                 _selectedRecruitmentRecipe = _recipeDefinitions[index];
+                _selectedRecipeIndex = index;
                 _selectionFromQueue = false;
                 _selectedQueueId = 0;
+                _recruitmentView.SetSelectedRecipeIndex(index);
                 RefreshSelectionDetails(
                     _selectedRecruitmentRecipe.UnitTypeId,
                     _selectedRecruitmentRecipe,
@@ -947,9 +994,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             _selectedRecruitmentRecipe = null;
+            _selectedRecipeIndex = -1;
             _selectionFromQueue = false;
             _selectedQueueId = 0;
+            _recruitmentView.SetSelectedRecipeIndex(-1);
             _recruitmentView.SelectionPanel.SetActive(false);
+            _recruitmentView.ClearStatRows();
+            _recruitmentView.SetActionHint(string.Empty);
             ClearCostRows();
         }
 
@@ -971,6 +1022,55 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return null;
         }
 
+        private int FindRecipeIndex(string unitTypeId)
+        {
+            if (string.IsNullOrWhiteSpace(unitTypeId))
+                return -1;
+
+            string normalized = unitTypeId.Trim();
+            for (int index = 0; index < _recipeUnitTypeIds.Count; index++)
+            {
+                if (string.Equals(
+                        _recipeUnitTypeIds[index]?.Trim(),
+                        normalized,
+                        StringComparison.Ordinal))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
+        }
+
+        private string ResolveRecruitmentActionHint(
+            bool ownsBuilding,
+            bool operational,
+            bool queueFull,
+            bool canRecruit)
+        {
+            if (_selectionFromQueue)
+            {
+                UnitRecruitmentQueueItemSnapshot? selected =
+                    FindVisibleQueueItem(_selectedQueueId);
+                if (selected.HasValue && selected.Value.IsReady)
+                    return "Готовий юніт розміщується через індикатор біля будівлі.";
+                return _selectedQueueId > 0 ? "Цей запис уже в черзі." : string.Empty;
+            }
+
+            if (!ownsBuilding)
+                return "Найм доступний лише у власній будівлі.";
+            if (!operational)
+                return "Будівля будується.";
+            if (!_authority.CanIssueLocalCommands)
+                return "Зараз не ваш хід.";
+            if (_selectedRecruitmentRecipe == null)
+                return "Оберіть юніта.";
+            if (queueFull)
+                return "Черга заповнена.";
+
+            return canRecruit ? string.Empty : "Найм зараз недоступний.";
+        }
+
         private void RefreshSelectionDetails(
             string unitTypeId,
             UnitRecruitmentRecipeDefinition recipe,
@@ -980,45 +1080,104 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
 
             UnitClassConfig config = _unitConfigs.GetConfig(unitTypeId);
+            _recruitmentView.SetSelectedRecipeIndex(
+                queueItem.HasValue ? FindRecipeIndex(unitTypeId) : _selectedRecipeIndex);
             _recruitmentView.SelectionPanel.SetActive(true);
             _recruitmentView.SelectionName.text = ResolveUnitName(unitTypeId);
+            _recruitmentView.SelectionClass.text =
+                config != null ? LocalizeCombatType(config.CombatType) : string.Empty;
             _recruitmentView.SelectionIcon.sprite = config?.CustomSprite;
             _recruitmentView.SelectionIcon.enabled = _recruitmentView.SelectionIcon.sprite != null;
+            if (_recruitmentView.SelectionStats != null)
+                _recruitmentView.SelectionStats.text = string.Empty;
 
             int trainingTurns = Mathf.Max(1, recipe?.TrainingTurns ?? queueItem?.TrainingTurns ?? 1);
             string progress = queueItem.HasValue
                 ? queueItem.Value.IsReady
-                    ? "СТАН: ГОТОВИЙ ДО РОЗМІЩЕННЯ"
+                    ? "Готовий до розміщення"
                     : queueItem.Value.QueueId == (_visibleQueueItems.Count > 0 ? _visibleQueueItems[0].QueueId : -1)
-                        ? $"СТАН: НАВЧАЄТЬСЯ • {queueItem.Value.CompletedTurns}/{queueItem.Value.TrainingTurns} • залишилось {queueItem.Value.RemainingTurns}"
-                        : $"СТАН: ОЧІКУЄ У ЧЕРЗІ • {queueItem.Value.CompletedTurns}/{queueItem.Value.TrainingTurns}"
+                        ? $"Навчається {queueItem.Value.CompletedTurns}/{queueItem.Value.TrainingTurns}"
+                        : $"Очікує {queueItem.Value.CompletedTurns}/{queueItem.Value.TrainingTurns}"
                 : $"Навчання: {trainingTurns} {RoundWord(trainingTurns)}";
 
-            if (config == null)
-            {
-                _recruitmentView.SelectionStats.text = progress;
-            }
-            else
-            {
-                string combat = LocalizeCombatType(config.CombatType);
-                int totalDamage = Mathf.Max(0, config.CuttingDamage)
-                    + Mathf.Max(0, config.PenetratingDamage)
-                    + Mathf.Max(0, config.CrushingDamage);
-                int totalDefense = Mathf.Max(0, config.CuttingDefense)
-                    + Mathf.Max(0, config.PenetratingDefense)
-                    + Mathf.Max(0, config.CrushingDefense);
-
-                _recruitmentView.SelectionStats.text =
-                    $"{combat} · HP {config.HitPoints} · Витр. {config.BaseStamina:0.#} · Огляд {config.VisionRange}\n" +
-                    $"Шкода {totalDamage} · Захист {totalDefense} · {progress}";
-            }
+            PopulateStatRows(config, trainingTurns, progress);
 
             RefreshCostRows(recipe);
-            _recruitmentView.HireButtonLabel.text = queueItem.HasValue
-                ? queueItem.Value.IsReady
-                    ? "Готовий до розміщення"
-                    : "Навчається / у черзі"
-                : "Найняти";
+            _recruitmentView.HireButtonLabel.text = "Найняти";
+            if (queueItem.HasValue)
+                _recruitmentView.SetActionHint(queueItem.Value.IsReady
+                    ? "Готовий юніт розміщується через індикатор біля будівлі."
+                    : "Цей запис уже в черзі.");
+        }
+
+        private void PopulateStatRows(
+            UnitClassConfig config,
+            int trainingTurns,
+            string progress)
+        {
+            _recruitmentView.ClearStatRows();
+
+            int row = 0;
+            if (config != null)
+            {
+                AddStatRow(ref row, "Здоров'я", config.HitPoints > 0 ? config.HitPoints.ToString() : null);
+                AddStatRow(ref row, "Витривалість", config.BaseStamina > 0f ? $"{config.BaseStamina:0.#}" : null);
+                AddStatRow(ref row, "Огляд", config.VisionRange > 0 ? config.VisionRange.ToString() : null);
+                AddStatRow(ref row, "Шкода", FormatCombatTriple(
+                    config.PenetratingDamage,
+                    config.CuttingDamage,
+                    config.CrushingDamage));
+                AddStatRow(ref row, "Захист", FormatCombatTriple(
+                    config.PenetratingDefense,
+                    config.CuttingDefense,
+                    config.CrushingDefense));
+            }
+
+            AddStatRow(
+                ref row,
+                "Навчання",
+                string.IsNullOrWhiteSpace(progress)
+                    ? $"{Mathf.Max(1, trainingTurns)} {RoundWord(trainingTurns)}"
+                    : progress);
+        }
+
+        private void AddStatRow(
+            ref int row,
+            string label,
+            string value)
+        {
+            if (row >= _recruitmentView.StatRowCount
+                || string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            _recruitmentView.SetStatRow(row, label, value);
+            row++;
+        }
+
+        private static string FormatCombatTriple(
+            int penetrating,
+            int cutting,
+            int crushing)
+        {
+            int total = Mathf.Max(0, penetrating)
+                + Mathf.Max(0, cutting)
+                + Mathf.Max(0, crushing);
+            if (total <= 0)
+                return null;
+
+            var parts = new List<string>(3);
+            if (penetrating > 0)
+                parts.Add($"кол. {penetrating}");
+            if (cutting > 0)
+                parts.Add($"ріж. {cutting}");
+            if (crushing > 0)
+                parts.Add($"дроб. {crushing}");
+
+            return parts.Count <= 1
+                ? total.ToString()
+                : string.Join(" / ", parts);
         }
 
         private void RefreshCostRows(UnitRecruitmentRecipeDefinition recipe)
@@ -1034,7 +1193,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (cost == null || string.IsNullOrWhiteSpace(cost.ResourceId) || cost.Amount <= 0f)
                     continue;
 
-                ResolveResourcePresentation(cost.ResourceId, out string displayName, out Sprite icon);
+                ResolveResourcePresentation(cost.ResourceId, out _, out Sprite icon);
                 GameObject row = _recruitmentView.GetCostRow(visible);
                 Image rowIcon = _recruitmentView.GetCostIcon(visible);
                 TMP_Text rowLabel = _recruitmentView.GetCostLabel(visible);
@@ -1042,7 +1201,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 row.SetActive(true);
                 rowIcon.sprite = icon;
                 rowIcon.enabled = icon != null;
-                rowLabel.text = $"{displayName} {cost.Amount:0.#}";
+                rowLabel.text = $"{cost.Amount:0.#}";
                 visible++;
             }
         }
@@ -1096,6 +1255,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return config != null && !string.IsNullOrWhiteSpace(config.DisplayName)
                 ? config.DisplayName.Trim()
                 : "Юніт";
+        }
+
+        private string ResolveBuildingName(BuildingDefinition definition)
+        {
+            if (!string.IsNullOrWhiteSpace(definition?.DisplayName))
+                return definition.DisplayName.Trim();
+
+            return string.IsNullOrWhiteSpace(_selectedBuildingId)
+                ? "Будівля"
+                : "Будівля";
         }
 
         private static string LocalizeCombatType(UnitCombatType combatType)

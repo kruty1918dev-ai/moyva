@@ -24,14 +24,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private RectTransform _hudRoot;
         private RectTransform _turnPanel;
         private RectTransform _unitPanel;
-        private RectTransform _recruitmentPanel;
         private Button _endTurnButton;
         private TMP_Text _turnSummary;
         private TMP_Text _turnStatus;
         private TMP_Text _unitText;
-        private TMP_Text _recruitmentTitle;
-        private TMP_Text _recruitmentQueue;
-        private RectTransform _recruitmentViewport;
 
         private RectTransform _resourceBar;
         private RectTransform _buildButton;
@@ -146,14 +142,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _hudRoot = FindRect("GameplayTurnHud");
             _turnPanel = FindRect("GameplayTurnHud/TurnPanel");
             _unitPanel = FindRect("GameplayTurnHud/UnitStaminaPanel");
-            _recruitmentPanel = FindRect("GameplayTurnHud/RecruitmentPanel");
             _endTurnButton = FindComponent<Button>("GameplayTurnHud/TurnPanel/EndTurnButton");
             _turnSummary = FindComponent<TMP_Text>("GameplayTurnHud/TurnPanel/TurnSummary");
             _turnStatus = FindComponent<TMP_Text>("GameplayTurnHud/TurnPanel/TurnStatus");
             _unitText = FindComponent<TMP_Text>("GameplayTurnHud/UnitStaminaPanel/UnitStamina");
-            _recruitmentTitle = FindComponent<TMP_Text>("GameplayTurnHud/RecruitmentPanel/Title");
-            _recruitmentQueue = FindComponent<TMP_Text>("GameplayTurnHud/RecruitmentPanel/Queue");
-            _recruitmentViewport = FindRect("GameplayTurnHud/RecruitmentPanel/RecipeViewport");
 
             _resourceBar = FindRect("EconomyPlayerSymmary/Root/Top");
             _buildButton = FindRect("GameModeUI/Build Button");
@@ -310,40 +302,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 SetBottomLeft(_unitPanel, safe.xMin + edge, safe.yMin + edge, unitWidth, unitHeight);
             }
 
-            if (_recruitmentPanel != null)
-            {
-                float aspect = safe.width / Mathf.Max(1f, safe.height);
-                if (aspect < 1.12f)
-                {
-                    float sheetHeight = Mathf.Clamp(safe.height * 0.52f, 360f, 520f);
-                    SetBottomLeft(
-                        _recruitmentPanel,
-                        safe.xMin + edge,
-                        safe.yMin + edge,
-                        Mathf.Max(1f, safe.width - edge * 2f),
-                        Mathf.Min(sheetHeight, safe.height - edge * 2f));
-                }
-                else
-                {
-                    float panelWidth = Mathf.Clamp(safe.width * 0.205f, 350f, 410f);
-                    float panelHeight = Mathf.Clamp(safe.height * 0.60f, 430f, 560f);
-                    float buildTop = _buildButton != null
-                        ? CanvasRect(_buildButton).yMax + 20f
-                        : safe.yMin + edge;
-                    float y = Mathf.Clamp(
-                        safe.center.y - panelHeight * 0.5f,
-                        Mathf.Max(safe.yMin + edge, buildTop),
-                        Mathf.Max(safe.yMin + edge, safe.yMax - edge - panelHeight));
-                    SetBottomLeft(
-                        _recruitmentPanel,
-                        safe.xMax - edge - panelWidth,
-                        y,
-                        panelWidth,
-                        panelHeight);
-                }
-
-                ApplyRecruitmentInternals();
-            }
         }
 
         private void ApplyBuildButton(Rect safe)
@@ -485,49 +443,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
         }
 
-        private void ApplyRecruitmentInternals()
-        {
-            if (_recruitmentPanel == null)
-                return;
-
-            float panelHeight = _recruitmentPanel.rect.height;
-            if (_recruitmentTitle != null)
-            {
-                RectTransform rect = _recruitmentTitle.rectTransform;
-                rect.anchorMin = new Vector2(0f, 1f);
-                rect.anchorMax = new Vector2(1f, 1f);
-                rect.pivot = new Vector2(0.5f, 1f);
-                rect.anchoredPosition = new Vector2(0f, -12f);
-                rect.sizeDelta = new Vector2(-36f, 38f);
-            }
-
-            float queueHeight = Mathf.Clamp(panelHeight * 0.20f, 88f, 112f);
-            if (_recruitmentQueue != null)
-            {
-                RectTransform rect = _recruitmentQueue.rectTransform;
-                rect.anchorMin = new Vector2(0f, 0f);
-                rect.anchorMax = new Vector2(1f, 0f);
-                rect.pivot = new Vector2(0.5f, 0f);
-                rect.anchoredPosition = new Vector2(0f, 12f);
-                rect.sizeDelta = new Vector2(-34f, queueHeight);
-            }
-
-            if (_recruitmentViewport != null)
-            {
-                _recruitmentViewport.anchorMin = Vector2.zero;
-                _recruitmentViewport.anchorMax = Vector2.one;
-                _recruitmentViewport.offsetMin = new Vector2(16f, queueHeight + 28f);
-                _recruitmentViewport.offsetMax = new Vector2(-16f, -62f);
-            }
-        }
-
         private void ConfigureTextAutosizing()
         {
             ConfigureAutosize(_turnSummary, 11f, 16.5f);
             ConfigureAutosize(_turnStatus, 10.5f, 13.5f);
             ConfigureAutosize(_unitText, 11f, 14.5f);
-            ConfigureAutosize(_recruitmentTitle, 13f, 19f);
-            ConfigureAutosize(_recruitmentQueue, 10.5f, 13.5f);
         }
 
         private Insets CalculateSafeInsets(Vector2 canvasSize)

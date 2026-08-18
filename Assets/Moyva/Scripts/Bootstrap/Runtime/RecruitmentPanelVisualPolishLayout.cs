@@ -6,59 +6,63 @@ using UnityEngine.UI;
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
     /// <summary>
-    /// P24UI.2 — compact recruitment panel layout.
-    ///
-    /// UI-only. No recruitment/economy/unit service access.
-    /// The layout deliberately replaces the oversized P24UI/P24UI.1 geometry.
+    /// Final recruitment panel layout owner. Presentation only.
+    /// Owns RecruitmentPanel root placement and recruitment internals.
     /// </summary>
     [ExecuteAlways]
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(1600)]
     public sealed class RecruitmentPanelVisualPolishLayout : MonoBehaviour
     {
-        private const float PanelWidth = 548f;
-        private const float PanelHeight = 476f;
-        private const float Edge = 12f;
-        private const float Gap = 8f;
-        private const float TitleHeight = 28f;
-        private const float StateHeight = 48f;
-        private const float ListWidth = 184f;
+        public const bool RecruitmentInternalsOwner = true;
+
+        private const float DesktopWidth = 610f;
+        private const float TabletWidth = 548f;
+        private const float CompactWidth = 520f;
+        private const float DesktopHeight = 480f;
+        private const float TabletHeight = 450f;
+        private const float CompactHeight = 430f;
+        private const float EdgeMargin = 20f;
+        private const float RightGap = 14f;
+        private const float HeaderHeight = 42f;
+        private const float StateHeight = 52f;
+        private const float CatalogWidth = 198f;
+        private const float CatalogCompactWidth = 184f;
+        private const float RecipeRowHeight = 44f;
         private const float QueueEmptyHeight = 38f;
-        private const float QueueRowHeight = 26f;
-        private const float QueueMaxHeight = 116f;
-        private const float WorldInfoGap = 12f;
+        private const float QueueHeaderHeight = 24f;
+        private const float QueueRowHeight = 30f;
+        private const float QueueMaxHeight = 126f;
+        private const float HireButtonWidth = 124f;
+        private const float HireButtonHeight = 34f;
+        private const float DetailIconSize = 64f;
 
         private RectTransform _panel;
         private RectTransform _hudRoot;
-        private RectTransform _title;
-        private RectTransform _statePanel;
-        private RectTransform _availableCard;
-        private RectTransform _availableHeader;
-        private RectTransform _recipeViewport;
-        private ScrollRect _recipeScroll;
-        private RectTransform _selectionPanel;
-        private RectTransform _detailsHeader;
-        private RectTransform _queueCard;
-        private RectTransform _queueHeader;
+        private RectTransform _mainContent;
+        private RectTransform _catalog;
+        private RectTransform _details;
+        private RectTransform _queueSection;
         private RectTransform _queueRows;
+        private RectTransform _recipeSlots;
+        private Button _hireButton;
+        private Button _closeButton;
 
         private Vector2 _lastHudSize = new(-1f, -1f);
         private float _lastReserve = float.NaN;
         private int _lastQueueRows = -1;
+        private bool _lastBottomSheet;
         private bool _ready;
-        private bool _resetScrollPending;
 
         private void OnEnable()
         {
             _ready = Cache();
-            _resetScrollPending = true;
             ApplyNow();
         }
 
         private void OnTransformChildrenChanged()
         {
             _ready = Cache();
-            _resetScrollPending = true;
             ApplyNow();
         }
 
@@ -73,24 +77,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!_ready && !Cache())
                 return;
 
-            Vector2 hud = _hudRoot.rect.size;
+            Vector2 hudSize = _hudRoot.rect.size;
             float reserve = CalculateRightReserve();
             int queueRows = CountActiveQueueRows();
+            bool bottomSheet = ShouldUseBottomSheet(hudSize, reserve);
 
-            if (!Approximately(hud, _lastHudSize)
+            if (!Approximately(hudSize, _lastHudSize)
                 || float.IsNaN(_lastReserve)
                 || Mathf.Abs(reserve - _lastReserve) > 0.5f
                 || queueRows != _lastQueueRows
-                || !LayoutStillApplied())
+                || bottomSheet != _lastBottomSheet
+                || !LayoutStillApplied(hudSize, reserve, bottomSheet))
             {
                 ApplyNow();
-            }
-
-            if (_resetScrollPending && gameObject.activeInHierarchy)
-            {
-                _resetScrollPending = false;
-                Canvas.ForceUpdateCanvases();
-                ResetScrollToTop();
             }
         }
 
@@ -99,23 +98,27 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!_ready && !Cache())
                 return false;
 
-            Vector2 canvas = _hudRoot.rect.size;
-            if (canvas.x <= 1f || canvas.y <= 1f)
+            Vector2 hudSize = _hudRoot.rect.size;
+            if (hudSize.x <= 1f || hudSize.y <= 1f)
                 return false;
 
             float reserve = CalculateRightReserve();
             int queueRows = CountActiveQueueRows();
-            float queueHeight = CalculateQueueHeight(queueRows);
+            bool bottomSheet = ShouldUseBottomSheet(hudSize, reserve);
 
-            ApplyPanelRect(canvas, reserve);
-            ApplySections(queueHeight);
+            ApplyPanelRect(hudSize, reserve, bottomSheet);
+            ApplyRootLayout();
+            ApplySectionLayout(queueRows, bottomSheet);
             ApplyRecipeRows();
-            ApplySelection();
-            ApplyQueueRows();
+            ApplyDetailsConstraints();
+            ApplyQueueRows(queueRows);
 
-            _lastHudSize = canvas;
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_panel);
+
+            _lastHudSize = hudSize;
             _lastReserve = reserve;
             _lastQueueRows = queueRows;
+            _lastBottomSheet = bottomSheet;
             return true;
         }
 
@@ -126,47 +129,59 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_panel == null || _hudRoot == null)
                 return false;
 
-            _title = R("Title");
-            _statePanel = R("BuildingStatePanel");
-            _availableCard = R("AvailableUnitsCard");
-            _availableHeader = R("AvailableUnitsCard/Header");
-            _recipeViewport = R("RecipeViewport");
-            _recipeScroll = _recipeViewport != null
-                ? _recipeViewport.GetComponent<ScrollRect>()
-                : null;
-            _selectionPanel = R("SelectionPanel");
-            _detailsHeader = R("SelectionPanel/DetailsHeader");
-            _queueCard = R("QueueCard");
-            _queueHeader = R("Queue");
-            _queueRows = R("QueueRows");
+            _mainContent = R("MainContent");
+            _catalog = R("MainContent/Catalog");
+            _details = R("MainContent/Details");
+            _queueSection = R("QueueSection");
+            _queueRows = R("QueueSection/QueueRows");
+            _recipeSlots = R("MainContent/Catalog/RecipeScroll/RecipeSlots");
+            _hireButton = transform.Find("MainContent/Details/ActionRow/HireButton")
+                ?.GetComponent<Button>();
+            _closeButton = transform.Find("Header/CloseButton")
+                ?.GetComponent<Button>();
 
-            return _title != null
-                && _statePanel != null
-                && _availableCard != null
-                && _availableHeader != null
-                && _recipeViewport != null
-                && _selectionPanel != null
-                && _detailsHeader != null
-                && _queueCard != null
-                && _queueHeader != null
-                && _queueRows != null;
+            return _mainContent != null
+                && _catalog != null
+                && _details != null
+                && _queueSection != null
+                && _queueRows != null
+                && _recipeSlots != null;
         }
 
-        private void ApplyPanelRect(Vector2 canvas, float reserve)
+        private void ApplyPanelRect(
+            Vector2 hudSize,
+            float reserve,
+            bool bottomSheet)
         {
-            float width = Mathf.Min(
-                PanelWidth,
-                Mathf.Max(440f, canvas.x - reserve - 340f));
-
-            float height = Mathf.Min(
-                PanelHeight,
-                Mathf.Max(420f, canvas.y - 54f));
-
-            if (canvas.x < 1180f)
+            if (bottomSheet)
             {
-                width = Mathf.Clamp(canvas.x - 32f, 440f, 520f);
-                reserve = 12f;
+                float sheetWidth = Mathf.Min(680f, Mathf.Max(420f, hudSize.x - EdgeMargin * 2f));
+                float sheetHeight = Mathf.Min(
+                    Mathf.Max(360f, hudSize.y * 0.56f),
+                    Mathf.Min(CompactHeight, hudSize.y - EdgeMargin * 2f));
+
+                _panel.anchorMin = new Vector2(0.5f, 0f);
+                _panel.anchorMax = new Vector2(0.5f, 0f);
+                _panel.pivot = new Vector2(0.5f, 0f);
+                _panel.anchoredPosition = new Vector2(0f, EdgeMargin);
+                _panel.sizeDelta = new Vector2(sheetWidth, sheetHeight);
+                return;
             }
+
+            float targetWidth = hudSize.x >= 1600f
+                ? DesktopWidth
+                : hudSize.x >= 1360f
+                    ? TabletWidth
+                    : CompactWidth;
+            float availableWidth = Mathf.Max(420f, hudSize.x - reserve - EdgeMargin * 2f);
+            float width = Mathf.Min(targetWidth, availableWidth);
+
+            float targetHeight = hudSize.y >= 900f
+                ? DesktopHeight
+                : hudSize.y >= 760f
+                    ? TabletHeight
+                    : CompactHeight;
+            float height = Mathf.Min(targetHeight, Mathf.Max(390f, hudSize.y - EdgeMargin * 2f));
 
             _panel.anchorMin = new Vector2(1f, 0.5f);
             _panel.anchorMax = new Vector2(1f, 0.5f);
@@ -175,338 +190,127 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _panel.sizeDelta = new Vector2(width, height);
         }
 
-        private void ApplySections(float queueHeight)
+        private void ApplyRootLayout()
         {
-            float stateTop = 8f + TitleHeight + 6f;
-            float bodyTop = stateTop + StateHeight + 8f;
-            float queueBottom = 10f;
-            float bodyBottom = queueBottom + queueHeight + 8f;
+            if (_panel.TryGetComponent(out VerticalLayoutGroup layout))
+            {
+                layout.padding = new RectOffset(12, 12, 10, 10);
+                layout.spacing = 8f;
+                layout.childControlWidth = true;
+                layout.childControlHeight = true;
+                layout.childForceExpandWidth = true;
+                layout.childForceExpandHeight = false;
+            }
 
-            SetTopStretch(_title, Edge, Edge, 8f, TitleHeight);
-            SetTopStretch(_statePanel, Edge, Edge, stateTop, StateHeight);
+            if (_panel.TryGetComponent(out ContentSizeFitter fitter))
+                fitter.enabled = false;
+        }
 
-            // Left compact recipe list.
-            _availableCard.anchorMin = new Vector2(0f, 0f);
-            _availableCard.anchorMax = new Vector2(0f, 1f);
-            _availableCard.pivot = new Vector2(0f, 0.5f);
-            _availableCard.offsetMin = new Vector2(Edge, bodyBottom);
-            _availableCard.offsetMax = new Vector2(
-                Edge + ListWidth,
-                -bodyTop);
+        private void ApplySectionLayout(int queueRows, bool bottomSheet)
+        {
+            SetPreferred("Header", HeaderHeight, flexibleHeight: 0f);
+            SetPreferred("StateStrip", StateHeight, flexibleHeight: 0f);
+            SetPreferred("MainContent", 0f, flexibleHeight: 1f);
 
-            SetTopStretch(
-                _availableHeader,
-                8f,
-                8f,
-                6f,
-                18f);
+            float queueHeight = CalculateQueueHeight(queueRows);
+            SetPreferred(_queueSection, queueHeight, flexibleHeight: 0f);
 
-            _recipeViewport.anchorMin = new Vector2(0f, 0f);
-            _recipeViewport.anchorMax = new Vector2(0f, 1f);
-            _recipeViewport.pivot = new Vector2(0f, 0.5f);
-            _recipeViewport.offsetMin = new Vector2(
-                Edge + 6f,
-                bodyBottom + 6f);
-            _recipeViewport.offsetMax = new Vector2(
-                Edge + ListWidth - 6f,
-                -(bodyTop + 28f));
+            if (_mainContent.TryGetComponent(out HorizontalLayoutGroup main))
+            {
+                main.padding = new RectOffset(0, 0, 0, 0);
+                main.spacing = 10f;
+                main.childControlWidth = true;
+                main.childControlHeight = true;
+                main.childForceExpandWidth = false;
+                main.childForceExpandHeight = true;
+            }
 
-            // Right detail area.
-            _selectionPanel.anchorMin = new Vector2(0f, 0f);
-            _selectionPanel.anchorMax = new Vector2(1f, 1f);
-            _selectionPanel.offsetMin = new Vector2(
-                Edge + ListWidth + Gap,
-                bodyBottom);
-            _selectionPanel.offsetMax = new Vector2(
-                -Edge,
-                -bodyTop);
-
-            SetTopStretch(
-                _detailsHeader,
-                10f,
-                10f,
-                6f,
-                18f);
-
-            // Compact queue across full width.
-            SetBottomStretch(
-                _queueCard,
-                Edge,
-                Edge,
-                queueBottom,
-                queueHeight);
-
-            SetBottomStretch(
-                _queueHeader,
-                Edge + 10f,
-                Edge + 10f,
-                queueBottom + queueHeight - 25f,
-                18f);
-
-            float rowsHeight = Mathf.Max(0f, queueHeight - 29f);
-            SetBottomStretch(
-                _queueRows,
-                Edge + 8f,
-                Edge + 8f,
-                queueBottom + 4f,
-                rowsHeight);
+            SetPreferredWidth(_catalog, bottomSheet ? CatalogCompactWidth : CatalogWidth, 0f);
+            SetPreferredWidth(_details, 0f, 1f);
         }
 
         private void ApplyRecipeRows()
         {
-            Transform content = transform.Find("RecipeViewport/RecipeSlots");
-            if (content == null)
-                return;
-
-            if (content.TryGetComponent(out VerticalLayoutGroup layout))
-            {
-                layout.padding = new RectOffset(2, 2, 2, 2);
-                layout.spacing = 5f;
-                layout.childControlWidth = true;
-                layout.childForceExpandWidth = true;
-                layout.childControlHeight = false;
-                layout.childForceExpandHeight = false;
-            }
-
-            for (int i = 0; i < content.childCount; i++)
-            {
-                Transform row = content.GetChild(i);
-                if (row == null
-                    || !row.name.StartsWith(
-                        "RecipeSlot_",
-                        StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                LayoutElement element = row.GetComponent<LayoutElement>();
-                if (element != null)
-                {
-                    element.minHeight = 42f;
-                    element.preferredHeight = 42f;
-                }
-
-                RectTransform icon = row.Find("UnitIcon") as RectTransform;
-                if (icon != null)
-                {
-                    icon.anchorMin = icon.anchorMax =
-                        new Vector2(0f, 0.5f);
-                    icon.pivot = new Vector2(0f, 0.5f);
-                    icon.anchoredPosition = new Vector2(7f, 0f);
-                    icon.sizeDelta = new Vector2(26f, 26f);
-                }
-
-                TMP_Text label =
-                    row.Find("Label")?.GetComponent<TMP_Text>();
-                if (label != null)
-                {
-                    label.rectTransform.anchorMin = Vector2.zero;
-                    label.rectTransform.anchorMax = Vector2.one;
-                    label.rectTransform.offsetMin =
-                        new Vector2(40f, 4f);
-                    label.rectTransform.offsetMax =
-                        new Vector2(-6f, -4f);
-                    label.alignment =
-                        TextAlignmentOptions.MidlineLeft;
-                    label.enableAutoSizing = true;
-                    label.fontSizeMin = 9.5f;
-                    label.fontSizeMax = 11.5f;
-                    label.textWrappingMode =
-                        TextWrappingModes.Normal;
-                    label.overflowMode =
-                        TextOverflowModes.Ellipsis;
-                }
-            }
-        }
-
-        private void ApplySelection()
-        {
-            RectTransform icon =
-                _selectionPanel.Find("UnitIcon") as RectTransform;
-            TMP_Text name =
-                _selectionPanel.Find("UnitName")
-                    ?.GetComponent<TMP_Text>();
-            TMP_Text stats =
-                _selectionPanel.Find("UnitStats")
-                    ?.GetComponent<TMP_Text>();
-            RectTransform costs =
-                _selectionPanel.Find("Costs") as RectTransform;
-            RectTransform hire =
-                _selectionPanel.Find("HireButton") as RectTransform;
-
-            if (icon != null)
-            {
-                icon.anchorMin = icon.anchorMax =
-                    new Vector2(0f, 1f);
-                icon.pivot = new Vector2(0f, 1f);
-                icon.anchoredPosition =
-                    new Vector2(10f, -32f);
-                icon.sizeDelta = new Vector2(48f, 48f);
-            }
-
-            if (name != null)
-            {
-                name.rectTransform.anchorMin =
-                    name.rectTransform.anchorMax =
-                        new Vector2(0f, 1f);
-                name.rectTransform.pivot =
-                    new Vector2(0f, 1f);
-                name.rectTransform.anchoredPosition =
-                    new Vector2(68f, -31f);
-                name.rectTransform.sizeDelta =
-                    new Vector2(
-                        Mathf.Max(
-                            120f,
-                            _selectionPanel.rect.width - 82f),
-                        22f);
-
-                name.fontStyle = FontStyles.Bold;
-                name.enableAutoSizing = true;
-                name.fontSizeMin = 12f;
-                name.fontSizeMax = 15f;
-                name.alignment =
-                    TextAlignmentOptions.MidlineLeft;
-                name.textWrappingMode =
-                    TextWrappingModes.NoWrap;
-                name.overflowMode =
-                    TextOverflowModes.Ellipsis;
-            }
-
-            if (stats != null)
-            {
-                stats.rectTransform.anchorMin =
-                    stats.rectTransform.anchorMax =
-                        new Vector2(0f, 1f);
-                stats.rectTransform.pivot =
-                    new Vector2(0f, 1f);
-                stats.rectTransform.anchoredPosition =
-                    new Vector2(68f, -56f);
-                stats.rectTransform.sizeDelta =
-                    new Vector2(
-                        Mathf.Max(
-                            120f,
-                            _selectionPanel.rect.width - 82f),
-                        58f);
-
-                stats.enableAutoSizing = true;
-                stats.fontSizeMin = 9.5f;
-                stats.fontSizeMax = 11f;
-                stats.alignment =
-                    TextAlignmentOptions.TopLeft;
-                stats.textWrappingMode =
-                    TextWrappingModes.Normal;
-                stats.overflowMode =
-                    TextOverflowModes.Ellipsis;
-            }
-
-            if (costs != null)
-            {
-                costs.anchorMin = new Vector2(0f, 0f);
-                costs.anchorMax = new Vector2(1f, 0f);
-                costs.pivot = new Vector2(0f, 0f);
-                costs.anchoredPosition =
-                    new Vector2(10f, 8f);
-                costs.sizeDelta =
-                    new Vector2(-128f, 28f);
-            }
-
-            if (hire != null)
-            {
-                hire.anchorMin = hire.anchorMax =
-                    new Vector2(1f, 0f);
-                hire.pivot = new Vector2(1f, 0f);
-                hire.anchoredPosition =
-                    new Vector2(-10f, 8f);
-                hire.sizeDelta =
-                    new Vector2(110f, 28f);
-
-                TMP_Text label =
-                    hire.GetComponentInChildren<TMP_Text>(true);
-                if (label != null)
-                {
-                    label.enableAutoSizing = true;
-                    label.fontSizeMin = 9.5f;
-                    label.fontSizeMax = 11f;
-                    label.textWrappingMode =
-                        TextWrappingModes.NoWrap;
-                    label.alignment =
-                        TextAlignmentOptions.Center;
-                }
-            }
-        }
-
-        private void ApplyQueueRows()
-        {
-            if (_queueRows.TryGetComponent(
-                    out VerticalLayoutGroup layout))
+            if (_recipeSlots.TryGetComponent(out VerticalLayoutGroup layout))
             {
                 layout.padding = new RectOffset(0, 0, 0, 0);
-                layout.spacing = 3f;
+                layout.spacing = 5f;
                 layout.childControlWidth = true;
-                layout.childForceExpandWidth = true;
                 layout.childControlHeight = false;
+                layout.childForceExpandWidth = true;
                 layout.childForceExpandHeight = false;
             }
 
-            for (int i = 0; i < _queueRows.childCount; i++)
+            for (int index = 0; index < _recipeSlots.childCount; index++)
             {
-                Transform row = _queueRows.GetChild(i);
+                Transform row = _recipeSlots.GetChild(index);
                 if (row == null
-                    || !row.name.StartsWith(
-                        "QueueRow_",
-                        StringComparison.Ordinal))
-                {
+                    || !row.name.StartsWith("RecipeSlot_", StringComparison.Ordinal))
                     continue;
-                }
 
-                LayoutElement element = row.GetComponent<LayoutElement>();
-                if (element != null)
-                {
-                    element.minHeight = QueueRowHeight;
-                    element.preferredHeight = QueueRowHeight;
-                }
+                RectTransform rect = row as RectTransform;
+                SetPreferred(rect, RecipeRowHeight, 0f);
+                if (rect != null)
+                    rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, RecipeRowHeight);
+            }
+        }
 
-                RectTransform icon =
-                    row.Find("UnitIcon") as RectTransform;
-                if (icon != null)
-                {
-                    icon.anchorMin = icon.anchorMax =
-                        new Vector2(0f, 0.5f);
-                    icon.pivot = new Vector2(0f, 0.5f);
-                    icon.anchoredPosition = new Vector2(5f, 0f);
-                    icon.sizeDelta = new Vector2(18f, 18f);
-                }
+        private void ApplyDetailsConstraints()
+        {
+            SetPreferred("MainContent/Details/UnitHeader", DetailIconSize, 0f);
+            SetPreferred("MainContent/Details/CostSection", 48f, 0f);
+            SetPreferred("MainContent/Details/ActionRow", HireButtonHeight, 0f);
 
-                TMP_Text label =
-                    row.Find("Label")?.GetComponent<TMP_Text>();
-                if (label != null)
-                {
-                    label.rectTransform.anchorMin = Vector2.zero;
-                    label.rectTransform.anchorMax = Vector2.one;
-                    label.rectTransform.offsetMin =
-                        new Vector2(29f, 3f);
-                    label.rectTransform.offsetMax =
-                        new Vector2(-6f, -3f);
-                    label.enableAutoSizing = true;
-                    label.fontSizeMin = 8.5f;
-                    label.fontSizeMax = 10f;
-                    label.textWrappingMode =
-                        TextWrappingModes.NoWrap;
-                    label.alignment =
-                        TextAlignmentOptions.MidlineLeft;
-                    label.overflowMode =
-                        TextOverflowModes.Ellipsis;
-                }
+            RectTransform icon =
+                transform.Find("MainContent/Details/UnitHeader/UnitIcon") as RectTransform;
+            if (icon != null)
+                icon.sizeDelta = new Vector2(DetailIconSize, DetailIconSize);
 
-                RectTransform track =
-                    row.Find("ProgressTrack") as RectTransform;
-                if (track != null)
-                {
-                    track.anchorMin = new Vector2(0f, 0f);
-                    track.anchorMax = new Vector2(1f, 0f);
-                    track.offsetMin = new Vector2(4f, 1f);
-                    track.offsetMax = new Vector2(-4f, 3f);
-                }
+            if (_hireButton != null)
+            {
+                RectTransform rect = _hireButton.transform as RectTransform;
+                SetPreferredWidth(rect, HireButtonWidth, 0f);
+                SetPreferred(rect, HireButtonHeight, 0f);
+            }
+
+            if (_closeButton != null)
+            {
+                RectTransform rect = _closeButton.transform as RectTransform;
+                SetPreferredWidth(rect, 28f, 0f);
+                SetPreferred(rect, 28f, 0f);
+            }
+        }
+
+        private void ApplyQueueRows(int queueRows)
+        {
+            if (_queueRows != null)
+                _queueRows.gameObject.SetActive(queueRows > 0);
+
+            if (_queueRows != null
+                && _queueRows.TryGetComponent(out VerticalLayoutGroup layout))
+            {
+                layout.padding = new RectOffset(0, 0, 0, 0);
+                layout.spacing = 4f;
+                layout.childControlWidth = true;
+                layout.childControlHeight = false;
+                layout.childForceExpandWidth = true;
+                layout.childForceExpandHeight = false;
+            }
+
+            if (_queueRows == null)
+                return;
+
+            for (int index = 0; index < _queueRows.childCount; index++)
+            {
+                Transform row = _queueRows.GetChild(index);
+                if (row == null
+                    || !row.name.StartsWith("QueueRow_", StringComparison.Ordinal))
+                    continue;
+
+                RectTransform rect = row as RectTransform;
+                SetPreferred(rect, QueueRowHeight, 0f);
+                if (rect != null)
+                    rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, QueueRowHeight);
             }
         }
 
@@ -533,17 +337,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             return Mathf.Min(
                 QueueMaxHeight,
-                28f + rows * (QueueRowHeight + 3f));
+                QueueHeaderHeight + 6f + rows * QueueRowHeight + Mathf.Max(0, rows - 1) * 4f);
         }
+
+        private static bool ShouldUseBottomSheet(Vector2 hudSize, float reserve)
+            => hudSize.x < 980f || hudSize.x - reserve < 760f;
 
         private float CalculateRightReserve()
         {
             if (_hudRoot == null)
-                return 18f;
+                return EdgeMargin;
 
             RectTransform rail = FindWorldInfoRail();
             if (rail == null)
-                return 18f;
+                return EdgeMargin;
 
             Vector3[] corners = new Vector3[4];
             rail.GetWorldCorners(corners);
@@ -551,18 +358,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             for (int i = 0; i < corners.Length; i++)
             {
-                Vector3 local =
-                    _hudRoot.InverseTransformPoint(corners[i]);
+                Vector3 local = _hudRoot.InverseTransformPoint(corners[i]);
                 left = Mathf.Min(left, local.x);
             }
 
-            float reserve =
-                _hudRoot.rect.xMax - left + WorldInfoGap;
-
+            float reserve = _hudRoot.rect.xMax - left + RightGap;
             return Mathf.Clamp(
                 reserve,
-                18f,
-                Mathf.Max(18f, _hudRoot.rect.width * 0.48f));
+                EdgeMargin,
+                Mathf.Max(EdgeMargin, _hudRoot.rect.width * 0.48f));
         }
 
         private RectTransform FindWorldInfoRail()
@@ -587,12 +391,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                 string n = rect.name ?? string.Empty;
                 bool candidate =
-                    n.IndexOf(
-                        "WorldInfoPanel",
-                        StringComparison.OrdinalIgnoreCase) >= 0
-                    || n.IndexOf(
-                        "BuildingInfoPanel",
-                        StringComparison.OrdinalIgnoreCase) >= 0;
+                    n.IndexOf("WorldInfoPanel", StringComparison.OrdinalIgnoreCase) >= 0
+                    || n.IndexOf("BuildingInfoPanel", StringComparison.OrdinalIgnoreCase) >= 0;
 
                 if (!candidate)
                     continue;
@@ -603,8 +403,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                 for (int k = 0; k < c.Length; k++)
                 {
-                    Vector3 local =
-                        _hudRoot.InverseTransformPoint(c[k]);
+                    Vector3 local = _hudRoot.InverseTransformPoint(c[k]);
                     left = Mathf.Min(left, local.x);
                 }
 
@@ -618,80 +417,91 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return best;
         }
 
-        private void ResetScrollToTop()
+        private bool LayoutStillApplied(
+            Vector2 hudSize,
+            float reserve,
+            bool bottomSheet)
         {
-            if (_recipeScroll == null)
-                return;
+            if (_panel == null)
+                return false;
 
-            _recipeScroll.StopMovement();
-            _recipeScroll.velocity = Vector2.zero;
-            _recipeScroll.verticalNormalizedPosition = 1f;
+            if (bottomSheet)
+                return _panel.anchorMin == new Vector2(0.5f, 0f)
+                    && _panel.anchorMax == new Vector2(0.5f, 0f)
+                    && _panel.rect.width <= Mathf.Min(680f, hudSize.x)
+                    && _panel.rect.height <= CompactHeight + 0.5f;
 
-            if (_recipeScroll.content != null)
-            {
-                Vector2 p =
-                    _recipeScroll.content.anchoredPosition;
-                p.y = 0f;
-                _recipeScroll.content.anchoredPosition = p;
-            }
-
-            Canvas.ForceUpdateCanvases();
-            _recipeScroll.verticalNormalizedPosition = 1f;
-        }
-
-        private bool LayoutStillApplied()
-        {
-            return _panel != null
-                && _panel.anchorMin == new Vector2(1f, 0.5f)
+            float expectedRight = -reserve;
+            return _panel.anchorMin == new Vector2(1f, 0.5f)
                 && _panel.anchorMax == new Vector2(1f, 0.5f)
-                && _panel.pivot == new Vector2(1f, 0.5f)
-                && _panel.rect.width <= 570f
-                && _panel.rect.height <= 500f;
+                && Mathf.Abs(_panel.anchoredPosition.x - expectedRight) <= 0.5f
+                && _panel.rect.width <= DesktopWidth + 0.5f
+                && _panel.rect.height <= DesktopHeight + 0.5f;
         }
 
         private RectTransform R(string path)
             => transform.Find(path) as RectTransform;
 
+        private void SetPreferred(
+            string path,
+            float height,
+            float flexibleHeight)
+            => SetPreferred(R(path), height, flexibleHeight);
+
+        private static void SetPreferred(
+            RectTransform rect,
+            float height,
+            float flexibleHeight)
+        {
+            if (rect == null)
+                return;
+
+            LayoutElement element =
+                rect.GetComponent<LayoutElement>()
+                ?? rect.gameObject.AddComponent<LayoutElement>();
+
+            if (height > 0f)
+            {
+                element.minHeight = height;
+                element.preferredHeight = height;
+            }
+            else
+            {
+                element.minHeight = 0f;
+                element.preferredHeight = -1f;
+            }
+
+            element.flexibleHeight = flexibleHeight;
+        }
+
+        private static void SetPreferredWidth(
+            RectTransform rect,
+            float width,
+            float flexibleWidth)
+        {
+            if (rect == null)
+                return;
+
+            LayoutElement element =
+                rect.GetComponent<LayoutElement>()
+                ?? rect.gameObject.AddComponent<LayoutElement>();
+
+            if (width > 0f)
+            {
+                element.minWidth = width;
+                element.preferredWidth = width;
+            }
+            else
+            {
+                element.minWidth = 0f;
+                element.preferredWidth = -1f;
+            }
+
+            element.flexibleWidth = flexibleWidth;
+        }
+
         private static bool Approximately(Vector2 a, Vector2 b)
             => Mathf.Abs(a.x - b.x) < 0.25f
                && Mathf.Abs(a.y - b.y) < 0.25f;
-
-        private static void SetTopStretch(
-            RectTransform rect,
-            float left,
-            float right,
-            float top,
-            float height)
-        {
-            if (rect == null)
-                return;
-
-            rect.anchorMin = new Vector2(0f, 1f);
-            rect.anchorMax = new Vector2(1f, 1f);
-            rect.pivot = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = new Vector2(0f, -top);
-            rect.sizeDelta = new Vector2(
-                -(left + right),
-                height);
-        }
-
-        private static void SetBottomStretch(
-            RectTransform rect,
-            float left,
-            float right,
-            float bottom,
-            float height)
-        {
-            if (rect == null)
-                return;
-
-            rect.anchorMin = new Vector2(0f, 0f);
-            rect.anchorMax = new Vector2(1f, 0f);
-            rect.pivot = new Vector2(0.5f, 0f);
-            rect.anchoredPosition = new Vector2(0f, bottom);
-            rect.sizeDelta = new Vector2(
-                -(left + right),
-                height);
-        }
     }
 }

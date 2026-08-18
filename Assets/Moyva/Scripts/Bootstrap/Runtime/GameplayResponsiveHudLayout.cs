@@ -25,17 +25,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private Canvas _canvas;
         private RectTransform _turnPanel;
         private RectTransform _unitPanel;
-        private RectTransform _recruitmentPanel;
         private RectTransform _resourcePanel;
         private RectTransform _buildButton;
         private Button _endTurnButton;
         private TMP_Text _turnText;
         private TMP_Text _statusText;
         private TMP_Text _unitText;
-        private TMP_Text _recruitmentTitle;
-        private TMP_Text _queueText;
-        private RectTransform _viewport;
-        private RectTransform _slots;
         private LayoutPlan _lastPlan;
         private bool _hasLastPlan;
         private bool _referencesReady;
@@ -238,18 +233,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             _turnPanel = FindRect("TurnPanel");
             _unitPanel = FindRect("UnitStaminaPanel");
-            _recruitmentPanel = FindRect("RecruitmentPanel");
-            if (_turnPanel == null || _unitPanel == null || _recruitmentPanel == null)
+            if (_turnPanel == null || _unitPanel == null)
                 return false;
 
             _turnText = FindComponent<TMP_Text>("TurnPanel/TurnSummary");
             _statusText = FindComponent<TMP_Text>("TurnPanel/TurnStatus");
             _endTurnButton = FindComponent<Button>("TurnPanel/EndTurnButton");
             _unitText = FindComponent<TMP_Text>("UnitStaminaPanel/UnitStamina");
-            _recruitmentTitle = FindComponent<TMP_Text>("RecruitmentPanel/Title");
-            _queueText = FindComponent<TMP_Text>("RecruitmentPanel/Queue");
-            _viewport = FindRect("RecruitmentPanel/RecipeViewport");
-            _slots = FindRect("RecruitmentPanel/RecipeViewport/RecipeSlots");
             _resourcePanel = FindResourcePanel();
             _buildButton = FindBuildButton();
 
@@ -261,11 +251,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             SetBottomLeftRect(_turnPanel, plan.TurnRect);
             SetBottomLeftRect(_unitPanel, plan.UnitRect);
-            SetBottomLeftRect(_recruitmentPanel, plan.RecruitmentRect);
 
             ApplyTurnPanelInternals(plan.TurnRect.width);
             ApplyUnitPanelInternals();
-            ApplyRecruitmentInternals(plan.RecruitmentRect.height, plan.RecruitmentBottomSheet);
         }
 
         private void ApplyTurnPanelInternals(float panelWidth)
@@ -348,70 +336,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             ConfigureAutosize(label, 11f, 14f);
         }
 
-        private void ApplyRecruitmentInternals(float panelHeight, bool bottomSheet)
-        {
-            if (_recruitmentTitle != null)
-                SetTopStretch(_recruitmentTitle.rectTransform, 18f, 18f, 12f, bottomSheet ? 38f : 34f);
-
-            float queueHeight = Mathf.Clamp(panelHeight * 0.22f, 88f, 108f);
-            if (_queueText != null)
-            {
-                RectTransform queueRect = _queueText.rectTransform;
-                queueRect.anchorMin = new Vector2(0f, 0f);
-                queueRect.anchorMax = new Vector2(1f, 0f);
-                queueRect.pivot = new Vector2(0.5f, 0f);
-                queueRect.anchoredPosition = new Vector2(0f, 12f);
-                queueRect.sizeDelta = new Vector2(-34f, queueHeight);
-                _queueText.enableWordWrapping = true;
-            }
-
-            if (_viewport != null)
-            {
-                _viewport.anchorMin = Vector2.zero;
-                _viewport.anchorMax = Vector2.one;
-                _viewport.offsetMin = new Vector2(16f, queueHeight + 28f);
-                _viewport.offsetMax = new Vector2(-16f, bottomSheet ? -62f : -58f);
-            }
-
-            if (_slots != null)
-            {
-                VerticalLayoutGroup layout = _slots.GetComponent<VerticalLayoutGroup>();
-                if (layout != null)
-                {
-                    layout.padding = new RectOffset(7, 7, 7, 7);
-                    layout.spacing = bottomSheet ? 6f : 7f;
-                }
-
-                LayoutElement[] elements = _slots.GetComponentsInChildren<LayoutElement>(true);
-                float rowHeight = bottomSheet ? 42f : 39f;
-                foreach (LayoutElement element in elements)
-                {
-                    if (element == null)
-                        continue;
-                    element.minHeight = rowHeight;
-                    element.preferredHeight = rowHeight;
-                }
-            }
-        }
-
         private void ConfigureTextSizing()
         {
             ConfigureAutosize(_turnText, 10.5f, 15.5f);
             ConfigureAutosize(_statusText, 10f, 12.5f);
             ConfigureAutosize(_unitText, 10.5f, 13.5f);
-            ConfigureAutosize(_recruitmentTitle, 13f, 18f);
-            ConfigureAutosize(_queueText, 10f, 12.5f);
 
             if (_endTurnButton != null)
             {
                 TMP_Text label = _endTurnButton.GetComponentInChildren<TMP_Text>(true);
                 ConfigureAutosize(label, 10f, 13.5f);
-            }
-
-            if (_slots != null)
-            {
-                foreach (TMP_Text label in _slots.GetComponentsInChildren<TMP_Text>(true))
-                    ConfigureAutosize(label, 10f, 12.5f);
             }
         }
 
