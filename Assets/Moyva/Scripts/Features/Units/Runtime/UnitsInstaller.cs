@@ -25,6 +25,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                 Container.Bind<WorldCreationDefaultsSO>()
                     .FromInstance(_worldDefaults)
                     .WhenInjectedInto<UnitMovementService>();
+
+                Container.Bind<WorldCreationDefaultsSO>()
+                    .FromInstance(_worldDefaults)
+                    .WhenInjectedInto<UnitPlacementValidator>();
             }
 
             Container.BindInterfacesAndSelfTo<UnitService>()
@@ -33,6 +37,10 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             Container.Bind<IUnitFactory>()
                 .To<UnitFactory>()
+                .AsSingle();
+
+            Container.Bind<IUnitPlacementValidator>()
+                .To<UnitPlacementValidator>()
                 .AsSingle();
 
             Container.BindInterfacesAndSelfTo<UnitMovementService>()

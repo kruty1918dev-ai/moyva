@@ -78,6 +78,23 @@ namespace Kruty1918.Moyva.Units.API
             : System.Math.Max(0, TrainingTurns - CompletedTurns);
     }
 
+    public readonly struct UnitRecruitmentDeploymentTileSnapshot
+    {
+        public UnitRecruitmentDeploymentTileSnapshot(
+            Vector2Int position,
+            bool isValid,
+            string reason)
+        {
+            Position = position;
+            IsValid = isValid;
+            Reason = reason ?? string.Empty;
+        }
+
+        public Vector2Int Position { get; }
+        public bool IsValid { get; }
+        public string Reason { get; }
+    }
+
     public interface IUnitRecruitmentService
     {
         bool TryEnqueue(
@@ -94,6 +111,35 @@ namespace Kruty1918.Moyva.Units.API
             string ownerId,
             Vector2Int recruitingBuildingPosition,
             out UnitRecruitmentQueueItemSnapshot item);
+
+        /// <summary>
+        /// Returns the ready head from each recruitment building owned by
+        /// <paramref name="ownerId"/>. Ready jobs remain queued until an explicit
+        /// deployment succeeds.
+        /// </summary>
+        IReadOnlyList<UnitRecruitmentQueueItemSnapshot> GetReadyItems(
+            string ownerId);
+
+        /// <summary>
+        /// Returns every tile inside the recruiting building deployment radius,
+        /// including invalid tiles with a player-facing rejection reason.
+        /// </summary>
+        IReadOnlyList<UnitRecruitmentDeploymentTileSnapshot> GetDeploymentTiles(
+            string ownerId,
+            Vector2Int recruitingBuildingPosition,
+            long queueId);
+
+        /// <summary>
+        /// Explicitly deploys a ready queue head onto a selected valid tile.
+        /// This is the only recruitment path that creates a unit after P24A.
+        /// </summary>
+        bool TryDeployReady(
+            string ownerId,
+            Vector2Int recruitingBuildingPosition,
+            long queueId,
+            Vector2Int targetPosition,
+            out string unitId,
+            out string reason);
     }
 
     /// <summary>

@@ -34,6 +34,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 		private readonly TileRegistrySO _tileRegistry;
 		private readonly ITurnService _turns;
 		private readonly IUnitOwnershipQuery _ownership;
+		private readonly IUnitPlacementValidator _placementValidator;
 
 		private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
 		private readonly Dictionary<string, float> _tileSurfaceOffsetYById = new();
@@ -53,7 +54,8 @@ namespace Kruty1918.Moyva.Units.Runtime
 			[InjectOptional] IGridProjection gridProjection = null,
 			[InjectOptional] TileRegistrySO tileRegistry = null,
 			[InjectOptional] ITurnService turns = null,
-			[InjectOptional] IUnitOwnershipQuery ownership = null)
+			[InjectOptional] IUnitOwnershipQuery ownership = null,
+			[InjectOptional] IUnitPlacementValidator placementValidator = null)
 		{
 			_unitService = unitService;
 			_pathfinder = pathfinder;
@@ -70,6 +72,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_tileRegistry = tileRegistry;
 			_turns = turns;
 			_ownership = ownership;
+			_placementValidator = placementValidator;
 		}
 
 		[System.Diagnostics.Conditional("MOYVA_VERBOSE_MOVEMENT")]
@@ -278,7 +281,23 @@ namespace Kruty1918.Moyva.Units.Runtime
 					return false;
 				}
 
-				if (IsBlockedByUnitPlacementRules(stepPos, tileTypeId, out string blockReason))
+				bool terrainBlocked;
+				string blockReason;
+				if (_placementValidator != null)
+				{
+					terrainBlocked = !_placementValidator.IsTerrainAllowed(
+						stepPos,
+						out blockReason);
+				}
+				else
+				{
+					terrainBlocked = IsBlockedByUnitPlacementRules(
+						stepPos,
+						tileTypeId,
+						out blockReason);
+				}
+
+				if (terrainBlocked)
 				{
 					Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: BLOCKED ({blockReason}).");
 					return false;
