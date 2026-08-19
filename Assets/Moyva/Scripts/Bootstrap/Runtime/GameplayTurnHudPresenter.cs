@@ -435,7 +435,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         slotIndex,
                         $"{Mathf.Max(1, recipe.TrainingTurns)} р.");
 
-                    icon.sprite = config?.CustomSprite;
+                    icon.sprite = config?.ResolveCustomSprite();
                     icon.enabled = icon.sprite != null;
                     button.gameObject.SetActive(true);
                     slotIndex++;
@@ -810,7 +810,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 UnitRecruitmentQueueItemSnapshot job = queue[index];
                 _visibleQueueItems.Add(job);
                 UnitClassConfig config = _unitConfigs.GetConfig(job.UnitTypeId);
-                icon.sprite = config?.CustomSprite;
+                icon.sprite = config?.ResolveCustomSprite();
                 icon.enabled = icon.sprite != null;
 
                 if (job.IsReady)
@@ -1086,7 +1086,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _recruitmentView.SelectionName.text = ResolveUnitName(unitTypeId);
             _recruitmentView.SelectionClass.text =
                 config != null ? LocalizeCombatType(config.CombatType) : string.Empty;
-            _recruitmentView.SelectionIcon.sprite = config?.CustomSprite;
+            _recruitmentView.SelectionIcon.sprite = config?.ResolveCustomSprite();
             _recruitmentView.SelectionIcon.enabled = _recruitmentView.SelectionIcon.sprite != null;
             if (_recruitmentView.SelectionStats != null)
                 _recruitmentView.SelectionStats.text = string.Empty;

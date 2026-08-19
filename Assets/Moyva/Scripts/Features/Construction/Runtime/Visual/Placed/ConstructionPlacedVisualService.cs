@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Presentation.API;
+using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
@@ -11,6 +13,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private const float PlacedSnapSharpness = 12f;
 
         private readonly Dictionary<Vector2Int, GameObject> _placedByPosition = new();
+        private readonly Dictionary<Vector2Int, EntityPresentationConfig> _presentationByPosition = new();
         private readonly HashSet<Vector2Int> _demolitionPreviewPositions = new();
         private readonly HashSet<Vector2Int> _underConstructionPositions = new();
         private readonly SpriteSelectionHighlighter _selectionHighlighter = new();
@@ -37,12 +40,26 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _settingsProvider = settingsProvider;
         }
 
-        public void Replace(Vector2Int position, string buildingId, GameObject prefab, Quaternion rotation, float visualOffsetY = 0f, GameObject sourceVisual = null)
+        public void Replace(
+            Vector2Int position,
+            string buildingId,
+            GameObject prefab,
+            Quaternion rotation,
+            float visualOffsetY = 0f,
+            GameObject sourceVisual = null,
+            EntityPresentationConfig presentation = null)
         {
             Remove(position);
             string objectName = $"Building_{buildingId}_{position.x}_{position.y}";
             GameObject instance = sourceVisual != null
-                ? PrepareSourceVisual(sourceVisual, position, objectName, rotation, visualOffsetY)
+                ? PrepareSourceVisual(
+                    sourceVisual,
+                    prefab,
+                    position,
+                    objectName,
+                    rotation,
+                    visualOffsetY,
+                    presentation)
                 : _visualFactory.CreateInstance(
                     prefab,
                     position,
@@ -50,13 +67,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     objectName,
                     ResolveSortingOrder(),
                     rotation,
-                    visualOffsetY: visualOffsetY);
+                    visualOffsetY: visualOffsetY,
+                    presentation: presentation);
             if (instance == null)
                 return;
 
             ConstructionBuildingPointerTarget.AttachOrUpdate(instance, buildingId, position, isPreviewVisual: false);
             _styleService.ApplySolidStyle(instance);
+            EntityPresentationApplier.ApplyStyleAndShadows(instance, presentation);
             _placedByPosition[position] = instance;
+            StorePresentation(position, presentation);
             _demolitionPreviewPositions.Remove(position);
             _underConstructionPositions.Remove(position);
 
@@ -73,6 +93,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 Object.Destroy(instance);
 
             _placedByPosition.Remove(position);
+            _presentationByPosition.Remove(position);
             _demolitionPreviewPositions.Remove(position);
             _underConstructionPositions.Remove(position);
         }
@@ -117,7 +138,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _underConstructionPositions.Add(position);
             if (!_demolitionPreviewPositions.Contains(position))
+            {
                 _styleService.ApplyUnderConstructionStyle(instance);
+                ApplyStoredPresentationStyle(position, instance);
+            }
         }
 
         public void MarkOperational(Vector2Int position)
@@ -125,7 +149,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _underConstructionPositions.Remove(position);
 
             if (_placedByPosition.TryGetValue(position, out GameObject instance) && instance != null)
+            {
                 _styleService.ApplySolidStyle(instance);
+                ApplyStoredPresentationStyle(position, instance);
+            }
         }
 
         public void RestoreDemolitionPreview(Vector2Int position)
@@ -156,6 +183,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             _placedByPosition.Clear();
+            _presentationByPosition.Clear();
             _demolitionPreviewPositions.Clear();
             _underConstructionPositions.Clear();
             ClearSelection();
@@ -170,21 +198,43 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return false;
         }
 
-        private GameObject PrepareSourceVisual(GameObject sourceVisual, Vector2Int position, string objectName, Quaternion rotation, float visualOffsetY)
+        private GameObject PrepareSourceVisual(
+            GameObject sourceVisual,
+            GameObject prefab,
+            Vector2Int position,
+            string objectName,
+            Quaternion rotation,
+            float visualOffsetY,
+            EntityPresentationConfig presentation)
         {
             if (sourceVisual == null)
                 return null;
 
             sourceVisual.name = objectName;
             sourceVisual.transform.SetParent(_roots.PlacedRoot, worldPositionStays: true);
-            sourceVisual.transform.rotation = rotation;
+            sourceVisual.transform.localScale = EntityPresentationApplier.ResolveScale(
+                prefab != null ? prefab.transform.localScale : sourceVisual.transform.localScale,
+                presentation);
+            sourceVisual.transform.rotation = EntityPresentationApplier.ResolveRotation(
+                rotation,
+                presentation);
             _styleService.EnsureRenderersEnabled(sourceVisual);
             _styleService.EnsureBuildingSortingOrder(sourceVisual, ResolveSortingOrder());
             _styleService.DisableColliders(sourceVisual);
 
             Vector3 targetPosition = _terrainAlignment != null
-                ? _terrainAlignment.ResolveAlignedInstancePosition(sourceVisual, position, isPreviewVisual: false, visualOffsetY)
+                ? _terrainAlignment.ResolveAlignedInstancePosition(
+                    sourceVisual,
+                    position,
+                    isPreviewVisual: false,
+                    presentation != null
+                        ? presentation.ResolveGroundOffsetY(visualOffsetY)
+                        : visualOffsetY)
                 : sourceVisual.transform.position;
+            targetPosition = EntityPresentationApplier.ResolvePositionOffset(
+                targetPosition,
+                rotation,
+                presentation);
 
             var motion = ConstructionSmoothVisualMotion.AttachOrUpdate(sourceVisual);
             if (motion != null)
@@ -204,6 +254,32 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _styleService.ApplyUnderConstructionStyle(instance);
             else
                 _styleService.ApplySolidStyle(instance);
+
+            ApplyStoredPresentationStyle(position, instance);
+        }
+
+        private void StorePresentation(
+            Vector2Int position,
+            EntityPresentationConfig presentation)
+        {
+            if (presentation == null)
+                _presentationByPosition.Remove(position);
+            else
+                _presentationByPosition[position] = presentation;
+        }
+
+        private void ApplyStoredPresentationStyle(
+            Vector2Int position,
+            GameObject instance)
+        {
+            if (_presentationByPosition.TryGetValue(
+                    position,
+                    out EntityPresentationConfig presentation))
+            {
+                EntityPresentationApplier.ApplyStyleAndShadows(
+                    instance,
+                    presentation);
+            }
         }
     }
 }

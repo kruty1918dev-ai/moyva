@@ -7,6 +7,8 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Pathfinding.API;
+using Kruty1918.Moyva.Presentation.API;
+using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Turns.API;
@@ -110,12 +112,15 @@ namespace Kruty1918.Moyva.Units.Runtime
 				return;
 
 			unitObject.transform.position =
-				ResolveMovementWorldPosition(
+				ResolveCanonicalMovementWorldPosition(
 					signal.UnitPosition,
 					0.02f);
 			_worldPositionResolver?.AlignBottomToSurface(
 				unitObject,
 				signal.UnitPosition);
+			ApplyUnitPresentationPosition(
+				unitObject,
+				signal.UnitId);
 		}
 
 		private void OnInterruptRequested(InterruptMovementSignal signal)
@@ -219,7 +224,12 @@ namespace Kruty1918.Moyva.Units.Runtime
 						completedSteps++;
 					};
 				float unitSurfacePivotOffsetY = ResolveUnitSurfacePivotOffsetY(unitObj, startPosition);
-				settings.ResolveWorldPosition = stepPos => ResolveMovementWorldPosition(stepPos, unitSurfacePivotOffsetY);
+				EntityPresentationConfig presentation = config?.ResolvePresentation();
+				settings.ResolveWorldPosition = stepPos => ResolveMovementWorldPosition(
+					stepPos,
+					unitSurfacePivotOffsetY,
+					presentation,
+					unitObj.transform.rotation);
 
 				await _animationService.MoveAlongPathAsync(unitObj.transform, path, settings, linkedCts.Token);
 			}
@@ -503,7 +513,23 @@ namespace Kruty1918.Moyva.Units.Runtime
 			});
 		}
 
-		private Vector3 ResolveMovementWorldPosition(Vector2Int gridPosition, float unitSurfacePivotOffsetY)
+		private Vector3 ResolveMovementWorldPosition(
+			Vector2Int gridPosition,
+			float unitSurfacePivotOffsetY,
+			EntityPresentationConfig presentation,
+			Quaternion baseRotation)
+		{
+			Vector3 canonicalPosition =
+				ResolveCanonicalMovementWorldPosition(
+					gridPosition,
+					unitSurfacePivotOffsetY);
+			return EntityPresentationApplier.ResolvePosition(
+				canonicalPosition,
+				baseRotation,
+				presentation);
+		}
+
+		private Vector3 ResolveCanonicalMovementWorldPosition(Vector2Int gridPosition, float unitSurfacePivotOffsetY)
 		{
 			if (_worldPositionResolver != null)
 				return _worldPositionResolver.ResolveWorldPosition(gridPosition, unitSurfacePivotOffsetY);
@@ -522,6 +548,29 @@ namespace Kruty1918.Moyva.Units.Runtime
 			}
 
 			return 0.05f;
+		}
+
+		private void ApplyUnitPresentationPosition(
+			GameObject unitObject,
+			string unitId)
+		{
+			if (unitObject == null)
+				return;
+
+			string unitTypeId = _unitService.GetUnitTypeId(unitId);
+			UnitClassConfig config =
+				string.IsNullOrEmpty(unitTypeId)
+					? null
+					: _unitClassConfig.GetConfig(unitTypeId);
+			Vector3 alignedPosition = unitObject.transform.position;
+			EntityPresentationApplier.ApplyPosition(
+				unitObject,
+				config?.ResolvePresentation(),
+				alignedPosition,
+				unitObject.transform.rotation);
+			EntityPresentationApplier.ApplyStyleAndShadows(
+				unitObject,
+				config?.ResolvePresentation());
 		}
 
 		private bool IsBlockedByUnitPlacementRules(Vector2Int position, string tileTypeId, out string reason)

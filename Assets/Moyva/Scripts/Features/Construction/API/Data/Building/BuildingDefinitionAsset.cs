@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Presentation.API;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -194,6 +195,7 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
                 Icon = Presentation.Icon,
                 RuntimePreview = Presentation.RuntimePreview,
                 Prefab = Presentation.Prefab,
+                Presentation = ClonePresentation(Presentation),
                 Footprint = CloneFootprint(Footprint),
                 VisualYOffset = Presentation.VisualYOffset,
                 ConstructionCost = CloneCost(Construction.Cost),
@@ -230,6 +232,7 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
             Presentation.RuntimePreview = legacy.RuntimePreview;
             Presentation.Prefab = legacy.Prefab;
             Presentation.VisualYOffset = legacy.VisualYOffset;
+            CopyPresentationOverrides(legacy.Presentation, Presentation);
 
             Footprint = CloneFootprint(legacy.Footprint);
 
@@ -323,6 +326,74 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
                     : Array.Empty<Vector2Int>(),
             };
         }
+
+        private static EntityPresentationConfig ClonePresentation(
+            BuildingPresentation source)
+        {
+            source ??= new BuildingPresentation();
+            return new EntityPresentationConfig
+            {
+                ScaleMultiplier = source.ScaleMultiplier,
+                PositionOffset = source.PositionOffset,
+                RotationOffset = source.RotationOffset,
+                GroundOffsetY = source.GroundOffsetY,
+                Tint = source.Tint,
+                TeamColorEnabled = source.TeamColorEnabled,
+                Outline = CloneOutline(source.Outline),
+                Shadows = CloneShadows(source.Shadows),
+                PreviewPrefab = source.PreviewPrefab,
+                Selection = CloneSelection(source.Selection),
+            };
+        }
+
+        private static void CopyPresentationOverrides(
+            EntityPresentationConfig source,
+            BuildingPresentation target)
+        {
+            if (source == null || target == null)
+                return;
+
+            target.ScaleMultiplier = source.ScaleMultiplier;
+            target.PositionOffset = source.PositionOffset;
+            target.RotationOffset = source.RotationOffset;
+            target.GroundOffsetY = source.GroundOffsetY;
+            target.Tint = source.Tint;
+            target.TeamColorEnabled = source.TeamColorEnabled;
+            target.Outline = CloneOutline(source.Outline);
+            target.Shadows = CloneShadows(source.Shadows);
+            target.PreviewPrefab = source.PreviewPrefab;
+            target.Selection = CloneSelection(source.Selection);
+        }
+
+        private static EntityOutlineConfig CloneOutline(
+            EntityOutlineConfig source)
+            => source == null
+                ? new EntityOutlineConfig()
+                : new EntityOutlineConfig
+                {
+                    Enabled = source.Enabled,
+                    Width = source.Width,
+                    Color = source.Color,
+                };
+
+        private static EntityShadowConfig CloneShadows(
+            EntityShadowConfig source)
+            => source == null
+                ? new EntityShadowConfig()
+                : new EntityShadowConfig
+                {
+                    Cast = source.Cast,
+                    Receive = source.Receive,
+                };
+
+        private static EntitySelectionPresentationConfig CloneSelection(
+            EntitySelectionPresentationConfig source)
+            => source == null
+                ? new EntitySelectionPresentationConfig()
+                : new EntitySelectionPresentationConfig
+                {
+                    MarkerScale = source.MarkerScale,
+                };
 
         private static BuildingPlacementRules ClonePlacement(
             BuildingPlacementRules source)

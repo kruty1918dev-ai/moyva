@@ -203,6 +203,69 @@
       ],
       "title": "Prefab"
     },
+    "presentation": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "prefab": {
+          "$ref": "#/$defs/assetReference",
+          "title": "Presentation Prefab"
+        },
+        "customSprite": {
+          "$ref": "#/$defs/assetReference",
+          "title": "Presentation Custom Sprite"
+        },
+        "scaleMultiplier": {
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 1.0,
+          "title": "Scale Multiplier"
+        },
+        "positionOffset": {
+          "$ref": "#/$defs/vector3",
+          "title": "Position Offset"
+        },
+        "rotationOffset": {
+          "$ref": "#/$defs/vector3",
+          "title": "Rotation Offset"
+        },
+        "groundOffsetY": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "title": "Ground Offset Y"
+        },
+        "tint": {
+          "$ref": "#/$defs/nullableColor",
+          "title": "Tint"
+        },
+        "teamColorEnabled": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "title": "Team Color Enabled"
+        },
+        "outline": {
+          "$ref": "#/$defs/outline"
+        },
+        "shadows": {
+          "$ref": "#/$defs/shadows"
+        },
+        "previewPrefab": {
+          "$ref": "#/$defs/assetReference",
+          "title": "Preview Prefab"
+        },
+        "selection": {
+          "$ref": "#/$defs/selection"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Presentation"
+    },
     "staminaRandomRange": {
       "type": "object",
       "properties": {
@@ -410,6 +473,157 @@
       },
       "title": "Animation Clips",
       "description": "Список анімацій, пов'язаних з юнітом"
+    }
+  },
+  "$defs": {
+    "assetReference": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "additionalProperties": false
+    },
+    "vector3": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "additionalProperties": false
+    },
+    "nullableColor": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^#?[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "outline": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "title": "Outline Enabled"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0.0,
+          "title": "Outline Width"
+        },
+        "color": {
+          "$ref": "#/$defs/nullableColor",
+          "title": "Outline Color"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Outline"
+    },
+    "shadows": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "cast": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "title": "Cast Shadows"
+        },
+        "receive": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "title": "Receive Shadows"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Shadows"
+    },
+    "selection": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "markerScale": {
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 1.0,
+          "title": "Marker Scale"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Selection"
     }
   }
 }

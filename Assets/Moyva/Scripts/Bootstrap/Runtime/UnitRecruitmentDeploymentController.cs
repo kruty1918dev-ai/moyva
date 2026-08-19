@@ -4,6 +4,8 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.Moyva.Presentation.API;
+using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
@@ -507,31 +509,47 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             EnsureWorldRoots();
 
             GameObject preview = null;
-            if (config?.Prefab != null)
+            GameObject prefab = config?.ResolvePreviewPrefab();
+            if (prefab != null)
             {
-                preview = Object.Instantiate(config.Prefab, _previewRoot);
+                preview = Object.Instantiate(prefab, _previewRoot);
                 preview.name = $"UnitDeploymentPreview_{_session.UnitTypeId}";
-                PreparePrefabPreview(preview);
+                PreparePrefabPreview(preview, config, prefab);
             }
-            else if (config?.CustomSprite != null)
+            else if (config?.ResolveCustomSprite() != null)
             {
-                preview = CreateSpritePreview(config.CustomSprite);
+                preview = CreateSpritePreview(
+                    config.ResolveCustomSprite(),
+                    config);
             }
             else
             {
-                preview = CreateFallbackPreview();
+                preview = CreateFallbackPreview(config);
             }
 
             return preview;
         }
 
-        private void PreparePrefabPreview(GameObject preview)
+        private void PreparePrefabPreview(
+            GameObject preview,
+            UnitClassConfig config,
+            GameObject prefab)
         {
             DisablePreviewGameplayComponents(preview);
+            EntityPresentationConfig presentation = config?.ResolvePresentation();
+            preview.transform.localScale = EntityPresentationApplier.ResolveScale(
+                prefab != null ? prefab.transform.localScale : preview.transform.localScale,
+                presentation);
+            preview.transform.rotation = EntityPresentationApplier.ResolveRotation(
+                Quaternion.identity,
+                presentation);
+            EntityPresentationApplier.ApplyStyleAndShadows(preview, presentation);
             ApplyPreviewTint(preview);
         }
 
-        private GameObject CreateSpritePreview(Sprite sprite)
+        private GameObject CreateSpritePreview(
+            Sprite sprite,
+            UnitClassConfig config)
         {
             var preview = new GameObject(
                 $"UnitDeploymentPreview_{_session.UnitTypeId}",
@@ -545,19 +563,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             float height = Mathf.Max(0.1f, sprite.bounds.size.y);
             float scale = SpritePreviewHeight / height;
-            preview.transform.localScale = new Vector3(scale, scale, scale);
+            preview.transform.localScale = EntityPresentationApplier.ResolveScale(
+                new Vector3(scale, scale, scale),
+                config?.ResolvePresentation());
             return preview;
         }
 
-        private GameObject CreateFallbackPreview()
+        private GameObject CreateFallbackPreview(UnitClassConfig config)
         {
             GameObject preview = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             preview.name = $"UnitDeploymentPreview_{_session.UnitTypeId}";
             preview.transform.SetParent(_previewRoot, false);
-            preview.transform.localScale = new Vector3(
-                0.45f,
-                FallbackPreviewHeight * 0.5f,
-                0.45f);
+            preview.transform.localScale = EntityPresentationApplier.ResolveScale(
+                new Vector3(
+                    0.45f,
+                    FallbackPreviewHeight * 0.5f,
+                    0.45f),
+                config?.ResolvePresentation());
 
             Collider collider = preview.GetComponent<Collider>();
             if (collider != null)
@@ -568,6 +590,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (renderer != null)
                 renderer.sharedMaterial = _fallbackPreviewMaterial;
 
+            EntityPresentationApplier.ApplyStyleAndShadows(
+                preview,
+                config?.ResolvePresentation());
             return preview;
         }
 
@@ -576,11 +601,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (preview == null)
                 return;
 
+            EntityPresentationConfig presentation =
+                ResolveActiveUnitPresentation();
             Vector3 tilePosition = ResolveWorldPosition(tile, PreviewLift);
             if (preview.GetComponent<SpriteRenderer>() != null)
             {
                 preview.transform.position =
-                    tilePosition + Vector3.up * SpritePreviewHeight * 0.5f;
+                    EntityPresentationApplier.ResolvePosition(
+                        tilePosition + Vector3.up * SpritePreviewHeight * 0.5f,
+                        Quaternion.identity,
+                        presentation);
                 FaceSpritePreviewToCamera();
                 return;
             }
@@ -594,6 +624,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     tilePosition.y - (bounds.min.y - root.y),
                     tilePosition.z - (bounds.center.z - root.z));
             }
+
+            EntityPresentationApplier.ApplyPosition(
+                preview,
+                presentation,
+                preview.transform.position,
+                Quaternion.identity);
         }
 
         private void DisablePreviewGameplayComponents(GameObject preview)
@@ -654,7 +690,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             UnityEngine.Camera camera = ResolveCamera();
             if (camera != null)
-                _previewObject.transform.rotation = camera.transform.rotation;
+            {
+                _previewObject.transform.rotation =
+                    EntityPresentationApplier.ResolveRotation(
+                        camera.transform.rotation,
+                        ResolveActiveUnitPresentation());
+            }
+        }
+
+        private EntityPresentationConfig ResolveActiveUnitPresentation()
+        {
+            if (_session == null || _unitConfigs == null)
+                return null;
+
+            return _unitConfigs
+                .GetConfig(_session.UnitTypeId)
+                ?.ResolvePresentation();
         }
 
         private bool TryResolveTile(

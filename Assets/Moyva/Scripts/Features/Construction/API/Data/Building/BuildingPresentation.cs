@@ -1,11 +1,12 @@
 using System;
+using Kruty1918.Moyva.Presentation.API;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
 {
     [Serializable]
-    public sealed class BuildingPresentation
+    public sealed class BuildingPresentation : EntityPresentationConfig
     {
         [AssetsOnly]
         [Required]

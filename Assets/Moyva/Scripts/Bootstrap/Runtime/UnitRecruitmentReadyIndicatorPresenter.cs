@@ -285,7 +285,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_spriteByUnitTypeId.TryGetValue(key, out Sprite cached))
                 return cached;
 
-            Sprite sprite = _unitConfigs.GetConfig(key)?.CustomSprite;
+            Sprite sprite = _unitConfigs.GetConfig(key)?.ResolveCustomSprite();
             _spriteByUnitTypeId[key] = sprite;
 
             if (sprite == null && _missingSpriteWarnings.Add(key))

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
+using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
@@ -48,7 +49,8 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_typeCounters[typeId]++;
 
 			var config = _unitClassConfig.GetConfig(typeId);
-			if (config == null || config.Prefab == null)
+			GameObject prefab = config?.ResolvePrefab();
+			if (config == null || prefab == null)
 			{
 				Debug.LogError($"[UnitFactory] Cannot find config or prefab for {typeId}");
 				_typeCounters[typeId]--;
@@ -64,8 +66,13 @@ namespace Kruty1918.Moyva.Units.Runtime
 			}
 
 			Vector3 worldPos = ResolveWorldPosition(gridPosition);
-			GameObject unitObj = _container.InstantiatePrefab(config.Prefab, worldPos, Quaternion.identity, null);
-			_worldPositionResolver?.AlignBottomToSurface(unitObj, gridPosition);
+			GameObject unitObj = _container.InstantiatePrefab(prefab, worldPos, Quaternion.identity, null);
+			ApplyPresentationTransform(unitObj, config, prefab, worldPos);
+			if (_worldPositionResolver != null)
+			{
+				_worldPositionResolver.AlignBottomToSurface(unitObj, gridPosition);
+				ApplyPresentationPosition(unitObj, config, unitObj.transform.position);
+			}
 
 			string instanceId = unitObj.GetInstanceID().ToString().Replace("-", "");
 			string finalUnitId = $"{typeId}_{_typeCounters[typeId]:D2}_{instanceId}";
@@ -82,7 +89,8 @@ namespace Kruty1918.Moyva.Units.Runtime
 			}
 
 			var config = _unitClassConfig.GetConfig(typeId);
-			if (config == null || config.Prefab == null)
+			GameObject prefab = config?.ResolvePrefab();
+			if (config == null || prefab == null)
 			{
 				Debug.LogError($"[UnitFactory] Cannot find config or prefab for {typeId}");
 				return null;
@@ -96,8 +104,13 @@ namespace Kruty1918.Moyva.Units.Runtime
 			}
 
 			Vector3 worldPos = ResolveWorldPosition(gridPosition);
-			GameObject unitObj = _container.InstantiatePrefab(config.Prefab, worldPos, Quaternion.identity, null);
-			_worldPositionResolver?.AlignBottomToSurface(unitObj, gridPosition);
+			GameObject unitObj = _container.InstantiatePrefab(prefab, worldPos, Quaternion.identity, null);
+			ApplyPresentationTransform(unitObj, config, prefab, worldPos);
+			if (_worldPositionResolver != null)
+			{
+				_worldPositionResolver.AlignBottomToSurface(unitObj, gridPosition);
+				ApplyPresentationPosition(unitObj, config, unitObj.transform.position);
+			}
 
 			return FireUnitCreated(forcedUnitId, typeId, gridPosition, unitObj, ownerId);
 		}
@@ -128,5 +141,37 @@ namespace Kruty1918.Moyva.Units.Runtime
 			=> _worldPositionResolver != null
 				? _worldPositionResolver.ResolveWorldPosition(gridPosition)
 				: new Vector3(gridPosition.x, gridPosition.y);
+
+		private static void ApplyPresentationTransform(
+			GameObject unitObj,
+			UnitClassConfig config,
+			GameObject prefab,
+			Vector3 worldPos)
+		{
+			EntityPresentationApplier.ApplyTransform(
+				unitObj,
+				config?.ResolvePresentation(),
+				worldPos,
+				Quaternion.identity,
+				prefab != null ? prefab.transform.localScale : Vector3.one);
+			EntityPresentationApplier.ApplyStyleAndShadows(
+				unitObj,
+				config?.ResolvePresentation());
+		}
+
+		private static void ApplyPresentationPosition(
+			GameObject unitObj,
+			UnitClassConfig config,
+			Vector3 alignedPosition)
+		{
+			EntityPresentationApplier.ApplyPosition(
+				unitObj,
+				config?.ResolvePresentation(),
+				alignedPosition,
+				Quaternion.identity);
+			EntityPresentationApplier.ApplyStyleAndShadows(
+				unitObj,
+				config?.ResolvePresentation());
+		}
 	}
 }

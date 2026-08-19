@@ -105,6 +105,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _buildingRegistry.GetById(signal.BuildingId);
             if (def?.Prefab != null)
             {
+                GameObject sourceVisual =
+                    ResolveReusablePlacedSource(previewVisual, def);
                 _placedVisuals.Replace(
                     signal.Position,
                     signal.BuildingId,
@@ -112,8 +114,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ConstructionRotationUtility.ToWorldRotation(
                         ConstructionRotationUtility.Normalize(
                             signal.RotationQuarterTurns)),
-                    def.VisualYOffset,
-                    previewVisual);
+                    def.ResolveVisualYOffset(),
+                    sourceVisual,
+                    def.Presentation);
 
                 if (_constructionLifecycle != null
                     && !_constructionLifecycle.IsOperational(signal.Position))
@@ -137,6 +140,24 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 previewReleaseMs,
                 placedVisualMs,
                 wallRefreshMs);
+        }
+
+        private static GameObject ResolveReusablePlacedSource(
+            GameObject previewVisual,
+            BuildingDefinition def)
+        {
+            if (previewVisual == null || def == null)
+                return null;
+
+            if (def.Presentation != null
+                && def.Presentation.PreviewPrefab != null
+                && def.Presentation.PreviewPrefab != def.Prefab)
+            {
+                Object.Destroy(previewVisual);
+                return null;
+            }
+
+            return previewVisual;
         }
 
         private static void LogPlacedSignalPerf(

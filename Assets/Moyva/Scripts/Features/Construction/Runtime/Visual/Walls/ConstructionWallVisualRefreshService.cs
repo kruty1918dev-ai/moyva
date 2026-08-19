@@ -59,7 +59,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!_wallVisualResolver.TryResolvePlacedVisual(position, occupantId, out GameObject prefab, out Quaternion rotation))
                 return;
 
-            _placedVisuals.Replace(position, occupantId, prefab, rotation, ResolveVisualYOffset(occupantId));
+            BuildingDefinition def = _buildingRegistry.GetById(occupantId);
+            _placedVisuals.Replace(
+                position,
+                occupantId,
+                prefab,
+                rotation,
+                def?.ResolveVisualYOffset() ?? 0f,
+                presentation: def?.Presentation);
         }
 
         private void RefreshPreviewAt(Vector2Int position, string fallbackBuildingId)
@@ -69,7 +76,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             string buildingId = ResolvePreviewBuildingId(position, fallbackBuildingId);
             if (_wallVisualResolver.TryResolvePreviewVisual(position, buildingId, out GameObject prefab))
-                _previewVisuals.ReplaceWallPreview(position, buildingId, prefab, ResolveVisualYOffset(buildingId));
+            {
+                BuildingDefinition def = _buildingRegistry.GetById(buildingId);
+                _previewVisuals.ReplaceWallPreview(
+                    position,
+                    buildingId,
+                    prefab,
+                    def?.ResolveVisualYOffset() ?? 0f,
+                    def?.Presentation);
+            }
         }
 
         private string ResolvePreviewBuildingId(Vector2Int position, string fallbackBuildingId)
@@ -83,7 +98,5 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return fallbackBuildingId;
         }
 
-        private float ResolveVisualYOffset(string buildingId)
-            => _buildingRegistry.GetById(buildingId)?.VisualYOffset ?? 0f;
     }
 }

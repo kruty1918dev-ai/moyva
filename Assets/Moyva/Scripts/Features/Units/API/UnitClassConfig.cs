@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Animations.API;
+using Kruty1918.Moyva.Presentation.API;
 
 using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Units.API
@@ -111,6 +112,8 @@ namespace Kruty1918.Moyva.Units.API
         [Min(0)] public int CrushingDefense;
 
         public GameObject Prefab;
+        public UnitPresentationConfig Presentation = new UnitPresentationConfig();
+
         public Vector2 StaminaRandomRange = new Vector2(-5, 5); // +/- 5 випадкових одиниць до базової стаміни
         public PathAnimationSettings AnimationSettings = PathAnimationSettings.Default;
 
@@ -119,6 +122,24 @@ namespace Kruty1918.Moyva.Units.API
 
         [Tooltip("Список анімацій, пов'язаних з юнітом")]
         public List<UnitAnimationClip> AnimationClips = new List<UnitAnimationClip>();
+
+        public GameObject ResolvePrefab()
+            => Presentation != null && Presentation.Prefab != null
+                ? Presentation.Prefab
+                : Prefab;
+
+        public GameObject ResolvePreviewPrefab()
+            => Presentation != null && Presentation.PreviewPrefab != null
+                ? Presentation.PreviewPrefab
+                : ResolvePrefab();
+
+        public Sprite ResolveCustomSprite()
+            => Presentation != null && Presentation.CustomSprite != null
+                ? Presentation.CustomSprite
+                : CustomSprite;
+
+        public EntityPresentationConfig ResolvePresentation()
+            => Presentation;
 
         /// <summary>
         /// Отримує анімацію за типом. Повертає першу знайдену анімацію цього типу.

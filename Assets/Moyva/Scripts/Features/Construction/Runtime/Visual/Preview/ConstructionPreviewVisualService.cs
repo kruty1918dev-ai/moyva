@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Presentation.API;
+using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
@@ -74,8 +76,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             Remove(signal.Position);
-            GameObject prefab = ResolvePrefab(signal.Position, signal.BuildingId, def.Prefab);
-            GameObject instance = CreatePreview(prefab, signal.Position, signal.BuildingId, def.VisualYOffset);
+            GameObject prefab = ResolvePrefab(signal.Position, signal.BuildingId, def.ResolvePreviewPrefab());
+            GameObject instance = CreatePreview(
+                prefab,
+                signal.Position,
+                signal.BuildingId,
+                def.ResolveVisualYOffset(),
+                def.Presentation);
             if (instance == null)
                 return null;
 
@@ -95,7 +102,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public bool Has(Vector2Int position) => TryGet(position, out _);
 
-        public bool TryMove(Vector2Int fromPosition, Vector2Int toPosition, string buildingId, float visualOffsetY = 0f)
+        public bool TryMove(
+            Vector2Int fromPosition,
+            Vector2Int toPosition,
+            string buildingId,
+            float visualOffsetY = 0f,
+            EntityPresentationConfig presentation = null,
+            Quaternion? baseRotation = null)
         {
             if (!_previewByPosition.TryGetValue(fromPosition, out GameObject instance) || instance == null)
                 return false;
@@ -114,7 +127,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _previewByPosition[toPosition] = instance;
             ConstructionBuildingPointerTarget.AttachOrUpdate(instance, buildingId, toPosition, isPreviewVisual: true);
-            MoveVisualToTile(instance, toPosition, isPreviewVisual: true, visualOffsetY, PreviewMoveSharpness);
+            MoveVisualToTile(
+                instance,
+                toPosition,
+                isPreviewVisual: true,
+                visualOffsetY,
+                PreviewMoveSharpness,
+                presentation,
+                baseRotation);
             return true;
         }
 
@@ -126,7 +146,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             bool hasSnapTarget,
             Vector2Int snapTargetPosition,
             bool isSnapTargetValid,
-            float visualOffsetY = 0f)
+            float visualOffsetY = 0f,
+            EntityPresentationConfig presentation = null,
+            Quaternion? baseRotation = null)
         {
             if (!TryGet(position, out GameObject instance)
                 || !MatchesBuildingId(instance, buildingId))
@@ -146,7 +168,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 instance,
                 surfaceTile,
                 isPreviewVisual: true,
-                visualOffsetY);
+                visualOffsetY,
+                presentation,
+                baseRotation);
 
             if (!snapToGrid)
             {
@@ -208,13 +232,23 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return true;
         }
 
-        public void ReplaceWallPreview(Vector2Int position, string buildingId, GameObject prefab, float visualOffsetY = 0f)
+        public void ReplaceWallPreview(
+            Vector2Int position,
+            string buildingId,
+            GameObject prefab,
+            float visualOffsetY = 0f,
+            EntityPresentationConfig presentation = null)
         {
             if (!Has(position))
                 return;
 
             Remove(position);
-            GameObject instance = CreatePreview(prefab, position, buildingId, visualOffsetY);
+            GameObject instance = CreatePreview(
+                prefab,
+                position,
+                buildingId,
+                visualOffsetY,
+                presentation);
             if (instance == null)
                 return;
 
@@ -347,7 +381,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             GameObject prefab,
             Vector2Int position,
             string buildingId,
-            float visualOffsetY)
+            float visualOffsetY,
+            EntityPresentationConfig presentation)
         {
             string prefabTag =
                 prefab != null ? prefab.name : "NULL";
@@ -367,7 +402,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     objectName,
                     ResolveSortingOrder(),
                     isPreviewVisual: true,
-                    visualOffsetY: visualOffsetY);
+                    visualOffsetY: visualOffsetY,
+                    presentation: presentation);
                 _poolReusedCount++;
 
                 int prefabId = prefab.GetInstanceID();
@@ -391,7 +427,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     objectName,
                     ResolveSortingOrder(),
                     isPreviewVisual: true,
-                    visualOffsetY: visualOffsetY);
+                    visualOffsetY: visualOffsetY,
+                    presentation: presentation);
                 if (instance != null)
                     _poolCreatedCount++;
             }
@@ -509,9 +546,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _loggedPoolReusePrefabIds.Clear();
         }
 
-        private void MoveVisualToTile(GameObject instance, Vector2Int position, bool isPreviewVisual, float visualOffsetY, float sharpness)
+        private void MoveVisualToTile(
+            GameObject instance,
+            Vector2Int position,
+            bool isPreviewVisual,
+            float visualOffsetY,
+            float sharpness,
+            EntityPresentationConfig presentation,
+            Quaternion? baseRotation)
         {
-            MoveVisual(instance, ResolveAlignedTarget(instance, position, isPreviewVisual, visualOffsetY), sharpness);
+            MoveVisual(
+                instance,
+                ResolveAlignedTarget(
+                    instance,
+                    position,
+                    isPreviewVisual,
+                    visualOffsetY,
+                    presentation,
+                    baseRotation),
+                sharpness);
         }
 
         private void MoveVisual(GameObject instance, Vector3 targetPosition, float sharpness)
@@ -523,15 +576,42 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 instance.transform.position = targetPosition;
         }
 
-        private Vector3 ResolveAlignedTarget(GameObject instance, Vector2Int position, bool isPreviewVisual, float visualOffsetY)
+        private Vector3 ResolveAlignedTarget(
+            GameObject instance,
+            Vector2Int position,
+            bool isPreviewVisual,
+            float visualOffsetY,
+            EntityPresentationConfig presentation,
+            Quaternion? baseRotation)
         {
+            Vector3 alignedPosition;
+            float resolvedVisualOffsetY =
+                presentation != null
+                    ? presentation.ResolveGroundOffsetY(visualOffsetY)
+                    : visualOffsetY;
+
             if (_terrainAlignment != null)
-                return _terrainAlignment.ResolveAlignedInstancePosition(instance, position, isPreviewVisual, visualOffsetY);
+            {
+                alignedPosition =
+                    _terrainAlignment.ResolveAlignedInstancePosition(
+                        instance,
+                        position,
+                        isPreviewVisual,
+                        resolvedVisualOffsetY);
+                return EntityPresentationApplier.ResolvePositionOffset(
+                    alignedPosition,
+                    baseRotation ?? instance?.transform.rotation ?? Quaternion.identity,
+                    presentation);
+            }
 
             Vector3 fallback = instance != null ? instance.transform.position : Vector3.zero;
             fallback.x = position.x;
             fallback.z = position.y;
-            return fallback;
+            fallback.y += resolvedVisualOffsetY;
+            return EntityPresentationApplier.ResolvePositionOffset(
+                fallback,
+                baseRotation ?? instance?.transform.rotation ?? Quaternion.identity,
+                presentation);
         }
 
         private static bool MatchesBuildingId(GameObject instance, string buildingId)

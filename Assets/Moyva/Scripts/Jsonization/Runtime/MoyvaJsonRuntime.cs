@@ -559,42 +559,71 @@ namespace Kruty1918.Moyva.Jsonization
             public override bool CanWrite => false;
             public override bool CanConvert(Type t)
             {
-                return t == typeof(Vector2) || t == typeof(Vector2Int) ||
-                       t == typeof(Vector3) || t == typeof(Vector3Int) ||
-                       t == typeof(Vector4) || t == typeof(Quaternion) ||
-                       t == typeof(Color) || t == typeof(Color32) || t == typeof(LayerMask) ||
-                       t == typeof(Rect) || t == typeof(RectInt) || t == typeof(Bounds) || t == typeof(BoundsInt) ||
-                       t == typeof(Gradient) || t == typeof(AnimationCurve);
+                Type targetType = Nullable.GetUnderlyingType(t) ?? t;
+                return targetType == typeof(Vector2) || targetType == typeof(Vector2Int) ||
+                       targetType == typeof(Vector3) || targetType == typeof(Vector3Int) ||
+                       targetType == typeof(Vector4) || targetType == typeof(Quaternion) ||
+                       targetType == typeof(Color) || targetType == typeof(Color32) || targetType == typeof(LayerMask) ||
+                       targetType == typeof(Rect) || targetType == typeof(RectInt) || targetType == typeof(Bounds) || targetType == typeof(BoundsInt) ||
+                       targetType == typeof(Gradient) || targetType == typeof(AnimationCurve);
             }
 
             public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)
             {
                 if (reader.TokenType == JsonToken.Null) return null;
-                if (t == typeof(LayerMask))
+                Type targetType = Nullable.GetUnderlyingType(t) ?? t;
+                JToken token = JToken.Load(reader);
+
+                if ((targetType == typeof(Color) || targetType == typeof(Color32))
+                    && token.Type == JTokenType.String)
                 {
-                    int v = Convert.ToInt32(JToken.Load(reader), System.Globalization.CultureInfo.InvariantCulture);
+                    string colorText = token.Value<string>();
+                    if (!string.IsNullOrWhiteSpace(colorText))
+                    {
+                        string htmlColor = colorText.Trim();
+                        if (!htmlColor.StartsWith("#", StringComparison.Ordinal))
+                            htmlColor = "#" + htmlColor;
+
+                        if (ColorUtility.TryParseHtmlString(htmlColor, out Color parsed))
+                        {
+                            if (targetType == typeof(Color32))
+                                return (Color32)parsed;
+
+                            return parsed;
+                        }
+                    }
+
+                    throw new JsonSerializationException("Invalid Unity color value " + colorText);
+                }
+
+                if (targetType == typeof(LayerMask))
+                {
+                    int v = Convert.ToInt32(token, System.Globalization.CultureInfo.InvariantCulture);
                     LayerMask m = new LayerMask(); m.value = v; return m;
                 }
-                JObject o = JObject.Load(reader);
+
+                if (token is not JObject o)
+                    throw new JsonSerializationException("Expected object for Unity value type " + targetType.FullName);
+
                 float F(string n) => o.Value<float?>(n) ?? 0f;
                 int I(string n) => o.Value<int?>(n) ?? 0;
-                if (t == typeof(Vector2)) return new Vector2(F("x"), F("y"));
-                if (t == typeof(Vector2Int)) return new Vector2Int(I("x"), I("y"));
-                if (t == typeof(Vector3)) return new Vector3(F("x"), F("y"), F("z"));
-                if (t == typeof(Vector3Int)) return new Vector3Int(I("x"), I("y"), I("z"));
-                if (t == typeof(Vector4)) return new Vector4(F("x"), F("y"), F("z"), F("w"));
-                if (t == typeof(Quaternion)) return new Quaternion(F("x"), F("y"), F("z"), F("w"));
-                if (t == typeof(Color)) return new Color(F("r"), F("g"), F("b"), o.Value<float?>("a") ?? 1f);
-                if (t == typeof(Color32)) return new Color32((byte)I("r"), (byte)I("g"), (byte)I("b"), (byte)(o.Value<int?>("a") ?? 255));
-                if (t == typeof(Rect)) return new Rect(F("x"), F("y"), F("width"), F("height"));
-                if (t == typeof(RectInt)) return new RectInt(I("x"), I("y"), I("width"), I("height"));
-                if (t == typeof(Bounds)) return new Bounds(
+                if (targetType == typeof(Vector2)) return new Vector2(F("x"), F("y"));
+                if (targetType == typeof(Vector2Int)) return new Vector2Int(I("x"), I("y"));
+                if (targetType == typeof(Vector3)) return new Vector3(F("x"), F("y"), F("z"));
+                if (targetType == typeof(Vector3Int)) return new Vector3Int(I("x"), I("y"), I("z"));
+                if (targetType == typeof(Vector4)) return new Vector4(F("x"), F("y"), F("z"), F("w"));
+                if (targetType == typeof(Quaternion)) return new Quaternion(F("x"), F("y"), F("z"), F("w"));
+                if (targetType == typeof(Color)) return new Color(F("r"), F("g"), F("b"), o.Value<float?>("a") ?? 1f);
+                if (targetType == typeof(Color32)) return new Color32((byte)I("r"), (byte)I("g"), (byte)I("b"), (byte)(o.Value<int?>("a") ?? 255));
+                if (targetType == typeof(Rect)) return new Rect(F("x"), F("y"), F("width"), F("height"));
+                if (targetType == typeof(RectInt)) return new RectInt(I("x"), I("y"), I("width"), I("height"));
+                if (targetType == typeof(Bounds)) return new Bounds(
                     new Vector3(o["center"]?.Value<float?>("x") ?? 0f, o["center"]?.Value<float?>("y") ?? 0f, o["center"]?.Value<float?>("z") ?? 0f),
                     new Vector3(o["size"]?.Value<float?>("x") ?? 0f, o["size"]?.Value<float?>("y") ?? 0f, o["size"]?.Value<float?>("z") ?? 0f));
-                if (t == typeof(BoundsInt)) return new BoundsInt(
+                if (targetType == typeof(BoundsInt)) return new BoundsInt(
                     new Vector3Int(o["position"]?.Value<int?>("x") ?? 0, o["position"]?.Value<int?>("y") ?? 0, o["position"]?.Value<int?>("z") ?? 0),
                     new Vector3Int(o["size"]?.Value<int?>("x") ?? 0, o["size"]?.Value<int?>("y") ?? 0, o["size"]?.Value<int?>("z") ?? 0));
-                if (t == typeof(Gradient))
+                if (targetType == typeof(Gradient))
                 {
                     var gradient = new Gradient();
                     var colors = new List<GradientColorKey>();
@@ -611,7 +640,7 @@ namespace Kruty1918.Moyva.Jsonization
                     if (Enum.TryParse(o.Value<string>("mode"), true, out GradientMode mode)) gradient.mode = mode;
                     return gradient;
                 }
-                if (t == typeof(AnimationCurve))
+                if (targetType == typeof(AnimationCurve))
                 {
                     var list = new List<Keyframe>();
                     if (o["keys"] is JArray keys)
@@ -635,7 +664,7 @@ namespace Kruty1918.Moyva.Jsonization
                     if (Enum.TryParse(o.Value<string>("postWrapMode"), true, out WrapMode post)) curve.postWrapMode = post;
                     return curve;
                 }
-                throw new JsonSerializationException("Unsupported Unity value type " + t.FullName);
+                throw new JsonSerializationException("Unsupported Unity value type " + targetType.FullName);
             }
 
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

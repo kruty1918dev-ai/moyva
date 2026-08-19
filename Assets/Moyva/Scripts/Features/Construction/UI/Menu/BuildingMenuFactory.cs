@@ -183,6 +183,7 @@ namespace Kruty1918.Moyva.Construction.UI
 			if (building.Icon != null)
 				return building.Icon;
 
+			GameObject fallbackPrefab = building.ResolvePreviewPrefab();
 			if (building.Category == BuildingCategory.Walls)
 			{
 				var collection = buildingRegistry?.GetWallCollectionByBuildingId(building.Id);
@@ -196,7 +197,7 @@ namespace Kruty1918.Moyva.Construction.UI
 						}
 
 						var gateSprite = ExtractSpriteFromPrefab(collection.GatePrefab)
-							?? ExtractSpriteFromPrefab(building.Prefab)
+							?? ExtractSpriteFromPrefab(fallbackPrefab)
 							?? ExtractSpriteFromPrefab(collection.HorizontalPrefab);
 						if (gateSprite != null)
 							return gateSprite;
@@ -215,17 +216,17 @@ namespace Kruty1918.Moyva.Construction.UI
 					return building.Icon;
 			}
 
-			if (building.Prefab == null)
+			if (fallbackPrefab == null)
 			{
 				Debug.LogWarning($"[Construction UI] Для будівлі '{building.Id}' не задано prefab. Використовую поле Icon з реєстру.", context);
 				return building.Icon;
 			}
 
-			int prefabId = building.Prefab.GetInstanceID();
+			int prefabId = fallbackPrefab.GetInstanceID();
 			if (_prefabSpriteCache.TryGetValue(prefabId, out Sprite cachedSprite))
 				return cachedSprite != null ? cachedSprite : building.Icon;
 
-			var renderers = building.Prefab.GetComponentsInChildren<SpriteRenderer>(true);
+			var renderers = fallbackPrefab.GetComponentsInChildren<SpriteRenderer>(true);
 			foreach (var renderer in renderers)
 			{
 				if (renderer != null && renderer.sprite != null)

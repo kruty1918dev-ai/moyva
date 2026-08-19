@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.Presentation.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.Runtime
@@ -12,7 +13,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             int minSortingOrder,
             Quaternion? forcedRotation = null,
             bool isPreviewVisual = false,
-            float visualOffsetY = 0f);
+            float visualOffsetY = 0f,
+            EntityPresentationConfig presentation = null);
     }
 
     internal interface IConstructionVisualInstanceRecycler
@@ -26,6 +28,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             int minSortingOrder,
             Quaternion? forcedRotation = null,
             bool isPreviewVisual = false,
-            float visualOffsetY = 0f);
+            float visualOffsetY = 0f,
+            EntityPresentationConfig presentation = null);
     }
 }

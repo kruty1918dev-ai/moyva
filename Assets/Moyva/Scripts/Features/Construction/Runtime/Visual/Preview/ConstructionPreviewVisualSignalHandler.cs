@@ -1,4 +1,6 @@
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Presentation.API;
+using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
@@ -67,7 +69,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 GameObject preview = _previewVisuals.Show(signal, def);
                 ApplyRotation(
                     preview,
-                    signal.RotationQuarterTurns);
+                    signal.RotationQuarterTurns,
+                    def.Presentation);
                 ShowOrHidePreviewRadius(def, signal.Position);
                 RefreshWallPreviewIfNeeded(signal);
             }
@@ -77,35 +80,60 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
             {
-                _previewVisuals.TryMove(signal.FromPosition, signal.ToPosition, signal.BuildingId, def.VisualYOffset);
+                Quaternion baseRotation = ResolveBaseRotation(
+                    signal.RotationQuarterTurns);
+                _previewVisuals.TryMove(
+                    signal.FromPosition,
+                    signal.ToPosition,
+                    signal.BuildingId,
+                    def.ResolveVisualYOffset(),
+                    def.Presentation,
+                    baseRotation);
                 if (_previewVisuals.TryGet(
                         signal.ToPosition,
                         out GameObject preview))
                 {
                     ApplyRotation(
                         preview,
-                        signal.RotationQuarterTurns);
+                        signal.RotationQuarterTurns,
+                        def.Presentation);
                 }
             }
         }
 
         private static void ApplyRotation(
             GameObject visual,
-            int rotationQuarterTurns)
+            int rotationQuarterTurns,
+            EntityPresentationConfig presentation)
         {
             if (visual == null)
                 return;
 
             visual.transform.rotation =
-                ConstructionRotationUtility.ToWorldRotation(
-                    ConstructionRotationUtility.Normalize(
-                        rotationQuarterTurns));
+                EntityPresentationApplier.ResolveRotation(
+                    ResolveBaseRotation(rotationQuarterTurns),
+                    presentation);
         }
+
+        private static Quaternion ResolveBaseRotation(int rotationQuarterTurns)
+            => ConstructionRotationUtility.ToWorldRotation(
+                ConstructionRotationUtility.Normalize(
+                    rotationQuarterTurns));
 
         public void Handle(BuildingPreviewDragVisualSignal signal)
         {
             if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
-                _previewVisuals.MoveDragVisual(signal.Position, signal.BuildingId, signal.WorldPosition, signal.SnapToGrid, signal.HasSnapTarget, signal.SnapTargetPosition, signal.IsSnapTargetValid, def.VisualYOffset);
+                _previewVisuals.MoveDragVisual(
+                    signal.Position,
+                    signal.BuildingId,
+                    signal.WorldPosition,
+                    signal.SnapToGrid,
+                    signal.HasSnapTarget,
+                    signal.SnapTargetPosition,
+                    signal.IsSnapTargetValid,
+                    def.ResolveVisualYOffset(),
+                    def.Presentation,
+                    ResolveBaseRotation(signal.RotationQuarterTurns));
         }
 
         public void Handle(BuildGridHoverChangedSignal signal)
@@ -165,7 +193,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private bool TryGetDefinition(string buildingId, out BuildingDefinition def)
         {
             def = string.IsNullOrWhiteSpace(buildingId) ? null : _buildingRegistry.GetById(buildingId);
-            return def != null && def.Prefab != null;
+            return def != null && def.ResolvePreviewPrefab() != null;
         }
 
         private bool HasInfluenceRadius(BuildingDefinition def)

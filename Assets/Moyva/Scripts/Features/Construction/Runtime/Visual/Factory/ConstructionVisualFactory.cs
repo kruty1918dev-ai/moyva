@@ -1,4 +1,6 @@
 using System;
+using Kruty1918.Moyva.Presentation.API;
+using Kruty1918.Moyva.Presentation.Runtime;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.Runtime
@@ -26,7 +28,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             int minSortingOrder,
             Quaternion? forcedRotation = null,
             bool isPreviewVisual = false,
-            float visualOffsetY = 0f)
+            float visualOffsetY = 0f,
+            EntityPresentationConfig presentation = null)
         {
             if (prefab == null)
             {
@@ -62,7 +65,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     minSortingOrder,
                     forcedRotation,
                     isPreviewVisual,
-                    visualOffsetY);
+                    visualOffsetY,
+                    presentation);
             }
             catch (Exception ex)
             {
@@ -82,7 +86,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             int minSortingOrder,
             Quaternion? forcedRotation = null,
             bool isPreviewVisual = false,
-            float visualOffsetY = 0f)
+            float visualOffsetY = 0f,
+            EntityPresentationConfig presentation = null)
         {
             if (instance == null)
             {
@@ -94,7 +99,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     minSortingOrder,
                     forcedRotation,
                     isPreviewVisual,
-                    visualOffsetY);
+                    visualOffsetY,
+                    presentation);
             }
 
             if (prefab == null || parent == null)
@@ -111,7 +117,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     minSortingOrder,
                     forcedRotation,
                     isPreviewVisual,
-                    visualOffsetY);
+                    visualOffsetY,
+                    presentation);
             }
             catch (Exception ex)
             {
@@ -127,7 +134,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     minSortingOrder,
                     forcedRotation,
                     isPreviewVisual,
-                    visualOffsetY);
+                    visualOffsetY,
+                    presentation);
             }
         }
 
@@ -140,7 +148,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             int minSortingOrder,
             Quaternion? forcedRotation,
             bool isPreviewVisual,
-            float visualOffsetY)
+            float visualOffsetY,
+            EntityPresentationConfig presentation)
         {
             Vector3 worldPos =
                 _terrainAlignmentService.ResolveWorldPosition(
@@ -152,7 +161,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Transform transform = instance.transform;
             transform.SetParent(parent, true);
             transform.position = worldPos;
-            transform.rotation = rotation;
+            transform.localScale = EntityPresentationApplier.ResolveScale(
+                prefab != null ? prefab.transform.localScale : Vector3.one,
+                presentation);
+            transform.rotation = EntityPresentationApplier.ResolveRotation(
+                rotation,
+                presentation);
 
             instance.name = objectName;
             instance.SetActive(true);
@@ -161,11 +175,21 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 instance,
                 tile,
                 isPreviewVisual,
-                visualOffsetY);
+                presentation != null
+                    ? presentation.ResolveGroundOffsetY(visualOffsetY)
+                    : visualOffsetY);
+            EntityPresentationApplier.ApplyPositionOffset(
+                instance,
+                presentation,
+                transform.position,
+                rotation);
             _styleService.EnsureBuildingSortingOrder(
                 instance,
                 minSortingOrder);
             _styleService.DisableColliders(instance);
+            EntityPresentationApplier.ApplyStyleAndShadows(
+                instance,
+                presentation);
             return instance;
         }
     }

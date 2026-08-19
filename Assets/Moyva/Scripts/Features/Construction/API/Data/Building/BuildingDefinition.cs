@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Presentation.API;
 using Sirenix.OdinInspector;
 
 namespace Kruty1918.Moyva.Construction.API
@@ -61,6 +62,7 @@ namespace Kruty1918.Moyva.Construction.API
         [Tooltip("Runtime-safe preview префаба будівлі. Генерується редактором і використовується toolbar UI у білді.")]
         public Sprite RuntimePreview;
         public GameObject Prefab;       // Prefab будівлі (stub: null поки арт не готовий)
+        public EntityPresentationConfig Presentation = new EntityPresentationConfig();
 
         [Header("Footprint")]
         [Tooltip("Runtime footprint used by validation, occupancy and build-grid preview.")]
@@ -69,6 +71,16 @@ namespace Kruty1918.Moyva.Construction.API
         [Header("Візуальне вирівнювання")]
         [Tooltip("Додатковий Y-offset для візуалу цієї будівлі. Не впливає на логіку клітинки чи колайдер розміщення.")]
         public float VisualYOffset;
+
+        public GameObject ResolvePreviewPrefab()
+            => Presentation != null && Presentation.PreviewPrefab != null
+                ? Presentation.PreviewPrefab
+                : Prefab;
+
+        public float ResolveVisualYOffset()
+            => Presentation != null
+                ? Presentation.ResolveGroundOffsetY(VisualYOffset)
+                : VisualYOffset;
 
         [Header("Вартість будівництва")]
         [Tooltip("Список ресурсів і кількостей, необхідних для побудови 1 екземпляра цієї будівлі.\nПорожній список означає безкоштовне будівництво.")]

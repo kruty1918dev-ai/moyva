@@ -41,7 +41,7 @@ namespace Kruty1918.Moyva.Units.API
             if (config.StaminaRandomRange != Vector2.zero)
                 output.AppendLine($"Рандом стаміни: {config.StaminaRandomRange.x:0.#} .. {config.StaminaRandomRange.y:0.#}");
 
-            if (config.Prefab != null)
+            if (config.ResolvePrefab() != null)
                 output.AppendLine("Прапорець: має prefab");
 
             return output.Length > startLength;
