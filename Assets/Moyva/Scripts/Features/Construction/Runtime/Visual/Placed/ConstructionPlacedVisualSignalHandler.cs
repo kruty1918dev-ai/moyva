@@ -105,12 +105,23 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _buildingRegistry.GetById(signal.BuildingId);
             if (def?.Prefab != null)
             {
+                bool showConstructionVisual =
+                    ShouldUseConstructionVisual(
+                        def,
+                        _constructionLifecycle,
+                        signal.Position);
+                GameObject placedPrefab = showConstructionVisual
+                    ? def.ResolveConstructionPrefab()
+                    : def.Prefab;
                 GameObject sourceVisual =
-                    ResolveReusablePlacedSource(previewVisual, def);
+                    ResolveReusablePlacedSource(
+                        previewVisual,
+                        def,
+                        placedPrefab);
                 _placedVisuals.Replace(
                     signal.Position,
                     signal.BuildingId,
-                    def.Prefab,
+                    placedPrefab,
                     ConstructionRotationUtility.ToWorldRotation(
                         ConstructionRotationUtility.Normalize(
                             signal.RotationQuarterTurns)),
@@ -118,11 +129,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     sourceVisual,
                     def.Presentation);
 
-                if (_constructionLifecycle != null
-                    && !_constructionLifecycle.IsOperational(signal.Position))
-                {
+                if (showConstructionVisual)
                     _placedVisuals.MarkUnderConstruction(signal.Position);
-                }
             }
             else if (previewVisual != null)
             {
@@ -144,20 +152,34 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private static GameObject ResolveReusablePlacedSource(
             GameObject previewVisual,
-            BuildingDefinition def)
+            BuildingDefinition def,
+            GameObject placedPrefab)
         {
             if (previewVisual == null || def == null)
                 return null;
 
-            if (def.Presentation != null
-                && def.Presentation.PreviewPrefab != null
-                && def.Presentation.PreviewPrefab != def.Prefab)
+            GameObject previewPrefab =
+                def.ResolvePreviewPrefab();
+            if (previewPrefab != null
+                && previewPrefab != placedPrefab)
             {
                 Object.Destroy(previewVisual);
                 return null;
             }
 
             return previewVisual;
+        }
+
+        internal static bool ShouldUseConstructionVisual(
+            BuildingDefinition definition,
+            IConstructionLifecycle lifecycle,
+            Vector2Int position)
+        {
+            if (definition == null || definition.BuildTurns <= 0)
+                return false;
+
+            return lifecycle == null
+                || !lifecycle.IsOperational(position);
         }
 
         private static void LogPlacedSignalPerf(
@@ -206,6 +228,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Handle(BuildingOperationalSignal signal)
         {
+            BuildingDefinition def =
+                _buildingRegistry.GetById(signal.BuildingId);
+            if (def?.Prefab != null)
+            {
+                if (_wallTopologyService.IsWallOrGate(signal.BuildingId))
+                    _wallVisuals.RefreshPlacedNeighborhood(signal.Position);
+                else
+                    _placedVisuals.ReplaceWithStoredPose(
+                        signal.Position,
+                        def.Prefab,
+                        def.ResolveVisualYOffset(),
+                        def.Presentation);
+            }
+
             _placedVisuals.MarkOperational(signal.Position);
         }
 

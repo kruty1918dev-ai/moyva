@@ -1,4 +1,5 @@
 using System;
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
@@ -10,15 +11,20 @@ namespace Kruty1918.Moyva.Interactions.Runtime
     {
         private readonly SignalBus _signalBus;
         private readonly IUnitService _unitService;
+        private readonly IConstructionLifecycle _constructionLifecycle;
 
         private WorldInfoSelectionKind _selectedKind;
         private string _selectedObjectId;
         private Vector2Int _selectedPosition;
 
-        public WorldInfoSelectionCoordinator(SignalBus signalBus, IUnitService unitService)
+        public WorldInfoSelectionCoordinator(
+            SignalBus signalBus,
+            IUnitService unitService,
+            [InjectOptional] IConstructionLifecycle constructionLifecycle = null)
         {
             _signalBus = signalBus;
             _unitService = unitService;
+            _constructionLifecycle = constructionLifecycle;
         }
 
         public void Initialize()
@@ -47,6 +53,12 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         {
             if (string.IsNullOrWhiteSpace(signal.BuildingId))
                 return;
+
+            if (_constructionLifecycle != null
+                && !_constructionLifecycle.IsOperational(signal.Position))
+            {
+                return;
+            }
 
             UpdateSelection(WorldInfoSelectionKind.Building, signal.BuildingId, signal.Position, emitWhenPositionChanged: true);
         }

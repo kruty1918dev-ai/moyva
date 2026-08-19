@@ -75,6 +75,8 @@ MonoBehaviour:
     Asset: {fileID: 919132149155446097, guid: cde5c5afa32fc5a419902e6a8bbef5c4, type: 3}
   - Key: asset.game-object.building-mine-blue.9fab77ec
     Asset: {fileID: 919132149155446097, guid: 9fab77ecb6c0d0340aafded7b8e7b66b, type: 3}
+  - Key: asset.game-object.building-scaffolding.07c8416d
+    Asset: {fileID: 919132149155446097, guid: 07c8416d728609645b1d00049899f341, type: 3}
   - Key: asset.game-object.building-stables-blue.49c0cff0
     Asset: {fileID: 919132149155446097, guid: 49c0cff0949cccd488fd77e8e775d7ee, type: 3}
   - Key: asset.game-object.building-workshop-blue.f5d290f5

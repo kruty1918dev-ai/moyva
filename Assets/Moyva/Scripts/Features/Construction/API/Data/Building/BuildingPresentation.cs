@@ -6,6 +6,21 @@ using UnityEngine;
 namespace Kruty1918.Moyva.Construction.API
 {
     [Serializable]
+    public sealed class BuildingPresentationVariants
+    {
+        [AssetsOnly]
+        [LabelText("Префаб будівництва")]
+        [PropertyTooltip("Що робить: Вказує replacement 3D-префаб, який повністю замінює базовий visual, доки будівля ще будується.\nВплив у грі: Якщо будівля не operational, гравець бачить цей prefab замість фінальної моделі.")]
+        public GameObject ConstructionPrefab;
+    }
+
+    [Serializable]
+    public sealed class BuildingRuntimePresentationConfig : EntityPresentationConfig
+    {
+        public BuildingPresentationVariants Variants = new BuildingPresentationVariants();
+    }
+
+    [Serializable]
     public sealed class BuildingPresentation : EntityPresentationConfig
     {
         [AssetsOnly]
@@ -13,6 +28,10 @@ namespace Kruty1918.Moyva.Construction.API
         [LabelText("Префаб")]
         [PropertyTooltip("Що робить: Вказує 3D-префаб поставленої будівлі.\nВплив у грі: Саме цей об'єкт створюється після підтвердження будівництва.")]
         public GameObject Prefab;
+
+        [InlineProperty]
+        [HideLabel]
+        public BuildingPresentationVariants Variants = new BuildingPresentationVariants();
 
         // MOYVA_BUILDING_ICON_PRESENTATION_PASS66
         [AssetsOnly]

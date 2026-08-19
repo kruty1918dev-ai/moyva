@@ -1,4 +1,7 @@
 using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
 using NUnit.Framework;
 using UnityEngine;
@@ -8,6 +11,29 @@ namespace Kruty1918.Moyva.Tests.Construction
     [TestFixture]
     public sealed class ConstructionLifecycleStateMachineTests
     {
+        private sealed class FixedLifecycle : IConstructionLifecycle
+        {
+            private readonly bool _isOperational;
+
+            public FixedLifecycle(bool isOperational)
+            {
+                _isOperational = isOperational;
+            }
+
+            public bool IsOperational(Vector2Int position)
+                => _isOperational;
+
+            public bool TryGetProgress(
+                Vector2Int position,
+                out int completedTurns,
+                out int requiredTurns)
+            {
+                completedTurns = _isOperational ? 1 : 0;
+                requiredTurns = 1;
+                return !_isOperational;
+            }
+        }
+
         private ConstructionLifecycleStateMachine _state;
 
         [SetUp]
@@ -26,6 +52,96 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.IsTrue(transition.IsValid);
             Assert.AreEqual("storage", transition.BuildingId);
             Assert.IsTrue(_state.IsOperational(new Vector2Int(2, 3)));
+        }
+
+        [Test]
+        public void InstantBuilding_BuildTurnsZero_IsImmediatelyOperational()
+        {
+            Vector2Int position = new(3, 4);
+
+            _state.RegisterPlacement(
+                position,
+                "castle-01",
+                "p1",
+                0,
+                12,
+                null,
+                out ConstructionLifecycleStateMachine.OperationalTransition
+                    transition);
+
+            Assert.IsTrue(transition.IsValid);
+            Assert.AreEqual("castle-01", transition.BuildingId);
+            Assert.IsTrue(_state.IsOperational(position));
+            Assert.IsTrue(_state.TryGetProgress(position, out int completed, out int required));
+            Assert.AreEqual(0, completed);
+            Assert.AreEqual(0, required);
+        }
+
+        [Test]
+        public void InstantBuilding_DoesNotShowConstructionVariant()
+        {
+            var definition = new BuildingDefinition
+            {
+                Id = "castle-01",
+                BuildTurns = 0,
+                Prefab = new GameObject("castle-base"),
+                Presentation = new BuildingRuntimePresentationConfig
+                {
+                    Variants = new BuildingPresentationVariants
+                    {
+                        ConstructionPrefab = new GameObject("building_scaffolding"),
+                    },
+                },
+            };
+
+            try
+            {
+                Assert.IsFalse(
+                    ConstructionPlacedVisualSignalHandler.ShouldUseConstructionVisual(
+                        definition,
+                        new FixedLifecycle(false),
+                        Vector2Int.zero));
+            }
+            finally
+            {
+                Object.DestroyImmediate(definition.Prefab);
+                Object.DestroyImmediate(definition.Presentation.Variants.ConstructionPrefab);
+            }
+        }
+
+        [Test]
+        public void TimedBuilding_UsesConstructionVariantUntilOperational()
+        {
+            var definition = new BuildingDefinition
+            {
+                Id = "barrack",
+                BuildTurns = 3,
+            };
+
+            Assert.IsTrue(
+                ConstructionPlacedVisualSignalHandler.ShouldUseConstructionVisual(
+                    definition,
+                    new FixedLifecycle(false),
+                    Vector2Int.zero));
+            Assert.IsFalse(
+                ConstructionPlacedVisualSignalHandler.ShouldUseConstructionVisual(
+                    definition,
+                    new FixedLifecycle(true),
+                    Vector2Int.zero));
+        }
+
+        [Test]
+        public void CastlePreset_BuildTurnsIsZero()
+        {
+            string json = File.ReadAllText(
+                "Assets/Moyva/Presets/Buildings/castle-01.json");
+
+            StringAssert.Contains("\"id\": \"castle-01\"", json);
+            Assert.IsTrue(
+                Regex.IsMatch(
+                    json,
+                    "\"construction\"\\s*:\\s*\\{[\\s\\S]*?\"buildTurns\"\\s*:\\s*0\\b"),
+                "castle-01 preset must use buildTurns=0 for instant construction.");
         }
 
         [Test]

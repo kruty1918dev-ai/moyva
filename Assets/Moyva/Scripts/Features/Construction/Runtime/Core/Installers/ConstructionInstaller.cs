@@ -1,7 +1,9 @@
 using Kruty1918.Moyva.Combat;
 using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Notifications.Runtime;
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.UIActions.Runtime;
 using Kruty1918.Moyva.WorldCreation.API;
 using Kruty1918.Moyva.InputRouting.Runtime;
 using System;
@@ -28,6 +30,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public override void InstallBindings()
         {
             InputRoutingBindings.Install(Container);
+            NotificationsInstaller.Install(Container);
+            UiActionsInstaller.Install(Container);
 
             _sceneContext ??= GetComponent<ConstructionSceneContext>();
             if (buildingRegistry == null && _sceneContext?.BuildingRegistry != null)

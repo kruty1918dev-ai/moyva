@@ -197,6 +197,42 @@
           ],
           "title": "Runtime Preview"
         },
+        "variants": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "constructionPrefab": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "description": "Replacement prefab shown while authoritative building IsOperational=false. This fully replaces the base visual and is not an additive scaffolding overlay.",
+              "properties": {
+                "$asset": {
+                  "type": "string",
+                  "title": "Asset ID"
+                },
+                "editorPath": {
+                  "type": "string",
+                  "description": "Editor-only path для діагностики/регенерації catalog."
+                },
+                "required": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "required": [
+                "$asset"
+              ],
+              "additionalProperties": false,
+              "title": "Construction Prefab"
+            }
+          },
+          "additionalProperties": false,
+          "title": "Variants"
+        },
         "uiTint": {
           "type": "object",
           "properties": {

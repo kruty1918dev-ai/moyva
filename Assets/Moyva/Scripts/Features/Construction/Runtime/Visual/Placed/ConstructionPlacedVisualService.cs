@@ -14,6 +14,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private readonly Dictionary<Vector2Int, GameObject> _placedByPosition = new();
         private readonly Dictionary<Vector2Int, EntityPresentationConfig> _presentationByPosition = new();
+        private readonly Dictionary<Vector2Int, string> _buildingIdByPosition = new();
+        private readonly Dictionary<Vector2Int, Quaternion> _baseRotationByPosition = new();
         private readonly HashSet<Vector2Int> _demolitionPreviewPositions = new();
         private readonly HashSet<Vector2Int> _underConstructionPositions = new();
         private readonly SpriteSelectionHighlighter _selectionHighlighter = new();
@@ -77,11 +79,38 @@ namespace Kruty1918.Moyva.Construction.Runtime
             EntityPresentationApplier.ApplyStyleAndShadows(instance, presentation);
             _placedByPosition[position] = instance;
             StorePresentation(position, presentation);
+            _buildingIdByPosition[position] = buildingId;
+            _baseRotationByPosition[position] = rotation;
             _demolitionPreviewPositions.Remove(position);
             _underConstructionPositions.Remove(position);
 
             if (_selectedPosition.HasValue && _selectedPosition.Value == position)
                 _selectionHighlighter.Apply(instance);
+        }
+
+        public void ReplaceWithStoredPose(
+            Vector2Int position,
+            GameObject prefab,
+            float visualOffsetY = 0f,
+            EntityPresentationConfig presentation = null)
+        {
+            if (prefab == null || !_placedByPosition.ContainsKey(position))
+                return;
+
+            string buildingId = _buildingIdByPosition.TryGetValue(position, out string storedBuildingId)
+                ? storedBuildingId
+                : string.Empty;
+            Quaternion rotation = _baseRotationByPosition.TryGetValue(position, out Quaternion storedRotation)
+                ? storedRotation
+                : Quaternion.identity;
+
+            Replace(
+                position,
+                buildingId,
+                prefab,
+                rotation,
+                visualOffsetY,
+                presentation: presentation);
         }
 
         public void Remove(Vector2Int position)
@@ -94,6 +123,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _placedByPosition.Remove(position);
             _presentationByPosition.Remove(position);
+            _buildingIdByPosition.Remove(position);
+            _baseRotationByPosition.Remove(position);
             _demolitionPreviewPositions.Remove(position);
             _underConstructionPositions.Remove(position);
         }
@@ -184,6 +215,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _placedByPosition.Clear();
             _presentationByPosition.Clear();
+            _buildingIdByPosition.Clear();
+            _baseRotationByPosition.Clear();
             _demolitionPreviewPositions.Clear();
             _underConstructionPositions.Clear();
             ClearSelection();

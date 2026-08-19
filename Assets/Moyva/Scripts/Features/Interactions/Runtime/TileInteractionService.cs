@@ -7,6 +7,7 @@ using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
+using Kruty1918.Moyva.Notifications.API;
 using UnityEngine;
 using Zenject;
 using System;
@@ -34,6 +35,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly IUnitMovementService _unitMovementService;
         private readonly IUnitOwnershipQuery _unitOwnershipQuery;
         private readonly IConstructionService _constructionService;
+        private readonly IConstructionLifecycle _constructionLifecycle;
+        private readonly IGameplayNotificationService _notifications;
         private readonly SignalBus _signalBus;
         private readonly ITurnService _turns;
         private GameModeType _currentMode = GameModeType.Normal;
@@ -58,6 +61,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery,
             [InjectOptional] IConstructionService constructionService,
             [InjectOptional] ITurnService turns,
+            [InjectOptional] IConstructionLifecycle constructionLifecycle,
+            [InjectOptional] IGameplayNotificationService notifications,
             SignalBus signalBus)
         {
             _gridService = gridService;
@@ -69,6 +74,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _unitOwnershipQuery = unitOwnershipQuery;
             _constructionService = constructionService;
             _turns = turns;
+            _constructionLifecycle = constructionLifecycle;
+            _notifications = notifications;
             _signalBus = signalBus;
         }
 
@@ -161,6 +168,18 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 if (!canInspectWorld)
                     return;
 
+                if (!IsBuildingOperationalForFunctionalUi(position))
+                {
+                    ClearSelectedUnit();
+                    _notifications?.Show(
+                        "Будівля ще будується",
+                        GameplayNotificationKind.Warning,
+                        dedupKey: "building-under-construction");
+                    if (VerboseLogs)
+                        Debug.Log($"[Interaction] Building '{occupantId}' at {position} is still under construction. Functional UI request ignored.");
+                    return;
+                }
+
                 // Повторний клік на вже відкриту будівлю — закрити панель (toggle)
                 if (_inspectedKind == WorldInfoSelectionKind.Building
                     && string.Equals(_inspectedObjectId, occupantId, StringComparison.Ordinal))
@@ -252,6 +271,10 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 return;
             }
         }
+
+        private bool IsBuildingOperationalForFunctionalUi(Vector2Int position)
+            => _constructionLifecycle == null
+                || _constructionLifecycle.IsOperational(position);
 
         private void HandleSecondaryTileClick(Vector2Int position)
         {

@@ -1,5 +1,5 @@
 using Kruty1918.Moyva.GameMode.API;
-using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.UIActions.API;
 using UnityEngine.InputSystem;
 using Zenject;
 
@@ -11,14 +11,17 @@ namespace Kruty1918.Moyva.GameMode.Runtime
     internal sealed class GameplayPauseInputController : IInitializable, ITickable
     {
         private readonly IGameStateService _gameState;
-        private readonly IGameModeService _gameMode;
+        private readonly IUiEscapeRouter _escapeRouter;
+        private readonly IUiActionRouter _actions;
 
         public GameplayPauseInputController(
             IGameStateService gameState,
-            IGameModeService gameMode)
+            IUiEscapeRouter escapeRouter,
+            IUiActionRouter actions)
         {
             _gameState = gameState;
-            _gameMode = gameMode;
+            _escapeRouter = escapeRouter;
+            _actions = actions;
         }
 
         public void Initialize()
@@ -33,17 +36,15 @@ namespace Kruty1918.Moyva.GameMode.Runtime
             if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame)
                 return;
 
-            if (_gameState.CurrentState == GameStateType.Paused)
-            {
-                _gameState.ResumeGame();
-                return;
-            }
-
-            if (_gameMode.CurrentMode == GameModeType.Construction)
+            if (_escapeRouter.TryHandleEscape())
                 return;
 
-            if (_gameState.CurrentState == GameStateType.Playing)
-                _gameState.PauseGame();
+            _actions.Execute(
+                _gameState.CurrentState == GameStateType.Paused
+                    ? UiActionId.PauseClose
+                    : UiActionId.PauseOpen,
+                UiActionSource.Escape,
+                "Gameplay");
         }
     }
 }

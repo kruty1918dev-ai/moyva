@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IWallVisualResolver _wallVisualResolver;
         private readonly IConstructionPlacedVisualService _placedVisuals;
         private readonly IConstructionPreviewVisualService _previewVisuals;
+        private readonly IConstructionLifecycle _constructionLifecycle;
 
         [Inject]
         public ConstructionWallVisualRefreshService(
@@ -21,7 +22,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             LazyInject<IConstructionService> constructionService,
             IWallVisualResolver wallVisualResolver,
             IConstructionPlacedVisualService placedVisuals,
-            IConstructionPreviewVisualService previewVisuals)
+            IConstructionPreviewVisualService previewVisuals,
+            [InjectOptional] IConstructionLifecycle constructionLifecycle = null)
         {
             _objectsMapService = objectsMapService;
             _buildingRegistry = buildingRegistry;
@@ -29,6 +31,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _wallVisualResolver = wallVisualResolver;
             _placedVisuals = placedVisuals;
             _previewVisuals = previewVisuals;
+            _constructionLifecycle = constructionLifecycle;
         }
 
         public void RefreshPlacedNeighborhood(Vector2Int center)
@@ -60,6 +63,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
 
             BuildingDefinition def = _buildingRegistry.GetById(occupantId);
+            bool isOperational =
+                _constructionLifecycle == null
+                || _constructionLifecycle.IsOperational(position);
+            bool showConstructionVisual =
+                def != null
+                && def.BuildTurns > 0
+                && !isOperational
+                && def.ResolveConstructionPrefab() != null;
+            if (showConstructionVisual)
+            {
+                prefab = def.ResolveConstructionPrefab();
+                rotation = Quaternion.identity;
+            }
+
             _placedVisuals.Replace(
                 position,
                 occupantId,
@@ -67,6 +84,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 rotation,
                 def?.ResolveVisualYOffset() ?? 0f,
                 presentation: def?.Presentation);
+
+            if (showConstructionVisual)
+                _placedVisuals.MarkUnderConstruction(position);
         }
 
         private void RefreshPreviewAt(Vector2Int position, string fallbackBuildingId)

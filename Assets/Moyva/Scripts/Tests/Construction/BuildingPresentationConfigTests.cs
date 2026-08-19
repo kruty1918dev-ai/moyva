@@ -10,6 +10,7 @@ namespace Kruty1918.Moyva.Tests.Construction
     {
         private GameObject _prefab;
         private GameObject _previewPrefab;
+        private GameObject _constructionPrefab;
 
         [TearDown]
         public void TearDown()
@@ -18,6 +19,8 @@ namespace Kruty1918.Moyva.Tests.Construction
                 Object.DestroyImmediate(_prefab);
             if (_previewPrefab != null)
                 Object.DestroyImmediate(_previewPrefab);
+            if (_constructionPrefab != null)
+                Object.DestroyImmediate(_constructionPrefab);
         }
 
         [Test]
@@ -25,6 +28,7 @@ namespace Kruty1918.Moyva.Tests.Construction
         {
             _prefab = new GameObject("placed-prefab");
             _previewPrefab = new GameObject("preview-prefab");
+            _constructionPrefab = new GameObject("construction-prefab");
             var asset = new BuildingDefinitionAsset
             {
                 Identity =
@@ -37,6 +41,10 @@ namespace Kruty1918.Moyva.Tests.Construction
                     new BuildingPresentation
                     {
                         Prefab = _prefab,
+                        Variants = new BuildingPresentationVariants
+                        {
+                            ConstructionPrefab = _constructionPrefab,
+                        },
                         PreviewPrefab = _previewPrefab,
                         VisualYOffset = 0.25f,
                         GroundOffsetY = 0.75f,
@@ -48,6 +56,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             BuildingDefinition runtime = asset.ToRuntimeDefinition();
 
             Assert.AreSame(_prefab, runtime.Prefab);
+            Assert.AreSame(_constructionPrefab, runtime.ResolveConstructionPrefab());
             Assert.AreSame(_previewPrefab, runtime.ResolvePreviewPrefab());
             Assert.AreEqual(0.75f, runtime.ResolveVisualYOffset(), 0.0001f);
             Assert.AreNotSame(asset.Presentation, runtime.Presentation);
@@ -65,6 +74,18 @@ namespace Kruty1918.Moyva.Tests.Construction
             runtime.Presentation.GroundOffsetY = null;
 
             Assert.AreEqual(0.35f, runtime.ResolveVisualYOffset(), 0.0001f);
+        }
+
+        [Test]
+        public void ResolveConstructionPrefab_FallsBackToPlacedPrefab()
+        {
+            _prefab = new GameObject("placed-prefab");
+            var runtime = new BuildingDefinition
+            {
+                Prefab = _prefab,
+            };
+
+            Assert.AreSame(_prefab, runtime.ResolveConstructionPrefab());
         }
     }
 }

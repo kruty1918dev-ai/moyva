@@ -62,7 +62,7 @@ namespace Kruty1918.Moyva.Construction.API
         [Tooltip("Runtime-safe preview префаба будівлі. Генерується редактором і використовується toolbar UI у білді.")]
         public Sprite RuntimePreview;
         public GameObject Prefab;       // Prefab будівлі (stub: null поки арт не готовий)
-        public EntityPresentationConfig Presentation = new EntityPresentationConfig();
+        public BuildingRuntimePresentationConfig Presentation = new BuildingRuntimePresentationConfig();
 
         [Header("Footprint")]
         [Tooltip("Runtime footprint used by validation, occupancy and build-grid preview.")]
@@ -75,6 +75,11 @@ namespace Kruty1918.Moyva.Construction.API
         public GameObject ResolvePreviewPrefab()
             => Presentation != null && Presentation.PreviewPrefab != null
                 ? Presentation.PreviewPrefab
+                : Prefab;
+
+        public GameObject ResolveConstructionPrefab()
+            => Presentation?.Variants?.ConstructionPrefab != null
+                ? Presentation.Variants.ConstructionPrefab
                 : Prefab;
 
         public float ResolveVisualYOffset()

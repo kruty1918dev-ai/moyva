@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.InputRouting.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.UIActions.API;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Zenject;
@@ -17,7 +18,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     /// блокує TileClickedSignal через IsPointerOverGameObject(),
     /// коли Construction UI панелі видимі.
     /// </summary>
-    internal sealed partial class ConstructionInputService : IConstructionInputService, IInitializable, IDisposable, ITickable
+    internal sealed partial class ConstructionInputService : IConstructionInputService, IInitializable, IDisposable, ITickable, IUiActionHandler
     {
         private const string LogTag = "[ConstructionInput]";
         private const string PerfLogTag =
@@ -41,6 +42,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IConstructionBuildGridDiagnostics _buildGridDiagnostics;
         private readonly IConstructionInteractiveUiHitTester _uiHitTester;
         private readonly IGameplayInputPolicy _inputPolicy;
+        private readonly IUiContextStack _uiContexts;
         private readonly SignalBus _signalBus;
         private readonly TouchTapTracker _touchTapTracker = new TouchTapTracker();
         private readonly HashSet<Vector2Int> _wallDragPendingPositions = new();
@@ -77,6 +79,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private string _cachedPlacementValidationBuildingId;
         private Vector2Int? _cachedPlacementValidationIgnoredPendingPosition;
         private bool _cachedPlacementValidationAllowed;
+        private IDisposable _constructionModeContext;
+        private IDisposable _buildingPlacementContext;
 
         [Inject]
         public ConstructionInputService(
@@ -96,6 +100,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IConstructionBuildGridDiagnostics buildGridDiagnostics,
             [InjectOptional] IConstructionInteractiveUiHitTester uiHitTester,
             [InjectOptional] IGameplayInputPolicy inputPolicy,
+            [InjectOptional] IUiContextStack uiContexts,
             SignalBus signalBus,
             [InjectOptional] IConstructionTerrainAlignmentService terrainAlignment = null)
         {
@@ -115,6 +120,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _buildGridDiagnostics = buildGridDiagnostics;
             _uiHitTester = uiHitTester ?? new ConstructionInteractiveUiHitTester();
             _inputPolicy = inputPolicy;
+            _uiContexts = uiContexts;
             _signalBus = signalBus;
             _terrainAlignment = terrainAlignment;
             _touchTapMaxMovePixels = Mathf.Max(0f, _inputSettingsProvider?.TouchTapMaxMovePixels ?? 18f);
@@ -139,6 +145,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus.Subscribe<GridTileChangedSignal>(InvalidateBuildGridHover);
             _signalBus.Subscribe<FogStateChangedSignal>(InvalidateBuildGridHover);
             _signalBus.Subscribe<SettlementResourceChangedSignal>(InvalidateBuildGridHover);
+            RegisterUiContexts();
             if (VerboseLogs)
                 Debug.Log($"{LogTag} Initialized.");
         }
@@ -154,6 +161,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus.TryUnsubscribe<GridTileChangedSignal>(InvalidateBuildGridHover);
             _signalBus.TryUnsubscribe<FogStateChangedSignal>(InvalidateBuildGridHover);
             _signalBus.TryUnsubscribe<SettlementResourceChangedSignal>(InvalidateBuildGridHover);
+            _constructionModeContext?.Dispose();
+            _buildingPlacementContext?.Dispose();
             if (VerboseLogs)
                 Debug.Log($"{LogTag} Disposed.");
         }
@@ -248,19 +257,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     }
                 }
 
-                if ((keyboard.enterKey.wasPressedThisFrame
-                     || keyboard.numpadEnterKey.wasPressedThisFrame)
-                    && _constructionService.GetPendingPlacements().Count > 0)
-                {
-                    _signalBus.Fire(new PlaceBuildingConfirmRequestSignal());
-                    return true;
-                }
-
-                if (keyboard.escapeKey.wasPressedThisFrame)
-                {
-                    CancelPlacementOrExitMode();
-                    return true;
-                }
+                // Confirm and Escape are routed through UIActions so buttons,
+                // hotkeys and Escape share one action path.
             }
 
             Mouse mouse = Mouse.current;
@@ -296,6 +294,80 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 RequestedMode = GameModeType.Normal,
             });
         }
+
+        public bool CanHandle(string actionId)
+        {
+            return actionId == UiActionId.BuildCancel
+                || actionId == UiActionId.BuildConfirm
+                || actionId == UiActionId.BuildRotate
+                || actionId == UiActionId.BuildUndo
+                || actionId == UiActionId.BuildRedo;
+        }
+
+        public UiActionResult Handle(UiActionRequest request)
+        {
+            switch (request.ActionId)
+            {
+                case UiActionId.BuildCancel:
+                    if (!_isActive)
+                        return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
+                    CancelPlacementOrExitMode();
+                    return UiActionResult.Performed();
+
+                case UiActionId.BuildConfirm:
+                    if (!_isActive || _constructionService.GetPendingPlacements().Count == 0)
+                        return UiActionResult.Rejected(UiActionReasonCode.NoSelection);
+                    _signalBus.Fire(new PlaceBuildingConfirmRequestSignal());
+                    return UiActionResult.Performed();
+
+                case UiActionId.BuildRotate:
+                    if (!_isActive || _constructionService is not IConstructionRotationService rotationService)
+                        return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
+                    if (!rotationService.RotateSelectedClockwise())
+                        return UiActionResult.Rejected(UiActionReasonCode.NoSelection);
+                    InvalidatePlacementInteractionCaches();
+                    return UiActionResult.Performed();
+
+                case UiActionId.BuildUndo:
+                    _constructionService.UndoLast();
+                    return UiActionResult.Performed();
+
+                case UiActionId.BuildRedo:
+                    _constructionService.RedoLast();
+                    return UiActionResult.Performed();
+
+                default:
+                    return UiActionResult.Ignored(UiActionReasonCode.ActionUnavailable);
+            }
+        }
+
+        private void RegisterUiContexts()
+        {
+            if (_uiContexts == null)
+                return;
+
+            _constructionModeContext = _uiContexts.Push(new UiContextRegistration(
+                "ConstructionMode",
+                UiContextLayer.Mode,
+                10,
+                () => _isActive,
+                UiActionId.BuildCancel,
+                blocksLowerHotkeys: false));
+
+            _buildingPlacementContext = _uiContexts.Push(new UiContextRegistration(
+                "BuildingPlacement",
+                UiContextLayer.Mode,
+                30,
+                HasActiveConstructionAction,
+                UiActionId.BuildCancel,
+                blocksLowerHotkeys: false));
+        }
+
+        private bool HasActiveConstructionAction()
+            => _isActive
+                && (_constructionService.State == BuildingPlacementState.Placing
+                    || _constructionService.IsDemolishMode
+                    || _constructionService.GetPendingPlacements().Count > 0);
 
         private bool ValidateDependencies()
         {

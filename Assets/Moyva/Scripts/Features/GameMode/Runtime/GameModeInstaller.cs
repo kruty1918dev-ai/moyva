@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.GameMode.API;
+using Kruty1918.Moyva.UIActions.Runtime;
 using Kruty1918.Moyva.Turns.Runtime;
 using UnityEngine;
 using Zenject;
@@ -9,6 +10,7 @@ namespace Kruty1918.Moyva.GameMode.Runtime
     {
         public override void InstallBindings()
         {
+            UiActionsInstaller.Install(Container);
             TurnBindings.Install(Container);
 
             Container.Bind<IGameModeService>()
@@ -21,6 +23,10 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 .NonLazy();
 
             Container.BindInterfacesAndSelfTo<GameModeChangeRequestRouter>()
+                .AsSingle()
+                .NonLazy();
+
+            Container.BindInterfacesAndSelfTo<GameModeUiActionHandler>()
                 .AsSingle()
                 .NonLazy();
 
@@ -60,6 +66,7 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 .NonLazy();
 
             Container.BindExecutionOrder<GameModeChangeRequestRouter>(-10);
+            Container.BindExecutionOrder<GameModeUiActionHandler>(-10);
             Container.BindExecutionOrder<GameModePanelController>(-10);
             Container.BindExecutionOrder<GameModeUIController>(-5);
             // Observe Esc before construction input. In Construction mode this

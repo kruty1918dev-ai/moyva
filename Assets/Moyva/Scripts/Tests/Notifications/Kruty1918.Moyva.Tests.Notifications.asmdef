@@ -1,0 +1,35 @@
+{
+  "name": "Kruty1918.Moyva.Tests.Notifications",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Notifications",
+  "references": [
+    "Zenject",
+    "Zenject-TestFramework",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner",
+    "Unity.TextMeshPro",
+    "Kruty1918.Moyva.Notifications",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.Interactions.API",
+    "Kruty1918.Moyva.Grid",
+    "Kruty1918.Moyva.ObjectsMap",
+    "Kruty1918.Moyva.Construction",
+    "Kruty1918.Moyva.Units",
+    "Kruty1918.Moyva.Turns",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

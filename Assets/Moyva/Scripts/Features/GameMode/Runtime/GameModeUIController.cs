@@ -2,8 +2,8 @@ using System;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.InputRouting.API;
 using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.UIActions.API;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Zenject;
 
 namespace Kruty1918.Moyva.GameMode.Runtime
@@ -33,7 +33,7 @@ namespace Kruty1918.Moyva.GameMode.Runtime
 
         // --- Інжектується Zenject ---
         private SignalBus _signalBus;
-        private IGameplayInputPolicy _inputPolicy;
+        private IUiActionRouter _actions;
 
         // --- Внутрішній стан ---
         private GameModeType _currentMode = GameModeType.Normal;
@@ -42,30 +42,11 @@ namespace Kruty1918.Moyva.GameMode.Runtime
         [Inject]
         public void Construct(
             SignalBus signalBus,
+            [InjectOptional] IUiActionRouter actions = null,
             [InjectOptional] IGameplayInputPolicy inputPolicy = null)
         {
             _signalBus = signalBus;
-            _inputPolicy = inputPolicy;
-        }
-
-        private void Update()
-        {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard == null || !keyboard.bKey.wasPressedThisFrame)
-                return;
-
-            Vector2 pointerPosition = Mouse.current?.position.ReadValue() ?? Vector2.zero;
-            if (!(_inputPolicy?.CanProcess(
-                    GameplayInputKind.KeyboardNavigation,
-                    pointerPosition) ?? true))
-            {
-                return;
-            }
-
-            RequestModeChange(
-                _currentMode == GameModeType.Construction
-                    ? GameModeType.Normal
-                    : GameModeType.Construction);
+            _actions = actions;
         }
 
         /// <summary>Викликається Zenject після ін'єкції. Підписується на сигнали.</summary>
@@ -137,12 +118,12 @@ namespace Kruty1918.Moyva.GameMode.Runtime
 
         private void OnEnterConstructionClicked()
         {
-            RequestModeChange(GameModeType.Construction);
+            ExecuteModeAction(UiActionId.BuildOpen);
         }
 
         private void OnExitConstructionClicked()
         {
-            RequestModeChange(GameModeType.Normal);
+            ExecuteModeAction(UiActionId.BuildClose);
         }
 
         // -----------------------------------------------------------------------
@@ -170,12 +151,23 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 exitConstructionButton.SetActive(!isNormalMode);
         }
 
-        private void RequestModeChange(GameModeType requestedMode)
+        private void ExecuteModeAction(string actionId)
         {
+            if (_actions != null)
+            {
+                _actions.Execute(actionId, UiActionSource.Button, _currentMode.ToString());
+                return;
+            }
+
             if (_signalBus == null)
                 return;
 
-            _signalBus.Fire(new GameModeChangeRequestedSignal { RequestedMode = requestedMode });
+            _signalBus.Fire(new GameModeChangeRequestedSignal
+            {
+                RequestedMode = actionId == UiActionId.BuildOpen
+                    ? GameModeType.Construction
+                    : GameModeType.Normal,
+            });
         }
     }
 }

@@ -4,6 +4,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
+using Kruty1918.Moyva.UIActions.API;
 using Kruty1918.Moyva.Units.API;
 using TMPro;
 using UnityEngine;
@@ -13,7 +14,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
-    internal sealed class GameplayTurnHudPresenter : IInitializable, IDisposable, ITickable
+    internal sealed class GameplayTurnHudPresenter : IInitializable, IDisposable, ITickable, IUiActionHandler
     {
         private readonly ITurnService _turns;
         private readonly IUnitService _units;
@@ -23,6 +24,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IBuildingRegistry _buildings;
         private readonly SignalBus _signals;
         private readonly GameplayTurnHudView _view;
+        private readonly IUiActionRouter _uiActions;
+        private readonly IUiContextStack _uiContexts;
         private readonly EconomyDatabaseSO _economyDatabase;
         private readonly IReadOnlyList<ITurnBlocker> _blockers;
 
@@ -41,6 +44,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly List<UnityAction> _queueButtonHandlers = new();
         private readonly List<UnitRecruitmentQueueItemSnapshot> _visibleQueueItems = new();
 
+        private UnityAction _endTurnButtonHandler;
         private UnityAction _hireButtonHandler;
         private UnityAction _closeButtonHandler;
         private string _selectedUnitId;
@@ -53,6 +57,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private long _selectedQueueId;
         private string _statusOverride;
         private GameplayTurnHudAuthoritySnapshot _authority;
+        private IDisposable _recruitmentPanelContext;
 
         public GameplayTurnHudPresenter(
             ITurnService turns,
@@ -63,6 +68,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IBuildingRegistry buildings,
             SignalBus signals,
             GameplayTurnHudView view,
+            [InjectOptional] IUiActionRouter uiActions = null,
+            [InjectOptional] IUiContextStack uiContexts = null,
             [InjectOptional] EconomyDatabaseSO economyDatabase = null,
             [InjectOptional] List<ITurnBlocker> blockers = null)
         {
@@ -74,6 +81,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _buildings = buildings;
             _signals = signals;
             _view = view ?? throw new ArgumentNullException(nameof(view));
+            _uiActions = uiActions;
+            _uiContexts = uiContexts;
             _economyDatabase = economyDatabase;
             _blockers = blockers ?? (IReadOnlyList<ITurnBlocker>)Array.Empty<ITurnBlocker>();
         }
@@ -88,6 +97,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.Subscribe<UnitRecruitmentQueueChangedSignal>(OnRecruitmentQueueChanged);
             _signals.Subscribe<UnitRecruitmentReadySignal>(OnRecruitmentReady);
             _signals.Subscribe<UnitRecruitmentDeployedSignal>(OnRecruitmentDeployed);
+            _recruitmentPanelContext = _uiContexts?.Push(new UiContextRegistration(
+                "RecruitmentPanel",
+                UiContextLayer.Panel,
+                20,
+                () => _recruitmentPanel != null && _recruitmentPanel.activeSelf,
+                UiActionId.RecruitmentClose));
             RefreshTurnAuthority();
             RefreshUnit();
             RefreshQueue();
@@ -102,9 +117,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.TryUnsubscribe<UnitRecruitmentQueueChangedSignal>(OnRecruitmentQueueChanged);
             _signals.TryUnsubscribe<UnitRecruitmentReadySignal>(OnRecruitmentReady);
             _signals.TryUnsubscribe<UnitRecruitmentDeployedSignal>(OnRecruitmentDeployed);
+            _recruitmentPanelContext?.Dispose();
 
-            if (_endTurnButton != null)
-                _endTurnButton.onClick.RemoveListener(OnEndTurn);
+            if (_endTurnButton != null && _endTurnButtonHandler != null)
+                _endTurnButton.onClick.RemoveListener(_endTurnButtonHandler);
 
             if (_recruitmentView != null
                 && _recruitmentView.HireButton != null
@@ -167,7 +183,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             _recruitmentView.ValidateConfiguration(_view.RecipeSlotCount);
-            _endTurnButton.onClick.AddListener(OnEndTurn);
+            _endTurnButtonHandler = () => ExecuteActionOrFallback(UiActionId.EndTurn, UiActionSource.Button);
+            _endTurnButton.onClick.AddListener(_endTurnButtonHandler);
 
             _recipeButtons.Clear();
             _recipeUnitTypeIds.Clear();
@@ -207,9 +224,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _queueButtonHandlers.Add(handler);
             }
 
-            _hireButtonHandler = OnHireClicked;
+            _hireButtonHandler = () => ExecuteActionOrFallback(UiActionId.RecruitmentEnqueue, UiActionSource.Button);
             _recruitmentView.HireButton.onClick.AddListener(_hireButtonHandler);
-            _closeButtonHandler = CloseRecruitmentPanel;
+            _closeButtonHandler = () => ExecuteActionOrFallback(UiActionId.RecruitmentClose, UiActionSource.Button);
             _recruitmentView.CloseButton.onClick.AddListener(_closeButtonHandler);
             _recruitmentView.SelectionPanel.SetActive(false);
             _recruitmentPanel.SetActive(false);
@@ -318,6 +335,83 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             RefreshTurnAuthority();
         }
+
+        public bool CanHandle(string actionId)
+        {
+            return actionId == UiActionId.EndTurn
+                || actionId == UiActionId.RecruitmentClose
+                || actionId == UiActionId.RecruitmentEnqueue;
+        }
+
+        public UiActionResult Handle(UiActionRequest request)
+        {
+            switch (request.ActionId)
+            {
+                case UiActionId.EndTurn:
+                    return HandleEndTurnAction();
+                case UiActionId.RecruitmentClose:
+                    if (_recruitmentPanel == null || !_recruitmentPanel.activeSelf)
+                        return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
+                    CloseRecruitmentPanel();
+                    return UiActionResult.Performed();
+                case UiActionId.RecruitmentEnqueue:
+                    return HandleRecruitmentEnqueueAction();
+                default:
+                    return UiActionResult.Ignored(UiActionReasonCode.ActionUnavailable);
+            }
+        }
+
+        private UiActionResult HandleEndTurnAction()
+        {
+            GameplayTurnHudAuthoritySnapshot current =
+                GameplayTurnHudAuthorityPolicy.Evaluate(_turns, _blockers);
+            if (!current.CanEndTurn)
+            {
+                OnEndTurn();
+                return UiActionResult.Rejected(UiActionReasonCode.ActionUnavailable, current.StatusText);
+            }
+
+            OnEndTurn();
+            return UiActionResult.Performed();
+        }
+
+        private UiActionResult HandleRecruitmentEnqueueAction()
+        {
+            if (_selectionFromQueue
+                || _selectedRecruitmentRecipe == null
+                || string.IsNullOrWhiteSpace(_selectedRecruitmentRecipe.UnitTypeId))
+            {
+                OnHireClicked();
+                return UiActionResult.Rejected(UiActionReasonCode.NoSelection);
+            }
+
+            OnHireClicked();
+            return string.IsNullOrWhiteSpace(_statusOverride)
+                || _statusOverride.Contains("додано до черги", StringComparison.Ordinal)
+                    ? UiActionResult.Performed()
+                    : UiActionResult.Rejected(UiActionReasonCode.ActionUnavailable, _statusOverride);
+        }
+
+        private void ExecuteActionOrFallback(string actionId, UiActionSource source)
+        {
+            if (_uiActions != null)
+            {
+                _uiActions.Execute(actionId, source, ActiveHudContext());
+                return;
+            }
+
+            if (actionId == UiActionId.EndTurn)
+                OnEndTurn();
+            else if (actionId == UiActionId.RecruitmentEnqueue)
+                OnHireClicked();
+            else if (actionId == UiActionId.RecruitmentClose)
+                CloseRecruitmentPanel();
+        }
+
+        private string ActiveHudContext()
+            => _recruitmentPanel != null && _recruitmentPanel.activeSelf
+                ? "RecruitmentPanel"
+                : "Gameplay";
 
         private void OnUnitSelected(UnitInfoPanelRequestedSignal signal)
         {

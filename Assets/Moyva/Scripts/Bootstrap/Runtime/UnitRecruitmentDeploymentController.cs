@@ -8,6 +8,7 @@ using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
+using Kruty1918.Moyva.UIActions.API;
 using Kruty1918.Moyva.Units.API;
 using TMPro;
 using UnityEngine;
@@ -24,7 +25,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         IInitializable,
         ITickable,
         IDisposable,
-        ITurnBlocker
+        ITurnBlocker,
+        IUiActionHandler
     {
         private const string LogTag = "[UnitDeployment]";
         private const string PreviewRootName = "UnitDeploymentPreviewRoot";
@@ -55,6 +57,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IGridActionOverlayService _gridOverlay;
         private readonly IUnitWorldPositionResolver _worldPositionResolver;
         private readonly IGameplayInputPolicy _inputPolicy;
+        private readonly IUiActionRouter _uiActions;
+        private readonly IUiContextStack _uiContexts;
         private readonly IGameModeService _gameModeService;
         private readonly GameplayTurnHudView _hudView;
         private readonly List<GridActionOverlayCell> _overlayCells = new();
@@ -71,6 +75,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private UnityEngine.Camera _camera;
         private bool _confirmInProgress;
         private bool _warnedMissingCamera;
+        private IDisposable _deploymentContext;
 
         public UnitRecruitmentDeploymentController(
             SignalBus signalBus,
@@ -84,6 +89,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IGridActionOverlayService gridOverlay = null,
             [InjectOptional] IUnitWorldPositionResolver worldPositionResolver = null,
             [InjectOptional] IGameplayInputPolicy inputPolicy = null,
+            [InjectOptional] IUiActionRouter uiActions = null,
+            [InjectOptional] IUiContextStack uiContexts = null,
             [InjectOptional] IGameModeService gameModeService = null,
             [InjectOptional] GameplayTurnHudView hudView = null)
         {
@@ -98,6 +105,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _gridOverlay = gridOverlay;
             _worldPositionResolver = worldPositionResolver;
             _inputPolicy = inputPolicy;
+            _uiActions = uiActions;
+            _uiContexts = uiContexts;
             _gameModeService = gameModeService;
             _hudView = hudView;
         }
@@ -112,6 +121,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signalBus.Subscribe<UnitRecruitmentDeployedSignal>(
                 OnRecruitmentDeployed);
             _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
+            RegisterUiContexts();
         }
 
         public void Dispose()
@@ -124,6 +134,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signalBus.TryUnsubscribe<UnitRecruitmentDeployedSignal>(
                 OnRecruitmentDeployed);
             _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
+            _deploymentContext?.Dispose();
 
             EndSession(destroyPreview: true);
             DestroyRuntimeRoot(_previewRoot);
@@ -144,7 +155,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (!_turns.CanOwnerAct(_session.OwnerId, out _))
             {
-                CancelSession();
+                ExecuteActionOrFallback(UiActionId.DeploymentCancel, UiActionSource.Programmatic);
                 return;
             }
 
@@ -313,18 +324,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Keyboard keyboard = Keyboard.current;
             if (keyboard == null)
                 return;
-
-            if (keyboard.escapeKey.wasPressedThisFrame)
-            {
-                CancelSession();
-                return;
-            }
-
-            if (keyboard.enterKey.wasPressedThisFrame
-                || keyboard.numpadEnterKey.wasPressedThisFrame)
-            {
-                ConfirmSelectedTile();
-            }
         }
 
         private void HandleMouse()
@@ -335,7 +334,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (mouse.rightButton.wasPressedThisFrame)
             {
-                CancelSession();
+                ExecuteActionOrFallback(UiActionId.DeploymentCancel, UiActionSource.Programmatic);
                 return;
             }
 
@@ -853,12 +852,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _controlsRoot,
                 "Confirm",
                 "Підтвердити",
-                ConfirmSelectedTile);
+                () => ExecuteActionOrFallback(UiActionId.DeploymentConfirm, UiActionSource.Button));
             _cancelButton = CreateControlButton(
                 _controlsRoot,
                 "Cancel",
                 "Скасувати",
-                CancelSession);
+                () => ExecuteActionOrFallback(UiActionId.DeploymentCancel, UiActionSource.Button));
 
             _controlsRoot.SetAsLastSibling();
             SetControlsVisible(false);
@@ -942,6 +941,70 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (_cancelButton != null)
                 _cancelButton.interactable = _session != null;
+        }
+
+        public bool CanHandle(string actionId)
+        {
+            return actionId == UiActionId.DeploymentCancel
+                || actionId == UiActionId.DeploymentConfirm;
+        }
+
+        public UiActionResult Handle(UiActionRequest request)
+        {
+            switch (request.ActionId)
+            {
+                case UiActionId.DeploymentCancel:
+                    if (_session == null)
+                        return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
+                    CancelSession();
+                    return UiActionResult.Performed();
+
+                case UiActionId.DeploymentConfirm:
+                    if (_session == null)
+                        return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
+                    if (!_session.SelectedTile.HasValue)
+                        return UiActionResult.Rejected(UiActionReasonCode.NoSelection);
+                    ConfirmSelectedTile();
+                    return UiActionResult.Performed();
+
+                default:
+                    return UiActionResult.Ignored(UiActionReasonCode.ActionUnavailable);
+            }
+        }
+
+        private void RegisterUiContexts()
+        {
+            if (_uiContexts == null)
+                return;
+
+            _deploymentContext = _uiContexts.Push(new UiContextRegistration(
+                "DeploymentMode",
+                UiContextLayer.Mode,
+                40,
+                () => _session != null,
+                UiActionId.DeploymentCancel,
+                blocksLowerHotkeys: true,
+                allowedHotkeyActionIds: new[]
+                {
+                    UiActionId.DeploymentCancel,
+                    UiActionId.DeploymentConfirm,
+                }));
+        }
+
+        private void ExecuteActionOrFallback(
+            string actionId,
+            UiActionSource source)
+        {
+            if (_uiActions != null)
+            {
+                _uiActions.Execute(actionId, source, "DeploymentMode");
+                return;
+            }
+
+            if (actionId == UiActionId.DeploymentConfirm)
+                ConfirmSelectedTile();
+            else
+                CancelSession();
         }
 
         private bool IsPointerOverUi(Vector2 screenPosition)

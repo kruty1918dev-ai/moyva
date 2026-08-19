@@ -327,11 +327,11 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
             };
         }
 
-        private static EntityPresentationConfig ClonePresentation(
+        private static BuildingRuntimePresentationConfig ClonePresentation(
             BuildingPresentation source)
         {
             source ??= new BuildingPresentation();
-            return new EntityPresentationConfig
+            return new BuildingRuntimePresentationConfig
             {
                 ScaleMultiplier = source.ScaleMultiplier,
                 PositionOffset = source.PositionOffset,
@@ -343,6 +343,7 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
                 Shadows = CloneShadows(source.Shadows),
                 PreviewPrefab = source.PreviewPrefab,
                 Selection = CloneSelection(source.Selection),
+                Variants = CloneVariants(source.Variants),
             };
         }
 
@@ -363,7 +364,18 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
             target.Shadows = CloneShadows(source.Shadows);
             target.PreviewPrefab = source.PreviewPrefab;
             target.Selection = CloneSelection(source.Selection);
+            if (source is BuildingRuntimePresentationConfig buildingPresentation)
+                target.Variants = CloneVariants(buildingPresentation.Variants);
         }
+
+        private static BuildingPresentationVariants CloneVariants(
+            BuildingPresentationVariants source)
+            => source == null
+                ? new BuildingPresentationVariants()
+                : new BuildingPresentationVariants
+                {
+                    ConstructionPrefab = source.ConstructionPrefab,
+                };
 
         private static EntityOutlineConfig CloneOutline(
             EntityOutlineConfig source)
