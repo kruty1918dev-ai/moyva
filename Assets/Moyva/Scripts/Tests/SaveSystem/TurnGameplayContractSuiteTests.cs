@@ -52,7 +52,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
         public void P04_UnitMovement_LeaseTracksTurnEpochAndCancelsOnAuthorityChange()
         {
             string source = Read(Scripts + "Features/Units/Runtime/UnitTurnAuthorityMovementService.cs");
-            ContainsAll(source, "CancellationTokenSource.CreateLinkedTokenSource", "_turns.StateChanged += OnTurnStateChanged",
+            ContainsAll(source, "CancellationTokenSource.CreateLinkedTokenSource", "_turns.StatusChanged += OnTurnStateChanged",
                 "_turns.GlobalTurn != lease.GlobalTurn", "_turns.Phase != TurnPhase.AwaitingInput", "_turns.CanOwnerAct(lease.OwnerId");
         }
 

@@ -2,12 +2,12 @@ namespace Kruty1918.Moyva.UIActions.API
 {
     public interface IUiActionRouter
     {
-        UiActionResult Execute(UiActionRequest request);
+        UiActionResult Execute(in UiActionRequest request);
 
         UiActionResult Execute(
-            string actionId,
+            UiActionId actionId,
             UiActionSource source = UiActionSource.Programmatic,
-            string context = null,
+            string contextId = null,
             string targetId = null);
     }
 }

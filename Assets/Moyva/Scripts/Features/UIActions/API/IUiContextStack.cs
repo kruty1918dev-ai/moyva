@@ -8,6 +8,6 @@ namespace Kruty1918.Moyva.UIActions.API
         IDisposable Push(UiContextRegistration registration);
         string ActiveContextId { get; }
         IReadOnlyList<UiContextRegistration> ActiveContexts { get; }
-        bool IsActionAllowedByContext(string actionId);
+        bool IsActionAllowedByContext(UiActionId actionId);
     }
 }

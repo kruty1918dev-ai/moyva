@@ -1,16 +1,21 @@
+using System;
+
 namespace Kruty1918.Moyva.UIActions.API
 {
+    [Obsolete("Use UiActionReason.")]
     public enum UiActionReasonCode
     {
-        None = 0,
-        BuildingNotOperational = 1,
-        InsufficientResources = 2,
-        InvalidPlacement = 3,
-        NoSelection = 4,
-        ActionUnavailable = 5,
-        ModalBlocked = 6,
-        WrongContext = 7,
-        TextEditing = 8,
-        Conflict = 9,
+        None = (int)UiActionReason.None,
+        WrongContext = (int)UiActionReason.WrongContext,
+        ActionUnavailable = (int)UiActionReason.ActionUnavailable,
+        BuildingNotOperational = (int)UiActionReason.BuildingNotOperational,
+        InsufficientResources = (int)UiActionReason.InsufficientResources,
+        InvalidPlacement = (int)UiActionReason.InvalidPlacement,
+        NoSelection = (int)UiActionReason.NoSelection,
+        ModalBlocked = (int)UiActionReason.ModalBlocked,
+        AlreadyOpen = (int)UiActionReason.AlreadyOpen,
+        AlreadyClosed = (int)UiActionReason.AlreadyClosed,
+        TextEditing = (int)UiActionReason.TextEditing,
+        Conflict = (int)UiActionReason.Conflict,
     }
 }

@@ -23,8 +23,7 @@ namespace Kruty1918.Moyva.UIActions.Runtime
         public bool TryHandleEscape()
         {
             _journal?.Record(
-                new UiActionRequest(UiActionId.InputEscape, UiActionSource.Escape),
-                _contexts?.ActiveContextId,
+                new UiActionRequest(UiActionIds.Diagnostics.InputEscape, UiActionSource.Escape, _contexts?.ActiveContextId),
                 UiActionResult.Performed());
 
             if (TryUnfocusTextInput())
@@ -34,7 +33,7 @@ namespace Kruty1918.Moyva.UIActions.Runtime
             for (int i = 0; i < active.Count; i++)
             {
                 UiContextRegistration context = active[i];
-                if (string.IsNullOrWhiteSpace(context.EscapeActionId))
+                if (!UiActionId.IsValid(context.EscapeActionId.Value))
                     continue;
 
                 UiActionResult result = _actions.Execute(new UiActionRequest(
@@ -44,8 +43,8 @@ namespace Kruty1918.Moyva.UIActions.Runtime
                 if (result.Consumed)
                     return true;
 
-                if (result.State == UiActionResultState.Rejected
-                    && result.Reason != UiActionReasonCode.WrongContext)
+                if (result.Status == UiActionStatus.Rejected
+                    && result.Reason != UiActionReason.WrongContext)
                 {
                     return true;
                 }
@@ -66,8 +65,7 @@ namespace Kruty1918.Moyva.UIActions.Runtime
 
             eventSystem.SetSelectedGameObject(null);
             _journal?.Record(
-                new UiActionRequest(UiActionId.TextUnfocus, UiActionSource.Escape, "TextEditing"),
-                "TextEditing",
+                new UiActionRequest(UiActionIds.Diagnostics.TextUnfocus, UiActionSource.Escape, "TextEditing"),
                 UiActionResult.Performed());
             return true;
         }

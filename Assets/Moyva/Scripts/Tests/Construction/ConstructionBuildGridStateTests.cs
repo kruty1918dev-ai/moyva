@@ -120,13 +120,13 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.AreEqual(ConstructionBuildGridTileVisualState.Missing, filter.ResolveVisualState(valid));
 
             Assert.IsTrue(state.SetConstructionModeActive(true));
-            Assert.AreEqual(BuildModeGridState.General, state.State);
+            Assert.AreEqual(BuildModeGridState.General, state.Status);
             Assert.AreEqual(ConstructionBuildGridTileVisualState.General, filter.ResolveVisualState(valid));
             Assert.AreEqual(ConstructionBuildGridTileVisualState.General, filter.ResolveVisualState(invalid));
             Assert.AreEqual(0, query.CallCount, "General grid must not execute building placement rules.");
 
             Assert.IsTrue(state.SetSelection("house", isDemolishMode: false));
-            Assert.AreEqual(BuildModeGridState.BuildingSelected, state.State);
+            Assert.AreEqual(BuildModeGridState.BuildingSelected, state.Status);
             Assert.AreEqual(ConstructionBuildGridTileVisualState.Valid, filter.ResolveVisualState(valid));
             Assert.AreEqual(ConstructionBuildGridTileVisualState.Invalid, filter.ResolveVisualState(invalid));
             Assert.AreEqual(2, query.CallCount);
@@ -135,13 +135,13 @@ namespace Kruty1918.Moyva.Tests.Construction
                 "Selected grid must use the same pending-preview rules as click validation.");
 
             Assert.IsTrue(state.SetSelection(null, isDemolishMode: false));
-            Assert.AreEqual(BuildModeGridState.General, state.State);
+            Assert.AreEqual(BuildModeGridState.General, state.Status);
             Assert.IsNull(state.SelectedBuildingId);
             Assert.AreEqual(ConstructionBuildGridTileVisualState.General, filter.ResolveVisualState(invalid));
             Assert.AreEqual(2, query.CallCount);
 
             Assert.IsTrue(state.SetConstructionModeActive(false));
-            Assert.AreEqual(BuildModeGridState.Hidden, state.State);
+            Assert.AreEqual(BuildModeGridState.Hidden, state.Status);
             Assert.AreEqual(ConstructionBuildGridTileVisualState.Missing, filter.ResolveVisualState(valid));
         }
 

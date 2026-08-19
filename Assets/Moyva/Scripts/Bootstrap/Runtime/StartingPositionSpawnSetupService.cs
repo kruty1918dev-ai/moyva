@@ -100,7 +100,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 stateSetCalled = true;
                 _startingPositionState.Set(startPos);
             }
-            Debug.Log($"{DirectDiagTag} SpawnSetup.State.SET startStateSet={_startingPositionState.IsSet}, startPosition={_startingPositionState.StartPosition}, playerStarts={_startingPositionState.PlayerStartPositions.Count}.");
+            Debug.Log($"{DirectDiagTag} SpawnSetup.Status.SET startStateSet={_startingPositionState.IsSet}, startPosition={_startingPositionState.StartPosition}, playerStarts={_startingPositionState.PlayerStartPositions.Count}.");
             Debug.Log($"{WorldGenDiagTag} SpawnSetup.RESULT selected={startPositions.Count}, assignments={_startingPositionState.SpawnAssignments.Count}");
 
             bool signalFired = false;

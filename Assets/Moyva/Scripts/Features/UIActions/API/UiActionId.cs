@@ -1,32 +1,41 @@
+using System;
+using System.Text.RegularExpressions;
+
 namespace Kruty1918.Moyva.UIActions.API
 {
-    public static class UiActionId
+    public readonly struct UiActionId : IEquatable<UiActionId>
     {
-        public const string InputEscape = "input.escape";
-        public const string TextUnfocus = "ui.text.unfocus";
+        private const string Pattern = "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$";
+        private static readonly Regex CanonicalRegex = new(Pattern, RegexOptions.Compiled);
 
-        public const string BuildOpen = "ui.build.open";
-        public const string BuildClose = "ui.build.close";
-        public const string BuildToggle = "ui.build.toggle";
-        public const string BuildCancel = "ui.build.cancel";
-        public const string BuildConfirm = "ui.build.confirm";
-        public const string BuildRotate = "ui.build.rotate";
-        public const string BuildUndo = "ui.build.undo";
-        public const string BuildRedo = "ui.build.redo";
+        public UiActionId(string value)
+        {
+            if (!IsValid(value))
+                throw new ArgumentException($"Invalid UI action id '{value}'.", nameof(value));
 
-        public const string RecruitmentOpen = "ui.recruitment.open";
-        public const string RecruitmentClose = "ui.recruitment.close";
-        public const string RecruitmentEnqueue = "ui.recruitment.enqueue";
+            Value = value;
+        }
 
-        public const string DeploymentCancel = "ui.deployment.cancel";
-        public const string DeploymentConfirm = "ui.deployment.confirm";
+        public string Value { get; }
 
-        public const string PanelClose = "ui.panel.close";
-        public const string ModalClose = "ui.modal.close";
+        public static bool IsValid(string value)
+            => !string.IsNullOrWhiteSpace(value) && CanonicalRegex.IsMatch(value);
 
-        public const string SelectionClear = "selection.clear";
-        public const string EndTurn = "game.end-turn";
-        public const string PauseOpen = "game.pause.open";
-        public const string PauseClose = "game.pause.close";
+        public bool Equals(UiActionId other)
+            => string.Equals(Value, other.Value, StringComparison.Ordinal);
+
+        public override bool Equals(object obj)
+            => obj is UiActionId other && Equals(other);
+
+        public override int GetHashCode()
+            => StringComparer.Ordinal.GetHashCode(Value ?? string.Empty);
+
+        public override string ToString() => Value;
+
+        public static bool operator ==(UiActionId left, UiActionId right)
+            => left.Equals(right);
+
+        public static bool operator !=(UiActionId left, UiActionId right)
+            => !left.Equals(right);
     }
 }

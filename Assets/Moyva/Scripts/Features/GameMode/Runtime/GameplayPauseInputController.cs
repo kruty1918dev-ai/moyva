@@ -41,8 +41,8 @@ namespace Kruty1918.Moyva.GameMode.Runtime
 
             _actions.Execute(
                 _gameState.CurrentState == GameStateType.Paused
-                    ? UiActionId.PauseClose
-                    : UiActionId.PauseOpen,
+                    ? UiActionIds.Pause.Close
+                    : UiActionIds.Pause.Open,
                 UiActionSource.Escape,
                 "Gameplay");
         }

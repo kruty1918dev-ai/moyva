@@ -176,7 +176,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private bool CanStartGame(LobbyRoom lobby)
         {
             if (lobby == null) return false;
-            if (lobby.State != LobbyState.Open) return false;
+            if (lobby.Status != LobbyState.Open) return false;
             return (lobby.Players?.Count ?? 0) >= 2;
         }
 

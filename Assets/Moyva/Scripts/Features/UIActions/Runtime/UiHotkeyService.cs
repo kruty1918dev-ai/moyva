@@ -17,7 +17,7 @@ namespace Kruty1918.Moyva.UIActions.Runtime
         private readonly IUiContextStack _contexts;
         private readonly IGameplayInputPolicy _inputPolicy;
         private readonly List<UiHotkeyBinding> _bindings = new();
-        private readonly HashSet<string> _heldActionsTriggered = new(StringComparer.Ordinal);
+        private readonly HashSet<UiActionId> _heldActionsTriggered = new();
 
         public UiHotkeyService(
             IUiActionRouter actions,
@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.UIActions.Runtime
             }
         }
 
-        public string GetBindingLabel(string actionId)
+        public string GetBindingLabel(UiActionId actionId)
         {
             UiHotkeyBinding binding = _bindings.FirstOrDefault(x => x.ActionId == actionId);
             return binding.HasBinding ? KeyLabel(binding.PrimaryKey, binding) : string.Empty;
@@ -71,7 +71,7 @@ namespace Kruty1918.Moyva.UIActions.Runtime
 
         public bool SetBinding(UiHotkeyBinding binding)
         {
-            if (string.IsNullOrWhiteSpace(binding.ActionId))
+            if (!UiActionId.IsValid(binding.ActionId.Value))
                 return false;
 
             int index = _bindings.FindIndex(x => x.ActionId == binding.ActionId);
@@ -86,12 +86,12 @@ namespace Kruty1918.Moyva.UIActions.Runtime
         public void ResetDefaults()
         {
             _bindings.Clear();
-            _bindings.Add(new UiHotkeyBinding(UiActionId.BuildToggle, Key.B, allowedContexts: new[] { "Gameplay", "ConstructionMode" }));
-            _bindings.Add(new UiHotkeyBinding(UiActionId.BuildConfirm, Key.Enter, Key.NumpadEnter, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }));
-            _bindings.Add(new UiHotkeyBinding(UiActionId.BuildRotate, Key.R, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }));
-            _bindings.Add(new UiHotkeyBinding(UiActionId.BuildUndo, Key.Z, ctrl: true, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }));
-            _bindings.Add(new UiHotkeyBinding(UiActionId.BuildRedo, Key.Y, ctrl: true, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }));
-            _bindings.Add(new UiHotkeyBinding(UiActionId.DeploymentConfirm, Key.Enter, Key.NumpadEnter, allowedContexts: new[] { "DeploymentMode" }));
+            _bindings.Add(new UiHotkeyBinding(UiActionIds.Construction.Toggle, Key.B, allowedContexts: new[] { "Gameplay", "ConstructionMode" }));
+            _bindings.Add(new UiHotkeyBinding(UiActionIds.Construction.ConfirmPlacement, Key.Enter, Key.NumpadEnter, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }));
+            _bindings.Add(new UiHotkeyBinding(UiActionIds.Construction.RotatePlacement, Key.R, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }));
+            _bindings.Add(new UiHotkeyBinding(UiActionIds.Construction.UndoPlacement, Key.Z, ctrl: true, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }));
+            _bindings.Add(new UiHotkeyBinding(UiActionIds.Construction.RedoPlacement, Key.Y, ctrl: true, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }));
+            _bindings.Add(new UiHotkeyBinding(UiActionIds.Deployment.Confirm, Key.Enter, Key.NumpadEnter, allowedContexts: new[] { "DeploymentMode" }));
         }
 
         public IReadOnlyList<string> DetectConflicts()

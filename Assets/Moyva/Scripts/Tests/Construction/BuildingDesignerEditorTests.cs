@@ -620,7 +620,7 @@ namespace Kruty1918.Moyva.Tests.Construction
 
             Assert.NotNull(
                 contract.GetProperty(
-                    nameof(IConstructionModuleStatePersistence.StateKey)));
+                    nameof(IConstructionModuleStatePersistence.StatusKey)));
             Assert.NotNull(
                 contract.GetMethod(
                     nameof(IConstructionModuleStatePersistence.CaptureState)));

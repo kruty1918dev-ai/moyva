@@ -74,8 +74,8 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             SerializedObject viewSo = new(view);
             SetObject(viewSo, "_buildingName", refs.BuildingName);
             SetObject(viewSo, "_subtitle", refs.Subtitle);
-            SetObject(viewSo, "_stateChip", refs.StateChip);
-            SetObject(viewSo, "_stateChipLabel", refs.StateChipLabel);
+            SetObject(viewSo, "_stateChip", refs.StatusChip);
+            SetObject(viewSo, "_stateChipLabel", refs.StatusChipLabel);
             SetObject(viewSo, "_closeButton", refs.CloseButton);
             AssignArray(viewSo, "_recipeIcons", refs.RecipeIcons);
             AssignArray(viewSo, "_recipeNameTexts", refs.RecipeNameTexts);
@@ -95,10 +95,10 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             AssignArray(viewSo, "_costRows", refs.CostRows);
             AssignArray(viewSo, "_costIcons", refs.CostIcons);
             AssignArray(viewSo, "_costLabels", refs.CostLabels);
-            SetObject(viewSo, "_buildingStatePanel", refs.StateStrip.gameObject);
-            SetObject(viewSo, "_buildingStateTitle", refs.StateTitle);
-            SetObject(viewSo, "_buildingStateDetail", refs.StateDetail);
-            SetObject(viewSo, "_buildingStateProgressFill", refs.StateFill);
+            SetObject(viewSo, "_buildingStatePanel", refs.StatusStrip.gameObject);
+            SetObject(viewSo, "_buildingStateTitle", refs.StatusTitle);
+            SetObject(viewSo, "_buildingStateDetail", refs.StatusDetail);
+            SetObject(viewSo, "_buildingStateProgressFill", refs.StatusFill);
             SetObject(viewSo, "_queueSection", refs.QueueSection.gameObject);
             SetObject(viewSo, "_queueTitle", refs.QueueTitle);
             SetObject(viewSo, "_queueCapacity", refs.QueueCapacity);
@@ -247,17 +247,17 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             refs.Subtitle = Text(nameBlock, "Subtitle", "Найм військ", sampleText, 11f, SecondaryTextColor, TextAlignmentOptions.MidlineLeft);
             AddLayout(refs.Subtitle.rectTransform, preferredHeight: 15f);
 
-            refs.StateChip = ImageObject(refs.Header, "StateChip", ReadyColor);
-            AddLayout(refs.StateChip.transform as RectTransform, preferredWidth: 82f, preferredHeight: 24f);
-            refs.StateChipLabel = Text(refs.StateChip.transform, "Label", "ВІЛЬНА", sampleText, 10.5f, Color.white, TextAlignmentOptions.Center);
-            Stretch(refs.StateChipLabel.rectTransform, 4f, 4f, 2f, 2f);
+            refs.StatusChip = ImageObject(refs.Header, "StateChip", ReadyColor);
+            AddLayout(refs.StatusChip.transform as RectTransform, preferredWidth: 82f, preferredHeight: 24f);
+            refs.StatusChipLabel = Text(refs.StatusChip.transform, "Label", "ВІЛЬНА", sampleText, 10.5f, Color.white, TextAlignmentOptions.Center);
+            Stretch(refs.StatusChipLabel.rectTransform, 4f, 4f, 2f, 2f);
 
             refs.CloseButton = Button(refs.Header, "CloseButton", "X", sampleText, new Color32(80, 54, 42, 255));
             AddLayout(refs.CloseButton.transform as RectTransform, preferredWidth: 28f, preferredHeight: 28f);
 
-            refs.StateStrip = Section(panel, "StateStrip", PanelAltColor);
-            AddLayout(refs.StateStrip, preferredHeight: 52f);
-            VerticalLayoutGroup stateLayout = refs.StateStrip.gameObject.AddComponent<VerticalLayoutGroup>();
+            refs.StatusStrip = Section(panel, "StateStrip", PanelAltColor);
+            AddLayout(refs.StatusStrip, preferredHeight: 52f);
+            VerticalLayoutGroup stateLayout = refs.StatusStrip.gameObject.AddComponent<VerticalLayoutGroup>();
             stateLayout.padding = new RectOffset(10, 10, 6, 6);
             stateLayout.spacing = 3f;
             stateLayout.childControlWidth = true;
@@ -265,19 +265,19 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             stateLayout.childForceExpandWidth = true;
             stateLayout.childForceExpandHeight = false;
 
-            refs.StateTitle = Text(refs.StateStrip, "StateTitle", "Вільна", sampleText, 13f, TextColor, TextAlignmentOptions.MidlineLeft);
-            refs.StateTitle.fontStyle = FontStyles.Bold;
-            AddLayout(refs.StateTitle.rectTransform, preferredHeight: 17f);
-            refs.StateDetail = Text(refs.StateStrip, "StateDetail", "Черга 0/3", sampleText, 10.5f, SecondaryTextColor, TextAlignmentOptions.MidlineLeft);
-            AddLayout(refs.StateDetail.rectTransform, preferredHeight: 16f);
-            Image stateTrack = Image(refs.StateStrip, "ProgressTrack", TrackColor);
+            refs.StatusTitle = Text(refs.StatusStrip, "StateTitle", "Вільна", sampleText, 13f, TextColor, TextAlignmentOptions.MidlineLeft);
+            refs.StatusTitle.fontStyle = FontStyles.Bold;
+            AddLayout(refs.StatusTitle.rectTransform, preferredHeight: 17f);
+            refs.StatusDetail = Text(refs.StatusStrip, "StateDetail", "Черга 0/3", sampleText, 10.5f, SecondaryTextColor, TextAlignmentOptions.MidlineLeft);
+            AddLayout(refs.StatusDetail.rectTransform, preferredHeight: 16f);
+            Image stateTrack = Image(refs.StatusStrip, "ProgressTrack", TrackColor);
             AddLayout(stateTrack.rectTransform, preferredHeight: 5f);
-            refs.StateFill = Image(stateTrack.transform, "Fill", ReadyColor);
-            refs.StateFill.type = UnityEngine.UI.Image.Type.Filled;
-            refs.StateFill.fillMethod = UnityEngine.UI.Image.FillMethod.Horizontal;
-            refs.StateFill.fillOrigin = 0;
-            refs.StateFill.fillAmount = 0f;
-            Stretch(refs.StateFill.rectTransform);
+            refs.StatusFill = Image(stateTrack.transform, "Fill", ReadyColor);
+            refs.StatusFill.type = UnityEngine.UI.Image.Type.Filled;
+            refs.StatusFill.fillMethod = UnityEngine.UI.Image.FillMethod.Horizontal;
+            refs.StatusFill.fillOrigin = 0;
+            refs.StatusFill.fillAmount = 0f;
+            Stretch(refs.StatusFill.rectTransform);
 
             refs.MainContent = Empty(panel, "MainContent");
             AddLayout(refs.MainContent, flexibleHeight: 1f);

@@ -214,7 +214,7 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
                         relayJoinCode,
                         Current.Players,
                         Current.PasswordHash,
-                        Current.State);
+                        Current.Status);
                 }
 
                 return Task.CompletedTask;

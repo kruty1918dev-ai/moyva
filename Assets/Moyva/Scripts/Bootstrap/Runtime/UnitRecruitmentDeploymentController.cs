@@ -57,7 +57,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IGridActionOverlayService _gridOverlay;
         private readonly IUnitWorldPositionResolver _worldPositionResolver;
         private readonly IGameplayInputPolicy _inputPolicy;
-        private readonly IUiActionRouter _uiActions;
         private readonly IUiContextStack _uiContexts;
         private readonly IGameModeService _gameModeService;
         private readonly GameplayTurnHudView _hudView;
@@ -89,7 +88,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IGridActionOverlayService gridOverlay = null,
             [InjectOptional] IUnitWorldPositionResolver worldPositionResolver = null,
             [InjectOptional] IGameplayInputPolicy inputPolicy = null,
-            [InjectOptional] IUiActionRouter uiActions = null,
             [InjectOptional] IUiContextStack uiContexts = null,
             [InjectOptional] IGameModeService gameModeService = null,
             [InjectOptional] GameplayTurnHudView hudView = null)
@@ -105,7 +103,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _gridOverlay = gridOverlay;
             _worldPositionResolver = worldPositionResolver;
             _inputPolicy = inputPolicy;
-            _uiActions = uiActions;
             _uiContexts = uiContexts;
             _gameModeService = gameModeService;
             _hudView = hudView;
@@ -155,7 +152,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (!_turns.CanOwnerAct(_session.OwnerId, out _))
             {
-                ExecuteActionOrFallback(UiActionId.DeploymentCancel, UiActionSource.Programmatic);
+                ExecuteActionOrFallback(UiActionIds.Deployment.Cancel, UiActionSource.Programmatic);
                 return;
             }
 
@@ -334,7 +331,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (mouse.rightButton.wasPressedThisFrame)
             {
-                ExecuteActionOrFallback(UiActionId.DeploymentCancel, UiActionSource.Programmatic);
+                ExecuteActionOrFallback(UiActionIds.Deployment.Cancel, UiActionSource.Programmatic);
                 return;
             }
 
@@ -852,12 +849,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _controlsRoot,
                 "Confirm",
                 "Підтвердити",
-                () => ExecuteActionOrFallback(UiActionId.DeploymentConfirm, UiActionSource.Button));
+                () => ExecuteActionOrFallback(UiActionIds.Deployment.Confirm, UiActionSource.Button));
             _cancelButton = CreateControlButton(
                 _controlsRoot,
                 "Cancel",
                 "Скасувати",
-                () => ExecuteActionOrFallback(UiActionId.DeploymentCancel, UiActionSource.Button));
+                () => ExecuteActionOrFallback(UiActionIds.Deployment.Cancel, UiActionSource.Button));
 
             _controlsRoot.SetAsLastSibling();
             SetControlsVisible(false);
@@ -943,33 +940,34 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _cancelButton.interactable = _session != null;
         }
 
-        public bool CanHandle(string actionId)
-        {
-            return actionId == UiActionId.DeploymentCancel
-                || actionId == UiActionId.DeploymentConfirm;
-        }
-
-        public UiActionResult Handle(UiActionRequest request)
-        {
-            switch (request.ActionId)
+        public IReadOnlyCollection<UiActionId> ActionIds { get; } =
+            new[]
             {
-                case UiActionId.DeploymentCancel:
-                    if (_session == null)
-                        return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
-                    CancelSession();
-                    return UiActionResult.Performed();
+                UiActionIds.Deployment.Cancel,
+                UiActionIds.Deployment.Confirm,
+            };
 
-                case UiActionId.DeploymentConfirm:
-                    if (_session == null)
-                        return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
-                    if (!_session.SelectedTile.HasValue)
-                        return UiActionResult.Rejected(UiActionReasonCode.NoSelection);
-                    ConfirmSelectedTile();
-                    return UiActionResult.Performed();
-
-                default:
-                    return UiActionResult.Ignored(UiActionReasonCode.ActionUnavailable);
+        public UiActionResult Execute(in UiActionRequest request)
+        {
+            if (request.ActionId == UiActionIds.Deployment.Cancel)
+            {
+                if (_session == null)
+                    return UiActionResult.Rejected(UiActionReason.WrongContext);
+                CancelSession();
+                return UiActionResult.Performed();
             }
+
+            if (request.ActionId == UiActionIds.Deployment.Confirm)
+            {
+                if (_session == null)
+                    return UiActionResult.Rejected(UiActionReason.WrongContext);
+                if (!_session.SelectedTile.HasValue)
+                    return UiActionResult.Rejected(UiActionReason.NoSelection);
+                ConfirmSelectedTile();
+                return UiActionResult.Performed();
+            }
+
+            return UiActionResult.Ignored(UiActionReason.ActionUnavailable);
         }
 
         private void RegisterUiContexts()
@@ -982,29 +980,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 UiContextLayer.Mode,
                 40,
                 () => _session != null,
-                UiActionId.DeploymentCancel,
+                UiActionIds.Deployment.Cancel,
                 blocksLowerHotkeys: true,
                 allowedHotkeyActionIds: new[]
                 {
-                    UiActionId.DeploymentCancel,
-                    UiActionId.DeploymentConfirm,
+                    UiActionIds.Deployment.Cancel,
+                    UiActionIds.Deployment.Confirm,
                 }));
         }
 
         private void ExecuteActionOrFallback(
-            string actionId,
+            UiActionId actionId,
             UiActionSource source)
         {
-            if (_uiActions != null)
-            {
-                _uiActions.Execute(actionId, source, "DeploymentMode");
-                return;
-            }
-
-            if (actionId == UiActionId.DeploymentConfirm)
-                ConfirmSelectedTile();
-            else
-                CancelSession();
+            Execute(new UiActionRequest(actionId, source, "DeploymentMode"));
         }
 
         private bool IsPointerOverUi(Vector2 screenPosition)

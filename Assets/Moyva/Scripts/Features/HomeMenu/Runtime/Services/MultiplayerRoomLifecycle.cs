@@ -75,15 +75,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
             if (lobby == null)
                 return "Кімната недоступна.";
 
-            if (lobby.State == LobbyState.Closed)
+            if (lobby.Status == LobbyState.Closed)
                 return "Кімната вже закрита.";
 
             bool reconnectAllowed = IsReconnectAllowed(lobby, playerName, reconnectToleranceSeconds);
-            if (lobby.State == LobbyState.Started && !reconnectAllowed)
+            if (lobby.Status == LobbyState.Started && !reconnectAllowed)
                 return "Гра вже запущена. Приєднання доступне лише для перепідключення.";
 
             int playerCount = lobby.Players?.Count ?? 0;
-            if (lobby.State == LobbyState.Open && lobby.MaxPlayers > 0 && playerCount >= lobby.MaxPlayers)
+            if (lobby.Status == LobbyState.Open && lobby.MaxPlayers > 0 && playerCount >= lobby.MaxPlayers)
                 return "Кімната вже заповнена.";
 
             if (string.IsNullOrWhiteSpace(lobby.RelayJoinCode) && string.IsNullOrWhiteSpace(lobby.LobbyId) && string.IsNullOrWhiteSpace(lobby.LobbyCode))

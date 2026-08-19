@@ -14,12 +14,9 @@ namespace Kruty1918.Moyva.UIActions.Runtime
         public int Capacity { get; } = DefaultCapacity;
         public int Count => _entries.Count;
 
-        public void Record(
-            UiActionRequest request,
-            string activeContext,
-            UiActionResult result)
+        public void Record(in UiActionRequest request, in UiActionResult result)
         {
-            if (string.IsNullOrWhiteSpace(request.ActionId))
+            if (!UiActionId.IsValid(request.ActionId.Value))
                 return;
 
             while (_entries.Count >= Capacity)
@@ -30,10 +27,11 @@ namespace Kruty1918.Moyva.UIActions.Runtime
                 Time.frameCount,
                 request.ActionId,
                 request.Source,
-                activeContext,
+                request.ContextId,
                 request.TargetId,
-                result.State,
+                result.Status,
                 result.Reason,
+                result.Consumed,
                 result.Details));
         }
 

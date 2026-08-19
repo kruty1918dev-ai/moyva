@@ -28,7 +28,7 @@ namespace Kruty1918.Moyva.UIActions.Runtime
             return new Disposable(() => _registrations.Remove(registration));
         }
 
-        public bool IsActionAllowedByContext(string actionId)
+        public bool IsActionAllowedByContext(UiActionId actionId)
         {
             IReadOnlyList<UiContextRegistration> active = ActiveContexts;
             for (int i = 0; i < active.Count; i++)

@@ -35,9 +35,9 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 UiContextLayer.Modal,
                 100,
                 () => _gameState.CurrentState == GameStateType.Paused,
-                UiActionId.PauseClose,
+                UiActionIds.Pause.Close,
                 blocksLowerHotkeys: true,
-                allowedHotkeyActionIds: new[] { UiActionId.PauseClose }));
+                allowedHotkeyActionIds: new[] { UiActionIds.Pause.Close }));
         }
 
         public void Dispose()
@@ -45,43 +45,49 @@ namespace Kruty1918.Moyva.GameMode.Runtime
             _pauseContext?.Dispose();
         }
 
-        public bool CanHandle(string actionId)
-        {
-            return actionId == UiActionId.BuildOpen
-                || actionId == UiActionId.BuildClose
-                || actionId == UiActionId.BuildToggle
-                || actionId == UiActionId.PauseOpen
-                || actionId == UiActionId.PauseClose;
-        }
-
-        public UiActionResult Handle(UiActionRequest request)
-        {
-            switch (request.ActionId)
+        public System.Collections.Generic.IReadOnlyCollection<UiActionId> ActionIds { get; } =
+            new[]
             {
-                case UiActionId.BuildOpen:
-                    return RequestMode(GameModeType.Construction);
-                case UiActionId.BuildClose:
-                    return RequestMode(GameModeType.Normal);
-                case UiActionId.BuildToggle:
-                    return RequestMode(
-                        _gameMode.CurrentMode == GameModeType.Construction
-                            ? GameModeType.Normal
-                            : GameModeType.Construction);
-                case UiActionId.PauseOpen:
-                    if (_gameState.CurrentState == GameStateType.Paused)
-                        return UiActionResult.Ignored();
-                    if (_gameMode.CurrentMode != GameModeType.Normal)
-                        return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
-                    _gameState.PauseGame();
-                    return UiActionResult.Performed();
-                case UiActionId.PauseClose:
-                    if (_gameState.CurrentState != GameStateType.Paused)
-                        return UiActionResult.Ignored();
-                    _gameState.ResumeGame();
-                    return UiActionResult.Performed();
-                default:
-                    return UiActionResult.Ignored(UiActionReasonCode.ActionUnavailable);
+                UiActionIds.Construction.Open,
+                UiActionIds.Construction.Close,
+                UiActionIds.Construction.Toggle,
+                UiActionIds.Pause.Open,
+                UiActionIds.Pause.Close,
+            };
+
+        public UiActionResult Execute(in UiActionRequest request)
+        {
+            if (request.ActionId == UiActionIds.Construction.Open)
+                return RequestMode(GameModeType.Construction);
+
+            if (request.ActionId == UiActionIds.Construction.Close)
+                return RequestMode(GameModeType.Normal);
+
+            if (request.ActionId == UiActionIds.Construction.Toggle)
+                return RequestMode(
+                    _gameMode.CurrentMode == GameModeType.Construction
+                        ? GameModeType.Normal
+                        : GameModeType.Construction);
+
+            if (request.ActionId == UiActionIds.Pause.Open)
+            {
+                if (_gameState.CurrentState == GameStateType.Paused)
+                    return UiActionResult.Ignored(UiActionReason.AlreadyOpen);
+                if (_gameMode.CurrentMode != GameModeType.Normal)
+                    return UiActionResult.Rejected(UiActionReason.WrongContext);
+                _gameState.PauseGame();
+                return UiActionResult.Performed();
             }
+
+            if (request.ActionId == UiActionIds.Pause.Close)
+            {
+                if (_gameState.CurrentState != GameStateType.Paused)
+                    return UiActionResult.Ignored(UiActionReason.AlreadyClosed);
+                _gameState.ResumeGame();
+                return UiActionResult.Performed();
+            }
+
+            return UiActionResult.Ignored(UiActionReason.ActionUnavailable);
         }
 
         private UiActionResult RequestMode(GameModeType requestedMode)

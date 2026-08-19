@@ -6,7 +6,7 @@ namespace Kruty1918.Moyva.UIActions.API
     {
         int Capacity { get; }
         int Count { get; }
-        void Record(UiActionRequest request, string activeContext, UiActionResult result);
+        void Record(in UiActionRequest request, in UiActionResult result);
         IReadOnlyList<UiActionJournalEntry> GetRecent(int count);
     }
 }

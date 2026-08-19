@@ -1,10 +1,13 @@
+using System;
+
 namespace Kruty1918.Moyva.UIActions.API
 {
+    [Obsolete("Use UiActionStatus.")]
     public enum UiActionResultState
     {
-        Performed = 0,
-        Rejected = 1,
-        Cancelled = 2,
-        Ignored = 3,
+        Performed = (int)UiActionStatus.Performed,
+        Rejected = (int)UiActionStatus.Rejected,
+        Cancelled = (int)UiActionStatus.Cancelled,
+        Ignored = (int)UiActionStatus.Ignored,
     }
 }

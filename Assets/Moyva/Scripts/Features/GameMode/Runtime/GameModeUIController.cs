@@ -118,12 +118,12 @@ namespace Kruty1918.Moyva.GameMode.Runtime
 
         private void OnEnterConstructionClicked()
         {
-            ExecuteModeAction(UiActionId.BuildOpen);
+            ExecuteModeAction(UiActionIds.Construction.Open);
         }
 
         private void OnExitConstructionClicked()
         {
-            ExecuteModeAction(UiActionId.BuildClose);
+            ExecuteModeAction(UiActionIds.Construction.Close);
         }
 
         // -----------------------------------------------------------------------
@@ -151,7 +151,7 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 exitConstructionButton.SetActive(!isNormalMode);
         }
 
-        private void ExecuteModeAction(string actionId)
+        private void ExecuteModeAction(UiActionId actionId)
         {
             if (_actions != null)
             {
@@ -164,7 +164,7 @@ namespace Kruty1918.Moyva.GameMode.Runtime
 
             _signalBus.Fire(new GameModeChangeRequestedSignal
             {
-                RequestedMode = actionId == UiActionId.BuildOpen
+                RequestedMode = actionId == UiActionIds.Construction.Open
                     ? GameModeType.Construction
                     : GameModeType.Normal,
             });

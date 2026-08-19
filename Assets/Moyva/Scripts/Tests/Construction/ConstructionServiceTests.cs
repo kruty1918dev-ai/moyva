@@ -245,7 +245,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             _service.SelectBuilding("barracks");
 
             Assert.IsFalse(_service.IsDemolishMode);
-            Assert.AreEqual(BuildingPlacementState.Placing, _service.State);
+            Assert.AreEqual(BuildingPlacementState.Placing, _service.Status);
             Assert.IsTrue(_service.TryPreviewAt(pos));
         }
 
@@ -264,7 +264,7 @@ namespace Kruty1918.Moyva.Tests.Construction
 
             _signalBus.Fire(new GameModeChangedSignal { NewMode = GameModeType.Normal });
 
-            Assert.AreEqual(BuildingPlacementState.Idle, _service.State);
+            Assert.AreEqual(BuildingPlacementState.Idle, _service.Status);
             Assert.AreEqual(1, cancelledSignals.Count);
             Assert.IsTrue(previewSignals.Exists(s => s.Position == pos && s.PreviewState == BuildingPreviewState.None));
             Assert.IsFalse(_service.TryPreviewAt(new Vector2Int(8, 8)));
@@ -708,7 +708,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             _service.Confirm();
 
             CollectionAssert.AreEqual(new[] { "map", "placed", "selection-cleared" }, events);
-            Assert.AreEqual(BuildingPlacementState.Idle, _service.State);
+            Assert.AreEqual(BuildingPlacementState.Idle, _service.Status);
             Assert.IsNull(_service.GetSelectedBuildingId());
         }
 

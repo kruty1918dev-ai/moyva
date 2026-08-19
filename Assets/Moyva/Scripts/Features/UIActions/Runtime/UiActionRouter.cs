@@ -1,63 +1,87 @@
+using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.UIActions.API;
+using UnityEngine;
 
 namespace Kruty1918.Moyva.UIActions.Runtime
 {
     internal sealed class UiActionRouter : IUiActionRouter
     {
-        private readonly List<IUiActionHandler> _handlers;
-        private readonly IUiContextStack _contexts;
+        private readonly Dictionary<UiActionId, IUiActionHandler> _handlers = new();
         private readonly IUiActionJournal _journal;
 
         public UiActionRouter(
             List<IUiActionHandler> handlers,
-            IUiContextStack contexts,
             IUiActionJournal journal)
         {
-            _handlers = handlers ?? new List<IUiActionHandler>();
-            _contexts = contexts;
             _journal = journal;
+            RegisterHandlers(handlers ?? new List<IUiActionHandler>());
         }
 
         public UiActionResult Execute(
-            string actionId,
+            UiActionId actionId,
             UiActionSource source = UiActionSource.Programmatic,
-            string context = null,
+            string contextId = null,
             string targetId = null)
         {
             return Execute(new UiActionRequest(
                 actionId,
                 source,
-                context,
+                contextId,
                 targetId));
         }
 
-        public UiActionResult Execute(UiActionRequest request)
+        public UiActionResult Execute(in UiActionRequest request)
         {
             UiActionResult result = ExecuteCore(request);
-            _journal?.Record(
-                request,
-                request.Context ?? _contexts?.ActiveContextId,
-                result);
+            _journal?.Record(request, result);
             return result;
         }
 
-        private UiActionResult ExecuteCore(UiActionRequest request)
+        private UiActionResult ExecuteCore(in UiActionRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.ActionId))
-                return UiActionResult.Ignored(UiActionReasonCode.ActionUnavailable);
-
-            if (!_contexts.IsActionAllowedByContext(request.ActionId))
-                return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
-
-            for (int i = 0; i < _handlers.Count; i++)
+            if (!UiActionId.IsValid(request.ActionId.Value))
             {
-                IUiActionHandler handler = _handlers[i];
-                if (handler != null && handler.CanHandle(request.ActionId))
-                    return handler.Handle(request);
+                Debug.LogWarning("[UIActions] Rejected invalid UI action request.");
+                return UiActionResult.Rejected(UiActionReason.ActionUnavailable);
             }
 
-            return UiActionResult.Rejected(UiActionReasonCode.ActionUnavailable);
+            if (!_handlers.TryGetValue(request.ActionId, out IUiActionHandler handler)
+                || handler == null)
+            {
+                Debug.LogWarning($"[UIActions] No handler registered for action '{request.ActionId}'.");
+                return UiActionResult.Rejected(UiActionReason.ActionUnavailable);
+            }
+
+            return handler.Execute(request);
+        }
+
+        private void RegisterHandlers(IReadOnlyList<IUiActionHandler> handlers)
+        {
+            for (int handlerIndex = 0; handlerIndex < handlers.Count; handlerIndex++)
+            {
+                IUiActionHandler handler = handlers[handlerIndex];
+                if (handler?.ActionIds == null)
+                    continue;
+
+                foreach (UiActionId actionId in handler.ActionIds)
+                {
+                    if (!UiActionId.IsValid(actionId.Value))
+                    {
+                        throw new InvalidOperationException(
+                            $"UI action handler '{handler.GetType().Name}' declared invalid action id '{actionId}'.");
+                    }
+
+                    if (_handlers.TryGetValue(actionId, out IUiActionHandler existing))
+                    {
+                        throw new InvalidOperationException(
+                            $"Duplicate UI action handler registration for '{actionId}': "
+                            + $"'{existing.GetType().Name}' and '{handler.GetType().Name}'.");
+                    }
+
+                    _handlers.Add(actionId, handler);
+                }
+            }
         }
     }
 }

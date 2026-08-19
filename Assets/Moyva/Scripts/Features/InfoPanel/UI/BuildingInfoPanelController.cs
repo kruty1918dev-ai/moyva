@@ -20,7 +20,6 @@ namespace Kruty1918.Moyva.InfoPanel.UI
         private readonly Button _closeButton;
         private readonly Transform _constructionCostContainer;
         private readonly EconomyDatabaseSO _economyDatabase;
-        private readonly IUiActionRouter _uiActions;
         private readonly IUiContextStack _uiContexts;
         private IDisposable _panelContext;
         private bool _isVisible;
@@ -41,7 +40,6 @@ namespace Kruty1918.Moyva.InfoPanel.UI
                 closeButton,
                 null,
                 null,
-                null,
                 null)
         {
         }
@@ -56,7 +54,6 @@ namespace Kruty1918.Moyva.InfoPanel.UI
             [Inject(Id = "BuildingInfoCloseButton")] Button closeButton,
             [Inject(Id = "ConstructionCostContainer", Optional = true)] Transform constructionCostContainer,
             [InjectOptional] EconomyDatabaseSO economyDatabase,
-            [InjectOptional] IUiActionRouter uiActions = null,
             [InjectOptional] IUiContextStack uiContexts = null)
         {
             _signalBus = signalBus;
@@ -67,7 +64,6 @@ namespace Kruty1918.Moyva.InfoPanel.UI
             _closeButton = closeButton;
             _constructionCostContainer = constructionCostContainer;
             _economyDatabase = economyDatabase;
-            _uiActions = uiActions;
             _uiContexts = uiContexts;
         }
 
@@ -92,7 +88,7 @@ namespace Kruty1918.Moyva.InfoPanel.UI
                     UiContextLayer.Panel,
                     10,
                     () => _isVisible,
-                    UiActionId.PanelClose));
+                    UiActionIds.Diagnostics.PanelClose));
 
                 SetVisible(false);
             }
@@ -262,13 +258,10 @@ namespace Kruty1918.Moyva.InfoPanel.UI
 
         private void ClosePanel()
         {
-            if (_uiActions != null)
-            {
-                _uiActions.Execute(UiActionId.PanelClose, UiActionSource.Button, "WorldInfoPanel");
-                return;
-            }
-
-            ClosePanelInternal();
+            Execute(new UiActionRequest(
+                UiActionIds.Diagnostics.PanelClose,
+                UiActionSource.Button,
+                "WorldInfoPanel"));
         }
 
         private void SetVisible(bool isVisible)
@@ -278,13 +271,13 @@ namespace Kruty1918.Moyva.InfoPanel.UI
                 _panelRoot.SetActive(isVisible);
         }
 
-        public bool CanHandle(string actionId)
-            => actionId == UiActionId.PanelClose;
+        public System.Collections.Generic.IReadOnlyCollection<UiActionId> ActionIds { get; } =
+            new[] { UiActionIds.Diagnostics.PanelClose };
 
-        public UiActionResult Handle(UiActionRequest request)
+        public UiActionResult Execute(in UiActionRequest request)
         {
             if (!_isVisible)
-                return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
+                return UiActionResult.Rejected(UiActionReason.WrongContext);
 
             ClosePanelInternal();
             return UiActionResult.Performed();

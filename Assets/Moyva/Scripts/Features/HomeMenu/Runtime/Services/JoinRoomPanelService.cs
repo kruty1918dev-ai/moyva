@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             try { if (_onJoinCodeChangedCallback != null) _viewController.OnJoinCodeChanged -= _onJoinCodeChangedCallback; } catch { }
             try { if (_onRoomSelectedCallback != null) _viewController.OnRoomSelected -= _onRoomSelectedCallback; } catch { }
             try { if (_modeSelector != null && _onModeChangedCallback != null) _modeSelector.OnModeChanged -= _onModeChangedCallback; } catch { }
-            try { if (_lobbyService != null && _onLobbyStateChangedCallback != null) _lobbyService.StateChanged -= _onLobbyStateChangedCallback; } catch { }
+            try { if (_lobbyService != null && _onLobbyStateChangedCallback != null) _lobbyService.StatusChanged -= _onLobbyStateChangedCallback; } catch { }
 
             _roomsCts?.Cancel();
             _roomsCts?.Dispose();
@@ -104,9 +104,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_lobbyService != null)
             {
                 if (_onLobbyStateChangedCallback != null)
-                    _lobbyService.StateChanged -= _onLobbyStateChangedCallback;
+                    _lobbyService.StatusChanged -= _onLobbyStateChangedCallback;
                 _onLobbyStateChangedCallback = OnLobbyStateChanged;
-                _lobbyService.StateChanged += _onLobbyStateChangedCallback;
+                _lobbyService.StatusChanged += _onLobbyStateChangedCallback;
             }
 
             Refresh();
@@ -407,7 +407,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
                 if (room != null)
                 {
-                    Debug.Log($"[JoinRoomPanelService] [{traceId}] JoinRoomAsync lobby join ok: lobbyId='{room.LobbyId}' code='{room.LobbyCode}' relay='{room.RelayJoinCode}' players={room.Players?.Count ?? 0} state={room.State}.");
+                    Debug.Log($"[JoinRoomPanelService] [{traceId}] JoinRoomAsync lobby join ok: lobbyId='{room.LobbyId}' code='{room.LobbyCode}' relay='{room.RelayJoinCode}' players={room.Players?.Count ?? 0} state={room.Status}.");
                     var blockReason = JoinRoomDomainLogic.GetPostJoinBlockReason(room, GetPlayerName(), ResolveReconnectToleranceSeconds());
                     if (!string.IsNullOrEmpty(blockReason))
                     {
@@ -457,7 +457,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
                     RememberJoinOrigin(joinPanelName, joinProviderType);
 
-                    if (room.State == LobbyState.Started)
+                    if (room.Status == LobbyState.Started)
                     {
                         bool reconnected = await StartReconnectedGameAsync(room, ct);
                         if (!reconnected)

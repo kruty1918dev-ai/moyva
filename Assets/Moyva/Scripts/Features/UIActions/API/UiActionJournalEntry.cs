@@ -5,33 +5,36 @@ namespace Kruty1918.Moyva.UIActions.API
         public UiActionJournalEntry(
             double timestampSeconds,
             int frame,
-            string actionId,
+            UiActionId actionId,
             UiActionSource source,
-            string activeContext,
+            string contextId,
             string targetId,
-            UiActionResultState result,
-            UiActionReasonCode reason,
+            UiActionStatus status,
+            UiActionReason reason,
+            bool consumed,
             string details)
         {
             TimestampSeconds = timestampSeconds;
             Frame = frame;
             ActionId = actionId;
             Source = source;
-            ActiveContext = activeContext;
+            ContextId = contextId;
             TargetId = targetId;
-            Result = result;
+            Status = status;
             Reason = reason;
+            Consumed = consumed;
             Details = details;
         }
 
         public double TimestampSeconds { get; }
         public int Frame { get; }
-        public string ActionId { get; }
+        public UiActionId ActionId { get; }
         public UiActionSource Source { get; }
-        public string ActiveContext { get; }
+        public string ContextId { get; }
         public string TargetId { get; }
-        public UiActionResultState Result { get; }
-        public UiActionReasonCode Reason { get; }
+        public UiActionStatus Status { get; }
+        public UiActionReason Reason { get; }
+        public bool Consumed { get; }
         public string Details { get; }
     }
 }

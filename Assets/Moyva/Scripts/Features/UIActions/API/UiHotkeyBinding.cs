@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.UIActions.API
     public readonly struct UiHotkeyBinding
     {
         public UiHotkeyBinding(
-            string actionId,
+            UiActionId actionId,
             Key primaryKey,
             Key secondaryKey = Key.None,
             bool ctrl = false,
@@ -32,7 +32,7 @@ namespace Kruty1918.Moyva.UIActions.API
             AllowedContexts = allowedContexts;
         }
 
-        public string ActionId { get; }
+        public UiActionId ActionId { get; }
         public Key PrimaryKey { get; }
         public Key SecondaryKey { get; }
         public bool Ctrl { get; }

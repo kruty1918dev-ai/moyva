@@ -10,9 +10,9 @@ namespace Kruty1918.Moyva.UIActions.API
             UiContextLayer layer,
             int priority,
             Func<bool> isActive,
-            string escapeActionId = null,
+            UiActionId escapeActionId = default,
             bool blocksLowerHotkeys = false,
-            IEnumerable<string> allowedHotkeyActionIds = null)
+            IEnumerable<UiActionId> allowedHotkeyActionIds = null)
         {
             ContextId = string.IsNullOrWhiteSpace(contextId) ? "Unknown" : contextId;
             Layer = layer;
@@ -21,7 +21,7 @@ namespace Kruty1918.Moyva.UIActions.API
             EscapeActionId = escapeActionId;
             BlocksLowerHotkeys = blocksLowerHotkeys;
             AllowedHotkeyActionIds = allowedHotkeyActionIds != null
-                ? new HashSet<string>(allowedHotkeyActionIds)
+                ? new HashSet<UiActionId>(allowedHotkeyActionIds)
                 : null;
         }
 
@@ -29,8 +29,8 @@ namespace Kruty1918.Moyva.UIActions.API
         public UiContextLayer Layer { get; }
         public int Priority { get; }
         public Func<bool> IsActive { get; }
-        public string EscapeActionId { get; }
+        public UiActionId EscapeActionId { get; }
         public bool BlocksLowerHotkeys { get; }
-        public IReadOnlyCollection<string> AllowedHotkeyActionIds { get; }
+        public IReadOnlyCollection<UiActionId> AllowedHotkeyActionIds { get; }
     }
 }

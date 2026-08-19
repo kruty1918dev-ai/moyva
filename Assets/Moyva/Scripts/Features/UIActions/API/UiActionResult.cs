@@ -3,37 +3,51 @@ namespace Kruty1918.Moyva.UIActions.API
     public readonly struct UiActionResult
     {
         public UiActionResult(
-            UiActionResultState state,
-            UiActionReasonCode reason = UiActionReasonCode.None,
+            UiActionStatus status,
+            UiActionReason reason = UiActionReason.None,
+            bool consumed = true,
             string details = null)
         {
-            State = state;
+            Status = status;
             Reason = reason;
+            Consumed = consumed;
             Details = details;
         }
 
-        public UiActionResultState State { get; }
-        public UiActionReasonCode Reason { get; }
+        public UiActionStatus Status { get; }
+        public UiActionReason Reason { get; }
+        public bool Consumed { get; }
         public string Details { get; }
-        public bool Consumed => State == UiActionResultState.Performed
-            || State == UiActionResultState.Cancelled;
 
         public static UiActionResult Performed()
-            => new(UiActionResultState.Performed);
+            => new(UiActionStatus.Performed);
 
         public static UiActionResult Rejected(
-            UiActionReasonCode reason,
+            UiActionReason reason,
+            bool consumed = false,
             string details = null)
-            => new(UiActionResultState.Rejected, reason, details);
+            => new(UiActionStatus.Rejected, reason, consumed, details);
+
+        public static UiActionResult Rejected(
+            UiActionReason reason,
+            string details)
+            => new(UiActionStatus.Rejected, reason, false, details);
 
         public static UiActionResult Ignored(
-            UiActionReasonCode reason = UiActionReasonCode.None,
+            UiActionReason reason = UiActionReason.None,
+            bool consumed = false,
             string details = null)
-            => new(UiActionResultState.Ignored, reason, details);
+            => new(UiActionStatus.Ignored, reason, consumed, details);
+
+        public static UiActionResult Ignored(
+            UiActionReason reason,
+            string details)
+            => new(UiActionStatus.Ignored, reason, false, details);
 
         public static UiActionResult Cancelled(
-            UiActionReasonCode reason = UiActionReasonCode.None,
+            UiActionReason reason = UiActionReason.None,
+            bool consumed = true,
             string details = null)
-            => new(UiActionResultState.Cancelled, reason, details);
+            => new(UiActionStatus.Cancelled, reason, consumed, details);
     }
 }

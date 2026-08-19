@@ -1,27 +1,25 @@
-using System.Collections.Generic;
-
 namespace Kruty1918.Moyva.UIActions.API
 {
     public readonly struct UiActionRequest
     {
         public UiActionRequest(
-            string actionId,
+            UiActionId actionId,
             UiActionSource source = UiActionSource.Programmatic,
-            string context = null,
+            string contextId = null,
             string targetId = null,
-            IReadOnlyDictionary<string, string> payload = null)
+            object payload = null)
         {
             ActionId = actionId;
             Source = source;
-            Context = context;
+            ContextId = contextId;
             TargetId = targetId;
             Payload = payload;
         }
 
-        public string ActionId { get; }
+        public UiActionId ActionId { get; }
         public UiActionSource Source { get; }
-        public string Context { get; }
+        public string ContextId { get; }
         public string TargetId { get; }
-        public IReadOnlyDictionary<string, string> Payload { get; }
+        public object Payload { get; }
     }
 }

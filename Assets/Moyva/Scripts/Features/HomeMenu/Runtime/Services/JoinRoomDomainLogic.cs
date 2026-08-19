@@ -14,10 +14,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (room == null)
                 return "Кімната недоступна.";
 
-            if (room.State == LobbyState.Closed)
+            if (room.Status == LobbyState.Closed)
                 return "Кімната вже закрита.";
 
-            if (room.State == LobbyState.Started &&
+            if (room.Status == LobbyState.Started &&
                 !MultiplayerRoomLifecycle.IsReconnectAllowed(room, playerName, reconnectToleranceSeconds))
             {
                 return "Гра вже запущена. Приєднання доступне лише для перепідключення з тим самим ніком і коректним локальним часом.";
@@ -65,7 +65,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 if (room.IsPrivate)
                     continue;
 
-                if (room.State != LobbyState.Open)
+                if (room.Status != LobbyState.Open)
                     continue;
 
                 int currentPlayers = room.Players?.Count ?? 0;

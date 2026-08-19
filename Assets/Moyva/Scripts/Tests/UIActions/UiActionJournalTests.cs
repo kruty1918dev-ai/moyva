@@ -13,13 +13,12 @@ namespace Kruty1918.Moyva.Tests.UIActions
             var journal = new UiActionJournal();
 
             journal.Record(
-                new UiActionRequest(UiActionId.BuildOpen, UiActionSource.Button, "Gameplay"),
-                "Gameplay",
+                new UiActionRequest(UiActionIds.Construction.Open, UiActionSource.Button, "Gameplay"),
                 UiActionResult.Performed());
 
             UiActionJournalEntry entry = journal.GetRecent(1)[0];
-            Assert.AreEqual(UiActionId.BuildOpen, entry.ActionId);
-            Assert.AreEqual(UiActionResultState.Performed, entry.Result);
+            Assert.AreEqual(UiActionIds.Construction.Open, entry.ActionId);
+            Assert.AreEqual(UiActionStatus.Performed, entry.Status);
         }
 
         [Test]
@@ -28,13 +27,12 @@ namespace Kruty1918.Moyva.Tests.UIActions
             var journal = new UiActionJournal();
 
             journal.Record(
-                new UiActionRequest(UiActionId.RecruitmentEnqueue, UiActionSource.Button, "RecruitmentPanel"),
-                "RecruitmentPanel",
-                UiActionResult.Rejected(UiActionReasonCode.InsufficientResources));
+                new UiActionRequest(UiActionIds.Recruitment.Enqueue, UiActionSource.Button, "RecruitmentPanel"),
+                UiActionResult.Rejected(UiActionReason.InsufficientResources));
 
             UiActionJournalEntry entry = journal.GetRecent(1)[0];
-            Assert.AreEqual(UiActionResultState.Rejected, entry.Result);
-            Assert.AreEqual(UiActionReasonCode.InsufficientResources, entry.Reason);
+            Assert.AreEqual(UiActionStatus.Rejected, entry.Status);
+            Assert.AreEqual(UiActionReason.InsufficientResources, entry.Reason);
         }
 
         [Test]
@@ -57,13 +55,12 @@ namespace Kruty1918.Moyva.Tests.UIActions
             for (int i = 0; i < UiActionJournal.DefaultCapacity + 20; i++)
             {
                 journal.Record(
-                    new UiActionRequest($"test.{i}", UiActionSource.Programmatic),
-                    "Gameplay",
+                    new UiActionRequest(new UiActionId($"test.id{i}"), UiActionSource.Programmatic, "Gameplay"),
                     UiActionResult.Performed());
             }
 
             Assert.AreEqual(UiActionJournal.DefaultCapacity, journal.Count);
-            Assert.AreEqual("test.20", journal.GetRecent(UiActionJournal.DefaultCapacity)[0].ActionId);
+            Assert.AreEqual(new UiActionId("test.id20"), journal.GetRecent(UiActionJournal.DefaultCapacity)[0].ActionId);
         }
 
         [Test]
@@ -72,8 +69,7 @@ namespace Kruty1918.Moyva.Tests.UIActions
             var journal = new UiActionJournal();
 
             journal.Record(
-                new UiActionRequest("camera.pan.start", UiActionSource.Hotkey, "Gameplay"),
-                "Gameplay",
+                new UiActionRequest(new UiActionId("camera.pan.start"), UiActionSource.Hotkey, "Gameplay"),
                 UiActionResult.Performed());
 
             Assert.AreEqual(1, journal.Count);
@@ -84,8 +80,7 @@ namespace Kruty1918.Moyva.Tests.UIActions
             var journal = new UiActionJournal();
 
             journal.Record(
-                new UiActionRequest(UiActionId.BuildOpen, source, "Gameplay"),
-                "Gameplay",
+                new UiActionRequest(UiActionIds.Construction.Open, source, "Gameplay"),
                 UiActionResult.Performed());
 
             Assert.AreEqual(source, journal.GetRecent(1)[0].Source);

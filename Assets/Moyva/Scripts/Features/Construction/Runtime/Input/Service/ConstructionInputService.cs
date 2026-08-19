@@ -295,50 +295,57 @@ namespace Kruty1918.Moyva.Construction.Runtime
             });
         }
 
-        public bool CanHandle(string actionId)
-        {
-            return actionId == UiActionId.BuildCancel
-                || actionId == UiActionId.BuildConfirm
-                || actionId == UiActionId.BuildRotate
-                || actionId == UiActionId.BuildUndo
-                || actionId == UiActionId.BuildRedo;
-        }
-
-        public UiActionResult Handle(UiActionRequest request)
-        {
-            switch (request.ActionId)
+        public IReadOnlyCollection<UiActionId> ActionIds { get; } =
+            new[]
             {
-                case UiActionId.BuildCancel:
-                    if (!_isActive)
-                        return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
-                    CancelPlacementOrExitMode();
-                    return UiActionResult.Performed();
+                UiActionIds.Construction.CancelPlacement,
+                UiActionIds.Construction.ConfirmPlacement,
+                UiActionIds.Construction.RotatePlacement,
+                UiActionIds.Construction.UndoPlacement,
+                UiActionIds.Construction.RedoPlacement,
+            };
 
-                case UiActionId.BuildConfirm:
-                    if (!_isActive || _constructionService.GetPendingPlacements().Count == 0)
-                        return UiActionResult.Rejected(UiActionReasonCode.NoSelection);
-                    _signalBus.Fire(new PlaceBuildingConfirmRequestSignal());
-                    return UiActionResult.Performed();
-
-                case UiActionId.BuildRotate:
-                    if (!_isActive || _constructionService is not IConstructionRotationService rotationService)
-                        return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
-                    if (!rotationService.RotateSelectedClockwise())
-                        return UiActionResult.Rejected(UiActionReasonCode.NoSelection);
-                    InvalidatePlacementInteractionCaches();
-                    return UiActionResult.Performed();
-
-                case UiActionId.BuildUndo:
-                    _constructionService.UndoLast();
-                    return UiActionResult.Performed();
-
-                case UiActionId.BuildRedo:
-                    _constructionService.RedoLast();
-                    return UiActionResult.Performed();
-
-                default:
-                    return UiActionResult.Ignored(UiActionReasonCode.ActionUnavailable);
+        public UiActionResult Execute(in UiActionRequest request)
+        {
+            if (request.ActionId == UiActionIds.Construction.CancelPlacement)
+            {
+                if (!_isActive)
+                    return UiActionResult.Rejected(UiActionReason.WrongContext);
+                CancelPlacementOrExitMode();
+                return UiActionResult.Performed();
             }
+
+            if (request.ActionId == UiActionIds.Construction.ConfirmPlacement)
+            {
+                if (!_isActive || _constructionService.GetPendingPlacements().Count == 0)
+                    return UiActionResult.Rejected(UiActionReason.NoSelection);
+                _signalBus.Fire(new PlaceBuildingConfirmRequestSignal());
+                return UiActionResult.Performed();
+            }
+
+            if (request.ActionId == UiActionIds.Construction.RotatePlacement)
+            {
+                if (!_isActive || _constructionService is not IConstructionRotationService rotationService)
+                    return UiActionResult.Rejected(UiActionReason.WrongContext);
+                if (!rotationService.RotateSelectedClockwise())
+                    return UiActionResult.Rejected(UiActionReason.NoSelection);
+                InvalidatePlacementInteractionCaches();
+                return UiActionResult.Performed();
+            }
+
+            if (request.ActionId == UiActionIds.Construction.UndoPlacement)
+            {
+                _constructionService.UndoLast();
+                return UiActionResult.Performed();
+            }
+
+            if (request.ActionId == UiActionIds.Construction.RedoPlacement)
+            {
+                _constructionService.RedoLast();
+                return UiActionResult.Performed();
+            }
+
+            return UiActionResult.Ignored(UiActionReason.ActionUnavailable);
         }
 
         private void RegisterUiContexts()
@@ -351,7 +358,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 UiContextLayer.Mode,
                 10,
                 () => _isActive,
-                UiActionId.BuildCancel,
+                UiActionIds.Construction.CancelPlacement,
                 blocksLowerHotkeys: false));
 
             _buildingPlacementContext = _uiContexts.Push(new UiContextRegistration(
@@ -359,7 +366,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 UiContextLayer.Mode,
                 30,
                 HasActiveConstructionAction,
-                UiActionId.BuildCancel,
+                UiActionIds.Construction.CancelPlacement,
                 blocksLowerHotkeys: false));
         }
 

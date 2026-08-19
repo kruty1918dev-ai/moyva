@@ -30,7 +30,7 @@ namespace Kruty1918.Moyva.Tests.GameMode
             Assert.That(save.CallCount, Is.EqualTo(1));
             Assert.That(disconnect.CallCount, Is.Zero);
             Assert.That(state.ResumeCount, Is.EqualTo(1));
-            Assert.That(loader.StateWhenLoaded, Is.EqualTo(GameStateType.Playing));
+            Assert.That(loader.StatusWhenLoaded, Is.EqualTo(GameStateType.Playing));
         }
 
         [Test]

@@ -24,7 +24,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IBuildingRegistry _buildings;
         private readonly SignalBus _signals;
         private readonly GameplayTurnHudView _view;
-        private readonly IUiActionRouter _uiActions;
         private readonly IUiContextStack _uiContexts;
         private readonly EconomyDatabaseSO _economyDatabase;
         private readonly IReadOnlyList<ITurnBlocker> _blockers;
@@ -68,7 +67,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IBuildingRegistry buildings,
             SignalBus signals,
             GameplayTurnHudView view,
-            [InjectOptional] IUiActionRouter uiActions = null,
             [InjectOptional] IUiContextStack uiContexts = null,
             [InjectOptional] EconomyDatabaseSO economyDatabase = null,
             [InjectOptional] List<ITurnBlocker> blockers = null)
@@ -81,7 +79,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _buildings = buildings;
             _signals = signals;
             _view = view ?? throw new ArgumentNullException(nameof(view));
-            _uiActions = uiActions;
             _uiContexts = uiContexts;
             _economyDatabase = economyDatabase;
             _blockers = blockers ?? (IReadOnlyList<ITurnBlocker>)Array.Empty<ITurnBlocker>();
@@ -102,7 +99,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 UiContextLayer.Panel,
                 20,
                 () => _recruitmentPanel != null && _recruitmentPanel.activeSelf,
-                UiActionId.RecruitmentClose));
+                UiActionIds.Recruitment.Close));
             RefreshTurnAuthority();
             RefreshUnit();
             RefreshQueue();
@@ -183,7 +180,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             _recruitmentView.ValidateConfiguration(_view.RecipeSlotCount);
-            _endTurnButtonHandler = () => ExecuteActionOrFallback(UiActionId.EndTurn, UiActionSource.Button);
+            _endTurnButtonHandler = () => ExecuteActionOrFallback(UiActionIds.EndTurn, UiActionSource.Button);
             _endTurnButton.onClick.AddListener(_endTurnButtonHandler);
 
             _recipeButtons.Clear();
@@ -224,9 +221,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _queueButtonHandlers.Add(handler);
             }
 
-            _hireButtonHandler = () => ExecuteActionOrFallback(UiActionId.RecruitmentEnqueue, UiActionSource.Button);
+            _hireButtonHandler = () => ExecuteActionOrFallback(UiActionIds.Recruitment.Enqueue, UiActionSource.Button);
             _recruitmentView.HireButton.onClick.AddListener(_hireButtonHandler);
-            _closeButtonHandler = () => ExecuteActionOrFallback(UiActionId.RecruitmentClose, UiActionSource.Button);
+            _closeButtonHandler = () => ExecuteActionOrFallback(UiActionIds.Recruitment.Close, UiActionSource.Button);
             _recruitmentView.CloseButton.onClick.AddListener(_closeButtonHandler);
             _recruitmentView.SelectionPanel.SetActive(false);
             _recruitmentPanel.SetActive(false);
@@ -336,29 +333,31 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             RefreshTurnAuthority();
         }
 
-        public bool CanHandle(string actionId)
-        {
-            return actionId == UiActionId.EndTurn
-                || actionId == UiActionId.RecruitmentClose
-                || actionId == UiActionId.RecruitmentEnqueue;
-        }
-
-        public UiActionResult Handle(UiActionRequest request)
-        {
-            switch (request.ActionId)
+        public IReadOnlyCollection<UiActionId> ActionIds { get; } =
+            new[]
             {
-                case UiActionId.EndTurn:
-                    return HandleEndTurnAction();
-                case UiActionId.RecruitmentClose:
-                    if (_recruitmentPanel == null || !_recruitmentPanel.activeSelf)
-                        return UiActionResult.Rejected(UiActionReasonCode.WrongContext);
-                    CloseRecruitmentPanel();
-                    return UiActionResult.Performed();
-                case UiActionId.RecruitmentEnqueue:
-                    return HandleRecruitmentEnqueueAction();
-                default:
-                    return UiActionResult.Ignored(UiActionReasonCode.ActionUnavailable);
+                UiActionIds.EndTurn,
+                UiActionIds.Recruitment.Close,
+                UiActionIds.Recruitment.Enqueue,
+            };
+
+        public UiActionResult Execute(in UiActionRequest request)
+        {
+            if (request.ActionId == UiActionIds.EndTurn)
+                return HandleEndTurnAction();
+
+            if (request.ActionId == UiActionIds.Recruitment.Close)
+            {
+                if (_recruitmentPanel == null || !_recruitmentPanel.activeSelf)
+                    return UiActionResult.Rejected(UiActionReason.WrongContext);
+                CloseRecruitmentPanel();
+                return UiActionResult.Performed();
             }
+
+            if (request.ActionId == UiActionIds.Recruitment.Enqueue)
+                return HandleRecruitmentEnqueueAction();
+
+            return UiActionResult.Ignored(UiActionReason.ActionUnavailable);
         }
 
         private UiActionResult HandleEndTurnAction()
@@ -368,7 +367,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!current.CanEndTurn)
             {
                 OnEndTurn();
-                return UiActionResult.Rejected(UiActionReasonCode.ActionUnavailable, current.StatusText);
+                return UiActionResult.Rejected(UiActionReason.ActionUnavailable, current.StatusText);
             }
 
             OnEndTurn();
@@ -382,30 +381,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 || string.IsNullOrWhiteSpace(_selectedRecruitmentRecipe.UnitTypeId))
             {
                 OnHireClicked();
-                return UiActionResult.Rejected(UiActionReasonCode.NoSelection);
+                return UiActionResult.Rejected(UiActionReason.NoSelection);
             }
 
             OnHireClicked();
             return string.IsNullOrWhiteSpace(_statusOverride)
                 || _statusOverride.Contains("додано до черги", StringComparison.Ordinal)
                     ? UiActionResult.Performed()
-                    : UiActionResult.Rejected(UiActionReasonCode.ActionUnavailable, _statusOverride);
+                    : UiActionResult.Rejected(UiActionReason.ActionUnavailable, _statusOverride);
         }
 
-        private void ExecuteActionOrFallback(string actionId, UiActionSource source)
+        private void ExecuteActionOrFallback(UiActionId actionId, UiActionSource source)
         {
-            if (_uiActions != null)
-            {
-                _uiActions.Execute(actionId, source, ActiveHudContext());
-                return;
-            }
-
-            if (actionId == UiActionId.EndTurn)
-                OnEndTurn();
-            else if (actionId == UiActionId.RecruitmentEnqueue)
-                OnHireClicked();
-            else if (actionId == UiActionId.RecruitmentClose)
-                CloseRecruitmentPanel();
+            Execute(new UiActionRequest(actionId, source, ActiveHudContext()));
         }
 
         private string ActiveHudContext()
