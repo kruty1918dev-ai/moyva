@@ -86,8 +86,7 @@ namespace Kruty1918.Moyva.Generator
                 .AsSingle();
             Container.BindInterfacesAndSelfTo<GeneratorTerrainLevelService>()
                 .AsSingle();
-            Container.Bind<IGeneratedTerrainLevelQuery>()
-                .To<GeneratedTerrainLevelQueryService>()
+            Container.BindInterfacesAndSelfTo<GeneratedTerrainLevelQueryService>()
                 .AsSingle();
             Container.Bind<ITileWorldCreatorTerrainBuildPolicyService>()
                 .To<TileWorldCreatorTerrainBuildPolicyService>()

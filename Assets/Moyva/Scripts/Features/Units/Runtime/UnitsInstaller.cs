@@ -43,6 +43,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .To<UnitPlacementValidator>()
                 .AsSingle();
 
+            Container.Bind<IUnitWorldPositionResolver>()
+                .To<UnitWorldPositionResolver>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<UnitMovementService>()
                 .AsSingle();
 
@@ -77,6 +81,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .NonLazy();
 
             Container.BindInterfacesAndSelfTo<UnitSelectionVisualService>()
+                .AsSingle()
+                .NonLazy();
+
+            Container.BindInterfacesAndSelfTo<UnitMovementGridPresenter>()
                 .AsSingle()
                 .NonLazy();
         }

@@ -81,6 +81,17 @@ namespace Kruty1918.Moyva.Signals
     }
 
     /// <summary>
+    /// Presentation-only local selection signal for unit overlays. Movement
+    /// commands still use MoveUnitRequestSignal.
+    /// </summary>
+    public struct LocalUnitSelectionChangedSignal
+    {
+        public string UnitId;
+        public Vector2Int Position;
+        public bool IsSelected;
+    }
+
+    /// <summary>
     /// Надсилається TileInteractionService, коли гравець наказує юніту рухатись до тайлу.
     /// MultiplayerAuthorityService перехоплює і або виконує MoveUnitAsync локально (хост/офлайн),
     /// або надсилає запит до хоста (клієнт).

@@ -11,9 +11,13 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionBuildGridOverlayService : IConstructionBuildGridOverlayService
+    internal sealed class ConstructionBuildGridOverlayService :
+        IConstructionBuildGridOverlayService,
+        IGridActionOverlayService
     {
         private readonly List<ConstructionBuildGridOverlayEntry> _entries = new();
+        private readonly List<ConstructionBuildGridOverlayEntry> _actionEntries = new();
+        private readonly Dictionary<Vector2Int, GridActionOverlayVisualState> _actionCellStates = new();
         private readonly IConstructionVisualRootService _roots;
         private readonly IConstructionBuildGridTileCollector _tileCollector;
         private readonly IConstructionBuildGridTileFilter _tileFilter;
@@ -29,7 +33,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private bool _isConstructionModeActive;
         private bool _dirty = true;
+        private bool _actionDirty;
         private int _lastChunkVisibilityVersion = -1;
+        private GridActionOverlayOwner _actionOwner = GridActionOverlayOwner.None;
 
         [Inject]
         public ConstructionBuildGridOverlayService(
@@ -59,6 +65,21 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _stateController = stateController;
             _constructionService = constructionService;
         }
+
+        public GridActionOverlayOwner ActiveOwner
+        {
+            get
+            {
+                if (_actionOwner != GridActionOverlayOwner.None)
+                    return _actionOwner;
+
+                return _isConstructionModeActive
+                    ? GridActionOverlayOwner.Construction
+                    : GridActionOverlayOwner.None;
+            }
+        }
+
+        public bool HasActiveOwner => ActiveOwner != GridActionOverlayOwner.None;
 
         public void Initialize()
         {
@@ -92,6 +113,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _isConstructionModeActive = active;
             _dirty = true;
+            if (active)
+                HideActionOverlay();
             _diagnostics.LogStateTransition(
                 previousState,
                 _stateController.State,
@@ -100,7 +123,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 active ? "construction-mode-enter" : "construction-mode-exit");
 
             if (!active)
-                Hide();
+                HideConstructionOverlay();
         }
 
         public void SetSelectedBuilding(string buildingId, bool isDemolishMode)
@@ -194,6 +217,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             RefreshChunkVisibilityDirtyFlag();
 
+            if (_actionOwner != GridActionOverlayOwner.None)
+            {
+                TickActionOverlay();
+                return;
+            }
+
             if (UseChunkSurfaceMode())
             {
                 TickChunkSurfaceMode();
@@ -208,9 +237,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Hide()
         {
-            _entries.Clear();
-            _renderer.SetVisible(false);
-            _chunkSurfaceService?.Hide();
+            HideConstructionOverlay();
+            HideActionOverlay();
         }
 
         public void Dispose()
@@ -288,10 +316,166 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void Draw()
         {
-            if (!_isConstructionModeActive)
+            if (!_isConstructionModeActive || _actionOwner != GridActionOverlayOwner.None)
                 return;
 
             _renderer.Draw(_entries, _diagnostics);
+        }
+
+        public bool Acquire(GridActionOverlayOwner owner)
+        {
+            if (owner == GridActionOverlayOwner.None)
+                return false;
+
+            if (_isConstructionModeActive && owner != GridActionOverlayOwner.Construction)
+                return false;
+
+            if (_actionOwner == owner)
+                return true;
+
+            if (_actionOwner != GridActionOverlayOwner.None
+                && ResolveOwnerPriority(owner) < ResolveOwnerPriority(_actionOwner))
+            {
+                return false;
+            }
+
+            HideActionOverlay();
+            _actionOwner = owner;
+            if (owner != GridActionOverlayOwner.Construction)
+                HideConstructionOverlay();
+
+            return true;
+        }
+
+        public void Show(
+            GridActionOverlayOwner owner,
+            IReadOnlyList<GridActionOverlayCell> cells)
+            => Update(owner, cells);
+
+        public void Update(
+            GridActionOverlayOwner owner,
+            IReadOnlyList<GridActionOverlayCell> cells)
+        {
+            if (!Acquire(owner))
+                return;
+
+            _actionCellStates.Clear();
+            if (cells != null)
+            {
+                for (int index = 0; index < cells.Count; index++)
+                {
+                    GridActionOverlayCell cell = cells[index];
+                    if (cell.VisualState == GridActionOverlayVisualState.Hidden)
+                        continue;
+
+                    _actionCellStates[cell.Position] = cell.VisualState;
+                }
+            }
+
+            _actionDirty = true;
+            if (_actionCellStates.Count == 0)
+                HideActionOverlay(keepOwner: true);
+        }
+
+        public void Hide(GridActionOverlayOwner owner)
+        {
+            if (_actionOwner == owner)
+                HideActionOverlay(keepOwner: true);
+        }
+
+        public void Release(GridActionOverlayOwner owner)
+        {
+            if (_actionOwner != owner)
+                return;
+
+            HideActionOverlay();
+            _actionOwner = GridActionOverlayOwner.None;
+            _dirty = true;
+        }
+
+        private void TickActionOverlay()
+        {
+            if (_actionDirty)
+                RebuildActionOverlay();
+
+            if (_actionEntries.Count > 0)
+                _renderer.Draw(_actionEntries, _diagnostics);
+        }
+
+        private void RebuildActionOverlay()
+        {
+            _actionDirty = false;
+            if (_actionCellStates.Count == 0)
+            {
+                _actionEntries.Clear();
+                _renderer.SetVisible(false);
+                return;
+            }
+
+            _chunkSurfaceService?.Hide();
+            _tileCollector.Collect(
+                _actionEntries,
+                ResolveActionVisualState,
+                out ConstructionBuildGridCollectionStats stats);
+            if (_actionEntries.Count == 0)
+            {
+                _diagnostics.LogRebuildCompleted(stats);
+                _renderer.SetVisible(false);
+                return;
+            }
+
+            _renderer.ApplyStyle(
+                new Color(0.70f, 0.95f, 1f, ResolveLineAlpha()),
+                new Color(0.70f, 0.95f, 1f, ResolveFillAlpha()),
+                ResolveLineWidth());
+            _renderer.SetVisible(true);
+            _diagnostics.LogRebuildCompleted(stats);
+        }
+
+        private ConstructionBuildGridTileVisualState ResolveActionVisualState(Vector2Int position)
+        {
+            if (!_actionCellStates.TryGetValue(position, out GridActionOverlayVisualState state))
+                return ConstructionBuildGridTileVisualState.Missing;
+
+            return state switch
+            {
+                GridActionOverlayVisualState.Neutral => ConstructionBuildGridTileVisualState.General,
+                GridActionOverlayVisualState.Valid => ConstructionBuildGridTileVisualState.Valid,
+                GridActionOverlayVisualState.Reachable => ConstructionBuildGridTileVisualState.Valid,
+                GridActionOverlayVisualState.Invalid => ConstructionBuildGridTileVisualState.Invalid,
+                GridActionOverlayVisualState.Blocked => ConstructionBuildGridTileVisualState.Invalid,
+                GridActionOverlayVisualState.Selected => ConstructionBuildGridTileVisualState.Unaffordable,
+                _ => ConstructionBuildGridTileVisualState.Missing,
+            };
+        }
+
+        private void HideConstructionOverlay()
+        {
+            _entries.Clear();
+            _renderer.SetVisible(false);
+            _chunkSurfaceService?.Hide();
+        }
+
+        private void HideActionOverlay(bool keepOwner = false)
+        {
+            _actionEntries.Clear();
+            _actionCellStates.Clear();
+            _actionDirty = false;
+            _renderer.SetVisible(false);
+
+            if (!keepOwner)
+                _actionOwner = GridActionOverlayOwner.None;
+        }
+
+        private static int ResolveOwnerPriority(GridActionOverlayOwner owner)
+        {
+            return owner switch
+            {
+                GridActionOverlayOwner.Deployment => 30,
+                GridActionOverlayOwner.Movement => 20,
+                GridActionOverlayOwner.Construction => 10,
+                _ => 0,
+            };
         }
 
         private bool TryGetSkipReason(out string reason)

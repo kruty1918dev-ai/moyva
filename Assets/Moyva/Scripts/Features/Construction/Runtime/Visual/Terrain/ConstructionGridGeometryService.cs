@@ -6,7 +6,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionGridGeometryService : IConstructionGridGeometryService, IInitializable, IDisposable
+    internal sealed class ConstructionGridGeometryService : IConstructionGridGeometryService, IGridWorldGeometryQuery, IInitializable, IDisposable
     {
         private const float MinCellSize = 0.0001f;
         private const string LogTag = "[ConstructionGridGeometry]";

@@ -25,14 +25,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         ITurnBlocker
     {
         private const string LogTag = "[UnitDeployment]";
-        private const string HighlightRootName = "UnitDeploymentHighlights";
         private const string PreviewRootName = "UnitDeploymentPreviewRoot";
         private const string ControlsRootName = "UnitDeploymentControls";
-        private const float TileOverlayLift = 0.075f;
         private const float PreviewLift = 0.08f;
         private const float SpritePreviewHeight = 0.95f;
         private const float FallbackPreviewHeight = 0.85f;
-        private const float TileMarkerScale = 0.86f;
         private const int OverlayRenderQueue = 3988;
         private const string TurnBlockReason =
             "Завершіть або скасуйте розміщення готового юніта.";
@@ -41,15 +38,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             GameplayInputKind.PrimaryPointer
             | GameplayInputKind.SecondaryPointer
             | GameplayInputKind.Placement;
-
-        private static readonly Color ValidTileColor =
-            new(0.18f, 0.92f, 0.34f, 0.46f);
-
-        private static readonly Color InvalidTileColor =
-            new(0.96f, 0.18f, 0.14f, 0.34f);
-
-        private static readonly Color SelectedTileColor =
-            new(0.88f, 1f, 0.38f, 0.62f);
 
         private static readonly Color PreviewTint =
             new(0.72f, 1f, 0.74f, 0.72f);
@@ -61,21 +49,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IGridProjection _gridProjection;
         private readonly IGridService _grid;
         private readonly IScreenToGridConverter _screenToGrid;
-        private readonly IGeneratedTerrainLevelQuery _terrainLevelQuery;
+        private readonly IWorldPointerGridResolver _pointerGridResolver;
+        private readonly IGridActionOverlayService _gridOverlay;
+        private readonly IUnitWorldPositionResolver _worldPositionResolver;
         private readonly IGameplayInputPolicy _inputPolicy;
         private readonly IGameModeService _gameModeService;
         private readonly GameplayTurnHudView _hudView;
-        private readonly List<GameObject> _highlightObjects = new();
+        private readonly List<GridActionOverlayCell> _overlayCells = new();
         private readonly MaterialPropertyBlock _previewPropertyBlock = new();
 
         private DeploymentSession _session;
-        private Transform _highlightRoot;
         private Transform _previewRoot;
         private GameObject _previewObject;
-        private GameObject _selectionMarker;
-        private Material _validTileMaterial;
-        private Material _invalidTileMaterial;
-        private Material _selectedTileMaterial;
         private Material _fallbackPreviewMaterial;
         private Canvas _canvas;
         private RectTransform _controlsRoot;
@@ -93,7 +78,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IGridProjection gridProjection,
             [InjectOptional] IGridService grid = null,
             [InjectOptional] IScreenToGridConverter screenToGrid = null,
-            [InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null,
+            [InjectOptional] IWorldPointerGridResolver pointerGridResolver = null,
+            [InjectOptional] IGridActionOverlayService gridOverlay = null,
+            [InjectOptional] IUnitWorldPositionResolver worldPositionResolver = null,
             [InjectOptional] IGameplayInputPolicy inputPolicy = null,
             [InjectOptional] IGameModeService gameModeService = null,
             [InjectOptional] GameplayTurnHudView hudView = null)
@@ -105,7 +92,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _gridProjection = gridProjection;
             _grid = grid;
             _screenToGrid = screenToGrid;
-            _terrainLevelQuery = terrainLevelQuery;
+            _pointerGridResolver = pointerGridResolver;
+            _gridOverlay = gridOverlay;
+            _worldPositionResolver = worldPositionResolver;
             _inputPolicy = inputPolicy;
             _gameModeService = gameModeService;
             _hudView = hudView;
@@ -135,23 +124,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
 
             EndSession(destroyPreview: true);
-            DestroyRuntimeRoot(_highlightRoot);
             DestroyRuntimeRoot(_previewRoot);
             if (_controlsRoot != null)
                 Object.Destroy(_controlsRoot.gameObject);
-            _highlightRoot = null;
             _previewRoot = null;
-            _selectionMarker = null;
             _controlsRoot = null;
             _confirmButton = null;
             _cancelButton = null;
-            DestroyMaterial(_validTileMaterial);
-            DestroyMaterial(_invalidTileMaterial);
-            DestroyMaterial(_selectedTileMaterial);
             DestroyMaterial(_fallbackPreviewMaterial);
-            _validTileMaterial = null;
-            _invalidTileMaterial = null;
-            _selectedTileMaterial = null;
             _fallbackPreviewMaterial = null;
         }
 
@@ -258,6 +238,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _session.InputBlock = _inputPolicy?.AcquireBlock(
                 DeploymentInputMask,
                 this);
+            _session.OverlayAcquired =
+                _gridOverlay?.Acquire(GridActionOverlayOwner.Deployment) == true;
+            if (!_session.OverlayAcquired)
+            {
+                Debug.LogWarning(
+                    $"{LogTag} Shared grid overlay is unavailable or owned by another mode; deployment remains functional without tile highlights.");
+            }
 
             EnsureWorldRoots();
             EnsureControls();
@@ -281,7 +268,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     _session.QueueId);
 
             _session.SetTiles(tiles);
-            RebuildHighlights();
+            RefreshDeploymentOverlay();
 
             if (_session.SelectedTile.HasValue
                 && !_session.ValidTiles.Contains(_session.SelectedTile.Value))
@@ -290,36 +277,33 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
         }
 
-        private void RebuildHighlights()
+        private void RefreshDeploymentOverlay()
         {
-            ClearHighlights();
-
             if (_session == null)
                 return;
 
-            EnsureWorldRoots();
-            EnsureTileMaterials();
-
+            _overlayCells.Clear();
             for (int index = 0; index < _session.Tiles.Count; index++)
             {
                 UnitRecruitmentDeploymentTileSnapshot tile = _session.Tiles[index];
                 if (!tile.IsValid && _grid != null && !_grid.ContainsCell(tile.Position))
                     continue;
 
-                Material material = tile.IsValid
-                    ? _validTileMaterial
-                    : _invalidTileMaterial;
-                GameObject marker = CreateTileMarker(
+                GridActionOverlayVisualState state =
+                    _session.SelectedTile.HasValue
+                    && _session.SelectedTile.Value == tile.Position
+                        ? GridActionOverlayVisualState.Selected
+                        : tile.IsValid
+                            ? GridActionOverlayVisualState.Valid
+                            : GridActionOverlayVisualState.Invalid;
+                _overlayCells.Add(new GridActionOverlayCell(
                     tile.Position,
-                    material,
-                    tile.IsValid
-                        ? $"DeployValid_{tile.Position.x}_{tile.Position.y}"
-                        : $"DeployInvalid_{tile.Position.x}_{tile.Position.y}");
-                if (marker != null)
-                    _highlightObjects.Add(marker);
+                    state,
+                    tile.Reason));
             }
 
-            UpdateSelectionMarker();
+            if (_session.OverlayAcquired)
+                _gridOverlay?.Show(GridActionOverlayOwner.Deployment, _overlayCells);
         }
 
         private void HandleKeyboard()
@@ -384,7 +368,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             _session.SelectedTile = tile;
             MovePreviewTo(tile);
-            UpdateSelectionMarker();
+            RefreshDeploymentOverlay();
             UpdateConfirmInteractable();
         }
 
@@ -479,10 +463,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void EndSession(bool destroyPreview)
         {
-            _session?.InputBlock?.Dispose();
+            DeploymentSession session = _session;
+            session?.InputBlock?.Dispose();
+            if (session?.OverlayAcquired == true)
+                _gridOverlay?.Release(GridActionOverlayOwner.Deployment);
             _session = null;
             _confirmInProgress = false;
-            ClearHighlights();
             ClearSelectedTile(destroyPreview);
             SetControlsVisible(false);
         }
@@ -498,8 +484,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _previewObject = null;
             }
 
-            if (_selectionMarker != null)
-                _selectionMarker.SetActive(false);
+            if (_session != null)
+                RefreshDeploymentOverlay();
 
             UpdateConfirmInteractable();
         }
@@ -671,78 +657,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _previewObject.transform.rotation = camera.transform.rotation;
         }
 
-        private void UpdateSelectionMarker()
-        {
-            if (_session == null || !_session.SelectedTile.HasValue)
-            {
-                if (_selectionMarker != null)
-                    _selectionMarker.SetActive(false);
-                return;
-            }
-
-            EnsureSelectionMarker();
-            Vector2Int tile = _session.SelectedTile.Value;
-            _selectionMarker.transform.position =
-                ResolveWorldPosition(tile, TileOverlayLift + 0.015f);
-            _selectionMarker.transform.rotation = ResolveTileMarkerRotation();
-            _selectionMarker.transform.localScale =
-                ResolveTileMarkerScale(TileMarkerScale * 0.72f);
-            _selectionMarker.SetActive(true);
-        }
-
-        private void EnsureSelectionMarker()
-        {
-            if (_selectionMarker != null)
-                return;
-
-            EnsureTileMaterials();
-            _selectionMarker = CreateTileMarker(
-                Vector2Int.zero,
-                _selectedTileMaterial,
-                "DeploySelectedTile");
-            if (_selectionMarker != null)
-                _selectionMarker.SetActive(false);
-        }
-
-        private GameObject CreateTileMarker(
-            Vector2Int tile,
-            Material material,
-            string objectName)
-        {
-            EnsureWorldRoots();
-            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            marker.name = objectName;
-            marker.transform.SetParent(_highlightRoot, false);
-            marker.transform.position = ResolveWorldPosition(tile, TileOverlayLift);
-            marker.transform.rotation = ResolveTileMarkerRotation();
-            marker.transform.localScale = ResolveTileMarkerScale(TileMarkerScale);
-
-            Collider collider = marker.GetComponent<Collider>();
-            if (collider != null)
-                Object.Destroy(collider);
-
-            Renderer renderer = marker.GetComponent<Renderer>();
-            if (renderer != null)
-            {
-                renderer.sharedMaterial = material;
-                renderer.shadowCastingMode = ShadowCastingMode.Off;
-                renderer.receiveShadows = false;
-            }
-
-            return marker;
-        }
-
-        private void ClearHighlights()
-        {
-            for (int index = 0; index < _highlightObjects.Count; index++)
-            {
-                if (_highlightObjects[index] != null)
-                    Object.Destroy(_highlightObjects[index]);
-            }
-
-            _highlightObjects.Clear();
-        }
-
         private bool TryResolveTile(
             Vector2 screenPosition,
             out Vector2Int tile)
@@ -752,6 +666,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_screenToGrid != null)
             {
                 tile = _screenToGrid.ScreenToGrid(screenPosition);
+                return true;
+            }
+
+            if (_pointerGridResolver != null
+                && _pointerGridResolver.TryScreenToGrid(screenPosition, out tile))
+            {
                 return true;
             }
 
@@ -769,7 +689,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!plane.Raycast(ray, out float distance) || distance < 0f)
                 return false;
 
-            tile = _gridProjection.WorldToGrid(ray.GetPoint(distance));
+            Vector3 worldPoint = ray.GetPoint(distance);
+            if (_pointerGridResolver != null
+                && _pointerGridResolver.TryWorldToGrid(worldPoint, out tile))
+            {
+                return true;
+            }
+
+            tile = _gridProjection.WorldToGrid(worldPoint);
             return true;
         }
 
@@ -777,74 +704,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Vector2Int tile,
             float layerOffset)
         {
-            if (_terrainLevelQuery != null
-                && _terrainLevelQuery.TryGetTerrainSurfaceY(tile, out float surfaceY)
-                && IsFinite(surfaceY))
-            {
-                Vector3 projected = _gridProjection.GridToWorld(tile);
-                projected.y = surfaceY + layerOffset;
-                return projected;
-            }
+            if (_worldPositionResolver != null)
+                return _worldPositionResolver.ResolveWorldPosition(tile, layerOffset);
 
-            float elevation = _terrainLevelQuery != null
-                && _terrainLevelQuery.TryGetTerrainLevel(tile, out int level)
-                    ? level
-                    : 0f;
+            if (_gridProjection == null)
+                return new Vector3(tile.x, tile.y, 0f);
 
-            return _gridProjection.GridToWorld(tile, elevation, layerOffset);
-        }
-
-        private Quaternion ResolveTileMarkerRotation()
-            => _gridProjection?.WorldPlane == GridWorldPlane.XZ
-                ? Quaternion.Euler(90f, 0f, 0f)
-                : Quaternion.identity;
-
-        private Vector3 ResolveTileMarkerScale(float scaleMultiplier)
-        {
-            Vector3 origin = _gridProjection.GridToWorld(Vector2Int.zero);
-            Vector3 xStep = _gridProjection.GridToWorld(Vector2Int.right) - origin;
-            Vector3 yStep = _gridProjection.GridToWorld(Vector2Int.up) - origin;
-            float width = Mathf.Max(0.1f, new Vector2(xStep.x, xStep.z).magnitude);
-            float height = Mathf.Max(0.1f, new Vector2(yStep.x, yStep.z).magnitude);
-
-            if (_gridProjection.WorldPlane != GridWorldPlane.XZ)
-            {
-                width = Mathf.Max(0.1f, Mathf.Abs(xStep.x));
-                height = Mathf.Max(0.1f, Mathf.Abs(yStep.y));
-            }
-
-            return new Vector3(
-                width * scaleMultiplier,
-                height * scaleMultiplier,
-                1f);
+            return _gridProjection.GridToWorld(tile, 0f, layerOffset);
         }
 
         private void EnsureWorldRoots()
         {
-            if (_highlightRoot == null)
-            {
-                var root = new GameObject(HighlightRootName);
-                _highlightRoot = root.transform;
-            }
-
             if (_previewRoot == null)
             {
                 var root = new GameObject(PreviewRootName);
                 _previewRoot = root.transform;
             }
-        }
-
-        private void EnsureTileMaterials()
-        {
-            _validTileMaterial ??= CreateTransparentMaterial(
-                "UnitDeploymentValidTile",
-                ValidTileColor);
-            _invalidTileMaterial ??= CreateTransparentMaterial(
-                "UnitDeploymentInvalidTile",
-                InvalidTileColor);
-            _selectedTileMaterial ??= CreateTransparentMaterial(
-                "UnitDeploymentSelectedTile",
-                SelectedTileColor);
         }
 
         private void EnsureFallbackPreviewMaterial()
@@ -1128,9 +1003,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private static string NormalizeId(string value)
             => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-        private static bool IsFinite(float value)
-            => !float.IsNaN(value) && !float.IsInfinity(value);
-
         private static void DestroyMaterial(Material material)
         {
             if (material != null)
@@ -1154,6 +1026,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             public readonly Dictionary<Vector2Int, string> InvalidReasons = new();
             public IDisposable InputBlock;
             public Vector2Int? SelectedTile;
+            public bool OverlayAcquired;
 
             public DeploymentSession(
                 string ownerId,

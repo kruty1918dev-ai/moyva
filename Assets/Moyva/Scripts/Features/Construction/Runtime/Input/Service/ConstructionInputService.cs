@@ -77,7 +77,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private string _cachedPlacementValidationBuildingId;
         private Vector2Int? _cachedPlacementValidationIgnoredPendingPosition;
         private bool _cachedPlacementValidationAllowed;
-        private bool _mandatoryCastlePreviewBootstrapPending;
 
         [Inject]
         public ConstructionInputService(
@@ -163,8 +162,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (!_isActive)
                 return;
-
-            TryBootstrapMandatoryCastlePreview();
 
             if (HandlePcCommands())
                 return;
@@ -537,161 +534,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             tilePosition = _screenToGrid.ScreenToGrid(screenPosition);
             return _gridService != null && _gridService.TryGetTileData(tilePosition, out _);
         }
-
-        private void TryBootstrapMandatoryCastlePreview()
-        {
-            if (!_mandatoryCastlePreviewBootstrapPending)
-                return;
-
-            if (_constructionService is not IConstructionBootstrapQuery bootstrap)
-            {
-                _mandatoryCastlePreviewBootstrapPending = false;
-                return;
-            }
-
-            if (!bootstrap.RequiresInitialCastle(
-                    _constructionService.GetActiveOwner(),
-                    out string castleBuildingId)
-                || string.IsNullOrWhiteSpace(castleBuildingId))
-            {
-                _mandatoryCastlePreviewBootstrapPending = false;
-                return;
-            }
-
-            if (_constructionService.State != BuildingPlacementState.Placing
-                || _constructionService.IsDemolishMode
-                || _constructionService.GetPendingPlacements().Count > 0
-                || !string.Equals(
-                    _constructionService.GetSelectedBuildingId(),
-                    castleBuildingId,
-                    StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            ConstructionPointerSnapshot pointer = ReadPointerSnapshot();
-            if (pointer.HasPointer
-                && TryPreviewMandatoryCastleAtScreenPosition(
-                    pointer.Position,
-                    castleBuildingId))
-            {
-                _mandatoryCastlePreviewBootstrapPending = false;
-                return;
-            }
-
-            if (TryPreviewMandatoryCastleAtScreenPosition(
-                    ResolveScreenCenter(),
-                    castleBuildingId))
-            {
-                _mandatoryCastlePreviewBootstrapPending = false;
-                return;
-            }
-
-            if (_gridService == null
-                || _gridService.GridWidth <= 0
-                || _gridService.GridHeight <= 0)
-            {
-                return;
-            }
-
-            bool fallbackPreviewCreated =
-                TryPreviewMandatoryCastleNearGridCenter(
-                    castleBuildingId);
-            _mandatoryCastlePreviewBootstrapPending = false;
-
-            if (!fallbackPreviewCreated && VerboseLogs)
-            {
-                Debug.LogWarning(
-                    $"{LogTag} Mandatory Castle preview could not find a valid initial tile.");
-            }
-        }
-
-        private bool TryPreviewMandatoryCastleAtScreenPosition(
-            Vector2 screenPosition,
-            string castleBuildingId)
-        {
-            return TryResolvePointerTile(screenPosition, out Vector2Int tile)
-                   && TryPreviewMandatoryCastleAtTile(
-                       tile,
-                       castleBuildingId);
-        }
-
-        private bool TryPreviewMandatoryCastleNearGridCenter(
-            string castleBuildingId)
-        {
-            if (_gridService == null
-                || _gridService.GridWidth <= 0
-                || _gridService.GridHeight <= 0)
-            {
-                return false;
-            }
-
-            var center = new Vector2Int(
-                Mathf.Clamp(_gridService.GridWidth / 2, 0, _gridService.GridWidth - 1),
-                Mathf.Clamp(_gridService.GridHeight / 2, 0, _gridService.GridHeight - 1));
-            int maxRadius = Mathf.Max(_gridService.GridWidth, _gridService.GridHeight);
-
-            for (int radius = 0; radius <= maxRadius; radius++)
-            {
-                for (int y = center.y - radius; y <= center.y + radius; y++)
-                {
-                    for (int x = center.x - radius; x <= center.x + radius; x++)
-                    {
-                        if (radius > 0
-                            && x != center.x - radius
-                            && x != center.x + radius
-                            && y != center.y - radius
-                            && y != center.y + radius)
-                        {
-                            continue;
-                        }
-
-                        var tile = new Vector2Int(x, y);
-                        if (!_gridService.TryGetTileData(tile, out _))
-                            continue;
-
-                        if (TryPreviewMandatoryCastleAtTile(
-                                tile,
-                                castleBuildingId))
-                        {
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        private bool TryPreviewMandatoryCastleAtTile(
-            Vector2Int tile,
-            string castleBuildingId)
-        {
-            if (_placementQuery == null)
-                return false;
-
-            ConstructionPlacementQueryResult result =
-                _placementQuery.EvaluatePlacement(
-                    new ConstructionPlacementQueryRequest(
-                        castleBuildingId,
-                        tile,
-                        includeResources: true,
-                        includeDetails: false,
-                        ownerId: _constructionService.GetActiveOwner(),
-                        attemptSource:
-                            ConstructionPlacementAttemptSource.PointerHover,
-                        allowUniquePreviewRelocation: true,
-                        rotation: ResolveSelectedRotation()));
-
-            return result.CanPreview
-                   && result.ResourcesValid
-                   && _constructionService.TryPreviewAt(tile);
-        }
-
-        private static Vector2 ResolveScreenCenter()
-            => new Vector2(
-                Mathf.Max(1, Screen.width) * 0.5f,
-                Mathf.Max(1, Screen.height) * 0.5f);
 
         private Camera ResolveCamera()
         {

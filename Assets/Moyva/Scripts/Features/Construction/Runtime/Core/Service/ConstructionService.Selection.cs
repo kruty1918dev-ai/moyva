@@ -322,10 +322,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
-            IsDemolishMode = false;
-            SetPlacementSelection(
-                castleBuildingId,
-                BuildingPlacementState.Placing);
+            SelectBuilding(castleBuildingId);
 
             Debug.Log(
                 $"{ModuleLogTag} castle-bootstrap " +

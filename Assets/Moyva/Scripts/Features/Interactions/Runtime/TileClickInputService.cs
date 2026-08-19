@@ -15,6 +15,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         private readonly SignalBus _signalBus;
         private readonly IGridProjection _gridProjection;
+        private readonly IWorldPointerGridResolver _pointerGridResolver;
         private readonly IGameplayInputPolicy _inputPolicy;
 
         private int _trackedTouchId = -1;
@@ -28,10 +29,12 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         public TileClickInputService(
             SignalBus signalBus,
             [InjectOptional] IGridProjection gridProjection = null,
+            [InjectOptional] IWorldPointerGridResolver pointerGridResolver = null,
             [InjectOptional] IGameplayInputPolicy inputPolicy = null)
         {
             _signalBus = signalBus;
             _gridProjection = gridProjection;
+            _pointerGridResolver = pointerGridResolver;
             _inputPolicy = inputPolicy;
         }
 
@@ -185,34 +188,31 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         private void FireTileClick(Vector2 screenPos, Camera cam, TilePointerButton button)
         {
-            Vector3 worldPos = ScreenToWorldOnGridPlane(screenPos, cam);
-            var tilePos = _gridProjection != null
+            Vector2Int tilePos;
+            if (_pointerGridResolver != null
+                && _pointerGridResolver.TryScreenToGrid(screenPos, out tilePos))
+            {
+                FireResolvedTileClick(tilePos, button);
+                return;
+            }
+
+            Vector3 worldPos = cam != null
+                ? cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, -cam.transform.position.z))
+                : Vector3.zero;
+            tilePos = _gridProjection != null
                 ? _gridProjection.WorldToGrid(worldPos)
                 : new Vector2Int(Mathf.RoundToInt(worldPos.x), Mathf.RoundToInt(worldPos.y));
 
+            FireResolvedTileClick(tilePos, button);
+        }
+
+        private void FireResolvedTileClick(Vector2Int tilePos, TilePointerButton button)
+        {
             _signalBus.Fire(new TileClickedSignal
             {
                 Position = tilePos,
                 Button = button,
             });
-        }
-
-        private Vector3 ScreenToWorldOnGridPlane(Vector2 screenPos, Camera cam)
-        {
-            if (cam == null)
-                return Vector3.zero;
-
-            if (_gridProjection == null)
-                return cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, -cam.transform.position.z));
-
-            Ray ray = cam.ScreenPointToRay(screenPos);
-            Plane plane = _gridProjection.WorldPlane == GridWorldPlane.XZ
-                ? new Plane(Vector3.up, Vector3.zero)
-                : new Plane(Vector3.forward, Vector3.zero);
-
-            return plane.Raycast(ray, out float distance)
-                ? ray.GetPoint(distance)
-                : cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, -cam.transform.position.z));
         }
     }
 }

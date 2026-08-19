@@ -67,6 +67,9 @@ namespace Kruty1918.Moyva.Grid.Runtime
 			if (!Container.HasBinding<IGridProjection>())
 				Container.Bind<IGridProjection>().FromInstance(GridProjectionFactory.Create(resolvedProjectSettings)).AsSingle();
 
+			if (!Container.HasBinding<IWorldPointerGridResolver>())
+				Container.Bind<IWorldPointerGridResolver>().To<WorldPointerGridResolver>().AsSingle();
+
 			MapChunkFeatureBindings.Install(Container);
 			Container.BindInterfacesTo<Project3DLightingInitializer>().AsSingle().NonLazy();
 

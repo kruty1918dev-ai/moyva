@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<UnitGarrisonStateChangedSignal>()
                 .OptionalSubscriber();
             Container.DeclareSignal<InterruptMovementSignal>();
+            Container.DeclareSignal<LocalUnitSelectionChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<OnMapObjectSpawnedSignal>();
             Container.DeclareSignal<OnObjectsMapChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<GridTileChangedSignal>().OptionalSubscriber();

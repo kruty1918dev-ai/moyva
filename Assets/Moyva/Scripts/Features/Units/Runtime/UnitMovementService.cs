@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Kruty1918.Moyva.Animations.API;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Grid.Runtime;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Pathfinding.API;
 using Kruty1918.Moyva.Signals;
@@ -17,7 +16,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
-	internal sealed class UnitMovementService : IUnitMovementService, ITurnBlocker, IInitializable, IDisposable
+	internal sealed class UnitMovementService : IUnitMovementService, IUnitMovementQuery, ITurnBlocker, IInitializable, IDisposable
 	{
 		private readonly IUnitService _unitService;
 		private readonly IPathfinder _pathfinder;
@@ -30,14 +29,12 @@ namespace Kruty1918.Moyva.Units.Runtime
 		private readonly IUnitGameplayProfileService _unitGameplayProfileService;
 		private readonly IGeneratedTerrainLevelQuery _terrainLevelQuery;
 		private readonly WorldCreationDefaultsSO _worldDefaults;
-		private readonly IGridProjection _gridProjection;
-		private readonly TileRegistrySO _tileRegistry;
 		private readonly ITurnService _turns;
 		private readonly IUnitOwnershipQuery _ownership;
 		private readonly IUnitPlacementValidator _placementValidator;
+		private readonly IUnitWorldPositionResolver _worldPositionResolver;
 
 		private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
-		private readonly Dictionary<string, float> _tileSurfaceOffsetYById = new();
 
 		public UnitMovementService(
 			IUnitService unitService,
@@ -51,11 +48,10 @@ namespace Kruty1918.Moyva.Units.Runtime
 			IUnitGameplayProfileService unitGameplayProfileService,
 			[InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null,
 			[InjectOptional] WorldCreationDefaultsSO worldDefaults = null,
-			[InjectOptional] IGridProjection gridProjection = null,
-			[InjectOptional] TileRegistrySO tileRegistry = null,
 			[InjectOptional] ITurnService turns = null,
 			[InjectOptional] IUnitOwnershipQuery ownership = null,
-			[InjectOptional] IUnitPlacementValidator placementValidator = null)
+			[InjectOptional] IUnitPlacementValidator placementValidator = null,
+			[InjectOptional] IUnitWorldPositionResolver worldPositionResolver = null)
 		{
 			_unitService = unitService;
 			_pathfinder = pathfinder;
@@ -68,11 +64,10 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_unitGameplayProfileService = unitGameplayProfileService;
 			_terrainLevelQuery = terrainLevelQuery;
 			_worldDefaults = worldDefaults;
-			_gridProjection = gridProjection;
-			_tileRegistry = tileRegistry;
 			_turns = turns;
 			_ownership = ownership;
 			_placementValidator = placementValidator;
+			_worldPositionResolver = worldPositionResolver;
 		}
 
 		[System.Diagnostics.Conditional("MOYVA_VERBOSE_MOVEMENT")]
@@ -117,7 +112,10 @@ namespace Kruty1918.Moyva.Units.Runtime
 			unitObject.transform.position =
 				ResolveMovementWorldPosition(
 					signal.UnitPosition,
-					GridSurfacePlacementUtility.DefaultSurfaceClearance);
+					0.02f);
+			_worldPositionResolver?.AlignBottomToSurface(
+				unitObject,
+				signal.UnitPosition);
 		}
 
 		private void OnInterruptRequested(InterruptMovementSignal signal)
@@ -257,62 +255,192 @@ namespace Kruty1918.Moyva.Units.Runtime
 			return false;
 		}
 
+		public IReadOnlyList<UnitMovementTileSnapshot> GetMovementTiles(string unitId)
+		{
+			var results = new Dictionary<Vector2Int, UnitMovementTileSnapshot>();
+			if (string.IsNullOrWhiteSpace(unitId)
+				|| !_unitService.TryGetUnitPosition(unitId, out Vector2Int startPosition))
+			{
+				return Array.Empty<UnitMovementTileSnapshot>();
+			}
+
+			float stamina = Mathf.Max(0f, _unitService.GetStamina(unitId));
+			results[startPosition] = new UnitMovementTileSnapshot(
+				startPosition,
+				isReachable: true,
+				cost: 0f);
+
+			var open = new List<Vector2Int> { startPosition };
+			var costByPosition = new Dictionary<Vector2Int, float>
+			{
+				[startPosition] = 0f,
+			};
+
+			while (open.Count > 0)
+			{
+				Vector2Int current = PopLowestCost(open, costByPosition);
+				float currentCost = costByPosition[current];
+
+				foreach (Vector2Int neighbor in _pathfinder.GetNeighbors(current))
+				{
+					if (neighbor == startPosition)
+						continue;
+
+					float remainingStamina = Mathf.Max(0f, stamina - currentCost);
+					if (!TryEvaluateMovementStep(
+							unitId,
+							neighbor,
+							remainingStamina,
+							openConstructionGateIfNeeded: false,
+							out float stepCost,
+							out string reason))
+					{
+						if (!results.TryGetValue(neighbor, out UnitMovementTileSnapshot existing)
+							|| !existing.IsReachable)
+						{
+							results[neighbor] = new UnitMovementTileSnapshot(
+								neighbor,
+								isReachable: false,
+								cost: currentCost,
+								reason);
+						}
+
+						continue;
+					}
+
+					float nextCost = currentCost + stepCost;
+					if (nextCost > stamina + 0.0001f)
+					{
+						if (!results.TryGetValue(neighbor, out UnitMovementTileSnapshot existing)
+							|| !existing.IsReachable)
+						{
+							results[neighbor] = new UnitMovementTileSnapshot(
+								neighbor,
+								isReachable: false,
+								cost: nextCost,
+								"Недостатньо витривалості.");
+						}
+
+						continue;
+					}
+
+					if (costByPosition.TryGetValue(neighbor, out float previousCost)
+						&& nextCost >= previousCost - 0.0001f)
+					{
+						continue;
+					}
+
+					costByPosition[neighbor] = nextCost;
+					results[neighbor] = new UnitMovementTileSnapshot(
+						neighbor,
+						isReachable: true,
+						cost: nextCost);
+
+					if (!open.Contains(neighbor))
+						open.Add(neighbor);
+				}
+			}
+
+			var ordered = new List<UnitMovementTileSnapshot>(results.Values);
+			ordered.Sort((left, right) =>
+			{
+				int reachable = right.IsReachable.CompareTo(left.IsReachable);
+				if (reachable != 0)
+					return reachable;
+
+				int cost = left.Cost.CompareTo(right.Cost);
+				if (cost != 0)
+					return cost;
+
+				int y = left.Position.y.CompareTo(right.Position.y);
+				return y != 0 ? y : left.Position.x.CompareTo(right.Position.x);
+			});
+			return ordered;
+		}
+
 		private bool CanMakeStep(string unitId, Vector2Int stepPos)
 		{
+			float currentStamina = _unitService.GetStamina(unitId);
+			bool canStep = TryEvaluateMovementStep(
+				unitId,
+				stepPos,
+				currentStamina,
+				openConstructionGateIfNeeded: true,
+				out float cost,
+				out string reason);
+			if (!canStep && !string.IsNullOrWhiteSpace(reason))
+				Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: BLOCKED ({reason}).");
+
+			LogMovementVerbose(
+				$"[UnitMovement] step {unitId}@{stepPos}: " +
+				$"stamina={currentStamina} cost={cost} ok={canStep}");
+			return canStep;
+		}
+
+		private bool TryEvaluateMovementStep(
+			string unitId,
+			Vector2Int stepPos,
+			float availableStamina,
+			bool openConstructionGateIfNeeded,
+			out float cost,
+			out string reason)
+		{
+			cost = 0f;
+			reason = null;
+
 			if (_objectsMapService.IsOccupied(stepPos)
-				&& _objectsMapService.TryGetOccupant(stepPos, out var occupantId)
+				&& _objectsMapService.TryGetOccupant(stepPos, out string occupantId)
 				&& occupantId != unitId
-				&& !CanTraverseOccupiedConstructionCell(
-					unitId,
-					stepPos,
-					occupantId,
-					out _))
+				&& !(openConstructionGateIfNeeded
+					? CanTraverseOccupiedConstructionCell(unitId, stepPos, occupantId, out reason)
+					: CanPathTraverseOccupiedConstructionCell(unitId, stepPos)))
 			{
+				reason ??= $"Клітинка зайнята '{occupantId}'.";
 				return false;
 			}
 
-			float currentStamina = _unitService.GetStamina(unitId);
-
-			if (_gridService.TryGetTileData(stepPos, out var tileTypeId))
+			if (!_gridService.TryGetTileData(stepPos, out string tileTypeId))
 			{
-				if (string.IsNullOrEmpty(tileTypeId))
-				{
-					Debug.LogWarning($"[UnitMovement] CanMakeStep: тайл {stepPos} має порожній tileTypeId.");
-					return false;
-				}
-
-				bool terrainBlocked;
-				string blockReason;
-				if (_placementValidator != null)
-				{
-					terrainBlocked = !_placementValidator.IsTerrainAllowed(
-						stepPos,
-						out blockReason);
-				}
-				else
-				{
-					terrainBlocked = IsBlockedByUnitPlacementRules(
-						stepPos,
-						tileTypeId,
-						out blockReason);
-				}
-
-				if (terrainBlocked)
-				{
-					Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: BLOCKED ({blockReason}).");
-					return false;
-				}
-
-				float cost = _tileSettings.GetTileWeight(tileTypeId);
-				bool canStep = currentStamina >= cost;
-				LogMovementVerbose(
-					$"[UnitMovement] step {unitId}@{stepPos}: " +
-					$"stamina={currentStamina} cost={cost} ok={canStep}");
-				return canStep;
+				reason = "Тайл не знайдено в grid-сервісі.";
+				return false;
 			}
 
-			Debug.LogWarning($"[UnitMovement] CanMakeStep: тайл {stepPos} не знайдено в грід-сервісі.");
-			return false;
+			if (string.IsNullOrEmpty(tileTypeId))
+			{
+				reason = "Тайл має порожній tileTypeId.";
+				return false;
+			}
+
+			bool terrainBlocked;
+			string blockReason;
+			if (_placementValidator != null)
+			{
+				terrainBlocked = !_placementValidator.IsTerrainAllowed(
+					stepPos,
+					out blockReason);
+			}
+			else
+			{
+				terrainBlocked = IsBlockedByUnitPlacementRules(
+					stepPos,
+					tileTypeId,
+					out blockReason);
+			}
+
+			if (terrainBlocked)
+			{
+				reason = blockReason;
+				return false;
+			}
+
+			cost = Mathf.Max(0.0001f, _tileSettings.GetTileWeight(tileTypeId));
+			if (availableStamina + 0.0001f < cost)
+			{
+				reason = "Недостатньо витривалості.";
+				return false;
+			}
+
+			return true;
 		}
 
 		private bool CanPathTraverseOccupiedConstructionCell(
@@ -377,65 +505,23 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 		private Vector3 ResolveMovementWorldPosition(Vector2Int gridPosition, float unitSurfacePivotOffsetY)
 		{
-			if (_gridProjection == null)
-				return new Vector3(gridPosition.x, gridPosition.y, 0f);
+			if (_worldPositionResolver != null)
+				return _worldPositionResolver.ResolveWorldPosition(gridPosition, unitSurfacePivotOffsetY);
 
-			float elevation = _terrainLevelQuery != null && _terrainLevelQuery.TryGetTerrainLevel(gridPosition, out int level)
-				? level
-				: 0f;
-			Vector3 basePosition = _gridProjection.GridToWorld(gridPosition, elevation, 0.05f);
-			if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
-				return basePosition;
-
-			basePosition.y = ResolveTerrainSurfaceY(gridPosition, elevation) + unitSurfacePivotOffsetY;
-			return basePosition;
+			return new Vector3(gridPosition.x, gridPosition.y, 0f);
 		}
 
 		private float ResolveUnitSurfacePivotOffsetY(GameObject unitObject, Vector2Int gridPosition)
 		{
-			if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection) || unitObject == null)
-				return 0.05f;
-
-			float elevation = _terrainLevelQuery != null && _terrainLevelQuery.TryGetTerrainLevel(gridPosition, out int level)
-				? level
-				: 0f;
-			float surfaceY = ResolveTerrainSurfaceY(gridPosition, elevation);
-			return Mathf.Max(GridSurfacePlacementUtility.DefaultSurfaceClearance, unitObject.transform.position.y - surfaceY);
-		}
-
-		private float ResolveTerrainSurfaceY(Vector2Int gridPosition, float elevation)
-		{
-			float baseY = _gridProjection.GridToWorld(gridPosition, elevation, 0f).y;
-			if (_gridService.TryGetTileData(gridPosition, out string tileId) && TryResolveTileSurfaceOffsetY(tileId, out float offsetY))
-				return baseY + offsetY;
-
-			return baseY;
-		}
-
-		private bool TryResolveTileSurfaceOffsetY(string tileId, out float offsetY)
-		{
-			offsetY = 0f;
-			if (string.IsNullOrWhiteSpace(tileId) || _tileRegistry?.Definitions == null)
-				return false;
-
-			if (_tileSurfaceOffsetYById.TryGetValue(tileId, out offsetY))
-				return true;
-
-			for (int i = 0; i < _tileRegistry.Definitions.Length; i++)
+			if (_worldPositionResolver != null)
 			{
-				var definition = _tileRegistry.Definitions[i];
-				var surfacePrefab = definition?.SurfaceReferencePrefab;
-				if (definition == null || definition.Id != tileId || surfacePrefab == null)
-					continue;
-
-				if (!GridSurfacePlacementUtility.TryResolveTopOffsetY(surfacePrefab, out offsetY))
-					offsetY = 0f;
-
-				_tileSurfaceOffsetYById[tileId] = offsetY;
-				return true;
+				return _worldPositionResolver.ResolveSurfacePivotOffsetY(
+					unitObject,
+					gridPosition,
+					0.02f);
 			}
 
-			return false;
+			return 0.05f;
 		}
 
 		private bool IsBlockedByUnitPlacementRules(Vector2Int position, string tileTypeId, out string reason)
@@ -507,6 +593,32 @@ namespace Kruty1918.Moyva.Units.Runtime
 			}
 
 			return false;
+		}
+
+		private static Vector2Int PopLowestCost(
+			List<Vector2Int> open,
+			IReadOnlyDictionary<Vector2Int, float> costByPosition)
+		{
+			int bestIndex = 0;
+			float bestCost = costByPosition.TryGetValue(open[0], out float cost)
+				? cost
+				: float.PositiveInfinity;
+
+			for (int index = 1; index < open.Count; index++)
+			{
+				float candidateCost = costByPosition.TryGetValue(open[index], out cost)
+					? cost
+					: float.PositiveInfinity;
+				if (candidateCost >= bestCost)
+					continue;
+
+				bestIndex = index;
+				bestCost = candidateCost;
+			}
+
+			Vector2Int result = open[bestIndex];
+			open.RemoveAt(bestIndex);
+			return result;
 		}
 	}
 }
