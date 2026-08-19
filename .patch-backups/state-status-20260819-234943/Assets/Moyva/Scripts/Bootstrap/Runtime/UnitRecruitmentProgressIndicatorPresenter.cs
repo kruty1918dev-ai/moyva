@@ -60,7 +60,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void Initialize()
         {
-            _turns.StateChanged += OnTurnStateChanged;
+            _turns.StatusChanged += OnTurnStateChanged;
             _signalBus.Subscribe<UnitRecruitmentQueueChangedSignal>(
                 OnRecruitmentQueueChanged);
             _signalBus.Subscribe<UnitRecruitmentReadySignal>(
@@ -74,7 +74,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void Dispose()
         {
-            _turns.StateChanged -= OnTurnStateChanged;
+            _turns.StatusChanged -= OnTurnStateChanged;
             _signalBus.TryUnsubscribe<UnitRecruitmentQueueChangedSignal>(
                 OnRecruitmentQueueChanged);
             _signalBus.TryUnsubscribe<UnitRecruitmentReadySignal>(

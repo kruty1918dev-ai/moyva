@@ -260,7 +260,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private static string GetAuthenticatedUserId()
         {
-            if (UnityServices.State == ServicesInitializationState.Initialized &&
+            if (UnityServices.Status == ServicesInitializationState.Initialized &&
                 AuthenticationService.Instance.IsSignedIn)
             {
                 return AuthenticationService.Instance.PlayerId ?? "unknown";

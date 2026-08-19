@@ -4,7 +4,6 @@ using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Zenject;
@@ -12,25 +11,28 @@ using Object = UnityEngine.Object;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
-    internal sealed class UnitRecruitmentProgressIndicatorPresenter :
+    internal sealed class UnitRecruitmentReadyIndicatorPresenter :
         IInitializable,
         ITickable,
         IDisposable
     {
-        private const string ContainerName = "RecruitmentProgressIndicators";
-        private const string IndicatorPrefix = "ProgressIndicator_";
-        private const float IndicatorWorldHeightOffset = 1.05f;
-        private const float IndicatorWidth = 74f;
-        private const float IndicatorHeight = 26f;
+        private const string ContainerName = "RecruitmentReadyIndicators";
+        private const string IndicatorPrefix = "ReadyIndicator_";
+        private const float IndicatorWorldHeightOffset = 1.35f;
+        private const float IndicatorSize = 52f;
 
-        private readonly Dictionary<long, ProgressHandle> _indicators = new();
-        private readonly HashSet<long> _activeQueueIds = new();
-        private readonly HashSet<BuildingQueueKey> _visitedQueues = new();
+        private readonly Dictionary<long, IndicatorHandle> _indicators = new();
+        private readonly Dictionary<string, Sprite> _spriteByUnitTypeId =
+            new(StringComparer.Ordinal);
+        private readonly HashSet<string> _missingSpriteWarnings =
+            new(StringComparer.Ordinal);
+        private readonly HashSet<long> _readyQueueIds = new();
         private readonly List<long> _removeBuffer = new();
+
         private readonly SignalBus _signalBus;
         private readonly ITurnService _turns;
         private readonly IUnitRecruitmentService _recruitment;
-        private readonly IUnitRecruitmentStateStore _stateStore;
+        private readonly IUnitClassConfig _unitConfigs;
         private readonly IGridProjection _gridProjection;
         private readonly GameplayTurnHudView _hudView;
 
@@ -42,25 +44,25 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private bool _warnedMissingCanvas;
         private bool _warnedMissingCamera;
 
-        public UnitRecruitmentProgressIndicatorPresenter(
+        public UnitRecruitmentReadyIndicatorPresenter(
             SignalBus signalBus,
             ITurnService turns,
             IUnitRecruitmentService recruitment,
+            IUnitClassConfig unitConfigs,
             IGridProjection gridProjection,
-            [InjectOptional] IUnitRecruitmentStateStore stateStore = null,
             [InjectOptional] GameplayTurnHudView hudView = null)
         {
             _signalBus = signalBus;
             _turns = turns;
             _recruitment = recruitment;
+            _unitConfigs = unitConfigs;
             _gridProjection = gridProjection;
-            _stateStore = stateStore;
             _hudView = hudView;
         }
 
         public void Initialize()
         {
-            _turns.StateChanged += OnTurnStateChanged;
+            _turns.StatusChanged += OnTurnStateChanged;
             _signalBus.Subscribe<UnitRecruitmentQueueChangedSignal>(
                 OnRecruitmentQueueChanged);
             _signalBus.Subscribe<UnitRecruitmentReadySignal>(
@@ -69,12 +71,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 OnRecruitmentDeployed);
             _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
 
-            ReconcileProgressIndicators();
+            ReconcileReadyIndicators();
         }
 
         public void Dispose()
         {
-            _turns.StateChanged -= OnTurnStateChanged;
+            _turns.StatusChanged -= OnTurnStateChanged;
             _signalBus.TryUnsubscribe<UnitRecruitmentQueueChangedSignal>(
                 OnRecruitmentQueueChanged);
             _signalBus.TryUnsubscribe<UnitRecruitmentReadySignal>(
@@ -102,71 +104,68 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         }
 
         private void OnTurnStateChanged()
-            => ReconcileProgressIndicators();
+            => ReconcileReadyIndicators();
 
         private void OnRecruitmentQueueChanged(UnitRecruitmentQueueChangedSignal _)
-            => ReconcileProgressIndicators();
+            => ReconcileReadyIndicators();
 
         private void OnRecruitmentReady(UnitRecruitmentReadySignal _)
-            => ReconcileProgressIndicators();
+            => ReconcileReadyIndicators();
 
         private void OnRecruitmentDeployed(UnitRecruitmentDeployedSignal _)
-            => ReconcileProgressIndicators();
+            => ReconcileReadyIndicators();
 
         private void OnWorldBuilt(WorldBuiltSignal _)
-            => ReconcileProgressIndicators();
+            => ReconcileReadyIndicators();
 
-        private void ReconcileProgressIndicators()
+        private void ReconcileReadyIndicators()
         {
             EnsureContainer();
 
-            string ownerId = NormalizeId(_turns.LocalOwnerId);
-            if (ownerId == null || _container == null || _stateStore == null)
+            string ownerId = _turns.LocalOwnerId;
+            if (string.IsNullOrWhiteSpace(ownerId) || _container == null)
             {
                 ClearIndicators();
                 return;
             }
 
-            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> allItems =
-                _stateStore.CaptureState();
-            _activeQueueIds.Clear();
-            _visitedQueues.Clear();
+            string normalizedOwnerId = ownerId.Trim();
+            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> readyItems =
+                _recruitment.GetReadyItems(normalizedOwnerId);
 
-            for (int index = 0; index < allItems.Count; index++)
+            _readyQueueIds.Clear();
+            for (int index = 0; index < readyItems.Count; index++)
             {
-                UnitRecruitmentQueueItemSnapshot item = allItems[index];
-                string itemOwner = NormalizeId(item.OwnerId);
-                if (!string.Equals(itemOwner, ownerId, StringComparison.Ordinal))
-                    continue;
-
-                var key = new BuildingQueueKey(ownerId, item.RecruitingBuildingPosition);
-                if (!_visitedQueues.Add(key))
-                    continue;
-
-                IReadOnlyList<UnitRecruitmentQueueItemSnapshot> queue =
-                    _recruitment.GetQueue(ownerId, item.RecruitingBuildingPosition);
-                if (queue == null || queue.Count == 0)
-                    continue;
-
-                UnitRecruitmentQueueItemSnapshot head = queue[0];
-                if (head.IsReady)
-                    continue;
-
-                _activeQueueIds.Add(head.QueueId);
-                if (_indicators.TryGetValue(head.QueueId, out ProgressHandle existing))
+                UnitRecruitmentQueueItemSnapshot ready = readyItems[index];
+                if (ready.QueueId < 1
+                    || !ready.IsReady
+                    || !string.Equals(
+                        ready.OwnerId?.Trim(),
+                        normalizedOwnerId,
+                        StringComparison.Ordinal))
                 {
-                    existing.Snapshot = head;
-                    UpdateText(existing);
                     continue;
                 }
 
-                _indicators.Add(head.QueueId, CreateIndicator(head));
+                _readyQueueIds.Add(ready.QueueId);
+                if (_indicators.TryGetValue(
+                        ready.QueueId,
+                        out IndicatorHandle existing))
+                {
+                    existing.Snapshot = ready;
+                    ApplySprite(existing, ready.UnitTypeId);
+                    continue;
+                }
+
+                _indicators.Add(
+                    ready.QueueId,
+                    CreateIndicator(ready));
             }
 
             _removeBuffer.Clear();
             foreach (long queueId in _indicators.Keys)
             {
-                if (!_activeQueueIds.Contains(queueId))
+                if (!_readyQueueIds.Contains(queueId))
                     _removeBuffer.Add(queueId);
             }
 
@@ -188,7 +187,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 {
                     _warnedMissingCanvas = true;
                     Debug.LogWarning(
-                        "[UnitRecruitmentProgressIndicator] Gameplay Canvas not found. Training progress indicators are disabled.");
+                        "[UnitRecruitmentReadyIndicator] Gameplay Canvas not found. Ready indicators are disabled.");
                 }
 
                 return;
@@ -228,63 +227,90 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 FindObjectsInactive.Include);
         }
 
-        private ProgressHandle CreateIndicator(
+        private IndicatorHandle CreateIndicator(
             UnitRecruitmentQueueItemSnapshot snapshot)
         {
             var root = new GameObject(
                 $"{IndicatorPrefix}{snapshot.QueueId}",
                 typeof(RectTransform),
                 typeof(CanvasRenderer),
-                typeof(Image));
+                typeof(Image),
+                typeof(Button));
             var rect = root.GetComponent<RectTransform>();
             rect.SetParent(_container, false);
-            rect.sizeDelta = new Vector2(IndicatorWidth, IndicatorHeight);
+            rect.sizeDelta = new Vector2(IndicatorSize, IndicatorSize);
 
             Image background = root.GetComponent<Image>();
-            background.color = new Color(0.08f, 0.12f, 0.14f, 0.86f);
-            background.raycastTarget = false;
+            background.color = new Color(0.1f, 0.18f, 0.14f, 0.88f);
+            background.raycastTarget = true;
 
-            var textObject = new GameObject(
-                "Text",
+            Button button = root.GetComponent<Button>();
+            button.targetGraphic = background;
+
+            var iconObject = new GameObject(
+                "Icon",
                 typeof(RectTransform),
                 typeof(CanvasRenderer),
-                typeof(TextMeshProUGUI));
-            var textRect = textObject.GetComponent<RectTransform>();
-            textRect.SetParent(rect, false);
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = Vector2.zero;
-            textRect.offsetMax = Vector2.zero;
+                typeof(Image));
+            var iconRect = iconObject.GetComponent<RectTransform>();
+            iconRect.SetParent(rect, false);
+            iconRect.anchorMin = Vector2.zero;
+            iconRect.anchorMax = Vector2.one;
+            iconRect.offsetMin = new Vector2(6f, 6f);
+            iconRect.offsetMax = new Vector2(-6f, -6f);
 
-            TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
-            text.alignment = TextAlignmentOptions.Center;
-            text.fontSize = 14f;
-            text.color = new Color(0.82f, 0.96f, 1f, 1f);
-            text.raycastTarget = false;
+            Image icon = iconObject.GetComponent<Image>();
+            icon.preserveAspect = true;
+            icon.raycastTarget = false;
 
-            var handle = new ProgressHandle(snapshot, rect, text);
-            UpdateText(handle);
+            var handle = new IndicatorHandle(snapshot, rect, icon, button);
+            button.onClick.AddListener(() => OnIndicatorClicked(snapshot.QueueId));
+            ApplySprite(handle, snapshot.UnitTypeId);
             return handle;
         }
 
-        private static void UpdateText(ProgressHandle handle)
-            => handle.Text.text = FormatRemainingTurns(
-                handle.Snapshot.RemainingTurns);
-
-        private static string FormatRemainingTurns(int turns)
+        private void ApplySprite(IndicatorHandle handle, string unitTypeId)
         {
-            int safeTurns = Math.Max(0, turns);
-            int lastTwoDigits = safeTurns % 100;
-            int lastDigit = safeTurns % 10;
-            string word = lastTwoDigits >= 11 && lastTwoDigits <= 14
-                ? "ходів"
-                : lastDigit == 1
-                    ? "хід"
-                    : lastDigit >= 2 && lastDigit <= 4
-                        ? "ходи"
-                        : "ходів";
+            Sprite sprite = ResolveUnitSprite(unitTypeId);
+            handle.Icon.sprite = sprite;
+            handle.Icon.enabled = sprite != null;
+        }
 
-            return $"{safeTurns} {word}";
+        private Sprite ResolveUnitSprite(string unitTypeId)
+        {
+            if (string.IsNullOrWhiteSpace(unitTypeId))
+                return null;
+
+            string key = unitTypeId.Trim();
+            if (_spriteByUnitTypeId.TryGetValue(key, out Sprite cached))
+                return cached;
+
+            Sprite sprite = _unitConfigs.GetConfig(key)?.ResolveCustomSprite();
+            _spriteByUnitTypeId[key] = sprite;
+
+            if (sprite == null && _missingSpriteWarnings.Add(key))
+            {
+                Debug.LogWarning(
+                    "[UnitRecruitmentReadyIndicator] Unit ready indicator has no CustomSprite. Neutral indicator will be shown.");
+            }
+
+            return sprite;
+        }
+
+        private void OnIndicatorClicked(long queueId)
+        {
+            if (!_indicators.TryGetValue(queueId, out IndicatorHandle handle))
+                return;
+
+            UnitRecruitmentQueueItemSnapshot snapshot = handle.Snapshot;
+            _signalBus.Fire(new UnitRecruitmentReadyIndicatorClickedSignal
+            {
+                OwnerId = snapshot.OwnerId,
+                QueueId = snapshot.QueueId,
+                UnitTypeId = snapshot.UnitTypeId,
+                RecruitingBuildingId = snapshot.RecruitingBuildingId,
+                RecruitingBuildingPosition = snapshot.RecruitingBuildingPosition,
+            });
         }
 
         private void UpdateIndicatorPositions()
@@ -296,7 +322,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
             }
 
-            foreach (ProgressHandle handle in _indicators.Values)
+            foreach (IndicatorHandle handle in _indicators.Values)
             {
                 Vector3 world = ResolveIndicatorWorldPosition(
                     handle.Snapshot.RecruitingBuildingPosition);
@@ -340,7 +366,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 _warnedMissingCamera = true;
                 Debug.LogWarning(
-                    "[UnitRecruitmentProgressIndicator] Main Camera not found. Progress indicators will stay hidden.");
+                    "[UnitRecruitmentReadyIndicator] Main Camera not found. Ready indicators will stay hidden.");
             }
 
             return _camera;
@@ -348,15 +374,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void SetAllIndicatorsVisible(bool visible)
         {
-            foreach (ProgressHandle handle in _indicators.Values)
+            foreach (IndicatorHandle handle in _indicators.Values)
                 handle.Root.gameObject.SetActive(visible);
         }
 
         private void RemoveIndicator(long queueId)
         {
-            if (!_indicators.TryGetValue(queueId, out ProgressHandle handle))
+            if (!_indicators.TryGetValue(queueId, out IndicatorHandle handle))
                 return;
 
+            handle.Button.onClick.RemoveAllListeners();
             _indicators.Remove(queueId);
             Object.Destroy(handle.Root.gameObject);
         }
@@ -370,58 +397,28 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             for (int index = 0; index < _removeBuffer.Count; index++)
                 RemoveIndicator(_removeBuffer[index]);
 
-            _activeQueueIds.Clear();
-            _visitedQueues.Clear();
+            _readyQueueIds.Clear();
             _removeBuffer.Clear();
         }
 
-        private static string NormalizeId(string value)
-            => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-        private readonly struct BuildingQueueKey : IEquatable<BuildingQueueKey>
+        private sealed class IndicatorHandle
         {
-            private readonly string _ownerId;
-            private readonly Vector2Int _position;
-
-            public BuildingQueueKey(string ownerId, Vector2Int position)
-            {
-                _ownerId = ownerId ?? string.Empty;
-                _position = position;
-            }
-
-            public bool Equals(BuildingQueueKey other)
-                => string.Equals(_ownerId, other._ownerId, StringComparison.Ordinal)
-                   && _position == other._position;
-
-            public override bool Equals(object obj)
-                => obj is BuildingQueueKey other && Equals(other);
-
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    return ((_ownerId != null
-                        ? StringComparer.Ordinal.GetHashCode(_ownerId)
-                        : 0) * 397) ^ _position.GetHashCode();
-                }
-            }
-        }
-
-        private sealed class ProgressHandle
-        {
-            public ProgressHandle(
+            public IndicatorHandle(
                 UnitRecruitmentQueueItemSnapshot snapshot,
                 RectTransform root,
-                TextMeshProUGUI text)
+                Image icon,
+                Button button)
             {
                 Snapshot = snapshot;
                 Root = root;
-                Text = text;
+                Icon = icon;
+                Button = button;
             }
 
             public UnitRecruitmentQueueItemSnapshot Snapshot;
             public RectTransform Root { get; }
-            public TextMeshProUGUI Text { get; }
+            public Image Icon { get; }
+            public Button Button { get; }
         }
     }
 }

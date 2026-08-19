@@ -297,7 +297,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             try
             {
-                if (UnityServices.State == ServicesInitializationState.Initialized &&
+                if (UnityServices.Status == ServicesInitializationState.Initialized &&
                     AuthenticationService.Instance != null &&
                     AuthenticationService.Instance.IsSignedIn)
                 {
