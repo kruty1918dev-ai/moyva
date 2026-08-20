@@ -16,8 +16,8 @@
         "Kruty1918.Moyva.Turns",
         "Kruty1918.Moyva.Construction",
         "Kruty1918.Moyva.Presentation",
-        "GUID:707af834e956b5ced87d2506a41e926d",
-        "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+        "Kruty1918.Moyva.Combat",
+        "Kruty1918.Moyva.Jsonization"
     ],
     "includePlatforms": [
         "Editor"

@@ -16,8 +16,8 @@
         "Kruty1918.Moyva.Grid",
         "Kruty1918.Moyva.ObjectsMap",
         "Kruty1918.Moyva.SaveSystem",
-        "Kruty1918.Moyva.Combat",
-        "Kruty1918.Moyva.Jsonization"
+        "GUID:707af834e956b5ced87d2506a41e926d",
+        "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
     ],
     "includePlatforms": [
         "Editor"
