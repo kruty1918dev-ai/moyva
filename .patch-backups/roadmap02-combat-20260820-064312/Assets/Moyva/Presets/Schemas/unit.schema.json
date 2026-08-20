@@ -1,0 +1,629 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/unit.schema.json",
+  "title": "Moyva — Unit Class Config",
+  "description": "JSON source of truth для Kruty1918.Moyva.Units.API.UnitClassConfig. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.unit"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "unit-class"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "typeId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Type Id",
+      "description": "У написані айді НЕ повино використовуватися нижнє підкреслення, окільки це є зарезервований символ для внутрішнього використання (наприклад, для позначення інстанцій юнітів). Рекомендується використовувати дефіси або camelCase. Наприклад: \"warrior-01\" або \"Warrior01\"."
+    },
+    "displayName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Display Name",
+      "description": "Назва для UI/інфопанелей. Якщо порожня, використовується TypeId."
+    },
+    "role": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Worker|Military))$",
+      "x-enumNames": [
+        "Worker",
+        "Military"
+      ],
+      "x-flags": false,
+      "title": "Role",
+      "description": "Класифікація юніта: Worker (економічні задачі) або Military (бойові задачі)."
+    },
+    "combatType": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:Infantry|Cavalry|SiegeMachine))$",
+      "x-enumNames": [
+        "Infantry",
+        "Cavalry",
+        "SiegeMachine"
+      ],
+      "x-flags": false,
+      "title": "Combat Type",
+      "description": "Бойова класифікація юніта: піхота, кавалерія або облогова машина."
+    },
+    "baseStamina": {
+      "type": "number",
+      "title": "Base Stamina"
+    },
+    "visionRange": {
+      "type": "integer",
+      "title": "Vision Range",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "visionHeightBoostPerLevel": {
+      "type": "number",
+      "title": "Vision Height Boost Per Level",
+      "description": "Індивідуальний бустер огляду за кожен рівень висоти в preview (Map + Fog).",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "canSeeCrest": {
+      "type": "boolean",
+      "title": "Can See Crest",
+      "description": "Чи може цей тип юніта знизу бачити верхній край пагорба/плато."
+    },
+    "crestVisibilityFactor": {
+      "type": "number",
+      "title": "Crest Visibility Factor",
+      "description": "Множник сили бачення верхівок знизу. 0 = край майже не читається, 1 = повна сила.",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "downSlopeVisionBonus": {
+      "type": "number",
+      "title": "Down Slope Vision Bonus",
+      "description": "Додаткова дальність у тайлах, коли юніт стоїть біля краю і дивиться вниз по схилу.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "silhouettePenalty": {
+      "type": "number",
+      "title": "Silhouette Penalty",
+      "description": "Наскільки легко помітити цього юніта як силует на верхньому краї. 0 = без бонусу, 1 = дуже помітний.",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "hitPoints": {
+      "type": "integer",
+      "title": "Hit Points",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "baseLevel": {
+      "type": "integer",
+      "title": "Base Level",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "cuttingDamage": {
+      "type": "integer",
+      "title": "Cutting Damage",
+      "description": "Ріжуча шкода: мечі, шаблі та інші удари лезом.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "penetratingDamage": {
+      "type": "integer",
+      "title": "Penetrating Damage",
+      "description": "Колюча шкода: списи, стріли та інші точкові пробивні удари.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "crushingDamage": {
+      "type": "integer",
+      "title": "Crushing Damage",
+      "description": "Дробляча шкода: тарани, катапульти, булави та важкі удари.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "cuttingDefense": {
+      "type": "integer",
+      "title": "Cutting Defense",
+      "description": "Захист від ріжучої шкоди.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "penetratingDefense": {
+      "type": "integer",
+      "title": "Penetrating Defense",
+      "description": "Захист від колючої шкоди.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "crushingDefense": {
+      "type": "integer",
+      "title": "Crushing Defense",
+      "description": "Захист від дроблячої шкоди.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "prefab": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "title": "Prefab"
+    },
+    "presentation": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "prefab": {
+          "$ref": "#/$defs/assetReference",
+          "title": "Presentation Prefab"
+        },
+        "customSprite": {
+          "$ref": "#/$defs/assetReference",
+          "title": "Presentation Custom Sprite"
+        },
+        "scaleMultiplier": {
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 1.0,
+          "title": "Scale Multiplier"
+        },
+        "positionOffset": {
+          "$ref": "#/$defs/vector3",
+          "title": "Position Offset"
+        },
+        "rotationOffset": {
+          "$ref": "#/$defs/vector3",
+          "title": "Rotation Offset"
+        },
+        "groundOffsetY": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "title": "Ground Offset Y"
+        },
+        "tint": {
+          "$ref": "#/$defs/nullableColor",
+          "title": "Tint"
+        },
+        "teamColorEnabled": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "title": "Team Color Enabled"
+        },
+        "outline": {
+          "$ref": "#/$defs/outline"
+        },
+        "shadows": {
+          "$ref": "#/$defs/shadows"
+        },
+        "previewPrefab": {
+          "$ref": "#/$defs/assetReference",
+          "title": "Preview Prefab"
+        },
+        "selection": {
+          "$ref": "#/$defs/selection"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Presentation"
+    },
+    "staminaRandomRange": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Stamina Random Range"
+    },
+    "animationSettings": {
+      "type": "object",
+      "properties": {
+        "moveDurationPerTile": {
+          "type": "number",
+          "title": "Move Duration Per Tile"
+        },
+        "delayOnTile": {
+          "type": "number",
+          "title": "Delay On Tile"
+        },
+        "onStepCompleted": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {},
+          "additionalProperties": false,
+          "title": "On Step Completed"
+        },
+        "canPerformStep": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {},
+          "additionalProperties": false,
+          "title": "Can Perform Step"
+        },
+        "resolveWorldPosition": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {},
+          "additionalProperties": false,
+          "title": "Resolve World Position"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Animation Settings"
+    },
+    "customSprite": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Спрайт юніта для швидкої редакції",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "title": "Custom Sprite"
+    },
+    "animationClips": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:Idle|Move|Attack|TakeDamage|Die|Custom))$",
+            "x-enumNames": [
+              "Idle",
+              "Move",
+              "Attack",
+              "TakeDamage",
+              "Die",
+              "Custom"
+            ],
+            "x-flags": false,
+            "title": "Type",
+            "description": "Тип анімації: Idle, Move, Attack, TakeDamage, Die, або Custom"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Name",
+            "description": "Назва анімації для можливості пошуку/фільтрації"
+          },
+          "animationClip": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "AnimationClip для Animator",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Animation Clip"
+          },
+          "animatorParameterName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Animator Parameter Name",
+            "description": "Параметр в Animator, який запускає цю анімацію (наприклад 'IsAttacking')"
+          },
+          "spriteFrames": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+              "properties": {
+                "$asset": {
+                  "type": "string",
+                  "title": "Asset ID"
+                },
+                "editorPath": {
+                  "type": "string",
+                  "description": "Editor-only path для діагностики/регенерації catalog."
+                },
+                "required": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "required": [
+                "$asset"
+              ]
+            },
+            "title": "Sprite Frames",
+            "description": "Список спрайтів для простої спрайт-анімації (альтернатива AnimationClip)"
+          },
+          "spriteFPS": {
+            "type": "integer",
+            "title": "Sprite FPS",
+            "description": "FPS для спрайт-анімації",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          },
+          "loop": {
+            "type": "boolean",
+            "title": "Loop",
+            "description": "Повторювати анімацію після завершення"
+          },
+          "duration": {
+            "type": "number",
+            "title": "Duration",
+            "description": "Довжина анімації в секундах",
+            "minimum": 0.01,
+            "x-moyva-editorMinimum": 0.01
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Animation Clips",
+      "description": "Список анімацій, пов'язаних з юнітом"
+    }
+  },
+  "$defs": {
+    "assetReference": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "additionalProperties": false
+    },
+    "vector3": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "additionalProperties": false
+    },
+    "nullableColor": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^#?[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "outline": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "title": "Outline Enabled"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0.0,
+          "title": "Outline Width"
+        },
+        "color": {
+          "$ref": "#/$defs/nullableColor",
+          "title": "Outline Color"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Outline"
+    },
+    "shadows": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "cast": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "title": "Cast Shadows"
+        },
+        "receive": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "title": "Receive Shadows"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Shadows"
+    },
+    "selection": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "markerScale": {
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 1.0,
+          "title": "Marker Scale"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Selection"
+    }
+  }
+}

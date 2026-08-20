@@ -60,7 +60,8 @@
           "loop": true,
           "duration": 1.0
         }
-      ]
+      ],
+      "movementPointsPerTurn": 5.0
     },
     {
       "typeId": "spearman",
@@ -107,7 +108,8 @@
           "localId": 21300000
         }
       },
-      "animations": []
+      "animations": [],
+      "movementPointsPerTurn": 5.0
     },
     {
       "typeId": "archer",
@@ -154,7 +156,8 @@
           "localId": 21300000
         }
       },
-      "animations": []
+      "animations": [],
+      "movementPointsPerTurn": 5.0
     },
     {
       "typeId": "light-cavalry",
@@ -201,7 +204,8 @@
           "localId": 21300000
         }
       },
-      "animations": []
+      "animations": [],
+      "movementPointsPerTurn": 7.0
     }
   ]
 }

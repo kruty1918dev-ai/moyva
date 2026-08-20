@@ -48,5 +48,7 @@
   "migration": {
     "sourceRegistry": "Assets/Moyva/Data/ScriptableObjects/Units/UnitRegistry.asset",
     "sourceHash": "e9422f330142d1fef0061e7c79d0a5546aea6c135f8d6e6d596f5e61a659a67c"
-  }
+  },
+  "attackRange": 1,
+  "movementPointsPerTurn": 5.0
 }

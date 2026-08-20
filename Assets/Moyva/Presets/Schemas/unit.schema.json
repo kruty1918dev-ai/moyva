@@ -81,6 +81,13 @@
       "type": "number",
       "title": "Base Stamina"
     },
+    "movementPointsPerTurn": {
+      "type": "number",
+      "title": "Movement Points Per Turn",
+      "description": "Очки руху, що відновлюються на початку ходу.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
     "visionRange": {
       "type": "integer",
       "title": "Vision Range",
@@ -133,6 +140,13 @@
     "baseLevel": {
       "type": "integer",
       "title": "Base Level",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "attackRange": {
+      "type": "integer",
+      "title": "Attack Range",
+      "description": "Дальність атаки у тайлах grid. 1 = ближній бій; >1 = дальня атака.",
       "minimum": 1.0,
       "x-moyva-editorMinimum": 1.0
     },

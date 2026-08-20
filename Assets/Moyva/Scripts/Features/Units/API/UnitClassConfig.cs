@@ -83,6 +83,8 @@ namespace Kruty1918.Moyva.Units.API
         public UnitCombatType CombatType = UnitCombatType.Infantry;
 
         public float BaseStamina;
+        [Tooltip("Очки руху, що відновлюються на початку ходу юніта.")]
+        [Min(0f)] public float MovementPointsPerTurn = 5f;
         [Min(1)] public int VisionRange = 1;
         [Tooltip("Індивідуальний бустер огляду за кожен рівень висоти в preview (Map + Fog).")]
         [Min(0f)] public float VisionHeightBoostPerLevel = 0f;
@@ -96,6 +98,8 @@ namespace Kruty1918.Moyva.Units.API
         [Range(0f, 1f)] public float SilhouettePenalty = 0f;
         [Min(1)] public int HitPoints = 100;
         [Min(1)] public int BaseLevel = 1;
+        [Tooltip("Дальність атаки у тайлах grid. 1 = ближній бій; >1 = дальня атака.")]
+        [Min(1)] public int AttackRange = 1;
 
         [Tooltip("Ріжуча шкода: мечі, шаблі та інші удари лезом.")]
         [Min(0)] public int CuttingDamage;

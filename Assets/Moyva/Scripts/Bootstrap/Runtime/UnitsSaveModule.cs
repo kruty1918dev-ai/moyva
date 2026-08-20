@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Kruty1918.Moyva.Diagnostics.API;
 using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
+using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
@@ -14,7 +15,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     internal sealed class UnitsSaveModule : ISaveModule, IInitializable, IDisposable
     {
         private const int SaveMagic = unchecked((int)0x554E4954);
-        private const int SaveVersion = 3;
+        private const int SaveVersion = 4;
         private const int MaxRecordCount = 100000;
 
         private readonly struct UnitRecord
@@ -25,8 +26,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             public readonly Vector2Int Position;
             public readonly bool HasStamina;
             public readonly float Stamina;
+            public readonly bool HasHealth;
+            public readonly int CurrentHp;
 
-            public UnitRecord(string unitId, string typeId, string ownerId, Vector2Int position, bool hasStamina, float stamina)
+            public UnitRecord(
+                string unitId,
+                string typeId,
+                string ownerId,
+                Vector2Int position,
+                bool hasStamina,
+                float stamina,
+                bool hasHealth = false,
+                int currentHp = 0)
             {
                 UnitId = unitId;
                 TypeId = typeId;
@@ -34,6 +45,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 Position = position;
                 HasStamina = hasStamina;
                 Stamina = stamina;
+                HasHealth = hasHealth;
+                CurrentHp = currentHp;
             }
         }
 
@@ -44,6 +57,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly ISaveLoadDiagnostics _loadDiagnostics;
         private readonly ISaveLoadDiagnosticsSession _loadDiagnosticsSession;
         private readonly IUnitRecruitmentStateStore _recruitmentState;
+        private readonly IHealthRegistry _healthRegistry;
         private readonly List<UnitRecord> _pendingRecords = new();
         private readonly List<UnitRecruitmentQueueItemSnapshot> _pendingRecruitment = new();
         private bool _hasPendingRecruitmentState;
@@ -56,7 +70,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             SignalBus signalBus,
             [InjectOptional] ISaveLoadDiagnostics loadDiagnostics = null,
             [InjectOptional] ISaveLoadDiagnosticsSession loadDiagnosticsSession = null,
-            [InjectOptional] IUnitRecruitmentStateStore recruitmentState = null)
+            [InjectOptional] IUnitRecruitmentStateStore recruitmentState = null,
+            [InjectOptional] IHealthRegistry healthRegistry = null)
         {
             _unitService = unitService;
             _unitFactory = unitFactory;
@@ -65,6 +80,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _loadDiagnostics = loadDiagnostics;
             _loadDiagnosticsSession = loadDiagnosticsSession;
             _recruitmentState = recruitmentState;
+            _healthRegistry = healthRegistry;
         }
 
         public void Initialize() => _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
@@ -88,6 +104,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 context.Writer.Write(hasPos ? pos.x : 0);
                 context.Writer.Write(hasPos ? pos.y : 0);
                 context.Writer.Write(stamina);
+                int currentHp = 0;
+                IHealth health;
+                if (_healthRegistry != null
+                    && _healthRegistry.TryGet(unitId, out health)
+                    && health != null)
+                {
+                    currentHp = health.CurrentHp;
+                }
+                context.Writer.Write(currentHp);
             }
 
             IReadOnlyList<UnitRecruitmentQueueItemSnapshot> queue =
@@ -103,20 +128,33 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (markerOrCount == SaveMagic)
             {
                 int version = context.Reader.ReadInt32();
-                if (version != 2 && version != SaveVersion)
+                if (version != 2 && version != 3 && version != SaveVersion)
                     throw new InvalidDataException($"Unsupported units save version {version}.");
 
                 int count = ReadBoundedCount(context.Reader, "unit");
                 var records = new List<UnitRecord>(count);
                 for (int index = 0; index < count; index++)
                 {
+                    string unitId = context.Reader.ReadString();
+                    string typeId = context.Reader.ReadString();
+                    string ownerId = context.Reader.ReadString();
+                    var position = new Vector2Int(
+                        context.Reader.ReadInt32(),
+                        context.Reader.ReadInt32());
+                    float stamina = ReadFiniteStamina(context.Reader);
+                    bool hasHealth = version >= 4;
+                    int currentHp = hasHealth
+                        ? Math.Max(1, context.Reader.ReadInt32())
+                        : 0;
                     records.Add(new UnitRecord(
-                        context.Reader.ReadString(),
-                        context.Reader.ReadString(),
-                        context.Reader.ReadString(),
-                        new Vector2Int(context.Reader.ReadInt32(), context.Reader.ReadInt32()),
+                        unitId,
+                        typeId,
+                        ownerId,
+                        position,
                         true,
-                        ReadFiniteStamina(context.Reader)));
+                        stamina,
+                        hasHealth,
+                        currentHp));
                 }
 
                 List<UnitRecruitmentQueueItemSnapshot> queue;
@@ -276,6 +314,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     : _unitFactory.CreateUnitWithId(record.UnitId, record.TypeId, record.Position, record.OwnerId);
                 if (!string.IsNullOrEmpty(newUnitId) && record.HasStamina)
                     _unitService.SetStamina(newUnitId, record.Stamina);
+
+                IHealth health;
+                if (!string.IsNullOrEmpty(newUnitId)
+                    && record.HasHealth
+                    && _healthRegistry != null
+                    && _healthRegistry.TryGet(newUnitId, out health)
+                    && health != null)
+                {
+                    int damageToRestore =
+                        Math.Max(0, health.CurrentHp - record.CurrentHp);
+                    if (damageToRestore > 0)
+                        health.TakeDamage(damageToRestore);
+                }
             }
             _loadDiagnostics?.CompleteStep(
                 _loadDiagnosticsSession?.CurrentFlow,

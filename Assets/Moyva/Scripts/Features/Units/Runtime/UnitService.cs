@@ -183,6 +183,17 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private void OnUnitDestroyed(UnitDestroyedSignal signal)
         {
+            if (_unitPositions.TryGetValue(
+                    signal.UnitId,
+                    out Vector2Int occupiedPosition))
+            {
+                if (_objectsMapService is IObjectsMapSharedOccupancy sharedOccupancy)
+                    sharedOccupancy.TryUnregisterOccupant(signal.UnitId);
+                else if (_objectsMapService.TryGetOccupant(occupiedPosition, out string occupantId)
+                         && string.Equals(occupantId, signal.UnitId, StringComparison.Ordinal))
+                    _objectsMapService.Unregister(occupiedPosition);
+            }
+
             if (_unitObjects.TryGetValue(
                     signal.UnitId,
                     out GameObject unitObject)
@@ -219,7 +230,17 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (string.IsNullOrEmpty(unitId) || !_unitStamina.ContainsKey(unitId))
                 return;
 
-            _unitStamina[unitId] = Mathf.Max(0f, stamina);
+            float cap = float.PositiveInfinity;
+            string typeId = GetUnitTypeId(unitId);
+            UnitClassConfig config = string.IsNullOrWhiteSpace(typeId)
+                ? null
+                : _unitClassConfig.GetConfig(typeId);
+            if (config != null)
+                cap = Mathf.Max(0f, config.MovementPointsPerTurn);
+
+            _unitStamina[unitId] = float.IsPositiveInfinity(cap)
+                ? Mathf.Max(0f, stamina)
+                : Mathf.Clamp(stamina, 0f, cap);
         }
 
         public bool TryGetUnitPosition(string unitId, out Vector2Int position)
@@ -658,7 +679,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private float ResolveStartingStamina(string unitTypeId, UnitClassConfig config)
         {
-            return config == null ? 0f : Mathf.Max(0f, config.BaseStamina);
+            return config == null
+                ? 0f
+                : Mathf.Max(0f, config.MovementPointsPerTurn);
         }
     }
 }

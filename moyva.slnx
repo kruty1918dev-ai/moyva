@@ -200,6 +200,7 @@
   <Project Path="Kruty1918.Moyva.Recruitment.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.Units.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Signals.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Camera.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
@@ -219,7 +220,6 @@
   <Project Path="Unity.Multiplayer.Tools.NetVis.Editor.Visualization.csproj" />
   <Project Path="Kruty1918.Moyva.Presentation.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Adapters.Ngo1.csproj" />
-  <Project Path="Kruty1918.Moyva.Tests.Units.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.MovementPlayMode.csproj" />
   <Project Path="Unity.AppUI.InternalAPIBridge.csproj" />
   <Project Path="Kruty1918.Moyva.Bootstrap.Editor.csproj" />

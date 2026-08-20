@@ -32,7 +32,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 string typeId = _units.GetUnitTypeId(unitId);
                 UnitClassConfig config = string.IsNullOrWhiteSpace(typeId) ? null : _configs.GetConfig(typeId);
                 if (config != null)
-                    _units.SetStamina(unitId, config.BaseStamina);
+                    _units.SetStamina(unitId, config.MovementPointsPerTurn);
             }
         }
 

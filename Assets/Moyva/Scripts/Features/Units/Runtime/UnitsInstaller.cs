@@ -47,6 +47,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .To<UnitWorldPositionResolver>()
                 .AsSingle();
 
+            Container.BindInterfacesAndSelfTo<UnitTraversalPolicy>()
+                .AsSingle()
+                .NonLazy();
+
             Container.BindInterfacesAndSelfTo<UnitMovementService>()
                 .AsSingle();
 
@@ -55,6 +59,10 @@ namespace Kruty1918.Moyva.Units.Runtime
             // ITurnBlocker so end-turn waits for its active movement set.
             Container.Decorate<IUnitMovementService>()
                 .With<UnitTurnAuthorityMovementService>();
+
+            Container.BindInterfacesAndSelfTo<UnitAuthorityEndpointBridge>()
+                .AsSingle()
+                .NonLazy();
 
             Container.BindInterfacesTo<UnitTurnParticipant>()
                 .AsSingle();
@@ -72,9 +80,12 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .To<UnitGameplayProfileService>()
                 .AsSingle();
 
-            Container.Bind<IUnitCombatService>()
-                .To<UnitCombatService>()
+            Container.BindInterfacesAndSelfTo<UnitCombatService>()
                 .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<UnitCombatPresentationService>()
+                .AsSingle()
+                .NonLazy();
 
             Container.BindInterfacesAndSelfTo<UnitWorldInfoPresenter>()
                 .AsSingle()

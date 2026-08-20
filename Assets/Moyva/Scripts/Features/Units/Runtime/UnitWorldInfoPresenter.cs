@@ -131,9 +131,9 @@ namespace Kruty1918.Moyva.Units.Runtime
                 sb.AppendLine($"Здоров'я: {config.HitPoints}");
 
             float stamina = _unitService.GetStamina(unitId);
-            sb.AppendLine(config?.BaseStamina > 0f
-                ? $"Витривалість: {stamina:0.#} / {config.BaseStamina:0.#}"
-                : $"Витривалість: {stamina:0.#}");
+            sb.AppendLine(config?.MovementPointsPerTurn > 0f
+                ? $"Очки руху: {stamina:0.#} / {config.MovementPointsPerTurn:0.#}"
+                : $"Очки руху: {stamina:0.#}");
 
             AppendMeaningfulFacts(config, sb);
 

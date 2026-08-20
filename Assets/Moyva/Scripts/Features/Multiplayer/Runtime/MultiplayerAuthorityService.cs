@@ -28,14 +28,15 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         IInitializable,
         IDisposable,
         IConstructionConfirmRequestExecutor,
-        IConstructionAuthorityEndpointRegistry
+        IConstructionAuthorityEndpointRegistry,
+        IUnitCommandAuthorityEndpointRegistry
     {
         private readonly IGameCommandSyncService _syncService;
         private readonly ISessionManager         _sessionManager;
         private readonly SignalBus               _signalBus;
         private IConstructionService             _constructionService;
-        private readonly IUnitMovementService    _unitMovementService;
-        private readonly IUnitOwnershipQuery     _unitOwnershipQuery;
+        private IUnitMovementService _unitMovementService;
+        private IUnitOwnershipQuery _unitOwnershipQuery;
         private readonly IUnitFactory            _unitFactory;
 
         // Guard: не ретранслюємо події, що прийшли з мережі (уникаємо нескінченного циклу).
@@ -90,7 +91,33 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
         }
 
-        public void Initialize()
+                public void AttachUnitCommandServices(
+            IUnitMovementService movementService,
+            IUnitOwnershipQuery ownershipQuery)
+        {
+            if (movementService == null)
+                throw new ArgumentNullException(nameof(movementService));
+            if (ownershipQuery == null)
+                throw new ArgumentNullException(nameof(ownershipQuery));
+
+            _unitMovementService = movementService;
+            _unitOwnershipQuery = ownershipQuery;
+
+            Debug.Log(
+                "[MOYVA_MOVE][AUTHORITY_BRIDGE] authority endpoint attached.");
+        }
+
+        public void DetachUnitCommandServices(
+            IUnitMovementService movementService,
+            IUnitOwnershipQuery ownershipQuery)
+        {
+            if (ReferenceEquals(_unitMovementService, movementService))
+                _unitMovementService = null;
+            if (ReferenceEquals(_unitOwnershipQuery, ownershipQuery))
+                _unitOwnershipQuery = null;
+        }
+
+public void Initialize()
         {
             // Локальні дії гравця: перехоплення перед виконанням
             _signalBus.Subscribe<MoveUnitRequestSignal>(OnLocalMoveUnitRequest);
@@ -217,40 +244,101 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 allowUniquePreviewRelocation: false,
                 rotation: rotation);
 
-        private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
-        {
-            if (_unitMovementService == null || _unitOwnershipQuery == null)
-            {
-                Debug.LogWarning("[MultiplayerAuthority] Move request rejected because unit command services are not bound in this scene.");
-                return;
-            }
+private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
+{
+    long trace = UnitMovementDiagnostics.TraceForUnit(signal.UnitId);
+    double started = UnitMovementDiagnostics.NowMs();
 
-            string requesterOwnerId = string.IsNullOrWhiteSpace(signal.RequesterOwnerId)
-                ? _sessionManager?.LocalPlayerId
-                : signal.RequesterOwnerId;
-            string unitOwnerId = _unitOwnershipQuery.GetUnitOwnerId(signal.UnitId);
-            if (!IsUnitCommandAuthorized(unitOwnerId, requesterOwnerId))
-            {
-                Debug.LogWarning(
-                    $"[Authority] Rejected local UnitMove for '{signal.UnitId}': requester '{requesterOwnerId}' does not own unit '{unitOwnerId}'.");
-                return;
-            }
+    UnitMovementDiagnostics.Log(
+        trace,
+        "AUTHORITY_REQUEST_RECEIVED",
+        $"unit={UnitMovementDiagnostics.Safe(signal.UnitId)}; " +
+        $"target={signal.TargetPosition}; " +
+        $"requesterInSignal={UnitMovementDiagnostics.Safe(signal.RequesterOwnerId)}; " +
+        $"movementServiceBound={_unitMovementService != null}; " +
+        $"ownershipBound={_unitOwnershipQuery != null}");
 
-            if (IsOfflineOrHost())
-            {
-                // Хост / офлайн: виконуємо рух одразу; UnitMovedSignal транслює кожен крок.
-                _ = _unitMovementService.MoveUnitAsync(signal.UnitId, signal.TargetPosition, CancellationToken.None);
-                return;
-            }
+    if (_unitMovementService == null || _unitOwnershipQuery == null)
+    {
+        UnitMovementDiagnostics.Error(
+            trace,
+            "AUTHORITY_REJECT_SERVICES",
+            "unit movement or ownership service is not bound");
 
-            // Клієнт: надсилаємо запит до хоста.
-            var payload = new UnitMovePayload(
-                GameActionMessageKind.Request,
-                signal.UnitId,
-                signal.TargetPosition);
-            _syncService.SendCommand(GameCommandType.UnitMove, payload.ToBytes());
-        }
+        Debug.LogWarning(
+            "[MultiplayerAuthority] Move request rejected because unit command services are not bound in this scene.");
+        return;
+    }
 
+    string requesterOwnerId =
+        string.IsNullOrWhiteSpace(signal.RequesterOwnerId)
+            ? _sessionManager?.LocalPlayerId
+            : signal.RequesterOwnerId;
+
+    string unitOwnerId =
+        _unitOwnershipQuery.GetUnitOwnerId(signal.UnitId);
+
+    bool authorized =
+        IsUnitCommandAuthorized(
+            unitOwnerId,
+            requesterOwnerId);
+
+    if (!authorized)
+    {
+        UnitMovementDiagnostics.Warn(
+            trace,
+            "AUTHORITY_REJECT_OWNERSHIP",
+            $"unit={signal.UnitId}; " +
+            $"requester={UnitMovementDiagnostics.Safe(requesterOwnerId)}; " +
+            $"unitOwner={UnitMovementDiagnostics.Safe(unitOwnerId)}");
+
+        Debug.LogWarning(
+            $"[Authority] Rejected local UnitMove for '{signal.UnitId}': " +
+            $"requester '{requesterOwnerId}' does not own unit '{unitOwnerId}'.");
+        return;
+    }
+
+    bool offlineOrHost = IsOfflineOrHost();
+
+    if (offlineOrHost)
+    {
+        UnitMovementDiagnostics.Log(
+            trace,
+            "AUTHORITY_ROUTE_LOCAL",
+            $"unit={signal.UnitId}; target={signal.TargetPosition}; " +
+            $"requester={UnitMovementDiagnostics.Safe(requesterOwnerId)}; " +
+            $"unitOwner={UnitMovementDiagnostics.Safe(unitOwnerId)}; " +
+            $"dispatchMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - started)}");
+
+        _ = _unitMovementService.MoveUnitAsync(
+            signal.UnitId,
+            signal.TargetPosition,
+            CancellationToken.None);
+        return;
+    }
+
+    UnitMovementDiagnostics.Log(
+        trace,
+        "AUTHORITY_ROUTE_NETWORK",
+        $"unit={signal.UnitId}; target={signal.TargetPosition}; " +
+        $"requester={UnitMovementDiagnostics.Safe(requesterOwnerId)}; " +
+        $"unitOwner={UnitMovementDiagnostics.Safe(unitOwnerId)}");
+
+    var payload = new UnitMovePayload(
+        GameActionMessageKind.Request,
+        signal.UnitId,
+        signal.TargetPosition);
+
+    _syncService.SendCommand(
+        GameCommandType.UnitMove,
+        payload.ToBytes());
+
+    UnitMovementDiagnostics.Log(
+        trace,
+        "AUTHORITY_NETWORK_SENT",
+        $"unit={signal.UnitId}; target={signal.TargetPosition}; " +
+        $"elapsedMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - started)}");
+}
         // ─── Хост: трансляція після локального виконання ─────────────────────────
 
         private void OnBuildingPlacedLocally(BuildingPlacedSignal signal)

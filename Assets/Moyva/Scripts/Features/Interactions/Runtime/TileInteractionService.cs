@@ -11,6 +11,7 @@ using Kruty1918.Moyva.Notifications.API;
 using UnityEngine;
 using Zenject;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace Kruty1918.Moyva.Interactions.Runtime
@@ -34,13 +35,14 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly IMapObjectEconomyService _mapObjectEconomyService;
         private readonly IUnitMovementService _unitMovementService;
         private readonly IUnitOwnershipQuery _unitOwnershipQuery;
+        private readonly IUnitCombatService _unitCombatService;
         private readonly IConstructionService _constructionService;
         private readonly IConstructionLifecycle _constructionLifecycle;
         private readonly IGameplayNotificationService _notifications;
         private readonly SignalBus _signalBus;
         private readonly ITurnService _turns;
         private GameModeType _currentMode = GameModeType.Normal;
-        
+
         private string _selectedUnitId;
         private CancellationTokenSource _moveCts;
         // Tracks what the WorldInfoPanel is currently showing (synced via signal).
@@ -59,6 +61,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             [InjectOptional] IMapObjectEconomyService mapObjectEconomyService,
             [InjectOptional] IUnitMovementService unitMovementService,
             [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery,
+            [InjectOptional] IUnitCombatService unitCombatService,
             [InjectOptional] IConstructionService constructionService,
             [InjectOptional] ITurnService turns,
             [InjectOptional] IConstructionLifecycle constructionLifecycle,
@@ -72,6 +75,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _mapObjectEconomyService = mapObjectEconomyService;
             _unitMovementService = unitMovementService;
             _unitOwnershipQuery = unitOwnershipQuery;
+            _unitCombatService = unitCombatService;
             _constructionService = constructionService;
             _turns = turns;
             _constructionLifecycle = constructionLifecycle;
@@ -84,6 +88,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _signalBus.Subscribe<TileClickedSignal>(OnTileClicked);
             _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
             _signalBus.Subscribe<WorldInfoSelectionChangedSignal>(OnWorldInfoSelectionChanged);
+            _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
         }
 
         public void Dispose()
@@ -91,6 +96,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _signalBus.TryUnsubscribe<TileClickedSignal>(OnTileClicked);
             _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
             _signalBus.TryUnsubscribe<WorldInfoSelectionChangedSignal>(OnWorldInfoSelectionChanged);
+            _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
             CancelMovement(MovementCancelReason.Dispose);
         }
 
@@ -128,12 +134,56 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         private void OnTileClicked(TileClickedSignal signal)
         {
-            if (signal.Button == TilePointerButton.Secondary)
-                HandleSecondaryTileClick(signal.Position);
-            else
-                HandleTileClick(signal.Position);
-        }
+            long trace = UnitMovementDiagnostics.BeginInput(
+                signal.Button.ToString(),
+                signal.Position,
+                _selectedUnitId,
+                _currentMode.ToString());
 
+            double started = UnitMovementDiagnostics.NowMs();
+
+            _objectsMapService.TryGetOccupant(
+                signal.Position,
+                out string diagnosticOccupantId);
+
+            UnitMovementDiagnostics.Log(
+                trace,
+                "INTERACTION_CLICK",
+                $"button={signal.Button}; pos={signal.Position}; " +
+                $"selectedBefore={UnitMovementDiagnostics.Safe(_selectedUnitId)}; " +
+                $"occupant={UnitMovementDiagnostics.Safe(diagnosticOccupantId)}; " +
+                $"localOwner={UnitMovementDiagnostics.Safe(GetLocalOwnerId())}; " +
+                $"canSelectUnit={CanSelectUnit()}; canInspect={CanInspectWorld()}");
+
+            if (signal.Button == TilePointerButton.Secondary)
+            {
+                HandleSecondaryTileClick(signal.Position);
+            }
+            else
+            {
+                HandleTileClick(signal.Position);
+
+                // IMPORTANT diagnostic: current input mapping does not route a
+                // primary click on an empty tile to StartMove().
+                if (string.IsNullOrWhiteSpace(diagnosticOccupantId)
+                    && !string.IsNullOrWhiteSpace(_selectedUnitId))
+                {
+                    UnitMovementDiagnostics.Log(
+                        trace,
+                        "INTERACTION_PRIMARY_EMPTY",
+                        $"selected={_selectedUnitId}; " +
+                        "primary click completed without a movement command; " +
+                        "the current movement route is HandleSecondaryTileClick -> StartMove");
+                }
+            }
+
+            UnitMovementDiagnostics.Log(
+                trace,
+                "INTERACTION_CLICK_DONE",
+                $"button={signal.Button}; pos={signal.Position}; " +
+                $"selectedAfter={UnitMovementDiagnostics.Safe(_selectedUnitId)}; " +
+                $"elapsedMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - started)}");
+        }
         public void HandleTileClick(Vector2Int position)
         {
             bool canInspectWorld = CanInspectWorld();
@@ -245,6 +295,9 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 if (!canSelectUnit)
                     return;
 
+                if (TryHandleAttackClick(occupantId))
+                    return;
+
                 // Повторний клік на вже вибраного юніта — зняти вибір (toggle)
                 if (string.Equals(occupantId, _selectedUnitId, StringComparison.Ordinal))
                 {
@@ -270,6 +323,51 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                     : $"[Interaction] Іноземний юніт '{occupantId}' відкритий лише для огляду.");
                 return;
             }
+
+            if (!string.IsNullOrWhiteSpace(_selectedUnitId)
+                && CanCommandUnit(_selectedUnitId))
+            {
+                TryIssueMoveCommand(position);
+                return;
+            }
+        }
+
+        private bool TryHandleAttackClick(string targetUnitId)
+        {
+            if (_unitCombatService == null || string.IsNullOrWhiteSpace(_selectedUnitId)
+                || string.IsNullOrWhiteSpace(targetUnitId)
+                || string.Equals(_selectedUnitId, targetUnitId, StringComparison.Ordinal)
+                || !CanCommandUnit(_selectedUnitId) || _unitOwnershipQuery == null)
+                return false;
+
+            string attackerOwner = _unitOwnershipQuery.GetUnitOwnerId(_selectedUnitId)?.Trim();
+            string targetOwner = _unitOwnershipQuery.GetUnitOwnerId(targetUnitId)?.Trim();
+            if (string.IsNullOrWhiteSpace(attackerOwner) || string.IsNullOrWhiteSpace(targetOwner)
+                || string.Equals(attackerOwner, targetOwner, StringComparison.Ordinal))
+                return false;
+
+            UnitAttackRejectReason rejectReason;
+            if (!_unitCombatService.CanAttack(_selectedUnitId, targetUnitId, out rejectReason))
+            {
+                if (rejectReason == UnitAttackRejectReason.TargetOutOfRange)
+                    _notifications?.Show("Ціль поза дальністю атаки", GameplayNotificationKind.Warning, dedupKey: "unit-attack-out-of-range");
+                else if (rejectReason == UnitAttackRejectReason.AttackUnavailable)
+                    _notifications?.Show("Цей юніт зараз не може атакувати", GameplayNotificationKind.Warning, dedupKey: "unit-attack-unavailable");
+                return true;
+            }
+
+            UnitAttackResult result;
+            _unitCombatService.TryAttack(_selectedUnitId, targetUnitId, out result);
+            if (VerboseLogs && result.Succeeded)
+                Debug.Log($"[Combat] {_selectedUnitId} -> {targetUnitId}: damage={result.DamageApplied}, hp={result.TargetHpBefore}->{result.TargetHpAfter}, died={result.TargetDied}");
+            return true;
+        }
+
+        private void OnUnitDestroyed(UnitDestroyedSignal signal)
+        {
+            if (!string.Equals(signal.UnitId, _selectedUnitId, StringComparison.Ordinal)) return;
+            ClearSelectedUnit();
+            _signalBus.Fire(new WorldInfoPanelClosedSignal());
         }
 
         private bool IsBuildingOperationalForFunctionalUi(Vector2Int position)
@@ -278,45 +376,105 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         private void HandleSecondaryTileClick(Vector2Int position)
         {
+            TryIssueMoveCommand(position);
+        }
+        private bool TryIssueMoveCommand(Vector2Int position)
+        {
             if (!CanCommandUnit(_selectedUnitId)
                 || !_gridService.TryGetTileData(position, out _))
             {
-                return;
+                return false;
             }
 
-            _objectsMapService.TryGetOccupant(position, out string occupantId);
-            if (!string.IsNullOrWhiteSpace(occupantId))
-                return;
+            IUnitMovementQuery movementQuery =
+                _unitMovementService as IUnitMovementQuery;
+
+            if (movementQuery != null)
+            {
+                IReadOnlyList<UnitMovementTileSnapshot> tiles =
+                    movementQuery.GetMovementTiles(_selectedUnitId);
+
+                bool reachable = false;
+                for (int i = 0; i < tiles.Count; i++)
+                {
+                    if (tiles[i].Position == position
+                        && tiles[i].IsReachable)
+                    {
+                        reachable = true;
+                        break;
+                    }
+                }
+
+                if (!reachable)
+                {
+                    _notifications?.Show(
+                        "Ця клітинка недоступна для руху",
+                        GameplayNotificationKind.Warning,
+                        dedupKey: "unit-move-unreachable");
+
+                    Debug.Log(
+                        $"[MOYVA_MOVE][INPUT_REJECT] "
+                        + $"unit={_selectedUnitId}; target={position}; "
+                        + "reason=not-reachable");
+                    return true;
+                }
+            }
+
+            Debug.Log(
+                $"[MOYVA_MOVE][INPUT_ACCEPT] "
+                + $"unit={_selectedUnitId}; target={position}");
 
             StartMove(_selectedUnitId, position);
+            return true;
         }
 
-        private void StartMove(string unitId, Vector2Int target)
-        {
-            if (string.IsNullOrEmpty(unitId) || !CanCommandUnit(unitId))
-                return;
+private void StartMove(string unitId, Vector2Int target)
+{
+    long trace = UnitMovementDiagnostics.TraceForUnit(unitId);
+    bool canCommand = CanCommandUnit(unitId);
 
-            // Скасовуємо попередній рух (InterruptMovementSignal надіслано в CancelMovement).
-            CancelMovement(MovementCancelReason.NewCommand);
-            _moveCts = new CancellationTokenSource(); // sentinel: рух активний (для queue-логіки)
-            _activeMoveUnitId = unitId;
-            _activeMoveTarget = target;
-            _cancelReason = MovementCancelReason.None;
+    if (string.IsNullOrEmpty(unitId) || !canCommand)
+    {
+        UnitMovementDiagnostics.Warn(
+            trace,
+            "START_MOVE_REJECT",
+            $"unit={UnitMovementDiagnostics.Safe(unitId)}; target={target}; " +
+            $"canCommand={canCommand}; mode={_currentMode}; " +
+            $"localOwner={UnitMovementDiagnostics.Safe(GetLocalOwnerId())}");
+        return;
+    }
 
-            // Маршрутизуємо через MultiplayerAuthorityService:
-            // офлайн/хост → виконає MoveUnitAsync локально;
-            // клієнт → надішле Request до хоста.
-            _signalBus.Fire(new MoveUnitRequestSignal
-            {
-                UnitId = unitId,
-                TargetPosition = target,
-                RequesterOwnerId = GetLocalOwnerId(),
-            });
+    UnitMovementDiagnostics.AssociateUnit(unitId, trace);
 
-            if (VerboseLogs)
-                Debug.Log($"[Interaction] Move requested for {unitId} to {target}");
-        }
+    CancelMovement(MovementCancelReason.NewCommand);
+    _moveCts = new CancellationTokenSource();
+    _activeMoveUnitId = unitId;
+    _activeMoveTarget = target;
+    _cancelReason = MovementCancelReason.None;
 
+    var request = new MoveUnitRequestSignal
+    {
+        UnitId = unitId,
+        TargetPosition = target,
+        RequesterOwnerId = GetLocalOwnerId(),
+    };
+
+    UnitMovementDiagnostics.Log(
+        trace,
+        "MOVE_REQUEST_FIRE",
+        $"unit={unitId}; target={target}; " +
+        $"requesterOwner={UnitMovementDiagnostics.Safe(request.RequesterOwnerId)}");
+
+    _signalBus.Fire(request);
+
+    UnitMovementDiagnostics.Log(
+        trace,
+        "MOVE_REQUEST_FIRE_DONE",
+        $"unit={unitId}; target={target}");
+
+    if (VerboseLogs)
+        Debug.Log($"[Interaction] Move requested for {unitId} to {target}");
+}
         private bool CanCommandUnit(string unitId)
         {
             if (_currentMode != GameModeType.Normal)
@@ -357,25 +515,54 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             string normalizedUnitId = string.IsNullOrWhiteSpace(unitId)
                 ? null
                 : unitId.Trim();
+
+            long trace = UnitMovementDiagnostics.CurrentTraceId;
+
             if (string.IsNullOrWhiteSpace(normalizedUnitId))
             {
+                UnitMovementDiagnostics.Warn(
+                    trace,
+                    "SELECT_REJECT_EMPTY_ID",
+                    $"pos={position}");
                 ClearSelectedUnit(position);
                 return;
             }
 
-            if (string.Equals(_selectedUnitId, normalizedUnitId, StringComparison.Ordinal))
+            if (string.Equals(
+                    _selectedUnitId,
+                    normalizedUnitId,
+                    StringComparison.Ordinal))
+            {
+                UnitMovementDiagnostics.Log(
+                    trace,
+                    "SELECT_ALREADY_SELECTED",
+                    $"unit={normalizedUnitId}; pos={position}");
                 return;
+            }
 
             ClearSelectedUnit();
             _selectedUnitId = normalizedUnitId;
+            UnitMovementDiagnostics.AssociateUnit(normalizedUnitId, trace);
+
+            UnitMovementDiagnostics.Log(
+                trace,
+                "SELECTION_FIRE",
+                $"unit={normalizedUnitId}; pos={position}; " +
+                $"owner={UnitMovementDiagnostics.Safe(_unitOwnershipQuery?.GetUnitOwnerId(normalizedUnitId))}; " +
+                $"localOwner={UnitMovementDiagnostics.Safe(GetLocalOwnerId())}");
+
             _signalBus.Fire(new LocalUnitSelectionChangedSignal
             {
                 UnitId = normalizedUnitId,
                 Position = position,
                 IsSelected = true,
             });
-        }
 
+            UnitMovementDiagnostics.Log(
+                trace,
+                "SELECTION_FIRE_DONE",
+                $"unit={normalizedUnitId}; pos={position}");
+        }
         private void ClearSelectedUnit(Vector2Int? knownPosition = null)
         {
             if (string.IsNullOrWhiteSpace(_selectedUnitId))

@@ -35,8 +35,11 @@ namespace Kruty1918.Moyva.Units.Runtime
 		private readonly IUnitOwnershipQuery _ownership;
 		private readonly IUnitPlacementValidator _placementValidator;
 		private readonly IUnitWorldPositionResolver _worldPositionResolver;
+		private readonly IUnitTraversalPolicy _traversalPolicy;
 
 		private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
+		private readonly Dictionary<string, MovementRangeCacheEntry> _movementRangeCache = new();
+		private int _movementWorldVersion;
 
 		public UnitMovementService(
 			IUnitService unitService,
@@ -53,7 +56,8 @@ namespace Kruty1918.Moyva.Units.Runtime
 			[InjectOptional] ITurnService turns = null,
 			[InjectOptional] IUnitOwnershipQuery ownership = null,
 			[InjectOptional] IUnitPlacementValidator placementValidator = null,
-			[InjectOptional] IUnitWorldPositionResolver worldPositionResolver = null)
+			[InjectOptional] IUnitWorldPositionResolver worldPositionResolver = null,
+			[InjectOptional] IUnitTraversalPolicy traversalPolicy = null)
 		{
 			_unitService = unitService;
 			_pathfinder = pathfinder;
@@ -70,6 +74,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_ownership = ownership;
 			_placementValidator = placementValidator;
 			_worldPositionResolver = worldPositionResolver;
+			_traversalPolicy = traversalPolicy;
 		}
 
 		[System.Diagnostics.Conditional("MOYVA_VERBOSE_MOVEMENT")]
@@ -81,6 +86,11 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_signalBus.Subscribe<InterruptMovementSignal>(OnInterruptRequested);
 			_signalBus.Subscribe<UnitGarrisonStateChangedSignal>(
 				OnUnitGarrisonStateChanged);
+			_signalBus.Subscribe<OnObjectsMapChangedSignal>(OnMovementObjectsMapChanged);
+			_signalBus.Subscribe<GridTileChangedSignal>(OnMovementGridTileChanged);
+			_signalBus.Subscribe<UnitMovedSignal>(OnMovementUnitMoved);
+			_signalBus.Subscribe<UnitCreatedSignal>(OnMovementUnitCreated);
+			_signalBus.Subscribe<UnitDestroyedSignal>(OnMovementUnitDestroyed);
 		}
 
 		public void Dispose()
@@ -88,6 +98,11 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_signalBus.TryUnsubscribe<InterruptMovementSignal>(OnInterruptRequested);
 			_signalBus.TryUnsubscribe<UnitGarrisonStateChangedSignal>(
 				OnUnitGarrisonStateChanged);
+			_signalBus.TryUnsubscribe<OnObjectsMapChangedSignal>(OnMovementObjectsMapChanged);
+			_signalBus.TryUnsubscribe<GridTileChangedSignal>(OnMovementGridTileChanged);
+			_signalBus.TryUnsubscribe<UnitMovedSignal>(OnMovementUnitMoved);
+			_signalBus.TryUnsubscribe<UnitCreatedSignal>(OnMovementUnitCreated);
+			_signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnMovementUnitDestroyed);
 
 			foreach (var cts in _activeMovements.Values)
 			{
@@ -96,6 +111,30 @@ namespace Kruty1918.Moyva.Units.Runtime
 			}
 			_activeMovements.Clear();
 		}
+
+		private void InvalidateMovementRangeCache()
+		{
+			unchecked { _movementWorldVersion++; }
+			_movementRangeCache.Clear();
+		}
+
+		private void OnMovementObjectsMapChanged(OnObjectsMapChangedSignal _)
+			=> InvalidateMovementRangeCache();
+
+		private void OnMovementGridTileChanged(GridTileChangedSignal _)
+		{
+			_traversalPolicy?.InvalidateStaticCache();
+			InvalidateMovementRangeCache();
+		}
+
+		private void OnMovementUnitMoved(UnitMovedSignal _)
+			=> InvalidateMovementRangeCache();
+
+		private void OnMovementUnitCreated(UnitCreatedSignal _)
+			=> InvalidateMovementRangeCache();
+
+		private void OnMovementUnitDestroyed(UnitDestroyedSignal _)
+			=> InvalidateMovementRangeCache();
 
 		private void OnUnitGarrisonStateChanged(
 			UnitGarrisonStateChangedSignal signal)
@@ -131,6 +170,14 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 		public async Task MoveUnitAsync(string unitId, Vector2Int targetPosition, CancellationToken externalToken = default)
 		{
+			long __diagTrace = UnitMovementDiagnostics.TraceForUnit(unitId);
+			double __diagMoveStarted = UnitMovementDiagnostics.NowMs();
+			UnitMovementDiagnostics.Log(
+				__diagTrace,
+				"MOVE_CORE_BEGIN",
+				$"unit={UnitMovementDiagnostics.Safe(unitId)}; target={targetPosition}; " +
+				$"activeMovements={_activeMovements.Count}");
+
 			if (string.IsNullOrEmpty(unitId))
 			{
 				Debug.LogWarning("[UnitMovement] MoveUnitAsync: unitId пустий або null. Рух скасовано.");
@@ -178,23 +225,90 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 			LogMovementVerbose(
 				$"[UnitMovement] path {unitId}: {startPosition} -> {targetPosition}");
-			List<Vector2Int> path =
-				_pathfinder is IOccupiedCellPathfinder occupiedPathfinder
-					? occupiedPathfinder.FindPath(
-						startPosition,
-						targetPosition,
-						position =>
-							CanPathTraverseOccupiedConstructionCell(
-								unitId,
-								position))
-					: _pathfinder.FindPath(
-						startPosition,
-						targetPosition);
-			if (path == null || path.Count <= 1)
+			double __diagPathStarted = UnitMovementDiagnostics.NowMs();
+			List<Vector2Int> path;
+if (_traversalPolicy != null
+	&& _pathfinder is ICostAwarePathfinder costAwarePathfinder)
+{
+	path = costAwarePathfinder.FindPathWithCosts(
+		startPosition,
+		targetPosition,
+		(Vector2Int from, Vector2Int to, out float stepCost) =>
+			_traversalPolicy.TryEvaluateStep(
+				unitId,
+				from,
+				to,
+				float.PositiveInfinity,
+				UnitTraversalMode.Pathfinding,
+				out stepCost,
+				out _));
+}
+else if (_pathfinder is IOccupiedCellPathfinder occupiedPathfinder)
+{
+	path = occupiedPathfinder.FindPath(
+		startPosition,
+		targetPosition,
+		position =>
+			CanPathTraverseOccupiedConstructionCell(
+				unitId,
+				position));
+}
+else
+{
+	path = _pathfinder.FindPath(
+		startPosition,
+		targetPosition);
+}
+if (path == null || path.Count <= 1)
 			{
 				Debug.LogWarning($"[UnitMovement] MoveUnitAsync: шлях не знайдено або занадто короткий для '{unitId}' ({startPosition} → {targetPosition}). path={path?.Count ?? 0} точок.");
 				return;
 			}
+
+if (_traversalPolicy != null)
+{
+	float requiredMovement = 0f;
+	for (int pathIndex = 1;
+		 pathIndex < path.Count;
+		 pathIndex++)
+	{
+		if (!_traversalPolicy.TryEvaluateStep(
+				unitId,
+				path[pathIndex - 1],
+				path[pathIndex],
+				float.PositiveInfinity,
+				UnitTraversalMode.Pathfinding,
+				out float pathStepCost,
+				out string pathStepReason))
+		{
+			Debug.LogWarning(
+				$"[MOYVA_MOVE][PATH_REJECT] unit={unitId}; "
+				+ $"from={path[pathIndex - 1]}; "
+				+ $"to={path[pathIndex]}; reason={pathStepReason}");
+			return;
+		}
+
+		requiredMovement += pathStepCost;
+	}
+
+	float availableMovement = _unitService.GetStamina(unitId);
+	if (requiredMovement > availableMovement + 0.0001f)
+	{
+		Debug.LogWarning(
+			$"[MOYVA_MOVE][PATH_REJECT_BUDGET] unit={unitId}; "
+			+ $"required={requiredMovement:0.###}; "
+			+ $"available={availableMovement:0.###}; "
+			+ $"target={targetPosition}");
+		return;
+	}
+
+	Debug.Log(
+		$"[MOYVA_MOVE][PATH_ACCEPT] unit={unitId}; "
+		+ $"nodes={path.Count}; cost={requiredMovement:0.###}; "
+		+ $"available={availableMovement:0.###}; "
+		+ $"target={targetPosition}");
+}
+
 
 			var unitObj = _unitService.GetUnitObject(unitId);
 			if (unitObj == null)
@@ -232,6 +346,11 @@ namespace Kruty1918.Moyva.Units.Runtime
 					unitObj.transform.rotation);
 
 				await _animationService.MoveAlongPathAsync(unitObj.transform, path, settings, linkedCts.Token);
+				UnitMovementDiagnostics.Log(
+					__diagTrace,
+					"MOVE_ANIMATION_RETURNED",
+					$"unit={unitId}; completedSteps={completedSteps}; " +
+					$"elapsedMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - __diagMoveStarted)}");
 			}
 			catch (OperationCanceledException)
 			{
@@ -248,6 +367,24 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 					internalCts.Dispose();
 				}
+
+			if (_unitService.TryGetUnitPosition(unitId, out Vector2Int __diagFinalPosition))
+			{
+				UnitMovementDiagnostics.Log(
+					__diagTrace,
+					"MOVE_CORE_END",
+					$"unit={unitId}; final={__diagFinalPosition}; target={targetPosition}; " +
+					$"completedSteps={completedSteps}; stamina={_unitService.GetStamina(unitId):F3}; " +
+					$"totalMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - __diagMoveStarted)}");
+			}
+			else
+			{
+				UnitMovementDiagnostics.Warn(
+					__diagTrace,
+					"MOVE_CORE_END_NO_POSITION",
+					$"unit={unitId}; target={targetPosition}; completedSteps={completedSteps}; " +
+					$"totalMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - __diagMoveStarted)}");
+			}
 
 			if (completedSteps > 0)
 				_turns?.TryRecordAction(ownerId, "unit-move");
@@ -266,126 +403,294 @@ namespace Kruty1918.Moyva.Units.Runtime
 		}
 
 		public IReadOnlyList<UnitMovementTileSnapshot> GetMovementTiles(string unitId)
+{
+	if (string.IsNullOrWhiteSpace(unitId)
+		|| !_unitService.TryGetUnitPosition(unitId, out Vector2Int startPosition))
+	{
+		return Array.Empty<UnitMovementTileSnapshot>();
+	}
+
+	string ownerId = _ownership?.GetUnitOwnerId(unitId);
+	if (_turns != null
+		&& !_turns.CanOwnerAct(ownerId, out _))
+	{
+		return Array.Empty<UnitMovementTileSnapshot>();
+	}
+
+	float movement = Mathf.Max(0f, _unitService.GetStamina(unitId));
+
+	if (_movementRangeCache.TryGetValue(
+			unitId,
+			out MovementRangeCacheEntry cached)
+		&& cached.Position == startPosition
+		&& Mathf.Abs(cached.Movement - movement) <= 0.0001f
+		&& cached.WorldVersion == _movementWorldVersion)
+	{
+		Debug.Log(
+			$"[MOYVA_MOVE][RANGE_CACHE_HIT] unit={unitId}; "
+			+ $"reachable={cached.Tiles.Count}; movement={movement:0.###}");
+		return cached.Tiles;
+	}
+
+	if (_traversalPolicy == null)
+	{
+		Debug.LogError(
+			$"[MOYVA_MOVE][RANGE] traversal policy is not bound for '{unitId}'.");
+		return Array.Empty<UnitMovementTileSnapshot>();
+	}
+
+	var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+	var costByPosition = new Dictionary<Vector2Int, float>(128);
+	var frontier = new List<MovementFrontierNode>(128);
+
+	costByPosition[startPosition] = 0f;
+	PushMovementFrontier(
+		frontier,
+		new MovementFrontierNode(startPosition, 0f));
+
+	int expanded = 0;
+	int evaluatedEdges = 0;
+
+	while (frontier.Count > 0)
+	{
+		MovementFrontierNode current = PopMovementFrontier(frontier);
+
+		if (!costByPosition.TryGetValue(
+				current.Position,
+				out float bestKnownCost)
+			|| current.Cost > bestKnownCost + 0.0001f)
 		{
-			var results = new Dictionary<Vector2Int, UnitMovementTileSnapshot>();
-			if (string.IsNullOrWhiteSpace(unitId)
-				|| !_unitService.TryGetUnitPosition(unitId, out Vector2Int startPosition))
+			continue;
+		}
+
+		if (current.Cost > movement + 0.0001f)
+			continue;
+
+		expanded++;
+
+		foreach (Vector2Int neighbor in _pathfinder.GetNeighbors(current.Position))
+		{
+			evaluatedEdges++;
+
+			if (neighbor == startPosition)
+				continue;
+
+			float remaining =
+				Mathf.Max(0f, movement - current.Cost);
+
+			if (!_traversalPolicy.TryEvaluateStep(
+					unitId,
+					current.Position,
+					neighbor,
+					remaining,
+					UnitTraversalMode.Preview,
+					out float stepCost,
+					out _))
 			{
-				return Array.Empty<UnitMovementTileSnapshot>();
+				continue;
 			}
 
-			float stamina = Mathf.Max(0f, _unitService.GetStamina(unitId));
-			results[startPosition] = new UnitMovementTileSnapshot(
-				startPosition,
+			float nextCost = current.Cost + stepCost;
+			if (nextCost > movement + 0.0001f)
+				continue;
+
+			if (costByPosition.TryGetValue(
+					neighbor,
+					out float previousCost)
+				&& nextCost >= previousCost - 0.0001f)
+			{
+				continue;
+			}
+
+			costByPosition[neighbor] = nextCost;
+			PushMovementFrontier(
+				frontier,
+				new MovementFrontierNode(neighbor, nextCost));
+		}
+	}
+
+	var ordered =
+		new List<UnitMovementTileSnapshot>(costByPosition.Count);
+
+	foreach (KeyValuePair<Vector2Int, float> entry in costByPosition)
+	{
+		ordered.Add(
+			new UnitMovementTileSnapshot(
+				entry.Key,
 				isReachable: true,
-				cost: 0f);
+				cost: entry.Value));
+	}
 
-			var open = new List<Vector2Int> { startPosition };
-			var costByPosition = new Dictionary<Vector2Int, float>
-			{
-				[startPosition] = 0f,
-			};
+	ordered.Sort((left, right) =>
+	{
+		int cost = left.Cost.CompareTo(right.Cost);
+		if (cost != 0)
+			return cost;
 
-			while (open.Count > 0)
-			{
-				Vector2Int current = PopLowestCost(open, costByPosition);
-				float currentCost = costByPosition[current];
+		int y = left.Position.y.CompareTo(right.Position.y);
+		return y != 0
+			? y
+			: left.Position.x.CompareTo(right.Position.x);
+	});
 
-				foreach (Vector2Int neighbor in _pathfinder.GetNeighbors(current))
-				{
-					if (neighbor == startPosition)
-						continue;
+	stopwatch.Stop();
 
-					float remainingStamina = Mathf.Max(0f, stamina - currentCost);
-					if (!TryEvaluateMovementStep(
-							unitId,
-							neighbor,
-							remainingStamina,
-							openConstructionGateIfNeeded: false,
-							out float stepCost,
-							out string reason))
-					{
-						if (!results.TryGetValue(neighbor, out UnitMovementTileSnapshot existing)
-							|| !existing.IsReachable)
-						{
-							results[neighbor] = new UnitMovementTileSnapshot(
-								neighbor,
-								isReachable: false,
-								cost: currentCost,
-								reason);
-						}
+	_movementRangeCache[unitId] =
+		new MovementRangeCacheEntry(
+			startPosition,
+			movement,
+			_movementWorldVersion,
+			ordered);
 
-						continue;
-					}
+	string profileTag =
+		stopwatch.Elapsed.TotalMilliseconds >= 20d ? "SLOW" : "OK";
 
-					float nextCost = currentCost + stepCost;
-					if (nextCost > stamina + 0.0001f)
-					{
-						if (!results.TryGetValue(neighbor, out UnitMovementTileSnapshot existing)
-							|| !existing.IsReachable)
-						{
-							results[neighbor] = new UnitMovementTileSnapshot(
-								neighbor,
-								isReachable: false,
-								cost: nextCost,
-								"Недостатньо витривалості.");
-						}
+	Debug.Log(
+		$"[MOYVA_MOVE][RANGE_{profileTag}] unit={unitId}; "
+		+ $"start={startPosition}; movement={movement:0.###}; "
+		+ $"reachable={ordered.Count}; expanded={expanded}; "
+		+ $"edges={evaluatedEdges}; "
+		+ $"ms={stopwatch.Elapsed.TotalMilliseconds:0.###}");
 
-						continue;
-					}
+	return ordered;
+}
 
-					if (costByPosition.TryGetValue(neighbor, out float previousCost)
-						&& nextCost >= previousCost - 0.0001f)
-					{
-						continue;
-					}
+private readonly struct MovementRangeCacheEntry
+{
+	public MovementRangeCacheEntry(
+		Vector2Int position,
+		float movement,
+		int worldVersion,
+		IReadOnlyList<UnitMovementTileSnapshot> tiles)
+	{
+		Position = position;
+		Movement = movement;
+		WorldVersion = worldVersion;
+		Tiles = tiles;
+	}
 
-					costByPosition[neighbor] = nextCost;
-					results[neighbor] = new UnitMovementTileSnapshot(
-						neighbor,
-						isReachable: true,
-						cost: nextCost);
+	public Vector2Int Position { get; }
+	public float Movement { get; }
+	public int WorldVersion { get; }
+	public IReadOnlyList<UnitMovementTileSnapshot> Tiles { get; }
+}
 
-					if (!open.Contains(neighbor))
-						open.Add(neighbor);
-				}
-			}
+private readonly struct MovementFrontierNode
+{
+	public MovementFrontierNode(Vector2Int position, float cost)
+	{
+		Position = position;
+		Cost = cost;
+	}
 
-			var ordered = new List<UnitMovementTileSnapshot>(results.Values);
-			ordered.Sort((left, right) =>
-			{
-				int reachable = right.IsReachable.CompareTo(left.IsReachable);
-				if (reachable != 0)
-					return reachable;
+	public Vector2Int Position { get; }
+	public float Cost { get; }
+}
 
-				int cost = left.Cost.CompareTo(right.Cost);
-				if (cost != 0)
-					return cost;
+private static void PushMovementFrontier(
+	List<MovementFrontierNode> heap,
+	MovementFrontierNode node)
+{
+	heap.Add(node);
+	int index = heap.Count - 1;
 
-				int y = left.Position.y.CompareTo(right.Position.y);
-				return y != 0 ? y : left.Position.x.CompareTo(right.Position.x);
-			});
-			return ordered;
-		}
+	while (index > 0)
+	{
+		int parent = (index - 1) / 2;
+		if (heap[parent].Cost <= heap[index].Cost)
+			break;
 
-		private bool CanMakeStep(string unitId, Vector2Int stepPos)
+		(heap[parent], heap[index]) =
+			(heap[index], heap[parent]);
+		index = parent;
+	}
+}
+
+private static MovementFrontierNode PopMovementFrontier(
+	List<MovementFrontierNode> heap)
+{
+	MovementFrontierNode result = heap[0];
+	int lastIndex = heap.Count - 1;
+	MovementFrontierNode last = heap[lastIndex];
+	heap.RemoveAt(lastIndex);
+
+	if (heap.Count == 0)
+		return result;
+
+	heap[0] = last;
+	int index = 0;
+
+	while (true)
+	{
+		int left = index * 2 + 1;
+		if (left >= heap.Count)
+			break;
+
+		int right = left + 1;
+		int best =
+			right < heap.Count
+			&& heap[right].Cost < heap[left].Cost
+				? right
+				: left;
+
+		if (heap[index].Cost <= heap[best].Cost)
+			break;
+
+		(heap[index], heap[best]) =
+			(heap[best], heap[index]);
+		index = best;
+	}
+
+	return result;
+}
+
+private bool CanMakeStep(string unitId, Vector2Int stepPos)
+{
+	float currentMovement = _unitService.GetStamina(unitId);
+
+	if (_traversalPolicy != null
+		&& _unitService.TryGetUnitPosition(
+			unitId,
+			out Vector2Int from))
+	{
+		bool allowed = _traversalPolicy.TryEvaluateStep(
+			unitId,
+			from,
+			stepPos,
+			currentMovement,
+			UnitTraversalMode.Execute,
+			out float exactCost,
+			out string exactReason);
+
+		if (!allowed)
 		{
-			float currentStamina = _unitService.GetStamina(unitId);
-			bool canStep = TryEvaluateMovementStep(
-				unitId,
-				stepPos,
-				currentStamina,
-				openConstructionGateIfNeeded: true,
-				out float cost,
-				out string reason);
-			if (!canStep && !string.IsNullOrWhiteSpace(reason))
-				Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: BLOCKED ({reason}).");
-
-			LogMovementVerbose(
-				$"[UnitMovement] step {unitId}@{stepPos}: " +
-				$"stamina={currentStamina} cost={cost} ok={canStep}");
-			return canStep;
+			Debug.LogWarning(
+				$"[MOYVA_MOVE][STEP_REJECT] unit={unitId}; "
+				+ $"from={from}; to={stepPos}; "
+				+ $"movement={currentMovement:0.###}; "
+				+ $"cost={exactCost:0.###}; reason={exactReason}");
 		}
+
+		return allowed;
+	}
+
+	bool canStep = TryEvaluateMovementStep(
+		unitId,
+		stepPos,
+		currentMovement,
+		openConstructionGateIfNeeded: true,
+		out float cost,
+		out string reason);
+
+	if (!canStep && !string.IsNullOrWhiteSpace(reason))
+		Debug.Log(
+			$"[UnitMovement] Перевірка кроку для {unitId} "
+			+ $"на {stepPos}: BLOCKED ({reason}).");
+
+	return canStep;
+}
+
+
 
 		private bool TryEvaluateMovementStep(
 			string unitId,
@@ -492,6 +797,19 @@ namespace Kruty1918.Moyva.Units.Runtime
 				return;
 
 			float stepCost = _tileSettings.GetTileWeight(tileTypeId);
+			if (_traversalPolicy != null
+				&& _unitService.TryGetUnitPosition(unitId, out Vector2Int previousPosition)
+				&& _traversalPolicy.TryEvaluateStep(
+					unitId,
+					previousPosition,
+					stepPos,
+					float.PositiveInfinity,
+					UnitTraversalMode.Pathfinding,
+					out float exactStepCost,
+					out _))
+			{
+				stepCost = exactStepCost;
+			}
 
 			bool sharedOccupancy =
 				_objectsMapService.TryGetOccupant(
