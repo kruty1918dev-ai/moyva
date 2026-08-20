@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Kruty1918.Moyva.BotAI.API;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Faction.API;
@@ -22,7 +23,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
     /// the turn itself: TurnBotDriver retries ITurnService.TryEndTurn on later ticks,
     /// allowing ITurnBlocker implementations (notably movement) to settle first.
     /// </summary>
-    public sealed class BotTurnExecutor : IBotTurnExecutor
+    public sealed class BotTurnExecutor : IBotTurnExecutor, ITurnBlocker, IDisposable
     {
         internal const int MaxMutatingActionsPerTurn = 6;
         internal const int MaxMoveActionsPerTurn = 4;
@@ -40,7 +41,14 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         private readonly IGridService _grid;
         private readonly IObjectsMapService _objectsMap;
         private readonly IFogOfWarServiceRegistry _fogRegistry;
+        private readonly IBotWorldSnapshotBuilder _snapshotBuilder;
+        private readonly IBotMemoryStore _memory;
+        private readonly BotPlanningProfile _profile;
+        private readonly IBotStrategicPlanner _strategicPlanner;
+        private readonly IBotTurnPlanner _turnPlanner;
+        private readonly IBotActionExecutor _actionExecutor;
         private readonly HashSet<BotTurnEpoch> _startedEpochs = new();
+        private BotTurnSession _activeSession;
 
         [Inject]
         public BotTurnExecutor(
@@ -53,7 +61,13 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             [InjectOptional] IUnitMovementService movement = null,
             [InjectOptional] IGridService grid = null,
             [InjectOptional] IObjectsMapService objectsMap = null,
-            [InjectOptional] IFogOfWarServiceRegistry fogRegistry = null)
+            [InjectOptional] IFogOfWarServiceRegistry fogRegistry = null,
+            [InjectOptional] IBotWorldSnapshotBuilder snapshotBuilder = null,
+            [InjectOptional] IBotMemoryStore memory = null,
+            [InjectOptional] BotPlanningProfile profile = null,
+            [InjectOptional] IBotStrategicPlanner strategicPlanner = null,
+            [InjectOptional] IBotTurnPlanner turnPlanner = null,
+            [InjectOptional] IBotActionExecutor actionExecutor = null)
         {
             _turns = turns;
             _factions = factions;
@@ -65,9 +79,16 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             _grid = grid;
             _objectsMap = objectsMap;
             _fogRegistry = fogRegistry;
+            _snapshotBuilder = snapshotBuilder;
+            _memory = memory;
+            _profile = profile ?? BotPlanningProfile.Normal();
+            _strategicPlanner = strategicPlanner;
+            _turnPlanner = turnPlanner;
+            _actionExecutor = actionExecutor;
         }
 
         internal int StartedEpochCount => _startedEpochs.Count;
+        internal bool IsSessionActive => _activeSession != null && !_activeSession.Task.IsCompleted;
 
         public bool TryBeginTurn(string ownerId, long globalTurn, out string reason)
         {
@@ -118,30 +139,83 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 return true;
             }
 
+            CancelActiveSessionIfDifferent(epoch);
+
             // Claim the epoch before the first mutation. If a synchronous gameplay
             // signal re-enters the executor, the same turn cannot issue actions twice.
             _startedEpochs.Add(epoch);
             PruneOldEpochs(globalTurn);
 
+            var cancellation = new CancellationTokenSource();
+            Task task = ExecuteTurnSessionAsync(owner, globalTurn, cancellation.Token);
+            _activeSession = new BotTurnSession(epoch, cancellation, task);
+            reason = null;
+            return true;
+        }
+
+        public bool IsTurnBlocked(out string reason)
+        {
+            BotTurnSession session = _activeSession;
+            if (session == null)
+            {
+                reason = null;
+                return false;
+            }
+
+            if (!session.Task.IsCompleted)
+            {
+                reason = $"Bot turn execution is still running for owner '{session.Epoch.OwnerId}'.";
+                return true;
+            }
+
+            if (session.Task.IsFaulted)
+                Debug.LogError($"[BotTurnExecutor] Bot session faulted: {session.Task.Exception}");
+
+            session.Dispose();
+            if (ReferenceEquals(_activeSession, session))
+                _activeSession = null;
+
+            reason = null;
+            return false;
+        }
+
+        public void Dispose()
+        {
+            BotTurnSession session = _activeSession;
+            if (session == null)
+                return;
+
+            session.Cancel();
+            session.Dispose();
+            _activeSession = null;
+        }
+
+        private async Task ExecuteTurnSessionAsync(string ownerId, long globalTurn, CancellationToken token)
+        {
             try
             {
-                ExecuteTurn(owner, globalTurn);
-                reason = null;
-                return true;
+                await ExecuteTurnAsync(ownerId, globalTurn, token);
+            }
+            catch (OperationCanceledException)
+            {
             }
             catch (Exception exception)
             {
                 // Keep the epoch claimed after a partial failure. Retrying the same
                 // turn could duplicate a successful command that preceded the fault.
-                reason = $"Bot turn execution failed safely: {exception.Message}";
-                Debug.LogError($"[BotTurnExecutor] owner={owner} globalTurn={globalTurn}: {exception}");
-                return false;
+                Debug.LogError($"[BotTurnExecutor] owner={ownerId} globalTurn={globalTurn}: {exception}");
             }
         }
 
-        private void ExecuteTurn(string ownerId, long globalTurn)
+        private async Task ExecuteTurnAsync(string ownerId, long globalTurn, CancellationToken token)
         {
             var budget = new BotTurnBudget(MaxMutatingActionsPerTurn);
+            await ExecutePlannedActionsAsync(ownerId, globalTurn, budget, token);
+
+            if (!budget.HasRemaining)
+                return;
+            token.ThrowIfCancellationRequested();
+
             ResolveBotProfile(ownerId, out Vector2Int startPosition, out string unitTypeId);
 
             bool hasBarrack = TryFindOwnedBuilding(
@@ -174,8 +248,79 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             if (!budget.HasRemaining)
                 return;
 
-            IssueDeterministicMoves(ownerId, globalTurn, budget);
+            await IssueDeterministicMovesAsync(ownerId, globalTurn, budget, token);
         }
+
+        private async Task ExecutePlannedActionsAsync(
+            string ownerId,
+            long globalTurn,
+            BotTurnBudget budget,
+            CancellationToken token)
+        {
+            if (_snapshotBuilder == null
+                || _strategicPlanner == null
+                || _turnPlanner == null
+                || _actionExecutor == null)
+            {
+                return;
+            }
+
+            int successfulMutations = 0;
+            int failedMutations = 0;
+            int maxIterations = Math.Max(1, Math.Min(_profile.MaxDecisionIterations, budget.Remaining));
+            for (int iteration = 0;
+                 iteration < maxIterations
+                 && budget.HasRemaining
+                 && successfulMutations < _profile.MaxSuccessfulMutations
+                 && failedMutations < _profile.MaxFailedMutations;
+                 iteration++)
+            {
+                token.ThrowIfCancellationRequested();
+                if (!IsSameTurnEpoch(ownerId, globalTurn))
+                    return;
+
+                BotWorldSnapshot snapshot = _snapshotBuilder.Build(ownerId, globalTurn);
+                _memory?.UpdateFromObservation(snapshot, _profile);
+                snapshot = _snapshotBuilder.Build(ownerId, globalTurn);
+                BotStrategicContext strategy = _strategicPlanner.Plan(snapshot);
+                IReadOnlyList<BotActionCandidate> candidates = _turnPlanner.GenerateCandidates(snapshot, strategy);
+                if (candidates == null || candidates.Count == 0)
+                    return;
+
+                BotActionCandidate selected = default;
+                bool found = false;
+                for (int index = 0; index < candidates.Count; index++)
+                {
+                    if (candidates[index].Score.Total < _profile.MinUtilityToAct)
+                        continue;
+
+                    selected = candidates[index];
+                    found = true;
+                    break;
+                }
+
+                if (!found)
+                    return;
+
+                BotActionExecutionResult result = await _actionExecutor.ExecuteAsync(ownerId, selected, token);
+                if (result.Succeeded && result.Mutated)
+                {
+                    budget.TrySpend();
+                    successfulMutations++;
+                    continue;
+                }
+
+                failedMutations++;
+                if (!result.Succeeded)
+                    return;
+            }
+        }
+
+        private bool IsSameTurnEpoch(string ownerId, long globalTurn)
+            => _turns != null
+               && _turns.GlobalTurn == globalTurn
+               && _turns.Phase == TurnPhase.AwaitingInput
+               && string.Equals(NormalizeId(_turns.ActiveOwnerId), ownerId, StringComparison.Ordinal);
 
         private void ResolveBotProfile(
             string ownerId,
@@ -291,10 +436,11 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             return false;
         }
 
-        private void IssueDeterministicMoves(
+        private async Task IssueDeterministicMovesAsync(
             string ownerId,
             long globalTurn,
-            BotTurnBudget budget)
+            BotTurnBudget budget,
+            CancellationToken token)
         {
             if (_units == null
                 || _ownership == null
@@ -347,6 +493,10 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                  && issuedMoves < MaxMoveActionsPerTurn;
                  index++)
             {
+                token.ThrowIfCancellationRequested();
+                if (!IsSameTurnEpoch(ownerId, globalTurn))
+                    return;
+
                 string unitId = ownedUnitIds[index];
                 if (!_units.TryGetUnitPosition(unitId, out Vector2Int current))
                     continue;
@@ -364,10 +514,25 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 }
 
                 reservedTargets.Add(target);
-                _ = _movement.MoveUnitAsync(unitId, target, CancellationToken.None);
+                await _movement.MoveUnitAsync(unitId, target, token);
                 budget.TrySpend();
                 issuedMoves++;
             }
+        }
+
+        private void CancelActiveSessionIfDifferent(BotTurnEpoch epoch)
+        {
+            BotTurnSession session = _activeSession;
+            if (session == null)
+                return;
+
+            if (session.Epoch.Equals(epoch))
+                return;
+
+            session.Cancel();
+            if (session.Task.IsCompleted)
+                session.Dispose();
+            _activeSession = null;
         }
 
         private bool TryChooseMoveTarget(
@@ -510,6 +675,39 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             return (int)(result < 0 ? result + divisor : result);
         }
 
+        internal static int StableNoise(
+            string ownerId,
+            long globalTurn,
+            int actionOrdinal,
+            string candidateId,
+            int magnitude)
+        {
+            if (magnitude <= 0)
+                return 0;
+
+            unchecked
+            {
+                uint hash = 2166136261u;
+                AddStableHash(ref hash, ownerId);
+                AddStableHash(ref hash, globalTurn.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                AddStableHash(ref hash, actionOrdinal.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                AddStableHash(ref hash, candidateId);
+
+                int range = (magnitude * 2) + 1;
+                return (int)(hash % (uint)range) - magnitude;
+            }
+        }
+
+        private static void AddStableHash(ref uint hash, string value)
+        {
+            value ??= string.Empty;
+            for (int index = 0; index < value.Length; index++)
+            {
+                hash ^= value[index];
+                hash *= 16777619u;
+            }
+        }
+
         private void PruneOldEpochs(long currentGlobalTurn)
         {
             long minimum = Math.Max(1L, currentGlobalTurn - 64L);
@@ -545,6 +743,29 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                            ^ GlobalTurn.GetHashCode();
                 }
             }
+        }
+
+        private sealed class BotTurnSession : IDisposable
+        {
+            public BotTurnSession(BotTurnEpoch epoch, CancellationTokenSource cancellation, Task task)
+            {
+                Epoch = epoch;
+                Cancellation = cancellation;
+                Task = task ?? Task.CompletedTask;
+            }
+
+            public BotTurnEpoch Epoch { get; }
+            public CancellationTokenSource Cancellation { get; }
+            public Task Task { get; }
+
+            public void Cancel()
+            {
+                if (!Cancellation.IsCancellationRequested)
+                    Cancellation.Cancel();
+            }
+
+            public void Dispose()
+                => Cancellation.Dispose();
         }
 
         internal sealed class BotTurnBudget

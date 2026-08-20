@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
     ///   Attacking → достатньо юнітів; рухає їх до найближчого ворога.
     ///   Defending → мало юнітів; тримає базові охоронці.
     /// </summary>
+    [System.Obsolete("Legacy compatibility only. Runtime BotAI uses TurnBotDriver -> IBotTurnExecutor.")]
     internal sealed class BotBrain : IBotController
     {
         private const int AttackRange   = 8;
@@ -226,19 +227,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
 
         private void SpawnStartUnit()
         {
-            if (string.IsNullOrEmpty(_definition.DefaultUnitTypeId))
-            {
-                Debug.LogWarning($"[BotBrain:{_definition.FactionId}] DefaultUnitTypeId не вказано — спавн пропущено.");
-                return;
-            }
-
-            string unitId = _unitFactory.CreateUnit(
-                _definition.DefaultUnitTypeId,
-                _definition.StartPosition,
-                _definition.FactionId.Value);
-
-            if (!string.IsNullOrEmpty(unitId))
-                Debug.Log($"[BotBrain:{_definition.FactionId}] Spawned unit '{unitId}' at {_definition.StartPosition}.");
+            Debug.LogWarning($"[BotBrain:{_definition.FactionId}] Legacy direct unit spawn is disabled. Runtime BotAI must recruit through IUnitRecruitmentService.");
         }
 
         private static int ManhattanDist(Vector2Int a, Vector2Int b)

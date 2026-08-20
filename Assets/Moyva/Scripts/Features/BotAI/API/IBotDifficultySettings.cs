@@ -3,11 +3,17 @@ namespace Kruty1918.Moyva.BotAI.API
     public interface IBotDifficultySettings
     {
         DifficultyLevel Difficulty { get; }
-        /// <summary>Інтервал між тіками бота (секунди).</summary>
+        /// <summary>Obsolete compatibility value. Runtime BotAI is turn-scoped, not timer-scoped.</summary>
+        [System.Obsolete("Runtime BotAI is turn-scoped. Use planning-quality settings instead.")]
         float TickInterval { get; }
-        /// <summary>Поріг юнітів для переходу в режим атаки.</summary>
+        /// <summary>Legacy compatibility threshold for BotBrain only.</summary>
         int AttackThreshold { get; }
-        /// <summary>Поріг юнітів для переходу в режим захисту.</summary>
+        /// <summary>Legacy compatibility threshold for BotBrain only.</summary>
         int DefendThreshold { get; }
+        int MaxDecisionIterations { get; }
+        int MaxSuccessfulMutations { get; }
+        int MaxFailedMutations { get; }
+        int DeterministicNoiseMagnitude { get; }
+        int MinUtilityToAct { get; }
     }
 }

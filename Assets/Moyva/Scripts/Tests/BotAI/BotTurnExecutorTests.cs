@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Kruty1918.Moyva.BotAI.API;
 using Kruty1918.Moyva.BotAI.Runtime;
 using Kruty1918.Moyva.Turns.API;
 using NUnit.Framework;
@@ -35,6 +38,51 @@ namespace Kruty1918.Moyva.Tests.BotAI
 
             Assert.IsTrue(executor.TryBeginTurn("bot-a", 9, out string secondReason), secondReason);
             Assert.AreEqual(1, executor.StartedEpochCount);
+        }
+
+        [Test]
+        public void Executor_BlocksTurnWhileAsyncActionIsRunning()
+        {
+            var turns = FakeTurns.Bot("bot-a", 11);
+            var action = new DelayedActionExecutor();
+            var executor = new BotTurnExecutor(
+                turns: turns,
+                snapshotBuilder: new StaticSnapshotBuilder(MakeSnapshot(11)),
+                memory: null,
+                profile: SingleActionProfile(),
+                strategicPlanner: new StaticStrategicPlanner(),
+                turnPlanner: new StaticTurnPlanner(MakeAction()),
+                actionExecutor: action);
+
+            Assert.IsTrue(executor.TryBeginTurn("bot-a", 11, out string startReason), startReason);
+            Assert.IsTrue(executor.IsTurnBlocked(out string blockReason));
+            StringAssert.Contains("still running", blockReason);
+
+            action.Complete(BotActionExecutionResult.Success("done"));
+
+            Assert.IsFalse(executor.IsTurnBlocked(out string finishedReason), finishedReason);
+        }
+
+        [Test]
+        public void Executor_DisposeCancelsActiveSession()
+        {
+            var turns = FakeTurns.Bot("bot-a", 12);
+            var action = new DelayedActionExecutor();
+            var executor = new BotTurnExecutor(
+                turns: turns,
+                snapshotBuilder: new StaticSnapshotBuilder(MakeSnapshot(12)),
+                memory: null,
+                profile: SingleActionProfile(),
+                strategicPlanner: new StaticStrategicPlanner(),
+                turnPlanner: new StaticTurnPlanner(MakeAction()),
+                actionExecutor: action);
+
+            Assert.IsTrue(executor.TryBeginTurn("bot-a", 12, out string reason), reason);
+
+            executor.Dispose();
+
+            Assert.IsTrue(action.LastToken.IsCancellationRequested);
+            Assert.IsFalse(executor.IsTurnBlocked(out _));
         }
 
         [Test]
@@ -131,6 +179,89 @@ namespace Kruty1918.Moyva.Tests.BotAI
                 reason = null;
                 return IsOwnerActive(requesterOwnerId);
             }
+        }
+
+        private static BotPlanningProfile SingleActionProfile()
+            => new(
+                "test",
+                DifficultyLevel.Normal,
+                maxDecisionIterations: 1,
+                maxSuccessfulMutations: 1,
+                maxFailedMutations: 1,
+                deterministicNoiseMagnitude: 0,
+                minUtilityToAct: 1);
+
+        private static BotWorldSnapshot MakeSnapshot(long globalTurn)
+            => new(
+                "bot-a",
+                round: 1,
+                globalTurn,
+                TurnPhase.AwaitingInput,
+                actionsThisTurn: 0,
+                Vector2Int.zero,
+                Array.Empty<BotUnitSnapshot>(),
+                Array.Empty<BotUnitSnapshot>(),
+                Array.Empty<BotBuildingSnapshot>(),
+                Array.Empty<Kruty1918.Moyva.Units.API.UnitRecruitmentQueueItemSnapshot>(),
+                Array.Empty<BotKnownEntityMemory>());
+
+        private static BotActionCandidate MakeAction()
+            => new(
+                "test:hold",
+                BotActionKind.Hold,
+                BotStrategicPosture.Search,
+                new BotActionScore(10, "test"));
+
+        private sealed class StaticSnapshotBuilder : IBotWorldSnapshotBuilder
+        {
+            private readonly BotWorldSnapshot _snapshot;
+
+            public StaticSnapshotBuilder(BotWorldSnapshot snapshot)
+            {
+                _snapshot = snapshot;
+            }
+
+            public BotWorldSnapshot Build(string ownerId, long globalTurn) => _snapshot;
+        }
+
+        private sealed class StaticStrategicPlanner : IBotStrategicPlanner
+        {
+            public BotStrategicContext Plan(BotWorldSnapshot snapshot)
+                => new("bot-a", snapshot.GlobalTurn, BotStrategicPosture.Search, 500, "test");
+        }
+
+        private sealed class StaticTurnPlanner : IBotTurnPlanner
+        {
+            private readonly IReadOnlyList<BotActionCandidate> _actions;
+
+            public StaticTurnPlanner(params BotActionCandidate[] actions)
+            {
+                _actions = actions;
+            }
+
+            public IReadOnlyList<BotActionCandidate> GenerateCandidates(
+                BotWorldSnapshot snapshot,
+                BotStrategicContext strategy)
+                => _actions;
+        }
+
+        private sealed class DelayedActionExecutor : IBotActionExecutor
+        {
+            private readonly TaskCompletionSource<BotActionExecutionResult> _completion = new();
+
+            public CancellationToken LastToken { get; private set; }
+
+            public Task<BotActionExecutionResult> ExecuteAsync(
+                string ownerId,
+                BotActionCandidate action,
+                CancellationToken token)
+            {
+                LastToken = token;
+                return _completion.Task;
+            }
+
+            public void Complete(BotActionExecutionResult result)
+                => _completion.TrySetResult(result);
         }
     }
 }

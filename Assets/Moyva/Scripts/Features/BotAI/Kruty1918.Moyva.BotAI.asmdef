@@ -10,7 +10,8 @@
         "Kruty1918.Moyva.Construction",
         "Kruty1918.Moyva.Grid",
         "Kruty1918.Moyva.ObjectsMap",
-        "Kruty1918.Moyva.Turns"
+        "Kruty1918.Moyva.Turns",
+        "Kruty1918.Moyva.SaveSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

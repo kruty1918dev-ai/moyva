@@ -80,7 +80,14 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .To<UnitGameplayProfileService>()
                 .AsSingle();
 
+            Container.BindInterfacesAndSelfTo<UnitTurnActionStateService>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<UnitCombatService>()
+                .AsSingle();
+
+            Container.Bind<ICombatCommandService>()
+                .To<UnitCombatCommandService>()
                 .AsSingle();
 
             Container.BindInterfacesAndSelfTo<UnitCombatPresentationService>()
