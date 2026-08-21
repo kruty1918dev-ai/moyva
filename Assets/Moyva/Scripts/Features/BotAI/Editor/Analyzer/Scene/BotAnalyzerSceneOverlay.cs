@@ -87,6 +87,7 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
                 DrawUnits(frame, projection);
                 DrawGoal(frame, projection);
                 DrawTopCandidate(frame, projection);
+                DrawLatestReasoningTarget(frame, projection);
                 DrawMarkers(projection, now);
                 DrawCoordinates(frame, projection);
             }
@@ -303,6 +304,34 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
                     center + Vector3.up * 0.58f,
                     $"TOP CANDIDATE\n{top.Kind} • {top.Score}",
                     BotAnalyzerSceneStyles.GoalLabel);
+            }
+        }
+
+        private void DrawLatestReasoningTarget(
+            BotAnalyzerFrame frame,
+            IGridProjection projection)
+        {
+            if (!_settings.ShowTopCandidate ||
+                frame?.Reasoning == null ||
+                frame.Reasoning.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = frame.Reasoning.Count - 1; i >= 0; i--)
+            {
+                BotAnalyzerReasoningState item = frame.Reasoning[i];
+                if (item == null || !item.HasTargetCell)
+                    continue;
+
+                Vector3 center = Lift(projection.GridToWorld(item.TargetCell), 0.52f);
+                Handles.color = BotAnalyzerSceneStyles.Candidate;
+                Handles.DrawWireDisc(center, Vector3.up, 0.72f);
+                Handles.Label(
+                    center + Vector3.up * 0.82f,
+                    $"AI REASONING • {item.Stage}\\n{item.Headline}\\nScore {item.Score}",
+                    BotAnalyzerSceneStyles.GoalLabel);
+                break;
             }
         }
 

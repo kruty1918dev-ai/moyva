@@ -74,6 +74,17 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
     }
 
     [Serializable]
+    public sealed class BotAnalyzerReasoningRow
+    {
+        [TableColumnWidth(70)] public long Turn;
+        [TableColumnWidth(110)] public string Stage = string.Empty;
+        [TableColumnWidth(80)] public int Score;
+        public string Headline = string.Empty;
+        [MultiLineProperty(3)] public string Narrative = string.Empty;
+        public string Target = string.Empty;
+    }
+
+    [Serializable]
     public sealed class BotAnalyzerTimelineRow
     {
         [TableColumnWidth(130)] public string Time = string.Empty;
@@ -244,6 +255,35 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
                     Explanation = item.Explanation,
                 });
             }
+            return result;
+        }
+
+        public static List<BotAnalyzerReasoningRow> BuildReasoning(
+            IReadOnlyList<BotAnalyzerReasoningState> reasoning)
+        {
+            var result = new List<BotAnalyzerReasoningRow>();
+            if (reasoning == null)
+                return result;
+
+            for (int i = reasoning.Count - 1; i >= 0; i--)
+            {
+                BotAnalyzerReasoningState item = reasoning[i];
+                if (item == null)
+                    continue;
+
+                result.Add(new BotAnalyzerReasoningRow
+                {
+                    Turn = item.GlobalTurn,
+                    Stage = item.Stage,
+                    Score = item.Score,
+                    Headline = item.Headline,
+                    Narrative = item.Narrative,
+                    Target = item.HasTargetCell
+                        ? item.TargetCell.ToString()
+                        : item.SubjectId ?? string.Empty,
+                });
+            }
+
             return result;
         }
 

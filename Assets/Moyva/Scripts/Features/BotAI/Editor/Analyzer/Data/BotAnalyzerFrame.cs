@@ -28,6 +28,7 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
         public BotAnalyzerFogState Fog = new();
         public List<BotAnalyzerCandidateState> Candidates = new();
         public List<BotAnalyzerMemoryState> Memory = new();
+        public List<BotAnalyzerReasoningState> Reasoning = new();
 
         [NonSerialized] public HashSet<string> ExistingUnitIds = new(StringComparer.Ordinal);
         [NonSerialized] public HashSet<string> ExistingBuildingKeys = new(StringComparer.Ordinal);
@@ -145,4 +146,31 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
         public int LastKnownHp;
         public bool ConfirmedDestroyed;
     }
+
+    [Serializable]
+    public sealed class BotAnalyzerReasoningState
+    {
+        public long Sequence;
+        public long GlobalTurn;
+        public string Stage = string.Empty;
+        public string Headline = string.Empty;
+        public string Narrative = string.Empty;
+        public int Score;
+        public bool HasTargetCell;
+        public Vector2Int TargetCell;
+        public string SubjectId = string.Empty;
+        public List<BotAnalyzerReasoningFactorState> Factors = new();
+    }
+
+    [Serializable]
+    public sealed class BotAnalyzerReasoningFactorState
+    {
+        public string Key = string.Empty;
+        public string Label = string.Empty;
+        public float RawValue;
+        public int Weight;
+        public int Contribution;
+        public string Detail = string.Empty;
+    }
+
 }

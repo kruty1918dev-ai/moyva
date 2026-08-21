@@ -21,6 +21,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         private readonly IUnitRecruitmentService _recruitment;
         private readonly IFogOfWarServiceRegistry _fogRegistry;
         private readonly IBotMemoryStore _memory;
+        private readonly IBotPerceptionService _perception;
 
         [Inject]
         public BotWorldSnapshotBuilder(
@@ -31,7 +32,8 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             [InjectOptional] IConstructionService construction = null,
             [InjectOptional] IUnitRecruitmentService recruitment = null,
             [InjectOptional] IFogOfWarServiceRegistry fogRegistry = null,
-            [InjectOptional] IBotMemoryStore memory = null)
+            [InjectOptional] IBotMemoryStore memory = null,
+            [InjectOptional] IBotPerceptionService perception = null)
         {
             _turns = turns;
             _factions = factions;
@@ -41,6 +43,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             _recruitment = recruitment;
             _fogRegistry = fogRegistry;
             _memory = memory;
+            _perception = perception;
         }
 
         public BotWorldSnapshot Build(string ownerId, long globalTurn)
@@ -49,16 +52,46 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             Vector2Int startPosition = ResolveStartPosition(owner);
 
             var ownUnits = new List<BotUnitSnapshot>();
-            var visibleEnemyUnits = new List<BotUnitSnapshot>();
-            CollectUnits(owner, ownUnits, visibleEnemyUnits);
+            var enemyUnitCandidates = new List<BotUnitSnapshot>();
+            CollectUnitCandidates(owner, ownUnits, enemyUnitCandidates);
 
             var ownBuildings = new List<BotBuildingSnapshot>();
-            var visibleEnemyBuildings = new List<BotBuildingSnapshot>();
-            CollectBuildings(owner, ownBuildings, visibleEnemyBuildings);
+            var enemyBuildingCandidates = new List<BotBuildingSnapshot>();
+            CollectBuildingCandidates(owner, ownBuildings, enemyBuildingCandidates);
 
-            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> ready = _recruitment?.GetReadyItems(owner)
+            _perception?.Refresh(
+                owner,
+                startPosition,
+                ownUnits,
+                ownBuildings);
+
+            var visibleEnemyUnits = new List<BotUnitSnapshot>();
+            for (int i = 0; i < enemyUnitCandidates.Count; i++)
+            {
+                BotUnitSnapshot candidate = enemyUnitCandidates[i];
+                if (IsVisible(owner, candidate.Position))
+                    visibleEnemyUnits.Add(candidate);
+            }
+
+            var visibleEnemyBuildings = new List<BotBuildingSnapshot>();
+            for (int i = 0; i < enemyBuildingCandidates.Count; i++)
+            {
+                BotBuildingSnapshot candidate = enemyBuildingCandidates[i];
+                if (IsVisible(owner, candidate.Position))
+                    visibleEnemyBuildings.Add(candidate);
+            }
+
+            SortUnits(ownUnits);
+            SortUnits(visibleEnemyUnits);
+            SortBuildings(ownBuildings);
+            SortBuildings(visibleEnemyBuildings);
+
+            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> ready =
+                _recruitment?.GetReadyItems(owner)
                 ?? Array.Empty<UnitRecruitmentQueueItemSnapshot>();
-            IReadOnlyList<BotKnownEntityMemory> memory = _memory?.GetMemory(owner, globalTurn)
+
+            IReadOnlyList<BotKnownEntityMemory> memory =
+                _memory?.GetMemory(owner, globalTurn)
                 ?? Array.Empty<BotKnownEntityMemory>();
 
             return new BotWorldSnapshot(
@@ -76,16 +109,14 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 visibleEnemyBuildings);
         }
 
-        private void CollectUnits(
+        private void CollectUnitCandidates(
             string ownerId,
             List<BotUnitSnapshot> ownUnits,
-            List<BotUnitSnapshot> visibleEnemyUnits)
+            List<BotUnitSnapshot> enemyCandidates)
         {
             if (_units == null || _ownership == null)
                 return;
 
-            IFogOfWarService fog = null;
-            _fogRegistry?.TryGetFor(ownerId, out fog);
             IReadOnlyCollection<string> ids = _units.GetAllUnitIds();
             if (ids == null)
                 return;
@@ -102,7 +133,13 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 string unitOwner = Normalize(_ownership.GetUnitOwnerId(unitId));
                 string typeId = Normalize(_units.GetUnitTypeId(unitId));
                 float stamina = _units.GetStamina(unitId);
-                var unit = new BotUnitSnapshot(unitId, unitOwner, typeId, position, stamina);
+
+                var unit = new BotUnitSnapshot(
+                    unitId,
+                    unitOwner,
+                    typeId,
+                    position,
+                    stamina);
 
                 if (string.Equals(unitOwner, ownerId, StringComparison.Ordinal))
                 {
@@ -110,70 +147,50 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                     continue;
                 }
 
-                if (unitOwner == null)
-                    continue;
-                if (fog == null || !fog.IsVisible(position))
-                    continue;
-
-                visibleEnemyUnits.Add(unit);
+                if (unitOwner != null)
+                    enemyCandidates.Add(unit);
             }
         }
 
-        private void CollectBuildings(
+        private void CollectBuildingCandidates(
             string ownerId,
             List<BotBuildingSnapshot> ownBuildings,
-            List<BotBuildingSnapshot> visibleEnemyBuildings)
+            List<BotBuildingSnapshot> enemyCandidates)
         {
             if (_construction is not IConstructionSaveSnapshotSource source)
                 return;
 
-            IFogOfWarService fog = null;
-            _fogRegistry?.TryGetFor(ownerId, out fog);
-            IReadOnlyList<ConstructionSavedPlacement> placements = source.GetSavedPlacements();
+            IReadOnlyList<ConstructionSavedPlacement> placements =
+                source.GetSavedPlacements();
+
             if (placements == null)
                 return;
 
             for (int index = 0; index < placements.Count; index++)
             {
                 ConstructionSavedPlacement placement = placements[index];
-                if (!string.Equals(Normalize(placement.OwnerId), ownerId, StringComparison.Ordinal))
-                {
-                    if (!string.IsNullOrWhiteSpace(placement.OwnerId)
-                        && fog != null
-                        && fog.IsVisible(placement.Position))
-                    {
-                        visibleEnemyBuildings.Add(new BotBuildingSnapshot(
-                            placement.BuildingId,
-                            placement.OwnerId,
-                            placement.Position));
-                    }
+                string placementOwner = Normalize(placement.OwnerId);
 
-                    continue;
-                }
-
-                ownBuildings.Add(new BotBuildingSnapshot(
+                var building = new BotBuildingSnapshot(
                     placement.BuildingId,
                     placement.OwnerId,
-                    placement.Position));
+                    placement.Position);
+
+                if (string.Equals(placementOwner, ownerId, StringComparison.Ordinal))
+                    ownBuildings.Add(building);
+                else if (placementOwner != null)
+                    enemyCandidates.Add(building);
             }
+        }
 
-            ownBuildings.Sort((left, right) =>
-            {
-                int x = left.Position.x.CompareTo(right.Position.x);
-                if (x != 0)
-                    return x;
-                int y = left.Position.y.CompareTo(right.Position.y);
-                return y != 0 ? y : string.CompareOrdinal(left.BuildingId, right.BuildingId);
-            });
+        private bool IsVisible(string ownerId, Vector2Int position)
+        {
+            if (_perception != null)
+                return _perception.IsVisible(ownerId, position);
 
-            visibleEnemyBuildings.Sort((left, right) =>
-            {
-                int x = left.Position.x.CompareTo(right.Position.x);
-                if (x != 0)
-                    return x;
-                int y = left.Position.y.CompareTo(right.Position.y);
-                return y != 0 ? y : string.CompareOrdinal(left.BuildingId, right.BuildingId);
-            });
+            IFogOfWarService fog = null;
+            _fogRegistry?.TryGetFor(ownerId, out fog);
+            return fog != null && fog.IsVisible(position);
         }
 
         private Vector2Int ResolveStartPosition(string ownerId)
@@ -184,8 +201,11 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 for (int index = 0; index < factions.Count; index++)
                 {
                     FactionDefinition faction = factions[index];
-                    if (faction != null
-                        && string.Equals(Normalize(faction.FactionId.Value), ownerId, StringComparison.Ordinal))
+                    if (faction != null &&
+                        string.Equals(
+                            Normalize(faction.FactionId.Value),
+                            ownerId,
+                            StringComparison.Ordinal))
                     {
                         return faction.StartPosition;
                     }
@@ -198,11 +218,46 @@ namespace Kruty1918.Moyva.BotAI.Runtime
 
             for (int index = 0; index < turnFactions.Count; index++)
             {
-                if (string.Equals(Normalize(turnFactions[index].OwnerId), ownerId, StringComparison.Ordinal))
+                if (string.Equals(
+                        Normalize(turnFactions[index].OwnerId),
+                        ownerId,
+                        StringComparison.Ordinal))
+                {
                     return turnFactions[index].StartPosition;
+                }
             }
 
             return Vector2Int.zero;
+        }
+
+        private static void SortUnits(List<BotUnitSnapshot> units)
+        {
+            units.Sort((left, right) =>
+            {
+                int x = left.Position.x.CompareTo(right.Position.x);
+                if (x != 0)
+                    return x;
+
+                int y = left.Position.y.CompareTo(right.Position.y);
+                return y != 0
+                    ? y
+                    : string.CompareOrdinal(left.UnitId, right.UnitId);
+            });
+        }
+
+        private static void SortBuildings(List<BotBuildingSnapshot> buildings)
+        {
+            buildings.Sort((left, right) =>
+            {
+                int x = left.Position.x.CompareTo(right.Position.x);
+                if (x != 0)
+                    return x;
+
+                int y = left.Position.y.CompareTo(right.Position.y);
+                return y != 0
+                    ? y
+                    : string.CompareOrdinal(left.BuildingId, right.BuildingId);
+            });
         }
 
         private static string Normalize(string value)

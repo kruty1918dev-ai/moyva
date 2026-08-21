@@ -47,6 +47,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         private readonly IBotStrategicPlanner _strategicPlanner;
         private readonly IBotTurnPlanner _turnPlanner;
         private readonly IBotActionExecutor _actionExecutor;
+        private readonly IBotReasoningTrace _reasoning;
         private readonly HashSet<BotTurnEpoch> _startedEpochs = new();
         private BotTurnSession _activeSession;
 
@@ -67,7 +68,8 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             [InjectOptional] BotPlanningProfile profile = null,
             [InjectOptional] IBotStrategicPlanner strategicPlanner = null,
             [InjectOptional] IBotTurnPlanner turnPlanner = null,
-            [InjectOptional] IBotActionExecutor actionExecutor = null)
+            [InjectOptional] IBotActionExecutor actionExecutor = null,
+            [InjectOptional] IBotReasoningTrace reasoning = null)
         {
             _turns = turns;
             _factions = factions;
@@ -85,6 +87,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             _strategicPlanner = strategicPlanner;
             _turnPlanner = turnPlanner;
             _actionExecutor = actionExecutor;
+            _reasoning = reasoning;
         }
 
         internal int StartedEpochCount => _startedEpochs.Count;
@@ -145,6 +148,13 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             // signal re-enters the executor, the same turn cannot issue actions twice.
             _startedEpochs.Add(epoch);
             PruneOldEpochs(globalTurn);
+
+            _reasoning?.Record(
+                owner,
+                globalTurn,
+                BotReasoningStage.Session,
+                "Починаю хід бота",
+                $"Активний owner='{owner}', globalTurn={globalTurn}. Спочатку знімаю власний snapshot світу, потім оцінюю strategy, goals і всі доступні candidates.");
 
             var cancellation = new CancellationTokenSource();
             Task task = ExecuteTurnSessionAsync(owner, globalTurn, cancellation.Token);
@@ -295,9 +305,44 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 _memory?.UpdateFromObservation(snapshot, _profile);
                 snapshot = _snapshotBuilder.Build(ownerId, globalTurn);
                 BotStrategicContext strategy = _strategicPlanner.Plan(snapshot);
+
+                _reasoning?.Record(
+                    ownerId,
+                    globalTurn,
+                    BotReasoningStage.Strategy,
+                    $"Стратегія: {strategy.Posture}",
+                    BotReasoningNarrator.DescribeStrategy(strategy),
+                    strategy.PostureScore);
+
                 IReadOnlyList<BotActionCandidate> candidates = _turnPlanner.GenerateCandidates(snapshot, strategy);
                 if (candidates == null || candidates.Count == 0)
+                {
+                    _reasoning?.Record(
+                        ownerId,
+                        globalTurn,
+                        BotReasoningStage.Warning,
+                        "Немає допустимих дій",
+                        "Планувальники не повернули жодного candidate; бот завершить decision loop без вигаданої дії.");
                     return;
+                }
+
+                int diagnosticCandidates = Math.Min(8, candidates.Count);
+                for (int diagnosticIndex = 0; diagnosticIndex < diagnosticCandidates; diagnosticIndex++)
+                {
+                    BotActionCandidate diagnostic = candidates[diagnosticIndex];
+                    _reasoning?.Record(
+                        ownerId,
+                        globalTurn,
+                        BotReasoningStage.Candidate,
+                        $"Кандидат #{diagnosticIndex + 1}: {diagnostic.Kind}",
+                        BotReasoningNarrator.DescribeCandidate(
+                            diagnostic,
+                            diagnosticIndex + 1,
+                            candidates.Count),
+                        diagnostic.Score.Total,
+                        diagnostic.TargetCell,
+                        diagnostic.CandidateId);
+                }
 
                 BotActionCandidate selected = default;
                 bool found = false;
@@ -316,7 +361,40 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 if (!found)
                     return;
 
+                _reasoning?.Record(
+                    ownerId,
+                    globalTurn,
+                    BotReasoningStage.Selection,
+                    $"Обираю {selected.Kind}",
+                    BotReasoningNarrator.DescribeCandidate(selected, 1, candidates.Count),
+                    selected.Score.Total,
+                    selected.TargetCell,
+                    selected.CandidateId);
+
+                _reasoning?.Record(
+                    ownerId,
+                    globalTurn,
+                    BotReasoningStage.ActionAttempt,
+                    $"Пробую виконати {selected.Kind}",
+                    $"Canonical executor отримує candidate '{selected.CandidateId}'.",
+                    selected.Score.Total,
+                    selected.TargetCell,
+                    selected.CandidateId);
+
                 BotActionExecutionResult result = await _actionExecutor.ExecuteAsync(ownerId, selected, token);
+
+                _reasoning?.Record(
+                    ownerId,
+                    globalTurn,
+                    BotReasoningStage.ActionResult,
+                    result.Succeeded
+                        ? $"Результат {selected.Kind}: success"
+                        : $"Результат {selected.Kind}: rejected",
+                    BotReasoningNarrator.DescribeActionResult(selected, result),
+                    selected.Score.Total,
+                    selected.TargetCell,
+                    selected.CandidateId);
+
                 if (result.Succeeded && result.Mutated)
                 {
                     budget.TrySpend();

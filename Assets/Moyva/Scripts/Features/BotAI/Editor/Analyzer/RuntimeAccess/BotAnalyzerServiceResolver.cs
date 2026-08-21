@@ -22,6 +22,8 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
         public IBotGoalStore Goals;
         public IBotDecisionTrace Trace;
         public IBotStrategicStateStore StrategicState;
+        public IBotReasoningTrace Reasoning;
+        public IBotPerceptionService Perception;
 
         public IFogOfWarServiceRegistry FogRegistry;
         public IGridService Grid;
@@ -54,6 +56,8 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
             AddIfNull(missing, Goals, nameof(IBotGoalStore));
             AddIfNull(missing, Trace, nameof(IBotDecisionTrace));
             AddIfNull(missing, StrategicState, nameof(IBotStrategicStateStore));
+            AddIfNull(missing, Reasoning, nameof(IBotReasoningTrace));
+            AddIfNull(missing, Perception, nameof(IBotPerceptionService));
             AddIfNull(missing, FogRegistry, nameof(IFogOfWarServiceRegistry));
             AddIfNull(missing, Grid, nameof(IGridService));
             AddIfNull(missing, GridProjection, nameof(IGridProjection));
@@ -144,6 +148,8 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
                 Goals = TryResolve<IBotGoalStore>(container),
                 Trace = TryResolve<IBotDecisionTrace>(container),
                 StrategicState = TryResolve<IBotStrategicStateStore>(container),
+                Reasoning = TryResolve<IBotReasoningTrace>(container),
+                Perception = TryResolve<IBotPerceptionService>(container),
 
                 FogRegistry = TryResolve<IFogOfWarServiceRegistry>(container),
                 Grid = TryResolve<IGridService>(container),

@@ -1,5 +1,7 @@
 using Zenject;
+using Kruty1918.Moyva.BotAI.Runtime;
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.BotAI.Diagnostics;
 using UnityEngine;
 using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.Camera.API;
@@ -30,6 +32,11 @@ namespace Kruty1918.Moyva.Bootstrap
             Debug.Log($"{DirectDiagTag} BootstrapInstaller.InstallBindings scene={gameObject.scene.name}, mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}.");
             var gameSettings = _config != null ? _config.GameSettings : _legacyGameSettings;
             var startingPositionSettings = _config != null ? _config.StartingPositionSettings : _legacyStartingPositionSettings;
+
+            // Bot diagnostics are bound from Bootstrap, not BotInstaller, so logging remains
+            // available even when the BotAI installer/runtime is the part that failed.
+            BotRuntimeBindings.Install(Container);
+            BotDiagnosticsBindings.Install(Container);
 
             if (_config == null)
                 Debug.LogWarning("[Bootstrap] BootstrapInstallerConfigSO не призначено. Використано legacy inline settings із BootstrapInstaller.");
@@ -259,7 +266,7 @@ namespace Kruty1918.Moyva.Bootstrap
                 $"{PolicyDiagTag} DirectLaunch.Initialize configured mode={GameLaunchContext.Mode}, " +
                 $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, " +
                 $"autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, slot={GameLaunchContext.SaveSlot}.");
-            Debug.Log("[Bootstrap] Direct gameplay start detected -> solo/no-save test mode enabled.");
+            Debug.Log("[Bootstrap] Direct gameplay start detected -> offline Player + Bot/no-save test mode enabled.");
 #endif
             Debug.Log($"{WorldGenDiagTag} DirectLaunch.Initialize AFTER mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
             Debug.Log($"{DirectDiagTag} DirectLaunch.Initialize AFTER mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");

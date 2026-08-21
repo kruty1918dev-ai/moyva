@@ -17,7 +17,8 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
                     e.Type == BotAnalyzerEventType.StrategyChanged ||
                     e.Type == BotAnalyzerEventType.GoalChanged ||
                     e.Type == BotAnalyzerEventType.CandidateSetChanged ||
-                    e.Type == BotAnalyzerEventType.TopCandidateChanged,
+                    e.Type == BotAnalyzerEventType.TopCandidateChanged ||
+                    e.Type == BotAnalyzerEventType.Reasoning,
 
                 BotAnalyzerTimelineFilter.Action =>
                     e.Severity == BotAnalyzerEventSeverity.Action,

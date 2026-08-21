@@ -1,6 +1,7 @@
 using System;
 using Kruty1918.Moyva.BotAI.API;
 using Kruty1918.Moyva.BotAI.Runtime;
+using Kruty1918.Moyva.BotAI.Diagnostics;
 using Kruty1918.Moyva.Turns.API;
 using UnityEngine;
 using Zenject;
@@ -16,17 +17,35 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     {
         private readonly ITurnService _turns;
         private readonly IBotTurnExecutor _executor;
+        private readonly IBotDiagnosticsLogger _diagnostics;
         private long _begunGlobalTurn = long.MinValue;
+        private string _lastEndTurnReason = string.Empty;
+        private double _nextEndTurnDiagnosticTime;
         private string _begunOwnerId = string.Empty;
 
         [Inject]
         public TurnBotDriver(
             ITurnService turns,
             DiContainer container,
-            [InjectOptional] IBotTurnExecutor executor = null)
+            [InjectOptional] IBotTurnExecutor executor = null,
+            [InjectOptional] IBotDiagnosticsLogger diagnostics = null)
         {
             _turns = turns ?? throw new ArgumentNullException(nameof(turns));
+            _diagnostics = diagnostics;
+
+            bool injectedExecutor = executor != null;
             _executor = executor ?? TryCreateFallbackExecutor(container);
+
+            _diagnostics?.Info(
+                BotDiagnosticCategory.Executor,
+                "DRIVER.CONSTRUCTED",
+                "TurnBotDriver constructed.",
+                reason: injectedExecutor
+                    ? "IBotTurnExecutor was injected from the container."
+                    : "No executor binding was injected; TurnBotDriver attempted its fallback construction path.",
+                details:
+                    $"injectedExecutor={injectedExecutor}; executorAvailable={_executor != null}; " +
+                    $"containerAvailable={container != null}");
         }
 
         public void Tick()
@@ -48,6 +67,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (!alreadyBegun)
             {
+                _diagnostics?.Info(
+                    BotDiagnosticCategory.Executor,
+                    "DRIVER.BOT_EPOCH_DETECTED",
+                    "TurnBotDriver detected a new authoritative bot turn epoch.",
+                    details:
+                        $"owner='{ownerId}'; globalTurn={globalTurn}; round={_turns.Round}; " +
+                        $"phase={_turns.Phase}; actionsThisTurn={_turns.ActionsThisTurn}",
+                    ownerId: ownerId);
+
                 // Claim before invoking the executor so synchronous signals cannot
                 // re-enter this driver and start the same bot turn twice.
                 _begunGlobalTurn = globalTurn;
@@ -55,15 +83,46 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                 if (_executor == null)
                 {
+                    _diagnostics?.Critical(
+                        BotDiagnosticCategory.Executor,
+                        "DRIVER.EXECUTOR_MISSING",
+                        "No IBotTurnExecutor is available for the active bot.",
+                        reason:
+                            "The driver cannot execute any AI action. The turn will become a no-op and may end immediately.",
+                        details:
+                            $"owner='{ownerId}'; globalTurn={globalTurn}; " +
+                            $"this strongly suggests BotInstaller/runtime bindings are missing or failed.",
+                        ownerId: ownerId);
+
                     Debug.LogWarning(
                         $"[TurnBotDriver] No IBotTurnExecutor is available for owner '{ownerId}'. " +
                         "The turn will fail closed to a no-op and proceed when blockers allow.");
                 }
                 else if (!_executor.TryBeginTurn(ownerId, globalTurn, out string reason))
                 {
+                    _diagnostics?.Error(
+                        BotDiagnosticCategory.Executor,
+                        "DRIVER.TRY_BEGIN_REJECTED",
+                        "IBotTurnExecutor rejected the bot turn.",
+                        reason: reason,
+                        details:
+                            $"owner='{ownerId}'; globalTurn={globalTurn}; phase={_turns.Phase}; " +
+                            $"isActiveFactionBot={_turns.IsActiveFactionBot}; activeOwner='{_turns.ActiveOwnerId}'",
+                        ownerId: ownerId);
+
                     Debug.LogWarning(
                         $"[TurnBotDriver] Bot execution did not start for owner '{ownerId}' " +
                         $"at globalTurn={globalTurn}: {reason}");
+                }
+                else
+                {
+                    _diagnostics?.Info(
+                        BotDiagnosticCategory.Executor,
+                        "DRIVER.TRY_BEGIN_ACCEPTED",
+                        "IBotTurnExecutor accepted the bot turn.",
+                        details:
+                            $"owner='{ownerId}'; globalTurn={globalTurn}; executorType='{_executor.GetType().FullName}'",
+                        ownerId: ownerId);
                 }
 
                 // Do not attempt End Turn in the same tick. Asynchronous gameplay
@@ -71,7 +130,52 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
             }
 
-            _turns.TryEndTurn(ownerId, out _);
+            bool ended = _turns.TryEndTurn(ownerId, out string endReason);
+            double now = Time.realtimeSinceStartupAsDouble;
+
+            if (ended)
+            {
+                _diagnostics?.Info(
+                    BotDiagnosticCategory.Handoff,
+                    "DRIVER.END_TURN_SUCCEEDED",
+                    "Authoritative bot turn ended successfully.",
+                    reason:
+                        "ITurnService accepted TryEndTurn after the bot executor epoch had begun.",
+                    details:
+                        $"owner='{ownerId}'; completedGlobalTurn={globalTurn}; " +
+                        $"newActiveOwner='{_turns.ActiveOwnerId}'; newGlobalTurn={_turns.GlobalTurn}; newRound={_turns.Round}",
+                    ownerId: ownerId);
+
+                _lastEndTurnReason = string.Empty;
+                _nextEndTurnDiagnosticTime = 0d;
+                return;
+            }
+
+            string normalizedReason = endReason ?? string.Empty;
+            bool reasonChanged =
+                !string.Equals(
+                    normalizedReason,
+                    _lastEndTurnReason,
+                    StringComparison.Ordinal);
+
+            if (reasonChanged || now >= _nextEndTurnDiagnosticTime)
+            {
+                _diagnostics?.Trace(
+                    BotDiagnosticCategory.Handoff,
+                    "DRIVER.END_TURN_BLOCKED",
+                    "Bot turn cannot end yet.",
+                    reason:
+                        string.IsNullOrWhiteSpace(normalizedReason)
+                            ? "ITurnService rejected TryEndTurn without a textual reason."
+                            : normalizedReason,
+                    details:
+                        $"owner='{ownerId}'; globalTurn={globalTurn}; phase={_turns.Phase}; " +
+                        $"actionsThisTurn={_turns.ActionsThisTurn}; retrying on later ticks.",
+                    ownerId: ownerId);
+
+                _lastEndTurnReason = normalizedReason;
+                _nextEndTurnDiagnosticTime = now + 1.0d;
+            }
         }
 
         private static IBotTurnExecutor TryCreateFallbackExecutor(DiContainer container)

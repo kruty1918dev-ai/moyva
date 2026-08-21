@@ -75,6 +75,7 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
             frame.Fog = _fog.Collect(ownerId, now, settings, forceSlowCollectors);
             frame.Recruitment = _recruitment.Collect(ownerId, world);
             frame.Candidates = _trace.Collect(ownerId, now, settings, forceSlowCollectors);
+            frame.Reasoning = CaptureReasoning(ownerId);
 
             MapUnits(world.OwnUnits, frame.OwnUnits);
             MapUnits(world.VisibleEnemyUnits, frame.VisibleEnemyUnits);
@@ -84,6 +85,65 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
 
             CaptureGlobalExistence(frame);
             return frame;
+        }
+
+        private List<BotAnalyzerReasoningState> CaptureReasoning(string ownerId)
+        {
+            var result = new List<BotAnalyzerReasoningState>();
+            if (_services.Reasoning == null || string.IsNullOrWhiteSpace(ownerId))
+                return result;
+
+            IReadOnlyList<BotReasoningEntry> entries;
+            try
+            {
+                entries = _services.Reasoning.GetEntries(ownerId);
+            }
+            catch
+            {
+                return result;
+            }
+
+            if (entries == null)
+                return result;
+
+            int start = Math.Max(0, entries.Count - 256);
+            for (int i = start; i < entries.Count; i++)
+            {
+                BotReasoningEntry entry = entries[i];
+                var mapped = new BotAnalyzerReasoningState
+                {
+                    Sequence = entry.Sequence,
+                    GlobalTurn = entry.GlobalTurn,
+                    Stage = entry.Stage.ToString(),
+                    Headline = entry.Headline,
+                    Narrative = entry.Narrative,
+                    Score = entry.Score,
+                    HasTargetCell = entry.TargetCell.HasValue,
+                    TargetCell = entry.TargetCell.GetValueOrDefault(),
+                    SubjectId = entry.SubjectId,
+                };
+
+                if (entry.Factors != null)
+                {
+                    for (int f = 0; f < entry.Factors.Count; f++)
+                    {
+                        BotSiteScoreFactor factor = entry.Factors[f];
+                        mapped.Factors.Add(new BotAnalyzerReasoningFactorState
+                        {
+                            Key = factor.Key,
+                            Label = factor.Label,
+                            RawValue = factor.RawValue,
+                            Weight = factor.Weight,
+                            Contribution = factor.Contribution,
+                            Detail = factor.Detail,
+                        });
+                    }
+                }
+
+                result.Add(mapped);
+            }
+
+            return result;
         }
 
         private BotAnalyzerStrategyState CaptureStrategy(string ownerId)

@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
         private List<BotAnalyzerBuildingRow> _visibleEnemyBuildings = new();
         private List<BotAnalyzerRecruitmentRow> _recruitment = new();
         private List<BotAnalyzerCandidateRow> _candidates = new();
+        private List<BotAnalyzerReasoningRow> _reasoning = new();
         private List<BotAnalyzerTimelineRow> _timeline = new();
         private List<BotAnalyzerMemoryRow> _memory = new();
         private BotAnalyzerFogSummary _fog = new();
@@ -180,6 +181,11 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
         [TabGroup("Decisions")]
         [ShowInInspector, ReadOnly, TableList(AlwaysExpanded = true)]
         public List<BotAnalyzerCandidateRow> DecisionCandidates => _candidates;
+
+        [TabGroup("Decisions")]
+        [ShowInInspector, ReadOnly, TableList(AlwaysExpanded = true)]
+        [LabelText("Algorithm Reasoning / Людське пояснення")]
+        public List<BotAnalyzerReasoningRow> ReasoningTrace => _reasoning;
 
         [TabGroup("World")]
         [ShowInInspector, ReadOnly, TableList(AlwaysExpanded = true)]
@@ -414,6 +420,7 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
             _visibleEnemyBuildings = BotAnalyzerWindowModels.BuildBuildings(current?.VisibleEnemyBuildings);
             _recruitment = BotAnalyzerWindowModels.BuildRecruitment(current?.Recruitment);
             _candidates = BotAnalyzerWindowModels.BuildCandidates(current?.Candidates);
+            _reasoning = BotAnalyzerWindowModels.BuildReasoning(current?.Reasoning);
             _memory = BotAnalyzerWindowModels.BuildMemory(current?.Memory);
             _fog = BotAnalyzerWindowModels.BuildFog(current?.Fog);
             RebuildTimeline();

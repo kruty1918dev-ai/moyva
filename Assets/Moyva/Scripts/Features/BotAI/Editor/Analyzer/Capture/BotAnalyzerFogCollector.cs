@@ -34,16 +34,32 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
             _cachedOwner = ownerId ?? string.Empty;
             _nextSampleTime = now + Math.Max(0.20f, settings?.FogSampleInterval ?? 0.50f);
 
-            if (_services?.Grid == null ||
-                _services.FogRegistry == null ||
-                string.IsNullOrWhiteSpace(ownerId) ||
+            if (_services?.Grid == null || string.IsNullOrWhiteSpace(ownerId))
+            {
+                _cached = new BotAnalyzerFogState();
+                return Clone(_cached);
+            }
+
+            if (_services.Perception != null)
+            {
+                _cached = new BotAnalyzerFogState
+                {
+                    GridWidth = _services.Grid.GridWidth,
+                    GridHeight = _services.Grid.GridHeight,
+                    VisibleCells = new List<Vector2Int>(_services.Perception.GetVisibleCells(ownerId)),
+                    ExploredCells = new List<Vector2Int>(_services.Perception.GetExploredCells(ownerId)),
+                };
+                return Clone(_cached);
+            }
+
+            if (_services.FogRegistry == null ||
                 !_services.FogRegistry.TryGetFor(ownerId, out IFogOfWarService fog) ||
                 fog == null)
             {
                 _cached = new BotAnalyzerFogState
                 {
-                    GridWidth = _services?.Grid?.GridWidth ?? 0,
-                    GridHeight = _services?.Grid?.GridHeight ?? 0,
+                    GridWidth = _services.Grid.GridWidth,
+                    GridHeight = _services.Grid.GridHeight,
                 };
                 return Clone(_cached);
             }

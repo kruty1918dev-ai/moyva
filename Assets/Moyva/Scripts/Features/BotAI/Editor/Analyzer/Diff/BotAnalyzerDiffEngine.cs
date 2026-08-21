@@ -34,6 +34,7 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
             DiffResources(previous, current, events);
             DiffFog(previous, current, events);
             DiffMemory(previous, current, events);
+            DiffReasoning(previous, current, events);
 
             return events;
         }
@@ -561,6 +562,40 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
                     BotAnalyzerEventSeverity.Trace,
                     "Visible cells became remembered terrain",
                     $"{becameExplored} cell(s) are now Explored but not currently Visible."));
+            }
+        }
+
+        private static void DiffReasoning(
+            BotAnalyzerFrame previous,
+            BotAnalyzerFrame current,
+            List<BotAnalyzerEvent> events)
+        {
+            long previousSequence = 0;
+            if (previous?.Reasoning != null && previous.Reasoning.Count > 0)
+                previousSequence = previous.Reasoning[previous.Reasoning.Count - 1].Sequence;
+
+            if (current?.Reasoning == null)
+                return;
+
+            for (int i = 0; i < current.Reasoning.Count; i++)
+            {
+                BotAnalyzerReasoningState item = current.Reasoning[i];
+                if (item == null || item.Sequence <= previousSequence)
+                    continue;
+
+                var e = Create(
+                    current,
+                    BotAnalyzerEventType.Reasoning,
+                    BotAnalyzerEventSeverity.Decision,
+                    string.IsNullOrWhiteSpace(item.Headline) ? item.Stage : item.Headline,
+                    item.Narrative);
+
+                e.HasScore = item.Score != 0;
+                e.Score = item.Score;
+                e.HasToCell = item.HasTargetCell;
+                e.ToCell = item.TargetCell;
+                e.TargetId = item.SubjectId ?? string.Empty;
+                events.Add(e);
             }
         }
 

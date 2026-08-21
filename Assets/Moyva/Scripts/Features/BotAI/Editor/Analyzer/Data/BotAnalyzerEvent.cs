@@ -6,7 +6,7 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
     public enum BotAnalyzerEventType
     {
         System = 0, TurnStarted, TurnEnded, Observation, ObservationLost,
-        StrategyChanged, GoalChanged, CandidateSetChanged, TopCandidateChanged,
+        StrategyChanged, GoalChanged, CandidateSetChanged, TopCandidateChanged, Reasoning,
         UnitMoved, UnitSpawned, UnitRemoved, UnitStateChanged, CombatObserved,
         BuildingStarted, BuildingProgress, BuildingPlaced, BuildingRemoved,
         RecruitmentStarted, RecruitmentProgress, RecruitmentReady, RecruitmentDeployed,

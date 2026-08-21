@@ -42,6 +42,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public int ResolveStartPositionCount()
         {
+            // Direct Gameplay is a deterministic local Human + Bot session.
+            // It must not depend on HasWorldSettings or a possibly stale ISessionManager.
+            if (GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest)
+                return Mathf.Max(2, GameLaunchContext.MaxPlayers);
+
             int participantCount = _sessionManager?.Participants?.Count ?? 1;
             if (participantCount > 1 || IsMultiplayerHost())
                 return Mathf.Max(participantCount, _settings.multiplayerStartSlots);
@@ -54,6 +59,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public string ResolveLocalPlayerId()
         {
+            // Direct Gameplay must not inherit an empty/stale editor multiplayer id.
+            if (GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest)
+                return "player_0";
+
             string localPlayerId = _sessionManager?.LocalPlayerId;
             if (!string.IsNullOrEmpty(localPlayerId))
                 return localPlayerId;
@@ -63,6 +72,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public bool CanRunStartLogic()
         {
+            if (GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest)
+                return true;
             int participantCount = _sessionManager?.Participants?.Count ?? 0;
             bool hasSession = _sessionManager != null;
             bool isHost = _sessionManager != null && _sessionManager.IsLocalPlayerHost;
@@ -107,6 +118,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public bool ShouldComputeHostStartPositions()
         {
+            if (GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest)
+                return true;
             int participantCount = _sessionManager?.Participants?.Count ?? 0;
             bool hasSession = _sessionManager != null;
             bool isHost = _sessionManager != null && _sessionManager.IsLocalPlayerHost;

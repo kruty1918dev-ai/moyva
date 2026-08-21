@@ -27,6 +27,7 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
             AppendBuildings(b, "Own Buildings", frame?.OwnBuildings);
             AppendRecruitment(b, frame);
             AppendFog(b, frame, settings);
+            AppendReasoning(b, frame);
             AppendCandidates(b, frame);
             if (settings.IncludeMemoryInExport)
                 AppendMemory(b, frame);
@@ -204,6 +205,51 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
                 b.AppendLine($"Visible cells: `{JoinCells(fog.VisibleCells, 1000)}`");
                 b.AppendLine();
                 b.AppendLine($"Explored cells: `{JoinCells(fog.ExploredCells, 1000)}`");
+            }
+        }
+
+        private static void AppendReasoning(StringBuilder b, BotAnalyzerFrame frame)
+        {
+            b.AppendLine();
+            b.AppendLine("## Algorithm Reasoning");
+            b.AppendLine();
+
+            if (frame?.Reasoning == null || frame.Reasoning.Count == 0)
+            {
+                b.AppendLine("No structured reasoning entries captured.");
+                return;
+            }
+
+            foreach (BotAnalyzerReasoningState item in frame.Reasoning)
+            {
+                if (item == null)
+                    continue;
+
+                b.AppendLine($"### Turn {item.GlobalTurn} — {Escape(item.Stage)}");
+                b.AppendLine();
+                b.AppendLine($"**{Escape(item.Headline)}**");
+                if (item.Score != 0)
+                    b.AppendLine($"- Score: {item.Score}");
+                if (item.HasTargetCell)
+                    b.AppendLine($"- Target cell: `{item.TargetCell}`");
+                if (!string.IsNullOrWhiteSpace(item.SubjectId))
+                    b.AppendLine($"- Subject: `{Escape(item.SubjectId)}`");
+                b.AppendLine();
+                b.AppendLine(EscapeMultiline(item.Narrative));
+
+                if (item.Factors != null && item.Factors.Count > 0)
+                {
+                    b.AppendLine();
+                    b.AppendLine("| Factor | Raw | Weight | Contribution | Detail |");
+                    b.AppendLine("|---|---:|---:|---:|---|");
+                    foreach (BotAnalyzerReasoningFactorState factor in item.Factors)
+                    {
+                        if (factor == null) continue;
+                        b.AppendLine($"| {EscapeCell(factor.Label)} | {factor.RawValue:0.##} | {factor.Weight} | {factor.Contribution} | {EscapeCell(factor.Detail)} |");
+                    }
+                }
+
+                b.AppendLine();
             }
         }
 

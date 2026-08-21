@@ -366,10 +366,27 @@ namespace Kruty1918.Moyva.Turns.Runtime
             if (_factions.Count != 0)
                 return;
 
-            _factions.Add(new TurnFaction("player_0", false, Vector2Int.zero));
+            // Emergency fallback only. Normal direct Gameplay should arrive through
+            // WorldSpawnPositionsSignal with player_0 + bot-01.
+            _factions.Add(
+                new TurnFaction(
+                    "player_0",
+                    false,
+                    Vector2Int.zero));
+
+            _factions.Add(
+                new TurnFaction(
+                    "bot-01",
+                    true,
+                    Vector2Int.one));
+
             LocalOwnerId = ResolveLocalOwnerId();
             _activeFactionIndex = 0;
-            Debug.LogWarning("[Turns] DirectGameplayTest has no spawn assignments; using explicit solo player_0 fallback.");
+
+            Debug.LogWarning(
+                "[Turns] DirectGameplayTest has no spawn assignments; " +
+                "using emergency player_0 + bot-01 fallback.");
+
             StateChanged?.Invoke();
         }
 
