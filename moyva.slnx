@@ -116,6 +116,7 @@
   <Project Path="Kruty1918.Moyva.EditorShared.csproj" />
   <Project Path="Unity.Services.Core.Editor.csproj" />
   <Project Path="Unity.Timeline.csproj" />
+  <Project Path="Kruty1918.Moyva.BotAI.Editor.csproj" />
   <Project Path="Unity.AppUI.MVVM.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Construction.csproj" />
   <Project Path="UnityEditor.UI.csproj" />
@@ -198,6 +199,7 @@
   <Project Path="Unity.Services.DeploymentApi.csproj" />
   <Project Path="Unity.2D.Common.Runtime.csproj" />
   <Project Path="Kruty1918.Moyva.Recruitment.csproj" />
+  <Project Path="Kruty1918.Moyva.BotAI.Editor.Tests.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Units.csproj" />

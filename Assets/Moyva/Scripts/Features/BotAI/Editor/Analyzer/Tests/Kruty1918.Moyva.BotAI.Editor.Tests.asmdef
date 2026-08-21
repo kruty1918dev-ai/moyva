@@ -1,0 +1,32 @@
+{
+  "name": "Kruty1918.Moyva.BotAI.Editor.Tests",
+  "rootNamespace": "Kruty1918.Moyva.BotAI.Editor.Analyzer.Tests",
+  "references": [
+    "Kruty1918.Moyva.BotAI.Editor",
+    "Kruty1918.Moyva.BotAI",
+    "Kruty1918.Moyva.Turns",
+    "Kruty1918.Moyva.FogOfWar",
+    "Kruty1918.Moyva.Grid",
+    "Kruty1918.Moyva.Units",
+    "Kruty1918.Moyva.Construction",
+    "Kruty1918.Moyva.Signals",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
