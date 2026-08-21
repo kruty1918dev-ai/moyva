@@ -6,46 +6,78 @@ using Zenject;
 namespace Kruty1918.Moyva.BotAI.Runtime
 {
     /// <summary>
-    /// Реєструє глобальний IFogOfWarService у IFogOfWarServiceRegistry для кожної бот-фракції.
-    /// Використовує один загальний сервіс туману (бот бачить усі юніти).
-    ///
-    /// Розширення: замінити на окремі per-faction FogOfWarService з фільтрацією сигналів.
+    /// Legacy compatibility bridge between the old global player fog and bot factions.
+    /// Modern BotAI uses IBotPerceptionService, so this component must never be a hard
+    /// dependency of the canonical bootstrap composition root.
     /// </summary>
     internal sealed class BotFogInitializer : IInitializable
     {
         private readonly IFactionRegistry _factionRegistry;
-
-        private IFogOfWarServiceRegistry _fogRegistry;
-
-        private IFogOfWarService _globalFog;
-
-        public BotFogInitializer(IFactionRegistry factionRegistry)
-        {
-            _factionRegistry = factionRegistry;
-        }
+        private readonly IFogOfWarServiceRegistry _fogRegistry;
+        private readonly IFogOfWarService _globalFog;
 
         [Inject]
-        private void ConstructOptionalDependencies(
-            [InjectOptional] IFogOfWarServiceRegistry fogRegistry,
-            [InjectOptional] IFogOfWarService globalFog)
+        public BotFogInitializer(
+            [InjectOptional] IFactionRegistry factionRegistry = null,
+            [InjectOptional] IFogOfWarServiceRegistry fogRegistry = null,
+            [InjectOptional] IFogOfWarService globalFog = null)
         {
+            _factionRegistry = factionRegistry;
             _fogRegistry = fogRegistry;
             _globalFog = globalFog;
         }
 
         public void Initialize()
         {
-            if (_fogRegistry == null || _globalFog == null)
+            if (_factionRegistry == null)
             {
-                Debug.Log("[BotFogInitializer] IFogOfWarServiceRegistry або IFogOfWarService не доступні — туман для ботів не налаштовано.");
+                Debug.LogWarning(
+                    "[MOYVA-BOT][Warning][Perception][FOG.LEGACY_FACTION_REGISTRY_MISSING] " +
+                    "Legacy BotFogInitializer skipped because IFactionRegistry is unavailable. " +
+                    "This is non-fatal: modern BotAI uses IBotPerceptionService.");
                 return;
             }
 
-            foreach (var faction in _factionRegistry.GetBotFactions())
+            if (_fogRegistry == null)
             {
-                _fogRegistry.Register(faction.FactionId.Value, _globalFog);
-                Debug.Log($"[BotFogInitializer] Зареєстровано туман для фракції '{faction.FactionId}'.");
+                Debug.LogWarning(
+                    "[MOYVA-BOT][Warning][Perception][FOG.LEGACY_REGISTRY_MISSING] " +
+                    "Legacy BotFogInitializer skipped because IFogOfWarServiceRegistry is unavailable. " +
+                    "This does not block modern per-bot perception.");
+                return;
             }
+
+            if (_globalFog == null)
+            {
+                Debug.LogWarning(
+                    "[MOYVA-BOT][Warning][Perception][FOG.LEGACY_GLOBAL_FOG_MISSING] " +
+                    "Legacy BotFogInitializer skipped because the shared IFogOfWarService is unavailable. " +
+                    "This does not block modern per-bot perception.");
+                return;
+            }
+
+            int registered = 0;
+            var botFactions = _factionRegistry.GetBotFactions();
+            if (botFactions != null)
+            {
+                foreach (var faction in botFactions)
+                {
+                    if (faction == null)
+                        continue;
+
+                    string ownerId = faction.FactionId.Value;
+                    if (string.IsNullOrWhiteSpace(ownerId))
+                        continue;
+
+                    _fogRegistry.Register(ownerId, _globalFog);
+                    registered++;
+                }
+            }
+
+            Debug.Log(
+                "[MOYVA-BOT][Info][Perception][FOG.LEGACY_INITIALIZER_COMPLETE] " +
+                $"Legacy fog compatibility initialization completed; registered={registered}. " +
+                "Modern BotAI perception remains authoritative.");
         }
     }
 }

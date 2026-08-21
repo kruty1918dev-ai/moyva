@@ -72,11 +72,12 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             }
 
             // Legacy wall-clock BotTickScheduler deliberately remains unbound.
-            //
-            // BotFogInitializer is intentionally NOT bound from the canonical bootstrap
-            // composition root. It is an old global-fog compatibility bridge whose
-            // Faction/Fog dependencies are optional scene features. Modern BotAI uses
-            // IBotPerceptionService as the authoritative per-bot knowledge path.
+            if (!container.HasBinding<BotFogInitializer>())
+            {
+                container.BindInterfacesAndSelfTo<BotFogInitializer>()
+                    .AsSingle()
+                    .NonLazy();
+            }
         }
 
         public static bool IsCoreReady(DiContainer container)
