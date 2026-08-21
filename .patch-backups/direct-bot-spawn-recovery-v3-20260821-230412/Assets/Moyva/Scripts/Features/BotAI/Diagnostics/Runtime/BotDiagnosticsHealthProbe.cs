@@ -161,32 +161,14 @@ namespace Kruty1918.Moyva.BotAI.Diagnostics
 
             if (!hasBotFaction)
             {
-                bool startupStillInitializing =
-                    _turns == null
-                    || _turns.Phase == TurnPhase.Initializing
-                    || factionCount == 0;
-
-                if (startupStillInitializing)
-                {
-                    _log.Trace(
-                        BotDiagnosticCategory.Faction,
-                        "FACTION.WAITING_FOR_REGISTRATION",
-                        "Bot faction has not been registered yet because gameplay startup is still initializing.",
-                        details:
-                            $"factionCount={factionCount}; phase={_turns?.Phase.ToString() ?? "Unavailable"}");
-                }
-                else
-                {
-                    _log.Error(
-                        BotDiagnosticCategory.Faction,
-                        "FACTION.NO_BOT_REGISTERED",
-                        "Turn authority currently contains no bot faction after startup.",
-                        reason:
-                            "If the player ends the only registered faction turn, the round advances immediately.",
-                        details:
-                            $"factionCount={factionCount}; phase={_turns.Phase}; " +
-                            "this is a real topology failure after initialization.");
-                }
+                _log.Error(
+                    BotDiagnosticCategory.Faction,
+                    "FACTION.NO_BOT_REGISTERED",
+                    "Turn authority currently contains no bot faction.",
+                    reason:
+                        "If the player ends the only registered faction turn, the round advances immediately.",
+                    details:
+                        $"factionCount={factionCount}; this directly matches the symptom 'round changes immediately after player End Turn'.");
             }
             else
             {

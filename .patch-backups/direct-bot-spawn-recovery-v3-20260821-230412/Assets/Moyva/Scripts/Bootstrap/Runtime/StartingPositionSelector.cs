@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Pathfinding.API;
-using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
@@ -31,54 +30,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int attempts = Mathf.Max(1, _settings.startCandidateAttempts);
             Debug.Log($"{DirectDiagTag} Selector.ENTER requestedCount={positionsCount}, map={signal.Width}x{signal.Height}, hasHeightMap={signal.HeightMap != null}, minHeight={Mathf.Min(_settings.startMinHeight, _settings.startMaxHeight)}, maxHeight={Mathf.Max(_settings.startMinHeight, _settings.startMaxHeight)}, minDistance={Mathf.Max(1, _settings.minAStarDistanceBetweenPlayers)}, attempts={attempts}.");
 
-            bool isDirectGameplay =
-                signal.Source == WorldGeneratedDataSource.DirectGameplayTest
-                || GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest
-                || GameLaunchContext.Source == GameLaunchSource.DirectGameplayTest;
-
             for (int positionIndex = 0; positionIndex < positionsCount; positionIndex++)
             {
                 if (TryPickStartingPosition(signal, positions, attempts, out Vector2Int position))
-                {
                     positions.Add(position);
-                    continue;
-                }
-
-                if (isDirectGameplay &&
-                    TryPickBestEffortDirectPosition(
-                        signal,
-                        positions,
-                        requireValidHeight: true,
-                        out position))
-                {
-                    positions.Add(position);
-                    Debug.LogWarning(
-                        $"{DirectDiagTag} Selector.DIRECT_FALLBACK_RELAX_DISTANCE " +
-                        $"slot={positionIndex}, position={position}, selected={positions.Count}/{positionsCount}. " +
-                        "Configured minimum inter-player distance could not be satisfied; " +
-                        "selected the farthest unique valid-height start instead.");
-                    continue;
-                }
-
-                if (isDirectGameplay &&
-                    TryPickBestEffortDirectPosition(
-                        signal,
-                        positions,
-                        requireValidHeight: false,
-                        out position))
-                {
-                    positions.Add(position);
-                    Debug.LogWarning(
-                        $"{DirectDiagTag} Selector.DIRECT_FALLBACK_RELAX_HEIGHT " +
-                        $"slot={positionIndex}, position={position}, selected={positions.Count}/{positionsCount}. " +
-                        "No additional unique tile satisfied the configured height band; " +
-                        "direct Human+Bot topology is preserved using the farthest in-bounds tile.");
-                    continue;
-                }
-
-                Debug.LogWarning(
-                    $"[Bootstrap] Не вдалось знайти стартову позицію #{positionIndex + 1} " +
-                    "навіть після direct-mode recovery.");
+                else
+                    Debug.LogWarning($"[Bootstrap] Не вдалось знайти стартову позицію #{positionIndex + 1} із заданими обмеженнями.");
             }
 
             if (positions.Count > 1)
@@ -90,114 +47,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Debug.Log($"{DirectDiagTag} Selector.RESULT selected={positions.Count}, selectedShort={FormatPositions(positions)}.");
 
             return positions;
-        }
-
-        private bool TryPickBestEffortDirectPosition(
-            WorldGeneratedDataSignal signal,
-            IReadOnlyList<Vector2Int> existingPositions,
-            bool requireValidHeight,
-            out Vector2Int position)
-        {
-            Vector2Int baseMapSize =
-                StartingPositionMapUtility.ResolveBaseMapSize(signal);
-
-            bool found = false;
-            Vector2Int best = default;
-            float bestDistanceScore = float.MinValue;
-
-            for (int x = 0; x < baseMapSize.x; x++)
-            {
-                for (int y = 0; y < baseMapSize.y; y++)
-                {
-                    var candidate = new Vector2Int(x, y);
-
-                    if (!IsInsideStartBounds(
-                            candidate,
-                            baseMapSize.x,
-                            baseMapSize.y))
-                    {
-                        continue;
-                    }
-
-                    if (ContainsPosition(existingPositions, candidate))
-                        continue;
-
-                    if (requireValidHeight &&
-                        !IsValidStartHeight(signal, candidate))
-                    {
-                        continue;
-                    }
-
-                    float score =
-                        ResolveMinimumEuclideanDistance(
-                            candidate,
-                            existingPositions);
-
-                    if (!found ||
-                        score > bestDistanceScore ||
-                        Mathf.Approximately(score, bestDistanceScore) &&
-                        ComparePosition(candidate, best) < 0)
-                    {
-                        found = true;
-                        best = candidate;
-                        bestDistanceScore = score;
-                    }
-                }
-            }
-
-            position = best;
-            return found;
-        }
-
-        private static float ResolveMinimumEuclideanDistance(
-            Vector2Int candidate,
-            IReadOnlyList<Vector2Int> existingPositions)
-        {
-            if (existingPositions == null ||
-                existingPositions.Count == 0)
-            {
-                return float.MaxValue;
-            }
-
-            float best = float.MaxValue;
-            for (int i = 0; i < existingPositions.Count; i++)
-            {
-                float distance =
-                    Vector2.Distance(
-                        candidate,
-                        existingPositions[i]);
-
-                if (distance < best)
-                    best = distance;
-            }
-
-            return best;
-        }
-
-        private static bool ContainsPosition(
-            IReadOnlyList<Vector2Int> positions,
-            Vector2Int candidate)
-        {
-            if (positions == null)
-                return false;
-
-            for (int i = 0; i < positions.Count; i++)
-            {
-                if (positions[i] == candidate)
-                    return true;
-            }
-
-            return false;
-        }
-
-        private static int ComparePosition(
-            Vector2Int left,
-            Vector2Int right)
-        {
-            int x = left.x.CompareTo(right.x);
-            return x != 0
-                ? x
-                : left.y.CompareTo(right.y);
         }
 
         public bool TryPickStartingPosition(

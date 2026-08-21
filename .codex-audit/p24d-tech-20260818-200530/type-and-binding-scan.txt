@@ -1,9 +1,0 @@
-Assets/Moyva/Scripts/Features/Units/Runtime/UnitRecruitmentService.cs:183:        public IReadOnlyList<UnitRecruitmentQueueItemSnapshot> GetReadyItems(string ownerId)
-Assets/Moyva/Scripts/Features/Units/API/IUnitRecruitmentService.cs:120:        IReadOnlyList<UnitRecruitmentQueueItemSnapshot> GetReadyItems(
-Assets/Moyva/Scripts/Features/Signals/API/OnUnitRecruitmentSignals.cs:51:    public struct UnitRecruitmentReadyIndicatorClickedSignal
-Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs:57:            Container.DeclareSignal<UnitRecruitmentReadyIndicatorClickedSignal>().OptionalSubscriber();
-Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs:14:    internal sealed class UnitRecruitmentReadyIndicatorPresenter :
-Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs:47:        public UnitRecruitmentReadyIndicatorPresenter(
-Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs:134:                _recruitment.GetReadyItems(normalizedOwnerId);
-Assets/Moyva/Scripts/Bootstrap/Runtime/UnitRecruitmentReadyIndicatorPresenter.cs:306:            _signalBus.Fire(new UnitRecruitmentReadyIndicatorClickedSignal
-Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs:91:            Container.BindInterfacesAndSelfTo<UnitRecruitmentReadyIndicatorPresenter>().AsSingle().NonLazy();

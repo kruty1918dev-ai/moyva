@@ -189,30 +189,14 @@ namespace Kruty1918.Moyva.BotAI.Diagnostics
 
             if (botCount == 0)
             {
-                bool startupStillInitializing =
-                    _turns.Phase == TurnPhase.Initializing
-                    || count == 0;
-
-                if (startupStillInitializing)
-                {
-                    _log.Trace(
-                        BotDiagnosticCategory.Faction,
-                        "FACTION.REGISTRY_INITIALIZING",
-                        "Faction registry is still being populated.",
-                        details:
-                            $"count={count}; phase={_turns.Phase}; factions=[{signature}]");
-                }
-                else
-                {
-                    _log.Error(
-                        BotDiagnosticCategory.Faction,
-                        "FACTION.REGISTRY_NO_BOT",
-                        "Faction registry contains no bot after gameplay reached an active turn.",
-                        reason:
-                            "The authoritative turn loop therefore has no AI turn to hand off to.",
-                        details:
-                            $"count={count}; phase={_turns.Phase}; factions=[{signature}]");
-                }
+                _log.Error(
+                    BotDiagnosticCategory.Faction,
+                    "FACTION.REGISTRY_NO_BOT",
+                    "Faction registry changed but still contains no bot.",
+                    reason:
+                        "The authoritative turn loop therefore has no AI turn to hand off to.",
+                    details:
+                        $"count={count}; factions=[{signature}]");
             }
             else
             {

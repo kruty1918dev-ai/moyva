@@ -103,10 +103,3 @@ Assets/_Recovery/
 /Assets/Moyva/Resources/MoyvaConfigGenerated/
 /Assets/Moyva/Resources/MoyvaRuntimeAssetCatalog.prefab
 /Assets/Moyva/Resources/MoyvaRuntimeAssetCatalog.prefab.meta
-
-# BEGIN MOYVA AUDIT GENERATED ARTIFACTS
-# Generated audit/test output must never become source context.
-/.codex-audit/
-/.all-editmode-tests/
-/.artifacts/
-# END MOYVA AUDIT GENERATED ARTIFACTS

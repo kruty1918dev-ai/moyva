@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Signals;
@@ -32,15 +31,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             bool isDirectGameplay =
                 Kruty1918.Moyva.SaveSystem.GameLaunchContext.Mode ==
-                    Kruty1918.Moyva.SaveSystem.GameLaunchMode.DirectGameplayTest
-                || Kruty1918.Moyva.SaveSystem.GameLaunchContext.Source ==
-                    Kruty1918.Moyva.SaveSystem.GameLaunchSource.DirectGameplayTest
-                || (!hasWorldSettings
-                    && maxPlayers >= 2
-                    && string.Equals(
-                        localPlayerId,
-                        "player_0",
-                        StringComparison.Ordinal));
+                Kruty1918.Moyva.SaveSystem.GameLaunchMode.DirectGameplayTest;
 
             int participantCount = participants?.Count ?? 0;
             int launchParticipantCount = isDirectGameplay
@@ -52,16 +43,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int assignmentCount = isDirectGameplay
                 ? Mathf.Min(positions.Count, launchParticipantCount)
                 : positions.Count;
-
-            if (isDirectGameplay &&
-                assignmentCount < launchParticipantCount)
-            {
-                Debug.LogError(
-                    $"{DirectDiagTag} AssignmentFactory.PARTIAL_DIRECT_TOPOLOGY " +
-                    $"positions={positions.Count}, requested={launchParticipantCount}, " +
-                    $"assignments={assignmentCount}. " +
-                    "StartingPositionSelector recovery should have provided all direct Human+Bot slots.");
-            }
 
             Debug.Log(
                 $"{DirectDiagTag} AssignmentFactory.ENTER positions={positions.Count}, " +
