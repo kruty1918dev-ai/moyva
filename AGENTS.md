@@ -110,3 +110,64 @@ Bad:
 
 ```csharp
 private const int MaxBuildings = 12;
+
+## Moyva clean-architecture route
+
+# Moyva agent route
+
+This file is intentionally small. It is the first routing layer for Codex/ChatGPT work.
+Do not put long audits, generated logs, patch output, or historical plans here.
+
+## Repository rule
+
+- The checked-out worktree is authoritative.
+- `game-process` gameplay changes must preserve current behavior unless a task explicitly changes it.
+- Do not infer current architecture from historical plans or `.artifacts`.
+- Generated audit/test output belongs under ignored `.artifacts/`, never beside production source.
+
+## Canonical gameplay authorities
+
+| Task | Start here | Authority |
+|---|---|---|
+| Turn progression | `Features/Turns/API` + `TurnService` | `ITurnService` / `TurnService` |
+| Bot turn bridge | `Bootstrap/Runtime/TurnBotDriver.cs` | `IBotTurnExecutor` |
+| Bot composition | `Features/BotAI/Runtime/BotRuntimeBindings.cs` | `BotRuntimeBindings.Install` |
+| Bot decision loop | `Features/BotAI/Runtime/BotTurnExecutor.cs` | planner → candidate → canonical action executor |
+| Bot planning | `Features/BotAI/Runtime/BotTurnPlanner.cs` | query-only planners |
+| Build query/mutation | `Features/Construction` | construction placement query/service |
+| Recruitment | `Features/Recruitment` | canonical recruitment service |
+| Combat | `Features/Combat` | combat query/command service |
+| Unit movement | `Features/Units` | movement query/service |
+| Save orchestration | `Features/SaveSystem` | central registry/sequencing; feature modules map payloads |
+| Direct/menu startup | `Bootstrap/Runtime` | launch topology → starting-position workflow → Turns |
+| World generation | `Features/Generator` | generator-owned coordinator |
+| Bot editor analysis | `Features/BotAI/Editor` | read-only; never gameplay authority |
+
+## Hard invariants
+
+1. Exactly one authoritative turn state machine.
+2. `TurnBotDriver` does not construct a fallback BotAI object graph.
+3. `BotRuntimeBindings` is the canonical BotAI composition root.
+4. `BotTickScheduler` remains absent/unbound.
+5. Bot planners query; `BotActionExecutor` delegates mutation to canonical gameplay services.
+6. No Bot-only alternate construction/combat/recruitment/unit mutation path.
+7. Tests do not live in Runtime folders.
+8. Editor/Analyzer code never becomes runtime decision authority.
+9. Direct Gameplay and menu Gameplay converge on the same participant/topology semantics.
+10. A compatibility path stays only while a supported mode can reach it.
+11. Do not delete serialized Unity types without GUID/reference proof.
+12. Prefer semantic names: Installer=bindings, Coordinator=orchestration, Policy=decision rule,
+    Resolver=input→result, Store=state, Registry=lookup, Adapter=boundary translation.
+13. Avoid new `Helper`, `Utils`, generic `Manager`, or second composition roots.
+14. Keep `CODEMAP.md` current and compact.
+
+## Before deleting or merging a type
+
+Check C# references, Unity serialized GUID references, reflection/string lookup, Zenject bindings,
+save/version compatibility, asmdef references, EditMode tests, and supported runtime smoke paths.
+
+## Typical verification
+
+Run focused EditMode tests for the changed feature, then the full EditMode suite for architecture work.
+For startup changes smoke-test both direct Gameplay and menu Gameplay.
+For BotAI changes verify Human → Bot → Human turn handoff and no new Console errors.

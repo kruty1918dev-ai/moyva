@@ -55,3 +55,19 @@ These paths are local/CI artifacts, not source:
 
 The authoritative implementation is the C# source at the current checked-out commit, not historical generated logs or audit copies.
 <!-- MOYVA_AUDIT_P0_CODEMAP_END -->
+
+<!-- MOYVA_CLEAN_ARCH_V1_START -->
+## Clean architecture v1 canonical route
+
+- Startup topology: `Bootstrap/Runtime/GameplayLaunchTopology.cs`
+- Starting-position policy: `Bootstrap/Runtime/StartingPositionPolicy.cs`
+- Assignment mapping: `Bootstrap/Runtime/StartingPositionAssignmentFactory.cs`
+- Turn authority: `Features/Turns/Runtime/TurnService.cs`
+- Bot turn bridge: `Bootstrap/Runtime/TurnBotDriver.cs`
+- Bot composition root: `Features/BotAI/Runtime/BotRuntimeBindings.cs`
+- Bot decision coordinator: `Features/BotAI/Runtime/BotTurnExecutor.cs`
+- Deterministic AI primitives: `Features/BotAI/Runtime/BotDeterministicGeometry.cs`
+
+One composition root; one turn authority; planners query; canonical gameplay services mutate;
+tests stay outside Runtime; generated output stays under ignored `.artifacts`.
+<!-- MOYVA_CLEAN_ARCH_V1_END -->

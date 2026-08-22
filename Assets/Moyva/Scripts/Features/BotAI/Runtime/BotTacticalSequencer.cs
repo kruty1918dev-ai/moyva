@@ -175,7 +175,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
 
                 int score = _profile.RetreatWeight + nearestEnemy * 90 - influence.Threat * 2 + influence.Support;
                 score -= Mathf.RoundToInt(Mathf.Max(0f, tile.Cost) * 6f);
-                if (score > selectedScore || score == selectedScore && BotTurnExecutor.ComparePosition(tile.Position, selected) < 0)
+                if (score > selectedScore || score == selectedScore && BotDeterministicGeometry.ComparePosition(tile.Position, selected) < 0)
                 {
                     selected = tile.Position;
                     selectedScore = score;
@@ -187,7 +187,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         private static int CompareTarget(BotUnitSnapshot leftEnemy, Vector2Int leftTile, BotUnitSnapshot rightEnemy, Vector2Int rightTile)
         {
             int enemy = string.CompareOrdinal(leftEnemy.UnitId, rightEnemy.UnitId);
-            return enemy != 0 ? enemy : BotTurnExecutor.ComparePosition(leftTile, rightTile);
+            return enemy != 0 ? enemy : BotDeterministicGeometry.ComparePosition(leftTile, rightTile);
         }
 
         private static int CompareCandidate(BotActionCandidate left, BotActionCandidate right)

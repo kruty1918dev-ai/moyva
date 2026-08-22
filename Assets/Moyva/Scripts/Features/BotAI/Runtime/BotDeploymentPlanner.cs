@@ -74,7 +74,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
 
                 int candidateScore = ScoreTile(snapshot, candidate.Position);
                 if (candidateScore > score
-                    || (candidateScore == score && BotTurnExecutor.ComparePosition(candidate.Position, tile) < 0))
+                    || (candidateScore == score && BotDeterministicGeometry.ComparePosition(candidate.Position, tile) < 0))
                 {
                     tile = candidate.Position;
                     score = candidateScore;

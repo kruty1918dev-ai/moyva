@@ -23,6 +23,7 @@
   <Project Path="Zenject-IntegrationTests-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
   <Project Path="Unity.Burst.csproj" />
+  <Project Path="Kruty1918.Moyva.BotAI.csproj" />
   <Project Path="sc.stylizedwater3.editor.csproj" />
   <Project Path="Unity.VisualScripting.Flow.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.Editor.csproj" />
@@ -41,7 +42,6 @@
   <Project Path="Unity.2D.SpriteShape.Editor.csproj" />
   <Project Path="UnityEngine.UI.csproj" />
   <Project Path="Unity.Services.Authentication.Editor.csproj" />
-  <Project Path="Kruty1918.Moyva.BotAI.csproj" />
   <Project Path="Unity.Searcher.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.csproj" />
   <Project Path="Unity.2D.Aseprite.Editor.csproj" />

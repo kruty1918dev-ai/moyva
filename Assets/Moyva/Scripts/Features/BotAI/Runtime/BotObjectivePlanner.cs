@@ -119,7 +119,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 evaluated++;
                 int candidateScore = ScoreTile(anchor, tile);
                 if (candidateScore > score
-                    || (candidateScore == score && BotTurnExecutor.ComparePosition(tile.Position, target) < 0))
+                    || (candidateScore == score && BotDeterministicGeometry.ComparePosition(tile.Position, target) < 0))
                 {
                     target = tile.Position;
                     score = candidateScore;

@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         bool IsMultiplayerLaunchContext();
     }
 
-    internal sealed class StartingPositionPolicy
+    internal sealed partial class StartingPositionPolicy
         : IStartingPositionPolicy
     {
         private const string PolicyDiagTag = "[MoyvaStartPolicyDiag]";
@@ -42,32 +42,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public int ResolveStartPositionCount()
         {
-            // Direct Gameplay is a deterministic local Human + Bot session.
-            // It must not depend on HasWorldSettings or a possibly stale ISessionManager.
-            if (GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest)
-                return Mathf.Max(2, GameLaunchContext.MaxPlayers);
-
             int participantCount = _sessionManager?.Participants?.Count ?? 1;
-            if (participantCount > 1 || IsMultiplayerHost())
-                return Mathf.Max(participantCount, _settings.multiplayerStartSlots);
-
-            if (GameLaunchContext.HasWorldSettings && GameLaunchContext.MaxPlayers > 1)
-                return Mathf.Max(GameLaunchContext.MaxPlayers, _settings.multiplayerStartSlots);
-
-            return 1;
+            return GameplayLaunchTopology.ResolveStartPositionCount(
+                GameLaunchContext.Mode,
+                GameLaunchContext.MaxPlayers,
+                GameLaunchContext.HasWorldSettings,
+                participantCount,
+                IsMultiplayerHost(),
+                _settings.multiplayerStartSlots);
         }
 
         public string ResolveLocalPlayerId()
         {
-            // Direct Gameplay must not inherit an empty/stale editor multiplayer id.
-            if (GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest)
-                return "player_0";
-
-            string localPlayerId = _sessionManager?.LocalPlayerId;
-            if (!string.IsNullOrEmpty(localPlayerId))
-                return localPlayerId;
-
-            return "local-player";
+            return GameplayLaunchTopology.ResolveLocalPlayerId(
+                GameLaunchContext.Mode,
+                _sessionManager?.LocalPlayerId);
         }
 
         public bool CanRunStartLogic()
@@ -141,51 +130,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return result;
         }
 
-        public bool IsMultiplayerLaunchContext()
-        {
-            bool result = IsMultiplayerLaunchContextStatic();
-            int participantCount = _sessionManager?.Participants?.Count ?? 0;
-            bool hasSession = _sessionManager != null;
-            bool isHost = _sessionManager != null && _sessionManager.IsLocalPlayerHost;
-            string localPlayerId = _sessionManager?.LocalPlayerId ?? string.Empty;
-            bool maxPlayersSuggestsMultiplayer = GameLaunchContext.MaxPlayers > 1;
-            bool realMultiplayerMode = GameLaunchContext.Mode == GameLaunchMode.MenuJoinGame
-                || GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame;
 
-            Debug.Log(
-                $"{PolicyDiagTag} Policy.{nameof(IsMultiplayerLaunchContext)} mode={GameLaunchContext.Mode}, maxPlayers={GameLaunchContext.MaxPlayers}, " +
-                $"maxPlayersSuggestsMultiplayer={maxPlayersSuggestsMultiplayer}, realMultiplayerMode={realMultiplayerMode}, hasSession={hasSession}, " +
-                $"participants={participantCount}, isHost={isHost}, localPlayerId={(string.IsNullOrEmpty(localPlayerId) ? "<empty>" : localPlayerId)}, result={result}.");
-            Debug.Log($"{DirectDiagTag} Policy.IsMultiplayerLaunchContext mode={GameLaunchContext.Mode}, maxPlayers={GameLaunchContext.MaxPlayers}, maxPlayersSuggestsMultiplayer={maxPlayersSuggestsMultiplayer}, realMultiplayerMode={realMultiplayerMode}, result={result}.");
 
-            return result;
-        }
-
-        public static bool IsMultiplayerLaunchContextStatic()
-        {
-            return GameLaunchContext.Mode == GameLaunchMode.MenuJoinGame
-                || GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame;
-        }
-
-        private static void LogPolicyDecision(
-            string methodName,
-            int participantCount,
-            bool hasSession,
-            bool isHost,
-            string localPlayerId,
-            bool isMultiplayerContext,
-            bool result,
-            string reason)
-        {
-            bool maxPlayersSuggestsMultiplayer = GameLaunchContext.MaxPlayers > 1;
-            bool realMultiplayerMode = GameLaunchContext.Mode == GameLaunchMode.MenuJoinGame
-                || GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame;
-
-            Debug.Log(
-                $"{PolicyDiagTag} Policy.{methodName} mode={GameLaunchContext.Mode}, maxPlayers={GameLaunchContext.MaxPlayers}, " +
-                $"maxPlayersSuggestsMultiplayer={maxPlayersSuggestsMultiplayer}, realMultiplayerMode={realMultiplayerMode}, " +
-                $"isMultiplayerContext={isMultiplayerContext}, hasSession={hasSession}, participants={participantCount}, " +
-                $"isHost={isHost}, localPlayerId={(string.IsNullOrEmpty(localPlayerId) ? "<empty>" : localPlayerId)}, result={result}, reason={reason}.");
-        }
     }
 }

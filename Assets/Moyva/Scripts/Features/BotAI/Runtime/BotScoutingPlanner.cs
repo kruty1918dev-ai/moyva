@@ -163,7 +163,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
 
                     if (score > bestScore ||
                         score == bestScore &&
-                        BotTurnExecutor.ComparePosition(
+                        BotDeterministicGeometry.ComparePosition(
                             tile.Position,
                             best) < 0)
                     {

@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _diagnostics = diagnostics;
 
             bool injectedExecutor = executor != null;
-            _executor = executor ?? TryCreateFallbackExecutor(container);
+            _executor = executor;
 
             _diagnostics?.Info(
                 BotDiagnosticCategory.Executor,
@@ -42,10 +42,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 "TurnBotDriver constructed.",
                 reason: injectedExecutor
                     ? "IBotTurnExecutor was injected from the container."
-                    : "No executor binding was injected; TurnBotDriver attempted its fallback construction path.",
+                    : "No executor binding was injected. Canonical BotRuntimeBindings must provide IBotTurnExecutor.",
                 details:
                     $"injectedExecutor={injectedExecutor}; executorAvailable={_executor != null}; " +
-                    $"containerAvailable={container != null}");
+                    "fallbackConstruction=false");
         }
 
         public void Tick()
@@ -178,24 +178,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
         }
 
-        private static IBotTurnExecutor TryCreateFallbackExecutor(DiContainer container)
-        {
-            if (container == null)
-                return null;
-
-            try
-            {
-                // Most scenes resolve the singleton bound by BotInstaller. This fallback
-                // protects direct/test scenes that contain TurnBotDriver but omit BotInstaller.
-                return container.Instantiate<BotTurnExecutor>();
-            }
-            catch (Exception exception)
-            {
-                Debug.LogWarning(
-                    $"[TurnBotDriver] Could not construct fallback BotTurnExecutor: {exception.Message}");
-                return null;
-            }
-        }
 
         private static string NormalizeId(string value)
             => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

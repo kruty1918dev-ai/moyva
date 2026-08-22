@@ -78,12 +78,12 @@ namespace Kruty1918.Moyva.Tests.BotAI
         [Test]
         public void DeterministicNoise_IsStableAndBounded()
         {
-            int first = BotTurnExecutor.StableNoise("bot-a", 12, 3, "move:unit-1:4,5", 5);
-            int second = BotTurnExecutor.StableNoise("bot-a", 12, 3, "move:unit-1:4,5", 5);
+            int first = BotDeterministicGeometry.StableNoise("bot-a", 12, 3, "move:unit-1:4,5", 5);
+            int second = BotDeterministicGeometry.StableNoise("bot-a", 12, 3, "move:unit-1:4,5", 5);
 
             Assert.That(first, Is.EqualTo(second));
             Assert.That(first, Is.InRange(-5, 5));
-            Assert.That(BotTurnExecutor.StableNoise("bot-a", 12, 3, "move:unit-1:4,5", 0), Is.EqualTo(0));
+            Assert.That(BotDeterministicGeometry.StableNoise("bot-a", 12, 3, "move:unit-1:4,5", 0), Is.EqualTo(0));
         }
 
         [Test]

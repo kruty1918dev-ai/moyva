@@ -100,8 +100,8 @@ namespace Kruty1918.Moyva.Tests.BotAI
         public void RingCandidates_AreDeterministicUniqueAndExcludeCenter()
         {
             var center = new Vector2Int(3, 4);
-            List<Vector2Int> first = BotTurnExecutor.BuildRingCandidates(center, 2);
-            List<Vector2Int> second = BotTurnExecutor.BuildRingCandidates(center, 2);
+            List<Vector2Int> first = BotDeterministicGeometry.BuildRingCandidates(center, 2);
+            List<Vector2Int> second = BotDeterministicGeometry.BuildRingCandidates(center, 2);
 
             CollectionAssert.AreEqual(first, second);
             Assert.AreEqual(24, first.Count);

@@ -21,7 +21,7 @@ using Object = UnityEngine.Object;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
-    internal sealed class UnitRecruitmentDeploymentController :
+    internal sealed partial class UnitRecruitmentDeploymentController :
         IInitializable,
         ITickable,
         IDisposable,
@@ -266,55 +266,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 $"{LogTag} Deployment session started queue={queueId} unit={unitTypeId} building={recruitingBuildingPosition}.");
         }
 
-        private void RefreshDeploymentTiles()
-        {
-            if (_session == null)
-                return;
 
-            IReadOnlyList<UnitRecruitmentDeploymentTileSnapshot> tiles =
-                _recruitment.GetDeploymentTiles(
-                    _session.OwnerId,
-                    _session.RecruitingBuildingPosition,
-                    _session.QueueId);
-
-            _session.SetTiles(tiles);
-            RefreshDeploymentOverlay();
-
-            if (_session.SelectedTile.HasValue
-                && !_session.ValidTiles.Contains(_session.SelectedTile.Value))
-            {
-                ClearSelectedTile();
-            }
-        }
-
-        private void RefreshDeploymentOverlay()
-        {
-            if (_session == null)
-                return;
-
-            _overlayCells.Clear();
-            for (int index = 0; index < _session.Tiles.Count; index++)
-            {
-                UnitRecruitmentDeploymentTileSnapshot tile = _session.Tiles[index];
-                if (!tile.IsValid && _grid != null && !_grid.ContainsCell(tile.Position))
-                    continue;
-
-                GridActionOverlayVisualState state =
-                    _session.SelectedTile.HasValue
-                    && _session.SelectedTile.Value == tile.Position
-                        ? GridActionOverlayVisualState.Selected
-                        : tile.IsValid
-                            ? GridActionOverlayVisualState.Valid
-                            : GridActionOverlayVisualState.Invalid;
-                _overlayCells.Add(new GridActionOverlayCell(
-                    tile.Position,
-                    state,
-                    tile.Reason));
-            }
-
-            if (_session.OverlayAcquired)
-                _gridOverlay?.Show(GridActionOverlayOwner.Deployment, _overlayCells);
-        }
 
         private void HandleKeyboard()
         {
@@ -348,78 +300,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             SelectTile(tile);
         }
 
-        private void SelectTile(Vector2Int tile)
-        {
-            if (_session == null)
-                return;
 
-            if (!_session.ValidTiles.Contains(tile))
-            {
-                if (_session.InvalidReasons.TryGetValue(tile, out string reason)
-                    && !string.IsNullOrWhiteSpace(reason))
-                {
-                    Debug.Log($"{LogTag} Invalid deployment tile {tile}: {reason}");
-                }
-
-                return;
-            }
-
-            _session.SelectedTile = tile;
-            MovePreviewTo(tile);
-            RefreshDeploymentOverlay();
-            UpdateConfirmInteractable();
-        }
-
-        private void ConfirmSelectedTile()
-        {
-            if (_session == null
-                || !_session.SelectedTile.HasValue
-                || _confirmInProgress)
-            {
-                return;
-            }
-
-            DeploymentSession session = _session;
-            Vector2Int target = _session.SelectedTile.Value;
-            if (!TryRevalidateTarget(target, out string reason))
-            {
-                Debug.LogWarning(
-                    $"{LogTag} Selected deployment tile became invalid: {reason}");
-                RefreshDeploymentTiles();
-                return;
-            }
-
-            _confirmInProgress = true;
-            UpdateConfirmInteractable();
-            try
-            {
-                bool deployed = _recruitment.TryDeployReady(
-                    session.OwnerId,
-                    session.RecruitingBuildingPosition,
-                    session.QueueId,
-                    target,
-                    out string unitId,
-                    out reason);
-
-                if (!deployed)
-                {
-                    Debug.LogWarning(
-                        $"{LogTag} Deployment confirm failed: {reason}");
-                    RefreshDeploymentTiles();
-                    return;
-                }
-
-                Debug.Log(
-                    $"{LogTag} Deployment confirmed queue={session.QueueId} unitId={unitId} tile={target}.");
-                if (_session != null)
-                    EndSession(destroyPreview: true);
-            }
-            finally
-            {
-                _confirmInProgress = false;
-                UpdateConfirmInteractable();
-            }
-        }
 
         private bool TryRevalidateTarget(
             Vector2Int target,
@@ -471,22 +352,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             SetControlsVisible(false);
         }
 
-        private void ClearSelectedTile(bool destroyPreview = true)
-        {
-            if (_session != null)
-                _session.SelectedTile = null;
-
-            if (destroyPreview && _previewObject != null)
-            {
-                Object.Destroy(_previewObject);
-                _previewObject = null;
-            }
-
-            if (_session != null)
-                RefreshDeploymentOverlay();
-
-            UpdateConfirmInteractable();
-        }
 
         private void MovePreviewTo(Vector2Int tile)
         {
@@ -704,48 +569,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 ?.ResolvePresentation();
         }
 
-        private bool TryResolveTile(
-            Vector2 screenPosition,
-            out Vector2Int tile)
-        {
-            tile = default;
-
-            if (_screenToGrid != null)
-            {
-                tile = _screenToGrid.ScreenToGrid(screenPosition);
-                return true;
-            }
-
-            if (_pointerGridResolver != null
-                && _pointerGridResolver.TryScreenToGrid(screenPosition, out tile))
-            {
-                return true;
-            }
-
-            UnityEngine.Camera camera = ResolveCamera();
-            if (camera == null || _gridProjection == null)
-                return false;
-
-            Ray ray = camera.ScreenPointToRay(screenPosition);
-            Plane plane = _gridProjection.WorldPlane == GridWorldPlane.XZ
-                ? new Plane(Vector3.up, ResolveWorldPosition(
-                    _session?.RecruitingBuildingPosition ?? Vector2Int.zero,
-                    layerOffset: 0f))
-                : new Plane(Vector3.forward, Vector3.zero);
-
-            if (!plane.Raycast(ray, out float distance) || distance < 0f)
-                return false;
-
-            Vector3 worldPoint = ray.GetPoint(distance);
-            if (_pointerGridResolver != null
-                && _pointerGridResolver.TryWorldToGrid(worldPoint, out tile))
-            {
-                return true;
-            }
-
-            tile = _gridProjection.WorldToGrid(worldPoint);
-            return true;
-        }
 
         private Vector3 ResolveWorldPosition(
             Vector2Int tile,
@@ -926,19 +749,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _controlsRoot.gameObject.SetActive(visible);
         }
 
-        private void UpdateConfirmInteractable()
-        {
-            if (_confirmButton != null)
-            {
-                _confirmButton.interactable =
-                    _session != null
-                    && _session.SelectedTile.HasValue
-                    && !_confirmInProgress;
-            }
-
-            if (_cancelButton != null)
-                _cancelButton.interactable = _session != null;
-        }
 
         public IReadOnlyCollection<UiActionId> ActionIds { get; } =
             new[]
@@ -1056,17 +866,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             RefreshDeploymentTiles();
         }
 
-        private void OnRecruitmentDeployed(
-            UnitRecruitmentDeployedSignal signal)
-        {
-            if (_session == null
-                || !_session.Matches(signal.OwnerId, signal.QueueId))
-            {
-                return;
-            }
-
-            EndSession(destroyPreview: true);
-        }
 
         private void OnGameModeChanged(GameModeChangedSignal signal)
         {
