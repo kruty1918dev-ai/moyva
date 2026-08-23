@@ -1,7 +1,10 @@
+// AI-context consolidation: related partials live together by responsibility.
+// No gameplay behavior is intentionally changed by this file organization.
 using System;
 using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
 
+// ---- Consolidated from ConstructionService.PlacementDiagnostics.cs ----
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed partial class ConstructionService

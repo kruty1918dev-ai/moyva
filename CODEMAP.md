@@ -43,3 +43,20 @@ For most changes, read:
 `CODEMAP -> feature API -> installer/bindings -> target implementation -> focused tests`
 
 Only expand to callers/consumers when the change crosses a feature boundary.
+
+## Construction reading map
+
+Do not open every `ConstructionService` partial for a focused task.
+
+| Task | Primary files |
+|---|---|
+| service lifecycle / dependencies | `ConstructionService.cs` |
+| can-place / placement query | `ConstructionService.PlacementQuery.cs`, then `ConstructionService.PlacementRules.cs` only if needed |
+| selection / preview state | `ConstructionService.PlacementState.cs` |
+| terrain / footprint / influence validation | `ConstructionService.PlacementRules.cs` |
+| cost / per-player limits / turn authority | `ConstructionService.EconomyAuthority.cs` |
+| confirm / demolish / undo-redo | `ConstructionService.CommitUndo.cs` |
+| save restore / singleton reconstruction | `ConstructionService.Persistence.cs` |
+| placement diagnostics | `ConstructionService.Diagnostics.cs` |
+
+`ConstructionService` remains one partial type for compatibility, but the physical files are grouped by cohesive responsibility to minimize context fan-out.
