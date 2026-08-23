@@ -366,14 +366,28 @@ namespace Kruty1918.Moyva.Turns.Runtime
             if (_factions.Count != 0)
                 return;
 
-            // Turns does not own map geometry. Direct Gameplay must wait for
-            // WorldSpawnPositionsSignal produced by the terrain-aware Bootstrap selector.
-            // Creating player_0 / bot-01 at Vector2Int.zero/one here would reintroduce
-            // hard-coded spawn coordinates and bypass player-distance/land/water rules.
+            // Emergency fallback only. Normal direct Gameplay should arrive through
+            // WorldSpawnPositionsSignal with player_0 + bot-01.
+            _factions.Add(
+                new TurnFaction(
+                    "player_0",
+                    false,
+                    Vector2Int.zero));
+
+            _factions.Add(
+                new TurnFaction(
+                    "bot-01",
+                    true,
+                    Vector2Int.one));
+
+            LocalOwnerId = ResolveLocalOwnerId();
+            _activeFactionIndex = 0;
+
             Debug.LogWarning(
-                "[Turns] DirectGameplayTest currently has no generated spawn assignments; " +
-                "synthetic start coordinates are disabled. Waiting for Bootstrap " +
-                "WorldSpawnPositionsSignal.");
+                "[Turns] DirectGameplayTest has no spawn assignments; " +
+                "using emergency player_0 + bot-01 fallback.");
+
+            StateChanged?.Invoke();
         }
 
         private string ResolveLocalOwnerId()

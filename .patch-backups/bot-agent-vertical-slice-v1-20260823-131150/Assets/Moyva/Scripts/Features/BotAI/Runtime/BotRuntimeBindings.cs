@@ -34,16 +34,6 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             BindIfMissing<IBotPerceptionService, BotPerceptionService>(container);
             BindIfMissing<IBotCastleSiteEvaluator, BotCastleSiteEvaluator>(container);
             BindIfMissing<IBotReasoningTrace, BotReasoningTraceStore>(container);
-            BindIfMissing<IBotStallTracker, BotStallTracker>(container);
-
-            if (!container.HasBinding<BotDevelopmentSiteEvaluator>())
-                container.Bind<BotDevelopmentSiteEvaluator>().AsSingle();
-
-            if (!container.HasBinding<BotDevelopmentUtilityEvaluator>())
-                container.Bind<BotDevelopmentUtilityEvaluator>().AsSingle();
-
-            if (!container.HasBinding<BotVerticalSliceDiagnostics>())
-                container.Bind<BotVerticalSliceDiagnostics>().AsSingle();
 
             BindIfMissing<IBotWorldSnapshotBuilder, BotWorldSnapshotBuilder>(container);
 

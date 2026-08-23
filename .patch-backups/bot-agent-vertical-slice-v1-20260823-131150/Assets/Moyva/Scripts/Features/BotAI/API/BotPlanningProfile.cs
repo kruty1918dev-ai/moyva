@@ -27,7 +27,6 @@ namespace Kruty1918.Moyva.BotAI.API
         public const int DefaultGoalHysteresisTurns = 3;
         public const int DefaultMaxTacticalTilesPerUnit = 64;
         public const int DefaultMaxScoutsPerTurn = 3;
-        public const int DefaultStallTurnThreshold = 3;
 
         public BotPlanningProfile(
             string profileId,
@@ -54,8 +53,7 @@ namespace Kruty1918.Moyva.BotAI.API
             int scoutThreatPenaltyPercent = DefaultScoutThreatPenaltyPercent,
             int goalHysteresisTurns = DefaultGoalHysteresisTurns,
             int maxTacticalTilesPerUnit = DefaultMaxTacticalTilesPerUnit,
-            int maxScoutsPerTurn = DefaultMaxScoutsPerTurn,
-            int stallTurnThreshold = DefaultStallTurnThreshold)
+            int maxScoutsPerTurn = DefaultMaxScoutsPerTurn)
         {
             ProfileId = string.IsNullOrWhiteSpace(profileId) ? "normal" : profileId.Trim();
             Difficulty = difficulty;
@@ -83,7 +81,6 @@ namespace Kruty1918.Moyva.BotAI.API
             GoalHysteresisTurns = Math.Max(0, goalHysteresisTurns);
             MaxTacticalTilesPerUnit = Math.Max(8, maxTacticalTilesPerUnit);
             MaxScoutsPerTurn = Math.Max(1, maxScoutsPerTurn);
-            StallTurnThreshold = Math.Max(1, stallTurnThreshold);
         }
 
         public string ProfileId { get; }
@@ -112,7 +109,6 @@ namespace Kruty1918.Moyva.BotAI.API
         public int GoalHysteresisTurns { get; }
         public int MaxTacticalTilesPerUnit { get; }
         public int MaxScoutsPerTurn { get; }
-        public int StallTurnThreshold { get; }
 
         public static BotPlanningProfile Normal()
             => new(

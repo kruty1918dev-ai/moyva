@@ -3,212 +3,252 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.BotAI.API;
 using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
-using Zenject;
 
 namespace Kruty1918.Moyva.BotAI.Runtime
 {
     internal sealed partial class BotConstructionPlanner
     {
-        private bool TryFindDevelopmentPlacement(
-            BotWorldSnapshot snapshot,
-            string buildingId,
-            out Vector2Int position,
-            out int score)
+        private IReadOnlyList<BotActionCandidate>
+            GenerateDevelopmentCandidates(
+                BotWorldSnapshot snapshot,
+                BotStrategicContext strategy)
         {
-            position = default;
-            score = int.MinValue;
-            int evaluated = 0;
+            BuildingDefinition[] definitions =
+                _buildings.GetAll();
 
-            Vector2Int anchor = ResolveSettlementAnchor(snapshot);
-            List<Vector2Int> cells = BotDeterministicGeometry.BuildRingCandidates(
-                anchor,
-                DevelopmentSearchRadius);
-
-            for (int index = 0;
-                 index < cells.Count && evaluated < MaxCandidateCells;
-                 index++)
+            if (definitions == null ||
+                definitions.Length == 0 ||
+                _developmentUtility == null)
             {
-                Vector2Int candidate = cells[index];
-                evaluated++;
-
-                ConstructionPlacementQueryResult result =
-                    EvaluatePlacement(
-                        snapshot.OwnerId,
-                        buildingId,
-                        candidate);
-
-                if (!result.CanCommit)
-                    continue;
-
-                int candidateScore =
-                    ScoreDevelopmentPlacement(anchor, candidate);
-
-                if (candidateScore > score ||
-                    candidateScore == score &&
-                    BotDeterministicGeometry.ComparePosition(candidate, position) < 0)
-                {
-                    position = candidate;
-                    score = candidateScore;
-                }
+                return Array.Empty<BotActionCandidate>();
             }
 
-            return score > int.MinValue;
-        }
+            bool ownsWarehouse =
+                HasOwnedCapability(
+                    snapshot,
+                    BuildingDefinitionCapabilities.IsWarehouse);
 
-        private BuildingDefinition FindNextDevelopmentBuilding(
-            BotWorldSnapshot snapshot,
-            out string reason,
-            out int baseScore)
-        {
-            reason = string.Empty;
-            baseScore = 0;
+            bool ownsRecruitment =
+                HasOwnedRecruitmentBuilding(snapshot);
 
-            BuildingDefinition warehouse = FindPreferredWarehouse();
-            if (warehouse != null && !HasOwnedCapability(snapshot, BuildingDefinitionCapabilities.IsWarehouse))
-            {
-                reason = "Після замку потрібне сховище, щоб місто мало стійку економічну інфраструктуру.";
-                baseScore = 1100;
-                return warehouse;
-            }
+            HashSet<string> ownedIndustry =
+                CollectOwnedIndustrialResourceIds(
+                    snapshot);
 
-            HashSet<string> ownedIndustrialResources =
-                CollectOwnedIndustrialResourceIds(snapshot);
+            Vector2Int anchor =
+                ResolveSettlementAnchor(snapshot);
 
-            if (ownedIndustrialResources.Count < 2)
-            {
-                BuildingDefinition production =
-                    FindPreferredProductionBuilding(
-                        ownedIndustrialResources);
+            var result =
+                new List<BotActionCandidate>();
 
-                if (production != null)
-                {
-                    string resourceId =
-                        BuildingDefinitionCapabilities
-                            .GetIndustrialResourceId(production);
+            var diagnostics =
+                new List<string>();
 
-                    reason =
-                        $"Розширюю базову економіку. Будівля '{production.Id}' додає ресурс '{resourceId}' " +
-                        $"і збільшує різноманітність виробництва ({ownedIndustrialResources.Count}/2).";
-
-                    baseScore =
-                        980 +
-                        BuildingDefinitionCapabilities
-                            .GetEconomyPriority(production) * 10;
-
-                    return production;
-                }
-            }
-
-            if (!HasOwnedRecruitmentBuilding(snapshot))
-            {
-                BuildingDefinition recruitment =
-                    FindPreferredRecruitmentBuilding();
-
-                if (recruitment != null)
-                {
-                    reason =
-                        "Базова економічна інфраструктура вже сформована; тепер потрібна recruitment-capable військова будівля.";
-                    baseScore = 900;
-                    return recruitment;
-                }
-            }
-
-            reason = "Базовий ланцюжок Castle → Storage → Production → Recruitment завершено.";
-            return null;
-        }
-
-        private BuildingDefinition FindPreferredWarehouse()
-        {
-            BuildingDefinition[] all = _buildings.GetAll();
-            if (all == null)
-                return null;
-
-            BuildingDefinition best = null;
-            for (int i = 0; i < all.Length; i++)
-            {
-                BuildingDefinition candidate = all[i];
-                if (candidate == null ||
-                    string.IsNullOrWhiteSpace(candidate.Id) ||
-                    !BuildingDefinitionCapabilities.IsWarehouse(candidate))
-                {
-                    continue;
-                }
-
-                if (best == null ||
-                    string.CompareOrdinal(candidate.Id, best.Id) < 0)
-                {
-                    best = candidate;
-                }
-            }
-
-            return best;
-        }
-
-        private BuildingDefinition FindPreferredProductionBuilding(
-            HashSet<string> ownedResourceIds)
-        {
-            BuildingDefinition[] all = _buildings.GetAll();
-            if (all == null)
-                return null;
-
-            BuildingDefinition best = null;
-            int bestPriority = int.MinValue;
-
-            for (int i = 0; i < all.Length; i++)
-            {
-                BuildingDefinition candidate = all[i];
-                if (candidate == null ||
-                    string.IsNullOrWhiteSpace(candidate.Id) ||
-                    BuildingDefinitionCapabilities.IsCastle(candidate))
-                {
-                    continue;
-                }
-
-                string resourceId =
-                    BuildingDefinitionCapabilities
-                        .GetIndustrialResourceId(candidate);
-
-                if (string.IsNullOrWhiteSpace(resourceId) ||
-                    ownedResourceIds.Contains(resourceId))
-                {
-                    continue;
-                }
-
-                int priority =
-                    BuildingDefinitionCapabilities
-                        .GetEconomyPriority(candidate) * 10;
-
-                if (best == null ||
-                    priority > bestPriority ||
-                    priority == bestPriority &&
-                    string.CompareOrdinal(candidate.Id, best.Id) < 0)
-                {
-                    best = candidate;
-                    bestPriority = priority;
-                }
-            }
-
-            return best;
-        }
-
-        private HashSet<string> CollectOwnedIndustrialResourceIds(
-            BotWorldSnapshot snapshot)
-        {
-            var result = new HashSet<string>(
-                StringComparer.OrdinalIgnoreCase);
-
-            for (int i = 0; i < snapshot.OwnBuildings.Count; i++)
+            for (int definitionIndex = 0;
+                 definitionIndex < definitions.Length;
+                 definitionIndex++)
             {
                 BuildingDefinition definition =
-                    _buildings.GetById(
-                        snapshot.OwnBuildings[i].BuildingId);
+                    definitions[definitionIndex];
 
-                string resourceId =
-                    BuildingDefinitionCapabilities
-                        .GetIndustrialResourceId(definition);
+                BotDevelopmentDefinitionScore definitionScore =
+                    _developmentUtility.Evaluate(
+                        snapshot,
+                        strategy,
+                        definition,
+                        ownsWarehouse,
+                        ownsRecruitment,
+                        ownedIndustry);
 
-                if (!string.IsNullOrWhiteSpace(resourceId))
-                    result.Add(resourceId);
+                if (definitionScore.Utility ==
+                    int.MinValue)
+                {
+                    continue;
+                }
+
+                List<BotDevelopmentPlacementCandidate> sites =
+                    FindTopDevelopmentSites(
+                        snapshot,
+                        definition,
+                        anchor);
+
+                if (sites.Count == 0)
+                {
+                    diagnostics.Add(
+                        $"{definition.Id}: no commit-ready site");
+                    continue;
+                }
+
+                for (int siteIndex = 0;
+                     siteIndex < sites.Count;
+                     siteIndex++)
+                {
+                    BotDevelopmentPlacementCandidate site =
+                        sites[siteIndex];
+
+                    int total =
+                        definitionScore.Utility +
+                        site.SiteScore.Utility;
+
+                    string reason =
+                        $"definition=[{definitionScore.Reason}]; " +
+                        $"site=[{site.SiteScore.Reason}]";
+
+                    result.Add(
+                        new BotActionCandidate(
+                            $"build:{definition.Id}:" +
+                            $"{site.Cell.x},{site.Cell.y}",
+                            BotActionKind.Build,
+                            strategy.Posture,
+                            new BotActionScore(
+                                total,
+                                reason),
+                            targetCell: site.Cell,
+                            definitionId: definition.Id,
+                            reason:
+                                "utility-based-city-development"));
+                }
+            }
+
+            result.Sort(CompareDevelopmentCandidate);
+
+            if (result.Count >
+                MaxDevelopmentCandidates)
+            {
+                result.RemoveRange(
+                    MaxDevelopmentCandidates,
+                    result.Count -
+                    MaxDevelopmentCandidates);
+            }
+
+            if (result.Count == 0)
+            {
+                _reasoning?.Record(
+                    snapshot.OwnerId,
+                    snapshot.GlobalTurn,
+                    BotReasoningStage.Warning,
+                    "Development: no commit-ready build candidate",
+                    diagnostics.Count == 0
+                        ? "No non-Castle building definition produced " +
+                          "positive development utility."
+                        : string.Join(
+                            " | ",
+                            diagnostics));
+            }
+            else
+            {
+                BotActionCandidate top =
+                    result[0];
+
+                _reasoning?.Record(
+                    snapshot.OwnerId,
+                    snapshot.GlobalTurn,
+                    BotReasoningStage.Candidate,
+                    $"Development utility winner: {top.DefinitionId}",
+                    $"strategy={strategy.Posture}; " +
+                    $"candidateCount={result.Count}; " +
+                    $"topCell={top.TargetCell}; " +
+                    $"topUtility={top.Score.Total}; " +
+                    $"{top.Score.Explanation}",
+                    top.Score.Total,
+                    top.TargetCell,
+                    top.DefinitionId);
+            }
+
+            return result;
+        }
+
+        private List<BotDevelopmentPlacementCandidate>
+            FindTopDevelopmentSites(
+                BotWorldSnapshot snapshot,
+                BuildingDefinition definition,
+                Vector2Int anchor)
+        {
+            var result =
+                new List<BotDevelopmentPlacementCandidate>();
+
+            var rejection =
+                new BotPlacementRejectionAccumulator();
+
+            List<Vector2Int> cells =
+                BotDeterministicGeometry.BuildRingCandidates(
+                    anchor,
+                    DevelopmentSearchRadius);
+
+            int evaluated = 0;
+
+            for (int index = 0;
+                 index < cells.Count &&
+                 evaluated <
+                 MaxDevelopmentCellsPerDefinition;
+                 index++)
+            {
+                Vector2Int candidate =
+                    cells[index];
+
+                evaluated++;
+
+                BotPlacementProbe probe =
+                    _placementProbe.Evaluate(
+                        snapshot.OwnerId,
+                        definition.Id,
+                        candidate);
+
+                rejection.Observe(probe);
+
+                if (!probe.CanCommit)
+                    continue;
+
+                BotDevelopmentSiteScore siteScore =
+                    _developmentSite?.Evaluate(
+                        snapshot,
+                        anchor,
+                        candidate)
+                    ?? new BotDevelopmentSiteScore(
+                        500 -
+                        Manhattan(anchor, candidate) * 18,
+                        "terrain evaluator unavailable");
+
+                result.Add(
+                    new BotDevelopmentPlacementCandidate(
+                        candidate,
+                        siteScore));
+            }
+
+            result.Sort(
+                (left, right) =>
+                {
+                    int score =
+                        right.SiteScore.Utility.CompareTo(
+                            left.SiteScore.Utility);
+
+                    return score != 0
+                        ? score
+                        : BotDeterministicGeometry
+                            .ComparePosition(
+                                left.Cell,
+                                right.Cell);
+                });
+
+            if (result.Count >
+                MaxDevelopmentSitesPerDefinition)
+            {
+                result.RemoveRange(
+                    MaxDevelopmentSitesPerDefinition,
+                    result.Count -
+                    MaxDevelopmentSitesPerDefinition);
+            }
+
+            if (result.Count == 0 &&
+                rejection.Legal > 0)
+            {
+                _reasoning?.Record(
+                    snapshot.OwnerId,
+                    snapshot.GlobalTurn,
+                    BotReasoningStage.Warning,
+                    $"Development legal but blocked: {definition.Id}",
+                    rejection.BuildSummary(),
+                    subjectId: definition.Id);
             }
 
             return result;
@@ -225,11 +265,13 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                     snapshot.OwnBuildings[index];
 
                 BuildingDefinition definition =
-                    _buildings.GetById(building.BuildingId);
+                    _buildings.GetById(
+                        building.BuildingId);
 
                 if (definition != null &&
                     BuildingDefinitionCapabilities
-                        .HasEnabledModule<UnitRecruitmentBuildingModule>(
+                        .HasEnabledModule<
+                            UnitRecruitmentBuildingModule>(
                             definition))
                 {
                     return true;
@@ -239,60 +281,107 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             return false;
         }
 
-        private BuildingDefinition FindPreferredRecruitmentBuilding()
+        private HashSet<string>
+            CollectOwnedIndustrialResourceIds(
+                BotWorldSnapshot snapshot)
         {
-            BuildingDefinition[] all = _buildings.GetAll();
-            if (all == null || all.Length == 0)
-                return null;
+            var result =
+                new HashSet<string>(
+                    StringComparer.OrdinalIgnoreCase);
 
-            BuildingDefinition best = null;
-
-            for (int index = 0; index < all.Length; index++)
+            for (int i = 0;
+                 i < snapshot.OwnBuildings.Count;
+                 i++)
             {
-                BuildingDefinition candidate = all[index];
+                BuildingDefinition definition =
+                    _buildings.GetById(
+                        snapshot.OwnBuildings[i].BuildingId);
 
-                if (candidate == null ||
-                    string.IsNullOrWhiteSpace(candidate.Id) ||
-                    !BuildingDefinitionCapabilities
-                        .HasEnabledModule<UnitRecruitmentBuildingModule>(
-                            candidate))
-                {
-                    continue;
-                }
+                string resourceId =
+                    BuildingDefinitionCapabilities
+                        .GetIndustrialResourceId(
+                            definition);
 
-                if (best == null ||
-                    candidate.Category == BuildingCategory.Military &&
-                    best.Category != BuildingCategory.Military ||
-                    string.CompareOrdinal(candidate.Id, best.Id) < 0)
+                if (!string.IsNullOrWhiteSpace(
+                        resourceId))
                 {
-                    best = candidate;
+                    result.Add(resourceId);
                 }
             }
 
-            return best;
+            return result;
         }
 
-        private static Vector2Int ResolveSettlementAnchor(
+        private Vector2Int ResolveSettlementAnchor(
             BotWorldSnapshot snapshot)
         {
-            if (snapshot?.OwnBuildings != null &&
-                snapshot.OwnBuildings.Count > 0)
+            // Anchor city growth on the actual data-driven Castle, not on
+            // "the first building in snapshot".
+            for (int i = 0;
+                 i < snapshot.OwnBuildings.Count;
+                 i++)
             {
-                return snapshot.OwnBuildings[0].Position;
+                BotBuildingSnapshot building =
+                    snapshot.OwnBuildings[i];
+
+                BuildingDefinition definition =
+                    _buildings.GetById(
+                        building.BuildingId);
+
+                if (definition != null &&
+                    BuildingDefinitionCapabilities.IsCastle(
+                        definition))
+                {
+                    return building.Position;
+                }
             }
 
-            return snapshot?.StartPosition ?? Vector2Int.zero;
+            return snapshot.StartPosition;
         }
 
-        private static int ScoreDevelopmentPlacement(
-            Vector2Int anchor,
-            Vector2Int candidate)
+        private static int CompareDevelopmentCandidate(
+            BotActionCandidate left,
+            BotActionCandidate right)
         {
-            int distance =
-                Mathf.Abs(anchor.x - candidate.x) +
-                Mathf.Abs(anchor.y - candidate.y);
+            int score =
+                right.Score.Total.CompareTo(
+                    left.Score.Total);
 
-            return 700 - distance * 12;
+            if (score != 0)
+                return score;
+
+            int definition =
+                string.CompareOrdinal(
+                    left.DefinitionId,
+                    right.DefinitionId);
+
+            if (definition != 0)
+                return definition;
+
+            return string.CompareOrdinal(
+                left.CandidateId,
+                right.CandidateId);
+        }
+
+        private static int Manhattan(
+            Vector2Int left,
+            Vector2Int right)
+            => Mathf.Abs(left.x - right.x) +
+               Mathf.Abs(left.y - right.y);
+
+        private readonly struct
+            BotDevelopmentPlacementCandidate
+        {
+            public BotDevelopmentPlacementCandidate(
+                Vector2Int cell,
+                BotDevelopmentSiteScore siteScore)
+            {
+                Cell = cell;
+                SiteScore = siteScore;
+            }
+
+            public Vector2Int Cell { get; }
+            public BotDevelopmentSiteScore SiteScore { get; }
         }
     }
 }

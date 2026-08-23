@@ -3,95 +3,161 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.BotAI.API;
 using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
-using Zenject;
 
 namespace Kruty1918.Moyva.BotAI.Runtime
 {
     internal sealed partial class BotConstructionPlanner
     {
-        private IReadOnlyList<BotActionCandidate> GenerateCastlePlacement(
-            BotWorldSnapshot snapshot,
-            BotStrategicContext strategy)
+        private IReadOnlyList<BotActionCandidate>
+            GenerateCastlePlacement(
+                BotWorldSnapshot snapshot,
+                BotStrategicContext strategy)
         {
-            BuildingDefinition castle = FindCastleDefinition();
-            if (castle == null || string.IsNullOrWhiteSpace(castle.Id))
+            BuildingDefinition castle =
+                FindCastleDefinition();
+
+            if (castle == null ||
+                string.IsNullOrWhiteSpace(castle.Id))
             {
                 _reasoning?.Record(
                     snapshot.OwnerId,
                     snapshot.GlobalTurn,
                     BotReasoningStage.Warning,
-                    "Не знайдено визначення замку",
-                    "У BuildingRegistry немає data-driven будівлі, для якої BuildingDefinitionCapabilities.IsCastle повертає true.");
+                    "Castle Search: definition missing",
+                    "BuildingRegistry contains no data-driven definition " +
+                    "for which BuildingDefinitionCapabilities.IsCastle is true.");
 
                 return Array.Empty<BotActionCandidate>();
             }
 
-            List<Vector2Int> cells = BotDeterministicGeometry.BuildRingCandidates(
-                snapshot.StartPosition,
-                CastleSearchRadius);
+            var rejection =
+                new BotPlacementRejectionAccumulator();
 
-            BotSiteEvaluation best = null;
+            var strongestLegal =
+                new List<BotSiteEvaluation>();
+
+            var seen = new HashSet<Vector2Int>();
+
+            BotSiteEvaluation bestLegal = null;
+            BotSiteEvaluation bestCommitReady = null;
+
+            BotPlacementProbe bestLegalProbe = default;
             int evaluated = 0;
-            int valid = 0;
-            var strongest = new List<BotSiteEvaluation>();
 
-            for (int index = 0;
-                 index < cells.Count && evaluated < MaxCandidateCells;
-                 index++)
+            int[] searchRadii =
             {
-                Vector2Int candidate = cells[index];
-                evaluated++;
+                CastleSearchRadius,
+                CastleSearchExpandedRadius,
+                CastleSearchMaximumRadius,
+            };
 
-                ConstructionPlacementQueryResult placement =
-                    EvaluatePlacement(
-                        snapshot.OwnerId,
-                        castle.Id,
-                        candidate);
+            for (int radiusIndex = 0;
+                 radiusIndex < searchRadii.Length &&
+                 evaluated < MaxCastleCandidateCells;
+                 radiusIndex++)
+            {
+                int radius = searchRadii[radiusIndex];
 
-                BotSiteEvaluation site =
-                    _castleEvaluator?.Evaluate(
-                        snapshot,
-                        castle.Id,
-                        candidate,
-                        placement.CanCommit)
-                    ?? FallbackEvaluation(
+                List<Vector2Int> cells =
+                    BotDeterministicGeometry.BuildRingCandidates(
                         snapshot.StartPosition,
-                        candidate,
-                        placement.CanCommit);
+                        radius);
 
-                if (!site.PlacementAllowed)
-                    continue;
-
-                valid++;
-                InsertTop(strongest, site, MaxLoggedSiteEvaluations);
-
-                if (best == null ||
-                    site.TotalScore > best.TotalScore ||
-                    site.TotalScore == best.TotalScore &&
-                    BotDeterministicGeometry.ComparePosition(site.Cell, best.Cell) < 0)
+                for (int index = 0;
+                     index < cells.Count &&
+                     evaluated < MaxCastleCandidateCells;
+                     index++)
                 {
-                    best = site;
+                    Vector2Int candidate =
+                        cells[index];
+
+                    if (!seen.Add(candidate))
+                        continue;
+
+                    evaluated++;
+
+                    BotPlacementProbe probe =
+                        _placementProbe.Evaluate(
+                            snapshot.OwnerId,
+                            castle.Id,
+                            candidate);
+
+                    rejection.Observe(probe);
+
+                    // Legality is intentionally independent from resources.
+                    // This lets diagnostics distinguish "great site, cannot
+                    // afford it yet" from "site is spatially impossible".
+                    if (!probe.IsLegal)
+                        continue;
+
+                    BotSiteEvaluation site =
+                        _castleEvaluator?.Evaluate(
+                            snapshot,
+                            castle.Id,
+                            candidate,
+                            placementAllowed: true)
+                        ?? FallbackEvaluation(
+                            snapshot.StartPosition,
+                            candidate,
+                            placementAllowed: true);
+
+                    InsertTop(
+                        strongestLegal,
+                        site,
+                        MaxLoggedSiteEvaluations);
+
+                    if (IsBetterSite(
+                            site,
+                            bestLegal))
+                    {
+                        bestLegal = site;
+                        bestLegalProbe = probe;
+                    }
+
+                    if (probe.CanCommit &&
+                        IsBetterSite(
+                            site,
+                            bestCommitReady))
+                    {
+                        bestCommitReady = site;
+                    }
+                }
+
+                // If a commit-ready capital exists in the normal search radius
+                // there is no reason to scan the whole map. Expansion is only
+                // a recovery path for difficult generated terrain.
+                if (bestCommitReady != null &&
+                    radius == CastleSearchRadius)
+                {
+                    break;
                 }
             }
+
+            string rejectionSummary =
+                rejection.BuildSummary();
 
             _reasoning?.Record(
                 snapshot.OwnerId,
                 snapshot.GlobalTurn,
                 BotReasoningStage.TerrainScan,
-                "Пошук позиції для першого замку",
-                $"Перевірено {evaluated} клітин навколо старту {snapshot.StartPosition}; " +
-                $"{valid} пройшли canonical construction rules. " +
-                "Кожна допустима позиція оцінюється за висотою, локальним high-ground, природними бар'єрами, " +
-                "простором для міста, ризиком вищих стрілецьких позицій, прямими кавалерійськими підходами, краєм карти й видимими загрозами.");
+                "Castle Search: legality + utility scan",
+                $"start={snapshot.StartPosition}; evaluated={evaluated}; " +
+                $"searchRadiusUpTo={CastleSearchMaximumRadius}. " +
+                $"Legality is evaluated without resources; affordability " +
+                $"and authority are evaluated separately. {rejectionSummary}");
 
-            for (int i = 0; i < strongest.Count; i++)
+            for (int i = 0;
+                 i < strongestLegal.Count;
+                 i++)
             {
-                BotSiteEvaluation site = strongest[i];
+                BotSiteEvaluation site =
+                    strongestLegal[i];
+
                 _reasoning?.Record(
                     snapshot.OwnerId,
                     snapshot.GlobalTurn,
                     BotReasoningStage.SiteEvaluation,
-                    $"Кандидат замку #{i + 1}: {site.Cell}",
+                    $"Castle legal site #{i + 1}: {site.Cell}",
                     BotReasoningNarrator.DescribeSite(site),
                     site.TotalScore,
                     site.Cell,
@@ -99,68 +165,110 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                     site.Factors);
             }
 
-            if (best == null)
+            if (bestLegal == null)
             {
                 _reasoning?.Record(
                     snapshot.OwnerId,
                     snapshot.GlobalTurn,
                     BotReasoningStage.Warning,
-                    "Замок неможливо розмістити",
-                    $"Не знайдено жодної допустимої клітинки в радіусі {CastleSearchRadius}.");
+                    "Castle Search rejected every site",
+                    "No legal Castle position was found. " +
+                    rejectionSummary);
+
+                return Array.Empty<BotActionCandidate>();
+            }
+
+            if (bestCommitReady == null)
+            {
+                string affordabilityReason =
+                    !bestLegalProbe.IsAffordable
+                        ? "best legal site is currently unaffordable"
+                        : !bestLegalProbe.HasAuthority
+                            ? "best legal site lacks commit authority"
+                            : "legal sites exist but none is commit-ready";
+
+                _reasoning?.Record(
+                    snapshot.OwnerId,
+                    snapshot.GlobalTurn,
+                    BotReasoningStage.Warning,
+                    "Castle Search found legal site but cannot commit",
+                    $"{affordabilityReason}; bestLegal={bestLegal.Cell}; " +
+                    $"utility={bestLegal.TotalScore}; " +
+                    $"reasonCode='{bestLegalProbe.ReasonCode}'; " +
+                    $"reason='{bestLegalProbe.Reason}'. " +
+                    rejectionSummary,
+                    bestLegal.TotalScore,
+                    bestLegal.Cell,
+                    castle.Id,
+                    bestLegal.Factors);
 
                 return Array.Empty<BotActionCandidate>();
             }
 
             int finalScore = Mathf.Clamp(
-                2200 + best.TotalScore,
-                1200,
-                5000);
+                2400 + bestCommitReady.TotalScore,
+                1400,
+                6000);
 
             _reasoning?.Record(
                 snapshot.OwnerId,
                 snapshot.GlobalTurn,
                 BotReasoningStage.Selection,
-                $"Обрано позицію замку {best.Cell}",
-                BotReasoningNarrator.DescribeSite(best),
+                $"Castle Search selected {bestCommitReady.Cell}",
+                "Selected the highest-utility site among legal, affordable " +
+                "and authoritative Castle placements. " +
+                BotReasoningNarrator.DescribeSite(
+                    bestCommitReady),
                 finalScore,
-                best.Cell,
+                bestCommitReady.Cell,
                 castle.Id,
-                best.Factors);
+                bestCommitReady.Factors);
 
             return new[]
             {
                 new BotActionCandidate(
-                    $"build:{castle.Id}:{best.Cell.x},{best.Cell.y}",
+                    $"build:{castle.Id}:" +
+                    $"{bestCommitReady.Cell.x}," +
+                    $"{bestCommitReady.Cell.y}",
                     BotActionKind.Build,
                     strategy.Posture,
                     new BotActionScore(
                         finalScore,
-                        best.Summary),
-                    targetCell: best.Cell,
+                        bestCommitReady.Summary),
+                    targetCell: bestCommitReady.Cell,
                     definitionId: castle.Id,
-                    reason: "castle-site-weighted-evaluation"),
+                    reason:
+                        "castle-search-legal-affordable-utility"),
             };
         }
 
         private BuildingDefinition FindCastleDefinition()
         {
-            BuildingDefinition[] all = _buildings.GetAll();
+            BuildingDefinition[] all =
+                _buildings.GetAll();
+
             if (all == null)
                 return null;
 
             BuildingDefinition best = null;
+
             for (int i = 0; i < all.Length; i++)
             {
-                BuildingDefinition candidate = all[i];
+                BuildingDefinition candidate =
+                    all[i];
+
                 if (candidate == null ||
                     string.IsNullOrWhiteSpace(candidate.Id) ||
-                    !BuildingDefinitionCapabilities.IsCastle(candidate))
+                    !BuildingDefinitionCapabilities.IsCastle(
+                        candidate))
                 {
                     continue;
                 }
 
                 if (best == null ||
-                    string.CompareOrdinal(candidate.Id, best.Id) < 0)
+                    string.CompareOrdinal(
+                        candidate.Id,
+                        best.Id) < 0)
                 {
                     best = candidate;
                 }
@@ -169,15 +277,23 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             return best;
         }
 
-        private bool HasOwnedCastle(BotWorldSnapshot snapshot)
+        private bool HasOwnedCastle(
+            BotWorldSnapshot snapshot)
         {
-            for (int i = 0; i < snapshot.OwnBuildings.Count; i++)
+            if (snapshot == null)
+                return false;
+
+            for (int i = 0;
+                 i < snapshot.OwnBuildings.Count;
+                 i++)
             {
                 BuildingDefinition definition =
-                    _buildings.GetById(snapshot.OwnBuildings[i].BuildingId);
+                    _buildings.GetById(
+                        snapshot.OwnBuildings[i].BuildingId);
 
                 if (definition != null &&
-                    BuildingDefinitionCapabilities.IsCastle(definition))
+                    BuildingDefinitionCapabilities.IsCastle(
+                        definition))
                 {
                     return true;
                 }
@@ -186,26 +302,52 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             return false;
         }
 
-        private static BotSiteEvaluation FallbackEvaluation(
-            Vector2Int start,
-            Vector2Int cell,
-            bool placementAllowed)
+        private static bool IsBetterSite(
+            BotSiteEvaluation candidate,
+            BotSiteEvaluation current)
+        {
+            if (candidate == null)
+                return false;
+
+            if (current == null)
+                return true;
+
+            if (candidate.TotalScore !=
+                current.TotalScore)
+            {
+                return candidate.TotalScore >
+                       current.TotalScore;
+            }
+
+            return
+                BotDeterministicGeometry.ComparePosition(
+                    candidate.Cell,
+                    current.Cell) < 0;
+        }
+
+        private static BotSiteEvaluation
+            FallbackEvaluation(
+                Vector2Int start,
+                Vector2Int cell,
+                bool placementAllowed)
         {
             int distance =
                 Mathf.Abs(start.x - cell.x) +
                 Mathf.Abs(start.y - cell.y);
 
-            int score = placementAllowed
-                ? 300 - distance * 12
-                : -100000;
+            int score =
+                placementAllowed
+                    ? 300 - distance * 12
+                    : -100000;
 
             return new BotSiteEvaluation(
                 cell,
                 placementAllowed,
                 score,
                 placementAllowed
-                    ? $"Fallback score based on start distance {distance}; terrain service unavailable."
-                    : "Canonical placement rejected this cell.",
+                    ? $"Fallback utility uses start distance={distance}; " +
+                      "terrain service unavailable."
+                    : "Canonical placement legality rejected this cell.",
                 Array.Empty<BotSiteScoreFactor>());
         }
 
@@ -215,20 +357,27 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             int cap)
         {
             list.Add(evaluation);
+
             list.Sort((left, right) =>
             {
                 int score =
-                    right.TotalScore.CompareTo(left.TotalScore);
+                    right.TotalScore.CompareTo(
+                        left.TotalScore);
 
                 return score != 0
                     ? score
-                    : BotDeterministicGeometry.ComparePosition(
-                        left.Cell,
-                        right.Cell);
+                    : BotDeterministicGeometry
+                        .ComparePosition(
+                            left.Cell,
+                            right.Cell);
             });
 
             if (list.Count > cap)
-                list.RemoveRange(cap, list.Count - cap);
+            {
+                list.RemoveRange(
+                    cap,
+                    list.Count - cap);
+            }
         }
     }
 }

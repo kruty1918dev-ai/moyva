@@ -85,30 +85,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         [Min(1)]
         public int startCandidateAttempts = 256;
 
-        [Header("Якість стартового регіону")]
-        [Tooltip("Радіус, у якому оцінюється суша, вода та перепад висоти навколо кожного кандидата старту. Однаковий для гравця і бота.")]
-        [Min(1)]
-        public int startTerrainSampleRadius = 5;
-
-        [Tooltip("Мінімальна частка суші у стартовому регіоні. Наприклад 0.70 означає, що щонайменше 70% перевірених тайлів повинні бути не водою.")]
-        [Range(0.25f, 1f)]
-        public float minimumLandRatioAroundStart = 0.70f;
-
-        [Tooltip("Якщо увімкнено, вода в корисній відстані додає utility кандидату, але її наявність не є жорсткою вимогою.")]
-        public bool preferWaterNearStart = true;
-
-        [Tooltip("Найменша бажана Manhattan-відстань до води. Надто близька вода може стискати забудову.")]
-        [Min(0)]
-        public int preferredWaterMinDistance = 2;
-
-        [Tooltip("Найбільша бажана Manhattan-відстань до води.")]
-        [Min(1)]
-        public int preferredWaterMaxDistance = 8;
-
-        [Tooltip("М'який орієнтир локального перепаду HeightMap. Менший перепад дає більший utility, але не блокує старт.")]
-        [Min(0.01f)]
-        public float preferredLocalHeightRange = 0.35f;
-
         [Header("Камера")]
         [Tooltip("Позиція Z для різкого перенесення камери в стартову точку.\nДля 2D зазвичай -10, щоб камера залишалась на правильній глибині.")]
         public float cameraZ = -10f;

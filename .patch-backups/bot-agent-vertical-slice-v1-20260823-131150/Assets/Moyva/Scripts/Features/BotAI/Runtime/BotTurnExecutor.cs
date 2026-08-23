@@ -48,8 +48,6 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         private readonly IBotTurnPlanner _turnPlanner;
         private readonly IBotActionExecutor _actionExecutor;
         private readonly IBotReasoningTrace _reasoning;
-        private readonly IBotStallTracker _stall;
-        private readonly BotVerticalSliceDiagnostics _verticalSlice;
         private readonly HashSet<BotTurnEpoch> _startedEpochs = new();
         private BotTurnSession _activeSession;
 
@@ -71,9 +69,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             [InjectOptional] IBotStrategicPlanner strategicPlanner = null,
             [InjectOptional] IBotTurnPlanner turnPlanner = null,
             [InjectOptional] IBotActionExecutor actionExecutor = null,
-            [InjectOptional] IBotReasoningTrace reasoning = null,
-            [InjectOptional] IBotStallTracker stall = null,
-            [InjectOptional] BotVerticalSliceDiagnostics verticalSlice = null)
+            [InjectOptional] IBotReasoningTrace reasoning = null)
         {
             _turns = turns;
             _factions = factions;
@@ -92,8 +88,6 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             _turnPlanner = turnPlanner;
             _actionExecutor = actionExecutor;
             _reasoning = reasoning;
-            _stall = stall;
-            _verticalSlice = verticalSlice;
         }
 
         internal int StartedEpochCount => _startedEpochs.Count;
@@ -154,7 +148,6 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             // signal re-enters the executor, the same turn cannot issue actions twice.
             _startedEpochs.Add(epoch);
             PruneOldEpochs(globalTurn);
-            _stall?.BeginTurn(owner, globalTurn);
 
             _reasoning?.Record(
                 owner,
@@ -209,51 +202,18 @@ namespace Kruty1918.Moyva.BotAI.Runtime
 
         private async Task ExecuteTurnSessionAsync(string ownerId, long globalTurn, CancellationToken token)
         {
-            bool cancelled = false;
-
             try
             {
                 await ExecuteTurnAsync(ownerId, globalTurn, token);
             }
             catch (OperationCanceledException)
             {
-                cancelled = true;
             }
             catch (Exception exception)
             {
                 // Keep the epoch claimed after a partial failure. Retrying the same
                 // turn could duplicate a successful command that preceded the fault.
                 Debug.LogError($"[BotTurnExecutor] owner={ownerId} globalTurn={globalTurn}: {exception}");
-            }
-            finally
-            {
-                if (!cancelled && _stall != null)
-                {
-                    BotStallStatus status =
-                        _stall.CompleteTurn(ownerId, globalTurn);
-
-                    if (status.IsStalled)
-                    {
-                        _reasoning?.Record(
-                            ownerId,
-                            globalTurn,
-                            BotReasoningStage.Warning,
-                            "Bot Stall Reason",
-                            status.StallReason,
-                            subjectId: status.LastCandidateId);
-                    }
-                    else if (status.ConsecutiveZeroMutationTurns > 0)
-                    {
-                        _reasoning?.Record(
-                            ownerId,
-                            globalTurn,
-                            BotReasoningStage.TurnComplete,
-                            "Turn completed without mutation",
-                            $"zeroMutationStreak={status.ConsecutiveZeroMutationTurns}/" +
-                            $"{status.Threshold}; lastCandidate='{status.LastCandidateId}'; " +
-                            $"lastFailure='{status.LastFailureReason}'.");
-                    }
-                }
             }
         }
 
@@ -316,7 +276,6 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 BotWorldSnapshot snapshot = _snapshotBuilder.Build(ownerId, globalTurn);
                 _memory?.UpdateFromObservation(snapshot, _profile);
                 snapshot = _snapshotBuilder.Build(ownerId, globalTurn);
-                _verticalSlice?.Observe(snapshot);
                 BotStrategicContext strategy = _strategicPlanner.Plan(snapshot);
 
                 _reasoning?.Record(
@@ -395,14 +354,6 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                     selected.CandidateId);
 
                 BotActionExecutionResult result = await _actionExecutor.ExecuteAsync(ownerId, selected, token);
-
-                _stall?.RecordActionResult(
-                    ownerId,
-                    globalTurn,
-                    selected.CandidateId,
-                    result.Succeeded,
-                    result.Mutated,
-                    result.Reason);
 
                 _reasoning?.Record(
                     ownerId,
