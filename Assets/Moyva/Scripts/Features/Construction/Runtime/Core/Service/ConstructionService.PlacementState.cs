@@ -1096,7 +1096,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             in PendingPlacement current,
             ReplacementPlacementRuleModule module)
         {
-            if (!RequiresSameOwner(module)
+            if (!_replacementPolicy.RequiresSameOwner(module)
                 || !current.OriginalPosition.HasValue)
             {
                 return true;

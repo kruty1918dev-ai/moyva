@@ -282,7 +282,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 if (placement.IsGateReplacement)
                 {
-                    if (!TryResolveGateReplacement(
+                    if (!_replacementPolicy.TryResolveGateReplacement(
                             position,
                             buildingId,
                             out replacedOrigin,
@@ -466,7 +466,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string replacedBuildingId = null;
             try
             {
-                if (TryResolveGateReplacement(
+                if (_replacementPolicy.TryResolveGateReplacement(
                         position,
                         buildingId,
                         out replacedOrigin,

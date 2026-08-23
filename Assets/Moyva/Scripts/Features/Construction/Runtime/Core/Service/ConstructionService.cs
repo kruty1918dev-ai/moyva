@@ -98,6 +98,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ITurnService _turns;
         private readonly ConstructionPlacementEnvironmentRules _placementEnvironmentRules;
         private readonly ConstructionFootprintStore _footprints;
+        private readonly ConstructionReplacementPolicy _replacementPolicy;
         private bool _initialized;
         private bool _disposed;
 
@@ -197,6 +198,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     _placementBuildingRegistry,
                     gridService,
                     ResolvePlacedRotation);
+            _replacementPolicy =
+                new ConstructionReplacementPolicy(
+                    _placementBuildingRegistry,
+                    objectsMapService,
+                    wallTopologyService,
+                    wallGateReplacementValidator,
+                    _footprints);
         }
 
         private bool CanActiveOwnerAct(out string reason)

@@ -196,7 +196,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     double validationStartedAt =
                         Time.realtimeSinceStartupAsDouble;
 
-                    bool gateReplacementAllowed = TryResolveGateReplacement(
+                    bool gateReplacementAllowed = _replacementPolicy.TryResolveGateReplacement(
                         pos,
                         id,
                         out replacedOrigin,

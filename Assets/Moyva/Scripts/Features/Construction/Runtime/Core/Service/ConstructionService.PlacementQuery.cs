@@ -113,16 +113,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     BuildingPlacementBlockerKind.Terrain);
             }
 
-            bool requiresReplacement = RequiresReplacement(
+            bool requiresReplacement = _replacementPolicy.RequiresReplacement(
                 request.BuildingId,
                 out ReplacementPlacementRuleModule replacementModule);
-            bool gateReplacement = TryResolveGateReplacement(
+            bool gateReplacement = _replacementPolicy.TryResolveGateReplacement(
                 request.Position,
                 request.BuildingId,
                 out Vector2Int replacedWallOriginValue,
                 out string replacedWallId);
             bool pendingReplacementSatisfied =
-                IsReplacementSatisfiedByPendingMarker(
+                _replacementPolicy.IsReplacementSatisfiedByPendingMarker(
                     request.BuildingId,
                     request.SatisfiedReplacementBuildingId,
                     replacementModule);
@@ -145,7 +145,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ? replacedWallOriginValue
                 : null;
             if (gateReplacement
-                && RequiresSameOwner(replacementModule)
+                && _replacementPolicy.RequiresSameOwner(replacementModule)
                 && replacedWallOrigin.HasValue
                 && _factionPlacedBuildings.TryGetValue(
                     replacedWallOrigin.Value,
@@ -166,7 +166,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             if (gateReplacement
-                && RequiresSameOwner(replacementModule)
+                && _replacementPolicy.RequiresSameOwner(replacementModule)
                 && replacedWallOrigin.HasValue
                 && _playerPlacedBuildings.ContainsKey(replacedWallOrigin.Value)
                 && !string.Equals(
