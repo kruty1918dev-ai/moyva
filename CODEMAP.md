@@ -53,7 +53,8 @@ Do not open every `ConstructionService` partial for a focused task.
 | service lifecycle / dependencies | `ConstructionService.cs` |
 | can-place / placement query | `ConstructionService.PlacementQuery.cs`, then `ConstructionService.PlacementRules.cs` only if needed |
 | selection / preview state | `ConstructionService.PlacementState.cs` |
-| terrain / footprint / influence validation | `ConstructionService.PlacementRules.cs` |
+| fog / terrain / tile placement rules | `ConstructionPlacementEnvironmentRules.cs` |
+| footprint / replacement / influence validation | `ConstructionService.PlacementRules.cs` |
 | cost / per-player limits / turn authority | `ConstructionService.EconomyAuthority.cs` |
 | confirm / demolish / undo-redo | `ConstructionService.CommitUndo.cs` |
 | save restore / singleton reconstruction | `ConstructionService.Persistence.cs` |

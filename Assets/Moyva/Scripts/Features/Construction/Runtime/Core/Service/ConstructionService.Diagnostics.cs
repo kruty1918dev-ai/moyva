@@ -148,7 +148,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             string terrainReason = null;
             if (!isSpatiallyValid)
-                IsBlockedByTerrain(contextPosition, out terrainReason);
+                _placementEnvironmentRules.IsBlockedByTerrain(contextPosition, out terrainReason);
 
             string fogState = null;
             if (_fogOfWarService != null)
@@ -167,7 +167,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             int? terrainLevel =
                 GetTerrainLevelForPlacementQuery(contextPosition);
-            string tileId = GetTileId(contextPosition);
+            string tileId = _placementEnvironmentRules.GetTileId(contextPosition);
             string reasonCode =
                 ConstructionPlacementDiagnosticFormatter.ResolveReasonCode(
                     evaluationResult,
@@ -237,7 +237,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             int? terrainLevel = GetTerrainLevelForPlacementQuery(position);
             string terrainReason = null;
-            IsBlockedByTerrain(position, out terrainReason);
+            _placementEnvironmentRules.IsBlockedByTerrain(position, out terrainReason);
 
             string fogState = null;
             if (_fogOfWarService != null)
@@ -264,7 +264,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 isGateReplacement: false,
                 reasonCode,
                 reason,
-                GetTileId(position),
+                _placementEnvironmentRules.GetTileId(position),
                 terrainLevel,
                 terrainReason,
                 fogState,

@@ -652,7 +652,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Vector2Int position,
             string tag)
         {
-            string tileId = GetTileId(position);
+            string tileId = _placementEnvironmentRules.GetTileId(position);
             return _tileSettings is Kruty1918.Moyva.Grid.API.ITerrainTagQuery tagQuery
                 && tagQuery.HasTerrainTag(tileId, tag);
         }
@@ -692,7 +692,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (_gridService != null && !_gridService.TryGetTileData(position, out _))
                 return true;
 
-            return IsBlockedByTerrain(position, out _);
+            return _placementEnvironmentRules.IsBlockedByTerrain(position, out _);
         }
 
         private int? GetTerrainLevelForPlacementQuery(Vector2Int position)

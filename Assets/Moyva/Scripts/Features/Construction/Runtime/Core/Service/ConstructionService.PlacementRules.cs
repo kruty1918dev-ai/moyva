@@ -11,40 +11,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed partial class ConstructionService
     {
-        private bool IsBlockedByFog(Vector2Int position)
-        {
-            try
-            {
-                if (_placementRulesProvider != null
-                    && (!_placementRulesProvider.EnableFogRules || !_placementRulesProvider.RequireVisibleFogTile))
-                {
-                    if (VerboseLogs)
-                        Debug.Log($"[Construction] IsBlockedByFog({position}): profile disabled fog rule");
-                    return false;
-                }
-
-                if (_fogOfWarService == null)
-                {
-                    if (VerboseLogs)
-                        Debug.Log($"[Construction] IsBlockedByFog({position}): _fogOfWarService == null, fog-перевірка відключена");
-                    return false;
-                }
-
-                var fogState = _fogOfWarService.GetFogState(position);
-                bool isBlocked = fogState != FogStateType.Visible;
-
-                if (VerboseLogs && isBlocked)
-                    Debug.Log($"[Construction] IsBlockedByFog({position}): BLOCKED (fogState={fogState})");
-
-                return isBlocked;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[Construction] ПОМИЛКА в IsBlockedByFog({position}): {ex.GetType().Name} - {ex.Message}");
-                return false;
-            }
-        }
-
         private void ApplyBuildingFogReveal(
             string buildingId,
             Vector2Int position)
@@ -119,23 +85,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private static string GetBuildingFogVisionAreaId(Vector2Int position)
             => $"building:{position.x}:{position.y}";
 
-        private bool IsBlockedByTerrain(Vector2Int position, out string reason)
-        {
-            return ConstructionTerrainBuildabilityUtility.IsTerrainBlocked(
-                position,
-                _gridService,
-                _generatedTerrainLevelQuery,
-                _tileSettings,
-                _placementRulesProvider,
-                out reason);
-        }
-
-        private string GetTileId(Vector2Int position)
-        {
-            return _gridService != null && _gridService.TryGetTileData(position, out string tileId)
-                ? tileId
-                : null;
-        }
     }
 }
 
@@ -980,7 +929,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 evaluation?.InfluenceZoneBlocked ?? false;
             terrainBlocked = evaluation?.TerrainBlocked
                 ?? (!result.IsSpatiallyValid
-                    && IsBlockedByTerrain(position, out _));
+                    && _placementEnvironmentRules.IsBlockedByTerrain(position, out _));
 
             LogPlacementAttempt(
                 result,

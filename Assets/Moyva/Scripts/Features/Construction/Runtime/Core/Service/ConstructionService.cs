@@ -96,6 +96,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IReadOnlyList<IBuildingPlacementRuleEvaluator>
             _placementRuleEvaluators;
         private readonly ITurnService _turns;
+        private readonly ConstructionPlacementEnvironmentRules _placementEnvironmentRules;
         private bool _initialized;
         private bool _disposed;
 
@@ -181,6 +182,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ?? (IReadOnlyList<IBuildingPlacementRuleEvaluator>)
                     Array.Empty<IBuildingPlacementRuleEvaluator>();
             _turns = turns;
+            _placementEnvironmentRules =
+                new ConstructionPlacementEnvironmentRules(
+                    fogOfWarService,
+                    gridService,
+                    generatedTerrainLevelQuery,
+                    tileSettings,
+                    placementRulesProvider,
+                    () => VerboseLogs);
         }
 
         private bool CanActiveOwnerAct(out string reason)
