@@ -110,3 +110,22 @@ Assets/_Recovery/
 /.all-editmode-tests/
 /.artifacts/
 # END MOYVA AUDIT GENERATED ARTIFACTS
+
+# BEGIN MOYVA REPOSITORY HYGIENE
+# AI/editor recovery copies and generated patch backups.
+/.codex-backups/
+/.copilot_tmp/
+/.moyva-patch-backups/
+/.moyva_optimization_backups/
+/.patch-backups/
+
+# Generated audit archives.
+/moyva-p24-gameplay-pass-audit-*.tar.gz
+/moyva-p24d-tech-audit-*.tar.gz
+
+# Accidental/local root artifacts.
+/Moyva_P24D_TECH_ReadyIndicators_v1.zip
+/quadcast-raw.wav
+/.moyva-git-bridge-chatgpt-import-test.md
+/e HEAD
+# END MOYVA REPOSITORY HYGIENE
