@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
     ///
     /// This is diagnostics only. It cannot build, recruit or deploy anything.
     /// </summary>
-    public sealed class BotVerticalSliceDiagnostics
+    internal sealed class BotVerticalSliceDiagnostics
     {
         [Flags]
         private enum Stage
