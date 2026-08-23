@@ -129,3 +129,16 @@ Assets/_Recovery/
 /.moyva-git-bridge-chatgpt-import-test.md
 /e HEAD
 # END MOYVA REPOSITORY HYGIENE
+
+# BEGIN MOYVA AI CONTEXT HYGIENE
+# Generated architecture/script inventory snapshots become stale and pollute AI search context.
+/00_README_FIRST.txt
+/START_HERE.md
+/ALL_SCRIPTS_COMPLETE_LIST.txt
+/Assets_Moyva_Scripts_RuntimeScripts.txt
+/DETAILED_SCRIPTS_LIST.md
+/SCRIPTS_INVENTORY.csv
+/SCRIPTS_MANAGEMENT_PLAN.md
+/SCRIPTS_QUICK_REFERENCE.md
+/MASTER_SCRIPTS_REFACTORING_PLAN.md
+# END MOYVA AI CONTEXT HYGIENE

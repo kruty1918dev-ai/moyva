@@ -1,173 +1,116 @@
+# Moyva — Agent Rules
 
-## JSON Configuration Policy
+This file is the canonical instruction entry point for AI/code agents.
+Keep it short. Do not add audits, generated inventories, patch logs, or historical plans here.
 
-All Moyva-owned gameplay configuration, definitions, registries, presets, balance data, system settings and generator graphs MUST be authored in JSON under `Assets/Moyva/Presets/`.
+## Project
 
-- JSON is the single editable source of truth.
-- Do not introduce new project-owned ScriptableObject configuration assets.
-- Runtime loads JSON once through Load -> Validate -> Resolve -> Freeze and consumes plain C# snapshots/repositories.
-- Unity assets are referenced through stable asset IDs resolved by the generated runtime asset catalog.
-- Do not use `AssetDatabase` in runtime configuration loading.
-- Do not generate ScriptableObject caches from JSON.
-- New data-driven entities are added by adding JSON; no inspector registry list is maintained manually.
-- Polymorphic module/node IDs are allow-listed stable IDs, never unrestricted CLR type names.
+- Unity 6.x, C#, URP.
+- Turn-based strategy on a square/tile procedural world.
+- Zenject is used for dependency injection.
+- Production gameplay source lives under `Assets/Moyva/Scripts/`.
+- Current architecture favors feature ownership, explicit data flow, and one authoritative mutation path per gameplay concept.
 
-# Moyva Agent Instructions
+## Source of truth
 
-## Project Context
+1. Current checked-out C# source and Unity serialized assets are authoritative.
+2. `CODEMAP.md` is the routing map, not a second specification.
+3. Moyva-owned gameplay configuration/definitions/presets are JSON under `Assets/Moyva/Presets/`.
+4. Do not introduce new project-owned ScriptableObject configuration as an alternative source of truth.
+5. Historical plans, generated audits, inventory dumps, backups, and archived patch output are not architecture authority.
 
-This is the Unity project **Moyva**.
+## Before changing code
 
-Moyva is a turn-based strategy game built with:
+Read only the smallest relevant slice:
 
-- Unity 6.x
-- C#
-- URP
-- Zenject
-- TextMeshPro
-- Odin Inspector where appropriate
-- Square grid / tile-based procedural world systems
+1. `CODEMAP.md`.
+2. The target feature's `API/`.
+3. Its installer/composition root.
+4. The concrete runtime implementation being changed.
+5. Focused tests for that feature.
 
-The project must stay maintainable, modular, and safe for long-term development.
+Do not recursively read the whole repository unless the task genuinely requires it.
 
----
+## Architecture rules
 
-## Core Rule
+- SOLID, DRY, KISS, YAGNI.
+- Composition over inheritance.
+- Prefer plain C# domain/services; keep MonoBehaviours thin.
+- One authoritative state-mutation path per gameplay concept.
+- UI, BotAI, multiplayer adapters, and editor tools must delegate to canonical gameplay services.
+- Feature modules own their bindings/composition. Scene/bootstrap installers may delegate, not duplicate the graph.
+- Tests stay outside production `Runtime/` folders.
+- Editor/analyzer code never becomes runtime decision authority.
+- Avoid hidden static global state and hidden side effects.
+- Avoid generic `Manager`, `Helper`, `Utils` when a concrete responsibility can be named.
+- Do not create an interface for a class unless it is an actual boundary, substitutable dependency, or test seam.
+- Do not split code into tiny files merely to satisfy SRP; cohesion matters more than file count.
 
-Before writing or modifying code, understand the local architecture.
+Naming semantics:
 
-Do not make broad rewrites unless explicitly requested.
+- `Installer` = DI bindings/composition.
+- `Coordinator` / `Orchestrator` = sequencing.
+- `Policy` = decision rule.
+- `Resolver` = input → result.
+- `Store` = owned in-memory state.
+- `Registry` = keyed lookup.
+- `Adapter` = boundary translation.
+- `Service` = cohesive domain/application capability.
 
-Prefer small, safe, focused changes over large changes.
+## Unity safety
 
-Every change must preserve existing Unity serialization unless a migration is explicitly requested.
+Never delete, rename, or merge serialized Unity types from C# reference count alone.
 
----
+Before removing a serialized type or asset, check:
 
-## Architecture Principles
+- C# references;
+- scene/prefab/asset GUID references;
+- Zenject bindings;
+- reflection/string lookup;
+- asmdef references;
+- save/version compatibility;
+- EditMode/PlayMode tests;
+- supported runtime smoke paths.
 
-Follow these principles:
+Preserve `.meta` files when moving Unity assets.
 
-- SOLID
-- DRY
-- KISS
-- YAGNI
-- Composition over inheritance
-- Dependency inversion
-- Clear separation of responsibilities
-- Explicit data flow
-- Minimal coupling between systems
-- High cohesion inside each feature module
+## JSON configuration policy
 
-Avoid:
+Moyva-owned gameplay configuration, definitions, registries, presets, balance data,
+system settings, and generator graphs are authored in JSON under `Assets/Moyva/Presets/`.
 
-- God classes
-- static global state
-- hardcoded dependencies
-- hidden side effects
-- duplicated logic
-- oversized MonoBehaviours
-- mixing runtime logic with editor logic
-- mixing game logic with UI logic
-- changing unrelated systems
+Runtime path:
 
----
+`Load -> Validate -> Resolve -> Freeze -> Consume`
 
-## Unity-Specific Rules
+Rules:
 
-### MonoBehaviour Rules
+- JSON is the editable source of truth.
+- Runtime consumes resolved plain C# snapshots/repositories.
+- Unity object references use stable asset IDs resolved through the runtime asset catalog.
+- No `AssetDatabase` in runtime loading.
+- No generated ScriptableObject cache mirroring JSON.
+- Polymorphic IDs are allow-listed stable IDs, not unrestricted CLR type names.
 
-MonoBehaviours should be thin.
+## Verification
 
-Use MonoBehaviours mainly for:
+For a focused change:
 
-- Unity lifecycle entry points
-- scene references
-- view/presentation glue
-- serialized configuration references
-- forwarding events to services/controllers
+1. compile;
+2. run focused EditMode tests;
+3. inspect affected Unity serialization/bindings when relevant.
 
-Avoid putting complex business logic directly in MonoBehaviours.
+For architecture/startup changes additionally:
 
-Prefer plain C# services/classes for core logic.
+- run the full relevant EditMode suite;
+- smoke-test direct Gameplay and menu -> Gameplay;
+- verify no new Console errors.
 
----
+For BotAI changes additionally verify Human -> Bot -> Human turn handoff.
 
-### ScriptableObject Rules
+## Context discipline
 
-Use ScriptableObjects for:
+Prefer modifying existing canonical files over adding another wrapper, facade, plan, or documentation layer.
 
-- configuration
-- presets
-- balance data
-- tile/building/unit definitions
-- editor-authored data
-- reusable settings
-
-Do not hardcode gameplay values directly in scripts if they should be configurable.
-
-Bad:
-
-```csharp
-private const int MaxBuildings = 12;
-
-## Moyva clean-architecture route
-
-# Moyva agent route
-
-This file is intentionally small. It is the first routing layer for Codex/ChatGPT work.
-Do not put long audits, generated logs, patch output, or historical plans here.
-
-## Repository rule
-
-- The checked-out worktree is authoritative.
-- `game-process` gameplay changes must preserve current behavior unless a task explicitly changes it.
-- Do not infer current architecture from historical plans or `.artifacts`.
-- Generated audit/test output belongs under ignored `.artifacts/`, never beside production source.
-
-## Canonical gameplay authorities
-
-| Task | Start here | Authority |
-|---|---|---|
-| Turn progression | `Features/Turns/API` + `TurnService` | `ITurnService` / `TurnService` |
-| Bot turn bridge | `Bootstrap/Runtime/TurnBotDriver.cs` | `IBotTurnExecutor` |
-| Bot composition | `Features/BotAI/Runtime/BotRuntimeBindings.cs` | `BotRuntimeBindings.Install` |
-| Bot decision loop | `Features/BotAI/Runtime/BotTurnExecutor.cs` | planner → candidate → canonical action executor |
-| Bot planning | `Features/BotAI/Runtime/BotTurnPlanner.cs` | query-only planners |
-| Build query/mutation | `Features/Construction` | construction placement query/service |
-| Recruitment | `Features/Recruitment` | canonical recruitment service |
-| Combat | `Features/Combat` | combat query/command service |
-| Unit movement | `Features/Units` | movement query/service |
-| Save orchestration | `Features/SaveSystem` | central registry/sequencing; feature modules map payloads |
-| Direct/menu startup | `Bootstrap/Runtime` | launch topology → starting-position workflow → Turns |
-| World generation | `Features/Generator` | generator-owned coordinator |
-| Bot editor analysis | `Features/BotAI/Editor` | read-only; never gameplay authority |
-
-## Hard invariants
-
-1. Exactly one authoritative turn state machine.
-2. `TurnBotDriver` does not construct a fallback BotAI object graph.
-3. `BotRuntimeBindings` is the canonical BotAI composition root.
-4. `BotTickScheduler` remains absent/unbound.
-5. Bot planners query; `BotActionExecutor` delegates mutation to canonical gameplay services.
-6. No Bot-only alternate construction/combat/recruitment/unit mutation path.
-7. Tests do not live in Runtime folders.
-8. Editor/Analyzer code never becomes runtime decision authority.
-9. Direct Gameplay and menu Gameplay converge on the same participant/topology semantics.
-10. A compatibility path stays only while a supported mode can reach it.
-11. Do not delete serialized Unity types without GUID/reference proof.
-12. Prefer semantic names: Installer=bindings, Coordinator=orchestration, Policy=decision rule,
-    Resolver=input→result, Store=state, Registry=lookup, Adapter=boundary translation.
-13. Avoid new `Helper`, `Utils`, generic `Manager`, or second composition roots.
-14. Keep `CODEMAP.md` current and compact.
-
-## Before deleting or merging a type
-
-Check C# references, Unity serialized GUID references, reflection/string lookup, Zenject bindings,
-save/version compatibility, asmdef references, EditMode tests, and supported runtime smoke paths.
-
-## Typical verification
-
-Run focused EditMode tests for the changed feature, then the full EditMode suite for architecture work.
-For startup changes smoke-test both direct Gameplay and menu Gameplay.
-For BotAI changes verify Human → Bot → Human turn handoff and no new Console errors.
+If two files explain the same architecture, consolidate them.
+If generated information can be derived from source, generate it on demand instead of tracking a snapshot.
