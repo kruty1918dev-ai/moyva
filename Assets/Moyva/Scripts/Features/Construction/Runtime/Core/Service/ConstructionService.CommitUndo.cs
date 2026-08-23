@@ -253,7 +253,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                     if (gateReplacementAllowed)
                     {
-                        UnregisterBuildingFootprint(
+                        _footprints.Unregister(
                             replacedOrigin,
                             replacedBuildingId);
                         replacementFootprintRemoved = true;
@@ -264,14 +264,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         && (!gateReplacementAllowed
                             || relocationSource.Value != replacedOrigin))
                     {
-                        UnregisterBuildingFootprint(
+                        _footprints.Unregister(
                             relocationSource.Value,
                             id);
                         relocationFootprintRemoved = true;
                     }
 
                     bool footprintRegistered =
-                        TryRegisterBuildingFootprint(
+                        _footprints.TryRegister(
                             pos,
                             id,
                             placement.Rotation);
@@ -373,7 +373,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     if (!modelCommitted)
                     {
                         if (targetFootprintRegistered)
-                            UnregisterBuildingFootprint(pos, id);
+                            _footprints.Unregister(pos, id);
 
                         if (relocationFootprintRemoved && relocationSource.HasValue)
                             RestoreBuildingFootprintOrLog(relocationSource.Value, id, "relocation");
@@ -660,7 +660,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            position = ResolvePlacedOrigin(position);
+            position = _footprints.ResolveOrigin(position);
             if (!TryResolveCommittedBuildingForOwner(
                     position,
                     _activeOwnerId,

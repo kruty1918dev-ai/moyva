@@ -97,6 +97,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placementRuleEvaluators;
         private readonly ITurnService _turns;
         private readonly ConstructionPlacementEnvironmentRules _placementEnvironmentRules;
+        private readonly ConstructionFootprintStore _footprints;
         private bool _initialized;
         private bool _disposed;
 
@@ -190,6 +191,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     tileSettings,
                     placementRulesProvider,
                     () => VerboseLogs);
+            _footprints =
+                new ConstructionFootprintStore(
+                    objectsMapService,
+                    _placementBuildingRegistry,
+                    gridService,
+                    ResolvePlacedRotation);
         }
 
         private bool CanActiveOwnerAct(out string reason)

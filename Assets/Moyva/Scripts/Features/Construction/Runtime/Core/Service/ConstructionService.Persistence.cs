@@ -85,7 +85,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (string.IsNullOrWhiteSpace(buildingId))
                 return;
 
-            if (!TryRegisterBuildingFootprint(
+            if (!_footprints.TryRegister(
                     position,
                     buildingId,
                     rotation))
@@ -291,7 +291,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         return false;
                     }
 
-                    UnregisterBuildingFootprint(replacedOrigin, replacedBuildingId);
+                    _footprints.Unregister(replacedOrigin, replacedBuildingId);
                     replacementRemoved = true;
                 }
 
@@ -299,13 +299,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     && (!replacementRemoved
                         || replacedOrigin != relocationSource.Value))
                 {
-                    UnregisterBuildingFootprint(
+                    _footprints.Unregister(
                         relocationSource.Value,
                         buildingId);
                     relocationRemoved = true;
                 }
 
-                if (!TryRegisterBuildingFootprint(
+                if (!_footprints.TryRegister(
                         position,
                         buildingId,
                         intent.Rotation))
@@ -338,7 +338,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (!modelCommitted)
                 {
                     if (targetRegistered)
-                        UnregisterBuildingFootprint(position, buildingId);
+                        _footprints.Unregister(position, buildingId);
                     if (relocationRemoved)
                     {
                         RestoreBuildingFootprintOrLog(
@@ -472,7 +472,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         out replacedOrigin,
                         out replacedBuildingId))
                 {
-                    UnregisterBuildingFootprint(
+                    _footprints.Unregister(
                         replacedOrigin,
                         replacedBuildingId);
                     replacementRemoved = true;
@@ -482,13 +482,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     && (!replacementRemoved
                         || replacedOrigin != relocationSource.Value))
                 {
-                    UnregisterBuildingFootprint(
+                    _footprints.Unregister(
                         relocationSource.Value,
                         buildingId);
                     relocationRemoved = true;
                 }
 
-                if (!TryRegisterBuildingFootprint(
+                if (!_footprints.TryRegister(
                         position,
                         buildingId,
                         intent.Rotation))
@@ -510,7 +510,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (!modelCommitted)
                 {
                     if (targetRegistered)
-                        UnregisterBuildingFootprint(position, buildingId);
+                        _footprints.Unregister(position, buildingId);
                     if (relocationRemoved)
                     {
                         RestoreBuildingFootprintOrLog(
@@ -639,7 +639,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Vector2Int position,
             string cause = null)
         {
-            Vector2Int origin = ResolvePlacedOrigin(position);
+            Vector2Int origin = _footprints.ResolveOrigin(position);
 
             string buildingId = null;
             string ownerId = null;
@@ -663,7 +663,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (string.IsNullOrWhiteSpace(buildingId))
                 return false;
 
-            UnregisterBuildingFootprint(
+            _footprints.Unregister(
                 origin,
                 buildingId);
             RemovePlacedRecordAt(origin);

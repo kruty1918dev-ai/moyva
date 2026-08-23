@@ -1225,7 +1225,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             out string buildingId,
             out string reason)
         {
-            origin = ResolvePlacedOrigin(position);
+            origin = _footprints.ResolveOrigin(position);
             buildingId = null;
             string normalizedOwner = ownerId?.Trim();
             if (string.IsNullOrWhiteSpace(normalizedOwner))
@@ -1309,7 +1309,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             string normalizedOwner = ownerId.Trim();
-            UnregisterBuildingFootprint(origin, buildingId);
+            _footprints.Unregister(origin, buildingId);
             RemovePlacedRecordAt(origin);
             InvalidatePlacementAvailabilityCache();
             _fogOfWarService?.UnregisterUnit(
