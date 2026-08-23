@@ -5,8 +5,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class WallHandleController : IWallHandleController
-    {
+    internal sealed class WallHandleController {
         private readonly SignalBus _signalBus;
         private readonly IConstructionWallSettingsProvider _wallSettingsProvider;
         private Vector2Int? _dragStartPosition;

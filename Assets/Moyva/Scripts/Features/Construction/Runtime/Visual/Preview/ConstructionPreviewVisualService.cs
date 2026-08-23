@@ -8,8 +8,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionPreviewVisualService : IConstructionPreviewVisualService
-    {
+    internal sealed class ConstructionPreviewVisualService {
         private const float PreviewMoveSharpness = 18f;
         private const float PreviewDragSharpness = 28f;
         private const float PreviewSnapSharpness = 14f;
@@ -32,11 +31,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly HashSet<int> _loggedPoolReusePrefabIds = new();
         private readonly List<GameObject> _gridHoverHighlights = new();
         private readonly List<MeshRenderer> _gridHoverRenderers = new();
-        private readonly IConstructionVisualRootService _roots;
-        private readonly IConstructionVisualFactory _visualFactory;
-        private readonly IConstructionVisualStyleService _styleService;
+        private readonly ConstructionVisualRootService _roots;
+        private readonly ConstructionVisualFactory _visualFactory;
+        private readonly ConstructionVisualStyleService _styleService;
         private readonly IWallVisualResolver _wallVisualResolver;
-        private readonly IConstructionTerrainAlignmentService _terrainAlignment;
+        private readonly ConstructionTerrainAlignmentService _terrainAlignment;
         private readonly IConstructionGridGeometryService _gridGeometry;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
         private GameObject _snapHighlight;
@@ -50,11 +49,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         [Inject]
         public ConstructionPreviewVisualService(
-            IConstructionVisualRootService roots,
-            IConstructionVisualFactory visualFactory,
-            IConstructionVisualStyleService styleService,
+            ConstructionVisualRootService roots,
+            ConstructionVisualFactory visualFactory,
+            ConstructionVisualStyleService styleService,
             IWallVisualResolver wallVisualResolver,
-            [InjectOptional] IConstructionTerrainAlignmentService terrainAlignment = null,
+            [InjectOptional] ConstructionTerrainAlignmentService terrainAlignment = null,
             [InjectOptional] IConstructionGridGeometryService gridGeometry = null,
             [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)
         {

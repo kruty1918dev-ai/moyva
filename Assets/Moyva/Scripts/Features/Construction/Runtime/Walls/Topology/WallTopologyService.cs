@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly LazyInject<IConstructionService> _constructionService;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IObjectsMapService _objectsMapService;
-        private readonly IConstructionPlacedVisualService _placedVisuals;
+        private readonly ConstructionPlacedVisualService _placedVisuals;
         private readonly SignalBus _signalBus;
         private readonly Dictionary<Vector2Int, bool>
             _gateOpenState = new();
@@ -33,7 +33,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IObjectsMapService objectsMapService,
             SignalBus signalBus,
             [InjectOptional]
-            IConstructionPlacedVisualService placedVisuals = null)
+            ConstructionPlacedVisualService placedVisuals = null)
         {
             _constructionService = constructionService;
             _buildingRegistry = buildingRegistry;

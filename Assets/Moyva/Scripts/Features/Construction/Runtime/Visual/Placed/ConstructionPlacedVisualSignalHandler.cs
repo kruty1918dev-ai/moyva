@@ -5,19 +5,18 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionPlacedVisualSignalHandler : IConstructionPlacedVisualSignalHandler
-    {
+    internal sealed class ConstructionPlacedVisualSignalHandler {
         private const string PerfLogTag =
             "[MoyvaConstructionPerf]";
         private const double SignalHandlerLogThresholdMs = 0.5d;
         private const double SignalHandlerWarnThresholdMs = 4d;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IWallTopologyService _wallTopologyService;
-        private readonly IConstructionPreviewVisualService _previewVisuals;
-        private readonly IConstructionPlacedVisualService _placedVisuals;
-        private readonly IConstructionWallVisualRefreshService _wallVisuals;
-        private readonly IConstructionInfluenceRadiusVisualService _radiusVisuals;
-        private readonly IConstructionBuildGridOverlayService _buildGridOverlay;
+        private readonly ConstructionPreviewVisualService _previewVisuals;
+        private readonly ConstructionPlacedVisualService _placedVisuals;
+        private readonly ConstructionWallVisualRefreshService _wallVisuals;
+        private readonly ConstructionInfluenceRadiusVisualService _radiusVisuals;
+        private readonly ConstructionBuildGridOverlayService _buildGridOverlay;
         private readonly IConstructionLifecycle _constructionLifecycle;
         private readonly int _townHallBuildRadius;
 
@@ -25,11 +24,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public ConstructionPlacedVisualSignalHandler(
             IBuildingRegistry buildingRegistry,
             IWallTopologyService wallTopologyService,
-            IConstructionPreviewVisualService previewVisuals,
-            IConstructionPlacedVisualService placedVisuals,
-            IConstructionWallVisualRefreshService wallVisuals,
-            IConstructionInfluenceRadiusVisualService radiusVisuals,
-            IConstructionBuildGridOverlayService buildGridOverlay,
+            ConstructionPreviewVisualService previewVisuals,
+            ConstructionPlacedVisualService placedVisuals,
+            ConstructionWallVisualRefreshService wallVisuals,
+            ConstructionInfluenceRadiusVisualService radiusVisuals,
+            ConstructionBuildGridOverlayService buildGridOverlay,
             [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius,
             [InjectOptional] IConstructionLifecycle constructionLifecycle = null)
         {

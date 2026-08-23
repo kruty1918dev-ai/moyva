@@ -4,21 +4,20 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class WallDragPreviewService : IWallDragPreviewService
-    {
+    internal sealed class WallDragPreviewService {
         private readonly LazyInject<IConstructionService> _constructionService;
         private readonly IWallPathfinder _wallPathfinder;
         private readonly IScreenToGridConverter _screenToGridConverter;
-        private readonly IWallHandleController _wallHandleController;
-        private readonly IConstructionBuildGridTileFilter _buildGridTileFilter;
+        private readonly WallHandleController _wallHandleController;
+        private readonly ConstructionBuildGridTileFilter _buildGridTileFilter;
 
         [Inject]
         public WallDragPreviewService(
             LazyInject<IConstructionService> constructionService,
             IWallPathfinder wallPathfinder,
             IScreenToGridConverter screenToGridConverter,
-            IWallHandleController wallHandleController,
-            [InjectOptional] IConstructionBuildGridTileFilter buildGridTileFilter = null)
+            WallHandleController wallHandleController,
+            [InjectOptional] ConstructionBuildGridTileFilter buildGridTileFilter = null)
         {
             _constructionService = constructionService;
             _wallPathfinder = wallPathfinder;

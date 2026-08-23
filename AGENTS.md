@@ -31,6 +31,19 @@ Read only the smallest relevant slice:
 
 Do not recursively read the whole repository unless the task genuinely requires it.
 
+### Default context exclusions
+
+Unless the task explicitly concerns them, do not read:
+
+- `**/Development/**`
+- `**/Editor/**`
+- `**/Tests/**` before the production path is identified
+- historical migration reports or archived documentation
+- generated site output
+- backup/audit artifacts
+
+Search production `API/`, composition, and `Runtime/` first. Expand to excluded paths only when a reference or failing test requires it.
+
 ## Architecture rules
 
 - SOLID, DRY, KISS, YAGNI.

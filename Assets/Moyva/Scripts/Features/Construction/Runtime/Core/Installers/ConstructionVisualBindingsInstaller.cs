@@ -7,32 +7,32 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public static void Install(DiContainer container)
         {
             container.Bind<BuildModeGridStateController>().AsSingle();
-            container.Bind<IConstructionVisualStyleService>().To<ConstructionVisualStyleService>().AsSingle();
+            container.Bind<ConstructionVisualStyleService>().To<ConstructionVisualStyleService>().AsSingle();
             container.BindInterfacesTo<ConstructionGridGeometryService>().AsSingle();
-            container.Bind<IConstructionTileSurfaceOffsetService>().To<ConstructionTileSurfaceOffsetService>().AsSingle();
-            container.Bind<IConstructionVisualBoundsAlignmentService>().To<ConstructionVisualBoundsAlignmentService>().AsSingle();
-            container.Bind<IConstructionTerrainAlignmentService>().To<ConstructionTerrainAlignmentService>().AsSingle();
-            container.Bind<IConstructionVisualFactory>().To<ConstructionVisualFactory>().AsSingle();
-            container.Bind<IConstructionVisualRootService>().To<ConstructionVisualRootService>().AsSingle();
-            container.Bind<IConstructionPreviewVisualService>().To<ConstructionPreviewVisualService>().AsSingle();
-            container.Bind<IConstructionPlacedVisualService>().To<ConstructionPlacedVisualService>().AsSingle();
+            container.Bind<ConstructionTileSurfaceOffsetService>().To<ConstructionTileSurfaceOffsetService>().AsSingle();
+            container.Bind<ConstructionVisualBoundsAlignmentService>().To<ConstructionVisualBoundsAlignmentService>().AsSingle();
+            container.Bind<ConstructionTerrainAlignmentService>().To<ConstructionTerrainAlignmentService>().AsSingle();
+            container.Bind<ConstructionVisualFactory>().To<ConstructionVisualFactory>().AsSingle();
+            container.Bind<ConstructionVisualRootService>().To<ConstructionVisualRootService>().AsSingle();
+            container.Bind<ConstructionPreviewVisualService>().To<ConstructionPreviewVisualService>().AsSingle();
+            container.Bind<ConstructionPlacedVisualService>().To<ConstructionPlacedVisualService>().AsSingle();
             container.Bind<IConstructionPlacedVisualLookup>()
-                .FromResolveGetter<IConstructionPlacedVisualService>(service => (IConstructionPlacedVisualLookup)service)
+                .FromResolveGetter<ConstructionPlacedVisualService>(service => (IConstructionPlacedVisualLookup)service)
                 .AsCached();
-            container.Bind<IConstructionWallVisualRefreshService>().To<ConstructionWallVisualRefreshService>().AsSingle();
-            container.Bind<IConstructionPreviewVisualSignalHandler>().To<ConstructionPreviewVisualSignalHandler>().AsSingle();
-            container.Bind<IConstructionPlacedVisualSignalHandler>().To<ConstructionPlacedVisualSignalHandler>().AsSingle();
-            container.Bind<IConstructionInfluenceMeshOverlayRenderer>().To<ConstructionInfluenceMeshOverlayRenderer>().AsSingle();
-            container.Bind<IConstructionRadiusVisualObjectFactory>().To<ConstructionRadiusVisualObjectFactory>().AsSingle();
-            container.Bind<IConstructionInfluenceRadiusVisualService>().To<ConstructionInfluenceRadiusVisualService>().AsSingle();
-            container.Bind<IConstructionBuildGridTileFilter>().To<ConstructionBuildGridTileFilter>().AsSingle();
-            container.Bind<IConstructionBuildGridTileCollector>().To<ConstructionBuildGridTileCollector>().AsSingle();
-            container.Bind<IConstructionBuildGridDiagnostics>().To<ConstructionBuildGridDiagnostics>().AsSingle();
-            container.Bind<IConstructionBuildGridOverlayRenderer>().To<ConstructionBuildGridOverlayRenderer>().AsSingle();
-            container.Bind<IConstructionBuildGridChunkSurfaceBuilder>().To<ConstructionBuildGridChunkSurfaceBuilder>().AsSingle();
-            container.Bind<IConstructionBuildGridChunkSurfaceService>().To<ConstructionBuildGridChunkSurfaceService>().AsSingle();
+            container.Bind<ConstructionWallVisualRefreshService>().To<ConstructionWallVisualRefreshService>().AsSingle();
+            container.Bind<ConstructionPreviewVisualSignalHandler>().To<ConstructionPreviewVisualSignalHandler>().AsSingle();
+            container.Bind<ConstructionPlacedVisualSignalHandler>().To<ConstructionPlacedVisualSignalHandler>().AsSingle();
+            container.Bind<ConstructionInfluenceMeshOverlayRenderer>().To<ConstructionInfluenceMeshOverlayRenderer>().AsSingle();
+            container.Bind<ConstructionRadiusVisualObjectFactory>().To<ConstructionRadiusVisualObjectFactory>().AsSingle();
+            container.Bind<ConstructionInfluenceRadiusVisualService>().To<ConstructionInfluenceRadiusVisualService>().AsSingle();
+            container.Bind<ConstructionBuildGridTileFilter>().To<ConstructionBuildGridTileFilter>().AsSingle();
+            container.Bind<ConstructionBuildGridTileCollector>().To<ConstructionBuildGridTileCollector>().AsSingle();
+            container.Bind<ConstructionBuildGridDiagnostics>().To<ConstructionBuildGridDiagnostics>().AsSingle();
+            container.Bind<ConstructionBuildGridOverlayRenderer>().To<ConstructionBuildGridOverlayRenderer>().AsSingle();
+            container.Bind<ConstructionBuildGridChunkSurfaceBuilder>().To<ConstructionBuildGridChunkSurfaceBuilder>().AsSingle();
+            container.Bind<ConstructionBuildGridChunkSurfaceService>().To<ConstructionBuildGridChunkSurfaceService>().AsSingle();
             container.BindInterfacesAndSelfTo<ConstructionBuildGridOverlayService>().AsSingle();
-            container.Bind<IConstructionBlockedFlashService>().To<ConstructionBlockedFlashService>().AsSingle();
+            container.Bind<ConstructionBlockedFlashService>().To<ConstructionBlockedFlashService>().AsSingle();
         }
     }
 }

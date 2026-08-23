@@ -6,13 +6,12 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionBuildGridTileCollector : IConstructionBuildGridTileCollector
-    {
+    internal sealed class ConstructionBuildGridTileCollector {
         private const float MinSurfaceOffsetY = 0.001f;
         private const float MaxSurfaceOffsetY = 0.5f;
 
         private readonly IGridService _gridService;
-        private readonly IConstructionTerrainAlignmentService _terrainAlignment;
+        private readonly ConstructionTerrainAlignmentService _terrainAlignment;
         private readonly IConstructionGridGeometryService _gridGeometry;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
         private readonly Mesh _quadMesh = ConstructionQuadMeshFactory.Create("ConstructionBuildGridQuad");
@@ -20,7 +19,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         [Inject]
         public ConstructionBuildGridTileCollector(
             IGridService gridService,
-            IConstructionTerrainAlignmentService terrainAlignment,
+            ConstructionTerrainAlignmentService terrainAlignment,
             [InjectOptional] IConstructionGridGeometryService gridGeometry = null,
             [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)
         {

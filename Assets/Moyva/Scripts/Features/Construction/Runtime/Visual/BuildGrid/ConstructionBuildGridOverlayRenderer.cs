@@ -5,8 +5,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionBuildGridOverlayRenderer : IConstructionBuildGridOverlayRenderer
-    {
+    internal sealed class ConstructionBuildGridOverlayRenderer {
         private const int BuildGridRenderQueue = 3990;
         private static readonly int EdgeMaskPropertyId = Shader.PropertyToID("_EdgeMask");
         private static readonly int LineColorPropertyId = Shader.PropertyToID("_LineColor");
@@ -121,7 +120,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _overlayGo.SetActive(visible);
         }
 
-        public void Draw(List<ConstructionBuildGridOverlayEntry> entries, IConstructionBuildGridDiagnostics diagnostics)
+        public void Draw(List<ConstructionBuildGridOverlayEntry> entries, ConstructionBuildGridDiagnostics diagnostics)
         {
             if (_material == null || entries.Count == 0)
                 return;

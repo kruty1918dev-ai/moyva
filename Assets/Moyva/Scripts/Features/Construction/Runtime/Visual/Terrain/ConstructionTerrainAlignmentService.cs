@@ -7,16 +7,15 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionTerrainAlignmentService : IConstructionTerrainAlignmentService
-    {
+    internal sealed class ConstructionTerrainAlignmentService {
         private const float BuildingSurfaceOffsetY = 0.5f;
         private const float PreviewSurfaceOffsetY = 0.7f;
 
         private readonly IGridService _gridService;
         private readonly IGridProjection _gridProjection;
         private readonly IConstructionGridGeometryService _gridGeometry;
-        private readonly IConstructionTileSurfaceOffsetService _tileSurfaceOffsets;
-        private readonly IConstructionVisualBoundsAlignmentService _boundsAlignment;
+        private readonly ConstructionTileSurfaceOffsetService _tileSurfaceOffsets;
+        private readonly ConstructionVisualBoundsAlignmentService _boundsAlignment;
         private readonly IGeneratedTerrainLevelQuery _generatedTerrainLevelQuery;
         private readonly ConditionalWeakTable<GameObject, CachedVisualMetrics> _visualMetrics = new();
         private readonly float _buildingSurfaceOffsetY;
@@ -27,8 +26,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IGridService gridService,
             [InjectOptional] IGridProjection gridProjection = null,
             [InjectOptional] IConstructionGridGeometryService gridGeometry = null,
-            [InjectOptional] IConstructionTileSurfaceOffsetService tileSurfaceOffsets = null,
-            [InjectOptional] IConstructionVisualBoundsAlignmentService boundsAlignment = null,
+            [InjectOptional] ConstructionTileSurfaceOffsetService tileSurfaceOffsets = null,
+            [InjectOptional] ConstructionVisualBoundsAlignmentService boundsAlignment = null,
             [InjectOptional] IGeneratedTerrainLevelQuery generatedTerrainLevelQuery = null,
             [InjectOptional] IConstructionVisualSettingsProvider visualSettingsProvider = null)
         {

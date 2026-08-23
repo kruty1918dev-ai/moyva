@@ -8,8 +8,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionPlacedVisualService : IConstructionPlacedVisualService
-    {
+    internal sealed class ConstructionPlacedVisualService {
         private const float PlacedSnapSharpness = 12f;
 
         private readonly Dictionary<Vector2Int, GameObject> _placedByPosition = new();
@@ -19,20 +18,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly HashSet<Vector2Int> _demolitionPreviewPositions = new();
         private readonly HashSet<Vector2Int> _underConstructionPositions = new();
         private readonly SpriteSelectionHighlighter _selectionHighlighter = new();
-        private readonly IConstructionVisualRootService _roots;
-        private readonly IConstructionVisualFactory _visualFactory;
-        private readonly IConstructionVisualStyleService _styleService;
-        private readonly IConstructionTerrainAlignmentService _terrainAlignment;
+        private readonly ConstructionVisualRootService _roots;
+        private readonly ConstructionVisualFactory _visualFactory;
+        private readonly ConstructionVisualStyleService _styleService;
+        private readonly ConstructionTerrainAlignmentService _terrainAlignment;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
 
         private Vector2Int? _selectedPosition;
 
         [Inject]
         public ConstructionPlacedVisualService(
-            IConstructionVisualRootService roots,
-            IConstructionVisualFactory visualFactory,
-            IConstructionVisualStyleService styleService,
-            [InjectOptional] IConstructionTerrainAlignmentService terrainAlignment = null,
+            ConstructionVisualRootService roots,
+            ConstructionVisualFactory visualFactory,
+            ConstructionVisualStyleService styleService,
+            [InjectOptional] ConstructionTerrainAlignmentService terrainAlignment = null,
             [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)
         {
             _roots = roots;

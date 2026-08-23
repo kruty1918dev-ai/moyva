@@ -10,8 +10,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     /// Maps the explicit grid mode and the authoritative placement query to a visual
     /// state. It does not implement any gameplay placement rules itself.
     /// </summary>
-    internal sealed class ConstructionBuildGridTileFilter : IConstructionBuildGridTileFilter
-    {
+    internal sealed class ConstructionBuildGridTileFilter {
         private readonly IGridService _gridService;
         private readonly IConstructionPlacementQuery _placementQuery;
         private readonly BuildModeGridStateController _stateController;

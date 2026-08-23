@@ -4,8 +4,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionVisualRootService : IConstructionVisualRootService
-    {
+    internal sealed class ConstructionVisualRootService {
         private readonly IConstructionSceneSettingsProvider _sceneSettingsProvider;
         private readonly IConstructionVisualSettingsProvider _visualSettingsProvider;
 

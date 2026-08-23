@@ -6,16 +6,15 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionRadiusVisualObjectFactory : IConstructionRadiusVisualObjectFactory
-    {
-        private readonly IConstructionVisualRootService _roots;
+    internal sealed class ConstructionRadiusVisualObjectFactory {
+        private readonly ConstructionVisualRootService _roots;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
         private readonly IGridService _gridService;
         private readonly IGridProjection _gridProjection;
 
         [Inject]
         public ConstructionRadiusVisualObjectFactory(
-            IConstructionVisualRootService roots,
+            ConstructionVisualRootService roots,
             IGridService gridService,
             [InjectOptional] IGridProjection gridProjection = null,
             [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)

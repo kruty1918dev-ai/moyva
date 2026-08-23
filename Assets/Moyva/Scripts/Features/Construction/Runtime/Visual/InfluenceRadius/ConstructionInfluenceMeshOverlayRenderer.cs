@@ -2,8 +2,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionInfluenceMeshOverlayRenderer : IConstructionInfluenceMeshOverlayRenderer
-    {
+    internal sealed class ConstructionInfluenceMeshOverlayRenderer {
         public void Show(ConstructionInfluenceRadiusOverlayState state, ConstructionInfluenceRadiusOverlayRequest request)
         {
             if (state == null || request.Material == null)

@@ -5,8 +5,7 @@ using UnityEngine.Rendering;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionVisualStyleService : IConstructionVisualStyleService
-    {
+    internal sealed class ConstructionVisualStyleService {
         private readonly float _ghostAlpha;
         private readonly ConditionalWeakTable<GameObject, VisualComponentCache>
             _componentCache = new();

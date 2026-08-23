@@ -5,14 +5,13 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionWallVisualRefreshService : IConstructionWallVisualRefreshService
-    {
+    internal sealed class ConstructionWallVisualRefreshService {
         private readonly IObjectsMapService _objectsMapService;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly LazyInject<IConstructionService> _constructionService;
         private readonly IWallVisualResolver _wallVisualResolver;
-        private readonly IConstructionPlacedVisualService _placedVisuals;
-        private readonly IConstructionPreviewVisualService _previewVisuals;
+        private readonly ConstructionPlacedVisualService _placedVisuals;
+        private readonly ConstructionPreviewVisualService _previewVisuals;
         private readonly IConstructionLifecycle _constructionLifecycle;
 
         [Inject]
@@ -21,8 +20,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IBuildingRegistry buildingRegistry,
             LazyInject<IConstructionService> constructionService,
             IWallVisualResolver wallVisualResolver,
-            IConstructionPlacedVisualService placedVisuals,
-            IConstructionPreviewVisualService previewVisuals,
+            ConstructionPlacedVisualService placedVisuals,
+            ConstructionPreviewVisualService previewVisuals,
             [InjectOptional] IConstructionLifecycle constructionLifecycle = null)
         {
             _objectsMapService = objectsMapService;

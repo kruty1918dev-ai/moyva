@@ -6,8 +6,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionTileSurfaceOffsetService : IConstructionTileSurfaceOffsetService
-    {
+    internal sealed class ConstructionTileSurfaceOffsetService {
         private readonly Dictionary<string, float> _offsetYByTileId = new();
         private readonly TileRegistrySO _tileRegistry;
 

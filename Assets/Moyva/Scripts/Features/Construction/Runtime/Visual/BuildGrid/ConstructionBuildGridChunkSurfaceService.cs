@@ -10,8 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionBuildGridChunkSurfaceService : IConstructionBuildGridChunkSurfaceService
-    {
+    internal sealed class ConstructionBuildGridChunkSurfaceService {
         private const int BuildGridRenderQueue = 3990;
         private const string PlaneName = "ConstructionBuildGridChunkSurface";
         private const string OverlaysRootName = "Overlays";
@@ -38,11 +37,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IMapChunkLayoutService _chunkLayout;
         private readonly IMapVisualChunkRootService _chunkRoots;
         private readonly IMapVisualChunkRegistry _chunkRegistry;
-        private readonly IConstructionBuildGridChunkSurfaceBuilder _builder;
-        private readonly IConstructionBuildGridTileFilter _tileFilter;
+        private readonly ConstructionBuildGridChunkSurfaceBuilder _builder;
+        private readonly ConstructionBuildGridTileFilter _tileFilter;
         private readonly IConstructionGridGeometryService _gridGeometry;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
-        private readonly IConstructionBuildGridDiagnostics _diagnostics;
+        private readonly ConstructionBuildGridDiagnostics _diagnostics;
         private readonly IFogStateReader _fogStateReader;
         private readonly Dictionary<MapChunkCoord, ConstructionBuildGridChunkSurfaceHandle> _handles = new();
         private readonly Dictionary<MapChunkCoord, bool> _chunkFogVisibilityCache = new();
@@ -74,12 +73,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public ConstructionBuildGridChunkSurfaceService(
             IMapChunkLayoutService chunkLayout,
             IMapVisualChunkRootService chunkRoots,
-            IConstructionBuildGridChunkSurfaceBuilder builder,
-            IConstructionBuildGridTileFilter tileFilter,
+            ConstructionBuildGridChunkSurfaceBuilder builder,
+            ConstructionBuildGridTileFilter tileFilter,
             [InjectOptional] IMapVisualChunkRegistry chunkRegistry = null,
             [InjectOptional] IConstructionGridGeometryService gridGeometry = null,
             [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null,
-            [InjectOptional] IConstructionBuildGridDiagnostics diagnostics = null,
+            [InjectOptional] ConstructionBuildGridDiagnostics diagnostics = null,
             [InjectOptional] IFogStateReader fogStateReader = null)
         {
             _chunkLayout = chunkLayout;

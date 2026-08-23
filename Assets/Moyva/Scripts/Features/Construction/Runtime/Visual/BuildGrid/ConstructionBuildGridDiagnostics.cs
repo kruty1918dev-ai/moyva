@@ -4,8 +4,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionBuildGridDiagnostics : IConstructionBuildGridDiagnostics
-    {
+    internal sealed class ConstructionBuildGridDiagnostics {
         private const string Tag = "[MoyvaBuildGridDiag]";
         private readonly IConstructionDiagnosticsSettingsProvider _settingsProvider;
 

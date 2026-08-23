@@ -28,7 +28,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IConstructionService _constructionService;
         private readonly IWallTopologyService _wallTopologyService;
         private readonly IWallPathfinder _wallPathfinder;
-        private readonly IWallHandleController _wallHandleController;
+        private readonly WallHandleController _wallHandleController;
         private readonly IObjectsMapService _objectsMapService;
         private readonly IScreenToGridConverter _screenToGrid;
         private readonly IConstructionPointerInputSource _pointerInputSource;
@@ -36,10 +36,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IConstructionDiagnosticsSettingsProvider _diagnosticsSettingsProvider;
         private readonly IGridService _gridService;
         private readonly IConstructionGridGeometryService _gridGeometry;
-        private readonly IConstructionTerrainAlignmentService _terrainAlignment;
+        private readonly ConstructionTerrainAlignmentService _terrainAlignment;
         private readonly IConstructionPlacementQuery _placementQuery;
         private readonly BuildModeGridStateController _buildGridState;
-        private readonly IConstructionBuildGridDiagnostics _buildGridDiagnostics;
+        private readonly ConstructionBuildGridDiagnostics _buildGridDiagnostics;
         private readonly IConstructionInteractiveUiHitTester _uiHitTester;
         private readonly IGameplayInputPolicy _inputPolicy;
         private readonly IUiContextStack _uiContexts;
@@ -87,7 +87,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IConstructionService constructionService,
             IWallTopologyService wallTopologyService,
             IWallPathfinder wallPathfinder,
-            IWallHandleController wallHandleController,
+            WallHandleController wallHandleController,
             IObjectsMapService objectsMapService,
             IScreenToGridConverter screenToGrid,
             IConstructionPointerInputSource pointerInputSource,
@@ -97,12 +97,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] IConstructionGridGeometryService gridGeometry,
             IConstructionPlacementQuery placementQuery,
             BuildModeGridStateController buildGridState,
-            IConstructionBuildGridDiagnostics buildGridDiagnostics,
+            ConstructionBuildGridDiagnostics buildGridDiagnostics,
             [InjectOptional] IConstructionInteractiveUiHitTester uiHitTester,
             [InjectOptional] IGameplayInputPolicy inputPolicy,
             [InjectOptional] IUiContextStack uiContexts,
             SignalBus signalBus,
-            [InjectOptional] IConstructionTerrainAlignmentService terrainAlignment = null)
+            [InjectOptional] ConstructionTerrainAlignmentService terrainAlignment = null)
         {
             _constructionService = constructionService;
             _wallTopologyService = wallTopologyService;
@@ -913,5 +913,93 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
 
+
+        #region Consolidated input helpers
+
+        // From ConstructionInputService.Pointer.cs
+        private ConstructionPointerSnapshot ReadPointerSnapshot() => _pointerInputSource.ReadPointerSnapshot();
+            
+
+        // From ConstructionInputService.UI.cs
+        private bool IsPointerOverInteractiveUI(Vector2 screenPosition, int pointerId)
+        {
+            if (!_blockInteractiveUi || _uiHitTester == null)
+                return false;
+
+            return _allowClicksThroughNonInteractiveUi
+                ? _uiHitTester.IsPointerOverInteractiveUI(screenPosition, pointerId)
+                : _uiHitTester.IsPointerOverAnyUI(screenPosition, pointerId);
+        }
+            
+
+        // From ConstructionInputService.State.cs
+        private void CancelActivePointerDrags()
+        {
+            _isDraggingPendingPlacement = false;
+            ClearPendingPlacementSnapTarget();
+            ClearTouchPendingDragCandidate();
+
+            if (_isDraggingWallPath)
+            {
+                _wallHandleController.EndDrag();
+                _wallDragPendingPositions.Clear();
+            }
+
+            _isDraggingWallPath = false;
+        }
+
+        private void CancelActiveDrags()
+        {
+            CancelActivePointerDrags();
+            ClearTouchPlacementState();
+            _touchTapTracker.Reset();
+        }
+
+        private void ClearTouchPlacementState()
+        {
+            ClearTouchPendingDragCandidate();
+            ClearTouchPendingMoveSource();
+            ClearTouchWallAnchor();
+        }
+
+        private void ClearTouchPendingDragCandidate()
+        {
+            _hasTouchPendingDragCandidate = false;
+            _touchPendingDragCandidatePosition = default;
+        }
+
+        private void ClearTouchPendingMoveSource()
+        {
+            _hasTouchPendingMoveSource = false;
+            _touchPendingMoveSourcePosition = default;
+        }
+
+        private void ClearTouchWallAnchor()
+        {
+            if (_hasTouchWallAnchor)
+                _wallHandleController.EndDrag();
+
+            _hasTouchWallAnchor = false;
+            _touchWallAnchorPosition = default;
+
+            if (!_isDraggingWallPath)
+                _wallDragPendingPositions.Clear();
+        }
+
+        private void OnGameModeChanged(GameModeChangedSignal signal)
+        {
+            _isActive = signal.NewMode == GameModeType.Construction;
+            if (!_isActive)
+            {
+                ClearBuildGridHover();
+                CancelActiveDrags();
+            }
+
+            if (VerboseLogs)
+                Debug.Log($"{LogTag} Active changed -> {_isActive}");
+        }
+            
+
+        #endregion
     }
 }

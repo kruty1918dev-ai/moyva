@@ -7,21 +7,21 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class WallPlacementService : IWallPlacementService
     {
-        private readonly IWallDragPreviewService _wallDragPreviewService;
+        private readonly WallDragPreviewService _wallDragPreviewService;
         private readonly IWallPathfinder _wallPathfinder;
         private readonly IWallTopologyService _wallTopologyService;
         private readonly IWallGateReplacementValidator _wallGateReplacementValidator;
         private readonly IWallVisualResolver _wallVisualResolver;
-        private readonly IWallHandleController _wallHandleController;
+        private readonly WallHandleController _wallHandleController;
 
         [Inject]
         public WallPlacementService(
-            IWallDragPreviewService wallDragPreviewService,
+            WallDragPreviewService wallDragPreviewService,
             IWallPathfinder wallPathfinder,
             IWallTopologyService wallTopologyService,
             IWallGateReplacementValidator wallGateReplacementValidator,
             IWallVisualResolver wallVisualResolver,
-            IWallHandleController wallHandleController)
+            WallHandleController wallHandleController)
         {
             _wallDragPreviewService = wallDragPreviewService;
             _wallPathfinder = wallPathfinder;

@@ -4,8 +4,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionBlockedFlashService : IConstructionBlockedFlashService
-    {
+    internal sealed class ConstructionBlockedFlashService {
         private struct FlashRestore
         {
             public GameObject Target;
@@ -13,13 +12,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             public float RestoreAt;
         }
 
-        private readonly IConstructionVisualStyleService _styleService;
+        private readonly ConstructionVisualStyleService _styleService;
         private readonly Dictionary<int, FlashRestore> _flashRestoresByTarget = new();
         private readonly List<int> _keysBuffer = new();
         private readonly float _blockedFlashDuration;
 
         public ConstructionBlockedFlashService(
-            IConstructionVisualStyleService styleService,
+            ConstructionVisualStyleService styleService,
             IConstructionVisualSettingsProvider visualSettingsProvider = null)
         {
             _styleService = styleService;

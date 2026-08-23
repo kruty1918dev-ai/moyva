@@ -11,19 +11,16 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionBuildGridOverlayService :
-        IConstructionBuildGridOverlayService,
-        IGridActionOverlayService
-    {
+    internal sealed class ConstructionBuildGridOverlayService : IGridActionOverlayService {
         private readonly List<ConstructionBuildGridOverlayEntry> _entries = new();
         private readonly List<ConstructionBuildGridOverlayEntry> _actionEntries = new();
         private readonly Dictionary<Vector2Int, GridActionOverlayVisualState> _actionCellStates = new();
-        private readonly IConstructionVisualRootService _roots;
-        private readonly IConstructionBuildGridTileCollector _tileCollector;
-        private readonly IConstructionBuildGridTileFilter _tileFilter;
-        private readonly IConstructionBuildGridDiagnostics _diagnostics;
-        private readonly IConstructionBuildGridOverlayRenderer _renderer;
-        private readonly IConstructionBuildGridChunkSurfaceService _chunkSurfaceService;
+        private readonly ConstructionVisualRootService _roots;
+        private readonly ConstructionBuildGridTileCollector _tileCollector;
+        private readonly ConstructionBuildGridTileFilter _tileFilter;
+        private readonly ConstructionBuildGridDiagnostics _diagnostics;
+        private readonly ConstructionBuildGridOverlayRenderer _renderer;
+        private readonly ConstructionBuildGridChunkSurfaceService _chunkSurfaceService;
         private readonly IGameModeService _gameModeService;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
         private readonly IGridProjection _gridProjection;
@@ -39,13 +36,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         [Inject]
         public ConstructionBuildGridOverlayService(
-            IConstructionVisualRootService roots,
-            IConstructionBuildGridTileCollector tileCollector,
-            IConstructionBuildGridTileFilter tileFilter,
-            IConstructionBuildGridDiagnostics diagnostics,
-            IConstructionBuildGridOverlayRenderer renderer,
+            ConstructionVisualRootService roots,
+            ConstructionBuildGridTileCollector tileCollector,
+            ConstructionBuildGridTileFilter tileFilter,
+            ConstructionBuildGridDiagnostics diagnostics,
+            ConstructionBuildGridOverlayRenderer renderer,
             BuildModeGridStateController stateController,
-            [InjectOptional] IConstructionBuildGridChunkSurfaceService chunkSurfaceService = null,
+            [InjectOptional] ConstructionBuildGridChunkSurfaceService chunkSurfaceService = null,
             [InjectOptional] IGameModeService gameModeService = null,
             [InjectOptional] IGridProjection gridProjection = null,
             [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null,

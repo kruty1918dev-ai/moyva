@@ -144,8 +144,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .To<WallPathfinder>()
                 .AsSingle();
 
-            Container.Bind<IWallDragPreviewService>()
-                .To<WallDragPreviewService>()
+            Container.Bind<WallDragPreviewService>()
                 .AsSingle();
 
             Container.Bind<IWallVisualResolver>()
@@ -156,8 +155,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .To<WallPrefabResolver>()
                 .AsSingle();
 
-            Container.Bind<IWallHandleController>()
-                .To<WallHandleController>()
+            Container.Bind<WallHandleController>()
                 .AsSingle();
 
             Container.Bind<IWallPlacementService>()

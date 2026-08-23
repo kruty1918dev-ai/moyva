@@ -7,16 +7,15 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionPreviewVisualSignalHandler : IConstructionPreviewVisualSignalHandler
-    {
+    internal sealed class ConstructionPreviewVisualSignalHandler {
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly LazyInject<IConstructionService> _constructionService;
         private readonly IWallTopologyService _wallTopologyService;
-        private readonly IConstructionPreviewVisualService _previewVisuals;
-        private readonly IConstructionPlacedVisualService _placedVisuals;
-        private readonly IConstructionWallVisualRefreshService _wallVisuals;
-        private readonly IConstructionInfluenceRadiusVisualService _radiusVisuals;
-        private readonly IConstructionBlockedFlashService _blockedFlashService;
+        private readonly ConstructionPreviewVisualService _previewVisuals;
+        private readonly ConstructionPlacedVisualService _placedVisuals;
+        private readonly ConstructionWallVisualRefreshService _wallVisuals;
+        private readonly ConstructionInfluenceRadiusVisualService _radiusVisuals;
+        private readonly ConstructionBlockedFlashService _blockedFlashService;
         private readonly int _townHallBuildRadius;
 
         [Inject]
@@ -24,11 +23,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IBuildingRegistry buildingRegistry,
             LazyInject<IConstructionService> constructionService,
             IWallTopologyService wallTopologyService,
-            IConstructionPreviewVisualService previewVisuals,
-            IConstructionPlacedVisualService placedVisuals,
-            IConstructionWallVisualRefreshService wallVisuals,
-            IConstructionInfluenceRadiusVisualService radiusVisuals,
-            IConstructionBlockedFlashService blockedFlashService,
+            ConstructionPreviewVisualService previewVisuals,
+            ConstructionPlacedVisualService placedVisuals,
+            ConstructionWallVisualRefreshService wallVisuals,
+            ConstructionInfluenceRadiusVisualService radiusVisuals,
+            ConstructionBlockedFlashService blockedFlashService,
             [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius)
         {
             _buildingRegistry = buildingRegistry;

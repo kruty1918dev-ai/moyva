@@ -9,14 +9,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
     internal sealed class ConstructionVisualService : IInitializable, IDisposable, ITickable
     {
         private readonly SignalBus _signalBus;
-        private readonly IConstructionVisualRootService _rootService;
-        private readonly IConstructionPreviewVisualSignalHandler _previewSignals;
-        private readonly IConstructionPlacedVisualSignalHandler _placedSignals;
-        private readonly IConstructionInfluenceRadiusVisualService _radiusVisuals;
-        private readonly IConstructionBuildGridOverlayService _buildGridOverlay;
-        private readonly IConstructionBlockedFlashService _blockedFlashService;
-        private readonly IConstructionPreviewVisualService _previewVisuals;
-        private readonly IConstructionPlacedVisualService _placedVisuals;
+        private readonly ConstructionVisualRootService _rootService;
+        private readonly ConstructionPreviewVisualSignalHandler _previewSignals;
+        private readonly ConstructionPlacedVisualSignalHandler _placedSignals;
+        private readonly ConstructionInfluenceRadiusVisualService _radiusVisuals;
+        private readonly ConstructionBuildGridOverlayService _buildGridOverlay;
+        private readonly ConstructionBlockedFlashService _blockedFlashService;
+        private readonly ConstructionPreviewVisualService _previewVisuals;
+        private readonly ConstructionPlacedVisualService _placedVisuals;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IConstructionPlacementRulesProvider _placementRules;
         private int _gridInvalidationRadius;
@@ -26,14 +26,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
         [Inject]
         public ConstructionVisualService(
             SignalBus signalBus,
-            IConstructionVisualRootService rootService,
-            IConstructionPreviewVisualSignalHandler previewSignals,
-            IConstructionPlacedVisualSignalHandler placedSignals,
-            IConstructionInfluenceRadiusVisualService radiusVisuals,
-            IConstructionBuildGridOverlayService buildGridOverlay,
-            IConstructionBlockedFlashService blockedFlashService,
-            IConstructionPreviewVisualService previewVisuals,
-            IConstructionPlacedVisualService placedVisuals,
+            ConstructionVisualRootService rootService,
+            ConstructionPreviewVisualSignalHandler previewSignals,
+            ConstructionPlacedVisualSignalHandler placedSignals,
+            ConstructionInfluenceRadiusVisualService radiusVisuals,
+            ConstructionBuildGridOverlayService buildGridOverlay,
+            ConstructionBlockedFlashService blockedFlashService,
+            ConstructionPreviewVisualService previewVisuals,
+            ConstructionPlacedVisualService placedVisuals,
             [InjectOptional] IBuildingRegistry buildingRegistry = null,
             [InjectOptional] IConstructionPlacementRulesProvider placementRules = null)
         {

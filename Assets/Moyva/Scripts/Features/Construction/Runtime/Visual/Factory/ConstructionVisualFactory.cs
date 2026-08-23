@@ -5,16 +5,13 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionVisualFactory :
-        IConstructionVisualFactory,
-        IConstructionVisualInstanceRecycler
-    {
-        private readonly IConstructionVisualStyleService _styleService;
-        private readonly IConstructionTerrainAlignmentService _terrainAlignmentService;
+    internal sealed class ConstructionVisualFactory : IConstructionVisualInstanceRecycler {
+        private readonly ConstructionVisualStyleService _styleService;
+        private readonly ConstructionTerrainAlignmentService _terrainAlignmentService;
 
         public ConstructionVisualFactory(
-            IConstructionVisualStyleService styleService,
-            IConstructionTerrainAlignmentService terrainAlignmentService)
+            ConstructionVisualStyleService styleService,
+            ConstructionTerrainAlignmentService terrainAlignmentService)
         {
             _styleService = styleService;
             _terrainAlignmentService = terrainAlignmentService;
