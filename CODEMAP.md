@@ -226,6 +226,26 @@ npx --yes jscpd@4.0.5 Assets/Moyva/Scripts \
   --min-lines 20 --min-tokens 100 --mode mild
 ```
 
+## Graph and Generator reading map
+
+| Task | Primary files |
+|---|---|
+| graph serialized model / read queries | `GraphSystem/API/GraphAsset.cs` |
+| graph state normalization / layer indexes | `GraphSystem/API/GraphAsset.State.cs` |
+| graph editor mutations / repair | `GraphSystem/API/GraphAsset.Authoring.cs` |
+| sync/async graph execution | `GraphSystem/Runtime/GraphRunner.Execution.cs` |
+| execution planning / participation diagnostics | `GraphSystem/Runtime/GraphRunner.cs` |
+| input/output port contracts | `GraphSystem/Runtime/GraphRunner.Contracts.cs` |
+| generic structural validation | `GraphSystem/Runtime/GraphValidator.cs` |
+| Generator node/TWC semantics | `Generator/Runtime/GeneratorGraphSemanticValidator.cs` |
+| Generator scene composition | `Generator/Runtime/GeneratorInstaller.cs`; `GeneratorBindingGroups.cs` |
+| startup world-build decision | `Generator/Runtime/GeneratorWorldStartupBuilder.cs` |
+| Add node settings / ports | `Generator/Runtime/Nodes/AddNode.cs` |
+| Add map arithmetic | `Generator/Runtime/Nodes/AddNode.Evaluator.cs` |
+
+Large chunk mesh builders are leaf algorithms. Do not open them for graph,
+composition, startup, or validation work.
+
 ## Construction reading map
 
 Do not open every `ConstructionService` partial for a focused task.
