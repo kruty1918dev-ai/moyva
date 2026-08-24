@@ -76,7 +76,10 @@ Do not open every Units runtime service for a focused task.
 | movement command / animation execution | `UnitMovementService.cs` |
 | reachable movement tiles / range cache | `UnitMovementRangeQuery.cs` |
 | traversal cost / terrain / construction passage | `UnitTraversalPolicy.cs` |
-| recruitment queue / training / deployment | `UnitRecruitmentService.cs`, then `UnitRecruitmentQueueStateMachine.cs` only for queue-state behavior |
+| recruitment enqueue / economy / turn progression / signals | `UnitRecruitmentService.cs` |
+| recruitment queue state / persistence identity | `UnitRecruitmentQueueStateMachine.cs` |
+| recruitment building / module / recipe context | `UnitRecruitmentBuildingContextResolver.cs` |
+| ready-unit deployment query / commit | `UnitRecruitmentDeploymentService.cs` |
 | deployment tile validity | `UnitPlacementValidator.cs` |
 | DI / canonical composition | `UnitsInstaller.cs` |
 

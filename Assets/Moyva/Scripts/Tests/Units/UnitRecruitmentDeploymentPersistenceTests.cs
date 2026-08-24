@@ -79,8 +79,8 @@ namespace Kruty1918.Moyva.Tests.Units
         public void SpawnCandidates_AreStableUniqueAndExcludeBuildingCell()
         {
             var center = new Vector2Int(10, 10);
-            List<Vector2Int> first = UnitRecruitmentService.BuildSpawnCandidates(center, 2);
-            List<Vector2Int> second = UnitRecruitmentService.BuildSpawnCandidates(center, 2);
+            List<Vector2Int> first = UnitRecruitmentDeploymentService.BuildSpawnCandidates(center, 2);
+            List<Vector2Int> second = UnitRecruitmentDeploymentService.BuildSpawnCandidates(center, 2);
             CollectionAssert.AreEqual(first, second);
             Assert.AreEqual(24, first.Count);
             Assert.IsFalse(first.Contains(center));
@@ -92,7 +92,7 @@ namespace Kruty1918.Moyva.Tests.Units
         {
             Assert.AreEqual(
                 "recruit_0000000012_warrior",
-                UnitRecruitmentService.BuildRecruitmentUnitId(12, "warrior"));
+                UnitRecruitmentDeploymentService.BuildRecruitmentUnitId(12, "warrior"));
         }
 
         [Test]

@@ -19,19 +19,11 @@ namespace Kruty1918.Moyva.Units.Runtime
         IDisposable
     {
         private readonly UnitRecruitmentQueueStateMachine _queue = new();
-        private readonly IUnitClassConfig _unitClassConfig;
-        private readonly IBuildingRegistry _buildingRegistry;
-        private readonly IConstructionSaveSnapshotSource _constructionSnapshot;
-        private readonly IConstructionLifecycle _constructionLifecycle;
         private readonly IEconomyInfoMediator _economy;
         private readonly ITurnService _turns;
         private readonly SignalBus _signalBus;
-        private readonly IUnitFactory _unitFactory;
-        private readonly IUnitService _unitService;
-        private readonly IUnitOwnershipQuery _ownership;
-        private readonly IGridService _grid;
-        private readonly IObjectsMapService _objectsMap;
-        private readonly IUnitPlacementValidator _placementValidator;
+        private readonly UnitRecruitmentBuildingContextResolver _buildingContext;
+        private readonly UnitRecruitmentDeploymentService _deployment;
 
         [Inject]
         public UnitRecruitmentService(
@@ -49,19 +41,27 @@ namespace Kruty1918.Moyva.Units.Runtime
             [InjectOptional] IObjectsMapService objectsMap = null,
             [InjectOptional] IUnitPlacementValidator placementValidator = null)
         {
-            _unitClassConfig = unitClassConfig;
-            _buildingRegistry = buildingRegistry;
-            _constructionSnapshot = constructionSnapshot;
-            _constructionLifecycle = constructionLifecycle;
             _economy = economy;
             _turns = turns;
             _signalBus = signalBus;
-            _unitFactory = unitFactory;
-            _unitService = unitService;
-            _ownership = ownership;
-            _grid = grid;
-            _objectsMap = objectsMap;
-            _placementValidator = placementValidator;
+
+            _buildingContext =
+                new UnitRecruitmentBuildingContextResolver(
+                    unitClassConfig,
+                    buildingRegistry,
+                    constructionSnapshot,
+                    constructionLifecycle);
+
+            _deployment =
+                new UnitRecruitmentDeploymentService(
+                    _queue,
+                    _buildingContext,
+                    turns,
+                    signalBus,
+                    unitFactory,
+                    unitService,
+                    ownership,
+                    placementValidator);
         }
 
         public int TurnOrder => 30;
@@ -94,46 +94,15 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
             if (!_turns.CanOwnerAct(owner, out reason))
                 return false;
-            if (_constructionSnapshot == null || _buildingRegistry == null || _constructionLifecycle == null)
+            if (!_buildingContext.TryResolveEnqueue(
+                    recruitingBuildingPosition,
+                    owner,
+                    unitType,
+                    out string recruitingBuildingId,
+                    out UnitRecruitmentBuildingModule recruitmentModule,
+                    out UnitRecruitmentRecipeDefinition recipe,
+                    out reason))
             {
-                reason = "Construction recruitment context is unavailable.";
-                return false;
-            }
-
-            if (!TryFindRecruitingPlacement(recruitingBuildingPosition, out ConstructionSavedPlacement placement))
-            {
-                reason = "Recruiting building is not a committed construction placement.";
-                return false;
-            }
-            if (!string.Equals(NormalizeRequiredId(placement.OwnerId), owner, StringComparison.Ordinal))
-            {
-                reason = "Recruiting building belongs to another owner.";
-                return false;
-            }
-            if (!_constructionLifecycle.IsOperational(recruitingBuildingPosition))
-            {
-                reason = "Recruiting building is still under construction.";
-                return false;
-            }
-
-            BuildingDefinition definition = _buildingRegistry.GetById(placement.BuildingId);
-            if (definition == null
-                || !BuildingDefinitionCapabilities.TryGetEnabledModule(
-                    definition,
-                    out UnitRecruitmentBuildingModule recruitmentModule))
-            {
-                reason = "Building has no enabled unit recruitment module.";
-                return false;
-            }
-
-            if (!TryFindRecipe(recruitmentModule, unitType, out UnitRecruitmentRecipeDefinition recipe))
-            {
-                reason = $"Building cannot recruit unit type '{unitType}'.";
-                return false;
-            }
-            if (_unitClassConfig?.GetConfig(unitType) == null)
-            {
-                reason = $"Unit type '{unitType}' is not registered.";
                 return false;
             }
 
@@ -148,7 +117,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             UnitRecruitmentQueueItemSnapshot enqueued = _queue.EnqueueValidated(
                 owner,
                 recruitingBuildingPosition,
-                placement.BuildingId,
+                recruitingBuildingId,
                 unitType,
                 Math.Max(1, recipe.TrainingTurns),
                 Math.Max(1L, _turns.GlobalTurn));
@@ -193,43 +162,10 @@ namespace Kruty1918.Moyva.Units.Runtime
             Vector2Int recruitingBuildingPosition,
             long queueId)
         {
-            string owner = NormalizeRequiredId(ownerId);
-            if (owner == null
-                || queueId < 1
-                || !_queue.TryPeekReady(
-                    owner,
-                    recruitingBuildingPosition,
-                    out UnitRecruitmentQueueItemSnapshot ready)
-                || ready.QueueId != queueId
-                || !TryResolveDeploymentModule(
-                    ready,
-                    out UnitRecruitmentBuildingModule module,
-                    out _))
-            {
-                return Array.Empty<UnitRecruitmentDeploymentTileSnapshot>();
-            }
-
-            List<Vector2Int> candidates = BuildSpawnCandidates(
-                ready.RecruitingBuildingPosition,
-                Math.Max(1, module.SpawnRadius));
-            var result =
-                new UnitRecruitmentDeploymentTileSnapshot[candidates.Count];
-
-            for (int index = 0; index < candidates.Count; index++)
-            {
-                Vector2Int candidate = candidates[index];
-                bool valid = ValidateDeploymentTile(
-                    ready.UnitTypeId,
-                    candidate,
-                    out string reason);
-
-                result[index] = new UnitRecruitmentDeploymentTileSnapshot(
-                    candidate,
-                    valid,
-                    reason);
-            }
-
-            return result;
+            return _deployment.GetDeploymentTiles(
+                ownerId,
+                recruitingBuildingPosition,
+                queueId);
         }
 
         public bool TryDeployReady(
@@ -240,171 +176,13 @@ namespace Kruty1918.Moyva.Units.Runtime
             out string unitId,
             out string reason)
         {
-            unitId = null;
-            reason = null;
-
-            string owner = NormalizeRequiredId(ownerId);
-            if (owner == null)
-            {
-                reason = "Recruitment owner is empty.";
-                return false;
-            }
-
-            if (queueId < 1)
-            {
-                reason = "Recruitment queue id is invalid.";
-                return false;
-            }
-
-            if (_turns == null)
-            {
-                reason = "Turn authority is unavailable for deployment.";
-                return false;
-            }
-
-            if (!_turns.CanOwnerAct(owner, out reason))
-                return false;
-
-            if (!_queue.TryPeekReady(
-                    owner,
-                    recruitingBuildingPosition,
-                    out UnitRecruitmentQueueItemSnapshot ready)
-                || ready.QueueId != queueId)
-            {
-                reason = "Requested recruitment job is not the ready queue head.";
-                return false;
-            }
-
-            if (!TryResolveDeploymentModule(
-                    ready,
-                    out UnitRecruitmentBuildingModule module,
-                    out reason))
-            {
-                return false;
-            }
-
-            if (!IsDeploymentCandidate(
-                    ready.RecruitingBuildingPosition,
-                    Math.Max(1, module.SpawnRadius),
-                    targetPosition))
-            {
-                reason = "Selected tile is outside the recruiting building deployment radius.";
-                return false;
-            }
-
-            if (!ValidateDeploymentTile(
-                    ready.UnitTypeId,
-                    targetPosition,
-                    out reason))
-            {
-                return false;
-            }
-
-            if (_unitFactory == null
-                || _unitService == null
-                || _ownership == null)
-            {
-                reason = "Unit deployment services are unavailable.";
-                return false;
-            }
-
-            string forcedUnitId = BuildRecruitmentUnitId(
-                ready.QueueId,
-                ready.UnitTypeId);
-            string existingType =
-                _unitService.GetUnitTypeId(forcedUnitId);
-
-            if (!string.IsNullOrWhiteSpace(existingType))
-            {
-                string existingOwner = NormalizeRequiredId(
-                    _ownership.GetUnitOwnerId(forcedUnitId));
-
-                if (string.Equals(
-                        existingType,
-                        ready.UnitTypeId,
-                        StringComparison.Ordinal)
-                    && string.Equals(
-                        existingOwner,
-                        ready.OwnerId,
-                        StringComparison.Ordinal))
-                {
-                    unitId = forcedUnitId;
-
-                    if (!_queue.TryTakeReady(
-                            ready.OwnerId,
-                            ready.RecruitingBuildingPosition,
-                            ready.QueueId,
-                            out UnitRecruitmentQueueItemSnapshot recovered))
-                    {
-                        reason =
-                            "Existing deployment was found but the ready queue could not be reconciled.";
-                        return false;
-                    }
-
-                    Vector2Int recoveredPosition = targetPosition;
-                    _unitService.TryGetUnitPosition(
-                        forcedUnitId,
-                        out recoveredPosition);
-
-                    FireDeployed(
-                        recovered,
-                        unitId,
-                        recoveredPosition);
-                    return true;
-                }
-
-                reason =
-                    $"Stable deployment id collision for queue {ready.QueueId}.";
-                return false;
-            }
-
-            try
-            {
-                unitId = _unitFactory.CreateUnitWithId(
-                    forcedUnitId,
-                    ready.UnitTypeId,
-                    targetPosition,
-                    ready.OwnerId);
-
-                if (string.IsNullOrWhiteSpace(unitId))
-                {
-                    reason =
-                        "UnitFactory rejected the selected deployment tile.";
-                    return false;
-                }
-
-                if (!_queue.TryTakeReady(
-                        ready.OwnerId,
-                        ready.RecruitingBuildingPosition,
-                        ready.QueueId,
-                        out UnitRecruitmentQueueItemSnapshot completed))
-                {
-                    reason =
-                        "Unit was created but the ready queue could not be completed.";
-                    Debug.LogError(
-                        $"[UnitRecruitment] Spawned {unitId} but ready queue {ready.QueueId} could not be completed.");
-                    return false;
-                }
-
-                _turns.TryRecordAction(
-                    owner,
-                    "unit-recruit-deploy");
-
-                FireDeployed(
-                    completed,
-                    unitId,
-                    targetPosition);
-
-                return true;
-            }
-            catch (Exception exception)
-            {
-                reason = exception.Message;
-                Debug.LogError(
-                    $"[UnitRecruitment] Manual deployment failed for queue {ready.QueueId}: {exception}");
-                unitId = null;
-                return false;
-            }
+            return _deployment.TryDeployReady(
+                ownerId,
+                recruitingBuildingPosition,
+                queueId,
+                targetPosition,
+                out unitId,
+                out reason);
         }
 
         public IReadOnlyList<UnitRecruitmentQueueItemSnapshot> CaptureState()
@@ -483,34 +261,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         public void OnTurnEnding(TurnContext context) { }
         public void OnRoundCompleted(int completedRound) { }
 
-        private bool ValidateDeploymentTile(
-            string unitTypeId,
-            Vector2Int position,
-            out string reason)
-        {
-            if (_placementValidator == null)
-            {
-                reason = "Unit placement validator is unavailable.";
-                return false;
-            }
 
-            return _placementValidator.CanDeployUnit(
-                unitTypeId,
-                position,
-                out reason);
-        }
-
-        private static bool IsDeploymentCandidate(
-            Vector2Int center,
-            int spawnRadius,
-            Vector2Int target)
-        {
-            int radius = Math.Max(1, spawnRadius);
-            int dx = Math.Abs(target.x - center.x);
-            int dy = Math.Abs(target.y - center.y);
-            int ring = Math.Max(dx, dy);
-            return ring >= 1 && ring <= radius;
-        }
 
         private void FireQueueChanged(
             UnitRecruitmentQueueItemSnapshot item)
@@ -590,32 +341,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
         }
 
-        private void FireDeployed(
-            UnitRecruitmentQueueItemSnapshot item,
-            string unitId,
-            Vector2Int position)
-        {
-            _signalBus?.Fire(new UnitRecruitmentDeployedSignal
-            {
-                OwnerId = item.OwnerId,
-                BuildingPosition = item.RecruitingBuildingPosition,
-                QueueId = item.QueueId,
-                UnitTypeId = item.UnitTypeId,
-                UnitId = unitId,
-                Position = position,
-            });
-
-            _signalBus?.Fire(new UnitRecruitmentQueueChangedSignal
-            {
-                OwnerId = item.OwnerId,
-                BuildingPosition = item.RecruitingBuildingPosition,
-                QueueId = item.QueueId,
-                UnitTypeId = item.UnitTypeId,
-                CompletedTurns = item.CompletedTurns,
-                TrainingTurns = item.TrainingTurns,
-                IsReady = false,
-            });
-        }
 
         private readonly struct RecruitmentQueueSignalKey : IEquatable<RecruitmentQueueSignalKey>
         {
@@ -658,53 +383,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
         }
 
-        private bool TryResolveDeploymentModule(
-            UnitRecruitmentQueueItemSnapshot ready,
-            out UnitRecruitmentBuildingModule module,
-            out string reason)
-        {
-            module = null;
-            reason = null;
-            if (_constructionSnapshot == null || _buildingRegistry == null || _constructionLifecycle == null)
-            {
-                reason = "construction context is unavailable";
-                return false;
-            }
-            if (!TryFindRecruitingPlacement(ready.RecruitingBuildingPosition, out ConstructionSavedPlacement placement))
-            {
-                reason = "recruiting building no longer exists";
-                return false;
-            }
-            if (!string.Equals(NormalizeRequiredId(placement.OwnerId), ready.OwnerId, StringComparison.Ordinal))
-            {
-                reason = "recruiting building owner changed";
-                return false;
-            }
-            if (!string.IsNullOrWhiteSpace(ready.RecruitingBuildingId)
-                && !string.Equals(placement.BuildingId, ready.RecruitingBuildingId, StringComparison.Ordinal))
-            {
-                reason = "recruiting building identity changed";
-                return false;
-            }
-            if (!_constructionLifecycle.IsOperational(ready.RecruitingBuildingPosition))
-            {
-                reason = "recruiting building is not operational";
-                return false;
-            }
-            BuildingDefinition definition = _buildingRegistry.GetById(placement.BuildingId);
-            if (definition == null
-                || !BuildingDefinitionCapabilities.TryGetEnabledModule(definition, out module))
-            {
-                reason = "recruiting module is unavailable";
-                return false;
-            }
-            if (_unitClassConfig?.GetConfig(ready.UnitTypeId) == null)
-            {
-                reason = "unit type is no longer registered";
-                return false;
-            }
-            return true;
-        }
 
         private void OnBuildingDemolished(BuildingDemolishedSignal signal)
         {
@@ -724,45 +402,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
         }
 
-        private bool TryFindRecruitingPlacement(Vector2Int position, out ConstructionSavedPlacement placement)
-        {
-            IReadOnlyList<ConstructionSavedPlacement> placements = _constructionSnapshot.GetSavedPlacements();
-            if (placements != null)
-            {
-                for (int index = 0; index < placements.Count; index++)
-                {
-                    if (placements[index].Position != position)
-                        continue;
-                    placement = placements[index];
-                    return true;
-                }
-            }
-            placement = default;
-            return false;
-        }
 
-        private static bool TryFindRecipe(
-            UnitRecruitmentBuildingModule module,
-            string unitTypeId,
-            out UnitRecruitmentRecipeDefinition recipe)
-        {
-            if (module?.Recipes != null)
-            {
-                for (int index = 0; index < module.Recipes.Count; index++)
-                {
-                    UnitRecruitmentRecipeDefinition candidate = module.Recipes[index];
-                    if (candidate == null
-                        || !string.Equals(NormalizeRequiredId(candidate.UnitTypeId), unitTypeId, StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-                    recipe = candidate;
-                    return true;
-                }
-            }
-            recipe = null;
-            return false;
-        }
 
         internal static Dictionary<string, float> BuildCostMap(IReadOnlyList<BuildingResourceAmount> source)
         {
@@ -813,34 +453,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             return _economy.TryConsumeSettlementResources(settlement.SettlementId, costs, out reason);
         }
 
-        internal static List<Vector2Int> BuildSpawnCandidates(Vector2Int center, int spawnRadius)
-        {
-            int radius = Math.Max(1, spawnRadius);
-            var result = new List<Vector2Int>();
-            for (int ring = 1; ring <= radius; ring++)
-            {
-                int minX = center.x - ring;
-                int maxX = center.x + ring;
-                int minY = center.y - ring;
-                int maxY = center.y + ring;
 
-                for (int x = minX; x <= maxX; x++)
-                    result.Add(new Vector2Int(x, maxY));
-                for (int y = maxY - 1; y >= minY; y--)
-                    result.Add(new Vector2Int(maxX, y));
-                for (int x = maxX - 1; x >= minX; x--)
-                    result.Add(new Vector2Int(x, minY));
-                for (int y = minY + 1; y < maxY; y++)
-                    result.Add(new Vector2Int(minX, y));
-            }
-            return result;
-        }
-
-        internal static string BuildRecruitmentUnitId(long queueId, string unitTypeId)
-        {
-            string type = NormalizeRequiredId(unitTypeId) ?? "unit";
-            return $"recruit_{Math.Max(1L, queueId):D10}_{type}";
-        }
 
         private static string NormalizeRequiredId(string value)
             => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
