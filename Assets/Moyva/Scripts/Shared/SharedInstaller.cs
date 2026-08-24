@@ -1,4 +1,3 @@
-using Kruty1918.Moyva.Multiplayer.Runtime;
 using Kruty1918.Moyva.Shared.Common;
 using Kruty1918.Moyva.Shared.Connectivity;
 using Kruty1918.Moyva.Shared.Diagnostics;
@@ -23,6 +22,13 @@ namespace Kruty1918.Moyva.Shared
         // Helper for programmatic installation from other installers
         public static void Install(DiContainer container)
         {
+            if (!container.HasBinding<IClientInstanceScope>())
+            {
+                container.Bind<IClientInstanceScope>()
+                    .FromInstance(ClientInstanceScope.Default)
+                    .AsSingle();
+            }
+
             container.Bind<IConnectivityService>()
                 .To<ConnectivityService>()
                 .AsSingle();

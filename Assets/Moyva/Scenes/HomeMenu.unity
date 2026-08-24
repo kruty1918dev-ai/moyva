@@ -12567,7 +12567,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf81f8ee9cec3fdc0861f34218ba745e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Shared.Notifications.ButtonInteractableOnNetwork
+  m_EditorClassIdentifier: Kruty1918.Moyva.Multiplayer.UI::Kruty1918.Moyva.Shared.Notifications.ButtonInteractableOnNetwork
   targetButton: {fileID: 537050245}
   interactableWhenOnline: 1
   startDisabledUntilChecked: 1

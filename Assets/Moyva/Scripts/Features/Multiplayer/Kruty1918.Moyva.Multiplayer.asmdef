@@ -9,6 +9,7 @@
         "Kruty1918.Moyva.Units",
         "Kruty1918.Moyva.Economy",
         "Kruty1918.Moyva.GameMode",
+        "Kruty1918.Moyva.Shared",
         "Unity.Services.Core",
         "Unity.Services.Authentication",
         "Unity.Services.Relay",

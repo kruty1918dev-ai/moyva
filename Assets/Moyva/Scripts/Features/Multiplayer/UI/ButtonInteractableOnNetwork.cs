@@ -4,12 +4,18 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using UnityEngine.Scripting.APIUpdating;
 using Zenject;
 using Kruty1918.Moyva.Multiplayer.Networking;
-using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Shared.Connectivity;
 
 namespace Kruty1918.Moyva.Shared.Notifications
 {
+    [MovedFrom(
+        true,
+        sourceNamespace: "Kruty1918.Moyva.Shared.Notifications",
+        sourceAssembly: "Kruty1918.Moyva.Shared",
+        sourceClassName: "ButtonInteractableOnNetwork")]
     [RequireComponent(typeof(Button))]
     public class ButtonInteractableOnNetwork : MonoBehaviour
     {

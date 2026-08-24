@@ -1,8 +1,8 @@
 using System;
 using System.IO;
 using Kruty1918.Moyva.HomeMenu.API;
-using Kruty1918.Moyva.Multiplayer.Runtime;
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.Shared.Common;
 using UnityEngine;
 using UnityEngine.Audio;
 using Zenject;
@@ -23,6 +23,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private const float DefaultUi = 0.9f;
 
         private readonly string _filePath;
+        private readonly IClientInstanceScope _clientScope;
 
         [InjectOptional] private ISaveService _saveService;
         [InjectOptional] private AudioMixerBindingsSO _mixerBindings;
@@ -37,9 +38,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public float UiVolume => Settings.UiVolume;
         public bool IsMuted => Settings.IsMuted;
 
-        public LocalGameSettingsService()
+        public LocalGameSettingsService(
+            [InjectOptional] IClientInstanceScope clientScope = null)
         {
-            _filePath = Path.Combine(Application.persistentDataPath, MultiplayerClientScope.BuildScopedFileName("home_menu_settings.dat"));
+            clientScope ??= ClientInstanceScope.Default;
+            _clientScope = clientScope;
+            _filePath = Path.Combine(
+                Application.persistentDataPath,
+                clientScope.BuildScopedFileName("home_menu_settings.dat"));
             Settings = CreateDefaultSettings();
         }
 
@@ -186,12 +192,20 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var defMusic = _mixerBindings != null ? _mixerBindings.defaultMusic : DefaultMusic;
             var defSfx = _mixerBindings != null ? _mixerBindings.defaultSfx : DefaultSfx;
             var defUi = _mixerBindings != null ? _mixerBindings.defaultUi : DefaultUi;
-            return new LocalGameSettings(MultiplayerClientScope.CreateDefaultPlayerName(), defMaster, defMusic, defSfx, defUi, false);
+            return new LocalGameSettings(
+                _clientScope.CreateDefaultPlayerName(),
+                defMaster,
+                defMusic,
+                defSfx,
+                defUi,
+                false);
         }
 
-        private static string NormalizePlayerName(string playerName)
+        private string NormalizePlayerName(string playerName)
         {
-            var value = string.IsNullOrWhiteSpace(playerName) ? MultiplayerClientScope.CreateDefaultPlayerName() : playerName.Trim();
+            var value = string.IsNullOrWhiteSpace(playerName)
+                ? _clientScope.CreateDefaultPlayerName()
+                : playerName.Trim();
             return value.Length <= 24 ? value : value.Substring(0, 24);
         }
 

@@ -3,6 +3,7 @@ using System.IO;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
+using Kruty1918.Moyva.Shared.Common;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Multiplayer.Runtime
@@ -22,7 +23,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         public BinaryConfigStore(string filePath = null)
         {
-            _filePath = filePath ?? Path.Combine(Application.persistentDataPath, MultiplayerClientScope.BuildScopedFileName("multiplayer_config.dat"));
+            _filePath = filePath ?? Path.Combine(
+                Application.persistentDataPath,
+                ClientInstanceScope.Default.BuildScopedFileName("multiplayer_config.dat"));
         }
 
         public bool Exists() => File.Exists(_filePath);

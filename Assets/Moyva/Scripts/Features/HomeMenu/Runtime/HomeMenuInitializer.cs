@@ -10,6 +10,7 @@ using Unity.Services.Core;
 using Zenject;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Shared.Common;
+using Kruty1918.Moyva.Shared.Connectivity;
 using Kruty1918.Moyva.Shared.Graphics;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
@@ -89,7 +90,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 else
                 {
                     LogVerbose("No IConnectivityService available — falling back to InternetChecker probe");
-                    hasInternet = await Kruty1918.Moyva.Multiplayer.Core.InternetChecker.HasInternetAsync(5, 3);
+                    hasInternet = await InternetChecker.HasInternetAsync(5, 3);
                     ct.ThrowIfCancellationRequested();
                 }
             }
@@ -179,7 +180,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     if (_connectivityService != null)
                         canProceed = await _connectivityService.WaitForOnlineAsync(_menuProfile.ConnectivityQuickProbeTimeout);
                     else
-                        canProceed = await Kruty1918.Moyva.Multiplayer.Core.InternetChecker.HasInternetAsync(3, 3);
+                        canProceed = await InternetChecker.HasInternetAsync(3, 3);
 
                     ct.ThrowIfCancellationRequested();
                 }

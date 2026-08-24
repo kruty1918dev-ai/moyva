@@ -7,6 +7,7 @@ using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
+using Kruty1918.Moyva.Shared.Connectivity;
 using UnityEngine;
 using Unity.Services.Core;
 using Unity.Services.Authentication;

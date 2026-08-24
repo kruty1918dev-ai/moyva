@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using Kruty1918.Moyva.Multiplayer.Runtime;
 using Kruty1918.Moyva.Audio.Runtime;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -204,9 +203,13 @@ namespace Kruty1918.Moyva.Shared.Graphics
         public GraphicsSettingsData Settings { get; private set; }
         public event Action<GraphicsSettingsData> OnSettingsChanged;
 
-        public GraphicsSettingsService()
+        public GraphicsSettingsService(
+            [InjectOptional] IClientInstanceScope clientScope = null)
         {
-            _filePath = Path.Combine(Application.persistentDataPath, MultiplayerClientScope.BuildScopedFileName("graphics_settings.dat"));
+            clientScope ??= ClientInstanceScope.Default;
+            _filePath = Path.Combine(
+                Application.persistentDataPath,
+                clientScope.BuildScopedFileName("graphics_settings.dat"));
             _startupDefaults = GraphicsStartupDefaultsProvider.LoadDefaults();
             _developerPixelOptimization = GraphicsStartupDefaultsProvider.LoadDeveloperPixelOptimization();
             Settings = _startupDefaults;
@@ -383,4 +386,3 @@ namespace Kruty1918.Moyva.Shared.Graphics
         }
     }
 }
-
