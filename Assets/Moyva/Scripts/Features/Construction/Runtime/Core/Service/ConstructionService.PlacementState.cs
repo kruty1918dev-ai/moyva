@@ -1118,3 +1118,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 : BuildingPreviewState.Unaffordable;
     }
 }
+
+
+// ---- Placed rotation state ----
+namespace Kruty1918.Moyva.Construction.Runtime
+{
+    internal sealed partial class ConstructionService
+    {
+        private ConstructionRotation ResolvePlacedRotation(
+            Vector2Int origin)
+            => _placedRotationByOrigin.TryGetValue(
+                origin,
+                out ConstructionRotation rotation)
+                ? rotation
+                : ConstructionRotation.Degrees0;
+    }
+}

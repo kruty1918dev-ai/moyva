@@ -100,6 +100,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionFootprintStore _footprints;
         private readonly ConstructionReplacementPolicy _replacementPolicy;
         private readonly ConstructionInfluencePolicy _influencePolicy;
+        private readonly ConstructionBuildingFogEffects _buildingFogEffects;
         private bool _initialized;
         private bool _disposed;
 
@@ -210,6 +211,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     _townHallBuildRadius,
                     placementRulesProvider,
                     () => VerboseLogs);
+            _buildingFogEffects =
+                new ConstructionBuildingFogEffects(
+                    fogOfWarService,
+                    buildingRegistry);
         }
 
         private bool CanActiveOwnerAct(out string reason)
@@ -376,7 +381,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 _fogOfWarService?.UnregisterUnit(
                     GetBuildingFogVisionAreaId(pair.Key));
-                ApplyBuildingFogReveal(
+                _buildingFogEffects.Apply(
                     pair.Value,
                     pair.Key);
                 refreshed++;
@@ -389,7 +394,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 _fogOfWarService?.UnregisterUnit(
                     GetBuildingFogVisionAreaId(pair.Key));
-                ApplyBuildingFogReveal(
+                _buildingFogEffects.Apply(
                     pair.Value.BuildingId,
                     pair.Key);
                 refreshed++;

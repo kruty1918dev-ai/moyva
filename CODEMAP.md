@@ -51,13 +51,18 @@ Do not open every `ConstructionService` partial for a focused task.
 | Task | Primary files |
 |---|---|
 | service lifecycle / dependencies | `ConstructionService.cs` |
-| can-place / placement query | `ConstructionService.PlacementQuery.cs`, then `ConstructionService.PlacementRules.cs` only if needed |
-| selection / preview state | `ConstructionService.PlacementState.cs` |
+| can-place / placement query / spacing | `ConstructionService.PlacementQuery.cs` |
+| selection / preview / placed rotation | `ConstructionService.PlacementState.cs` |
 | fog / terrain / tile placement rules | `ConstructionPlacementEnvironmentRules.cs` |
-| footprint / replacement / influence validation | `ConstructionService.PlacementRules.cs` |
+| committed-building fog reveal | `ConstructionBuildingFogEffects.cs` |
+| placed footprint occupancy / origin mapping | `ConstructionFootprintStore.cs` |
+| replacement / gate-wall policy | `ConstructionReplacementPolicy.cs` |
+| settlement / influence-zone policy | `ConstructionInfluencePolicy.cs` |
 | cost / per-player limits / turn authority | `ConstructionService.EconomyAuthority.cs` |
 | confirm / demolish / undo-redo | `ConstructionService.CommitUndo.cs` |
-| save restore / singleton reconstruction | `ConstructionService.Persistence.cs` |
+| save restore / singleton reconstruction / footprint rollback | `ConstructionService.Persistence.cs` |
 | placement diagnostics | `ConstructionService.Diagnostics.cs` |
 
-`ConstructionService` remains one partial type for compatibility, but the physical files are grouped by cohesive responsibility to minimize context fan-out.
+Placement validation authority is `ConstructionService.EvaluatePlacement(...)` plus `BuildingPlacementEvaluator`; do not introduce a parallel `ConstructionPlacementValidator`.
+
+`ConstructionService.PlacementRules.cs` no longer exists. Follow the focused ownership rows above instead of searching for a monolithic rules partial.

@@ -113,7 +113,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     SourceFactionId = normalizedOwner,
                     RotationQuarterTurns = (int)rotation,
                 });
-            ApplyBuildingFogReveal(
+            _buildingFogEffects.Apply(
                 buildingId,
                 position);
 
@@ -378,7 +378,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     GetBuildingFogVisionAreaId(
                         relocationSource.Value));
             }
-            ApplyBuildingFogReveal(buildingId, position);
+            _buildingFogEffects.Apply(buildingId, position);
             LogPlacementAttempt(
                 placement,
                 emitRejectedAction: false);
@@ -551,7 +551,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     GetBuildingFogVisionAreaId(
                         relocationSource.Value));
             }
-            ApplyBuildingFogReveal(buildingId, position);
+            _buildingFogEffects.Apply(buildingId, position);
             return true;
         }
 
@@ -1128,6 +1128,26 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _playerPlacedBuildings.Remove(position);
             _factionPlacedBuildings.Remove(position);
             _placedRotationByOrigin.Remove(position);
+        }
+    }
+}
+
+
+// ---- Footprint restoration ----
+namespace Kruty1918.Moyva.Construction.Runtime
+{
+    internal sealed partial class ConstructionService
+    {
+        private void RestoreBuildingFootprintOrLog(Vector2Int origin, string buildingId, string context)
+        {
+            if (_footprints.TryRegister(
+                    origin,
+                    buildingId,
+                    ResolvePlacedRotation(origin)))
+                return;
+
+            Debug.LogError(
+                $"[MoyvaBuildGridDiag] footprint-rollback-failed context='{context}' building='{buildingId}' origin={origin}");
         }
     }
 }

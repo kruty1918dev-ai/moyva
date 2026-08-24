@@ -427,7 +427,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     {
                         if (isRelocation && relocationSource.HasValue)
                             _fogOfWarService?.UnregisterUnit(GetBuildingFogVisionAreaId(relocationSource.Value));
-                        ApplyBuildingFogReveal(id, pos);
+                        _buildingFogEffects.Apply(id, pos);
                     }
                     catch (Exception fogEx)
                     {
