@@ -751,17 +751,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 && IsRelocation(placement);
         }
 
-        private int FindPendingPlacementIndexForQuery(Vector2Int position)
-        {
-            for (int i = 0; i < _pendingPlacements.Count; i++)
-            {
-                if (_pendingPlacements[i].Position == position)
-                    return i;
-            }
-
-            return -1;
-        }
-
         private void MarkPendingPlacementsChanged()
         {
             _pendingPlacementsVersion++;
@@ -1086,19 +1075,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed partial class ConstructionService
     {
-        private bool IsBlockedByInfluenceZone(
-            Vector2Int position,
-            string buildingId,
-            Vector2Int? ignoredPendingPosition)
-        {
-            return _influencePolicy.IsBlocked(
-                position,
-                buildingId,
-                ignoredPendingPosition,
-                BuildPlacementSimulationEntries(),
-                BuildPlacedBuildingSimulationEntries());
-        }
-
         private bool IsBlockedBySpacing(Vector2Int position, Vector2Int? ignoredPendingPosition)
         {
             try
