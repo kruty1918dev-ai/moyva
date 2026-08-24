@@ -623,8 +623,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 PlacedBuildings = _placedBuildingSimulationSnapshot,
                 TileMatchWorkspace = _placementTileMatchWorkspace,
                 HasInfluenceCenterDefinitions =
-                    HasAnyInfluenceCenterDefinition(),
-                MaxInfluenceRadius = ResolveMaxInfluenceRadius(),
+                    _influencePolicy.HasAnyInfluenceCenterDefinition(),
+                MaxInfluenceRadius = _influencePolicy.ResolveMaxInfluenceRadius(),
                 RuleEvaluators = _placementRuleEvaluators,
                 SkipInfluenceRules = _placementRulesProvider != null
                     && !_placementRulesProvider.EnableInfluenceZoneRules,
@@ -662,19 +662,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ? null
                 : GetObjectOccupantId(position);
 
-        private Vector2Int? GetOccupantOriginForPlacementQuery(Vector2Int position)
-            => _placedOriginByOccupiedTile.TryGetValue(position, out Vector2Int origin)
+        private Vector2Int? GetOccupantOriginForPlacementQuery(
+            Vector2Int position)
+            => _footprints.TryGetOrigin(
+                    position,
+                    out Vector2Int origin)
                 ? origin
                 : null;
 
         private string GetOccupantOwnerForPlacementQuery(
             Vector2Int position)
         {
-            Vector2Int origin = _placedOriginByOccupiedTile.TryGetValue(
-                position,
-                out Vector2Int resolvedOrigin)
-                ? resolvedOrigin
-                : position;
+            Vector2Int origin =
+                _footprints.ResolveOrigin(position);
             if (_factionPlacedBuildings.TryGetValue(
                     origin,
                     out var factionPlacement))

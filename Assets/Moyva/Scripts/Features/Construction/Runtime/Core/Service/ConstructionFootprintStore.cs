@@ -230,6 +230,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
+        public bool TryGetOrigin(
+            Vector2Int occupiedCell,
+            out Vector2Int origin)
+        {
+            return _originByOccupiedTile.TryGetValue(
+                occupiedCell,
+                out origin);
+        }
+
         public Vector2Int ResolveOrigin(Vector2Int occupiedCell)
         {
             return _originByOccupiedTile.TryGetValue(

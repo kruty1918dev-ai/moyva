@@ -199,11 +199,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             ownerId = null;
             Vector2Int origin =
-                _placedOriginByOccupiedTile.TryGetValue(
-                    position,
-                    out Vector2Int resolvedOrigin)
-                    ? resolvedOrigin
-                    : position;
+                _footprints.ResolveOrigin(position);
 
             if (_factionPlacedBuildings.TryGetValue(
                     origin,

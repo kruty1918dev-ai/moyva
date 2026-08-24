@@ -99,6 +99,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionPlacementEnvironmentRules _placementEnvironmentRules;
         private readonly ConstructionFootprintStore _footprints;
         private readonly ConstructionReplacementPolicy _replacementPolicy;
+        private readonly ConstructionInfluencePolicy _influencePolicy;
         private bool _initialized;
         private bool _disposed;
 
@@ -131,8 +132,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private int _pendingPlacementsVersion;
         private int _placementSimulationSnapshotVersion = -1;
         private int _lastModuleAuditRevision = -1;
-        private int _cachedMaxInfluenceRadius = -1;
-        private int _cachedInfluenceCenterDefinitionState = -1;
 
         public BuildingPlacementState State { get; private set; } = BuildingPlacementState.Idle;
         public bool IsDemolishMode { get; private set; }
@@ -205,6 +204,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     wallTopologyService,
                     wallGateReplacementValidator,
                     _footprints);
+            _influencePolicy =
+                new ConstructionInfluencePolicy(
+                    buildingRegistry,
+                    _townHallBuildRadius,
+                    placementRulesProvider,
+                    () => VerboseLogs);
         }
 
         private bool CanActiveOwnerAct(out string reason)
