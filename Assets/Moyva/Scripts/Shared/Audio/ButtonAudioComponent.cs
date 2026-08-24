@@ -28,7 +28,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
         [Tooltip("Кешований реєстр звуків. Заповнюється автоматично при старті редактора.")]
         [SerializeField] private AudioRegistrySO _cachedRegistry;
 
-        [Inject] private IAudioService _audioService;
+        private IAudioService _audioService;
 
         private Button _button;
 
@@ -38,16 +38,19 @@ namespace Kruty1918.Moyva.Audio.Runtime
         /// <summary>Кешований реєстр звуків (може бути null у runtime).</summary>
         public AudioRegistrySO CachedRegistry => _cachedRegistry;
 
+        [Inject]
+        private void Construct(IAudioService audioService)
+        {
+            _audioService = audioService;
+        }
+
         private void Awake()
         {
             _button = GetComponent<Button>();
             TryCacheRegistry();
-             if (_button != null)
+            if (_button != null)
                 _button.onClick.AddListener(OnButtonClicked);
         }
-
-
-
         private void OnDestroy()
         {
             if (_button != null)

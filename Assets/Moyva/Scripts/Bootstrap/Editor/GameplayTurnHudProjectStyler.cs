@@ -78,7 +78,7 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             turnTextRect.pivot = new Vector2(0f, 0.5f);
             turnTextRect.offsetMin = new Vector2(18f, 34f);
             turnTextRect.offsetMax = new Vector2(-166f, -8f);
-            turnText.enableWordWrapping = false;
+            turnText.textWrappingMode = TextWrappingModes.NoWrap;
             turnText.overflowMode = TextOverflowModes.Overflow;
 
             Button endTurnButton = Require<Button>(root, "TurnPanel/EndTurnButton");
@@ -186,7 +186,7 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             queueRect.pivot = new Vector2(0.5f, 0f);
             queueRect.anchoredPosition = new Vector2(0f, 12f);
             queueRect.sizeDelta = new Vector2(-34f, 104f);
-            queue.enableWordWrapping = true;
+            queue.textWrappingMode = TextWrappingModes.Normal;
 
             root.SetAsLastSibling();
             EditorSceneManager.MarkSceneDirty(scene);
@@ -602,4 +602,3 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
         }
     }
 }
-

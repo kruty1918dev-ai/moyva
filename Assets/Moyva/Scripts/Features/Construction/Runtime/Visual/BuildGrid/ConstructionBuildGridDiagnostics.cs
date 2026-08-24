@@ -89,6 +89,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 Debug.Log($"{Tag} pruned stale={prunedCount} remaining={remainingCount}");
         }
 
-        private bool VerboseLogs => _settingsProvider?.EnableVerboseLogs ?? (Application.isEditor && Debug.isDebugBuild);
+        private bool VerboseLogs => _settingsProvider?.EnableVerboseLogs ?? false;
     }
 }

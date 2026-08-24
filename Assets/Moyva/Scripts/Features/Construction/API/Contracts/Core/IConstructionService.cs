@@ -62,7 +62,7 @@ namespace Kruty1918.Moyva.Construction.API
 
         /// <summary>
         /// Підтвердити всі pending-розміщення.
-        /// Реєструє кожне в ObjectsMapService, надсилає BuildingPlacedSignal.
+        /// Реєструє кожне через IObjectsMapService, надсилає BuildingPlacedSignal.
         /// У режимі знесення — підтверджує всі позначені до знесення об'єкти.
         /// Після Confirm дія незворотна.
         /// </summary>

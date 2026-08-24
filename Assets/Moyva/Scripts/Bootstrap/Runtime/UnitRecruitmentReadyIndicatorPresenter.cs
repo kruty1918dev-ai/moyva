@@ -180,51 +180,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_container != null)
                 return;
 
-            _canvas = ResolveCanvas();
-            if (_canvas == null)
-            {
-                if (!_warnedMissingCanvas)
-                {
-                    _warnedMissingCanvas = true;
-                    Debug.LogWarning(
-                        "[UnitRecruitmentReadyIndicator] Gameplay Canvas not found. Ready indicators are disabled.");
-                }
-
-                return;
-            }
-
-            _canvasRect = _canvas.transform as RectTransform;
-            Transform existing = _canvas.transform.Find(ContainerName);
-            if (existing != null)
-            {
-                _container = existing as RectTransform;
-                _createdContainer = false;
-                return;
-            }
-
-            var go = new GameObject(
+            RecruitmentIndicatorCanvasContainer.TryResolve(
+                _hudView,
                 ContainerName,
-                typeof(RectTransform));
-            _container = go.GetComponent<RectTransform>();
-            _container.SetParent(_canvas.transform, false);
-            _container.anchorMin = Vector2.zero;
-            _container.anchorMax = Vector2.one;
-            _container.offsetMin = Vector2.zero;
-            _container.offsetMax = Vector2.zero;
-            _container.SetAsLastSibling();
-            _createdContainer = true;
-        }
-
-        private Canvas ResolveCanvas()
-        {
-            Canvas canvas = _hudView != null
-                ? _hudView.GetComponentInParent<Canvas>(true)
-                : null;
-            if (canvas != null)
-                return canvas;
-
-            return Object.FindFirstObjectByType<Canvas>(
-                FindObjectsInactive.Include);
+                "[UnitRecruitmentReadyIndicator] Gameplay Canvas not found. Ready indicators are disabled.",
+                ref _warnedMissingCanvas,
+                out _canvas,
+                out _canvasRect,
+                out _container,
+                out _createdContainer);
         }
 
         private IndicatorHandle CreateIndicator(
@@ -315,61 +279,27 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void UpdateIndicatorPositions()
         {
-            UnityEngine.Camera camera = ResolveCamera();
+            UnityEngine.Camera camera =
+                RecruitmentIndicatorScreenProjection.ResolveMainCamera(
+                    ref _camera,
+                    ref _warnedMissingCamera,
+                    "[UnitRecruitmentReadyIndicator] Main Camera not found. Ready indicators will stay hidden.");
             if (camera == null || _canvasRect == null || _container == null)
             {
                 SetAllIndicatorsVisible(false);
                 return;
             }
 
-            foreach (IndicatorHandle handle in _indicators.Values)
-            {
-                Vector3 world = ResolveIndicatorWorldPosition(
-                    handle.Snapshot.RecruitingBuildingPosition);
-                Vector3 screen = camera.WorldToScreenPoint(world);
-                Vector3 viewport = camera.WorldToViewportPoint(world);
-                bool visible = screen.z > 0f
-                    && viewport.x >= 0f
-                    && viewport.x <= 1f
-                    && viewport.y >= 0f
-                    && viewport.y <= 1f;
-
-                handle.Root.gameObject.SetActive(visible);
-                if (!visible)
-                    continue;
-
-                UnityEngine.Camera uiCamera = _canvas.renderMode == RenderMode.ScreenSpaceOverlay
-                    ? null
-                    : (_canvas.worldCamera != null ? _canvas.worldCamera : camera);
-                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                        _canvasRect,
-                        screen,
-                        uiCamera,
-                        out Vector2 local))
-                {
-                    handle.Root.anchoredPosition = local;
-                }
-            }
-        }
-
-        private Vector3 ResolveIndicatorWorldPosition(Vector2Int buildingPosition)
-            => _gridProjection.GridToWorld(buildingPosition)
-               + Vector3.up * IndicatorWorldHeightOffset;
-
-        private UnityEngine.Camera ResolveCamera()
-        {
-            if (_camera != null && _camera.isActiveAndEnabled)
-                return _camera;
-
-            _camera = UnityEngine.Camera.main;
-            if (_camera == null && !_warnedMissingCamera)
-            {
-                _warnedMissingCamera = true;
-                Debug.LogWarning(
-                    "[UnitRecruitmentReadyIndicator] Main Camera not found. Ready indicators will stay hidden.");
-            }
-
-            return _camera;
+            RecruitmentIndicatorScreenProjection.UpdatePositions(
+                _indicators.Values,
+                static handle =>
+                    handle.Snapshot.RecruitingBuildingPosition,
+                static handle => handle.Root,
+                _gridProjection,
+                IndicatorWorldHeightOffset,
+                _canvas,
+                _canvasRect,
+                camera);
         }
 
         private void SetAllIndicatorsVisible(bool visible)

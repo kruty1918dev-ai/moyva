@@ -70,7 +70,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     if (!_objectsMapService.TryGetOccupant(
                             position,
                             out replacedBuildingId)
-                        || !CanReplaceBuilding(
+                        || !CanReplace(
                             replacedBuildingId,
                             replacementModule))
                     {
@@ -160,7 +160,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (module?.MergeMode
                 == PlacementRuleMergeMode.Override)
             {
-                return CanReplaceBuilding(
+                return CanReplace(
                     replacedPendingBuildingId,
                     module);
             }
@@ -173,7 +173,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     replacedPendingBuildingId);
         }
 
-        private bool CanReplaceBuilding(
+        public bool CanReplace(
             string replacedBuildingId,
             ReplacementPlacementRuleModule module)
         {

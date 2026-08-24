@@ -1312,8 +1312,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _footprints.Unregister(origin, buildingId);
             RemovePlacedRecordAt(origin);
             InvalidatePlacementAvailabilityCache();
-            _fogOfWarService?.UnregisterUnit(
-                GetBuildingFogVisionAreaId(origin));
+            _buildingFogEffects.Remove(origin);
 
             _signalBus.Fire(new BuildingDemolishedSignal
             {

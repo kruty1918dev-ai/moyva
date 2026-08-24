@@ -302,11 +302,6 @@ public sealed class GraphAsset : MoyvaJsonConfigObject
             changed += NormalizeNodeIdsInternal();
             changed += NormalizeConnectionIdsInternal();
 
-#if UNITY_EDITOR
-            if (changed > 0)
-                ; // JSON source of truth: no ScriptableObject dirty flag.
-#endif
-
             return changed;
         }
 
@@ -906,8 +901,6 @@ public sealed class GraphAsset : MoyvaJsonConfigObject
             if (repaired > 0)
                 EnsureLayerGraphStates();
 
-            if (repaired > 0)
-                ; // JSON source of truth: no ScriptableObject dirty flag.
             return repaired;
         }
 
@@ -919,7 +912,6 @@ public sealed class GraphAsset : MoyvaJsonConfigObject
                 var node = _nodes[i];
                 if (node != null)
                 {
-                    ; // JSON config object is not stored as a Unity subasset.
                     MoyvaJsonObjectFactory.DestroyImmediate(node, true);
                 }
             }

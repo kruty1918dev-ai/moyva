@@ -288,7 +288,7 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
         protected override void OnEnable()
         {
             base.OnEnable();
-            Initialize();
+            InitializeAnalyzer();
         }
 
         protected override void OnDisable()
@@ -314,7 +314,7 @@ namespace Kruty1918.Moyva.BotAI.Editor.Analyzer
             base.OnImGUI();
         }
 
-        private void Initialize()
+        private void InitializeAnalyzer()
         {
             Shutdown();
 

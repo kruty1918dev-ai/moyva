@@ -389,11 +389,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 $"Preview_{buildingId}_{prefabTag}_{position.x}_{position.y}";
 
             GameObject instance = TakePreviewFromPool(prefab);
-            if (instance != null
-                && _visualFactory
-                    is IConstructionVisualInstanceRecycler recycler)
+            if (instance != null)
             {
-                instance = recycler.ReuseInstance(
+                instance = _visualFactory.ReuseInstance(
                     instance,
                     prefab,
                     position,

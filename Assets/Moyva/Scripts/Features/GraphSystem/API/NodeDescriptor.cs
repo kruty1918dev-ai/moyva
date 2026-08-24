@@ -53,37 +53,4 @@ namespace Kruty1918.Moyva.GraphSystem.API
             && NodeType != null
             && string.IsNullOrEmpty(UnavailableReason);
     }
-
-    public static class NodeCategoryOrder
-    {
-        private static readonly string[] OrderedCategories =
-        {
-            "Core",
-            "Generators",
-            "Masks",
-            "Height",
-            "Math",
-            "Modifiers",
-            "Layers",
-            "Tiles",
-            "Objects",
-            "Values",
-            "Subgraphs",
-            "Advanced/TileWorldCreator"
-        };
-
-        public static int Get(string category)
-        {
-            string value = category ?? string.Empty;
-            for (int i = 0; i < OrderedCategories.Length; i++)
-            {
-                string known = OrderedCategories[i];
-                if (string.Equals(value, known, StringComparison.Ordinal)
-                    || value.StartsWith(known + "/", StringComparison.Ordinal))
-                    return i;
-            }
-
-            return OrderedCategories.Length;
-        }
-    }
 }

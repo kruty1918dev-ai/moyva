@@ -985,7 +985,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     && replacementModule.MergeMode
                         == PlacementRuleMergeMode.Override)
                 {
-                    if (!CanReplaceBuilding(
+                    if (!_replacementPolicy.CanReplace(
                             current.BuildingId,
                             replacementModule)
                         || !IsPendingReplacementOwnerAllowed(

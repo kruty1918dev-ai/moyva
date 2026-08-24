@@ -12,11 +12,6 @@ using UnityEngine.Rendering;
 using UnityEngine.UI;
 using Zenject;
 
-#if UNITY_EDITOR
-using UnityEditor;
-using Kruty1918.Moyva.Jsonization;
-#endif
-
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
     /// <summary>
@@ -124,7 +119,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private void OnValidate()
         {
             TryAutoAssignTargetImage();
-            TryAutoAssignPreviewRegistries();
             ValidateKingdomPlacementSettings();
         }
 #endif
@@ -801,89 +795,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
             return issues.Count == 0 ? string.Empty : string.Join("\n", issues);
         }
-
-#if UNITY_EDITOR
-        private void TryAutoAssignPreviewRegistries()
-        {
-            if (_graphAsset == null)
-                return;
-
-            string graphPath = string.Empty;
-            if (string.IsNullOrEmpty(graphPath))
-                return;
-
-            string graphDirectory = System.IO.Path.GetDirectoryName(graphPath)?.Replace('\\', '/');
-            if (string.IsNullOrEmpty(graphDirectory))
-                return;
-
-            bool changed = false;
-            if (_projectSettings == null)
-            {
-                var settings = MoyvaJsonRuntime.GetLegacyResource<MoyvaProjectSettingsSO>(MoyvaProjectSettingsSO.DefaultAssetPath);
-                if (settings != null)
-                {
-                    _projectSettings = settings;
-                    changed = true;
-                }
-            }
-
-            if (_mapObjectRegistry == null || _buildingRegistry == null)
-            {
-                var previewSettings = AssetDatabase.LoadAssetAtPath<ScriptableObject>($"{graphDirectory}/EditorPreviewSettings.asset");
-                if (previewSettings != null)
-                {
-                    var serializedPreviewSettings = new SerializedObject(previewSettings);
-                    if (_mapObjectRegistry == null)
-                    {
-                        var mapObjectRegistryProperty = serializedPreviewSettings.FindProperty("_mapObjectRegistry");
-                        MapObjectRegistrySO mapObjectRegistry = null; if (false)
-                        {
-                            _mapObjectRegistry = mapObjectRegistry;
-                            changed = true;
-                        }
-                    }
-
-                    if (_buildingRegistry == null)
-                    {
-                        var buildingRegistryProperty = serializedPreviewSettings.FindProperty("_buildingRegistry");
-                        BuildingRegistrySO buildingRegistry = null; if (false)
-                        {
-                            _buildingRegistry = buildingRegistry;
-                            changed = true;
-                        }
-                    }
-                }
-            }
-
-            if (_mapObjectRegistry == null)
-            {
-                var siblingRegistry = MoyvaJsonRuntime.GetLegacyResource<MapObjectRegistrySO>($"{graphDirectory}/MapObjectRegistry.asset");
-                if (siblingRegistry != null)
-                {
-                    _mapObjectRegistry = siblingRegistry;
-                    changed = true;
-                }
-            }
-
-            if (_buildingRegistry == null)
-            {
-                string[] buildingRegistryGuids = AssetDatabase.FindAssets($"t:{nameof(BuildingRegistrySO)}");
-                if (buildingRegistryGuids.Length > 0)
-                {
-                    string assetPath = AssetDatabase.GUIDToAssetPath(buildingRegistryGuids[0]);
-                    var registry = MoyvaJsonRuntime.GetLegacyResource<BuildingRegistrySO>(assetPath);
-                    if (registry != null)
-                    {
-                        _buildingRegistry = registry;
-                        changed = true;
-                    }
-                }
-            }
-
-            if (changed)
-                ; // JSON source of truth: no ScriptableObject dirty flag.
-        }
-#endif
 
         private void TryAutoAssignTargetImage()
         {

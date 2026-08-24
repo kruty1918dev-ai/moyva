@@ -14,7 +14,7 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            // ObjectsMapService повинен ініціалізуватись першим,
+            // Канонічна object-map реалізація має ініціалізуватись першою,
             // щоб підписатись на сигнали до решти сервісів.
             Container.BindExecutionOrder<ChunkedObjectsMapService>(-10);
         }

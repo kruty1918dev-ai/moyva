@@ -374,9 +374,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             });
             if (isRelocation)
             {
-                _fogOfWarService?.UnregisterUnit(
-                    GetBuildingFogVisionAreaId(
-                        relocationSource.Value));
+                _buildingFogEffects.Remove(
+                    relocationSource.Value);
             }
             _buildingFogEffects.Apply(buildingId, position);
             LogPlacementAttempt(
@@ -547,9 +546,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             });
             if (relocationSource.HasValue)
             {
-                _fogOfWarService?.UnregisterUnit(
-                    GetBuildingFogVisionAreaId(
-                        relocationSource.Value));
+                _buildingFogEffects.Remove(
+                    relocationSource.Value);
             }
             _buildingFogEffects.Apply(buildingId, position);
             return true;
@@ -668,8 +666,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 buildingId);
             RemovePlacedRecordAt(origin);
 
-            _fogOfWarService?.UnregisterUnit(
-                GetBuildingFogVisionAreaId(origin));
+            _buildingFogEffects.Remove(origin);
 
             _signalBus.Fire(
                 new BuildingDemolishedSignal

@@ -224,41 +224,12 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 private void PumpHost()
                 {
-                    NetworkConnection incoming;
-                    while ((incoming = _driver.Accept()) != default)
-                    {
-                        _serverConnections.Add(incoming);
-                    }
-
-                    for (int i = 0; i < _serverConnections.Length; i++)
-                    {
-                        var connection = _serverConnections[i];
-                        if (!connection.IsCreated)
-                        {
-                            _serverConnections.RemoveAtSwapBack(i--);
-                            continue;
-                        }
-
-                        NetworkEvent.Type eventType;
-                        while ((eventType = _driver.PopEventForConnection(connection, out var stream)) != NetworkEvent.Type.Empty)
-                        {
-                            switch (eventType)
-                            {
-                                case NetworkEvent.Type.Data:
-                                    HandleFrame(connection, stream, isHostSide: true);
-                                    break;
-                                case NetworkEvent.Type.Disconnect:
-                                    var key = connection.GetHashCode();
-                                    if (_connectionPlayerIds.TryGetValue(key, out var pid))
-                                    {
-                                        _connectionPlayerIds.Remove(key);
-                                        PeerDisconnected?.Invoke(pid);
-                                    }
-                                    _serverConnections[i] = default;
-                                    break;
-                            }
-                        }
-                    }
+                    MultiplayerFrameCodec.PumpHostConnections(
+                        ref _driver,
+                        ref _serverConnections,
+                        _connectionPlayerIds,
+                        HandleFrame,
+                        PeerDisconnected);
                 }
 
                 private void PumpClient()
@@ -362,7 +333,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 private void HandleUserData(NetworkConnection source, byte[] body, bool isHostSide)
                 {
-                    if (!TryParseUserData(body, out string target, out string senderId, out byte[] payload))
+                    if (!MultiplayerFrameCodec.TryParseUserData(
+                            body,
+                            out string target,
+                            out string senderId,
+                            out byte[] payload))
                     {
                         _logger.Warn("[Lan] Malformed UserData frame.");
                         return;
@@ -397,7 +372,12 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     DispatchUserMessage(senderId, payload);
                     if (!isHostSide) return;
 
-                    byte[] wireFrame = BuildUserDataFrame(senderId, target, payload);
+                    byte[] wireFrame =
+                        MultiplayerFrameCodec.BuildUserDataFrame(
+                            FrameUserData,
+                            senderId,
+                            target,
+                            payload);
                     if (string.IsNullOrWhiteSpace(target) || target == "*")
                     {
                         for (int i = 0; i < _serverConnections.Length; i++)
@@ -422,7 +402,12 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     }
 
                     var safePayload = payload ?? Array.Empty<byte>();
-                    var frame = BuildUserDataFrame(_localPeerId, targetPeerId, safePayload);
+                    var frame =
+                        MultiplayerFrameCodec.BuildUserDataFrame(
+                            FrameUserData,
+                            _localPeerId,
+                            targetPeerId,
+                            safePayload);
 
                     if (_isHost)
                     {
@@ -494,7 +479,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     var body = new byte[4 + idBytes.Length];
                     Buffer.BlockCopy(BitConverter.GetBytes((uint)1), 0, body, 0, 4);
                     if (idBytes.Length > 0) Buffer.BlockCopy(idBytes, 0, body, 4, idBytes.Length);
-                    return WrapFrame(FrameHello, body);
+                    return MultiplayerFrameCodec.Wrap(
+                        FrameHello,
+                        body);
                 }
 
                 private static string BuildLocalPeerId()
@@ -510,68 +497,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 private static byte[] BuildIdentityFrame(string peerId)
                 {
-                    return WrapFrame(FrameIdentity, System.Text.Encoding.UTF8.GetBytes(peerId ?? string.Empty));
-                }
-
-                private static byte[] BuildUserDataFrame(string senderId, string targetPeerId, byte[] payload)
-                {
-                    var targetBytes = System.Text.Encoding.UTF8.GetBytes(string.IsNullOrWhiteSpace(targetPeerId) ? "*" : targetPeerId);
-                    var senderBytes = System.Text.Encoding.UTF8.GetBytes(senderId ?? string.Empty);
-                    var p = payload ?? Array.Empty<byte>();
-
-                    var body = new byte[2 + targetBytes.Length + 2 + senderBytes.Length + p.Length];
-                    int offset = 0;
-                    WriteUShort(body, ref offset, (ushort)targetBytes.Length);
-                    Buffer.BlockCopy(targetBytes, 0, body, offset, targetBytes.Length); offset += targetBytes.Length;
-                    WriteUShort(body, ref offset, (ushort)senderBytes.Length);
-                    Buffer.BlockCopy(senderBytes, 0, body, offset, senderBytes.Length); offset += senderBytes.Length;
-                    if (p.Length > 0) Buffer.BlockCopy(p, 0, body, offset, p.Length);
-                    return WrapFrame(FrameUserData, body);
-                }
-
-                private static bool TryParseUserData(byte[] body, out string target, out string senderId, out byte[] payload)
-                {
-                    target = null; senderId = null; payload = null;
-                    if (body == null || body.Length < 4) return false;
-
-                    int offset = 0;
-                    ushort tLen = ReadUShort(body, ref offset);
-                    if (offset + tLen > body.Length) return false;
-                    target = System.Text.Encoding.UTF8.GetString(body, offset, tLen); offset += tLen;
-
-                    if (offset + 2 > body.Length) return false;
-                    ushort sLen = ReadUShort(body, ref offset);
-                    if (offset + sLen > body.Length) return false;
-                    senderId = System.Text.Encoding.UTF8.GetString(body, offset, sLen); offset += sLen;
-
-                    int payloadLen = body.Length - offset;
-                    payload = new byte[payloadLen];
-                    if (payloadLen > 0) Buffer.BlockCopy(body, offset, payload, 0, payloadLen);
-                    return true;
-                }
-
-                private static byte[] WrapFrame(byte type, byte[] body)
-                {
-                    if (body == null) body = Array.Empty<byte>();
-                    var frame = new byte[3 + body.Length];
-                    frame[0] = type;
-                    frame[1] = (byte)(body.Length & 0xFF);
-                    frame[2] = (byte)((body.Length >> 8) & 0xFF);
-                    if (body.Length > 0) Buffer.BlockCopy(body, 0, frame, 3, body.Length);
-                    return frame;
-                }
-
-                private static void WriteUShort(byte[] buf, ref int offset, ushort value)
-                {
-                    buf[offset++] = (byte)(value & 0xFF);
-                    buf[offset++] = (byte)((value >> 8) & 0xFF);
-                }
-
-                private static ushort ReadUShort(byte[] buf, ref int offset)
-                {
-                    ushort v = (ushort)(buf[offset] | (buf[offset + 1] << 8));
-                    offset += 2;
-                    return v;
+                    return MultiplayerFrameCodec.Wrap(
+                        FrameIdentity,
+                        System.Text.Encoding.UTF8.GetBytes(
+                            peerId ?? string.Empty));
                 }
 
                 private bool TryFindConnectionByPlayerId(string playerId, out NetworkConnection connection)

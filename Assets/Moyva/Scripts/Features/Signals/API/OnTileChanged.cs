@@ -113,7 +113,7 @@ namespace Kruty1918.Moyva.Signals
     }
 
     /// <summary>
-    /// Надсилається ObjectsMapService після будь-якої зміни карти обʼєктів
+    /// Надсилається реалізацією IObjectsMapService після зміни карти обʼєктів.
     /// </summary>
     public struct OnObjectsMapChangedSignal
     {

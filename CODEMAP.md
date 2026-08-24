@@ -3,23 +3,180 @@
 Purpose: route a human or AI to the minimum source set needed for a task.
 Implementation source remains authoritative.
 
-| Concern | Start here | Authority |
+## Composition roots
+
+| Scope | Root | Installs / delegates to |
 |---|---|---|
-| Bootstrap / gameplay startup | `Assets/Moyva/Scripts/Bootstrap/` | launch topology -> starting-position workflow -> Turns |
-| Turns / rounds | `Assets/Moyva/Scripts/Features/Turns/` | `ITurnService` / `TurnService` |
-| Bot turn bridge | `Assets/Moyva/Scripts/Bootstrap/Runtime/TurnBotDriver.cs` | delegates a turn to BotAI |
-| BotAI composition | `Assets/Moyva/Scripts/Features/BotAI/Runtime/BotRuntimeBindings.cs` | single BotAI object graph |
-| Bot decision loop | `Assets/Moyva/Scripts/Features/BotAI/Runtime/BotTurnExecutor.cs` | planner -> candidate -> canonical action execution |
-| Construction | `Assets/Moyva/Scripts/Features/Construction/` | canonical placement/query/mutation services |
-| Units / movement / recruitment | `Assets/Moyva/Scripts/Features/Units/` | `UnitService` state; `UnitMovementService` execution; `UnitMovementRangeQuery` reachable tiles; `UnitRecruitmentService` recruitment |
-| Combat | `Assets/Moyva/Scripts/Features/Combat/` | canonical combat query/command services |
-| Economy | `Assets/Moyva/Scripts/Features/Economy/` | economy-owned state and operations |
-| Fog / perception | `Assets/Moyva/Scripts/Features/FogOfWar/` | visibility/perception authority |
-| Save / restore | `Assets/Moyva/Scripts/Features/SaveSystem/` | central sequencing; feature modules map their payloads |
-| World generation | `Assets/Moyva/Scripts/Features/Generator/` | generator-owned coordinator |
-| Graph authoring/runtime | `Assets/Moyva/Scripts/Features/GraphSystem/` | graph/node model and evaluation |
-| Multiplayer | `Assets/Moyva/Scripts/Features/Multiplayer/` | network boundary; gameplay mutation remains canonical |
-| JSON config | `Assets/Moyva/Presets/` + JSON runtime loader | JSON source -> resolved immutable runtime data |
+| Project lifetime | `Assets/Moyva/Scripts/Bootstrap/Runtime/ProjectServicesInstaller.cs` | diagnostics, shared services, audio, SaveSystem, Multiplayer |
+| Gameplay scene | `Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs` | gameplay bootstrap, starting-position workflow, BotAI bindings, turn HUD, recruitment deployment UI, bootstrap save modules |
+| Gameplay signals | `Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs` | Zenject SignalBus, gameplay signals, legacy-to-domain-event bridge, cached world-generation signals |
+| Home menu | `Assets/Moyva/Scripts/Features/HomeMenu/Runtime/HomeMenuInstaller.cs` | menu UI/services, gameplay session, menu-to-gameplay startup pipeline |
+| World generation | `Assets/Moyva/Scripts/Features/Generator/Runtime/GeneratorInstaller.cs` | graph map-data pipeline, TileWorldCreator bridge, map visuals, generator save module |
+
+Scene-authored feature installers still compose their own modules. Project and bootstrap installers may call idempotent feature binding methods, but must not duplicate feature graphs.
+
+## Runtime ownership map
+
+| Concern | Minimal start set | Runtime owner / mutation authority |
+|---|---|---|
+| Gameplay startup | `Bootstrap/Runtime/BootstrapInstaller.cs`; `Bootstrap/Runtime/StartingPositionInitializer.cs`; `Bootstrap/Runtime/StartingPositionWorkflowService.cs`; `Bootstrap/Runtime/StartingPositionWorkflowService.Client.cs` | `StartingPositionWorkflowService` sequences spawn assignment, load/new-world handling, fog reveal and camera framing; it delegates gameplay mutations |
+| Launch topology | `Bootstrap/Runtime/GameplayLaunchTopology.cs`; `Features/SaveSystem/Runtime/SavePlayModeOptions.cs` | `GameplayLaunchTopology` is pure participant policy; `GameLaunchContext` carries selected launch settings into Gameplay |
+| Turns / rounds | `Features/Turns/API/TurnContracts.cs`; `Features/Turns/Runtime/TurnBindings.cs`; `Features/Turns/Runtime/TurnService.cs` | `TurnService` owns active faction, phase, round, action count and transitions; `RoundResolutionService` orders round callbacks then advances Calendar |
+| Bot turn bridge | `Bootstrap/Runtime/TurnBotDriver.cs` | starts one BotAI executor epoch and retries canonical `TryEndTurn`; owns no strategy or gameplay state |
+| BotAI | `Features/BotAI/API/IBotTurnExecutor.cs`; `Features/BotAI/Runtime/BotRuntimeBindings.cs`; `Features/BotAI/Runtime/BotTurnExecutor.cs`; `Features/BotAI/Runtime/BotActionExecutor.cs` | Bot stores/planners own AI knowledge and decisions; `BotActionExecutor` delegates every mutation to canonical gameplay APIs |
+| Units: state / identity | `Features/Units/API/IUnitService.cs`; `Features/Units/Runtime/UnitsInstaller.cs`; `Features/Units/Runtime/UnitService.cs`; `Features/Units/Runtime/UnitFactory.cs` | `UnitService` owns unit position/type/owner/stamina indexes; `UnitFactory` is the creation boundary |
+| Units: movement | `Features/Units/API/IUnitMovementService.cs`; `Features/Units/API/Movement/IUnitMovementQuery.cs`; `Features/Units/Runtime/UnitMovementService.cs`; `Features/Units/Runtime/UnitMovementRangeQuery.cs` | `UnitMovementService` executes movement; `UnitMovementRangeQuery` owns reachable-tile queries; `UnitTurnAuthorityMovementService` decorates commands with turn/owner checks |
+| Units: recruitment | `Features/Units/API/IUnitRecruitmentService.cs`; `Features/Units/Runtime/UnitRecruitmentService.cs`; `Features/Units/Runtime/UnitRecruitmentQueueStateMachine.cs`; `Features/Units/Runtime/UnitRecruitmentDeploymentService.cs` | `UnitRecruitmentService` is the only enqueue/progress/deploy application boundary; the queue state machine owns paid queue state |
+| Unit combat | `Features/Combat/API/ICombatCommandService.cs`; `Features/Units/API/IUnitCombatService.cs`; `Features/Units/Runtime/UnitCombatCommandService.cs`; `Features/Units/Runtime/UnitCombatService.cs` | `UnitCombatCommandService` is the turn/owner-aware command boundary; `UnitCombatService` validates and applies unit attacks |
+| Health | `Features/Combat/API/IHealthRegistry.cs`; `Features/Combat/Runtime/CombatInstaller.cs`; `Features/Combat/Runtime/HealthRegistry.cs`; `Features/Construction/Runtime/Core/Health/BuildingHealthService.cs` | `HealthRegistry` indexes entity health; building health and garrison state are owned by `BuildingHealthService` |
+| Construction | `Features/Construction/API/Contracts/Core/IConstructionService.cs`; `Features/Construction/Runtime/Core/Installers/ConstructionInstaller.cs`; `Features/Construction/Runtime/Core/Service/ConstructionService.cs` | `ConstructionService` is the canonical selection, placement, confirmation, demolition and placed-building state authority |
+| Construction lifecycle | `Features/Construction/API/Contracts/Core/IConstructionLifecycle.cs`; `Features/Construction/Runtime/Core/Service/ConstructionLifecycleService.cs`; `Features/Construction/Runtime/Core/Service/ConstructionLifecycleStateMachine.cs` | owns build progress, operational transitions and their persistence payload |
+| Economy | `Features/Economy/Runtime/EconomyInstaller.cs`; `Features/Economy/Runtime/EconomyManager.cs`; `Features/Economy/Runtime/EconomySettlementRegistryService.cs`; `Features/Economy/Runtime/EconomyOwnerResourcePoolService.cs` | `EconomyManager` coordinates construction/calendar signals; settlement states/registry and owner resource pool are authoritative stores |
+| Economy queries | `Features/Economy/Runtime/IEconomyRuntimeApi.cs`; `Features/Economy/Runtime/EconomyRuntimeApi.cs`; `Features/Economy/API/IMapObjectEconomyService.cs` | read-only projections for UI/BotAI and map-object inspection; mutations stay behind Economy services |
+| Factions | `Features/Faction/API/`; `Features/Faction/Runtime/FactionInstaller.cs`; `Features/Faction/Runtime/FactionOwnershipService.cs` | `FactionRegistry` owns definitions; `FactionOwnershipService` owns the unit-to-faction index derived from lifecycle signals |
+| Fog / perception | `Features/FogOfWar/API/Contracts/Core/IFogOfWarService.cs`; `Features/FogOfWar/Runtime/Installers/FogOfWarInstaller.cs`; `Features/FogOfWar/Runtime/Core/Service/FogOfWarService.cs` | `FogOfWarService` owns explored/visible state and vision sources; `FogVisualUpdaterRouter` delegates presentation |
+| Grid | `Features/Grid/API/IGridService.cs`; `Features/Grid/Runtime/GridInstaller.cs`; `Features/Grid/Runtime/ChunkedGridService.cs` | `ChunkedGridService` is the bound grid API; tile storage is `Features/MapChunks/Runtime/Grid/ChunkedTileStore.cs` |
+| Object occupancy | `Features/ObjectsMap/API/IObjectsMapService.cs`; `Features/ObjectsMap/Runtime/ObjectsMapInstaller.cs`; `Features/ObjectsMap/Runtime/ChunkedObjectsMapService.cs` | bound occupancy API; mirrors unit/map-object lifecycle signals into `ChunkedObjectStore` |
+| Map chunks | `Features/MapChunks/API/`; `Features/MapChunks/Runtime/Installers/MapChunkFeatureBindings.cs`; `Features/MapChunks/Runtime/Core/MapChunkLayoutService.cs` | layout, chunked tile/object stores and visual chunk registries; bindings are reused by Grid, ObjectsMap, Camera, Fog and Generator |
+| Pathfinding | `Features/Pathfinding/API/IPathfinder.cs`; `Features/Pathfinding/Runtime/PathfinderInstaller.cs`; `Features/Pathfinding/Runtime/Pathfinder.cs` | path queries only; callers provide traversal/occupancy rules, so it is not a movement mutation path |
+| Calendar | `Features/Calendar/API/ICalendarService.cs`; `Features/Calendar/Runtime/CalendarInstaller.cs`; `Features/Calendar/Runtime/GameCalendarService.cs` | `GameCalendarService` owns game date/time; round resolution advances it exactly once per completed round |
+| Game mode / pause | `Features/GameMode/API/`; `Features/GameMode/Runtime/GameModeInstaller.cs`; `Features/GameMode/Runtime/GameModeService.cs`; `Features/GameMode/Runtime/GameStateService.cs` | `GameModeService` owns interaction mode; `GameStateService` owns playing/paused/game-over lifecycle; exit sequencing is `ExitMatchCoordinator` |
+| Save / restore | `Features/SaveSystem/API/`; `Features/SaveSystem/Runtime/SaveSystemInstaller.cs`; `Features/SaveSystem/Runtime/SaveService.cs`; `Features/SaveSystem/Runtime/SaveModuleRegistry.cs` | `SaveService` sequences registered `ISaveModule` payloads; feature modules capture/restore their own state |
+| Multiplayer session | `Features/Multiplayer/API/ISessionManager.cs`; `Features/Multiplayer/Runtime/MultiplayerInstaller.cs`; `Features/Multiplayer/Runtime/SessionManager.cs` | `SessionManager` owns session/participant lifecycle; switchable lobby/network providers own transport selection |
+| Multiplayer commands | `Features/Multiplayer/API/IGameCommandSyncService.cs`; `Features/Multiplayer/Runtime/GameCommandSyncService.cs`; `Features/Multiplayer/Runtime/MultiplayerAuthorityService.cs` | routes commands and host confirmations; confirmed gameplay changes delegate to canonical Construction/Units services |
+| World creation settings | `Features/WorldCreation/API/IWorldCreationService.cs`; `Features/WorldCreation/Runtime/WorldCreationInstaller.cs`; `Features/WorldCreation/Runtime/WorldCreationService.cs` | owns editable menu configuration; menu startup freezes it into session/launch settings |
+| Home menu / launch | `Features/HomeMenu/API/`; `Features/HomeMenu/Runtime/HomeMenuInstaller.cs`; `Features/HomeMenu/Runtime/HomeMenuGameStarter.cs`; `Features/HomeMenu/Runtime/Startup/GameplayStartupPipeline.cs` | menu services prepare `GameplaySession`; startup sets `GameLaunchContext`, preloads and activates Gameplay |
+| Graph model / evaluation | `Features/GraphSystem/API/GraphAsset.cs`; `Features/GraphSystem/API/IGraphRunner.cs`; `Features/GraphSystem/Runtime/GraphRunner.cs`; `Features/GraphSystem/Runtime/GraphValidator.cs` | `GraphAsset` owns graph/node data; `GraphRunner` evaluates it. Generator constructs it through `GraphEvaluationPipeline` |
+| World generation | `Features/Generator/API/IMapDataGenerator.cs`; `Features/Generator/Runtime/GeneratorInstaller.cs`; `Features/Generator/Runtime/MapVisualInstantiator.cs`; `Features/Generator/Runtime/MapVisual/MapVisualWorldBuildOrchestrator.cs` | orchestrator sequences generate/restore, TileWorldCreator build, grid write and world signals; `GraphTwcMapDataGenerator` is the normal provider |
+| Signals / domain events | `Features/Signals/API/`; `Features/Signals/Runtime/SignalBusInstaller.cs`; `Features/Signals/Runtime/SignalDomainEventBridge.cs` | transport and notification only; signals must not become alternative state authority |
+| Input routing | `Infrastructure/InputRouting/API/GameplayInputPolicy.cs`; `Infrastructure/InputRouting/Runtime/InputRoutingBindings.cs`; `Infrastructure/InputRouting/Runtime/GameplayInputPolicy.cs` | owns scoped input-block leases; feature input services still interpret allowed input |
+| UI action routing | `Features/UIActions/API/`; `Features/UIActions/Runtime/UiActionsInstaller.cs`; `Features/UIActions/Runtime/UiActionRouter.cs` | context/escape/hotkey routing and action journal only; handlers delegate gameplay changes |
+| Interactions / selection | `Features/Interactions/API/ITileInteractionService.cs`; `Features/Interactions/Runtime/InteractionsInstaller.cs`; `Features/Interactions/Runtime/WorldInfoSelectionCoordinator.cs` | translates pointer/tile selection into presentation requests; owns selection coordination, not map-object state |
+| Info panel | `Features/InfoPanel/UI/WorldInfoPanelInstaller.cs` | presentation-only world/building/unit information UI |
+| Notifications | `Features/Notifications/API/IGameplayNotificationService.cs`; `Features/Notifications/Runtime/NotificationsInstaller.cs`; `Features/Notifications/Runtime/GameplayNotificationService.cs` | owns notification queue/deduplication and delegates rendering to its presenter |
+| Camera | `Features/Camera/API/`; `Features/Camera/Runtime/CameraInstaller.cs`; `Features/Camera/Runtime/CameraMovement.cs`; `Features/Camera/Runtime/CameraZoom.cs` | owns camera presentation state and input; reads Grid/MapChunks but owns no gameplay state |
+| Animations | `Features/Animations/API/IMovementAnimationService.cs`; `Features/Animations/Runtime/AnimationsInstaller.cs`; `Features/Animations/Runtime/MovementAnimationService.cs` | movement presentation only; canonical unit movement awaits completion |
+| Clouds | `Features/Clouds/API/ICloudsService.cs`; `Features/Clouds/Runtime/CloudsInstaller.cs`; `Features/Clouds/Runtime/CloudsService.cs` | owns transient cloud presentation instances only |
+| Visuals / day-night | `Features/Visuals/Runtime/VisualInstaller.cs`; `Features/Visuals/Runtime/DayNightShaderController.cs` | presentation derived from Calendar; delegates default calendar composition to `CalendarInstaller.InstallDefaultIfMissing` |
+| Shared runtime services | `Shared/SharedInstaller.cs`; `Shared/Audio/AudioContracts.cs`; `Shared/Audio/AudioService.cs`; `Shared/GraphicsSettingsService.cs`; `Shared/Performance/`; `Shared/UI/` | project-lifetime connectivity, graphics, audio, health, performance and UI policies; no gameplay mutation authority |
+| Diagnostics | `Infrastructure/Diagnostics/API/`; `Infrastructure/Diagnostics/Runtime/DiagnosticsInstaller.cs` | observes and reports flows; diagnostics never decide gameplay outcomes |
+| JSON runtime | `Jsonization/Runtime/MoyvaJsonRuntime.cs`; `Jsonization/Runtime/MoyvaJsonTypeRegistry.cs`; `Jsonization/Runtime/MoyvaJsonAssetCatalog.cs` | loads, validates and resolves JSON-backed configuration; JSON under `Assets/Moyva/Presets/` is editable source of truth |
+
+## Authoritative runtime flows
+
+### Project startup
+
+`ProjectServicesInstaller`
+→ `DiagnosticsInstaller`
+→ `SharedInstaller` / `AudioInstaller`
+→ `SaveSystemInstaller`
+→ `MultiplayerInstaller`
+
+### Home menu to Gameplay
+
+`HomeMenu UI/services`
+→ `GameplaySession`
+→ `HomeMenuGameStarter`
+→ `GameplayStartupPipeline` (`Preload → Bind → Warmup → SceneActivate`)
+→ `GameLaunchContext`
+→ Gameplay scene installers
+
+### New or restored world
+
+`GeneratorWorldStartupBuilder`
+→ `MapVisualInstantiator`
+→ `MapVisualWorldBuildOrchestrator`
+→ pending save data or `GraphTwcMapDataGenerator`
+→ `GraphEvaluationPipeline` / `GraphRunner`
+→ optional TileWorldCreator bridge
+→ `IGridService`
+→ `WorldGeneratedDataSignal` + `WorldSpawnPositionsSignal`
+→ `StartingPositionInitializer`
+→ `StartingPositionWorkflowService`
+→ load/new-world reveal, camera and spawn setup
+→ `TurnService` becomes ready from spawn assignments
+
+### Round and turn handoff
+
+`TurnService.StartCurrentTurn`
+→ ordered `ITurnParticipant.OnTurnStarted`
+→ canonical player/BotAI actions
+→ `ITurnBlocker` checks
+→ ordered `ITurnParticipant.OnTurnEnding`
+→ next faction, or `RoundResolutionService`
+→ `ITurnParticipant.OnRoundCompleted`
+→ `ICalendarService.AdvanceTurn`
+→ calendar-driven Economy tick
+→ next round
+
+### Human gameplay mutation
+
+`input/UI`
+→ input policy and feature query/preflight
+→ canonical command/application service
+→ authoritative store/state update
+→ gameplay signal/domain event
+→ presentation and derived indexes
+
+Canonical command boundaries are Construction (`IConstructionService` / `IConstructionPlacementQuery`), movement (`IUnitMovementService` / `IUnitMovementQuery`), recruitment (`IUnitRecruitmentService`) and combat (`ICombatCommandService`).
+
+### Bot turn
+
+`TurnService`
+→ `TurnBotDriver`
+→ `BotTurnExecutor`
+→ world snapshot + strategic/turn planners
+→ ranked `BotActionCandidate`
+→ `BotActionExecutor`
+→ canonical Construction / Units / Combat APIs
+→ normal blockers settle
+→ `TurnBotDriver`
+→ `ITurnService.TryEndTurn`
+
+### Multiplayer gameplay command
+
+`client request`
+→ `MultiplayerAuthorityService`
+→ `GameCommandSyncService`
+→ host validation
+→ canonical Construction / Units service
+→ confirmed command/event
+→ clients apply confirmed state through the same feature boundary
+
+### Save / restore
+
+`ISaveService`
+→ snapshot of DI-provided and `SaveModuleRegistry` modules
+→ deterministic module order
+→ `SaveWriteService` or `SaveLoadService`
+→ each feature's `ISaveModule`
+→ explicit feature restore boundary without replaying costs or gameplay commands
+
+## Cross-feature dependency rules
+
+- Bootstrap sequences startup; it does not become a second gameplay domain.
+- UI, BotAI, Multiplayer, save adapters and editor tools delegate mutations to canonical feature services.
+- Signals publish completed transitions or requests; subscribers do not silently establish a second source of truth.
+- Grid owns tile identity. ObjectsMap owns occupancy. Units and Construction own their domain state and keep derived occupancy indexes synchronized through canonical signals/services.
+- Calendar advances from round resolution. Economy reacts to Calendar and Construction; it does not advance Turns.
+- GraphSystem evaluates graphs. Generator owns world-generation orchestration and writes the resolved world to Grid.
+- Shared and Infrastructure contain cross-cutting policies only; feature-specific behavior stays in its feature.
+
+## Authority and consumers
+
+| Authoritative state | Mutation entry points | Main readers / derived consumers |
+|---|---|---|
+| world and tile IDs | Generator world build or generated-world restore → `IGridService` | Construction, Units traversal, Pathfinding, Fog, Camera, BotAI |
+| occupancy | `IObjectsMapService`, synchronized from unit/map-object lifecycle | Construction placement, Units movement, BotAI snapshots, world-info UI |
+| turn state | `ITurnService`; `ITurnStateRestorer` only for persistence | Units and Construction participants, BotAI driver, HUD, SaveSystem |
+| unit state | `IUnitFactory`, `IUnitMovementService`, `IUnitRecruitmentService`, `ICombatCommandService`, unit restore boundary | ObjectsMap, Faction ownership, Fog, BotAI, Multiplayer adapters, UI |
+| construction state | `IConstructionService`, confirmed multiplayer apply contracts, construction restore contracts | Economy, Fog, ObjectsMap, Units traversal/garrison, BotAI, UI |
+| economy state | Economy construction/calendar integration, starter-pack grant, economy restore module | Construction affordability, UI summaries, BotAI queries |
+| fog state | fog map/reveal/vision-source contracts and fog restore module | Construction rules, BotAI perception, renderer culling and fog visuals |
+| calendar state | `RoundResolutionService`; calendar restore/sync boundaries | Economy tick and day/night visuals |
+| faction definitions / ownership | `FactionInstaller`; unit lifecycle-derived ownership registration | Turns, BotAI, unit queries and presentation |
+| session / participants | menu session preparation and `ISessionManager` | launch topology, local-owner resolution, multiplayer authority, pause policy |
+| game mode / lifecycle | `IGameModeService`, `IGameStateService`, `IExitMatchCoordinator` | input routing, pause/menu UI and scene exit |
 
 ## Invariants
 
@@ -42,6 +199,32 @@ For most changes, read:
 `CODEMAP -> feature API -> installer/bindings -> target implementation -> focused tests`
 
 Only expand to callers/consumers when the change crosses a feature boundary.
+
+## Context-budget guardrails
+
+- Search production first: exclude `Development`, `Editor` and `Tests` until a concrete runtime path requires them.
+- Treat a file above 500 lines as a review signal, not an automatic split target. Split mixed ownership; keep cohesive mesh, validation and rendering algorithms together.
+- Do not open large Fog, Generator mesh or Graph evaluation implementations to answer composition/authority questions. Start from their API and installer row above.
+- Construction uses responsibility-based partials; use the focused map below instead of loading every partial.
+- Runtime code with no C# caller still requires GUID, DI, reflection, JSON ID and save-compatibility checks before removal.
+- Disabled or generated sources must be reproducible and actively compiled; do not track inert compatibility corpora.
+
+On-demand size scan (do not commit its output):
+
+```sh
+rg --files Assets/Moyva/Scripts -g '*.cs' \
+  -g '!**/Development/**' -g '!**/Editor/**' -g '!**/Tests/**' \
+  | xargs wc -l | sort -nr
+```
+
+On-demand structural clone scan:
+
+```sh
+npx --yes jscpd@4.0.5 Assets/Moyva/Scripts \
+  --pattern '**/*.cs' \
+  --ignore '**/Development/**,**/Editor/**,**/Tests/**' \
+  --min-lines 20 --min-tokens 100 --mode mild
+```
 
 ## Construction reading map
 
@@ -73,7 +256,9 @@ Do not open every Units runtime service for a focused task.
 | Task | Primary files |
 |---|---|
 | unit state / position / ownership | `UnitService.cs` |
+| unit creation | `UnitFactory.cs` |
 | movement command / animation execution | `UnitMovementService.cs` |
+| turn / owner movement authority | `UnitTurnAuthorityMovementService.cs` |
 | reachable movement tiles / range cache | `UnitMovementRangeQuery.cs` |
 | traversal cost / terrain / construction passage | `UnitTraversalPolicy.cs` |
 | recruitment enqueue / economy / turn progression / signals | `UnitRecruitmentService.cs` |
@@ -81,6 +266,8 @@ Do not open every Units runtime service for a focused task.
 | recruitment building / module / recipe context | `UnitRecruitmentBuildingContextResolver.cs` |
 | ready-unit deployment query / commit | `UnitRecruitmentDeploymentService.cs` |
 | deployment tile validity | `UnitPlacementValidator.cs` |
+| combat query / damage application | `UnitCombatService.cs` |
+| combat command / turn authority | `UnitCombatCommandService.cs` |
 | DI / canonical composition | `UnitsInstaller.cs` |
 
 Recruitment is owned by `Features/Units`; do not create a parallel `Features/Recruitment` mutation path.

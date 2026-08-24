@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
@@ -64,35 +62,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             int w = Mathf.Max(1, context.MapSize.x);
             int h = Mathf.Max(1, context.MapSize.y);
             return new bool[w, h];
-        }
-
-    }
-
-    internal static class LayerMaskPrewarmUtility
-    {
-        public static void PrewarmAllLayerMasks(
-            GraphAsset graph,
-            int seed,
-            Vector2Int mapSize,
-            LayerMaskRegistry registry,
-            Action<NodeContext> configureContext = null,
-            ISet<string> skippedLayerIds = null)
-        {
-            if (graph == null || registry == null)
-                return;
-
-            var snapshot = GraphEvaluationPipeline.Evaluate(
-                graph,
-                seed,
-                mapSize,
-                configureContext: configureContext,
-                skippedLayerIds: skippedLayerIds);
-            foreach (var pair in snapshot.LayerOutputs)
-            {
-                if (pair.Value is ILayerMaskArtifact artifact
-                    && artifact.LayerMask != null)
-                    registry.SetLatestMask(pair.Key, artifact.LayerMask);
-            }
         }
 
     }

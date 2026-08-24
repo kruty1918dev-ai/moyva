@@ -18,6 +18,8 @@ namespace Kruty1918.Moyva.Grid.Runtime
         /// Локальний кеш визначень тайлів для O(1) доступу за TileId.
         /// </summary>
         private readonly Dictionary<string, TileTypeDefinition> _cache = new();
+        private readonly HashSet<string> _reportedMissingTileIds = new(StringComparer.Ordinal);
+        private bool _reportedEmptyTileId;
 
         /// <summary>
         /// Нове джерело параметрів за id шару. Має пріоритет, якщо задане.
@@ -58,7 +60,12 @@ namespace Kruty1918.Moyva.Grid.Runtime
             // 1) Ранній захист від порожнього або null-ідентифікатора.
             if (String.IsNullOrEmpty(tileTypeId))
             {
-                Debug.LogWarning("TileSettingsService: GetTileWeight called with null or empty tileTypeId");
+                if (!_reportedEmptyTileId)
+                {
+                    _reportedEmptyTileId = true;
+                    Debug.LogWarning("TileSettingsService: GetTileWeight called with null or empty tileTypeId");
+                }
+
                 return 0f;
             }
 
@@ -71,7 +78,8 @@ namespace Kruty1918.Moyva.Grid.Runtime
                 return props.MovementCost;
 
             // 4) Якщо ключ відсутній, логуємо попередження для діагностики даних.
-            Debug.LogWarning($"TileSettingsService: Tile type ID '{tileTypeId}' not found in registry!");
+            if (_reportedMissingTileIds.Add(tileTypeId))
+                Debug.LogWarning($"TileSettingsService: Tile type ID '{tileTypeId}' not found in registry!");
 
             // 5) Повертаємо fallback, щоб ігрова логіка лишалась стабільною.
             return 0f;

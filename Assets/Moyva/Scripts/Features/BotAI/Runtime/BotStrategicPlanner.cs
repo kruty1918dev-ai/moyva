@@ -280,6 +280,14 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                     "Economy stage waits for the capital.");
             }
 
+            if (_buildings == null)
+            {
+                return new ScoredPosture(
+                    BotStrategicPosture.Economy,
+                    180,
+                    "Building capabilities are unavailable; economy gaps are not inferred.");
+            }
+
             bool warehouse =
                 HasOwnedCapability(
                     snapshot,

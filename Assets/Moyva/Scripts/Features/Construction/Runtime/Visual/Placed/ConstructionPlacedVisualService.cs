@@ -8,7 +8,9 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionPlacedVisualService {
+    internal sealed class ConstructionPlacedVisualService :
+        IConstructionPlacedVisualLookup
+    {
         private const float PlacedSnapSharpness = 12f;
 
         private readonly Dictionary<Vector2Int, GameObject> _placedByPosition = new();

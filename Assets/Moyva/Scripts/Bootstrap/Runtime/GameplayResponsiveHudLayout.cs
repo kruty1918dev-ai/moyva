@@ -288,7 +288,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 rect.pivot = new Vector2(0f, 0.5f);
                 rect.offsetMin = new Vector2(18f, 34f);
                 rect.offsetMax = new Vector2(-endButtonSpace, -8f);
-                _turnText.enableWordWrapping = false;
+                _turnText.textWrappingMode =
+                    TextWrappingModes.NoWrap;
                 _turnText.overflowMode = TextOverflowModes.Ellipsis;
             }
 

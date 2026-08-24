@@ -379,8 +379,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             foreach (var pair in _playerPlacedBuildings)
             {
-                _fogOfWarService?.UnregisterUnit(
-                    GetBuildingFogVisionAreaId(pair.Key));
+                _buildingFogEffects.Remove(pair.Key);
                 _buildingFogEffects.Apply(
                     pair.Value,
                     pair.Key);
@@ -392,8 +391,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (_playerPlacedBuildings.ContainsKey(pair.Key))
                     continue;
 
-                _fogOfWarService?.UnregisterUnit(
-                    GetBuildingFogVisionAreaId(pair.Key));
+                _buildingFogEffects.Remove(pair.Key);
                 _buildingFogEffects.Apply(
                     pair.Value.BuildingId,
                     pair.Key);

@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {

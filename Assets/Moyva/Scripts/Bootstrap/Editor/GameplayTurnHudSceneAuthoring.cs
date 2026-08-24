@@ -67,7 +67,7 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             turnTextRect.pivot = new Vector2(0f, 0.5f);
             turnTextRect.offsetMin = new Vector2(16f, 34f);
             turnTextRect.offsetMax = new Vector2(-172f, -10f);
-            turnText.enableWordWrapping = false;
+            turnText.textWrappingMode = TextWrappingModes.NoWrap;
             turnText.text = "Фракція: —    Раунд 1    Хід 1\nФаза —    Дії 0";
 
             Button endTurnButton = CreateButton(
@@ -207,7 +207,7 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             queueRect.pivot = new Vector2(0.5f, 0f);
             queueRect.anchoredPosition = new Vector2(0f, 12f);
             queueRect.sizeDelta = new Vector2(-28f, 112f);
-            queueText.enableWordWrapping = true;
+            queueText.textWrappingMode = TextWrappingModes.Normal;
             queueText.text = string.Empty;
 
             ConfigureView(
@@ -331,7 +331,7 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             text.alignment = alignment;
             text.color = color;
             text.raycastTarget = false;
-            text.enableWordWrapping = false;
+            text.textWrappingMode = TextWrappingModes.NoWrap;
             return text;
         }
 

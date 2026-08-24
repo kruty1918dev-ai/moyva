@@ -97,6 +97,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
+        public void Remove(Vector2Int position)
+        {
+            _fogOfWarService?.UnregisterUnit(
+                GetBuildingFogVisionAreaId(position));
+        }
+
         private static string GetBuildingFogVisionAreaId(
             Vector2Int position)
         {

@@ -67,12 +67,12 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             { kind = BotGoalKind.DefendBase; priority = 1000; reason = "Emergency posture overrides strategic hysteresis."; }
             else if (snapshot.OwnBuildings.Count == 0)
             { kind = BotGoalKind.StabilizeOpening; priority = 900; reason = "No owned infrastructure."; }
+            else if (snapshot.VisibleEnemyUnits.Count > 0)
+            { kind = BotGoalKind.PressureEnemy; priority = 650; reason = "Visible enemy contact."; }
             else if (snapshot.OwnUnits.Count < 3)
             { kind = BotGoalKind.BuildArmy; priority = 700; reason = "Army below baseline."; }
             else if (strategy.Posture == BotStrategicPosture.Siege)
             { kind = BotGoalKind.SiegeObjective; priority = 760; reason = "Known objective and siege posture."; }
-            else if (snapshot.VisibleEnemyUnits.Count > 0)
-            { kind = BotGoalKind.PressureEnemy; priority = 650; reason = "Visible enemy contact."; }
             else if (strategy.Posture == BotStrategicPosture.Search)
             { kind = BotGoalKind.SearchEnemy; priority = 550; reason = "No visible contact; preserve search intent."; }
             else

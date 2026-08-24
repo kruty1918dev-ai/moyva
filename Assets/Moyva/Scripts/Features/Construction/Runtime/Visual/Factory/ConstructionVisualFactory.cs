@@ -5,7 +5,8 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionVisualFactory : IConstructionVisualInstanceRecycler {
+    internal sealed class ConstructionVisualFactory
+    {
         private readonly ConstructionVisualStyleService _styleService;
         private readonly ConstructionTerrainAlignmentService _terrainAlignmentService;
 

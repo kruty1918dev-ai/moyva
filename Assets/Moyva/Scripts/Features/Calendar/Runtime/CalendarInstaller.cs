@@ -22,14 +22,43 @@ namespace Kruty1918.Moyva.Calendar.Runtime
                 rawConfig,
                 message => Debug.LogWarning($"[CalendarInstaller] {message}"));
 
+            InstallIfMissing(Container, config);
+        }
+
+        public static void InstallDefaultIfMissing(DiContainer container)
+        {
+            InstallIfMissing(
+                container,
+                CalendarConfigLifecycle.ValidateAndFreeze(
+                    CalendarConfig.Default(),
+                    message => Debug.LogWarning(
+                        $"[CalendarInstaller] {message}")));
+        }
+
+        private static void InstallIfMissing(
+            DiContainer container,
+            CalendarConfig config)
+        {
+            if (container == null
+                || container.HasBinding<ICalendarService>())
+            {
+                return;
+            }
+
             var service = new GameCalendarService(config);
-            Container.BindInstance(service).AsSingle();
-            Container.Bind<ICalendarService>().FromInstance(service).AsSingle();
-            Container.Bind<ICalendarStateRestorer>().FromInstance(service).AsSingle();
+            container.BindInstance(service).AsSingle();
+            container.Bind<ICalendarService>()
+                .FromInstance(service)
+                .AsSingle();
+            container.Bind<ICalendarStateRestorer>()
+                .FromInstance(service)
+                .AsSingle();
 
             var adapter = new CalendarSyncAdapter(service);
-            Container.BindInstance(adapter).AsSingle();
-            Container.Bind<ICalendarSyncAdapter>().FromInstance(adapter).AsSingle();
+            container.BindInstance(adapter).AsSingle();
+            container.Bind<ICalendarSyncAdapter>()
+                .FromInstance(adapter)
+                .AsSingle();
         }
     }
 }
