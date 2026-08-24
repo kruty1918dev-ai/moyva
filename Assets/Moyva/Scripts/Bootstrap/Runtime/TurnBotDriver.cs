@@ -91,7 +91,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                             "The driver cannot execute any AI action. The turn will become a no-op and may end immediately.",
                         details:
                             $"owner='{ownerId}'; globalTurn={globalTurn}; " +
-                            $"this strongly suggests BotInstaller/runtime bindings are missing or failed.",
+                            $"this strongly suggests BotRuntimeBindings/runtime bindings are missing or failed.",
                         ownerId: ownerId);
 
                     Debug.LogWarning(

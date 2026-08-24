@@ -44,4 +44,4 @@ Alternative:
 - `Assets/Moyva/Scripts/Shared/Common/DomainErrorCode.cs`
 - `Assets/Moyva/Scripts/Features/HomeMenu/Runtime/Services/JoinRoomPanelService.cs`
 - `Assets/Moyva/Scripts/Features/HomeMenu/Runtime/Services/JoinRoomTransportAdapter.cs`
-- `docs/standarts/domain-result-pattern.md`
+- `docs/standards/domain-result-pattern.md`

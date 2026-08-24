@@ -7,6 +7,8 @@ on:
       - '**'
     paths:
       - 'docs/**'
+      - 'tools/docs/site/**'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
   delete:
 
@@ -30,67 +32,47 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate core documentation files
+      - name: Build static docs artifact
         run: |
-          MISSING=0
-          for f in docs/README.md docs/index.html docs/pages.json; do
-            if [ ! -f "$f" ]; then
-              echo "MISSING: $f"
-              MISSING=$((MISSING + 1))
-            fi
-          done
-          if [ "$MISSING" -gt 0 ]; then
-            echo "Validation failed: $MISSING required file(s) are missing."
-            exit 1
-          fi
-          echo "Core documentation files are present."
+          rm -rf .docs-site
+          mkdir -p .docs-site
+          cp -a docs/. .docs-site/
+          cp tools/docs/site/index.template.html .docs-site/index.html
+          cp tools/docs/site/navigation.json .docs-site/pages.json
 
-      - name: Validate pages.json structure
+      - name: Validate documentation artifact
         run: |
           python3 << 'PYEOF'
-          import json, sys, os
-
-          with open('docs/pages.json', encoding='utf-8') as f:
-              data = json.load(f)
-
-          if not isinstance(data, dict) or 'sections' not in data:
-              print('ERROR: pages.json must be an object with "sections" array.')
-              print('       Got:', type(data).__name__, '— keys:', list(data.keys()) if isinstance(data, dict) else 'N/A')
+          import json, os, sys
+          root='.docs-site'
+          required=['README.md','index.html','pages.json']
+          missing=[f for f in required if not os.path.isfile(os.path.join(root,f))]
+          if missing:
+              print('Missing:', ', '.join(missing))
               sys.exit(1)
-
-          sections = data['sections']
-          if not isinstance(sections, list) or len(sections) == 0:
-              print('ERROR: "sections" must be a non-empty array.')
+          with open(os.path.join(root,'pages.json'),encoding='utf-8') as f:
+              data=json.load(f)
+          sections=data.get('sections') if isinstance(data,dict) else None
+          if not isinstance(sections,list) or not sections:
+              print('ERROR: pages.json requires non-empty sections')
               sys.exit(1)
-
-          errors = 0
-          total_pages = 0
-          for i, sec in enumerate(sections):
-              if not isinstance(sec, dict):
-                  print(f'ERROR: sections[{i}] is not an object')
-                  errors += 1
-                  continue
-              for key in ('id', 'title', 'icon', 'pages'):
+          errors=0
+          pages=0
+          for i,sec in enumerate(sections):
+              for key in ('id','title','icon','pages'):
                   if key not in sec:
-                      print(f'ERROR: sections[{i}] ("{sec.get("id","?")}") missing "{key}"')
-                      errors += 1
-              if not isinstance(sec.get('pages'), list):
-                  print(f'ERROR: sections[{i}].pages is not an array')
-                  errors += 1
-                  continue
-              for j, page in enumerate(sec['pages']):
-                  total_pages += 1
-                  if 'path' not in page:
-                      print(f'ERROR: sections[{i}].pages[{j}] missing "path"')
-                      errors += 1
-                  elif not os.path.isfile(os.path.join('docs', page['path'])):
-                      print(f'WARNING: file not found: docs/{page["path"]}')
-
-          if errors > 0:
-              print(f'Validation FAILED with {errors} error(s).')
+                      print(f'ERROR sections[{i}] missing {key}')
+                      errors+=1
+              for page in sec.get('pages',[]):
+                  pages+=1
+                  rel=page.get('path')
+                  if not rel:
+                      errors+=1
+                  elif not os.path.isfile(os.path.join(root,rel)):
+                      print(f'WARNING missing docs page: {rel}')
+          if errors:
               sys.exit(1)
-
-          print(f'pages.json OK: {len(sections)} sections, {total_pages} pages.')
+          print(f'pages.json OK: {len(sections)} sections, {pages} pages')
           PYEOF
 
       - name: Setup Pages
@@ -101,7 +83,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './docs'
+          path: './.docs-site'
 
       - name: Compute preview URL
         if: github.ref != 'refs/heads/main'
@@ -115,20 +97,7 @@ jobs:
         env:
           SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
         run: |
-          npx --yes surge ./docs "${{ steps.preview_url.outputs.domain }}" --token "$SURGE_TOKEN"
-
-      - name: Publish preview summary
-        if: github.ref != 'refs/heads/main'
-        run: |
-          {
-            echo "## 📄 Documentation Preview"
-            echo ""
-            echo "Гілка: \`${GITHUB_REF_NAME}\`"
-            echo ""
-            echo "🔗 **Live preview:** https://${{ steps.preview_url.outputs.domain }}"
-            echo ""
-            echo "> Сайт існує лише для цієї гілки і буде видалений разом з нею."
-          } >> "$GITHUB_STEP_SUMMARY"
+          npx --yes surge ./.docs-site "${{ steps.preview_url.outputs.domain }}" --token "$SURGE_TOKEN"
 
   deploy:
     runs-on: ubuntu-latest
@@ -157,13 +126,3 @@ jobs:
           SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
         run: |
           npx --yes surge teardown "${{ steps.preview_url.outputs.domain }}" --token "$SURGE_TOKEN"
-
-      - name: Publish teardown summary
-        run: |
-          {
-            echo "## 🗑️ Preview Removed"
-            echo ""
-            echo "Гілку \`${{ github.event.ref }}\` видалено — превʼю сайт також прибрано."
-            echo ""
-            echo "~~https://${{ steps.preview_url.outputs.domain }}~~"
-          } >> "$GITHUB_STEP_SUMMARY"

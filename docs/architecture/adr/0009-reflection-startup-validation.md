@@ -43,4 +43,4 @@ Alternative:
 - `Assets/Moyva/Scripts/Features/Multiplayer/Runtime/RelayNetworkProvider.cs`
 - `Assets/Moyva/Scripts/Features/Multiplayer/Runtime/MultiplayerInstaller.cs`
 - `Assets/Moyva/Scripts/Features/Multiplayer/Runtime/NetworkProviderFactory.cs`
-- `docs/standarts/reflection-startup-validation.md`
+- `docs/standards/reflection-startup-validation.md`

@@ -60,37 +60,34 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
         }
 
         [Test]
-        public void P15_RuntimeSource_HasNoLegacyRecruitmentConsumerOutsideLegacyFeature()
+        public void P15_LegacyRecruitmentFeature_IsRemoved()
         {
-            string root = Path.Combine(
+            string legacyDirectory = Path.Combine(
                 Directory.GetCurrentDirectory(),
-                Scripts.Replace('/', Path.DirectorySeparatorChar));
-            foreach (string file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
-            {
-                string normalized = file.Replace('\\', '/');
-                if (normalized.Contains("/Features/Recruitment/", StringComparison.Ordinal)
-                    || normalized.Contains("/Tests/", StringComparison.Ordinal))
-                {
-                    continue;
-                }
+                Scripts.Replace('/', Path.DirectorySeparatorChar),
+                "Features",
+                "Recruitment");
+            Assert.That(Directory.Exists(legacyDirectory), Is.False);
 
-                string source = File.ReadAllText(file);
-                Assert.That(source, Does.Not.Contain("RecruitmentBindings.Install("), normalized);
-                Assert.That(source, Does.Not.Contain("using Kruty1918.Moyva.Recruitment;"), normalized);
-                Assert.That(source, Does.Not.Contain("IRecruitmentService"), normalized);
-            }
+            string units = Read(Scripts + "Features/Units/Runtime/UnitsInstaller.cs");
+            Assert.That(units, Does.Contain("BindInterfacesAndSelfTo<UnitRecruitmentService>()"));
         }
 
         [Test]
-        public void P15_LegacyBotScheduler_IsBothUnboundAndInert()
+        public void P15_LegacyBotScheduler_IsRemoved()
         {
-            string installer = Read(Scripts + "Features/BotAI/Runtime/BotInstaller.cs");
-            string scheduler = Read(Scripts + "Features/BotAI/Runtime/BotTickScheduler.cs");
-            Assert.That(installer, Does.Not.Contain("BindInterfacesAndSelfTo<BotTickScheduler>"));
-            Assert.That(installer, Does.Not.Contain("BindInterfacesTo<BotTickScheduler>"));
-            Assert.That(scheduler, Does.Contain("IsRuntimeEnabled => false"));
-            Assert.That(scheduler, Does.Not.Contain("ITickable"));
-            Assert.That(scheduler, Does.Not.Contain("Time.deltaTime"));
+            string schedulerPath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                Scripts.Replace('/', Path.DirectorySeparatorChar),
+                "Features",
+                "BotAI",
+                "Runtime",
+                "BotTickScheduler.cs");
+            Assert.That(File.Exists(schedulerPath), Is.False);
+
+            string bindings = Read(Scripts + "Features/BotAI/Runtime/BotRuntimeBindings.cs");
+            Assert.That(bindings, Does.Not.Contain("BindInterfacesAndSelfTo<BotTickScheduler>"));
+            Assert.That(bindings, Does.Not.Contain("BindInterfacesTo<BotTickScheduler>"));
         }
 
         [Test]
@@ -193,6 +190,29 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             for (int patch = 1; patch <= 13; patch++)
                 Assert.That(suite, Does.Contain($"P{patch:D2}_"), $"Missing P{patch:D2} contract marker.");
             Assert.That(Count(suite, "        [Test]"), Is.GreaterThanOrEqualTo(20));
+        }
+
+        [Test]
+        public void P15_UnitMovementRangeQuery_HasSingleRuntimeOwner()
+        {
+            string movement = Read(Scripts + "Features/Units/Runtime/UnitMovementService.cs");
+            string range = Read(Scripts + "Features/Units/Runtime/UnitMovementRangeQuery.cs");
+            string installer = Read(Scripts + "Features/Units/Runtime/UnitsInstaller.cs");
+
+            Assert.That(movement, Does.Not.Contain("IUnitMovementQuery"));
+            Assert.That(movement, Does.Not.Contain("GetMovementTiles("));
+            Assert.That(range, Does.Contain("IUnitMovementQuery"));
+            Assert.That(range, Does.Contain("GetMovementTiles("));
+            Assert.That(installer, Does.Contain("BindInterfacesAndSelfTo<UnitMovementRangeQuery>()"));
+        }
+
+        [Test]
+        public void P15_RecruitmentDeployment_UsesCanonicalPlacementValidatorOnly()
+        {
+            string recruitment = Read(Scripts + "Features/Units/Runtime/UnitRecruitmentService.cs");
+            Assert.That(recruitment, Does.Contain("_placementValidator.CanDeployUnit"));
+            Assert.That(recruitment, Does.Not.Contain("_grid.ContainsCell"));
+            Assert.That(recruitment, Does.Not.Contain("_objectsMap.IsOccupied"));
         }
 
         [Test]

@@ -39,7 +39,7 @@ Unless the task explicitly concerns them, do not read:
 - `**/Editor/**`
 - `**/Tests/**` before the production path is identified
 - historical migration reports or archived documentation
-- generated site output
+- generated site output (`.docs-site/`) and docs site templates unless working on publishing
 - backup/audit artifacts
 
 Search production `API/`, composition, and `Runtime/` first. Expand to excluded paths only when a reference or failing test requires it.
@@ -50,6 +50,7 @@ Search production `API/`, composition, and `Runtime/` first. Expand to excluded 
 - Composition over inheritance.
 - Prefer plain C# domain/services; keep MonoBehaviours thin.
 - One authoritative state-mutation path per gameplay concept.
+- Canonical unit recruitment lives in `Features/Units` via `IUnitRecruitmentService` / `UnitRecruitmentService`; do not reintroduce a parallel Recruitment feature.
 - UI, BotAI, multiplayer adapters, and editor tools must delegate to canonical gameplay services.
 - Feature modules own their bindings/composition. Scene/bootstrap installers may delegate, not duplicate the graph.
 - Tests stay outside production `Runtime/` folders.

@@ -7,9 +7,8 @@ namespace Kruty1918.Moyva.BotAI.Runtime
     /// <summary>
     /// Canonical BotAI DI composition root.
     ///
-    /// Gameplay scenes are not allowed to depend on a scene-authored BotInstaller
-    /// being present. Bootstrap can safely call this composition root, while the
-    /// optional BotInstaller delegates to the same method. Every binding is guarded,
+    /// Gameplay scenes do not depend on a scene-authored BotAI installer.
+    /// Bootstrap calls this composition root directly. Every binding is guarded,
     /// so invoking the installer more than once in the same container is idempotent.
     /// </summary>
     public static class BotRuntimeBindings
@@ -70,7 +69,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
 
             BindSaveModule<BotGoalSaveModule>(container);
 
-            BindIfMissing<IBotObjectivePlanner, BotObjectivePlanner>(container);
+            BindIfMissing<BotObjectivePlanner, BotObjectivePlanner>(container);
             BindIfMissing<IBotMovementPlanner, BotMovementPlanner>(container);
             BindIfMissing<IBotTurnPlanner, BotTurnPlanner>(container);
             BindIfMissing<IBotActionExecutor, BotActionExecutor>(container);
@@ -81,7 +80,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                     .AsSingle();
             }
 
-            // Legacy wall-clock BotTickScheduler deliberately remains unbound.
+            // No wall-clock bot scheduler exists: bot execution is authoritative and turn-scoped.
             //
             // BotFogInitializer is intentionally NOT bound from the canonical bootstrap
             // composition root. It is an old global-fog compatibility bridge whose

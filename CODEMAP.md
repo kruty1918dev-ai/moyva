@@ -11,8 +11,7 @@ Implementation source remains authoritative.
 | BotAI composition | `Assets/Moyva/Scripts/Features/BotAI/Runtime/BotRuntimeBindings.cs` | single BotAI object graph |
 | Bot decision loop | `Assets/Moyva/Scripts/Features/BotAI/Runtime/BotTurnExecutor.cs` | planner -> candidate -> canonical action execution |
 | Construction | `Assets/Moyva/Scripts/Features/Construction/` | canonical placement/query/mutation services |
-| Recruitment | `Assets/Moyva/Scripts/Features/Recruitment/` | canonical recruitment service |
-| Units / movement | `Assets/Moyva/Scripts/Features/Units/` | canonical unit/movement services |
+| Units / movement / recruitment | `Assets/Moyva/Scripts/Features/Units/` | `UnitService` state; `UnitMovementService` execution; `UnitMovementRangeQuery` reachable tiles; `UnitRecruitmentService` recruitment |
 | Combat | `Assets/Moyva/Scripts/Features/Combat/` | canonical combat query/command services |
 | Economy | `Assets/Moyva/Scripts/Features/Economy/` | economy-owned state and operations |
 | Fog / perception | `Assets/Moyva/Scripts/Features/FogOfWar/` | visibility/perception authority |
@@ -66,3 +65,20 @@ Do not open every `ConstructionService` partial for a focused task.
 Placement validation authority is `ConstructionService.EvaluatePlacement(...)` plus `BuildingPlacementEvaluator`; do not introduce a parallel `ConstructionPlacementValidator`.
 
 `ConstructionService.PlacementRules.cs` no longer exists. Follow the focused ownership rows above instead of searching for a monolithic rules partial.
+
+## Units reading map
+
+Do not open every Units runtime service for a focused task.
+
+| Task | Primary files |
+|---|---|
+| unit state / position / ownership | `UnitService.cs` |
+| movement command / animation execution | `UnitMovementService.cs` |
+| reachable movement tiles / range cache | `UnitMovementRangeQuery.cs` |
+| traversal cost / terrain / construction passage | `UnitTraversalPolicy.cs` |
+| recruitment queue / training / deployment | `UnitRecruitmentService.cs`, then `UnitRecruitmentQueueStateMachine.cs` only for queue-state behavior |
+| deployment tile validity | `UnitPlacementValidator.cs` |
+| DI / canonical composition | `UnitsInstaller.cs` |
+
+Recruitment is owned by `Features/Units`; do not create a parallel `Features/Recruitment` mutation path.
+`IUnitMovementQuery` is implemented by `UnitMovementRangeQuery`; `IUnitMovementService` owns execution.

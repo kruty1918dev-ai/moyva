@@ -16,7 +16,6 @@ namespace Kruty1918.Moyva.SaveSystem
         internal const int EconomyOrder = 300;
         internal const int BootstrapStateOrder = 350;
         internal const int UnitsOrder = 400;
-        internal const int LegacyRecruitmentOrder = 450;
         internal const int FogOfWarOrder = 500;
         internal const int DefaultOrder = 600;
         internal const int TurnStateOrder = 900;
@@ -31,8 +30,6 @@ namespace Kruty1918.Moyva.SaveSystem
             "Kruty1918.Moyva.Bootstrap.Runtime.BootstrapStarterPackSaveModule";
         private const string UnitsModule =
             "Kruty1918.Moyva.Bootstrap.Runtime.UnitsSaveModule";
-        private const string LegacyRecruitmentModule =
-            "Kruty1918.Moyva.Recruitment.RecruitmentService";
         private const string FogOfWarModule =
             "Kruty1918.Moyva.FogOfWar.Runtime.FogOfWarSaveModule";
         private const string TurnModule =
@@ -99,8 +96,6 @@ namespace Kruty1918.Moyva.SaveSystem
                 return BootstrapStateOrder;
             if (string.Equals(fullTypeName, UnitsModule, StringComparison.Ordinal))
                 return UnitsOrder;
-            if (string.Equals(fullTypeName, LegacyRecruitmentModule, StringComparison.Ordinal))
-                return LegacyRecruitmentOrder;
             if (string.Equals(fullTypeName, FogOfWarModule, StringComparison.Ordinal))
                 return FogOfWarOrder;
             if (string.Equals(fullTypeName, TurnModule, StringComparison.Ordinal))

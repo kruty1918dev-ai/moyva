@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         private readonly IBotTacticalSequencer _tactical;
         private readonly IBotDefensePlanner _defense;
         private readonly IBotRecruitmentPlanner _recruitment;
-        private readonly IBotObjectivePlanner _objective;
+        private readonly BotObjectivePlanner _objective;
         private readonly IBotScoutingPlanner _scouting;
         private readonly IBotConstructionPlanner _construction;
         private readonly IBotMovementPlanner _movement;
@@ -25,7 +25,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         public BotTurnPlanner(
             [InjectOptional] IBotDeploymentPlanner deployment = null,
             [InjectOptional] IBotCombatPlanner combat = null,
-            [InjectOptional] IBotObjectivePlanner objective = null,
+            [InjectOptional] BotObjectivePlanner objective = null,
             [InjectOptional] IBotConstructionPlanner construction = null,
             [InjectOptional] IBotMovementPlanner movement = null,
             [InjectOptional] IBotDefensePlanner defense = null,

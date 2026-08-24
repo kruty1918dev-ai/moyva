@@ -7,7 +7,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.BotAI.Runtime
 {
-    internal sealed class BotObjectivePlanner : IBotObjectivePlanner
+    internal sealed class BotObjectivePlanner
     {
         internal const int MaxUnitsPlanned = 3;
         internal const int MaxTilesPerUnit = 64;

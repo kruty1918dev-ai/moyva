@@ -51,6 +51,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInterfacesAndSelfTo<UnitMovementRangeQuery>()
+                .AsSingle()
+                .NonLazy();
+
             Container.BindInterfacesAndSelfTo<UnitMovementService>()
                 .AsSingle();
 

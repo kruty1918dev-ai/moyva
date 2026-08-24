@@ -48,4 +48,4 @@ Alternative:
 - `Assets/Moyva/Scripts/Features/Multiplayer/Runtime/NetworkProviderFactory.cs`
 - `Assets/Moyva/Scripts/Features/Multiplayer/Runtime/SessionManager.cs`
 - `Assets/Moyva/Scripts/Features/Multiplayer/Editor/MultiplayerConfigEditorWindow.cs`
-- `docs/standarts/feature-toggles-risky-features.md`
+- `docs/standards/feature-toggles-risky-features.md`

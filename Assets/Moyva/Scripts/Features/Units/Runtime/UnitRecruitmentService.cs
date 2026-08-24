@@ -488,51 +488,16 @@ namespace Kruty1918.Moyva.Units.Runtime
             Vector2Int position,
             out string reason)
         {
-            if (_placementValidator != null)
+            if (_placementValidator == null)
             {
-                return _placementValidator.CanDeployUnit(
-                    unitTypeId,
-                    position,
-                    out reason);
-            }
-
-            // Conservative fallback for scenes/tests that have not yet bound
-            // IUnitPlacementValidator.
-            if (_grid == null || !_grid.ContainsCell(position))
-            {
-                reason = "Тайл знаходиться за межами карти.";
+                reason = "Unit placement validator is unavailable.";
                 return false;
             }
 
-            if (!_grid.TryGetTileTypeId(
-                    position,
-                    out string tileTypeId)
-                || string.IsNullOrWhiteSpace(tileTypeId))
-            {
-                reason = "На клітинці немає валідного типу тайла.";
-                return false;
-            }
-
-            if (_objectsMap == null)
-            {
-                reason = "Карта зайнятості об'єктів недоступна.";
-                return false;
-            }
-
-            if (_objectsMap.IsOccupied(position))
-            {
-                _objectsMap.TryGetOccupant(
-                    position,
-                    out string occupantId);
-
-                reason = string.IsNullOrWhiteSpace(occupantId)
-                    ? "Клітинка вже зайнята."
-                    : $"Клітинка зайнята об'єктом '{occupantId}'.";
-                return false;
-            }
-
-            reason = null;
-            return true;
+            return _placementValidator.CanDeployUnit(
+                unitTypeId,
+                position,
+                out reason);
         }
 
         private static bool IsDeploymentCandidate(

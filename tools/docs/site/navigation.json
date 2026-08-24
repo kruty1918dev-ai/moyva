@@ -780,7 +780,7 @@
       "icon": "📐",
       "pages": [
         {
-          "path": "standarts/TDD.md",
+          "path": "standards/TDD.md",
           "title": "TDD: Модульна архітектура Unity"
         },
         {
@@ -788,39 +788,39 @@
           "title": "ADR Journal"
         },
         {
-          "path": "standarts/project-context-data-policy.md",
+          "path": "standards/project-context-data-policy.md",
           "title": "ProjectContext Data Policy"
         },
         {
-          "path": "standarts/runtime-config-lifecycle.md",
+          "path": "standards/runtime-config-lifecycle.md",
           "title": "Runtime Config Lifecycle"
         },
         {
-          "path": "standarts/domain-result-pattern.md",
+          "path": "standards/domain-result-pattern.md",
           "title": "Domain Result Pattern"
         },
         {
-          "path": "standarts/reflection-startup-validation.md",
+          "path": "standards/reflection-startup-validation.md",
           "title": "Reflection Startup Validation"
         },
         {
-          "path": "standarts/service-mode-profiles.md",
+          "path": "standards/service-mode-profiles.md",
           "title": "Service Mode Profiles"
         },
         {
-          "path": "standarts/feature-toggles-risky-features.md",
+          "path": "standards/feature-toggles-risky-features.md",
           "title": "Feature Toggles for Risky Features"
         },
         {
-          "path": "standarts/multiplayer-config-schema-migration.md",
+          "path": "standards/multiplayer-config-schema-migration.md",
           "title": "Multiplayer Config Schema + Migration Pipeline"
         },
         {
-          "path": "standarts/domain-events-layer.md",
+          "path": "standards/domain-events-layer.md",
           "title": "Domain Events Layer"
         },
         {
-          "path": "standarts/tech-debt-register.md",
+          "path": "standards/tech-debt-register.md",
           "title": "Tech Debt Register"
         },
         {
@@ -828,23 +828,23 @@
           "title": "Tech Debt Register Items"
         },
         {
-          "path": "standarts/unit-designer-modular-facades.md",
+          "path": "standards/unit-designer-modular-facades.md",
           "title": "Unit Designer Modular Facades"
         },
         {
-          "path": "standarts/unit-designer-safe-edit-mode.md",
+          "path": "standards/unit-designer-safe-edit-mode.md",
           "title": "Unit Designer Safe Edit Mode"
         },
         {
-          "path": "standarts/unit-designer-pre-save-validation.md",
+          "path": "standards/unit-designer-pre-save-validation.md",
           "title": "Unit Designer Pre-Save Validation"
         },
         {
-          "path": "standarts/unit-designer-batch-operations.md",
+          "path": "standards/unit-designer-batch-operations.md",
           "title": "Unit Designer Batch Operations"
         },
         {
-          "path": "standarts/designer-preset-system.md",
+          "path": "standards/designer-preset-system.md",
           "title": "Designer Preset System"
         }
       ]
@@ -854,8 +854,16 @@
       "title": "Bot AI",
       "icon": "🤖",
       "pages": [
-        { "path": "systems/bot-ai/README.md", "title": "BotAI — Огляд", "tag": "new" },
-        { "path": "systems/bot-ai/brain.md", "title": "BotBrain — Логіка", "tag": "new" }
+        {
+          "path": "systems/bot-ai/README.md",
+          "title": "BotAI — Огляд",
+          "tag": "new"
+        },
+        {
+          "path": "systems/bot-ai/brain.md",
+          "title": "BotBrain — Логіка",
+          "tag": "new"
+        }
       ]
     }
   ]

@@ -18,7 +18,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
-	internal sealed class UnitMovementService : IUnitMovementService, IUnitMovementQuery, ITurnBlocker, IInitializable, IDisposable
+	internal sealed class UnitMovementService : IUnitMovementService, ITurnBlocker, IInitializable, IDisposable
 	{
 		private readonly IUnitService _unitService;
 		private readonly IPathfinder _pathfinder;
@@ -38,8 +38,6 @@ namespace Kruty1918.Moyva.Units.Runtime
 		private readonly IUnitTraversalPolicy _traversalPolicy;
 
 		private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
-		private readonly Dictionary<string, MovementRangeCacheEntry> _movementRangeCache = new();
-		private int _movementWorldVersion;
 
 		public UnitMovementService(
 			IUnitService unitService,
@@ -86,11 +84,6 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_signalBus.Subscribe<InterruptMovementSignal>(OnInterruptRequested);
 			_signalBus.Subscribe<UnitGarrisonStateChangedSignal>(
 				OnUnitGarrisonStateChanged);
-			_signalBus.Subscribe<OnObjectsMapChangedSignal>(OnMovementObjectsMapChanged);
-			_signalBus.Subscribe<GridTileChangedSignal>(OnMovementGridTileChanged);
-			_signalBus.Subscribe<UnitMovedSignal>(OnMovementUnitMoved);
-			_signalBus.Subscribe<UnitCreatedSignal>(OnMovementUnitCreated);
-			_signalBus.Subscribe<UnitDestroyedSignal>(OnMovementUnitDestroyed);
 		}
 
 		public void Dispose()
@@ -98,11 +91,6 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_signalBus.TryUnsubscribe<InterruptMovementSignal>(OnInterruptRequested);
 			_signalBus.TryUnsubscribe<UnitGarrisonStateChangedSignal>(
 				OnUnitGarrisonStateChanged);
-			_signalBus.TryUnsubscribe<OnObjectsMapChangedSignal>(OnMovementObjectsMapChanged);
-			_signalBus.TryUnsubscribe<GridTileChangedSignal>(OnMovementGridTileChanged);
-			_signalBus.TryUnsubscribe<UnitMovedSignal>(OnMovementUnitMoved);
-			_signalBus.TryUnsubscribe<UnitCreatedSignal>(OnMovementUnitCreated);
-			_signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnMovementUnitDestroyed);
 
 			foreach (var cts in _activeMovements.Values)
 			{
@@ -111,30 +99,6 @@ namespace Kruty1918.Moyva.Units.Runtime
 			}
 			_activeMovements.Clear();
 		}
-
-		private void InvalidateMovementRangeCache()
-		{
-			unchecked { _movementWorldVersion++; }
-			_movementRangeCache.Clear();
-		}
-
-		private void OnMovementObjectsMapChanged(OnObjectsMapChangedSignal _)
-			=> InvalidateMovementRangeCache();
-
-		private void OnMovementGridTileChanged(GridTileChangedSignal _)
-		{
-			_traversalPolicy?.InvalidateStaticCache();
-			InvalidateMovementRangeCache();
-		}
-
-		private void OnMovementUnitMoved(UnitMovedSignal _)
-			=> InvalidateMovementRangeCache();
-
-		private void OnMovementUnitCreated(UnitCreatedSignal _)
-			=> InvalidateMovementRangeCache();
-
-		private void OnMovementUnitDestroyed(UnitDestroyedSignal _)
-			=> InvalidateMovementRangeCache();
 
 		private void OnUnitGarrisonStateChanged(
 			UnitGarrisonStateChangedSignal signal)
@@ -401,248 +365,6 @@ if (_traversalPolicy != null)
 			reason = null;
 			return false;
 		}
-
-		public IReadOnlyList<UnitMovementTileSnapshot> GetMovementTiles(string unitId)
-{
-	if (string.IsNullOrWhiteSpace(unitId)
-		|| !_unitService.TryGetUnitPosition(unitId, out Vector2Int startPosition))
-	{
-		return Array.Empty<UnitMovementTileSnapshot>();
-	}
-
-	string ownerId = _ownership?.GetUnitOwnerId(unitId);
-	if (_turns != null
-		&& !_turns.CanOwnerAct(ownerId, out _))
-	{
-		return Array.Empty<UnitMovementTileSnapshot>();
-	}
-
-	float movement = Mathf.Max(0f, _unitService.GetStamina(unitId));
-
-	if (_movementRangeCache.TryGetValue(
-			unitId,
-			out MovementRangeCacheEntry cached)
-		&& cached.Position == startPosition
-		&& Mathf.Abs(cached.Movement - movement) <= 0.0001f
-		&& cached.WorldVersion == _movementWorldVersion)
-	{
-		Debug.Log(
-			$"[MOYVA_MOVE][RANGE_CACHE_HIT] unit={unitId}; "
-			+ $"reachable={cached.Tiles.Count}; movement={movement:0.###}");
-		return cached.Tiles;
-	}
-
-	if (_traversalPolicy == null)
-	{
-		Debug.LogError(
-			$"[MOYVA_MOVE][RANGE] traversal policy is not bound for '{unitId}'.");
-		return Array.Empty<UnitMovementTileSnapshot>();
-	}
-
-	var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-	var costByPosition = new Dictionary<Vector2Int, float>(128);
-	var frontier = new List<MovementFrontierNode>(128);
-
-	costByPosition[startPosition] = 0f;
-	PushMovementFrontier(
-		frontier,
-		new MovementFrontierNode(startPosition, 0f));
-
-	int expanded = 0;
-	int evaluatedEdges = 0;
-
-	while (frontier.Count > 0)
-	{
-		MovementFrontierNode current = PopMovementFrontier(frontier);
-
-		if (!costByPosition.TryGetValue(
-				current.Position,
-				out float bestKnownCost)
-			|| current.Cost > bestKnownCost + 0.0001f)
-		{
-			continue;
-		}
-
-		if (current.Cost > movement + 0.0001f)
-			continue;
-
-		expanded++;
-
-		foreach (Vector2Int neighbor in _pathfinder.GetNeighbors(current.Position))
-		{
-			evaluatedEdges++;
-
-			if (neighbor == startPosition)
-				continue;
-
-			float remaining =
-				Mathf.Max(0f, movement - current.Cost);
-
-			if (!_traversalPolicy.TryEvaluateStep(
-					unitId,
-					current.Position,
-					neighbor,
-					remaining,
-					UnitTraversalMode.Preview,
-					out float stepCost,
-					out _))
-			{
-				continue;
-			}
-
-			float nextCost = current.Cost + stepCost;
-			if (nextCost > movement + 0.0001f)
-				continue;
-
-			if (costByPosition.TryGetValue(
-					neighbor,
-					out float previousCost)
-				&& nextCost >= previousCost - 0.0001f)
-			{
-				continue;
-			}
-
-			costByPosition[neighbor] = nextCost;
-			PushMovementFrontier(
-				frontier,
-				new MovementFrontierNode(neighbor, nextCost));
-		}
-	}
-
-	var ordered =
-		new List<UnitMovementTileSnapshot>(costByPosition.Count);
-
-	foreach (KeyValuePair<Vector2Int, float> entry in costByPosition)
-	{
-		ordered.Add(
-			new UnitMovementTileSnapshot(
-				entry.Key,
-				isReachable: true,
-				cost: entry.Value));
-	}
-
-	ordered.Sort((left, right) =>
-	{
-		int cost = left.Cost.CompareTo(right.Cost);
-		if (cost != 0)
-			return cost;
-
-		int y = left.Position.y.CompareTo(right.Position.y);
-		return y != 0
-			? y
-			: left.Position.x.CompareTo(right.Position.x);
-	});
-
-	stopwatch.Stop();
-
-	_movementRangeCache[unitId] =
-		new MovementRangeCacheEntry(
-			startPosition,
-			movement,
-			_movementWorldVersion,
-			ordered);
-
-	string profileTag =
-		stopwatch.Elapsed.TotalMilliseconds >= 20d ? "SLOW" : "OK";
-
-	Debug.Log(
-		$"[MOYVA_MOVE][RANGE_{profileTag}] unit={unitId}; "
-		+ $"start={startPosition}; movement={movement:0.###}; "
-		+ $"reachable={ordered.Count}; expanded={expanded}; "
-		+ $"edges={evaluatedEdges}; "
-		+ $"ms={stopwatch.Elapsed.TotalMilliseconds:0.###}");
-
-	return ordered;
-}
-
-private readonly struct MovementRangeCacheEntry
-{
-	public MovementRangeCacheEntry(
-		Vector2Int position,
-		float movement,
-		int worldVersion,
-		IReadOnlyList<UnitMovementTileSnapshot> tiles)
-	{
-		Position = position;
-		Movement = movement;
-		WorldVersion = worldVersion;
-		Tiles = tiles;
-	}
-
-	public Vector2Int Position { get; }
-	public float Movement { get; }
-	public int WorldVersion { get; }
-	public IReadOnlyList<UnitMovementTileSnapshot> Tiles { get; }
-}
-
-private readonly struct MovementFrontierNode
-{
-	public MovementFrontierNode(Vector2Int position, float cost)
-	{
-		Position = position;
-		Cost = cost;
-	}
-
-	public Vector2Int Position { get; }
-	public float Cost { get; }
-}
-
-private static void PushMovementFrontier(
-	List<MovementFrontierNode> heap,
-	MovementFrontierNode node)
-{
-	heap.Add(node);
-	int index = heap.Count - 1;
-
-	while (index > 0)
-	{
-		int parent = (index - 1) / 2;
-		if (heap[parent].Cost <= heap[index].Cost)
-			break;
-
-		(heap[parent], heap[index]) =
-			(heap[index], heap[parent]);
-		index = parent;
-	}
-}
-
-private static MovementFrontierNode PopMovementFrontier(
-	List<MovementFrontierNode> heap)
-{
-	MovementFrontierNode result = heap[0];
-	int lastIndex = heap.Count - 1;
-	MovementFrontierNode last = heap[lastIndex];
-	heap.RemoveAt(lastIndex);
-
-	if (heap.Count == 0)
-		return result;
-
-	heap[0] = last;
-	int index = 0;
-
-	while (true)
-	{
-		int left = index * 2 + 1;
-		if (left >= heap.Count)
-			break;
-
-		int right = left + 1;
-		int best =
-			right < heap.Count
-			&& heap[right].Cost < heap[left].Cost
-				? right
-				: left;
-
-		if (heap[index].Cost <= heap[best].Cost)
-			break;
-
-		(heap[index], heap[best]) =
-			(heap[best], heap[index]);
-		index = best;
-	}
-
-	return result;
-}
 
 private bool CanMakeStep(string unitId, Vector2Int stepPos)
 {

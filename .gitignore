@@ -146,3 +146,12 @@ Assets/_Recovery/
 # BEGIN MOYVA AI WORKSPACE HYGIENE
 /.kilo/
 # END MOYVA AI WORKSPACE HYGIENE
+
+# BEGIN MOYVA GENERATED DOCS / LEGACY TOOLING HYGIENE
+/.docs-site/
+/docs/index.html
+/docs/pages.json
+/moyva_project.slnx
+/CAPTURE_RUNTIME_AUDIT.sh
+/tools/p24d-ready-indicators/
+# END MOYVA GENERATED DOCS / LEGACY TOOLING HYGIENE
