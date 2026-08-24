@@ -104,7 +104,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         "Фінальний вузол шару, який явно фіксує карти, маску та службові дані для runtime і превью.",
         StableId = "moyva.core.output",
         Order = 10)]
-    public sealed class OutputNode : NodeBase, IGraphOutputNode
+    public sealed class OutputNode : NodeBase, IGraphOutputNode, IGraphConnectionCompatibility
     {
         public const int BiomeMapInputIndex = 0;
         public const int ObjectMapInputIndex = 1;
@@ -135,6 +135,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         };
 
         public override PortDefinition[] Outputs => Array.Empty<PortDefinition>();
+
+        public bool AcceptsConnection(
+            PortDefinition sourcePort,
+            int targetPortIndex)
+        {
+            return _outputKind == LayerOutputKind.Masks
+                && targetPortIndex == BiomeMapInputIndex
+                && sourcePort?.ValueType == typeof(bool[,]);
+        }
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {

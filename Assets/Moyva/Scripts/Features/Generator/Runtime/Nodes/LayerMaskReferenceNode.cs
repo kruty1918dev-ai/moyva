@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         StableId = "moyva.layers.mask-reference",
         Order = 10,
         PreviewOutput = "out.mask")]
-    public sealed class LayerMaskReferenceNode : NodeBase
+    public sealed class LayerMaskReferenceNode : NodeBase, IGraphLayerReferenceNode
     {
         [SerializeField, HideInInspector] private string _sourceLayerId;
 

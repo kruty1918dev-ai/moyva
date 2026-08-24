@@ -15,6 +15,22 @@ namespace Kruty1918.Moyva.GraphSystem.API
     }
 
     /// <summary>
+    /// Marks a node that intentionally bridges data between graph layers.
+    /// </summary>
+    public interface IGraphLayerReferenceNode
+    {
+        string SourceLayerId { get; }
+    }
+
+    /// <summary>
+    /// Defines explicit compatibility for a legacy or feature-owned input contract.
+    /// </summary>
+    public interface IGraphConnectionCompatibility
+    {
+        bool AcceptsConnection(PortDefinition sourcePort, int targetPortIndex);
+    }
+
+    /// <summary>
     /// Allows GraphRunner to publish only a finalized layer mask to LayerMaskRegistry.
     /// </summary>
     public interface ILayerMaskArtifact : INodeExecutionArtifact

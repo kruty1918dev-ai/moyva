@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.GraphSystem.API;
-using Kruty1918.Moyva.GraphSystem.Runtime;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
@@ -32,7 +31,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public GraphValidationReport Validate(GraphAsset graph)
         {
-            return graph != null ? new GraphValidator().ValidateDetailed(graph) : null;
+            return graph != null
+                ? GeneratorGraphSemanticValidator.Validate(graph)
+                : null;
         }
 
         public List<GraphValidationIssue> GetGlobalErrors(GraphValidationReport report)

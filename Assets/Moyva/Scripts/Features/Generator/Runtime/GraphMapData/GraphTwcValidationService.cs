@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.GraphSystem.API;
-using Kruty1918.Moyva.GraphSystem.Runtime;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
@@ -15,7 +14,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         public GraphTwcValidationResult Validate(GraphAsset graph)
         {
-            var report = new GraphValidator().ValidateDetailed(graph);
+            var report = GeneratorGraphSemanticValidator.Validate(graph);
             var result = new GraphTwcValidationResult
             {
                 Report = report,

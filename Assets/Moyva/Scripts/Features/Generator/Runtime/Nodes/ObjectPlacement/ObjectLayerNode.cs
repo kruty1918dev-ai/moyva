@@ -37,6 +37,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 
         public override string Title => "Object Layer";
         public override string Category => "Objects";
+        internal bool HasConfiguredPrefab =>
+            _prefabs != null && _prefabs.Exists(entry => entry?.Prefab != null);
 
         public override PortDefinition[] Inputs => new[]
         {
