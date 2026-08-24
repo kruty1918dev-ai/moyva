@@ -1,0 +1,14 @@
+{
+  "algorithmLeaves": {
+    "Assets/Moyva/Scripts/Features/Generator/Runtime/ChunkFirst/Mesh/ChunkTerrainMeshBuilder.cs": {
+      "warnEffectiveLines": 1200,
+      "maxEffectiveLines": 1800,
+      "reason": "Cohesive chunk mesh construction leaf; composition does not read it."
+    },
+    "Assets/Moyva/Scripts/Features/Generator/Runtime/ChunkFirst/Mesh/TileVerticalFillMeshUtility.cs": {
+      "warnEffectiveLines": 1600,
+      "maxEffectiveLines": 2300,
+      "reason": "Cohesive vertical-fill geometry leaf; composition does not read it."
+    }
+  }
+}

@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,7 +10,7 @@ from typing import Dict, List, Set, Tuple
 
 ROOT = Path(__file__).resolve().parents[2]
 ASMDEF_ROOT = ROOT / "Assets" / "Moyva" / "Scripts"
-DEFAULT_OUTPUT = ROOT / "docs" / "architecture" / "feature-dependency-map.md"
+DEFAULT_OUTPUT = Path(tempfile.gettempdir()) / "moyva-feature-dependency-map.md"
 
 
 @dataclass(frozen=True)

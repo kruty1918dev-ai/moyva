@@ -1,26 +1,27 @@
-# Ліміти розміру файлів (soft-limit)
+# Ліміти контексту вихідного коду
 
-Ці правила потрібні, щоб прискорити рев'ю, зменшити складність змін і полегшити масштабування модулів.
+Ці правила обмежують мінімальний контекст, який потрібен для зміни коду.
+Аналізатор рахує raw LOC, non-comment LOC і приблизний обсяг model context.
 
 ## Цільові ліміти
 
-- Runtime-класи (шлях містить `/Runtime/`):
-- soft warning: понад 300 рядків
-- hard guardrail: понад 500 рядків
-
-- Editor-вікна (клас успадковує `EditorWindow`):
-- soft warning: понад 700 рядків
-- hard guardrail: понад 900 рядків
+- API, installer, controller, coordinator, orchestrator і presenter:
+  warning понад 350 effective LOC, hard limit понад 500.
+- Інші production leaf-файли:
+  warning понад 500 effective LOC, hard limit понад 800.
+- Великі цілісні алгоритми дозволяються лише через
+  `tools/quality/context-budget-allowlist.json` з локальним лімітом і причиною.
+- `Editor`, `Tests` і `Development` не входять у production context budget.
 
 ## Як працює guardrail
 
-Скрипт: `tools/quality/check-file-length-limits.sh`
+Основний аналізатор: `tools/quality/context_budget.py`.
+Сумісний wrapper: `tools/quality/check-file-length-limits.sh`.
 
 - У CI для Pull Request перевіряються лише змінені C# файли у `Assets/Moyva/Scripts`.
-- Якщо файл уже був понад hard-limit у базовій гілці, це маркується як `DEBT` (warning), а не фейл.
-- Якщо новий або змінений файл вперше перевищив hard-limit — це маркується як `FAIL`.
-- За замовчуванням перевірка працює в soft-режимі і не блокує build.
-- Для блокування використовуйте `--strict`.
+- Існуюче перевищення, яке не виросло, маркується `DEBT`.
+- Нове перевищення або збільшення наявного боргу маркується `FAIL`.
+- Pull Request запускає changed-only перевірку у strict mode.
 
 ## Локальний запуск
 
@@ -34,10 +35,13 @@ tools/quality/check-file-length-limits.sh --base-ref origin/main --changed-only
 tools/quality/check-file-length-limits.sh --base-ref origin/main --changed-only --strict
 ```
 
-Або повний аудит:
+Повний звіт або звіт для одного feature:
 
 ```bash
-tools/quality/check-file-length-limits.sh
+python3 tools/quality/context_budget.py report
+python3 tools/quality/context_budget.py report --feature Construction
+python3 tools/quality/context_budget.py report \
+  --path Assets/Moyva/Scripts/Features/FogOfWar --top 10
 ```
 
 ## Практика декомпозиції
