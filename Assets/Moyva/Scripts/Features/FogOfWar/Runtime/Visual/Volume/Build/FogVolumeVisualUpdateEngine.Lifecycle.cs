@@ -1,0 +1,348 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using GiantGrey.TileWorldCreator;
+using GiantGrey.TileWorldCreator.Components;
+using Kruty1918.Moyva.FogOfWar.API;
+using UnityEngine;
+using Zenject;
+
+namespace Kruty1918.Moyva.FogOfWar.Runtime
+{
+    internal sealed partial class FogVolumeVisualUpdateEngine
+    {
+        /// <summary>
+        /// Під'єднує scene controller як host для runtime visual update path.
+        /// Side effect: updater починає працювати з його TWC manager-ом і може запланувати rebuild.
+        /// </summary>
+        /// <param name="controller">Scene host-компонент fog volume.</param>
+        public void AttachController(FogOfWarVolumeController controller)
+        {
+            if (controller == null)
+                return;
+
+            if (_controller == controller)
+                return;
+
+            _controller = controller;
+            _manager = controller.TileWorldCreatorManager;
+            _clusteredVolumeRenderer?.ConfigureRoot(_manager != null ? _manager.transform : controller.transform);
+            if (_runtimeConfiguration == null)
+                _previousManagerConfiguration = _manager != null ? _manager.configuration : null;
+            _runtimeConfigurationDirty = true;
+            _loggedMissingController = false;
+            _loggedMissingManager = false;
+            _loggedMissingSettings = false;
+            _loggedNoRuntimeLayers = false;
+            _loggedUnexploredPresetProblem = false;
+            _loggedExploredPresetProblem = false;
+            Debug.Log($"{StartDiagTag} VolumeUpdater.AttachController controller={(controller != null ? controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, settings={(controller.Settings != null ? controller.Settings.name : "null")}, hasLastFogService={_pendingWorkState.FogService != null}, hasBuilt={_hasBuiltAtLeastOnce}.");
+            LogUpdaterOnce(ref _loggedAttach, $"AttachController: controller='{controller.name}', manager={(_manager != null ? _manager.name : "null")}, settings={(controller.Settings != null ? controller.Settings.name : "null")}, hasLastFogService={_pendingWorkState.FogService != null}, hasBuilt={_hasBuiltAtLeastOnce}.");
+            RequestVisualRebuild();
+            if (_pendingWorkState.FogService != null && !_hasBuiltAtLeastOnce)
+                ExecutePendingVisualWork();
+        }
+
+        /// <summary>
+        /// Від'єднує scene controller від updater-а.
+        /// Side effect: наступні visual rebuild-и не зможуть використовувати попередній manager напряму.
+        /// </summary>
+        /// <param name="controller">Scene host-компонент, який відключається.</param>
+        public void DetachController(FogOfWarVolumeController controller)
+        {
+            if (_controller != controller)
+                return;
+
+            _controller = null;
+            _manager = null;
+            _runtimeConfigurationDirty = true;
+        }
+
+        /// <summary>
+        /// Ініціалізує runtime visual state для карти заданого розміру і world context.
+        /// Side effect: позначає runtime configuration як dirty і планує повну перебудову.
+        /// </summary>
+        /// <param name="width">Ширина карти у клітинках.</param>
+        /// <param name="height">Висота карти у клітинках.</param>
+        /// <param name="context">Світовий контекст для volume build path.</param>
+        public void Initialize(int width, int height, FogWorldVisualContext context)
+        {
+            _mapWidth = Mathf.Max(1, width);
+            _mapHeight = Mathf.Max(1, height);
+            _pendingWorkMaintenance.SetMapSize(_mapWidth, _mapHeight);
+            _stateCache.InitializeMapSize(_mapWidth, _mapHeight);
+            if (context.IsValid)
+                _context = context.WithSize(_mapWidth, _mapHeight);
+            else if (!_context.IsValid)
+                _context = CreateFallbackContext(_mapWidth, _mapHeight);
+            else
+                _context = _context.WithSize(_mapWidth, _mapHeight);
+
+            _runtimeConfigurationDirty = true;
+            _pendingWorkRequests.RequestFullRebuild();
+            _hasBuiltAtLeastOnce = false;
+            _worldContextChangedSinceBuild = true;
+            _loggedNoRuntimeLayers = false;
+            _loggedUnexploredPresetProblem = false;
+            _loggedExploredPresetProblem = false;
+            _loggedTickWaitingForInterval = false;
+            _cachedEffectiveHeightLayerSnap = -1f;
+            _pendingWorkMaintenance.ClearCellChanges();
+            LogUpdaterOnce(ref _loggedInitialize, $"Initialize: requested={width}x{height}, effective={_mapWidth}x{_mapHeight}, contextValid={context.IsValid}, contextCell={context.CellSize:0.###}, storedCell={_context.CellSize:0.###}, bounds={FormatBounds(_context)}, heightMap={FormatMapSize(_context.HeightMap)}, terrainLevelMap={FormatMapSize(_context.TerrainLevelMap)}, controller={(_controller != null ? _controller.name : "null")}.");
+        }
+
+        /// <summary>
+        /// Оновлює world context без зміни gameplay fog state.
+        /// Викликається, коли змінилися bounds, cell size або height/terrain maps.
+        /// </summary>
+        /// <param name="context">Оновлений visual context generated світу.</param>
+        public void SetWorldContext(FogWorldVisualContext context)
+        {
+            if (!context.IsValid)
+                return;
+
+            bool sizeChanged = context.Width != _mapWidth || context.Height != _mapHeight;
+            bool cellSizeChanged = !_context.IsValid || !Mathf.Approximately(context.CellSize, _context.CellSize);
+            bool boundsChanged = !_context.IsValid || context.HasMapWorldBounds != _context.HasMapWorldBounds
+                || context.HasMapWorldBounds && !ApproximatelyBounds(context.MapWorldBounds, _context.MapWorldBounds);
+
+            _context = context;
+            _mapWidth = context.Width;
+            _mapHeight = context.Height;
+            _pendingWorkMaintenance.SetMapSize(_mapWidth, _mapHeight);
+            _stateCache.InitializeMapSize(_mapWidth, _mapHeight);
+
+            if (sizeChanged || cellSizeChanged || boundsChanged)
+                _runtimeConfigurationDirty = true;
+
+            _worldContextChangedSinceBuild = true;
+            _pendingWorkRequests.RequestFullRebuild();
+            _loggedWorldContext = false;
+            _cachedEffectiveHeightLayerSnap = -1f;
+            _pendingWorkMaintenance.ClearCellChanges();
+            LogUpdaterOnce(ref _loggedWorldContext, $"SetWorldContext: map={_mapWidth}x{_mapHeight}, cell={_context.CellSize:0.###}, sizeChanged={sizeChanged}, cellSizeChanged={cellSizeChanged}, boundsChanged={boundsChanged}, bounds={FormatBounds(_context)}, heightMap={FormatMapSize(_context.HeightMap)}, terrainLevelMap={FormatMapSize(_context.TerrainLevelMap)}.");
+        }
+
+        /// <summary>
+        /// Будує тимчасовий preview reveal через startup-style preview fog service.
+        /// Не змінює gameplay fog state.
+        /// </summary>
+        /// <param name="center">Центр preview reveal.</param>
+        /// <param name="radius">Радіус preview reveal.</param>
+        /// <param name="shape">Форма reveal області.</param>
+        /// <param name="keepVisible">Чи має preview поводитись як постійна visible область.</param>
+        public void PreviewRevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible)
+        {
+            if (_pendingWorkState.FogService != null)
+            {
+                Debug.Log($"{LogTag} PreviewRevealArea skipped: gameplay fog service is active and will drive visual state.");
+                return;
+            }
+
+            if (!_context.IsValid)
+                _context = CreateFallbackContext(_mapWidth, _mapHeight);
+
+            Debug.Log($"{LogTag} PreviewRevealArea center={center}, radius={Mathf.Max(0, radius)}, shape={shape}, keepVisible={keepVisible}, context={_context.Width}x{_context.Height}.");
+            Initialize(_context.Width, _context.Height, _context);
+            RebuildFullVisual(_startupFogServiceFactory.Create(_context.Width, _context.Height, center, radius, shape, keepVisible));
+        }
+
+        /// <summary>
+        /// Приймає dirty-клітинки від gameplay fog service і планує часткову або негайну visual rebuild.
+        /// </summary>
+        /// <param name="fogService">Gameplay source of truth для fog state.</param>
+        /// <param name="dirtyTiles">Клітинки, чий стан змінився з останнього update.</param>
+        public void UpdateDirtyTiles(IFogOfWarService fogService, IEnumerable<Vector2Int> dirtyTiles)
+        {
+            if (fogService != null)
+                _loggedMissingFogService = false;
+            int accepted = _pendingWorkRequests.RequestDirtyTiles(fogService, dirtyTiles, out int requested);
+            if (Debug.isDebugBuild
+                && (requested >= LargeDirtyRequestThreshold
+                    || accepted >= LargeDirtyRequestThreshold))
+            {
+                Debug.Log(
+                    $"{ConstructionPerfTag} fog-dirty-request " +
+                    $"requested={requested} accepted={accepted} " +
+                    $"map={_mapWidth}x{_mapHeight} " +
+                    $"full={_pendingWorkState.FullRebuildRequested}");
+            }
+            if (ShouldLogLifecycle(_loggedDirtyUpdate))
+            {
+                _loggedDirtyUpdate = true;
+                Debug.Log($"{LogTag} UpdateDirtyTiles: fogService={(fogService != null ? fogService.GetType().Name : "null")}, requested={requested}, acceptedPending={accepted}, map={_mapWidth}x{_mapHeight}, updateMode={_visualUpdateScheduleState.CurrentUpdateMode}, immediate={_visualUpdateRequestPolicy.ShouldExecuteImmediateRequest()}, controller={(_controller != null ? _controller.name : "null")}.");
+            }
+            if (_visualUpdateRequestPolicy.ShouldExecuteImmediateRequest())
+                ExecutePendingVisualWork();
+        }
+
+        public void RequestCellsUpdate(
+            IFogOfWarService fogService,
+            IReadOnlyList<FogCellVisualChange> changes,
+            FogWorldVisualContext context)
+        {
+            if (fogService != null)
+                _loggedMissingFogService = false;
+
+            if (context.IsValid)
+            {
+                _context = context.WithSize(context.Width, context.Height);
+                _mapWidth = context.Width;
+                _mapHeight = context.Height;
+                _pendingWorkMaintenance.SetMapSize(_mapWidth, _mapHeight);
+            }
+
+            int accepted = _pendingWorkRequests.RequestCellsUpdate(fogService, changes);
+            int requested =
+                changes?.Count ?? 0;
+            if (Debug.isDebugBuild
+                && (requested >= LargeDirtyRequestThreshold
+                    || accepted >= LargeDirtyRequestThreshold))
+            {
+                Debug.Log(
+                    $"{ConstructionPerfTag} fog-cell-request " +
+                    $"requested={requested} accepted={accepted} " +
+                    $"context={_context.Width}x{_context.Height}");
+            }
+            if (_visualUpdateRequestPolicy.ShouldExecuteImmediateRequest())
+                ExecutePendingVisualWork();
+        }
+
+        /// <summary>
+        /// Прапорить повну перебудову volume зі стану gameplay fog service.
+        /// </summary>
+        /// <param name="fogService">Gameplay source of truth для fog state.</param>
+        public void RebuildFullVisual(IFogOfWarService fogService)
+        {
+            if (fogService != null)
+                _loggedMissingFogService = false;
+            _pendingWorkRequests.RequestFullRebuild(fogService);
+            Debug.Log($"{StartDiagTag} VolumeUpdater.RebuildFullVisual hasFogService={fogService != null}, map={_mapWidth}x{_mapHeight}, controller={(_controller != null ? _controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, contextValid={_context.IsValid}, hasBuilt={_hasBuiltAtLeastOnce}, contextChanged={_worldContextChangedSinceBuild}.");
+            if (ShouldLogLifecycle(_loggedRebuildRequest))
+            {
+                _loggedRebuildRequest = true;
+                Debug.Log($"{LogTag} RebuildFullVisual: fogService={(fogService != null ? fogService.GetType().Name : "null")}, map={_mapWidth}x{_mapHeight}, contextValid={_context.IsValid}, hasController={_controller != null}, hasManager={_manager != null}, hasBuilt={_hasBuiltAtLeastOnce}, contextChanged={_worldContextChangedSinceBuild}, updateMode={_visualUpdateScheduleState.CurrentUpdateMode}.");
+            }
+            if (_visualUpdateRequestPolicy.ShouldExecuteFullRebuildRequestImmediately(_hasBuiltAtLeastOnce, _worldContextChangedSinceBuild))
+                ExecutePendingVisualWork();
+        }
+
+        /// <summary>
+        /// Виконує відкладену visual rebuild відповідно до обраного update mode.
+        /// Викликається Zenject-ом щокадру як частина runtime lifecycle.
+        /// </summary>
+        public void Tick()
+        {
+            if (!_visualUpdateTickGate.ShouldExecute(_pendingWorkState.Snapshot, out string waitingMessage))
+            {
+                if (!string.IsNullOrEmpty(waitingMessage))
+                    LogUpdaterOnce(ref _loggedTickWaitingForInterval, waitingMessage);
+                return;
+            }
+
+            ExecutePendingVisualWork();
+        }
+
+        /// <summary>
+        /// Звільняє runtime configuration clone і пов'язані ресурси updater-а.
+        /// </summary>
+        public void Dispose()
+        {
+            _clusteredVolumeRenderer?.Clear();
+            _dirtyClusterTracker?.Clear();
+            DisposeRuntimeConfiguration();
+        }
+
+        /// <summary>
+        /// Діагностично перевіряє, чи кеш unexplored state містить задану клітинку.
+        /// </summary>
+        /// <param name="tile">Клітинка для перевірки.</param>
+        /// <returns><see langword="true"/>, якщо клітинка входить до unexplored-кешу.</returns>
+        internal bool DebugHasUnexploredCell(Vector2Int tile)
+            => _stateCache.HasUnexploredCell(tile);
+
+        /// <summary>
+        /// Діагностично перевіряє, чи кеш explored state містить задану клітинку.
+        /// </summary>
+        /// <param name="tile">Клітинка для перевірки.</param>
+        /// <returns><see langword="true"/>, якщо клітинка входить до explored-кешу.</returns>
+        internal bool DebugHasExploredCell(Vector2Int tile)
+            => _stateCache.HasExploredCell(tile);
+
+        /// <summary>
+        /// Запитує первинну startup build для controller-а без локальної visible області.
+        /// </summary>
+        /// <param name="controller">Host-компонент сцени.</param>
+        /// <param name="context">Світовий контекст для build path.</param>
+        internal void RequestStartupBuildFromController(FogOfWarVolumeController controller, FogWorldVisualContext context)
+            => RequestStartupBuildFromController(controller, context, null, 0, FogRevealShape.PixelCircle, keepVisible: false);
+
+        /// <summary>
+        /// Запитує первинну startup build для controller-а з необов'язковою visible preview областю.
+        /// Side effect: може ініціалізувати updater і одразу виконати повну visual rebuild.
+        /// </summary>
+        /// <param name="controller">Host-компонент сцени.</param>
+        /// <param name="context">Світовий контекст для build path.</param>
+        /// <param name="visibleCenter">Необов'язковий центр початкової visible області.</param>
+        /// <param name="visibleRadius">Радіус початкової visible області.</param>
+        /// <param name="visibleShape">Форма початкової visible області.</param>
+        /// <param name="keepVisible">Чи має початкова область залишатись visible надалі.</param>
+        internal void RequestStartupBuildFromController(
+            FogOfWarVolumeController controller,
+            FogWorldVisualContext context,
+            Vector2Int? visibleCenter,
+            int visibleRadius,
+            FogRevealShape visibleShape,
+            bool keepVisible)
+        {
+            if (controller != null)
+                AttachController(controller);
+
+            if (_pendingWorkState.FogService != null)
+            {
+                Debug.Log($"{LogTag} Startup build skipped: gameplay fog service is already available.");
+                return;
+            }
+
+            if (_hasBuiltAtLeastOnce)
+            {
+                Debug.Log($"{LogTag} Startup build skipped: fog volume has already been built.");
+                return;
+            }
+
+            if (!context.IsValid)
+                context = CreateFallbackContext(_mapWidth, _mapHeight);
+
+            Debug.Log($"{StartDiagTag} VolumeUpdater.RequestStartupBuildFromController controller={(controller != null ? controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, context={context.Width}x{context.Height}, cell={context.CellSize:0.###}, visibleCenter={(visibleCenter.HasValue ? visibleCenter.Value.ToString() : "none")}, visibleRadius={Mathf.Max(0, visibleRadius)}, keepVisible={keepVisible}, hasLastFogService={_pendingWorkState.FogService != null}, hasBuilt={_hasBuiltAtLeastOnce}.");
+            Debug.Log($"{LogTag} Startup build requested by controller='{(controller != null ? controller.name : "null")}', context={context.Width}x{context.Height}, cell={context.CellSize:0.###}, bounds={FormatBounds(context)}, heightMap={FormatMapSize(context.HeightMap)}, terrainLevelMap={FormatMapSize(context.TerrainLevelMap)}, visibleCenter={(visibleCenter.HasValue ? visibleCenter.Value.ToString() : "none")}, visibleRadius={Mathf.Max(0, visibleRadius)}, visibleShape={visibleShape}, keepVisible={keepVisible}.");
+            Initialize(context.Width, context.Height, context);
+            RebuildFullVisual(visibleCenter.HasValue
+                ? _startupFogServiceFactory.Create(context.Width, context.Height, visibleCenter.Value, visibleRadius, visibleShape, keepVisible)
+                : _startupFogServiceFactory.Create(context.Width, context.Height));
+        }
+
+        /// <summary>
+        /// Запитує повну runtime rebuild від scene controller-а.
+        /// </summary>
+        /// <param name="controller">Host-компонент сцени, який ініціює rebuild.</param>
+        internal void RequestFullRebuildFromController(FogOfWarVolumeController controller)
+        {
+            if (controller != null)
+                AttachController(controller);
+
+            _runtimeConfigurationDirty = true;
+            _pendingWorkRequests.RequestFullRebuildWhenFogServiceAvailable();
+            Debug.Log($"{StartDiagTag} VolumeUpdater.RequestFullRebuildFromController controller={(controller != null ? controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, hasLastFogService={_pendingWorkState.FogService != null}, context={_context.Width}x{_context.Height}.");
+
+            if (_pendingWorkState.HasPendingWork)
+                ExecutePendingVisualWork();
+        }
+
+        void IFogVolumeRuntimeUpdater.RequestStartupBuildFromController(FogOfWarVolumeController controller, FogWorldVisualContext context)
+            => RequestStartupBuildFromController(controller, context);
+
+        void IFogVolumeRuntimeUpdater.RequestFullRebuildFromController(FogOfWarVolumeController controller)
+            => RequestFullRebuildFromController(controller);
+
+    }
+}

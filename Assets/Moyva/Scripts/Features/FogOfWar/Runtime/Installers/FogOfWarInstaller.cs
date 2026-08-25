@@ -60,8 +60,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             Debug.Log(installerMessage);
 
-            LogControllerDiagnostics(fogVolumes);
-
             MapChunkFeatureBindings.Install(Container);
 
             Container.Bind<IFogSaveDataProvider>()
@@ -237,84 +235,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             Container.BindExecutionOrder<
                 MapFogChunkCoverageRefreshService>(260);
-        }
-
-        private static void LogControllerDiagnostics(
-            FogOfWarVolumeController[] fogVolumes)
-        {
-            if (fogVolumes == null
-                || fogVolumes.Length == 0)
-            {
-                return;
-            }
-
-            for (int i = 0;
-                 i < fogVolumes.Length;
-                 i++)
-            {
-                FogOfWarVolumeController fogVolume =
-                    fogVolumes[i];
-
-                if (fogVolume == null)
-                    continue;
-
-                var manager =
-                    fogVolume.TileWorldCreatorManager;
-
-                string settingsName =
-                    fogVolume.Settings != null
-                        ? fogVolume.Settings.name
-                        : "null";
-
-                string presentationName =
-                    fogVolume.Settings != null
-                        ? fogVolume.Settings
-                            .PresentationMode
-                            .ToString()
-                        : "unknown";
-
-                string managerName =
-                    manager != null
-                        ? manager.name
-                        : "null";
-
-                string managerConfigurationName =
-                    manager != null
-                    && manager.configuration != null
-                        ? manager.configuration.name
-                        : "null";
-
-                string message =
-                    "[FogOfWar] Controller[" +
-                    i +
-                    "] name='" +
-                    fogVolume.name +
-                    "', active=" +
-                    fogVolume.gameObject.activeInHierarchy +
-                    ", enabled=" +
-                    fogVolume.enabled +
-                    ", settings=" +
-                    settingsName +
-                    ", presentation=" +
-                    presentationName +
-                    ", manager=" +
-                    managerName +
-                    ", managerConfig=" +
-                    managerConfigurationName +
-                    ", updateMode=" +
-                    fogVolume.EffectiveUpdateMode +
-                    ", logSummary=" +
-                    fogVolume.LogBuildSummary +
-                    ", logEveryUpdate=" +
-                    fogVolume.LogEveryVolumeUpdate +
-                    ", logValidation=" +
-                    fogVolume.LogValidationWarnings +
-                    ".";
-
-                Debug.Log(
-                    message,
-                    fogVolume);
-            }
         }
 
         private FogOfWarSettings ResolveSettings(

@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// Thin Unity/Odin host for volume-based FogOfWar presentation.
     /// Runtime behavior is split into partial files by responsibility.
     /// </summary>
-    public sealed partial class FogOfWarVolumeController : MonoBehaviour, IFogVolumePreviewHost, IFogVolumeSceneContextHost, IFogVolumeValidationHost
+    public sealed partial class FogOfWarVolumeController : MonoBehaviour
     {
         private const string StartDiagTag = "[MoyvaFogStartDiag]";
 

@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// </summary>
         /// <param name="host">Host-компонент preview path.</param>
         /// <param name="context">Поточний world context для preview.</param>
-        public void BuildPreview(IFogVolumePreviewHost host, FogWorldVisualContext context)
+        public void BuildPreview(FogOfWarVolumeController host, FogWorldVisualContext context)
         {
             if (host?.Settings == null)
                 return;

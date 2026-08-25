@@ -10,6 +10,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// </summary>
         /// <param name="host">Host-компонент, який надає settings і manager.</param>
         /// <returns>Людинозрозуміле повідомлення для inspector-а.</returns>
-        string BuildValidationSummary(IFogVolumeValidationHost host);
+        string BuildValidationSummary(FogOfWarVolumeController host);
     }
 }

@@ -372,13 +372,13 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [Tooltip(
             "Пише summary та boundary-сегменти у Console " +
             "з префіксом [MOYVA_FOG_CURTAIN_DIAG].")]
-        public bool LogCurtainDiagnostics = true;
+        public bool LogCurtainDiagnostics;
 
         [BoxGroup("Diagnostics")]
         [Tooltip(
             "Пише camera/world-to-grid probes у Console " +
             "з префіксом [MOYVA_FOG_SHADER_DIAG].")]
-        public bool LogShaderDiagnostics = true;
+        public bool LogShaderDiagnostics;
 
         [BoxGroup("Diagnostics")]
         [MinValue(0.1f)]

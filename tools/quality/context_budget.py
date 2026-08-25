@@ -242,6 +242,7 @@ def changed_paths(base_ref: str) -> set[str]:
         run_git("diff", "--name-only", f"{base_ref}...HEAD"),
         run_git("diff", "--name-only"),
         run_git("diff", "--cached", "--name-only"),
+        run_git("ls-files", "--others", "--exclude-standard"),
     )
     return {
         line.strip()

@@ -277,6 +277,25 @@ Placement validation authority is `ConstructionService.EvaluatePlacement(...)` p
 
 `ConstructionService.PlacementRules.cs` no longer exists. Follow the focused ownership rows above instead of searching for a monolithic rules partial.
 
+## FogOfWar reading map
+
+Keep core visibility authority and presentation work in separate task packets.
+
+| Task | Primary files |
+|---|---|
+| fog state / reveal / vision sources | `API/Contracts/Core/IFogOfWarService.cs`; `Runtime/Core/Service/FogOfWarService.cs` |
+| DI and presentation selection | `Runtime/Installers/FogOfWarInstaller.cs`; `Runtime/Visual/FogVisualUpdaterRouter.cs` |
+| screen-space lifecycle / texture state | `FogScreenSpaceTextureUpdater.cs`; `FogScreenSpaceTextureUpdater.Lifecycle.cs`; `FogScreenSpaceTextureUpdater.StateBuffer.cs` |
+| shader publication / world transform | `FogScreenSpaceTextureUpdater.ShaderPublisher.cs`; `FogScreenSpaceTextureUpdater.Transform.cs` |
+| curtain mesh / surface calibration | `FogBoundaryCurtainRenderer.Geometry.cs`; `FogBoundaryCurtainRenderer.SurfaceCalibration.cs`; `FogBoundaryCurtainRenderer.SurfaceGrid.cs` |
+| curtain material / top cap | `FogBoundaryCurtainRenderer.Presentation.cs`; `FogBoundaryCurtainRenderer.TopCap.cs` |
+| volume host / scene context | `Volume/Controller/FogOfWarVolumeController.cs`; `Volume/Context/FogVolumeSceneContextBuilder.cs` |
+| volume request lifecycle / scheduling | `FogVolumeVisualUpdateEngine.Lifecycle.cs`; `FogVolumeVisualUpdateEngine.Scheduling.cs` |
+| TWC runtime layers / build | `FogVolumeVisualUpdateEngine.RuntimeLayers.cs`; `FogVolumeVisualUpdateEngine.TwcBuild.cs`; `FogVolumeVisualUpdateEngine.Height.cs` |
+| optional presentation diagnostics | `ScreenSpace/Diagnostics/`; `Volume/Diagnostics/` |
+
+The geometry and TWC build files are leaf algorithms. Do not load diagnostics for normal fog-state or composition changes.
+
 ## Units reading map
 
 Do not open every Units runtime service for a focused task.

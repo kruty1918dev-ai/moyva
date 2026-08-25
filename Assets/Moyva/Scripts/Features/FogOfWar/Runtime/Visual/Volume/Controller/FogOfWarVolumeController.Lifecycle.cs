@@ -83,7 +83,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _runtimeUpdater.AttachController(this);
         }
 
-        void IFogVolumePreviewHost.AttachPreviewUpdater(IFogVolumeRuntimeUpdater updater)
+        internal void AttachPreviewUpdater(IFogVolumeRuntimeUpdater updater)
         {
             if (updater == null)
                 return;
