@@ -8,7 +8,7 @@ Implementation source remains authoritative.
 | Scope | Root | Installs / delegates to |
 |---|---|---|
 | Project lifetime | `Assets/Moyva/Scripts/Bootstrap/Runtime/ProjectServicesInstaller.cs` | diagnostics, shared services, audio, SaveSystem, Multiplayer |
-| Gameplay scene | `Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs` | gameplay bootstrap, starting-position workflow, BotAI bindings, turn HUD, recruitment deployment UI, bootstrap save modules |
+| Gameplay scene | `Assets/Moyva/Scripts/Bootstrap/Runtime/BootstrapInstaller.cs` | gameplay bootstrap and starting-position workflow; delegates presentation to `GameplayHudBindings` and feature state/save composition to feature installers |
 | Gameplay signals | `Assets/Moyva/Scripts/Features/Signals/Runtime/SignalBusInstaller.cs` | Zenject SignalBus, gameplay signals, legacy-to-domain-event bridge, cached world-generation signals |
 | Home menu | `Assets/Moyva/Scripts/Features/HomeMenu/Runtime/HomeMenuInstaller.cs` | menu UI/services, gameplay session, menu-to-gameplay startup pipeline |
 | World generation | `Assets/Moyva/Scripts/Features/Generator/Runtime/GeneratorInstaller.cs` | graph map-data pipeline, TileWorldCreator bridge, map visuals, generator save module |
@@ -27,6 +27,7 @@ Scene-authored feature installers still compose their own modules. Project and b
 | Units: state / identity | `Features/Units/API/IUnitService.cs`; `Features/Units/Runtime/UnitsInstaller.cs`; `Features/Units/Runtime/UnitService.cs`; `Features/Units/Runtime/UnitFactory.cs` | `UnitService` owns unit position/type/owner/stamina indexes; `UnitFactory` is the creation boundary |
 | Units: movement | `Features/Units/API/IUnitMovementService.cs`; `Features/Units/API/Movement/IUnitMovementQuery.cs`; `Features/Units/Runtime/UnitMovementService.cs`; `Features/Units/Runtime/UnitMovementRangeQuery.cs` | `UnitMovementService` executes movement; `UnitMovementRangeQuery` owns reachable-tile queries; `UnitTurnAuthorityMovementService` decorates commands with turn/owner checks |
 | Units: recruitment | `Features/Units/API/IUnitRecruitmentService.cs`; `Features/Units/Runtime/UnitRecruitmentService.cs`; `Features/Units/Runtime/UnitRecruitmentQueueStateMachine.cs`; `Features/Units/Runtime/UnitRecruitmentDeploymentService.cs` | `UnitRecruitmentService` is the only enqueue/progress/deploy application boundary; the queue state machine owns paid queue state |
+| Gameplay HUD / recruitment presentation | `Features/GameplayHUD/Runtime/GameplayHudBindings.cs`; `GameplayTurnHudPresenter.cs`; `UnitRecruitmentDeploymentController.cs` | scene-authored turn and recruitment presentation; all mutations delegate to Turns and Units APIs |
 | Unit combat | `Features/Combat/API/ICombatCommandService.cs`; `Features/Units/API/IUnitCombatService.cs`; `Features/Units/Runtime/UnitCombatCommandService.cs`; `Features/Units/Runtime/UnitCombatService.cs` | `UnitCombatCommandService` is the turn/owner-aware command boundary; `UnitCombatService` validates and applies unit attacks |
 | Health | `Features/Combat/API/IHealthRegistry.cs`; `Features/Combat/Runtime/CombatInstaller.cs`; `Features/Combat/Runtime/HealthRegistry.cs`; `Features/Construction/Runtime/Core/Health/BuildingHealthService.cs` | `HealthRegistry` indexes entity health; building health and garrison state are owned by `BuildingHealthService` |
 | Construction | `Features/Construction/API/Contracts/Core/ConstructionSessionContracts.cs`; `Features/Construction/API/Contracts/Core/ConstructionPersistenceContracts.cs`; `Features/Construction/Runtime/Core/Installers/ConstructionInstaller.cs`; `Features/Construction/Runtime/Core/Service/ConstructionService.cs` | one `ConstructionService` singleton implements the narrow session/query/persistence boundaries and remains the canonical mutation authority |
@@ -310,6 +311,7 @@ Do not open every Units runtime service for a focused task.
 | traversal cost / terrain / construction passage | `UnitTraversalPolicy.cs` |
 | recruitment enqueue / economy / turn progression / signals | `UnitRecruitmentService.cs` |
 | recruitment queue state / persistence identity | `UnitRecruitmentQueueStateMachine.cs` |
+| unit and recruitment save payload | `UnitsSaveModule.cs` |
 | recruitment building / module / recipe context | `UnitRecruitmentBuildingContextResolver.cs` |
 | ready-unit deployment query / commit | `UnitRecruitmentDeploymentService.cs` |
 | deployment tile validity | `UnitPlacementValidator.cs` |
@@ -319,3 +321,19 @@ Do not open every Units runtime service for a focused task.
 
 Recruitment is owned by `Features/Units`; do not create a parallel `Features/Recruitment` mutation path.
 `IUnitMovementQuery` is implemented by `UnitMovementRangeQuery`; `IUnitMovementService` owns execution.
+
+## Bootstrap and GameplayHUD reading map
+
+| Task | Primary files |
+|---|---|
+| scene composition | `Bootstrap/Runtime/BootstrapInstaller.cs` |
+| launch-context fallback | `Bootstrap/Runtime/DirectGameplayLaunchModeInitializer.cs`; `GameplayLaunchTopology.cs` |
+| starting-position sequencing | `StartingPositionInitializer.cs`; `StartingPositionWorkflowService.cs`; `StartingPositionWorkflowService.Client.cs` |
+| initial new-world save | `Bootstrap/Runtime/InitialWorldSaveService.cs` |
+| HUD composition / lifecycle | `Features/GameplayHUD/Runtime/GameplayHudBindings.cs`; `GameplayTurnHudPresenter.cs` |
+| recruitment recipes / enqueue | `GameplayTurnHudPresenter.Recruitment.cs`; `GameplayTurnHudPresenter.RecruitmentAuthority.cs` |
+| recruitment queue / selection | `GameplayTurnHudPresenter.RecruitmentQueue.cs`; `GameplayTurnHudPresenter.RecruitmentSelection.cs` |
+| ready-unit deployment session | `UnitRecruitmentDeploymentController.cs`; `UnitRecruitmentDeploymentController.Session.cs` |
+| deployment preview / controls | `UnitRecruitmentDeploymentController.Preview.cs`; `UnitRecruitmentDeploymentController.Controls.cs`; `UnitRecruitmentDeploymentController.UiActions.cs` |
+
+`Features/GameplayHUD` uses an asmref to the existing Bootstrap assembly so moved scene components retain their serialized assembly identity.

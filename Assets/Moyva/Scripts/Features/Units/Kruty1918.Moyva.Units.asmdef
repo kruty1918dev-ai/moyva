@@ -11,6 +11,8 @@
     "Kruty1918.Moyva.Calendar",
     "Kruty1918.Moyva.Turns",
     "Kruty1918.Moyva.Construction",
+    "Kruty1918.Moyva.SaveSystem",
+    "Kruty1918.Moyva.Diagnostics",
     "Kruty1918.Moyva.WorldCreation.API",
     "Kruty1918.Moyva.Combat",
     "Kruty1918.Moyva.Presentation",
