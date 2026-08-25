@@ -6,7 +6,6 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using TMPro;
 using UnityEngine;
-using Unity.Profiling;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.UI
@@ -16,8 +15,6 @@ namespace Kruty1918.Moyva.Construction.UI
     /// </summary>
     public partial class ConstructionUIController : MonoBehaviour, IInitializable, IDisposable
     {
-        private const string ModuleLogTag =
-            "[MoyvaConstructionModules]";
         [Header("Підпанелі (перетягни в Inspector)")]
         [Tooltip("Панель вибору будівель.")]
         [SerializeField] private BuildingSelectionPanelUI selectionPanel;
@@ -300,12 +297,8 @@ namespace Kruty1918.Moyva.Construction.UI
             RequestBuildingListRefresh();
         }
 
-        private static readonly ProfilerMarker BuildingPlacedUiMarker =
-            new("Moyva.BuildCommit.Subscriber.ConstructionUI");
-
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
-            using var marker = BuildingPlacedUiMarker.Auto();
             RequestBuildingListRefresh();
             RefreshUI();
         }

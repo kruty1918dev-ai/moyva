@@ -41,7 +41,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionBuildGridTileFilter _tileFilter;
         private readonly IConstructionGridGeometryService _gridGeometry;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
-        private readonly ConstructionBuildGridDiagnostics _diagnostics;
         private readonly IFogStateReader _fogStateReader;
         private readonly Dictionary<MapChunkCoord, ConstructionBuildGridChunkSurfaceHandle> _handles = new();
         private readonly Dictionary<MapChunkCoord, bool> _chunkFogVisibilityCache = new();
@@ -60,10 +59,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private RectInt _activeMaskRect;
         private int _activeMaskNextY;
         private int _activeMaskRevision;
-        private int _activeMaskGeneral;
-        private int _activeMaskValid;
-        private int _activeMaskInvalid;
-        private int _activeMaskHidden;
 
         private Material _material;
         private bool _visible;
@@ -78,7 +73,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] IMapVisualChunkRegistry chunkRegistry = null,
             [InjectOptional] IConstructionGridGeometryService gridGeometry = null,
             [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null,
-            [InjectOptional] ConstructionBuildGridDiagnostics diagnostics = null,
             [InjectOptional] IFogStateReader fogStateReader = null)
         {
             _chunkLayout = chunkLayout;
@@ -88,7 +82,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _chunkRegistry = chunkRegistry;
             _gridGeometry = gridGeometry;
             _settingsProvider = settingsProvider;
-            _diagnostics = diagnostics;
             _fogStateReader = fogStateReader;
         }
 
@@ -590,11 +583,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _activeMaskRevision =
                     _maskRevision;
 
-                _activeMaskGeneral = 0;
-                _activeMaskValid = 0;
-                _activeMaskInvalid = 0;
-                _activeMaskHidden = 0;
-
                 return true;
             }
 
@@ -628,13 +616,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ConstructionBuildGridTileVisualState visualState =
                     _tileFilter.ResolveVisualState(tile);
 
-                CountVisualState(
-                    visualState,
-                    ref _activeMaskGeneral,
-                    ref _activeMaskValid,
-                    ref _activeMaskInvalid,
-                    ref _activeMaskHidden);
-
                 buffer[
                     rowStart
                     + tileX
@@ -651,23 +632,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             MapChunkCoord coord =
                 _activeMaskCoord.Value;
 
-            RectInt completedRect =
-                _activeMaskRect;
-
             int completedRevision =
                 _activeMaskRevision;
-
-            int general =
-                _activeMaskGeneral;
-
-            int valid =
-                _activeMaskValid;
-
-            int invalid =
-                _activeMaskInvalid;
-
-            int hidden =
-                _activeMaskHidden;
 
             /*
              * Upload once, after every row has been evaluated.
@@ -699,13 +665,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             handle.MaskDirty =
                 hasNewerPendingWork;
 
-            _diagnostics?.LogChunkMaskUpdated(
-                completedRect,
-                general,
-                valid,
-                invalid,
-                hidden);
-
             if (hasNewerPendingWork
                 && !_queuedMasks.Contains(coord))
             {
@@ -719,10 +678,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _activeMaskRect = default;
             _activeMaskNextY = 0;
             _activeMaskRevision = -1;
-            _activeMaskGeneral = 0;
-            _activeMaskValid = 0;
-            _activeMaskInvalid = 0;
-            _activeMaskHidden = 0;
         }
 
         private void BuildChunk(MapChunkDescriptor descriptor)
@@ -973,33 +928,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private static RectInt CreateTileRect(int xMin, int yMin, int xMax, int yMax)
             => new RectInt(xMin, yMin, Mathf.Max(0, xMax - xMin), Mathf.Max(0, yMax - yMin));
-
-        private static void CountVisualState(
-            ConstructionBuildGridTileVisualState state,
-            ref int general,
-            ref int valid,
-            ref int invalid,
-            ref int hidden)
-        {
-            switch (state)
-            {
-                case ConstructionBuildGridTileVisualState.General:
-                    general++;
-                    break;
-                case ConstructionBuildGridTileVisualState.Valid:
-                    valid++;
-                    break;
-                case ConstructionBuildGridTileVisualState.Unaffordable:
-                    valid++;
-                    break;
-                case ConstructionBuildGridTileVisualState.Invalid:
-                    invalid++;
-                    break;
-                default:
-                    hidden++;
-                    break;
-            }
-        }
 
         private static Color ResolveConfiguredColor(Color configured, float fallbackAlpha)
         {

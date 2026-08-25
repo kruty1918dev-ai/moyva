@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
@@ -24,11 +23,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private const int SchemaMagic =
             unchecked((int)0xC0535632);
         private const int SchemaVersion = 3;
-        private const string ModuleLogTag =
-            "[MoyvaConstructionModules]";
-        private const string PerfLogTag =
-            "[MoyvaConstructionPerf]";
-        private const double SlowSaveThresholdMs = 2d;
         private const int MaxStatePayloadBytes =
             16 * 1024 * 1024;
 
@@ -54,13 +48,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 stateProviders
                 ?? new List<IConstructionModuleStatePersistence>();
 
-            AuditStateProviders("init");
+            ValidateStateProviders();
         }
 
-        private void AuditStateProviders(string phase)
+        private void ValidateStateProviders()
         {
-            var keys =
-                new List<string>();
             var seen =
                 new HashSet<string>(
                     StringComparer.Ordinal);
@@ -88,32 +80,18 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     continue;
                 }
 
-                keys.Add(key);
             }
-
-            keys.Sort(StringComparer.Ordinal);
-
-            string keySummary =
-                keys.Count == 0
-                    ? "none"
-                    : string.Join(",", keys);
 
             if (duplicates > 0 || invalid > 0)
             {
                 Debug.LogError(
-                    $"{ModuleLogTag} state-provider-audit " +
-                    $"phase={phase} " +
-                    $"schema={BuildingDefinitionCapabilities.RuntimeStateSchemaVersion} " +
-                    $"providers={keys.Count} duplicates={duplicates} " +
-                    $"invalid={invalid} keys=[{keySummary}]");
-                return;
+                    $"[ConstructionSave] Invalid module state providers: " +
+                    $"duplicates={duplicates}, invalid={invalid}.");
             }
         }
 
         public void OnSave(ISaveContext context)
         {
-            long startedAt = Stopwatch.GetTimestamp();
-
             IReadOnlyList<ConstructionSavedPlacement> placements =
                 _placementSnapshots.GetSavedPlacements();
 
@@ -167,7 +145,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             context.Writer.Write(providers.Count);
 
-            int savedStates = 0;
             for (int index = 0;
                  index < providers.Count;
                  index++)
@@ -189,27 +166,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 context.Writer.Write(provider.StateKey);
                 context.Writer.Write(payload.Length);
                 if (payload.Length > 0)
-                {
                     context.Writer.Write(payload);
-                    savedStates++;
-                }
-            }
-
-            double elapsedMs =
-                (Stopwatch.GetTimestamp() - startedAt)
-                * 1000d
-                / Stopwatch.Frequency;
-
-            if (Debug.isDebugBuild
-                && elapsedMs >= SlowSaveThresholdMs)
-            {
             }
         }
 
         public void OnLoad(ISaveContext context)
         {
-            long startedAt = Stopwatch.GetTimestamp();
-
             int markerOrLegacyCount =
                 context.Reader.ReadInt32();
 
@@ -281,7 +243,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             int stateCount =
                 Math.Max(0, context.Reader.ReadInt32());
-            int restoredStates = 0;
 
             for (int index = 0;
                  index < stateCount;
@@ -313,21 +274,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 try
                 {
                     provider.RestoreState(payload);
-                    restoredStates++;
                 }
                 catch (Exception)
                 {
                 }
-            }
-
-            double elapsedMs =
-                (Stopwatch.GetTimestamp() - startedAt)
-                * 1000d
-                / Stopwatch.Frequency;
-
-            if (Debug.isDebugBuild
-                && elapsedMs >= SlowSaveThresholdMs)
-            {
             }
         }
 

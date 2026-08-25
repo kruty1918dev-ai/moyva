@@ -134,9 +134,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     rotation: intent.Rotation));
             if (!placement.CanCommit)
             {
-                LogPlacementAttempt(
-                    placement,
-                    emitRejectedAction: true);
                 return false;
             }
 
@@ -244,15 +241,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     relocationSource.Value);
             }
             _buildingFogEffects.Apply(buildingId, position);
-            LogPlacementAttempt(
-                placement,
-                emitRejectedAction: false);
             RecordConstructionAction(
                 ownerId,
                 isRelocation ? "building-relocate" : "building-place");
-            if (VerboseLogs)
-            {
-            }
             return true;
         }
     }

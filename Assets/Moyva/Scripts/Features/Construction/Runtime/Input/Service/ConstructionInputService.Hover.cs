@@ -84,10 +84,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 FootprintPositions = Array.Empty<Vector2Int>(),
                 InvalidFootprintPositions = Array.Empty<Vector2Int>(),
             });
-            _buildGridDiagnostics?.LogHoverChanged(
-                false,
-                default,
-                ConstructionBuildGridTileVisualState.Missing);
         }
 
         private void InvalidateBuildGridHover(BuildingSelectionChangedSignal _) => InvalidatePlacementInteractionCaches();
@@ -133,10 +129,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 FootprintPositions = footprintPositions,
                 InvalidFootprintPositions = invalidPositions,
             });
-            _buildGridDiagnostics?.LogHoverChanged(
-                true,
-                tile,
-                _buildGridState.HoverVisualState);
         }
 
         private static void BuildHoverFootprintArrays(

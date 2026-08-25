@@ -7,7 +7,6 @@ using Kruty1918.Moyva.Calendar.Core;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
-using Unity.Profiling;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
@@ -27,9 +26,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         IInitializable,
         IDisposable
     {
-        private const string PerfLogTag =
-            "[MoyvaConstructionPerf]";
-        private const double HealthPlacementPerfThresholdMs = 0.5d;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IHealthRegistry _healthRegistry;
         private readonly SignalBus _signalBus;
@@ -151,15 +147,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _pendingGarrisonRestoreByUnit.Clear();
         }
 
-        private static readonly ProfilerMarker BuildingPlacedMarker =
-            new("Moyva.BuildCommit.Subscriber.Health");
-
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
-            using var marker = BuildingPlacedMarker.Auto();
-            double startedAt =
-                Time.realtimeSinceStartupAsDouble;
-
             if (signal.HasRelocationSource && signal.RelocationSourcePosition != signal.Position)
             {
                 _healthRegistry.Unregister(
@@ -230,15 +219,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _defenses.Remove(signal.Position);
             }
 
-            if (Debug.isDebugBuild)
-            {
-                double elapsedMs =
-                    (Time.realtimeSinceStartupAsDouble - startedAt)
-                    * 1000d;
-                if (elapsedMs >= HealthPlacementPerfThresholdMs)
-                {
-                }
-            }
         }
 
         private void OnBuildingDestroyed(
@@ -826,7 +806,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     failed++;
                     Debug.LogError(
-                        $"[MoyvaConstructionModules] garrison release failed " +
+                        $"[ConstructionHealth] Garrison release failed: " +
                         $"building={buildingPosition} unit={unitId} " +
                         $"reason={reason}");
                 }
@@ -874,7 +854,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         out string reason))
                 {
                     Debug.LogError(
-                        $"[MoyvaConstructionModules] garrison capacity-trim failed " +
+                        $"[ConstructionHealth] Garrison capacity trim failed: " +
                         $"building={buildingPosition} unit={unitId} " +
                         $"targetCapacity={capacity} reason={reason}");
                     continue;

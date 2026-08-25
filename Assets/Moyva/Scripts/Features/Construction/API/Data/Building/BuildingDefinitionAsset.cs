@@ -42,8 +42,8 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
                 catch (Exception ex)
                 {
                     Debug.LogError(
-                        $"[MoyvaConstructionModules] live-refresh " +
-                        $"subscriber-failed revision={_runtimeRevision} " +
+                        $"[Construction] Building definition refresh subscriber failed: " +
+                        $"revision={_runtimeRevision} " +
                         $"handler={invocationList[index].Method?.DeclaringType?.Name}." +
                         $"{invocationList[index].Method?.Name} " +
                         $"error={ex.GetType().Name}:{ex.Message}");

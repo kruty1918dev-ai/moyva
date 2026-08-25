@@ -19,11 +19,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
-            if (VerboseLogs)
-            {
-                string inputKind = selectionOnRelease ? "ReleaseSelect" : "PressSelect";
-            }
-
             if (!_gridService.TryGetTileData(tilePos, out _))
             {
                 return;

@@ -17,7 +17,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly int _defaultInfluenceRadius;
         private readonly IConstructionPlacementRulesProvider
             _placementRulesProvider;
-        private readonly Func<bool> _verboseLogs;
 
         private int _cachedMaxInfluenceRadius = -1;
         private int _cachedInfluenceCenterDefinitionState = -1;
@@ -25,14 +24,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public ConstructionInfluencePolicy(
             IBuildingRegistry buildingRegistry,
             int defaultInfluenceRadius,
-            IConstructionPlacementRulesProvider placementRulesProvider,
-            Func<bool> verboseLogs)
+            IConstructionPlacementRulesProvider placementRulesProvider)
         {
             _buildingRegistry = buildingRegistry;
             _defaultInfluenceRadius =
                 Mathf.Max(0, defaultInfluenceRadius);
             _placementRulesProvider = placementRulesProvider;
-            _verboseLogs = verboseLogs ?? (() => false);
         }
 
         public bool IsBlocked(
@@ -46,18 +43,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (_placementRulesProvider != null
                 && !_placementRulesProvider.EnableInfluenceZoneRules)
-            {
-                if (_verboseLogs())
-                {
-                }
-
                 return false;
-            }
 
             if (string.IsNullOrWhiteSpace(buildingId))
-            {
                 return false;
-            }
 
             if (_buildingRegistry == null)
             {
@@ -69,31 +58,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             BuildingDefinition candidate =
                 _buildingRegistry.GetById(buildingId);
             if (candidate == null)
-            {
                 return false;
-            }
 
             if (!HasAnyInfluenceCenterDefinition())
-            {
-                if (_verboseLogs())
-                {
-                }
-
                 return false;
-            }
 
             int ruleRadius = IsInfluenceCenter(candidate)
                 ? ResolveInfluenceRadius(candidate)
                 : ResolveMaxInfluenceRadius();
 
             if (ruleRadius <= 0)
-            {
-                if (_verboseLogs())
-                {
-                }
-
                 return false;
-            }
 
             bool hasInfluenceCenterInRange =
                 HasInfluenceCenterCoveringPosition(
@@ -102,10 +77,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ignoredPendingPosition,
                     pendingPlacements,
                     placedBuildings);
-
-            if (_verboseLogs())
-            {
-            }
 
             bool requireInfluenceCenterInRange;
             bool blockWhenInfluenceCenterExists;
@@ -116,10 +87,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     candidate.RequireTownHallInRange;
                 blockWhenInfluenceCenterExists =
                     candidate.BlockIfTownHallAlreadyInRange;
-
-                if (_verboseLogs())
-                {
-                }
             }
             else
             {
@@ -129,21 +96,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     !isInfluenceCenter;
                 blockWhenInfluenceCenterExists =
                     isInfluenceCenter;
-
-                if (_verboseLogs())
-                {
-                }
             }
 
             if (requireInfluenceCenterInRange
                 && !hasInfluenceCenterInRange)
-            {
-                if (_verboseLogs())
-                {
-                }
-
                 return true;
-            }
 
             int candidateInfluenceRadius =
                 ResolveInfluenceRadius(candidate);
@@ -155,20 +112,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ignoredPendingPosition,
                     pendingPlacements,
                     placedBuildings,
-                    out Vector2Int overlapPosition,
-                    out string overlapBuildingId,
-                    out int overlapRadius))
-            {
-                if (_verboseLogs())
-                {
-                }
-
+                    out _,
+                    out _,
+                    out _))
                 return true;
-            }
-
-            if (_verboseLogs())
-            {
-            }
 
             return false;
         }

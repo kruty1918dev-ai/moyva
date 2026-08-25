@@ -99,9 +99,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 influenceZoneBlocked = false;
                 terrainBlocked = false;
 
-                LogPlacementAttempt(
-                    fastResult,
-                    emitRejectedAction: false);
                 return true;
             }
 
@@ -139,9 +136,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ?? (!result.IsSpatiallyValid
                     && _placementEnvironmentRules.IsBlockedByTerrain(position, out _));
 
-            LogPlacementAttempt(
-                result,
-                emitRejectedAction: !result.CanCommit);
 
             return result.AvailabilityValid
                 && result.SpatialValid

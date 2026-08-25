@@ -198,15 +198,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            if (Application.isEditor || Debug.isDebugBuild)
-            {
-                Container.BindInterfacesAndSelfTo<FirstCastlePerformanceRecorder>()
-                    .AsSingle()
-                    .NonLazy();
-            }
-
-            QueueSceneDebugViewInjection();
-
             // Явний порядок Initialize() — виконується ПІСЛЯ GameMode (-10).
             Container.BindExecutionOrder<ConstructionService>(0);
             Container.BindExecutionOrder<ConstructionConfirmRequestRouter>(2);
@@ -228,16 +219,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 Container.BindInstance(_sceneContext.SystemProfile.FogOfWarSettings)
                     .IfNotBound();
-            }
-        }
-
-        private void QueueSceneDebugViewInjection()
-        {
-            var debugViews = FindObjectsByType<ConstructionDebugSceneView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            for (int i = 0; i < debugViews.Length; i++)
-            {
-                if (debugViews[i] != null)
-                    Container.QueueForInject(debugViews[i]);
             }
         }
 

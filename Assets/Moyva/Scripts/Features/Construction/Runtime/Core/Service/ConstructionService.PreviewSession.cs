@@ -53,13 +53,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 _lastActionMessage =
                     $"На клітинці {position} вже є непідтверджене розміщення.";
-                LogSyntheticPlacementRejection(
-                    ConstructionPlacementAttemptSource.PointerClick,
-                    _selectedBuildingId,
-                    position,
-                    _activeOwnerId,
-                    "pending-position-occupied",
-                    _lastActionMessage);
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
                     Position = position,
@@ -89,9 +82,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     BuildingId = _selectedBuildingId,
                     PreviewState = BuildingPreviewState.Blocked
                 });
-                LogPlacementAttempt(
-                    placementResult,
-                    emitRejectedAction: true);
                 return false;
             }
 
@@ -104,15 +94,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     BuildingId = _selectedBuildingId,
                     PreviewState = BuildingPreviewState.Unaffordable
                 });
-                LogPlacementAttempt(
-                    placementResult,
-                    emitRejectedAction: true);
                 return false;
             }
 
-            LogPlacementAttempt(
-                placementResult,
-                emitRejectedAction: false);
 
             return AddPendingPlacement(
                 position,
@@ -224,24 +208,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!moveResult.CanPreview)
             {
                 _lastActionMessage = moveResult.Reason;
-                LogPlacementAttempt(
-                    moveResult,
-                    emitRejectedAction: true);
                 return false;
             }
 
             if (!moveResult.ResourcesValid)
             {
                 _lastActionMessage = moveResult.Reason;
-                LogPlacementAttempt(
-                    moveResult,
-                    emitRejectedAction: true);
                 return false;
             }
 
-            LogPlacementAttempt(
-                moveResult,
-                emitRejectedAction: false);
             SaveSnapshotForUndo(clearRedoHistory: true);
 
             _pendingPositions.Remove(fromPosition);

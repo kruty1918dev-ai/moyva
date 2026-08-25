@@ -7,8 +7,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     public sealed class ObjectTypePickerService : IObjectTypePicker
     {
-        private const bool VerboseLogs = true;
-
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IAutoTileVariantResolver _autoTileVariantResolver;
 
@@ -42,10 +40,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
 
             resolvedBuildingId = ChooseRandom(variants);
-
-            if (VerboseLogs)
-            {
-            }
 
             return !string.IsNullOrWhiteSpace(resolvedBuildingId);
         }

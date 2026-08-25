@@ -13,8 +13,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private const float PreviewDragSharpness = 28f;
         private const float PreviewSnapSharpness = 14f;
         private const int SnapHighlightRenderQueue = 3995;
-        private const string PerfLogTag =
-            "[MoyvaConstructionPerf]";
         private const int MaxPooledInstancesPerPrefab = 24;
 
         private static readonly int EdgeMaskPropertyId = Shader.PropertyToID("_EdgeMask");
@@ -28,7 +26,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly Dictionary<Vector2Int, GameObject> _previewByPosition = new();
         private readonly Dictionary<int, Stack<GameObject>> _previewPoolByPrefabId = new();
         private readonly Dictionary<GameObject, int> _prefabIdByPreviewInstance = new();
-        private readonly HashSet<int> _loggedPoolReusePrefabIds = new();
         private readonly List<GameObject> _gridHoverHighlights = new();
         private readonly List<MeshRenderer> _gridHoverRenderers = new();
         private readonly ConstructionVisualRootService _roots;
@@ -42,11 +39,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private Mesh _snapHighlightMesh;
         private Material _snapHighlightMaterial;
         private MaterialPropertyBlock _gridHoverPropertyBlock;
-        private int _poolCreatedCount;
-        private int _poolReusedCount;
-        private int _poolReleasedCount;
-        private int _poolOverflowDestroyedCount;
-
         [Inject]
         public ConstructionPreviewVisualService(
             ConstructionVisualRootService roots,
@@ -394,13 +386,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     isPreviewVisual: true,
                     visualOffsetY: visualOffsetY,
                     presentation: presentation);
-                _poolReusedCount++;
-
-                int prefabId = prefab.GetInstanceID();
-                if (Debug.isDebugBuild
-                    && _loggedPoolReusePrefabIds.Add(prefabId))
-                {
-                }
             }
             else
             {
@@ -416,8 +401,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     isPreviewVisual: true,
                     visualOffsetY: visualOffsetY,
                     presentation: presentation);
-                if (instance != null)
-                    _poolCreatedCount++;
             }
 
             if (instance == null)
@@ -490,12 +473,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (pool.Count >= MaxPooledInstancesPerPrefab)
             {
-                _poolOverflowDestroyedCount++;
                 Object.Destroy(instance);
-
-                if (Debug.isDebugBuild)
-                {
-                }
                 return;
             }
 
@@ -507,7 +485,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _roots.PreviewRoot,
                 true);
             pool.Push(instance);
-            _poolReleasedCount++;
         }
 
         private void DestroyPreviewPool()
@@ -526,7 +503,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _previewPoolByPrefabId.Clear();
             _prefabIdByPreviewInstance.Clear();
-            _loggedPoolReusePrefabIds.Clear();
         }
 
         private void MoveVisualToTile(

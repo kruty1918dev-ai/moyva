@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
 {
     internal sealed class BuildingRegistryValidationRunner
     {
-        private const string LogTag = "[BuildingValidator]";
-
         private readonly BuildingValidationRunner _definitionRunner;
 
         public BuildingRegistryValidationRunner(BuildingValidationRunner definitionRunner)
@@ -23,7 +20,6 @@ namespace Kruty1918.Moyva.Construction.API
             if (registry == null)
             {
                 collector.AddError("REGISTRY_NULL", "BuildingRegistry не задано.");
-                collector.LogSummary("registry");
                 return collector.Issues;
             }
 
@@ -55,7 +51,6 @@ namespace Kruty1918.Moyva.Construction.API
                 }));
             }
 
-            collector.LogSummary("registry");
             return collector.Issues;
         }
     }

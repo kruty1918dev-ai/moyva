@@ -6,7 +6,6 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using TMPro;
 using UnityEngine;
-using Unity.Profiling;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.UI

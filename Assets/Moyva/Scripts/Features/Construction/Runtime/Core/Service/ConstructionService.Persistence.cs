@@ -110,9 +110,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 buildingId,
                 position);
 
-            if (VerboseLogs)
-            {
-            }
         }
 
     }

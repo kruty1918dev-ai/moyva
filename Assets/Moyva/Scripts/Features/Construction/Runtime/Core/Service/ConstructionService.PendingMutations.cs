@@ -188,18 +188,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (!placement.CanPreview)
                 {
                     _lastActionMessage = placement.Reason;
-                    LogPlacementAttempt(
-                        placement,
-                        emitRejectedAction: true);
                     return false;
                 }
 
                 if (!placement.ResourcesValid)
                 {
                     _lastActionMessage = placement.Reason;
-                    LogPlacementAttempt(
-                        placement,
-                        emitRejectedAction: true);
                     return false;
                 }
 
@@ -228,10 +222,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     PreviewState = ResolvePreviewState(
                         placement.ResourcesValid)
                 });
-
-                if (VerboseLogs)
-                {
-                }
 
                 return true;
             }

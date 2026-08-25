@@ -27,7 +27,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             container.Bind<ConstructionInfluenceRadiusVisualService>().To<ConstructionInfluenceRadiusVisualService>().AsSingle();
             container.Bind<ConstructionBuildGridTileFilter>().To<ConstructionBuildGridTileFilter>().AsSingle();
             container.Bind<ConstructionBuildGridTileCollector>().To<ConstructionBuildGridTileCollector>().AsSingle();
-            container.Bind<ConstructionBuildGridDiagnostics>().To<ConstructionBuildGridDiagnostics>().AsSingle();
             container.Bind<ConstructionBuildGridOverlayRenderer>().To<ConstructionBuildGridOverlayRenderer>().AsSingle();
             container.Bind<ConstructionBuildGridChunkSurfaceBuilder>().To<ConstructionBuildGridChunkSurfaceBuilder>().AsSingle();
             container.Bind<ConstructionBuildGridChunkSurfaceService>().To<ConstructionBuildGridChunkSurfaceService>().AsSingle();

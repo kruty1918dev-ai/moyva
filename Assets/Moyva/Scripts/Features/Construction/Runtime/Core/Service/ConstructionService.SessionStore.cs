@@ -72,8 +72,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             public List<PendingPlacement> PendingUndoBatchSnapshot;
             public bool PendingUndoBatchChanged;
             public bool PendingUndoBatchClearRedoHistory;
-            public int PendingUndoBatchStartCount;
-            public string PendingUndoBatchReason;
 
             public readonly List<PendingDemolition> PendingDemolitions = new();
             public readonly HashSet<Vector2Int> PendingDemolitionPositions = new();
@@ -166,18 +164,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             get => _sessionStore.PendingUndoBatchClearRedoHistory;
             set => _sessionStore.PendingUndoBatchClearRedoHistory = value;
-        }
-
-        private int _pendingUndoBatchStartCount
-        {
-            get => _sessionStore.PendingUndoBatchStartCount;
-            set => _sessionStore.PendingUndoBatchStartCount = value;
-        }
-
-        private string _pendingUndoBatchReason
-        {
-            get => _sessionStore.PendingUndoBatchReason;
-            set => _sessionStore.PendingUndoBatchReason = value;
         }
 
         private List<PendingPlacement> _pendingPlacements =>

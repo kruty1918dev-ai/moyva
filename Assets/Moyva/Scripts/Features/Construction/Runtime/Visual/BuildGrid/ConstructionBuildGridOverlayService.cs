@@ -18,7 +18,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionVisualRootService _roots;
         private readonly ConstructionBuildGridTileCollector _tileCollector;
         private readonly ConstructionBuildGridTileFilter _tileFilter;
-        private readonly ConstructionBuildGridDiagnostics _diagnostics;
         private readonly ConstructionBuildGridOverlayRenderer _renderer;
         private readonly ConstructionBuildGridChunkSurfaceService _chunkSurfaceService;
         private readonly IGameModeService _gameModeService;
@@ -39,7 +38,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ConstructionVisualRootService roots,
             ConstructionBuildGridTileCollector tileCollector,
             ConstructionBuildGridTileFilter tileFilter,
-            ConstructionBuildGridDiagnostics diagnostics,
             ConstructionBuildGridOverlayRenderer renderer,
             BuildModeGridStateController stateController,
             [InjectOptional] ConstructionBuildGridChunkSurfaceService chunkSurfaceService = null,
@@ -52,7 +50,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _roots = roots;
             _tileCollector = tileCollector;
             _tileFilter = tileFilter;
-            _diagnostics = diagnostics;
             _renderer = renderer;
             _chunkSurfaceService = chunkSurfaceService;
             _gameModeService = gameModeService;
@@ -87,14 +84,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ApplyGridStyleToChunkSurface();
 
             ApplyInitialModeState();
-
-            _diagnostics.LogInitialized(shaderName, ResolveActiveMaterialReady(), _gridProjection != null);
         }
 
         public void SetConstructionModeActive(bool active)
         {
-            BuildModeGridState previousState = _stateController.State;
-            string previousBuildingId = _stateController.SelectedBuildingId;
             bool stateChanged = _stateController.SetConstructionModeActive(active);
             if (active && _constructionService != null)
             {
@@ -112,12 +105,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _dirty = true;
             if (active)
                 HideActionOverlay();
-            _diagnostics.LogStateTransition(
-                previousState,
-                _stateController.State,
-                previousBuildingId,
-                _stateController.SelectedBuildingId,
-                active ? "construction-mode-enter" : "construction-mode-exit");
 
             if (!active)
                 HideConstructionOverlay();
@@ -125,19 +112,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void SetSelectedBuilding(string buildingId, bool isDemolishMode)
         {
-            BuildModeGridState previousState = _stateController.State;
-            string previousBuildingId = _stateController.SelectedBuildingId;
             if (!_stateController.SetSelection(buildingId, isDemolishMode))
                 return;
 
             if (!UsesUnfilteredChunkSurface())
                 _dirty = true;
-            _diagnostics.LogStateTransition(
-                previousState,
-                _stateController.State,
-                previousBuildingId,
-                _stateController.SelectedBuildingId,
-                isDemolishMode ? "demolish-mode" : "building-selection");
         }
 
         public void MarkDirty()
@@ -149,7 +128,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
 
             _dirty = true;
-            _diagnostics.LogFullRefreshRequested(_stateController.State, _stateController.SelectedBuildingId);
         }
 
         public void MarkFogDirty()
@@ -169,7 +147,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (UsesUnfilteredChunkSurface())
                 return;
 
-            _diagnostics.LogPartialRefreshRequested(position, Mathf.Max(0, radius));
             if (UseChunkSurfaceMode())
             {
                 _chunkSurfaceService?.InvalidateRegion(position, radius);
@@ -264,9 +241,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
-            if (TryGetSkipReason(out string reason))
+            if (ShouldSkipRebuild())
             {
-                _diagnostics.LogRebuildSkipped(reason);
                 Hide();
                 return;
             }
@@ -286,19 +262,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private void Rebuild()
         {
             _dirty = false;
-            if (TryGetSkipReason(out string reason))
+            if (ShouldSkipRebuild())
             {
-                _diagnostics.LogRebuildSkipped(reason);
                 Hide();
                 return;
             }
 
             _chunkSurfaceService?.Hide();
-            _tileCollector.Collect(_entries, _tileFilter.ResolveVisualState, out ConstructionBuildGridCollectionStats stats);
+            _tileCollector.Collect(_entries, _tileFilter.ResolveVisualState);
             _lastChunkVisibilityVersion = ResolveChunkVisibilityVersion();
             if (_entries.Count == 0)
             {
-                _diagnostics.LogRebuildCompleted(stats);
                 Hide();
                 return;
             }
@@ -308,7 +282,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 new Color(0.70f, 0.95f, 1f, ResolveFillAlpha()),
                 ResolveLineWidth());
             _renderer.SetVisible(true);
-            _diagnostics.LogRebuildCompleted(stats);
         }
 
         private void Draw()
@@ -316,7 +289,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!_isConstructionModeActive || _actionOwner != GridActionOverlayOwner.None)
                 return;
 
-            _renderer.Draw(_entries, _diagnostics);
+            _renderer.Draw(_entries);
         }
 
         public bool Acquire(GridActionOverlayOwner owner)
@@ -396,7 +369,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 RebuildActionOverlay();
 
             if (_actionEntries.Count > 0)
-                _renderer.Draw(_actionEntries, _diagnostics);
+                _renderer.Draw(_actionEntries);
         }
 
         private void RebuildActionOverlay()
@@ -412,11 +385,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _chunkSurfaceService?.Hide();
             _tileCollector.Collect(
                 _actionEntries,
-                ResolveActionVisualState,
-                out ConstructionBuildGridCollectionStats stats);
+                ResolveActionVisualState);
             if (_actionEntries.Count == 0)
             {
-                _diagnostics.LogRebuildCompleted(stats);
                 _renderer.SetVisible(false);
                 return;
             }
@@ -426,7 +397,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 new Color(0.70f, 0.95f, 1f, ResolveFillAlpha()),
                 ResolveLineWidth());
             _renderer.SetVisible(true);
-            _diagnostics.LogRebuildCompleted(stats);
         }
 
         private ConstructionBuildGridTileVisualState ResolveActionVisualState(Vector2Int position)
@@ -475,19 +445,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             };
         }
 
-        private bool TryGetSkipReason(out string reason)
-        {
-            reason = !_isConstructionModeActive
-                ? "construction mode is inactive"
-                : !ResolveUseOverlay()
-                    ? "visual profile disabled build-grid overlay"
-                    : !ResolveActiveMaterialReady()
-                        ? "material is missing"
-                        : _gridProjection != null && !GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection)
-                            ? $"unsupported grid world plane '{_gridProjection.WorldPlane}'"
-                            : null;
-            return reason != null;
-        }
+        private bool ShouldSkipRebuild()
+            => !_isConstructionModeActive
+               || !ResolveUseOverlay()
+               || !ResolveActiveMaterialReady()
+               || (_gridProjection != null
+                   && !GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection));
 
         private bool ResolveUseOverlay() => _settingsProvider?.UseBuildGridOverlay ?? true;
         private float ResolveFillAlpha() => Mathf.Clamp01(_settingsProvider?.BuildGridFillAlpha ?? 0.045f);

@@ -288,10 +288,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private ConstructionPlacementQueryResult InvalidPlacementQueryResult(
             bool availabilityValid,
             string reason,
-            string reasonCode,
             ConstructionPlacementQueryRequest request,
             string ownerId,
-            BuildingPerPlayerLimitEvaluation limitEvaluation,
             BuildingPlacementBlockerKind blockerKind)
         {
             BuildingPlacementEvaluationResult evaluationResult = null;
@@ -323,9 +321,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 reason,
                 evaluationResult,
                 request,
-                ownerId,
-                limitEvaluation,
-                reasonCode);
+                ownerId);
         }
     }
 }

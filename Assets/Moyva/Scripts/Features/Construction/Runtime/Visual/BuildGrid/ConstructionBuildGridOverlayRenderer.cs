@@ -120,33 +120,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _overlayGo.SetActive(visible);
         }
 
-        public void Draw(List<ConstructionBuildGridOverlayEntry> entries, ConstructionBuildGridDiagnostics diagnostics)
+        public void Draw(List<ConstructionBuildGridOverlayEntry> entries)
         {
             if (_material == null || entries.Count == 0)
                 return;
 
-            int prunedCount = 0;
             for (int i = entries.Count - 1; i >= 0; i--)
             {
                 ConstructionBuildGridOverlayEntry entry = entries[i];
                 if (entry.Mesh == null)
                 {
                     entries.RemoveAt(i);
-                    prunedCount++;
                     continue;
                 }
 
                 if (entry.SourceRenderer != null && !entry.SourceRenderer.enabled)
                 {
                     entries.RemoveAt(i);
-                    prunedCount++;
                     continue;
                 }
 
                 DrawEntry(entry);
             }
-
-            diagnostics.LogEntriesPruned(prunedCount, entries.Count);
         }
 
         private void DrawEntry(ConstructionBuildGridOverlayEntry entry)

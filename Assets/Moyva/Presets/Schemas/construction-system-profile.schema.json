@@ -2367,77 +2367,6 @@
       "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type.",
       "title": "Wall Profile"
     },
-    "diagnosticsProfile": {
-      "anyOf": [
-        {
-          "type": "object",
-          "properties": {
-            "$config": {
-              "type": "object",
-              "required": [
-                "id"
-              ],
-              "properties": {
-                "model": {
-                  "type": "string"
-                },
-                "id": {
-                  "type": "string"
-                }
-              },
-              "additionalProperties": true
-            }
-          },
-          "required": [
-            "$config"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "enableVerboseLogs": {
-              "type": "boolean",
-              "title": "Enable Verbose Logs"
-            },
-            "enablePlacementDebug": {
-              "type": "boolean",
-              "title": "Enable Placement Debug"
-            },
-            "enableResourceDebug": {
-              "type": "boolean",
-              "title": "Enable Resource Debug"
-            },
-            "enableVisualDebug": {
-              "type": "boolean",
-              "title": "Enable Visual Debug"
-            },
-            "enableWallDebug": {
-              "type": "boolean",
-              "title": "Enable Wall Debug"
-            },
-            "drawSceneGizmos": {
-              "type": "boolean",
-              "title": "Draw Scene Gizmos"
-            },
-            "drawBlockedTiles": {
-              "type": "boolean",
-              "title": "Draw Blocked Tiles"
-            },
-            "drawInfluenceZones": {
-              "type": "boolean",
-              "title": "Draw Influence Zones"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type.",
-      "title": "Diagnostics Profile"
-    },
     "economyRulesProfile": {
       "anyOf": [
         {
@@ -2528,8 +2457,6 @@
                 "cluster-scatter",
                 "constant-cell-mask",
                 "construction-dashboard-window",
-                "construction-diagnostics-profile",
-                "construction-diagnostics-profile-editor",
                 "construction-input-profile",
                 "construction-input-profile-editor",
                 "construction-placement-rules-profile",
@@ -2784,8 +2711,6 @@
                 "cluster-scatter",
                 "constant-cell-mask",
                 "construction-dashboard-window",
-                "construction-diagnostics-profile",
-                "construction-diagnostics-profile-editor",
                 "construction-input-profile",
                 "construction-input-profile-editor",
                 "construction-placement-rules-profile",

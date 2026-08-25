@@ -121,7 +121,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             catch (Exception ex)
             {
                 Debug.LogError(
-                    $"[MoyvaConstructionPerf] pooled visual reuse failed " +
+                    $"[ConstructionVisual] Pooled visual reuse failed: " +
                     $"name={objectName} error={ex.GetType().Name}: {ex.Message}");
                 UnityEngine.Object.Destroy(instance);
                 return CreateInstance(

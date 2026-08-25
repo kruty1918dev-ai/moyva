@@ -147,16 +147,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _pendingUndoBatchSnapshot = ClonePendingSnapshot();
                 _pendingUndoBatchChanged = false;
                 _pendingUndoBatchClearRedoHistory = false;
-                _pendingUndoBatchStartCount =
-                    _pendingPlacements.Count;
-                _pendingUndoBatchReason =
-                    string.IsNullOrWhiteSpace(reason)
-                        ? "unspecified"
-                        : reason;
-
-                if (VerboseLogs)
-                {
-                }
             }
 
             _pendingUndoBatchDepth++;
@@ -180,13 +170,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (_pendingUndoBatchClearRedoHistory)
                     _redoSnapshots.Clear();
 
-                if (VerboseLogs)
-                {
-                    int finalCount = _pendingPlacements.Count;
-                }
-            }
-            else if (VerboseLogs)
-            {
             }
 
             ResetPendingUndoBatchState();
@@ -198,8 +181,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _pendingUndoBatchSnapshot = null;
             _pendingUndoBatchChanged = false;
             _pendingUndoBatchClearRedoHistory = false;
-            _pendingUndoBatchStartCount = 0;
-            _pendingUndoBatchReason = null;
         }
 
         private void SaveSnapshotForUndo(bool clearRedoHistory)
@@ -239,10 +220,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     placement;
             }
             MarkPendingPlacementsChanged();
-
-            if (VerboseLogs)
-            {
-            }
 
             var previousByPosition = new Dictionary<Vector2Int, PendingPlacement>();
             for (int i = 0; i < previous.Count; i++)

@@ -6,10 +6,6 @@ using Zenject;
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class ConstructionPlacedVisualSignalHandler {
-        private const string PerfLogTag =
-            "[MoyvaConstructionPerf]";
-        private const double SignalHandlerLogThresholdMs = 0.5d;
-        private const double SignalHandlerWarnThresholdMs = 4d;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IWallTopologyService _wallTopologyService;
         private readonly ConstructionPreviewVisualService _previewVisuals;
@@ -45,60 +41,27 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Handle(BuildingPlacedSignal signal)
         {
-            double totalStartedAt =
-                Time.realtimeSinceStartupAsDouble;
-            double relocationMs = 0d;
-            double previewReleaseMs = 0d;
-            double placedVisualMs = 0d;
-            double wallRefreshMs = 0d;
-
             if (signal.HasRelocationSource
                 && signal.RelocationSourcePosition != signal.Position)
             {
-                double startedAt =
-                    Time.realtimeSinceStartupAsDouble;
                 _placedVisuals.Remove(
                     signal.RelocationSourcePosition);
-                relocationMs +=
-                    (Time.realtimeSinceStartupAsDouble - startedAt)
-                    * 1000d;
             }
 
-            double previewStartedAt =
-                Time.realtimeSinceStartupAsDouble;
             _previewVisuals.TryRelease(
                 signal.Position,
                 out GameObject previewVisual);
             _radiusVisuals.HidePreview();
-            previewReleaseMs +=
-                (Time.realtimeSinceStartupAsDouble - previewStartedAt)
-                * 1000d;
 
             if (_wallTopologyService.IsWallOrGate(signal.BuildingId))
             {
                 if (previewVisual != null)
                     Object.Destroy(previewVisual);
 
-                double wallStartedAt =
-                    Time.realtimeSinceStartupAsDouble;
                 _wallVisuals.RefreshPlacedNeighborhood(
                     signal.Position);
-                wallRefreshMs +=
-                    (Time.realtimeSinceStartupAsDouble - wallStartedAt)
-                    * 1000d;
-
-                LogPlacedSignalPerf(
-                    signal,
-                    totalStartedAt,
-                    relocationMs,
-                    previewReleaseMs,
-                    placedVisualMs,
-                    wallRefreshMs);
                 return;
             }
-
-            double placedStartedAt =
-                Time.realtimeSinceStartupAsDouble;
 
             BuildingDefinition def =
                 _buildingRegistry.GetById(signal.BuildingId);
@@ -136,17 +99,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 Object.Destroy(previewVisual);
             }
 
-            placedVisualMs +=
-                (Time.realtimeSinceStartupAsDouble - placedStartedAt)
-                * 1000d;
-
-            LogPlacedSignalPerf(
-                signal,
-                totalStartedAt,
-                relocationMs,
-                previewReleaseMs,
-                placedVisualMs,
-                wallRefreshMs);
         }
 
         private static GameObject ResolveReusablePlacedSource(
@@ -179,35 +131,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             return lifecycle == null
                 || !lifecycle.IsOperational(position);
-        }
-
-        private static void LogPlacedSignalPerf(
-            BuildingPlacedSignal signal,
-            double totalStartedAt,
-            double relocationMs,
-            double previewReleaseMs,
-            double placedVisualMs,
-            double wallRefreshMs)
-        {
-            if (!Debug.isDebugBuild)
-                return;
-
-            double totalMs =
-                (Time.realtimeSinceStartupAsDouble - totalStartedAt)
-                * 1000d;
-
-            if (totalMs < SignalHandlerLogThresholdMs)
-                return;
-
-            string message =
-                $"{PerfLogTag} placed-signal-visual " +
-                $"building={signal.BuildingId} pos={signal.Position} " +
-                $"totalMs={totalMs:F3} " +
-                $"relocation={relocationMs:F3} " +
-                $"previewRelease={previewReleaseMs:F3} " +
-                $"placedVisual={placedVisualMs:F3} " +
-                $"wallRefresh={wallRefreshMs:F3}";
-
         }
 
         public void Handle(BuildingDemolishedSignal signal)

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
 {
@@ -11,8 +10,6 @@ namespace Kruty1918.Moyva.Construction.API
 
     internal sealed class BuildingModuleValidationRunner
     {
-        private const string LogTag = "[BuildingModuleValidation]";
-
         private readonly IReadOnlyList<IBuildingModuleValidator> _validators;
 
         public BuildingModuleValidationRunner(IReadOnlyList<IBuildingModuleValidator> validators)
@@ -38,7 +35,6 @@ namespace Kruty1918.Moyva.Construction.API
             for (int i = 0; i < _validators.Count; i++)
                 _validators[i]?.Validate(context);
 
-            collector.LogSummary();
             return collector.Issues;
         }
     }

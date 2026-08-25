@@ -1,12 +1,9 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
 {
     internal sealed class BuildingValidationCollector
     {
-        private const string LogTag = "[BuildingValidator]";
-
         private readonly BuildingDefinition _definition;
         private readonly List<BuildingValidationIssue> _issues = new List<BuildingValidationIssue>();
 
@@ -28,7 +25,6 @@ namespace Kruty1918.Moyva.Construction.API
                 Code = code,
                 Message = message,
             });
-            Debug.LogError($"{LogTag} [{BuildingLabel}] {code}: {message}");
         }
 
         public void AddWarning(string code, string message)
@@ -53,22 +49,5 @@ namespace Kruty1918.Moyva.Construction.API
             }
         }
 
-        public void LogSummary(string scope = null)
-        {
-            int errorCount = 0;
-            int warningCount = 0;
-            for (int i = 0; i < _issues.Count; i++)
-            {
-                if (_issues[i] == null)
-                    continue;
-
-                if (_issues[i].Severity == BuildingValidationSeverity.Error)
-                    errorCount++;
-                else if (_issues[i].Severity == BuildingValidationSeverity.Warning)
-                    warningCount++;
-            }
-
-            string label = string.IsNullOrWhiteSpace(scope) ? BuildingLabel : scope;
-        }
     }
 }

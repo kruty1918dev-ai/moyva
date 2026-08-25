@@ -120,10 +120,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (TryFindPendingPlacementByBuildingId(_selectedBuildingId, out int pendingIndex))
             {
                 Vector2Int currentPosition = _pendingPlacements[pendingIndex].Position;
-                if (VerboseLogs)
-                {
-                }
-
                 placementSucceeded = currentPosition == targetPosition
                     || TryMovePendingPlacement(currentPosition, targetPosition);
                 return true;
@@ -156,13 +152,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 _lastActionMessage =
                     $"Будівля '{_selectedBuildingId}' вже розміщена на клітинці {targetPosition}.";
-                LogSyntheticPlacementRejection(
-                    ConstructionPlacementAttemptSource.PointerClick,
-                    _selectedBuildingId,
-                    targetPosition,
-                    _activeOwnerId,
-                    "unique-building-already-at-target",
-                    _lastActionMessage);
                 return true;
             }
 
@@ -179,7 +168,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!relocationResult.CanPreview)
             {
                 _lastActionMessage = relocationResult.Reason;
-                LogPlacementAttempt(relocationResult, emitRejectedAction: true);
                 return true;
             }
 
@@ -193,11 +181,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             placementSucceeded = true;
-            LogPlacementAttempt(relocationResult, emitRejectedAction: false);
-            if (VerboseLogs)
-            {
-            }
-
             return true;
         }
 

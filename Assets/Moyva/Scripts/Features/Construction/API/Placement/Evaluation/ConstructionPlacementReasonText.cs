@@ -4,7 +4,7 @@ namespace Kruty1918.Moyva.Construction.API
 {
     /// <summary>
     /// Converts stable placement reason codes to short player-facing Ukrainian text.
-    /// Diagnostic details remain available in ConstructionPlacementDiagnostic.
+    /// Detailed spatial blockers remain available in BuildingPlacementEvaluationResult.
     /// </summary>
     public static class ConstructionPlacementReasonText
     {

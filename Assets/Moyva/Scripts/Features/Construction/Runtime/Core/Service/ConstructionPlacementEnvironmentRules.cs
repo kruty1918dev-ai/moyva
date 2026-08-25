@@ -20,22 +20,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IGeneratedTerrainLevelQuery _generatedTerrainLevelQuery;
         private readonly ITileSettingsService _tileSettings;
         private readonly IConstructionPlacementRulesProvider _placementRulesProvider;
-        private readonly Func<bool> _verboseLogs;
 
         public ConstructionPlacementEnvironmentRules(
             IFogOfWarService fogOfWarService,
             IGridService gridService,
             IGeneratedTerrainLevelQuery generatedTerrainLevelQuery,
             ITileSettingsService tileSettings,
-            IConstructionPlacementRulesProvider placementRulesProvider,
-            Func<bool> verboseLogs)
+            IConstructionPlacementRulesProvider placementRulesProvider)
         {
             _fogOfWarService = fogOfWarService;
             _gridService = gridService;
             _generatedTerrainLevelQuery = generatedTerrainLevelQuery;
             _tileSettings = tileSettings;
             _placementRulesProvider = placementRulesProvider;
-            _verboseLogs = verboseLogs ?? (() => false);
         }
 
         public bool IsBlockedByFog(Vector2Int position)
@@ -45,32 +42,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (_placementRulesProvider != null
                     && (!_placementRulesProvider.EnableFogRules
                         || !_placementRulesProvider.RequireVisibleFogTile))
-                {
-                    if (_verboseLogs())
-                    {
-                    }
-
                     return false;
-                }
 
                 if (_fogOfWarService == null)
-                {
-                    if (_verboseLogs())
-                    {
-                    }
-
                     return false;
-                }
 
                 FogStateType fogState =
                     _fogOfWarService.GetFogState(position);
-                bool isBlocked = fogState != FogStateType.Visible;
-
-                if (_verboseLogs() && isBlocked)
-                {
-                }
-
-                return isBlocked;
+                return fogState != FogStateType.Visible;
             }
             catch (Exception ex)
             {

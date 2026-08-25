@@ -28517,15 +28517,6 @@ MonoBehaviour:
       _allowWallPathThroughGates: 0
       _wallPathMode: 0
       _showWallHandles: 1
-    _diagnosticsProfile:
-      _enableVerboseLogs: 1
-      _enablePlacementDebug: 1
-      _enableResourceDebug: 1
-      _enableVisualDebug: 1
-      _enableWallDebug: 1
-      _drawSceneGizmos: 1
-      _drawBlockedTiles: 0
-      _drawInfluenceZones: 1
     _highlightedDefinitions: []
   _buildingRegistry:
     WallCollections: []
@@ -28603,15 +28594,6 @@ MonoBehaviour:
       _allowWallPathThroughGates: 0
       _wallPathMode: 0
       _showWallHandles: 1
-    _diagnosticsProfileOverride:
-      _enableVerboseLogs: 1
-      _enablePlacementDebug: 1
-      _enableResourceDebug: 1
-      _enableVisualDebug: 1
-      _enableWallDebug: 1
-      _drawSceneGizmos: 1
-      _drawBlockedTiles: 0
-      _drawInfluenceZones: 1
   references:
     version: 2
     RefIds: []

@@ -60,23 +60,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public ConstructionPlacementQueryResult EvaluatePlacement(ConstructionPlacementQueryRequest request)
         {
-            AuditModuleRegistryIfNeeded();
             string placementOwnerId = string.IsNullOrWhiteSpace(request.OwnerId)
                 ? _activeOwnerId
                 : request.OwnerId.Trim();
             request = ResolveEffectivePlacementRequest(request, placementOwnerId);
-            BuildingPerPlayerLimitEvaluation limitEvaluation =
-                BuildingPerPlayerLimitEvaluation.Disabled;
-
             if (string.IsNullOrWhiteSpace(request.BuildingId))
             {
                 return InvalidPlacementQueryResult(
                     availabilityValid: false,
                     "Building id is empty.",
-                    "building-id-empty",
                     request,
                     placementOwnerId,
-                    limitEvaluation,
                     BuildingPlacementBlockerKind.Configuration);
             }
 
@@ -85,18 +79,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     request,
                     placementOwnerId);
 
-            limitEvaluation =
-                availability.LimitEvaluation;
-
             if (!availability.IsValid)
             {
                 return InvalidPlacementQueryResult(
                     availabilityValid: false,
                     availability.Reason,
-                    availability.ReasonCode,
                     request,
                     placementOwnerId,
-                    limitEvaluation,
                     availability.BlockerKind);
             }
 
@@ -106,10 +95,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return InvalidPlacementQueryResult(
                     availabilityValid: true,
                     "Tile does not exist.",
-                    "tile-missing",
                     request,
                     placementOwnerId,
-                    limitEvaluation,
                     BuildingPlacementBlockerKind.Terrain);
             }
 
@@ -133,10 +120,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return InvalidPlacementQueryResult(
                     availabilityValid: true,
                     "This building must replace a configured building type.",
-                    "replacement-required",
                     request,
                     placementOwnerId,
-                    limitEvaluation,
                     BuildingPlacementBlockerKind.Configuration);
             }
 
@@ -158,10 +143,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return InvalidPlacementQueryResult(
                     availabilityValid: true,
                     "Gate cannot replace a wall owned by another faction.",
-                    "gate-foreign-faction-wall",
                     request,
                     placementOwnerId,
-                    limitEvaluation,
                     BuildingPlacementBlockerKind.Configuration);
             }
 
@@ -177,10 +160,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return InvalidPlacementQueryResult(
                     availabilityValid: true,
                     "Gate cannot replace a player wall owned by another faction.",
-                    "gate-foreign-player-wall",
                     request,
                     placementOwnerId,
-                    limitEvaluation,
                     BuildingPlacementBlockerKind.Configuration);
             }
 
@@ -206,8 +187,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     reason,
                     evaluationResult,
                     request,
-                    placementOwnerId,
-                    limitEvaluation);
+                    placementOwnerId);
             }
 
             bool resourcesValid = true;
@@ -229,9 +209,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 resourceReason,
                 evaluationResult,
                 request,
-                placementOwnerId,
-                limitEvaluation,
-                resourcesValid ? null : "resources");
+                placementOwnerId);
         }
 
 

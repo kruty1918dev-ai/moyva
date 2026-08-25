@@ -30,9 +30,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         IDisposable
     {
         private const string DefaultOwnerId = "player_0";
-        private const string ModuleLogTag =
-            "[MoyvaConstructionModules]";
-        private const string PerfLogTag = "[MoyvaConstructionPerf]";
 
         private readonly IObjectsMapService _objectsMapService;
         private readonly IBuildingRegistry _buildingRegistry;
@@ -48,7 +45,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IGeneratedTerrainLevelQuery _generatedTerrainLevelQuery;
         private readonly ITileSettingsService _tileSettings;
         private readonly IConstructionPlacementRulesProvider _placementRulesProvider;
-        private readonly IConstructionDiagnosticsSettingsProvider _diagnosticsSettingsProvider;
         private readonly IConstructionPlacementAuthorityPolicy
             _placementAuthorityPolicy;
         private readonly IReadOnlyList<IBuildingPlacementRuleEvaluator>
@@ -61,10 +57,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionBuildingFogEffects _buildingFogEffects;
         private bool _initialized;
         private bool _disposed;
-
-        private int _lastModuleAuditRevision = -1;
-
-        private bool VerboseLogs => _diagnosticsSettingsProvider?.EnableVerboseLogs ?? (Application.isEditor && Debug.isDebugBuild);
 
         [Inject]
         public ConstructionService(
@@ -81,7 +73,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] IGeneratedTerrainLevelQuery generatedTerrainLevelQuery,
             [InjectOptional] ITileSettingsService tileSettings = null,
             [InjectOptional] IConstructionPlacementRulesProvider placementRulesProvider = null,
-            [InjectOptional] IConstructionDiagnosticsSettingsProvider diagnosticsSettingsProvider = null,
             [InjectOptional] IConstructionPlacementAuthorityPolicy
                 placementAuthorityPolicy = null,
             [InjectOptional] List<IBuildingPlacementRuleEvaluator>
@@ -102,7 +93,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _generatedTerrainLevelQuery = generatedTerrainLevelQuery;
             _tileSettings = tileSettings;
             _placementRulesProvider = placementRulesProvider;
-            _diagnosticsSettingsProvider = diagnosticsSettingsProvider;
             _placementAuthorityPolicy = placementAuthorityPolicy;
             _placementRuleEvaluators = placementRuleEvaluators
                 ?? (IReadOnlyList<IBuildingPlacementRuleEvaluator>)
@@ -114,8 +104,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     gridService,
                     generatedTerrainLevelQuery,
                     tileSettings,
-                    placementRulesProvider,
-                    () => VerboseLogs);
+                    placementRulesProvider);
             _footprints =
                 new ConstructionFootprintStore(
                     objectsMapService,
@@ -133,8 +122,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 new ConstructionInfluencePolicy(
                     buildingRegistry,
                     _townHallBuildRadius,
-                    placementRulesProvider,
-                    () => VerboseLogs);
+                    placementRulesProvider);
             _buildingFogEffects =
                 new ConstructionBuildingFogEffects(
                     fogOfWarService,
@@ -164,7 +152,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 BuildingDefinitionAsset.RuntimeRevisionChanged +=
                     OnBuildingDefinitionRuntimeRevisionChanged;
                 _initialized = true;
-                AuditModuleRegistryIfNeeded(force: true);
             }
             catch (Exception ex)
             {
@@ -211,87 +198,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ResetSession(clearRedoHistory: true);
         }
 
-        private void AuditModuleRegistryIfNeeded(bool force = false)
-        {
-            int revision = BuildingDefinitionAsset.RuntimeRevision;
-            if (!force && _lastModuleAuditRevision == revision)
-                return;
-
-            _lastModuleAuditRevision = revision;
-            BuildingDefinition[] definitions =
-                _placementBuildingRegistry?.GetAll()
-                ?? Array.Empty<BuildingDefinition>();
-            int buildings = 0;
-            int modules = 0;
-            int canonicalModules = 0;
-            int legacyModules = 0;
-            int errors = 0;
-            int warnings = 0;
-
-            for (int definitionIndex = 0;
-                 definitionIndex < definitions.Length;
-                 definitionIndex++)
-            {
-                BuildingDefinition definition =
-                    definitions[definitionIndex];
-                if (definition == null)
-                    continue;
-
-                buildings++;
-                if (definition.Modules != null)
-                {
-                    for (int moduleIndex = 0;
-                         moduleIndex < definition.Modules.Count;
-                         moduleIndex++)
-                    {
-                        BuildingModuleDefinition module =
-                            definition.Modules[moduleIndex];
-                        if (module?.IsEnabled != true)
-                            continue;
-
-                        modules++;
-                        if (BuildingDefinitionCapabilities
-                                .IsLegacyCompatibilityModule(
-                                    module.GetType()))
-                        {
-                            legacyModules++;
-                        }
-                        else
-                        {
-                            canonicalModules++;
-                        }
-                    }
-                }
-
-                IReadOnlyList<BuildingValidationIssue> issues =
-                    GetModuleValidationIssuesCached(definition);
-                for (int issueIndex = 0;
-                     issueIndex < issues.Count;
-                     issueIndex++)
-                {
-                    BuildingValidationIssue issue = issues[issueIndex];
-                    if (issue == null)
-                        continue;
-                    if (issue.Severity == BuildingValidationSeverity.Error)
-                        errors++;
-                    else if (issue.Severity == BuildingValidationSeverity.Warning)
-                        warnings++;
-                }
-            }
-        }
-
         private void OnBuildingDefinitionRuntimeRevisionChanged(
-            int revision)
+            int _)
         {
-            int refreshed = 0;
-
             foreach (var pair in _playerPlacedBuildings)
             {
                 _buildingFogEffects.Remove(pair.Key);
                 _buildingFogEffects.Apply(
                     pair.Value,
                     pair.Key);
-                refreshed++;
             }
 
             foreach (var pair in _factionPlacedBuildings)
@@ -303,22 +218,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _buildingFogEffects.Apply(
                     pair.Value.BuildingId,
                     pair.Key);
-                refreshed++;
             }
 
             InvalidatePlacementResourceValidationCache();
-            AuditModuleRegistryIfNeeded(force: true);
         }
 
         private void OnSettlementResourceChanged(
             SettlementResourceChangedSignal signal)
         {
             InvalidatePlacementResourceValidationCache();
-
-            if (!RevalidateActiveSelectionAvailability(
-                    "resource-change"))
-            {
-            }
+            RevalidateActiveSelectionAvailability("resource-change");
         }
     }
 }

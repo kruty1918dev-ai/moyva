@@ -21,8 +21,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
     internal sealed partial class ConstructionInputService : IConstructionInputService, IInitializable, IDisposable, ITickable, IUiActionHandler
     {
         private const string LogTag = "[ConstructionInput]";
-        private const string PerfLogTag =
-            "[MoyvaConstructionPerf]";
         private const float PointerFollowPlaneFallbackY = 0f;
 
         private readonly IConstructionSessionCommands _constructionService;
@@ -33,13 +31,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IScreenToGridConverter _screenToGrid;
         private readonly IConstructionPointerInputSource _pointerInputSource;
         private readonly IConstructionInputSettingsProvider _inputSettingsProvider;
-        private readonly IConstructionDiagnosticsSettingsProvider _diagnosticsSettingsProvider;
         private readonly IGridService _gridService;
         private readonly IConstructionGridGeometryService _gridGeometry;
         private readonly ConstructionTerrainAlignmentService _terrainAlignment;
         private readonly IConstructionPlacementQuery _placementQuery;
         private readonly BuildModeGridStateController _buildGridState;
-        private readonly ConstructionBuildGridDiagnostics _buildGridDiagnostics;
         private readonly IConstructionInteractiveUiHitTester _uiHitTester;
         private readonly IGameplayInputPolicy _inputPolicy;
         private readonly IUiContextStack _uiContexts;
@@ -55,7 +51,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly bool _enableMultiTouchCancel;
         private readonly bool _blockInteractiveUi;
         private readonly bool _allowClicksThroughNonInteractiveUi;
-        private bool VerboseLogs => _diagnosticsSettingsProvider?.EnableVerboseLogs ?? (Application.isEditor && Debug.isDebugBuild);
 
         private bool _isActive;
         private bool _isDraggingPendingPlacement;
@@ -92,12 +87,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IScreenToGridConverter screenToGrid,
             IConstructionPointerInputSource pointerInputSource,
             [InjectOptional] IConstructionInputSettingsProvider inputSettingsProvider,
-            [InjectOptional] IConstructionDiagnosticsSettingsProvider diagnosticsSettingsProvider,
             IGridService gridService,
             [InjectOptional] IConstructionGridGeometryService gridGeometry,
             IConstructionPlacementQuery placementQuery,
             BuildModeGridStateController buildGridState,
-            ConstructionBuildGridDiagnostics buildGridDiagnostics,
             [InjectOptional] IConstructionInteractiveUiHitTester uiHitTester,
             [InjectOptional] IGameplayInputPolicy inputPolicy,
             [InjectOptional] IUiContextStack uiContexts,
@@ -112,12 +105,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _screenToGrid = screenToGrid;
             _pointerInputSource = pointerInputSource;
             _inputSettingsProvider = inputSettingsProvider;
-            _diagnosticsSettingsProvider = diagnosticsSettingsProvider;
             _gridService = gridService;
             _gridGeometry = gridGeometry;
             _placementQuery = placementQuery;
             _buildGridState = buildGridState;
-            _buildGridDiagnostics = buildGridDiagnostics;
             _uiHitTester = uiHitTester ?? new ConstructionInteractiveUiHitTester();
             _inputPolicy = inputPolicy;
             _uiContexts = uiContexts;

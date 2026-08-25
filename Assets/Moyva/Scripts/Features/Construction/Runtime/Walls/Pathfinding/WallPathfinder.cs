@@ -10,10 +10,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class WallPathfinder : IWallPathfinder
     {
-        private const string PerfLogTag =
-            "[MoyvaConstructionPerf]";
-        private const double SlowPathLogThresholdMs = 1.5d;
-
         private static readonly Vector2Int[] NeighborDirections =
         {
             Vector2Int.up,
@@ -65,9 +61,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var selectedBuildingId = _constructionService.Value.GetSelectedBuildingId();
             var selectedCollection = _buildingRegistry.GetWallCollectionByBuildingId(selectedBuildingId);
 
-            double startedAt =
-                Time.realtimeSinceStartupAsDouble;
-            int expandedNodes = 0;
             ResetWorkspace(startPosition, endPosition);
 
             while (_openHeap.Count > 0)
@@ -87,21 +80,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
 
                 if (current == endPosition)
-                {
-                    IReadOnlyList<Vector2Int> result =
-                        BuildResultPath(current);
-                    LogPathBuild(
-                        startPosition,
-                        endPosition,
-                        result.Count,
-                        expandedNodes,
-                        startedAt,
-                        success: true);
-                    return result;
-                }
+                    return BuildResultPath(current);
 
                 _closed.Add(current);
-                expandedNodes++;
 
                 for (int i = 0;
                      i < NeighborDirections.Length;
@@ -157,13 +138,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
             }
 
-            LogPathBuild(
-                startPosition,
-                endPosition,
-                pathLength: 1,
-                expandedNodes,
-                startedAt,
-                success: false);
             return new[] { startPosition };
         }
 
@@ -323,27 +297,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private static int Heuristic(Vector2Int from, Vector2Int to)
         {
             return Math.Abs(from.x - to.x) + Math.Abs(from.y - to.y);
-        }
-
-        private static void LogPathBuild(
-            Vector2Int start,
-            Vector2Int end,
-            int pathLength,
-            int expandedNodes,
-            double startedAt,
-            bool success)
-        {
-            if (!Debug.isDebugBuild)
-                return;
-
-            double elapsedMs =
-                (Time.realtimeSinceStartupAsDouble - startedAt)
-                * 1000d;
-            if (elapsedMs < SlowPathLogThresholdMs
-                && expandedNodes < 64)
-            {
-                return;
-            }
         }
 
         private readonly struct OpenNode

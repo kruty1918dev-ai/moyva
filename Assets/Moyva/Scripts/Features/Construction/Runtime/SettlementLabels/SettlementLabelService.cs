@@ -3,15 +3,12 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
-using Unity.Profiling;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class SettlementLabelService : IInitializable, IDisposable
     {
-        private static readonly ProfilerMarker BuildingPlacedMarker =
-            new("Moyva.BuildCommit.Subscriber.SettlementLabel");
         private readonly SignalBus _signalBus;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IConstructionPlacedVisualLookup _placedVisualLookup;
@@ -60,7 +57,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
-            using var marker = BuildingPlacedMarker.Auto();
             if (signal.HasRelocationSource && signal.RelocationSourcePosition != signal.Position)
                 RemoveLabel(signal.RelocationSourcePosition);
 
