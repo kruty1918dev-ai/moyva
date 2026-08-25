@@ -337,3 +337,21 @@ Recruitment is owned by `Features/Units`; do not create a parallel `Features/Rec
 | deployment preview / controls | `UnitRecruitmentDeploymentController.Preview.cs`; `UnitRecruitmentDeploymentController.Controls.cs`; `UnitRecruitmentDeploymentController.UiActions.cs` |
 
 `Features/GameplayHUD` uses an asmref to the existing Bootstrap assembly so moved scene components retain their serialized assembly identity.
+
+## HomeMenu reading map
+
+| Task | Primary files |
+|---|---|
+| composition | `Runtime/HomeMenuInstaller.cs` |
+| shell creation / navigation | `Runtime/Shell/HomeMenuInitializer.cs`; `HomeMenuRuntimeUiFactory.cs`; `HomeMenuNavigation.cs` |
+| lobby room list | `Runtime/Lobby/JoinRoomPanelService.cs`; `JoinRoomPanelService.RoomList.cs` |
+| lobby join transaction | `JoinRoomPanelService.JoinPipeline.cs`; `JoinRoomTransportAdapter.cs`; `MultiplayerRoomLifecycle.cs` |
+| join target / password / feedback | `JoinRoomPanelService.TargetResolution.cs`; `JoinRoomPanelService.Feedback.cs`; `PasswordPanelService.cs` |
+| host lobby workflow | `CreateRoomPanelService.cs`; `LobbyPanelService.cs`; `GameStartListenerService.cs` |
+| world setup | `Runtime/Services/WorldCreationPanelService.cs`; `GameSettingsPanelService.cs` |
+| menu world preview lifecycle / generation | `UI/Preview/HomeMenuBackgroundPreviewController.cs`; `HomeMenuBackgroundPreviewController.Lifecycle.cs`; `HomeMenuBackgroundPreviewController.Generation.cs` |
+| live preview mesh / camera | `HomeMenuBackgroundPreviewController.LiveMeshBuild.cs`; `HomeMenuBackgroundPreviewController.LiveMeshAssets.cs`; `HomeMenuBackgroundPreviewController.LiveMeshPresentation.cs` |
+| preview texture / clouds | `HomeMenuBackgroundPreviewController.TexturePresentation.cs`; `HomeMenuBackgroundPreviewController.Clouds.cs` |
+| gameplay scene transition | `Runtime/HomeMenuGameStarter.cs`; `Runtime/Startup/GameplayStartupPipeline.cs` |
+
+Lobby, preview and startup are separate task packets. Do not load preview mesh/cloud files for room or scene-transition work.
