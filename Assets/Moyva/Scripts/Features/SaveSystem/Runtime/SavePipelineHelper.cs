@@ -199,7 +199,7 @@ namespace Kruty1918.Moyva.SaveSystem
                     continue;
 
                 Type moduleType = module.GetType();
-                string moduleName = moduleType.FullName ?? moduleType.Name;
+                string moduleName = SaveModuleIdentity.GetStableId(moduleType);
                 uint blockId = SaveFileCodec.ComputeBlockId(moduleType);
 
                 if (moduleNamesByBlockId.TryGetValue(blockId, out string existingModuleName)

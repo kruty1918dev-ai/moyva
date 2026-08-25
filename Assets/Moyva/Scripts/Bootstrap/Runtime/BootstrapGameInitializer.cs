@@ -304,6 +304,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             => string.IsNullOrWhiteSpace(ownerId) ? "player_0" : ownerId.Trim();
     }
 
+    [SaveModuleId("Kruty1918.Moyva.Bootstrap.Runtime.BootstrapStarterPackSaveModule")]
     internal sealed class BootstrapStarterPackSaveModule : ISaveModule
     {
         private const int SchemaVersion = 1;

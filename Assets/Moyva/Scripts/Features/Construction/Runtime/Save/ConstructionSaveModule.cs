@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     ///     int32  — Y позиції тайлу
     ///     string — buildingId (UTF-8 з length prefix via BinaryWriter)
     /// </summary>
+    [SaveModuleId("Kruty1918.Moyva.Construction.Runtime.ConstructionSaveModule")]
     internal sealed class ConstructionSaveModule : ISaveModule
     {
         private const int SchemaMagic =

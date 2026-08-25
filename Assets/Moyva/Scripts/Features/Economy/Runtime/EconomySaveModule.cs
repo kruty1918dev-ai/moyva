@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
+    [SaveModuleId("Kruty1918.Moyva.Economy.Runtime.EconomySaveModule")]
     internal sealed class EconomySaveModule : ISaveModule
     {
         private const int SchemaVersion = 2;

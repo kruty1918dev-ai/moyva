@@ -3,6 +3,7 @@ using Kruty1918.Moyva.Signals;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
+    [SaveModuleId("Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule")]
     internal sealed class GeneratedWorldSaveModule : ISaveModule
     {
         private readonly MapVisualInstantiator _mapVisualInstantiator;

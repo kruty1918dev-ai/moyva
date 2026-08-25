@@ -9,6 +9,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// Зберігає explored snapshot і fixed vision areas, але не зберігає короткоживучий visible state:
     /// він має відновлюватися з юнітів, reveal sources та bootstrap/runtime logic після load.
     /// </summary>
+    [SaveModuleId("Kruty1918.Moyva.FogOfWar.Runtime.FogOfWarSaveModule")]
     internal sealed class FogOfWarSaveModule : ISaveModule
     {
         private const int FormatVersionWithFixedVisionAreas = -2;

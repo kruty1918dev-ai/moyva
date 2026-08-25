@@ -17,7 +17,7 @@ from typing import Iterable, Optional
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_ROOT = ROOT / "Assets" / "Moyva" / "Scripts"
 ALLOWLIST_PATH = Path(__file__).with_name("context-budget-allowlist.json")
-EXCLUDED_PARTS = {"Editor", "Tests", "Development"}
+EXCLUDED_PARTS = {"Editor", "EditorShared", "Tests", "Development"}
 ENTRYPOINT_SUFFIXES = (
     "Installer",
     "Controller",
@@ -38,6 +38,8 @@ class Metrics:
     role: str
     lines: int
     effective_lines: int
+    code_context_tokens: int
+    documentation_tokens: int
     context_tokens: int
 
 
@@ -179,14 +181,25 @@ def measure_source(path: str, source: str) -> Metrics:
     file_path = ROOT / path
     without_comments = strip_comments(source)
     effective_lines = sum(1 for line in without_comments.splitlines() if line.strip())
-    non_whitespace = re.sub(r"\s+", "", source)
-    context_tokens = math.ceil(len(non_whitespace.encode("utf-8")) / 4)
+    source_non_whitespace = re.sub(r"\s+", "", source)
+    code_non_whitespace = re.sub(r"\s+", "", without_comments)
+    xml_documentation = "\n".join(
+        line for line in source.splitlines() if line.lstrip().startswith("///")
+    )
+    documentation_non_whitespace = re.sub(r"\s+", "", xml_documentation)
+    source_bytes = len(source_non_whitespace.encode("utf-8"))
+    code_bytes = len(code_non_whitespace.encode("utf-8"))
+    context_tokens = math.ceil(source_bytes / 4)
+    code_context_tokens = math.ceil(code_bytes / 4)
+    documentation_tokens = math.ceil(len(documentation_non_whitespace.encode("utf-8")) / 4)
     return Metrics(
         path=path,
         module=module_for(file_path),
         role=role_for(file_path),
         lines=len(source.splitlines()),
         effective_lines=effective_lines,
+        code_context_tokens=code_context_tokens,
+        documentation_tokens=documentation_tokens,
         context_tokens=context_tokens,
     )
 
@@ -264,34 +277,54 @@ def print_report(metrics: list[Metrics], top: int, as_json: bool) -> None:
     for item in metrics:
         aggregate = totals.setdefault(
             item.module,
-            {"files": 0, "lines": 0, "effective_lines": 0, "context_tokens": 0},
+            {
+                "files": 0,
+                "lines": 0,
+                "effective_lines": 0,
+                "code_context_tokens": 0,
+                "documentation_tokens": 0,
+                "context_tokens": 0,
+            },
         )
         aggregate["files"] += 1
         aggregate["lines"] += item.lines
         aggregate["effective_lines"] += item.effective_lines
+        aggregate["code_context_tokens"] += item.code_context_tokens
+        aggregate["documentation_tokens"] += item.documentation_tokens
         aggregate["context_tokens"] += item.context_tokens
 
     if as_json:
         print(json.dumps({"modules": totals, "files": [item.__dict__ for item in metrics]}, indent=2))
         return
 
-    print("MODULE                 FILES      LOC  EFFECTIVE  CONTEXT_TOKENS")
-    for module, values in sorted(totals.items(), key=lambda item: item[1]["context_tokens"], reverse=True):
+    print("MODULE                 FILES      LOC  EFFECTIVE     CODE_TOKENS     DOC_TOKENS  SOURCE_TOKENS")
+    for module, values in sorted(
+        totals.items(),
+        key=lambda item: item[1]["code_context_tokens"],
+        reverse=True,
+    ):
         print(
             f"{module:<22} {values['files']:>5} {values['lines']:>8} "
-            f"{values['effective_lines']:>10} {values['context_tokens']:>15}"
+            f"{values['effective_lines']:>10} {values['code_context_tokens']:>15} "
+            f"{values['documentation_tokens']:>14} {values['context_tokens']:>14}"
         )
 
     all_lines = sum(item.lines for item in metrics)
     all_effective = sum(item.effective_lines for item in metrics)
+    all_code_tokens = sum(item.code_context_tokens for item in metrics)
+    all_documentation_tokens = sum(item.documentation_tokens for item in metrics)
     all_tokens = sum(item.context_tokens for item in metrics)
-    print(f"TOTAL                  {len(metrics):>5} {all_lines:>8} {all_effective:>10} {all_tokens:>15}")
+    print(
+        f"TOTAL                  {len(metrics):>5} {all_lines:>8} {all_effective:>10} "
+        f"{all_code_tokens:>15} {all_documentation_tokens:>14} {all_tokens:>14}"
+    )
 
     if top > 0:
         print("\nLARGEST CONTEXT FILES")
-        for item in sorted(metrics, key=lambda value: value.context_tokens, reverse=True)[:top]:
+        for item in sorted(metrics, key=lambda value: value.code_context_tokens, reverse=True)[:top]:
             print(
-                f"{item.context_tokens:>8} tokens {item.effective_lines:>5} effective "
+                f"{item.code_context_tokens:>8} code tokens "
+                f"{item.documentation_tokens:>7} docs {item.effective_lines:>5} effective "
                 f"[{item.role}] {item.path}"
             )
 
@@ -322,7 +355,8 @@ def run_check(metrics: list[Metrics], base_ref: Optional[str], strict: bool) -> 
         allowlist_note = f" allowlist={limit.reason}" if limit.reason else ""
         print(
             f"{status} [{item.role}] {item.path} :: effective={item.effective_lines}, "
-            f"tokens~={item.context_tokens}, warn={limit.warn_lines}, hard={limit.hard_lines}"
+            f"code_tokens~={item.code_context_tokens}, docs~={item.documentation_tokens}, "
+            f"source_tokens~={item.context_tokens}, warn={limit.warn_lines}, hard={limit.hard_lines}"
             f"{allowlist_note}"
         )
 

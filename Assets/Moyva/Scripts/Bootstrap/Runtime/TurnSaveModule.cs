@@ -7,6 +7,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
+    [SaveModuleId("Kruty1918.Moyva.Bootstrap.Runtime.TurnSaveModule")]
     internal sealed class TurnSaveModule : ISaveModule
     {
         private const int Magic = unchecked((int)0x5455524E);

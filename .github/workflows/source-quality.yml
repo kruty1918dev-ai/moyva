@@ -1,0 +1,47 @@
+name: Source Quality
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/Moyva/Scripts/**/*.cs'
+      - 'tools/quality/context_budget.py'
+      - 'tools/quality/context-budget-allowlist.json'
+      - 'tools/quality/documentation_coverage.py'
+      - 'tools/quality/no_procedural_visuals.py'
+      - '.github/workflows/source-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  changed-source:
+    runs-on: ubuntu-latest
+    env:
+      BASE_REF: ${{ github.event.pull_request.base.sha || github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check context budget
+        run: >-
+          python3 tools/quality/context_budget.py check
+          --base-ref "$BASE_REF"
+          --changed-only
+          --strict
+
+      - name: Reject procedural visuals
+        run: >-
+          python3 tools/quality/no_procedural_visuals.py
+          --base-ref "$BASE_REF"
+          --changed-only
+          --strict
+
+      - name: Check XML documentation debt
+        run: >-
+          python3 tools/quality/documentation_coverage.py
+          --base-ref "$BASE_REF"
+          --changed-only
+          --strict

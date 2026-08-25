@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Kruty1918.Moyva.SaveSystem
@@ -10,6 +11,25 @@ namespace Kruty1918.Moyva.SaveSystem
         {
             if (module == null || _modules.Contains(module))
                 return;
+
+            string moduleId = SaveModuleIdentity.GetStableId(module.GetType());
+            for (int index = 0; index < _modules.Count; index++)
+            {
+                ISaveModule registered = _modules[index];
+                if (registered == null)
+                    continue;
+
+                if (registered.GetType() == module.GetType())
+                    return;
+
+                string registeredId = SaveModuleIdentity.GetStableId(registered.GetType());
+                if (string.Equals(registeredId, moduleId, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"Save module ID '{moduleId}' is used by both " +
+                        $"'{registered.GetType().FullName}' and '{module.GetType().FullName}'.");
+                }
+            }
 
             _modules.Add(module);
         }

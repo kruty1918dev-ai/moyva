@@ -10,6 +10,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
+    [SaveModuleId("Kruty1918.Moyva.Bootstrap.Runtime.UnitsSaveModule")]
     internal sealed class UnitsSaveModule : ISaveModule, IInitializable, IDisposable
     {
         private const int SaveMagic = unchecked((int)0x554E4954);

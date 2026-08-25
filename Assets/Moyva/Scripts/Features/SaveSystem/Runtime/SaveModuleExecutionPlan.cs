@@ -69,7 +69,7 @@ namespace Kruty1918.Moyva.SaveSystem
                     continue;
                 }
 
-                string typeName = type.FullName ?? type.Name;
+                string typeName = SaveModuleIdentity.GetStableId(type);
                 candidates.Add(new Candidate(module, ResolveOrder(module, typeName), typeName));
             }
 

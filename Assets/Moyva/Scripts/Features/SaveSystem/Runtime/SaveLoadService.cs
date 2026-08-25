@@ -94,7 +94,10 @@ namespace Kruty1918.Moyva.SaveSystem
                 if (module == null)
                     continue;
 
-                if (string.Equals(module.GetType().FullName, moduleTypeFullName, StringComparison.Ordinal))
+                if (string.Equals(
+                        SaveModuleIdentity.GetStableId(module.GetType()),
+                        moduleTypeFullName,
+                        StringComparison.Ordinal))
                     return true;
             }
 

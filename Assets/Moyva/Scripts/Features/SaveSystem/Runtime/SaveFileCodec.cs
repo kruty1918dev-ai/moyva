@@ -31,7 +31,7 @@ namespace Kruty1918.Moyva.SaveSystem
         /// Використовується як унікальний blockId.
         /// </summary>
         internal static uint ComputeBlockId(Type moduleType)
-            => ComputeBlockId(moduleType.FullName ?? moduleType.Name);
+            => ComputeBlockId(SaveModuleIdentity.GetStableId(moduleType));
 
         /// <summary>
         /// Обчислює FNV-1a хеш із рядкового імені типу.
