@@ -69,38 +69,13 @@ public async Task MoveUnitAsync(
     Vector2Int targetPosition,
     CancellationToken token = default)
 {
-    long trace = UnitMovementDiagnostics.TraceForUnit(unitId);
-    double totalStarted = UnitMovementDiagnostics.NowMs();
-
-    UnitMovementDiagnostics.Log(
-        trace,
-        "TURN_GATE_BEGIN",
-        $"unit={UnitMovementDiagnostics.Safe(unitId)}; target={targetPosition}; " +
-        $"turnServiceBound={_turns != null}; ownershipBound={_ownership != null}; " +
-        $"unitServiceBound={_units != null}");
-
     if (!TryAcquireLease(
             unitId,
             out UnitTurnCommandLease lease,
             out string reason))
     {
-        UnitMovementDiagnostics.Warn(
-            trace,
-            "TURN_GATE_REJECT",
-            $"unit={UnitMovementDiagnostics.Safe(unitId)}; " +
-            $"target={targetPosition}; reason={reason}; " +
-            $"phase={_turns?.Phase}; round={_turns?.Round}; " +
-            $"globalTurn={_turns?.GlobalTurn}; " +
-            $"activeOwner={UnitMovementDiagnostics.Safe(_turns?.ActiveOwnerId)}");
         return;
     }
-
-    UnitMovementDiagnostics.Log(
-        trace,
-        "TURN_GATE_ACCEPT",
-        $"unit={lease.UnitId}; owner={lease.OwnerId}; " +
-        $"target={targetPosition}; phase={_turns?.Phase}; " +
-        $"round={lease.Round}; globalTurn={lease.GlobalTurn}");
 
     using var authorityCancellation = new CancellationTokenSource();
     using var linkedCancellation =
@@ -113,14 +88,6 @@ public async Task MoveUnitAsync(
         if (!IsLeaseValid(lease, out string leaseReason)
             && !authorityCancellation.IsCancellationRequested)
         {
-            UnitMovementDiagnostics.Warn(
-                trace,
-                "TURN_GATE_CANCEL_STATE_CHANGE",
-                $"unit={lease.UnitId}; reason={leaseReason}; " +
-                $"phase={_turns?.Phase}; round={_turns?.Round}; " +
-                $"globalTurn={_turns?.GlobalTurn}; " +
-                $"activeOwner={UnitMovementDiagnostics.Safe(_turns?.ActiveOwnerId)}");
-
             authorityCancellation.Cancel();
         }
     }
@@ -131,60 +98,27 @@ public async Task MoveUnitAsync(
     {
         if (!IsLeaseValid(lease, out reason))
         {
-            UnitMovementDiagnostics.Warn(
-                trace,
-                "TURN_GATE_CANCEL_BEFORE_DELEGATE",
-                $"unit={unitId}; reason={reason}");
             return;
         }
-
-        double decoratedStarted =
-            UnitMovementDiagnostics.NowMs();
-
-        UnitMovementDiagnostics.Log(
-            trace,
-            "MOVE_DELEGATE_BEGIN",
-            $"unit={unitId}; target={targetPosition}");
 
         await _decorated.MoveUnitAsync(
             unitId,
             targetPosition,
             linkedCancellation.Token);
-
-        UnitMovementDiagnostics.Log(
-            trace,
-            "MOVE_DELEGATE_END",
-            $"unit={unitId}; target={targetPosition}; " +
-            $"elapsedMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - decoratedStarted)}; " +
-            $"cancelled={linkedCancellation.IsCancellationRequested}");
     }
     catch (OperationCanceledException)
     {
-        UnitMovementDiagnostics.Warn(
-            trace,
-            "MOVE_DELEGATE_CANCELLED",
-            $"unit={unitId}; target={targetPosition}; " +
-            $"elapsedMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - totalStarted)}");
         throw;
     }
     catch (Exception exception)
     {
-        UnitMovementDiagnostics.Error(
-            trace,
-            "MOVE_DELEGATE_EXCEPTION",
-            $"unit={unitId}; target={targetPosition}; " +
-            $"type={exception.GetType().Name}; message={exception.Message}");
+        Debug.LogError(
+            $"[UnitMovement] Move delegate failed for unit '{unitId}' at {targetPosition}: {exception.Message}");
         throw;
     }
     finally
     {
         _turns.StateChanged -= OnTurnStateChanged;
-
-        UnitMovementDiagnostics.Log(
-            trace,
-            "TURN_GATE_END",
-            $"unit={UnitMovementDiagnostics.Safe(unitId)}; " +
-            $"target={targetPosition}; totalMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - totalStarted)}");
     }
 }
         internal bool TryAcquireLease(

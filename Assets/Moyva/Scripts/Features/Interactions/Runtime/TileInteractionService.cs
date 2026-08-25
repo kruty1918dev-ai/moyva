@@ -18,8 +18,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 {
     internal sealed class TileInteractionService : ITileInteractionService, IInitializable, IDisposable
     {
-        private const bool VerboseLogs = true;
-
         private enum MovementCancelReason
         {
             None,
@@ -128,27 +126,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         private void OnTileClicked(TileClickedSignal signal)
         {
-            long trace = UnitMovementDiagnostics.BeginInput(
-                signal.Button.ToString(),
-                signal.Position,
-                _selectedUnitId,
-                _currentMode.ToString());
-
-            double started = UnitMovementDiagnostics.NowMs();
-
-            _objectsMapService.TryGetOccupant(
-                signal.Position,
-                out string diagnosticOccupantId);
-
-            UnitMovementDiagnostics.Log(
-                trace,
-                "INTERACTION_CLICK",
-                $"button={signal.Button}; pos={signal.Position}; " +
-                $"selectedBefore={UnitMovementDiagnostics.Safe(_selectedUnitId)}; " +
-                $"occupant={UnitMovementDiagnostics.Safe(diagnosticOccupantId)}; " +
-                $"localOwner={UnitMovementDiagnostics.Safe(GetLocalOwnerId())}; " +
-                $"canSelectUnit={CanSelectUnit()}; canInspect={CanInspectWorld()}");
-
             if (signal.Button == TilePointerButton.Secondary)
             {
                 HandleSecondaryTileClick(signal.Position);
@@ -156,27 +133,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             else
             {
                 HandleTileClick(signal.Position);
-
-                // IMPORTANT diagnostic: current input mapping does not route a
-                // primary click on an empty tile to StartMove().
-                if (string.IsNullOrWhiteSpace(diagnosticOccupantId)
-                    && !string.IsNullOrWhiteSpace(_selectedUnitId))
-                {
-                    UnitMovementDiagnostics.Log(
-                        trace,
-                        "INTERACTION_PRIMARY_EMPTY",
-                        $"selected={_selectedUnitId}; " +
-                        "primary click completed without a movement command; " +
-                        "the current movement route is HandleSecondaryTileClick -> StartMove");
-                }
             }
-
-            UnitMovementDiagnostics.Log(
-                trace,
-                "INTERACTION_CLICK_DONE",
-                $"button={signal.Button}; pos={signal.Position}; " +
-                $"selectedAfter={UnitMovementDiagnostics.Safe(_selectedUnitId)}; " +
-                $"elapsedMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - started)}");
         }
         public void HandleTileClick(Vector2Int position)
         {
@@ -397,21 +354,12 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
 private void StartMove(string unitId, Vector2Int target)
 {
-    long trace = UnitMovementDiagnostics.TraceForUnit(unitId);
     bool canCommand = CanCommandUnit(unitId);
 
     if (string.IsNullOrEmpty(unitId) || !canCommand)
     {
-        UnitMovementDiagnostics.Warn(
-            trace,
-            "START_MOVE_REJECT",
-            $"unit={UnitMovementDiagnostics.Safe(unitId)}; target={target}; " +
-            $"canCommand={canCommand}; mode={_currentMode}; " +
-            $"localOwner={UnitMovementDiagnostics.Safe(GetLocalOwnerId())}");
         return;
     }
-
-    UnitMovementDiagnostics.AssociateUnit(unitId, trace);
 
     CancelMovement(MovementCancelReason.NewCommand);
     _moveCts = new CancellationTokenSource();
@@ -426,18 +374,7 @@ private void StartMove(string unitId, Vector2Int target)
         RequesterOwnerId = GetLocalOwnerId(),
     };
 
-    UnitMovementDiagnostics.Log(
-        trace,
-        "MOVE_REQUEST_FIRE",
-        $"unit={unitId}; target={target}; " +
-        $"requesterOwner={UnitMovementDiagnostics.Safe(request.RequesterOwnerId)}");
-
     _signalBus.Fire(request);
-
-    UnitMovementDiagnostics.Log(
-        trace,
-        "MOVE_REQUEST_FIRE_DONE",
-        $"unit={unitId}; target={target}");
 }
         private bool CanCommandUnit(string unitId)
         {
@@ -480,14 +417,8 @@ private void StartMove(string unitId, Vector2Int target)
                 ? null
                 : unitId.Trim();
 
-            long trace = UnitMovementDiagnostics.CurrentTraceId;
-
             if (string.IsNullOrWhiteSpace(normalizedUnitId))
             {
-                UnitMovementDiagnostics.Warn(
-                    trace,
-                    "SELECT_REJECT_EMPTY_ID",
-                    $"pos={position}");
                 ClearSelectedUnit(position);
                 return;
             }
@@ -497,23 +428,11 @@ private void StartMove(string unitId, Vector2Int target)
                     normalizedUnitId,
                     StringComparison.Ordinal))
             {
-                UnitMovementDiagnostics.Log(
-                    trace,
-                    "SELECT_ALREADY_SELECTED",
-                    $"unit={normalizedUnitId}; pos={position}");
                 return;
             }
 
             ClearSelectedUnit();
             _selectedUnitId = normalizedUnitId;
-            UnitMovementDiagnostics.AssociateUnit(normalizedUnitId, trace);
-
-            UnitMovementDiagnostics.Log(
-                trace,
-                "SELECTION_FIRE",
-                $"unit={normalizedUnitId}; pos={position}; " +
-                $"owner={UnitMovementDiagnostics.Safe(_unitOwnershipQuery?.GetUnitOwnerId(normalizedUnitId))}; " +
-                $"localOwner={UnitMovementDiagnostics.Safe(GetLocalOwnerId())}");
 
             _signalBus.Fire(new LocalUnitSelectionChangedSignal
             {
@@ -521,11 +440,6 @@ private void StartMove(string unitId, Vector2Int target)
                 Position = position,
                 IsSelected = true,
             });
-
-            UnitMovementDiagnostics.Log(
-                trace,
-                "SELECTION_FIRE_DONE",
-                $"unit={normalizedUnitId}; pos={position}");
         }
         private void ClearSelectedUnit(Vector2Int? knownPosition = null)
         {

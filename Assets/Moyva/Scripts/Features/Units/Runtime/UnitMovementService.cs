@@ -130,14 +130,6 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 		public async Task MoveUnitAsync(string unitId, Vector2Int targetPosition, CancellationToken externalToken = default)
 		{
-			long __diagTrace = UnitMovementDiagnostics.TraceForUnit(unitId);
-			double __diagMoveStarted = UnitMovementDiagnostics.NowMs();
-			UnitMovementDiagnostics.Log(
-				__diagTrace,
-				"MOVE_CORE_BEGIN",
-				$"unit={UnitMovementDiagnostics.Safe(unitId)}; target={targetPosition}; " +
-				$"activeMovements={_activeMovements.Count}");
-
 			if (string.IsNullOrEmpty(unitId))
 			{
 				return;
@@ -175,7 +167,6 @@ namespace Kruty1918.Moyva.Units.Runtime
 				return;
 			}
 
-			double __diagPathStarted = UnitMovementDiagnostics.NowMs();
 			List<Vector2Int> path;
 if (_traversalPolicy != null
 	&& _pathfinder is ICostAwarePathfinder costAwarePathfinder)
@@ -276,11 +267,6 @@ if (_traversalPolicy != null)
 					unitObj.transform.rotation);
 
 				await _animationService.MoveAlongPathAsync(unitObj.transform, path, settings, linkedCts.Token);
-				UnitMovementDiagnostics.Log(
-					__diagTrace,
-					"MOVE_ANIMATION_RETURNED",
-					$"unit={unitId}; completedSteps={completedSteps}; " +
-					$"elapsedMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - __diagMoveStarted)}");
 			}
 			catch (OperationCanceledException)
 			{
@@ -296,24 +282,6 @@ if (_traversalPolicy != null)
 
 					internalCts.Dispose();
 				}
-
-			if (_unitService.TryGetUnitPosition(unitId, out Vector2Int __diagFinalPosition))
-			{
-				UnitMovementDiagnostics.Log(
-					__diagTrace,
-					"MOVE_CORE_END",
-					$"unit={unitId}; final={__diagFinalPosition}; target={targetPosition}; " +
-					$"completedSteps={completedSteps}; stamina={_unitService.GetStamina(unitId):F3}; " +
-					$"totalMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - __diagMoveStarted)}");
-			}
-			else
-			{
-				UnitMovementDiagnostics.Warn(
-					__diagTrace,
-					"MOVE_CORE_END_NO_POSITION",
-					$"unit={unitId}; target={targetPosition}; completedSteps={completedSteps}; " +
-					$"totalMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - __diagMoveStarted)}");
-			}
 
 			if (completedSteps > 0)
 				_turns?.TryRecordAction(ownerId, "unit-move");
@@ -348,10 +316,6 @@ private bool CanMakeStep(string unitId, Vector2Int stepPos)
 			UnitTraversalMode.Execute,
 			out float exactCost,
 			out string exactReason);
-
-		if (!allowed)
-		{
-		}
 
 		return allowed;
 	}

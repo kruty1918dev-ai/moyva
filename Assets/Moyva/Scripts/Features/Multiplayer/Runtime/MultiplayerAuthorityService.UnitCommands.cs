@@ -15,24 +15,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     {
 private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
 {
-    long trace = UnitMovementDiagnostics.TraceForUnit(signal.UnitId);
-    double started = UnitMovementDiagnostics.NowMs();
-
-    UnitMovementDiagnostics.Log(
-        trace,
-        "AUTHORITY_REQUEST_RECEIVED",
-        $"unit={UnitMovementDiagnostics.Safe(signal.UnitId)}; " +
-        $"target={signal.TargetPosition}; " +
-        $"requesterInSignal={UnitMovementDiagnostics.Safe(signal.RequesterOwnerId)}; " +
-        $"movementServiceBound={_unitMovementService != null}; " +
-        $"ownershipBound={_unitOwnershipQuery != null}");
-
     if (_unitMovementService == null || _unitOwnershipQuery == null)
     {
-        UnitMovementDiagnostics.Error(
-            trace,
-            "AUTHORITY_REJECT_SERVICES",
-            "unit movement or ownership service is not bound");
+        Debug.LogError("[MultiplayerAuthority] Unit movement or ownership service is not bound.");
         return;
     }
 
@@ -51,12 +36,6 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
 
     if (!authorized)
     {
-        UnitMovementDiagnostics.Warn(
-            trace,
-            "AUTHORITY_REJECT_OWNERSHIP",
-            $"unit={signal.UnitId}; " +
-            $"requester={UnitMovementDiagnostics.Safe(requesterOwnerId)}; " +
-            $"unitOwner={UnitMovementDiagnostics.Safe(unitOwnerId)}");
         return;
     }
 
@@ -64,27 +43,12 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
 
     if (offlineOrHost)
     {
-        UnitMovementDiagnostics.Log(
-            trace,
-            "AUTHORITY_ROUTE_LOCAL",
-            $"unit={signal.UnitId}; target={signal.TargetPosition}; " +
-            $"requester={UnitMovementDiagnostics.Safe(requesterOwnerId)}; " +
-            $"unitOwner={UnitMovementDiagnostics.Safe(unitOwnerId)}; " +
-            $"dispatchMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - started)}");
-
         _ = _unitMovementService.MoveUnitAsync(
             signal.UnitId,
             signal.TargetPosition,
             CancellationToken.None);
         return;
     }
-
-    UnitMovementDiagnostics.Log(
-        trace,
-        "AUTHORITY_ROUTE_NETWORK",
-        $"unit={signal.UnitId}; target={signal.TargetPosition}; " +
-        $"requester={UnitMovementDiagnostics.Safe(requesterOwnerId)}; " +
-        $"unitOwner={UnitMovementDiagnostics.Safe(unitOwnerId)}");
 
     var payload = new UnitMovePayload(
         GameActionMessageKind.Request,
@@ -94,12 +58,6 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
     _syncService.SendCommand(
         GameCommandType.UnitMove,
         payload.ToBytes());
-
-    UnitMovementDiagnostics.Log(
-        trace,
-        "AUTHORITY_NETWORK_SENT",
-        $"unit={signal.UnitId}; target={signal.TargetPosition}; " +
-        $"elapsedMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - started)}");
 }
 
         private void OnUnitMovedLocally(UnitMovedSignal signal)

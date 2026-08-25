@@ -26,14 +26,6 @@ namespace Kruty1918.Moyva.Units.Runtime
         private GameModeType _currentMode = GameModeType.Normal;
         private bool _refreshPending;
 
-        private int _pendingInvalidations;
-        private int _selectionInvalidations;
-        private int _moveInvalidations;
-        private int _objectsMapInvalidations;
-        private int _gridInvalidations;
-        private int _modeInvalidations;
-        private double _firstInvalidationMs;
-
         public UnitMovementGridPresenter(
             SignalBus signalBus,
             [InjectOptional] IUnitMovementQuery movementQuery = null,
@@ -55,11 +47,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             _signalBus.Subscribe<GridTileChangedSignal>(OnGridTileChanged);
             _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
 
-            UnitMovementDiagnostics.Log(
-                UnitMovementDiagnostics.CurrentTraceId,
-                "GRID_PRESENTER_INIT",
-                $"movementQueryBound={_movementQuery != null}; " +
-                $"overlayBound={_overlay != null}");
         }
 
         public void Dispose()
@@ -76,7 +63,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 OnGameModeChanged);
 
             _refreshPending = false;
-            ClearOverlay("dispose");
+            ClearOverlay();
         }
 
         public void LateTick()
@@ -85,36 +72,12 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return;
 
             _refreshPending = false;
-            long trace = UnitMovementDiagnostics.TraceForUnit(_selectedUnitId);
-
-            UnitMovementDiagnostics.Log(
-                trace,
-                "GRID_LATE_TICK",
-                $"unit={UnitMovementDiagnostics.Safe(_selectedUnitId)}; " +
-                $"coalescedInvalidations={_pendingInvalidations}; " +
-                $"reasons=selection:{_selectionInvalidations}," +
-                $"move:{_moveInvalidations}," +
-                $"objectsMap:{_objectsMapInvalidations}," +
-                $"grid:{_gridInvalidations}," +
-                $"mode:{_modeInvalidations}; " +
-                $"queuedForMs={UnitMovementDiagnostics.Ms(UnitMovementDiagnostics.NowMs() - _firstInvalidationMs)}");
-
-            RefreshOverlay(trace);
-            ResetInvalidationCounters();
+            RefreshOverlay();
         }
 
         private void OnLocalUnitSelectionChanged(
             LocalUnitSelectionChangedSignal signal)
         {
-            long trace = UnitMovementDiagnostics.TraceForUnit(signal.UnitId);
-
-            UnitMovementDiagnostics.Log(
-                trace,
-                "SELECTION_SIGNAL",
-                $"unit={UnitMovementDiagnostics.Safe(signal.UnitId)}; " +
-                $"selected={signal.IsSelected}; pos={signal.Position}; " +
-                $"previous={UnitMovementDiagnostics.Safe(_selectedUnitId)}");
-
             if (!signal.IsSelected
                 || string.IsNullOrWhiteSpace(signal.UnitId))
             {
@@ -126,8 +89,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 {
                     _selectedUnitId = null;
                     _refreshPending = false;
-                    ResetInvalidationCounters();
-                    ClearOverlay("selection-cleared");
+                    ClearOverlay();
                 }
 
                 return;
@@ -135,8 +97,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             _selectedUnitId = signal.UnitId.Trim();
             _selectedPosition = signal.Position;
-            UnitMovementDiagnostics.AssociateUnit(_selectedUnitId, trace);
-            RequestRefresh("selection");
+            RequestRefresh();
         }
 
         private void OnUnitMoved(UnitMovedSignal signal)
@@ -150,7 +111,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
 
             _selectedPosition = signal.NewPosition;
-            RequestRefresh("move");
+            RequestRefresh();
         }
 
         private void OnUnitDestroyed(UnitDestroyedSignal signal)
@@ -163,28 +124,21 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return;
             }
 
-            long trace = UnitMovementDiagnostics.TraceForUnit(signal.UnitId);
-            UnitMovementDiagnostics.Log(
-                trace,
-                "UNIT_DESTROYED_GRID_CLEAR",
-                $"unit={signal.UnitId}");
-
             _selectedUnitId = null;
             _refreshPending = false;
-            ResetInvalidationCounters();
-            ClearOverlay("unit-destroyed");
+            ClearOverlay();
         }
 
         private void OnObjectsMapChanged(OnObjectsMapChangedSignal _)
         {
             if (!string.IsNullOrWhiteSpace(_selectedUnitId))
-                RequestRefresh("objects-map");
+                RequestRefresh();
         }
 
         private void OnGridTileChanged(GridTileChangedSignal _)
         {
             if (!string.IsNullOrWhiteSpace(_selectedUnitId))
-                RequestRefresh("grid-tile");
+                RequestRefresh();
         }
 
         private void OnGameModeChanged(GameModeChangedSignal signal)
@@ -194,77 +148,32 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (_currentMode != GameModeType.Normal)
             {
                 _refreshPending = false;
-                ResetInvalidationCounters();
-                ClearOverlay("mode-not-normal");
+                ClearOverlay();
             }
             else if (!string.IsNullOrWhiteSpace(_selectedUnitId))
             {
-                RequestRefresh("mode");
+                RequestRefresh();
             }
         }
 
-        private void RequestRefresh(string reason)
+        private void RequestRefresh()
         {
-            if (!_refreshPending)
-                _firstInvalidationMs = UnitMovementDiagnostics.NowMs();
-
             _refreshPending = true;
-            _pendingInvalidations++;
-
-            switch (reason)
-            {
-                case "selection":
-                    _selectionInvalidations++;
-                    break;
-                case "move":
-                    _moveInvalidations++;
-                    break;
-                case "objects-map":
-                    _objectsMapInvalidations++;
-                    break;
-                case "grid-tile":
-                    _gridInvalidations++;
-                    break;
-                case "mode":
-                    _modeInvalidations++;
-                    break;
-            }
         }
 
-        private void RefreshOverlay(long trace)
+        private void RefreshOverlay()
         {
-            double totalStart = UnitMovementDiagnostics.NowMs();
-
             if (_overlay == null
                 || _movementQuery == null
                 || _currentMode != GameModeType.Normal
                 || string.IsNullOrWhiteSpace(_selectedUnitId))
             {
-                UnitMovementDiagnostics.Warn(
-                    trace,
-                    "GRID_REFRESH_SKIPPED",
-                    $"overlayBound={_overlay != null}; " +
-                    $"queryBound={_movementQuery != null}; " +
-                    $"mode={_currentMode}; " +
-                    $"unit={UnitMovementDiagnostics.Safe(_selectedUnitId)}");
-                ClearOverlay("refresh-precondition");
+                ClearOverlay();
                 return;
             }
 
-            UnitMovementDiagnostics.Log(
-                trace,
-                "GRID_REFRESH_BEGIN",
-                $"unit={_selectedUnitId}; selectedPos={_selectedPosition}");
-
-            double queryStart = UnitMovementDiagnostics.NowMs();
             IReadOnlyList<UnitMovementTileSnapshot> movementTiles =
                 _movementQuery.GetMovementTiles(_selectedUnitId);
-            double queryMs =
-                UnitMovementDiagnostics.NowMs() - queryStart;
-
-            int reachable = 0;
-            int blocked = 0;
-            double convertStart = UnitMovementDiagnostics.NowMs();
 
             _cells.Clear();
             if (_cells.Capacity < movementTiles.Count)
@@ -273,11 +182,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             for (int index = 0; index < movementTiles.Count; index++)
             {
                 UnitMovementTileSnapshot tile = movementTiles[index];
-
-                if (tile.IsReachable)
-                    reachable++;
-                else
-                    blocked++;
 
                 GridActionOverlayVisualState state =
                     tile.Position == _selectedPosition
@@ -293,57 +197,13 @@ namespace Kruty1918.Moyva.Units.Runtime
                         tile.Reason));
             }
 
-            double convertMs =
-                UnitMovementDiagnostics.NowMs() - convertStart;
-
-            double overlayStart = UnitMovementDiagnostics.NowMs();
             _overlay.Show(OverlayOwner, _cells);
-            double overlayMs =
-                UnitMovementDiagnostics.NowMs() - overlayStart;
-
-            double totalMs =
-                UnitMovementDiagnostics.NowMs() - totalStart;
-
-            string summary =
-                $"unit={_selectedUnitId}; tiles={movementTiles.Count}; " +
-                $"reachable={reachable}; blocked={blocked}; " +
-                $"queryMs={UnitMovementDiagnostics.Ms(queryMs)}; " +
-                $"convertMs={UnitMovementDiagnostics.Ms(convertMs)}; " +
-                $"overlayShowMs={UnitMovementDiagnostics.Ms(overlayMs)}; " +
-                $"totalMs={UnitMovementDiagnostics.Ms(totalMs)}";
-
-            if (totalMs >= 100.0)
-                UnitMovementDiagnostics.Warn(trace, "GRID_REFRESH_SLOW", summary);
-            else
-                UnitMovementDiagnostics.Log(trace, "GRID_REFRESH_DONE", summary);
         }
 
-        private void ClearOverlay(string reason)
+        private void ClearOverlay()
         {
-            long trace = UnitMovementDiagnostics.TraceForUnit(_selectedUnitId);
-            double start = UnitMovementDiagnostics.NowMs();
-            int cellsBefore = _cells.Count;
-
             _cells.Clear();
             _overlay?.Release(OverlayOwner);
-
-            double elapsed = UnitMovementDiagnostics.NowMs() - start;
-            UnitMovementDiagnostics.Log(
-                trace,
-                "GRID_CLEAR",
-                $"reason={reason}; previousCells={cellsBefore}; " +
-                $"releaseMs={UnitMovementDiagnostics.Ms(elapsed)}");
-        }
-
-        private void ResetInvalidationCounters()
-        {
-            _pendingInvalidations = 0;
-            _selectionInvalidations = 0;
-            _moveInvalidations = 0;
-            _objectsMapInvalidations = 0;
-            _gridInvalidations = 0;
-            _modeInvalidations = 0;
-            _firstInvalidationMs = 0.0;
         }
     }
 }
