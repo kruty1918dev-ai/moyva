@@ -156,10 +156,6 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
             if (!CanPlay(sound))
             {
-                if (_registry != null && _registry.VerboseLogs)
-                {
-                    _activeCountByKey.TryGetValue(sound.Key, out int cnt);
-                }
                 return default;
             }
 
@@ -596,4 +592,3 @@ namespace Kruty1918.Moyva.Audio.Runtime
         }
     }
 }
-

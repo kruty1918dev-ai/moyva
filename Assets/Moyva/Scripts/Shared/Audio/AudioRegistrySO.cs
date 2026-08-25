@@ -15,7 +15,6 @@ public sealed class AudioRegistrySO : MoyvaJsonConfigObject
         [SerializeField] private AudioSoundDefinition[] _sounds = Array.Empty<AudioSoundDefinition>();
         [SerializeField, Min(1)] private int _defaultPoolSize = 12;
         [SerializeField] private bool _dontDestroyOnLoad = true;
-        [SerializeField] private bool _verboseLogs;
 
         private Dictionary<string, AudioSoundDefinition> _byKey;
 
@@ -31,7 +30,6 @@ public sealed class AudioRegistrySO : MoyvaJsonConfigObject
 
         public int DefaultPoolSize => Mathf.Max(1, _defaultPoolSize);
         public bool PersistAcrossScenes => _dontDestroyOnLoad;
-        public bool VerboseLogs => _verboseLogs;
 
         public bool TryGet(string key, out AudioSoundDefinition definition)
         {

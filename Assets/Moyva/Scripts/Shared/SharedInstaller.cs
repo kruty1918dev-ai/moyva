@@ -53,8 +53,6 @@ namespace Kruty1918.Moyva.Shared
                 .To<StartupPrewarmService>()
                 .FromResolve();
 
-            container.BindInterfacesTo<GcAllocationMonitorService>().AsSingle().NonLazy();
-            container.BindInterfacesTo<FrameTimeDeveloperHudService>().AsSingle().NonLazy();
             container.BindInterfacesTo<AsyncGlobalErrorHandlerService>().AsSingle().NonLazy();
 
             container.BindInterfacesTo<UiMotionService>().AsSingle();
