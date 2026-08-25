@@ -22,8 +22,6 @@ Scene-authored feature installers still compose their own modules. Project and b
 | Gameplay startup | `Bootstrap/Runtime/BootstrapInstaller.cs`; `Bootstrap/Runtime/StartingPositionInitializer.cs`; `Bootstrap/Runtime/StartingPositionWorkflowService.cs`; `Bootstrap/Runtime/StartingPositionWorkflowService.Client.cs` | `StartingPositionWorkflowService` sequences spawn assignment, load/new-world handling, fog reveal and camera framing; it delegates gameplay mutations |
 | Launch topology | `Bootstrap/Runtime/GameplayLaunchTopology.cs`; `Features/SaveSystem/Runtime/SavePlayModeOptions.cs` | `GameplayLaunchTopology` is pure participant policy; `GameLaunchContext` carries selected launch settings into Gameplay |
 | Turns / rounds | `Features/Turns/API/TurnContracts.cs`; `Features/Turns/Runtime/TurnBindings.cs`; `Features/Turns/Runtime/TurnService.cs` | `TurnService` owns active faction, phase, round, action count and transitions; `RoundResolutionService` orders round callbacks then advances Calendar |
-| Bot turn bridge | `Bootstrap/Runtime/TurnBotDriver.cs` | starts one BotAI executor epoch and retries canonical `TryEndTurn`; owns no strategy or gameplay state |
-| BotAI | `Features/BotAI/API/IBotTurnExecutor.cs`; `Features/BotAI/Runtime/BotRuntimeBindings.cs`; `Features/BotAI/Runtime/BotTurnExecutor.cs`; `Features/BotAI/Runtime/BotActionExecutor.cs` | Bot stores/planners own AI knowledge and decisions; `BotActionExecutor` delegates every mutation to canonical gameplay APIs |
 | Units: state / identity | `Features/Units/API/IUnitService.cs`; `Features/Units/Runtime/UnitsInstaller.cs`; `Features/Units/Runtime/UnitService.cs`; `Features/Units/Runtime/UnitFactory.cs` | `UnitService` owns unit position/type/owner/stamina indexes; `UnitFactory` is the creation boundary |
 | Units: movement | `Features/Units/API/IUnitMovementService.cs`; `Features/Units/API/Movement/IUnitMovementQuery.cs`; `Features/Units/Runtime/UnitMovementService.cs`; `Features/Units/Runtime/UnitMovementRangeQuery.cs` | `UnitMovementService` executes movement; `UnitMovementRangeQuery` owns reachable-tile queries; `UnitTurnAuthorityMovementService` decorates commands with turn/owner checks |
 | Units: recruitment | `Features/Units/API/IUnitRecruitmentService.cs`; `Features/Units/Runtime/UnitRecruitmentService.cs`; `Features/Units/Runtime/UnitRecruitmentQueueStateMachine.cs`; `Features/Units/Runtime/UnitRecruitmentDeploymentService.cs` | `UnitRecruitmentService` is the only enqueue/progress/deploy application boundary; the queue state machine owns paid queue state |
@@ -33,7 +31,7 @@ Scene-authored feature installers still compose their own modules. Project and b
 | Construction | `Features/Construction/API/Contracts/Core/ConstructionSessionContracts.cs`; `Features/Construction/API/Contracts/Core/ConstructionPersistenceContracts.cs`; `Features/Construction/Runtime/Core/Installers/ConstructionInstaller.cs`; `Features/Construction/Runtime/Core/Service/ConstructionService.cs` | one `ConstructionService` singleton implements the narrow session/query/persistence boundaries and remains the canonical mutation authority |
 | Construction lifecycle | `Features/Construction/API/Contracts/Core/IConstructionLifecycle.cs`; `Features/Construction/Runtime/Core/Service/ConstructionLifecycleService.cs`; `Features/Construction/Runtime/Core/Service/ConstructionLifecycleStateMachine.cs` | owns build progress, operational transitions and their persistence payload |
 | Economy | `Features/Economy/Runtime/EconomyInstaller.cs`; `Features/Economy/Runtime/EconomyManager.cs`; `Features/Economy/Runtime/EconomySettlementRegistryService.cs`; `Features/Economy/Runtime/EconomyOwnerResourcePoolService.cs` | `EconomyManager` coordinates construction/calendar signals; settlement states/registry and owner resource pool are authoritative stores |
-| Economy queries | `Features/Economy/Runtime/IEconomyRuntimeApi.cs`; `Features/Economy/Runtime/EconomyRuntimeApi.cs`; `Features/Economy/API/IMapObjectEconomyService.cs` | read-only projections for UI/BotAI and map-object inspection; mutations stay behind Economy services |
+| Economy queries | `Features/Economy/Runtime/IEconomyRuntimeApi.cs`; `Features/Economy/Runtime/EconomyRuntimeApi.cs`; `Features/Economy/API/IMapObjectEconomyService.cs` | read-only projections for UI and map-object inspection; mutations stay behind Economy services |
 | Factions | `Features/Faction/API/`; `Features/Faction/Runtime/FactionInstaller.cs`; `Features/Faction/Runtime/FactionOwnershipService.cs` | `FactionRegistry` owns definitions; `FactionOwnershipService` owns the unit-to-faction index derived from lifecycle signals |
 | Fog / perception | `Features/FogOfWar/API/Contracts/Core/IFogOfWarService.cs`; `Features/FogOfWar/Runtime/Installers/FogOfWarInstaller.cs`; `Features/FogOfWar/Runtime/Core/Service/FogOfWarService.cs` | `FogOfWarService` owns explored/visible state and vision sources; `FogVisualUpdaterRouter` delegates presentation |
 | Grid | `Features/Grid/API/IGridService.cs`; `Features/Grid/Runtime/GridInstaller.cs`; `Features/Grid/Runtime/ChunkedGridService.cs` | `ChunkedGridService` is the bound grid API; tile storage is `Features/MapChunks/Runtime/Grid/ChunkedTileStore.cs` |
@@ -101,7 +99,7 @@ Scene-authored feature installers still compose their own modules. Project and b
 
 `TurnService.StartCurrentTurn`
 → ordered `ITurnParticipant.OnTurnStarted`
-→ canonical player/BotAI actions
+→ canonical participant actions
 → `ITurnBlocker` checks
 → ordered `ITurnParticipant.OnTurnEnding`
 → next faction, or `RoundResolutionService`
@@ -120,19 +118,6 @@ Scene-authored feature installers still compose their own modules. Project and b
 → presentation and derived indexes
 
 Canonical command boundaries are Construction (`IConstructionSessionCommands` / `IConstructionPlacementQuery`), movement (`IUnitMovementService` / `IUnitMovementQuery`), recruitment (`IUnitRecruitmentService`) and combat (`ICombatCommandService`).
-
-### Bot turn
-
-`TurnService`
-→ `TurnBotDriver`
-→ `BotTurnExecutor`
-→ world snapshot + strategic/turn planners
-→ ranked `BotActionCandidate`
-→ `BotActionExecutor`
-→ canonical Construction / Units / Combat APIs
-→ normal blockers settle
-→ `TurnBotDriver`
-→ `ITurnService.TryEndTurn`
 
 ### Multiplayer gameplay command
 
@@ -156,7 +141,7 @@ Canonical command boundaries are Construction (`IConstructionSessionCommands` / 
 ## Cross-feature dependency rules
 
 - Bootstrap sequences startup; it does not become a second gameplay domain.
-- UI, BotAI, Multiplayer, save adapters and editor tools delegate mutations to canonical feature services.
+- UI, Multiplayer, save adapters and editor tools delegate mutations to canonical feature services.
 - Signals publish completed transitions or requests; subscribers do not silently establish a second source of truth.
 - Grid owns tile identity. ObjectsMap owns occupancy. Units and Construction own their domain state and keep derived occupancy indexes synchronized through canonical signals/services.
 - Calendar advances from round resolution. Economy reacts to Calendar and Construction; it does not advance Turns.
@@ -167,25 +152,22 @@ Canonical command boundaries are Construction (`IConstructionSessionCommands` / 
 
 | Authoritative state | Mutation entry points | Main readers / derived consumers |
 |---|---|---|
-| world and tile IDs | Generator world build or generated-world restore → `IGridService` | Construction, Units traversal, Pathfinding, Fog, Camera, BotAI |
-| occupancy | `IObjectsMapService`, synchronized from unit/map-object lifecycle | Construction placement, Units movement, BotAI snapshots, world-info UI |
-| turn state | `ITurnService`; `ITurnStateRestorer` only for persistence | Units and Construction participants, BotAI driver, HUD, SaveSystem |
-| unit state | `IUnitFactory`, `IUnitMovementService`, `IUnitRecruitmentService`, `ICombatCommandService`, unit restore boundary | ObjectsMap, Faction ownership, Fog, BotAI, Multiplayer adapters, UI |
-| construction state | `IConstructionSessionCommands`, confirmed multiplayer apply contracts, construction restore contracts | Economy, Fog, ObjectsMap, Units traversal/garrison, BotAI, UI |
-| economy state | Economy construction/calendar integration, starter-pack grant, economy restore module | Construction affordability, UI summaries, BotAI queries |
-| fog state | fog map/reveal/vision-source contracts and fog restore module | Construction rules, BotAI perception, renderer culling and fog visuals |
+| world and tile IDs | Generator world build or generated-world restore → `IGridService` | Construction, Units traversal, Pathfinding, Fog, Camera |
+| occupancy | `IObjectsMapService`, synchronized from unit/map-object lifecycle | Construction placement, Units movement, world-info UI |
+| turn state | `ITurnService`; `ITurnStateRestorer` only for persistence | Units and Construction participants, HUD, SaveSystem |
+| unit state | `IUnitFactory`, `IUnitMovementService`, `IUnitRecruitmentService`, `ICombatCommandService`, unit restore boundary | ObjectsMap, Faction ownership, Fog, Multiplayer adapters, UI |
+| construction state | `IConstructionSessionCommands`, confirmed multiplayer apply contracts, construction restore contracts | Economy, Fog, ObjectsMap, Units traversal/garrison, UI |
+| economy state | Economy construction/calendar integration, starter-pack grant, economy restore module | Construction affordability and UI summaries |
+| fog state | fog map/reveal/vision-source contracts and fog restore module | Construction rules, renderer culling and fog visuals |
 | calendar state | `RoundResolutionService`; calendar restore/sync boundaries | Economy tick and day/night visuals |
-| faction definitions / ownership | `FactionInstaller`; unit lifecycle-derived ownership registration | Turns, BotAI, unit queries and presentation |
+| faction definitions / ownership | `FactionInstaller`; unit lifecycle-derived ownership registration | Turns, unit queries and presentation |
 | session / participants | menu session preparation and `ISessionManager` | launch topology, local-owner resolution, multiplayer authority, pause policy |
 | game mode / lifecycle | `IGameModeService`, `IGameStateService`, `IExitMatchCoordinator` | input routing, pause/menu UI and scene exit |
 
 ## Invariants
 
 - One mutation authority per gameplay concept.
-- BotAI plans/queries; canonical gameplay services mutate.
-- No parallel Bot-only construction/combat/recruitment/movement implementation.
-- One BotAI composition root.
-- Turn-driven BotAI; no second wall-clock bot scheduler.
+- Multiplayer authority validates participant commands; canonical gameplay services mutate.
 - Tests are not production Runtime code.
 - Editor/analyzer code is never gameplay authority.
 - Direct Gameplay and menu Gameplay converge on the same participant/session semantics.

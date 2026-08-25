@@ -36,14 +36,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             var assignments = _startingPositionState.SpawnAssignments;
-            for (int index = 0; index < assignments.Count; index++)
+            if (assignments.Count > 0)
             {
-                if (!assignments[index].IsBot)
-                {
-                    position = assignments[index].Position;
-                    Debug.Log($"{DirectDiagTag} LocalSpawnResolver.RESULT center={position}, source=first-non-bot-assignment, found=true.");
-                    return true;
-                }
+                position = assignments[0].Position;
+                return true;
             }
 
             position = default;

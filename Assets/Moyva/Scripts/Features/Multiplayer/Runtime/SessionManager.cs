@@ -21,13 +21,10 @@ namespace Kruty1918.Moyva.Multiplayer.Core
     /// </summary>
     public sealed partial class SessionManager : ISessionManager, IDisposable
     {
-        private const string SoloSessionPrefix = "solo-local";
-        private static readonly SessionRules SoloFallbackRules = new SessionRules(
-            SessionMode.PeacefulSolo,
+        private const string LocalSessionPrefix = "local-session";
+        private static readonly SessionRules LocalSessionRules = new SessionRules(
+            SessionMode.Local,
             maxParticipants: 1,
-            maxHumans: 1,
-            maxBots: 0,
-            allowBotsFallbackOnLeave: false,
             allowMatchSaveForAnalysis: false,
             strictParticipantLock: false);
 
@@ -41,7 +38,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private readonly IMultiplayerSessionDiagnostics _diagnostics;
         private readonly IFailureHandlingPolicy _failurePolicy;
         private readonly IHostMigrationService _hostMigration;
-        private readonly IParticipantFallbackService _participantFallback;
         private readonly IHostMigrationCheckpointService _hostMigrationCheckpoint;
 
         private readonly List<Participant> _participants = new List<Participant>();
@@ -76,7 +72,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             [Zenject.InjectOptional] IMultiplayerSessionDiagnostics diagnostics,
             IFailureHandlingPolicy failurePolicy,
             IHostMigrationService hostMigration,
-            IParticipantFallbackService participantFallback,
             IHostMigrationCheckpointService hostMigrationCheckpoint = null)
         {
             _network             = network             ?? throw new ArgumentNullException(nameof(network));
@@ -89,7 +84,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _diagnostics         = diagnostics;
             _failurePolicy       = failurePolicy       ?? throw new ArgumentNullException(nameof(failurePolicy));
             _hostMigration       = hostMigration       ?? throw new ArgumentNullException(nameof(hostMigration));
-            _participantFallback = participantFallback ?? throw new ArgumentNullException(nameof(participantFallback));
             _hostMigrationCheckpoint = hostMigrationCheckpoint;
 
             _network.PeerConnected    += OnPeerConnected;
@@ -108,7 +102,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             IMultiplayerLogger logger,
             IFailureHandlingPolicy failurePolicy,
             IHostMigrationService hostMigration,
-            IParticipantFallbackService participantFallback,
             IHostMigrationCheckpointService hostMigrationCheckpoint = null)
             : this(
                 network,
@@ -121,7 +114,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 diagnostics: null,
                 failurePolicy,
                 hostMigration,
-                participantFallback,
                 hostMigrationCheckpoint)
         {
         }

@@ -159,7 +159,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             for (int index = 0; index < count; index++)
             {
                 SpawnPositionAssignment assignment = assignments[index];
-                parts[index] = $"#{assignment.SlotIndex}:{assignment.ParticipantId}@{assignment.Position}{(assignment.IsBot ? ":bot" : string.Empty)}";
+                parts[index] = $"#{assignment.SlotIndex}:{assignment.ParticipantId}@{assignment.Position}";
             }
 
             return assignments.Count > count

@@ -41,8 +41,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int launchParticipantCount =
                 GameplayLaunchTopology.ResolveLaunchParticipantCount(
                     isDirectGameplay,
-                    hasWorldSettings,
-                    maxPlayers);
+                    participantCount);
 
             int assignmentCount =
                 GameplayLaunchTopology.ResolveAssignmentCount(
@@ -77,32 +76,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 {
                     SlotIndex = index,
                     ParticipantId = spec.ParticipantId,
-                    IsBot = spec.IsBot,
                     Position = positions[index],
                 };
             }
-
-            int botAssignments = 0;
-            int humanAssignments = 0;
-            string localAssignment = "<none>";
-
-            for (int index = 0; index < assignments.Length; index++)
-            {
-                if (assignments[index].IsBot)
-                {
-                    botAssignments++;
-                }
-                else
-                {
-                    humanAssignments++;
-                    if (localAssignment == "<none>")
-                        localAssignment = assignments[index].Position.ToString();
-                }
-            }
-
-            Debug.Log(
-                $"{DirectDiagTag} AssignmentFactory.RESULT assignments={assignments.Length}, " +
-                $"humans={humanAssignments}, bots={botAssignments}, localAssignment={localAssignment}.");
 
             return assignments;
         }

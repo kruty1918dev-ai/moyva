@@ -51,27 +51,13 @@ namespace Kruty1918.Moyva.Multiplayer.Config
 
             SessionMode mode = Enum.IsDefined(typeof(SessionMode), rules.Mode)
                 ? rules.Mode
-                : SessionMode.MultiplayerHumans;
+                : SessionMode.Multiplayer;
             if (mode != rules.Mode)
                 corrected = true;
 
             int maxParticipants = rules.MaxParticipants >= 1 ? rules.MaxParticipants : 1;
             if (maxParticipants != rules.MaxParticipants)
                 corrected = true;
-
-            int maxHumans = Clamp(rules.MaxHumans, 0, maxParticipants);
-            if (maxHumans != rules.MaxHumans)
-                corrected = true;
-
-            int maxBots = Clamp(rules.MaxBots, 0, Math.Max(0, maxParticipants - maxHumans));
-            if (maxBots != rules.MaxBots)
-                corrected = true;
-
-            if (maxHumans == 0 && maxBots == 0)
-            {
-                maxHumans = 1;
-                corrected = true;
-            }
 
             float reconnectTolerance = config.ReconnectLocalTimeToleranceSeconds >= 0f
                 ? config.ReconnectLocalTimeToleranceSeconds
@@ -96,9 +82,6 @@ namespace Kruty1918.Moyva.Multiplayer.Config
             SessionRules frozenRules = new SessionRules(
                 mode,
                 maxParticipants,
-                maxHumans,
-                maxBots,
-                rules.AllowBotsFallbackOnLeave,
                 rules.AllowMatchSaveForAnalysis,
                 rules.StrictParticipantLock);
 

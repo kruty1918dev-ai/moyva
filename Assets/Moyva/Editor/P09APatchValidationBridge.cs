@@ -121,13 +121,12 @@ namespace Kruty1918.Moyva.EditorTools
                 testMode = TestMode.EditMode,
                 assemblyNames = new[]
                 {
-                    "Kruty1918.Moyva.Tests.BotAI",
                     "Kruty1918.Moyva.Tests.Units",
                 },
             };
 
             var settings = new ExecutionSettings(filter);
-            Debug.Log("[MOYVA_P09A][EDITOR] Starting EditMode tests for BotAI + Units assemblies.");
+            Debug.Log("[MOYVA_P09A][EDITOR] Starting focused EditMode tests.");
             string runId = _runner.Execute(settings);
             Debug.Log($"[MOYVA_P09A][EDITOR] TestRunner runId={runId}");
         }

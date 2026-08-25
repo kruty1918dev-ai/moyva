@@ -112,10 +112,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Container.BindInstance(config).AsSingle().IfNotBound();
 
             // View controllers (from scene hierarchy)
-            Container.BindInterfacesTo<BotViewController>()
-                .FromComponentsInHierarchy(includeInactive: true)
-                .AsCached();
-
             Container.BindInterfacesTo<ContinueViewController>()
                 .FromComponentsInHierarchy(includeInactive: true)
                 .AsCached();
@@ -158,10 +154,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 .FromComponentsInHierarchy(includeInactive: true)
                 .AsCached();
 
-            Container.BindInterfacesTo<SoloViewController>()
-                .FromComponentsInHierarchy(includeInactive: true)
-                .AsCached();
-
             Container.BindInterfacesTo<WorldSetupViewController>()
                 .FromComponentsInHierarchy(includeInactive: true)
                 .AsCached();
@@ -171,24 +163,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 .AsSingle();
 
             Container.BindInterfacesAndSelfTo<ContinuePanelService>()
-                .AsSingle();
-
-            // Default settings for bot panel (bound as instance so Zenject can inject struct)
-            Container.BindInstance(new BotDefaultSettings
-            {
-                Difficulty = BotDifficulty.Medium,
-                Strategy = BotStrategy.Random,
-                BotCount = 1,
-                AllowBotCheating = false
-            }).AsSingle();
-
-            Container.BindInterfacesAndSelfTo<BotPanelService>()
-                .AsSingle();
-
-            Container.BindInterfacesAndSelfTo<SelectedGameModeService>()
-                .AsSingle();
-
-            Container.BindInterfacesAndSelfTo<SoloPanelService>()
                 .AsSingle();
 
             Container.BindInterfacesAndSelfTo<MultiplayerPanelService>()

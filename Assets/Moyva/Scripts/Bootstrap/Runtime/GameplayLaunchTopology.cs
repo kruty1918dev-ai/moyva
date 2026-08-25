@@ -36,7 +36,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int multiplayerStartSlots)
         {
             if (mode == GameLaunchMode.DirectGameplayTest)
-                return Mathf.Max(2, maxPlayers);
+                return 1;
 
             int participantCount = Mathf.Max(1, sessionParticipantCount);
             if (participantCount > 1 || isMultiplayerHost)
@@ -62,15 +62,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public static int ResolveLaunchParticipantCount(
             bool isDirectGameplay,
-            bool hasWorldSettings,
-            int maxPlayers)
+            int sessionParticipantCount)
         {
             if (isDirectGameplay)
-                return Mathf.Max(2, maxPlayers);
+                return 1;
 
-            return hasWorldSettings
-                ? Mathf.Max(1, maxPlayers)
-                : 1;
+            return Mathf.Max(1, sessionParticipantCount);
         }
 
         public static int ResolveAssignmentCount(
@@ -81,9 +78,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (availablePositions <= 0)
                 return 0;
 
-            return isDirectGameplay
-                ? Mathf.Min(availablePositions, launchParticipantCount)
-                : availablePositions;
+            return Mathf.Min(availablePositions, launchParticipantCount);
         }
 
         public static GameplayParticipantSpec ResolveParticipant(
@@ -97,17 +92,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 throw new ArgumentOutOfRangeException(nameof(slotIndex));
 
             if (isDirectGameplay)
-            {
-                return slotIndex == 0
-                    ? new GameplayParticipantSpec(DirectLocalOwnerId, false)
-                    : new GameplayParticipantSpec($"bot-{slotIndex:00}", true);
-            }
+                return slotIndex == 0 ? new GameplayParticipantSpec(DirectLocalOwnerId) : default;
 
             if (participant != null)
             {
-                return new GameplayParticipantSpec(
-                    participant.Identity?.PlayerId ?? string.Empty,
-                    participant.IsBot);
+                return new GameplayParticipantSpec(participant.Identity?.PlayerId ?? string.Empty);
             }
 
             if (slotIndex == 0)
@@ -115,25 +104,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return new GameplayParticipantSpec(
                     !string.IsNullOrWhiteSpace(localPlayerId)
                         ? localPlayerId.Trim()
-                        : "local-player",
-                    false);
+                        : "local-player");
             }
 
-            return slotIndex < launchParticipantCount
-                ? new GameplayParticipantSpec($"bot-{slotIndex:00}", true)
-                : default;
+            return default;
         }
     }
 
     internal readonly struct GameplayParticipantSpec
     {
-        public GameplayParticipantSpec(string participantId, bool isBot)
+        public GameplayParticipantSpec(string participantId)
         {
             ParticipantId = participantId ?? string.Empty;
-            IsBot = isBot;
         }
 
         public string ParticipantId { get; }
-        public bool IsBot { get; }
     }
 }

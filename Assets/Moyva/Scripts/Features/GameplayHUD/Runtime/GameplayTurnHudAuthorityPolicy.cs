@@ -10,7 +10,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             TurnPhase phase,
             string activeOwnerId,
             string localOwnerId,
-            bool isActiveFactionBot,
             bool isLocalOwnerTurn,
             bool canIssueLocalCommands,
             bool canEndTurn,
@@ -20,7 +19,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Phase = phase;
             ActiveOwnerId = activeOwnerId ?? string.Empty;
             LocalOwnerId = localOwnerId ?? string.Empty;
-            IsActiveFactionBot = isActiveFactionBot;
             IsLocalOwnerTurn = isLocalOwnerTurn;
             CanIssueLocalCommands = canIssueLocalCommands;
             CanEndTurn = canEndTurn;
@@ -31,7 +29,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public TurnPhase Phase { get; }
         public string ActiveOwnerId { get; }
         public string LocalOwnerId { get; }
-        public bool IsActiveFactionBot { get; }
         public bool IsLocalOwnerTurn { get; }
         public bool CanIssueLocalCommands { get; }
         public bool CanEndTurn { get; }
@@ -59,7 +56,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     false,
                     false,
                     false,
-                    false,
                     Array.Empty<string>(),
                     "Система ходів недоступна.");
             }
@@ -69,7 +65,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool awaitingInput = turns.Phase == TurnPhase.AwaitingInput;
             bool sameOwner = localOwnerId.Length > 0
                 && string.Equals(activeOwnerId, localOwnerId, StringComparison.Ordinal);
-            bool localTurn = awaitingInput && sameOwner && !turns.IsActiveFactionBot;
+            bool localTurn = awaitingInput && sameOwner;
 
             IReadOnlyList<string> blockerReasons = localTurn
                 ? CollectBlockingReasons(blockers)
@@ -80,7 +76,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 turns.Phase,
                 activeOwnerId,
                 localOwnerId,
-                turns.IsActiveFactionBot,
                 localTurn,
                 blockerReasons);
 
@@ -88,7 +83,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 turns.Phase,
                 activeOwnerId,
                 localOwnerId,
-                turns.IsActiveFactionBot,
                 localTurn,
                 localTurn,
                 canEndTurn,
@@ -152,7 +146,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             TurnPhase phase,
             string activeOwnerId,
             string localOwnerId,
-            bool isActiveFactionBot,
             bool isLocalTurn,
             IReadOnlyList<string> blockerReasons)
         {
@@ -161,11 +154,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (phase != TurnPhase.AwaitingInput)
                 return $"{LocalizePhase(phase)} ходу…";
-
-            if (isActiveFactionBot)
-                return activeOwnerId.Length == 0
-                    ? "Хід бота."
-                    : $"Хід бота: {activeOwnerId}";
 
             if (!isLocalTurn)
                 return activeOwnerId.Length == 0

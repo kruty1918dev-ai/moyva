@@ -63,7 +63,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 {
                     Participant candidate = participants[index];
                     if (candidate?.Identity == null
-                        || candidate.IsBot
                         || !string.Equals(
                             candidate.Identity.PlayerId,
                             normalizedSender,
@@ -80,7 +79,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             if (authorizedParticipant == null)
             {
                 reason =
-                    $"Sender '{normalizedSender}' is not an active human participant.";
+                    $"Sender '{normalizedSender}' is not an active participant.";
                 return false;
             }
 

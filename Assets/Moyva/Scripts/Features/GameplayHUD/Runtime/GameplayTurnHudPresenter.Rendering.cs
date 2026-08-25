@@ -19,13 +19,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private void RefreshTurnAuthority()
         {
             _authority = GameplayTurnHudAuthorityPolicy.Evaluate(_turns, _blockers);
-            string actor = _authority.IsActiveFactionBot ? "Бот" : "Фракція";
             string owner = string.IsNullOrWhiteSpace(_authority.ActiveOwnerId)
                 ? "—"
                 : _authority.ActiveOwnerId;
 
             _turnText.text =
-                $"{actor}: {owner}    Раунд {_turns.Round}    Хід {_turns.GlobalTurn}\n" +
+                $"Фракція: {owner}    Раунд {_turns.Round}    Хід {_turns.GlobalTurn}\n" +
                 $"Фаза {GameplayTurnHudAuthorityPolicy.LocalizePhase(_authority.Phase)}    Дії {_turns.ActionsThisTurn}";
             _endTurnButton.interactable = _authority.CanEndTurn;
 

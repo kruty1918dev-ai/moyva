@@ -11,7 +11,6 @@
   <assembly fullname="Kruty1918.Moyva.Signals" preserve="all"/>
   <assembly fullname="Kruty1918.Moyva.Bootstrap" preserve="all"/>
   <assembly fullname="Kruty1918.Moyva.Animations" preserve="all"/>
-  <assembly fullname="Kruty1918.Moyva.BotAI" preserve="all"/>
   <assembly fullname="Kruty1918.Moyva.Calendar" preserve="all"/>
   <assembly fullname="Kruty1918.Moyva.Camera" preserve="all"/>
   <assembly fullname="Kruty1918.Moyva.Clouds" preserve="all"/>

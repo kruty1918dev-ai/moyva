@@ -64,23 +64,11 @@ namespace Kruty1918.Moyva.WorldCreation.UI
         [Tooltip("Випадаючий список складності.")]
         [SerializeField] private TMP_Dropdown difficultyDropdown;
 
-        [Tooltip("Перемикач увімкнення ботів.")]
-        [SerializeField] private Toggle enableBotsToggle;
+        [Tooltip("Слайдер кількості мережевих гравців (2–4).")]
+        [SerializeField] private Slider playerCountSlider;
 
-        [Tooltip("Контейнер налаштувань ботів (ховається якщо боти вимкнені).")]
-        [SerializeField] private GameObject botSettingsGroup;
-
-        [Tooltip("Слайдер кількості людських гравців (1–4).")]
-        [SerializeField] private Slider humanPlayerCountSlider;
-
-        [Tooltip("Текст, що відображає поточне значення humanPlayerCountSlider.")]
-        [SerializeField] private TMP_Text humanPlayerCountLabel;
-
-        [Tooltip("Слайдер кількості ботів (0–4).")]
-        [SerializeField] private Slider botCountSlider;
-
-        [Tooltip("Текст, що відображає поточне значення botCountSlider.")]
-        [SerializeField] private TMP_Text botCountLabel;
+        [Tooltip("Текст поточної кількості гравців.")]
+        [SerializeField] private TMP_Text playerCountLabel;
 
         [Tooltip("Поле вводу стартового золота.")]
         [SerializeField] private TMP_InputField startingGoldField;
@@ -208,9 +196,7 @@ namespace Kruty1918.Moyva.WorldCreation.UI
             if (customHeightField   != null) customHeightField.onEndEdit.AddListener(_ => OnAnyFieldChanged());
             if (mapTypeDropdown     != null) mapTypeDropdown.onValueChanged.AddListener(_ => OnAnyFieldChanged());
             if (difficultyDropdown  != null) difficultyDropdown.onValueChanged.AddListener(_ => OnAnyFieldChanged());
-            if (enableBotsToggle    != null) enableBotsToggle.onValueChanged.AddListener(_ => OnEnableBotsChanged());
-            if (humanPlayerCountSlider != null) humanPlayerCountSlider.onValueChanged.AddListener(OnHumanCountChanged);
-            if (botCountSlider      != null) botCountSlider.onValueChanged.AddListener(OnBotCountChanged);
+            if (playerCountSlider != null) playerCountSlider.onValueChanged.AddListener(OnPlayerCountChanged);
             if (startingGoldField   != null) startingGoldField.onEndEdit.AddListener(_ => OnAnyFieldChanged());
             if (startingFoodField   != null) startingFoodField.onEndEdit.AddListener(_ => OnAnyFieldChanged());
             if (forestDensitySlider    != null) forestDensitySlider.onValueChanged.AddListener(_ => OnAnyFieldChanged());
@@ -231,9 +217,7 @@ namespace Kruty1918.Moyva.WorldCreation.UI
             if (customHeightField   != null) customHeightField.onEndEdit.RemoveAllListeners();
             if (mapTypeDropdown     != null) mapTypeDropdown.onValueChanged.RemoveAllListeners();
             if (difficultyDropdown  != null) difficultyDropdown.onValueChanged.RemoveAllListeners();
-            if (enableBotsToggle    != null) enableBotsToggle.onValueChanged.RemoveAllListeners();
-            if (humanPlayerCountSlider != null) humanPlayerCountSlider.onValueChanged.RemoveAllListeners();
-            if (botCountSlider      != null) botCountSlider.onValueChanged.RemoveAllListeners();
+            if (playerCountSlider != null) playerCountSlider.onValueChanged.RemoveAllListeners();
             if (startingGoldField   != null) startingGoldField.onEndEdit.RemoveAllListeners();
             if (startingFoodField   != null) startingFoodField.onEndEdit.RemoveAllListeners();
             if (forestDensitySlider    != null) forestDensitySlider.onValueChanged.RemoveAllListeners();
@@ -260,9 +244,7 @@ namespace Kruty1918.Moyva.WorldCreation.UI
             SetText(customHeightField, cfg.CustomHeight.ToString());
             SetDropdown(mapTypeDropdown, (int)cfg.MapType);
             SetDropdown(difficultyDropdown, (int)cfg.Difficulty);
-            SetToggle(enableBotsToggle, cfg.EnableBots);
-            SetSlider(humanPlayerCountSlider, cfg.HumanPlayerCount);
-            SetSlider(botCountSlider, cfg.BotCount);
+            SetSlider(playerCountSlider, cfg.PlayerCount);
             SetText(startingGoldField, cfg.StartingGold.ToString());
             SetText(startingFoodField, cfg.StartingFood.ToString());
             SetSlider(forestDensitySlider,   cfg.ForestDensity);
@@ -273,9 +255,8 @@ namespace Kruty1918.Moyva.WorldCreation.UI
             SetToggle(generateBiomesToggle,  cfg.GenerateBiomes);
             SetToggle(applyWFCToggle,        cfg.ApplyWFC);
 
-            RefreshSliderLabels(cfg.HumanPlayerCount, cfg.BotCount);
+            RefreshPlayerCountLabel(cfg.PlayerCount);
             RefreshCustomSizeVisibility(cfg.SizePreset);
-            RefreshBotSettingsVisibility(cfg.EnableBots);
             ClearValidationError();
 
             _isPopulating = false;
@@ -301,29 +282,10 @@ namespace Kruty1918.Moyva.WorldCreation.UI
             ClearValidationError();
         }
 
-        private void OnEnableBotsChanged()
+        private void OnPlayerCountChanged(float value)
         {
             if (_isPopulating) return;
-            bool enabled = enableBotsToggle != null && enableBotsToggle.isOn;
-            RefreshBotSettingsVisibility(enabled);
-            _service.UpdateConfig(ReadConfigFromUI());
-            ClearValidationError();
-        }
-
-        private void OnHumanCountChanged(float value)
-        {
-            if (_isPopulating) return;
-            if (humanPlayerCountLabel != null)
-                humanPlayerCountLabel.text = Mathf.RoundToInt(value).ToString();
-            _service.UpdateConfig(ReadConfigFromUI());
-            ClearValidationError();
-        }
-
-        private void OnBotCountChanged(float value)
-        {
-            if (_isPopulating) return;
-            if (botCountLabel != null)
-                botCountLabel.text = Mathf.RoundToInt(value).ToString();
+            RefreshPlayerCountLabel(Mathf.RoundToInt(value));
             _service.UpdateConfig(ReadConfigFromUI());
             ClearValidationError();
         }
@@ -386,9 +348,7 @@ namespace Kruty1918.Moyva.WorldCreation.UI
                 CustomHeight     = Mathf.Max(16, ch),
                 MapType          = (MapTypePreset)(mapTypeDropdown     != null ? mapTypeDropdown.value     : 0),
                 Difficulty       = (DifficultyLevel)(difficultyDropdown  != null ? difficultyDropdown.value  : 1),
-                EnableBots       = enableBotsToggle          != null && enableBotsToggle.isOn,
-                HumanPlayerCount = humanPlayerCountSlider    != null ? Mathf.RoundToInt(humanPlayerCountSlider.value) : 1,
-                BotCount         = botCountSlider            != null ? Mathf.RoundToInt(botCountSlider.value)         : 0,
+                PlayerCount      = playerCountSlider != null ? Mathf.RoundToInt(playerCountSlider.value) : 2,
                 StartingGold     = Mathf.Max(0, gold),
                 StartingFood     = Mathf.Max(0, food),
                 ForestDensity    = forestDensitySlider    != null ? forestDensitySlider.value    : 0.4f,
@@ -430,16 +390,10 @@ namespace Kruty1918.Moyva.WorldCreation.UI
                 customSizeGroup.SetActive(preset == WorldSizePreset.Custom);
         }
 
-        private void RefreshBotSettingsVisibility(bool botsEnabled)
+        private void RefreshPlayerCountLabel(int playerCount)
         {
-            if (botSettingsGroup != null)
-                botSettingsGroup.SetActive(botsEnabled);
-        }
-
-        private void RefreshSliderLabels(int humanCount, int botCount)
-        {
-            if (humanPlayerCountLabel != null) humanPlayerCountLabel.text = humanCount.ToString();
-            if (botCountLabel         != null) botCountLabel.text         = botCount.ToString();
+            if (playerCountLabel != null)
+                playerCountLabel.text = playerCount.ToString();
         }
 
         // ────────────────────────────────────────────────────────────────

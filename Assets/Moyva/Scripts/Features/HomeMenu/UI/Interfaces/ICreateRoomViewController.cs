@@ -3,7 +3,6 @@ using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
-    // TODO: Implement view controllers for each menu panel (Solo, Multiplayer, CreateRoom, JoinRoom, Continue, WorldSetup) following the pattern of IBotViewController and BotViewController.
     /// <summary>
     /// Контракт UI-контролера панелі створення кімнати.
     /// Залежності: використовується CreateRoomPanelService.

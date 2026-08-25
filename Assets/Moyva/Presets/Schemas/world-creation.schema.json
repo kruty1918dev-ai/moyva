@@ -178,27 +178,13 @@
       "title": "Default Difficulty",
       "description": "Складність за замовчуванням."
     },
-    "defaultEnableBots": {
-      "type": "boolean",
-      "title": "Default Enable Bots",
-      "description": "Чи увімкнені боти за замовчуванням."
-    },
-    "defaultHumanPlayerCount": {
+    "defaultPlayerCount": {
       "type": "integer",
-      "title": "Default Human Player Count",
-      "description": "Кількість людських гравців. Мін: 1, Макс: 4.",
-      "minimum": 1.0,
+      "title": "Default Player Count",
+      "description": "Кількість мережевих гравців. Мін: 2, Макс: 4.",
+      "minimum": 2.0,
       "maximum": 4.0,
-      "x-moyva-editorMinimum": 1.0,
-      "x-moyva-editorMaximum": 4.0
-    },
-    "defaultBotCount": {
-      "type": "integer",
-      "title": "Default Bot Count",
-      "description": "Кількість ботів за замовчуванням. Мін: 0, Макс: 4.",
-      "minimum": 0.0,
-      "maximum": 4.0,
-      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMinimum": 2.0,
       "x-moyva-editorMaximum": 4.0
     },
     "defaultStartingGold": {

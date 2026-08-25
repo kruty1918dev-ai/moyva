@@ -97,7 +97,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             _latestSpawnAssignments = (SpawnPositionAssignment[])signal.Assignments.Clone();
             TryApplyBootstrap();
-            TryGrantBotStarterPacks();
+            TryGrantParticipantStarterPacks();
         }
 
         private void TryApplyBootstrap()
@@ -156,7 +156,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _persistenceService.TryPersistStarterGrant(slot, activeOwnerId, "після видачі стартових ресурсів", _grantService.HasStarterPackEntries());
             }
 
-            TryGrantBotStarterPacks();
+            TryGrantParticipantStarterPacks();
 
             if (!_ownerIdResolver.CanRunBootstrapLogic())
                 return;
@@ -164,7 +164,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _bootstrapApplied = true;
         }
 
-        private void TryGrantBotStarterPacks()
+        private void TryGrantParticipantStarterPacks()
         {
             if (!_starterPackGrantEnabled ||
                 _latestSpawnAssignments == null ||
@@ -176,7 +176,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             for (int index = 0; index < _latestSpawnAssignments.Length; index++)
             {
                 SpawnPositionAssignment assignment = _latestSpawnAssignments[index];
-                if (!assignment.IsBot || string.IsNullOrWhiteSpace(assignment.ParticipantId))
+                if (string.IsNullOrWhiteSpace(assignment.ParticipantId))
                     continue;
 
                 string ownerId = assignment.ParticipantId.Trim();
@@ -184,20 +184,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     continue;
 
                 if (!_grantService.TryGrant(string.Empty, ownerId))
-                {
-                    Debug.LogWarning(
-                        $"{StarterPackLogTag} Bot starter grant failed for owner '{ownerId}'.");
                     continue;
-                }
 
                 _persistenceService.TryPersistStarterGrant(
                     GameLaunchContext.SaveSlot,
                     ownerId,
-                    "після видачі стартових ресурсів боту",
+                    "після видачі стартових ресурсів учаснику",
                     _grantService.HasStarterPackEntries());
-
-                Debug.Log(
-                    $"{StarterPackLogTag} Bot starter pack granted to '{ownerId}' at spawn {assignment.Position}.");
             }
         }
 

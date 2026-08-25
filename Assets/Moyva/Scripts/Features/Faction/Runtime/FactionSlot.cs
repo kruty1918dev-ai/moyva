@@ -6,17 +6,17 @@ namespace Kruty1918.Moyva.Faction.Runtime
 {
     /// <summary>
     /// Один слот фракції в конфігурації сесії.
-    /// Кожен слот = одна команда (людина або бот).
+    /// Кожен слот відповідає локальному або мережевому гравцю.
     /// </summary>
     [Serializable]
     public sealed class FactionSlot
     {
-        [Tooltip("Унікальний рядковий ідентифікатор фракції, напр. 'player_0', 'bot_1'.")]
+        [Tooltip("Унікальний рядковий ідентифікатор фракції, наприклад 'player_0'.")]
         [SerializeField] private string _factionId = "faction_0";
 
         [SerializeField] private FactionType _type = FactionType.Human;
 
-        [Tooltip("TypeId юніта, який бот спавнить на старті, напр. 'warrior'.")]
+        [Tooltip("TypeId стартового юніта, наприклад 'warrior'.")]
         [SerializeField] private string _defaultUnitTypeId = "warrior";
 
         [SerializeField] private Vector2Int _startPosition = Vector2Int.zero;

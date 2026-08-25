@@ -266,7 +266,6 @@ namespace Kruty1918.Moyva.Signals
             {
                 if (left[index].SlotIndex != right[index].SlotIndex
                     || !string.Equals(left[index].ParticipantId, right[index].ParticipantId, StringComparison.Ordinal)
-                    || left[index].IsBot != right[index].IsBot
                     || left[index].Position != right[index].Position)
                 {
                     return false;

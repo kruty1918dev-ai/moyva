@@ -1,13 +1,11 @@
 namespace Kruty1918.Moyva.Multiplayer.Core
 {
     /// <summary>
-    /// Defines the available game session modes.
+    /// Визначає підтримувані режими сесії без AI-учасників.
     /// </summary>
     public enum SessionMode
     {
-        PeacefulSolo,
-        SoloWithBots,
-        MultiplayerHumans,
-        MixedHumansAndBots
+        Local = 0,
+        Multiplayer = 2,
     }
 }

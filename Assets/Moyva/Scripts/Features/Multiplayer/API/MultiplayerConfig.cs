@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Multiplayer.Config
     /// </summary>
     public sealed class MultiplayerConfig
     {
-        public const int CurrentSchemaVersion = 5;
+        public const int CurrentSchemaVersion = 6;
 
         public int SchemaVersion { get; }
         public NetworkProviderType ProviderType { get; }

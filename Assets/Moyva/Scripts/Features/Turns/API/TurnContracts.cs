@@ -15,15 +15,14 @@ namespace Kruty1918.Moyva.Turns.API
 
     public readonly struct TurnFaction
     {
-        public TurnFaction(string ownerId, bool isBot, Vector2Int startPosition)
+        /// <summary>Створює фракцію учасника в порядку ходів.</summary>
+        public TurnFaction(string ownerId, Vector2Int startPosition)
         {
             OwnerId = ownerId ?? string.Empty;
-            IsBot = isBot;
             StartPosition = startPosition;
         }
 
         public string OwnerId { get; }
-        public bool IsBot { get; }
         public Vector2Int StartPosition { get; }
     }
 
@@ -76,7 +75,6 @@ namespace Kruty1918.Moyva.Turns.API
         int ActionsThisTurn { get; }
         string ActiveOwnerId { get; }
         string LocalOwnerId { get; }
-        bool IsActiveFactionBot { get; }
         IReadOnlyList<TurnFaction> Factions { get; }
 
         bool IsOwnerActive(string ownerId);

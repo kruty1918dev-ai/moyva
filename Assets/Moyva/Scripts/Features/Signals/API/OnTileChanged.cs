@@ -186,7 +186,6 @@ namespace Kruty1918.Moyva.Signals
     {
         public int SlotIndex;
         public string ParticipantId;
-        public bool IsBot;
         public Vector2Int Position;
     }
 

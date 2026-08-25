@@ -61,14 +61,8 @@ public sealed class WorldCreationDefaultsSO : MoyvaJsonConfigObject
 		[Tooltip("Складність за замовчуванням.")]
 		public DifficultyLevel DefaultDifficulty = DifficultyLevel.Normal;
 
-		[Tooltip("Чи увімкнені боти за замовчуванням.")]
-		public bool DefaultEnableBots = true;
-
-		[Tooltip("Кількість людських гравців. Мін: 1, Макс: 4.")]
-		[Range(1, 4)] public int DefaultHumanPlayerCount = 1;
-
-		[Tooltip("Кількість ботів за замовчуванням. Мін: 0, Макс: 4.")]
-		[Range(0, 4)] public int DefaultBotCount = 1;
+        [Tooltip("Кількість мережевих гравців. Мін: 2, Макс: 4.")]
+        [Range(2, 4)] public int DefaultPlayerCount = 2;
 
 		[Tooltip("Стартове золото на фракцію.")]
 		[Min(0)] public int DefaultStartingGold = 200;
@@ -134,9 +128,7 @@ public sealed class WorldCreationDefaultsSO : MoyvaJsonConfigObject
 				LargeHeight = ResolveHeight(WorldSizePreset.Large),
 				MapType = DefaultMapType,
 				Difficulty = DefaultDifficulty,
-				EnableBots = DefaultEnableBots,
-				HumanPlayerCount = DefaultHumanPlayerCount,
-				BotCount = DefaultBotCount,
+                PlayerCount = DefaultPlayerCount,
 				StartingGold = DefaultStartingGold,
 				StartingFood = DefaultStartingFood,
 				ForestDensity = DefaultForestDensity,

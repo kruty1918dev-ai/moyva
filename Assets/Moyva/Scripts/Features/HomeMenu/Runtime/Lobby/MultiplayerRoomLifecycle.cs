@@ -10,7 +10,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
         public static IReadOnlyList<GameplayPlayer> ProjectGameplayPlayers(LobbyRoom lobby, string localPlayerId)
         {
             var players = new List<GameplayPlayer>();
-            var usedIds = new HashSet<string>(StringComparer.Ordinal);
 
             if (lobby?.Players != null)
             {
@@ -25,19 +24,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
                         string.IsNullOrWhiteSpace(player.DisplayName) ? playerId : player.DisplayName,
                         player.IsHost,
                         string.Equals(playerId, localPlayerId, StringComparison.Ordinal)));
-                    usedIds.Add(playerId);
                 }
-            }
-
-            int targetCount = Math.Max(players.Count, lobby?.MaxPlayers ?? players.Count);
-            for (int index = players.Count; index < targetCount; index++)
-            {
-                var botId = $"bot-{index:00}";
-                while (usedIds.Contains(botId))
-                    botId = $"bot-{index:00}-{usedIds.Count:00}";
-
-                players.Add(new GameplayPlayer(botId, $"Бот {index + 1}", false, false));
-                usedIds.Add(botId);
             }
 
             return players;

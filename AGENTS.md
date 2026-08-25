@@ -51,7 +51,7 @@ Search production `API/`, composition, and `Runtime/` first. Expand to excluded 
 - Prefer plain C# domain/services; keep MonoBehaviours thin.
 - One authoritative state-mutation path per gameplay concept.
 - Canonical unit recruitment lives in `Features/Units` via `IUnitRecruitmentService` / `UnitRecruitmentService`; do not reintroduce a parallel Recruitment feature.
-- UI, BotAI, multiplayer adapters, and editor tools must delegate to canonical gameplay services.
+- UI, multiplayer adapters, and editor tools must delegate to canonical gameplay services.
 - Feature modules own their bindings/composition. Scene/bootstrap installers may delegate, not duplicate the graph.
 - Tests stay outside production `Runtime/` folders.
 - Editor/analyzer code never becomes runtime decision authority.
@@ -119,8 +119,6 @@ For architecture/startup changes additionally:
 - run the full relevant EditMode suite;
 - smoke-test direct Gameplay and menu -> Gameplay;
 - verify no new Console errors.
-
-For BotAI changes additionally verify Human -> Bot -> Human turn handoff.
 
 ## Context discipline
 

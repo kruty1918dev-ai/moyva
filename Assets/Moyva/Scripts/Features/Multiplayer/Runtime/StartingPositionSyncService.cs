@@ -152,7 +152,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 SpawnPositionAssignment assignment = assignments[index];
                 writer.Write(assignment.SlotIndex);
                 writer.Write(assignment.ParticipantId ?? string.Empty);
-                writer.Write(assignment.IsBot);
+                writer.Write(false);
                 writer.Write(assignment.Position.x);
                 writer.Write(assignment.Position.y);
             }
@@ -182,11 +182,13 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 var assignments = new SpawnPositionAssignment[count];
                 for (int index = 0; index < count; index++)
                 {
+                    int slotIndex = reader.ReadInt32();
+                    string participantId = reader.ReadString();
+                    reader.ReadBoolean();
                     assignments[index] = new SpawnPositionAssignment
                     {
-                        SlotIndex = reader.ReadInt32(),
-                        ParticipantId = reader.ReadString(),
-                        IsBot = reader.ReadBoolean(),
+                        SlotIndex = slotIndex,
+                        ParticipantId = participantId,
                         Position = new Vector2Int(reader.ReadInt32(), reader.ReadInt32()),
                     };
                 }

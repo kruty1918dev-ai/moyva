@@ -64,18 +64,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             // Direct Gameplay is local; stale ISessionManager data must not win.
             if (GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest)
-            {
-                for (int index = 0; index < factions.Count; index++)
-                {
-                    if (!factions[index].IsBot &&
-                        !string.IsNullOrWhiteSpace(factions[index].OwnerId))
-                    {
-                        return factions[index].OwnerId;
-                    }
-                }
-
                 return factions[0].OwnerId ?? string.Empty;
-            }
 
             var participants = _sessionManager?.Participants;
             bool hasAuthoritativeSession =
@@ -104,15 +93,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return string.Empty;
             }
 
-            for (int index = 0; index < factions.Count; index++)
-            {
-                if (!factions[index].IsBot &&
-                    !string.IsNullOrWhiteSpace(factions[index].OwnerId))
-                {
-                    return factions[index].OwnerId;
-                }
-            }
-
             return factions[0].OwnerId ?? string.Empty;
         }
 
@@ -125,21 +105,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 for (int index = 0; index < targets.Count; index++)
                 {
                     var target = targets[index];
-                    if (target.IsBot)
-                        continue;
-
                     if (!string.IsNullOrWhiteSpace(localPlayerId)
                         && string.Equals(target.ParticipantId, localPlayerId, StringComparison.Ordinal))
                     {
                         return ResolveSpawnOwnerId(target, index);
                     }
-                }
-
-                for (int index = 0; index < targets.Count; index++)
-                {
-                    var target = targets[index];
-                    if (!target.IsBot)
-                        return ResolveSpawnOwnerId(target, index);
                 }
 
                 if (targets.Count > 0)
@@ -153,9 +123,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             if (!string.IsNullOrWhiteSpace(assignment.ParticipantId))
                 return assignment.ParticipantId;
-
-            if (assignment.IsBot)
-                return $"bot-{assignment.SlotIndex:00}";
 
             return fallbackIndex == 0 ? DefaultOwnerId : $"spawn-slot-{assignment.SlotIndex:00}";
         }

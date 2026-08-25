@@ -30,14 +30,8 @@ namespace Kruty1918.Moyva.Signals
         /// <summary>Індекс <c>DifficultyLevel</c> (0=Easy, 1=Normal, 2=Hard, 3=Brutal).</summary>
         public int DifficultyIndex;
 
-        /// <summary>Чи включені боти у сесії.</summary>
-        public bool EnableBots;
-
-        /// <summary>Кількість людських гравців (1–4).</summary>
-        public int HumanPlayerCount;
-
-        /// <summary>Кількість бот-гравців (0–4).</summary>
-        public int BotCount;
+        /// <summary>Кількість мережевих гравців (2–4).</summary>
+        public int PlayerCount;
 
         /// <summary>Кількість стартового золота на фракцію.</summary>
         public int StartingGold;

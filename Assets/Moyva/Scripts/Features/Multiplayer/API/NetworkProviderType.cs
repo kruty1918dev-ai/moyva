@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         /// <summary>WebSocket — connects to a custom signalling/relay server via ws:// or wss://.</summary>
         WebSocket = 1,
 
-        /// <summary>Offline / local — no real networking; used for solo play and testing.</summary>
+        /// <summary>Offline / local transport used by direct gameplay tests.</summary>
         Offline = 2
         ,
         /// <summary>LAN — local network transport (Netcode for GameObjects or UDP).</summary>

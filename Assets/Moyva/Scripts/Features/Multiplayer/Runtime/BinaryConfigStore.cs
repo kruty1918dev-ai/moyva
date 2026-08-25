@@ -16,6 +16,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// Schema v3 adds reconnect local-time tolerance.
     /// Schema v4 adds risky feature toggles.
     /// Schema v5 adds graceful reconnect window.
+    /// Schema v6 removes obsolete AI participant limits.
     /// </summary>
     public sealed class BinaryConfigStore : IConfigStore
     {
@@ -80,9 +81,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var rules = config.DefaultSessionRules;
             bw.Write((int)rules.Mode);
             bw.Write(rules.MaxParticipants);
-            bw.Write(rules.MaxHumans);
-            bw.Write(rules.MaxBots);
-            bw.Write(rules.AllowBotsFallbackOnLeave);
             bw.Write(rules.AllowMatchSaveForAnalysis);
             bw.Write(rules.StrictParticipantLock);
 
@@ -125,13 +123,23 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             var mode = (SessionMode)br.ReadInt32();
             int maxParticipants = br.ReadInt32();
-            int maxHumans = br.ReadInt32();
-            int maxBots = br.ReadInt32();
-            bool botsFallback = br.ReadBoolean();
-            bool matchSave = br.ReadBoolean();
-            bool rulesStrictLock = br.ReadBoolean();
+            bool matchSave;
+            bool rulesStrictLock;
+            if (schemaVersion <= 5)
+            {
+                br.ReadInt32();
+                br.ReadInt32();
+                br.ReadBoolean();
+                matchSave = br.ReadBoolean();
+                rulesStrictLock = br.ReadBoolean();
+            }
+            else
+            {
+                matchSave = br.ReadBoolean();
+                rulesStrictLock = br.ReadBoolean();
+            }
 
-            var rules = new SessionRules(mode, maxParticipants, maxHumans, maxBots, botsFallback, matchSave, rulesStrictLock);
+            var rules = new SessionRules(mode, maxParticipants, matchSave, rulesStrictLock);
 
             // v2 fields — use defaults for v1 configs
             var fallbackProviderType = NetworkProviderType.Offline;

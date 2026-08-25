@@ -38494,9 +38494,7 @@ MonoBehaviour:
       Height: 128
     DefaultMapType: 0
     DefaultDifficulty: 1
-    DefaultEnableBots: 1
-    DefaultHumanPlayerCount: 1
-    DefaultBotCount: 1
+    DefaultPlayerCount: 2
     DefaultStartingGold: 200
     DefaultStartingFood: 100
     DefaultForestDensity: 0.4
@@ -39223,6 +39221,12 @@ MonoBehaviour:
       multiplayerStartSlots: 4
       minAStarDistanceBetweenPlayers: 15
       startCandidateAttempts: 256
+      startTerrainSampleRadius: 5
+      minimumLandRatioAroundStart: 0.7
+      preferWaterNearStart: 1
+      preferredWaterMinDistance: 2
+      preferredWaterMaxDistance: 8
+      preferredLocalHeightRange: 0.35
       cameraZ: -10
       ensureStartupCameraShowsRevealedArea: 1
       startupCameraPaddingTiles: 2
@@ -39264,6 +39268,12 @@ MonoBehaviour:
     multiplayerStartSlots: 4
     minAStarDistanceBetweenPlayers: 15
     startCandidateAttempts: 256
+    startTerrainSampleRadius: 5
+    minimumLandRatioAroundStart: 0.7
+    preferWaterNearStart: 1
+    preferredWaterMinDistance: 2
+    preferredWaterMaxDistance: 8
+    preferredLocalHeightRange: 0.35
     cameraZ: -10
     ensureStartupCameraShowsRevealedArea: 1
     startupCameraPaddingTiles: 2
@@ -39328,9 +39338,7 @@ MonoBehaviour:
       Height: 128
     DefaultMapType: 0
     DefaultDifficulty: 1
-    DefaultEnableBots: 1
-    DefaultHumanPlayerCount: 1
-    DefaultBotCount: 1
+    DefaultPlayerCount: 2
     DefaultStartingGold: 200
     DefaultStartingFood: 100
     DefaultForestDensity: 0.4

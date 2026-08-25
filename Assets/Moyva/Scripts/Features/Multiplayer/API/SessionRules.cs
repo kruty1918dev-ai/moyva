@@ -9,37 +9,27 @@ namespace Kruty1918.Moyva.Multiplayer.Config
     {
         public SessionMode Mode { get; }
         public int MaxParticipants { get; }
-        public int MaxHumans { get; }
-        public int MaxBots { get; }
-        public bool AllowBotsFallbackOnLeave { get; }
         public bool AllowMatchSaveForAnalysis { get; }
         public bool StrictParticipantLock { get; }
 
+        /// <summary>Створює незмінні правила сесії для мережевих учасників.</summary>
         public SessionRules(
             SessionMode mode,
             int maxParticipants,
-            int maxHumans,
-            int maxBots,
-            bool allowBotsFallbackOnLeave,
             bool allowMatchSaveForAnalysis,
             bool strictParticipantLock)
         {
             Mode = mode;
             MaxParticipants = maxParticipants;
-            MaxHumans = maxHumans;
-            MaxBots = maxBots;
-            AllowBotsFallbackOnLeave = allowBotsFallbackOnLeave;
             AllowMatchSaveForAnalysis = allowMatchSaveForAnalysis;
             StrictParticipantLock = strictParticipantLock;
         }
 
+        /// <summary>Повертає стандартні правила multiplayer-сесії.</summary>
         public static SessionRules Default() =>
             new SessionRules(
-                mode: SessionMode.MultiplayerHumans,
+                mode: SessionMode.Multiplayer,
                 maxParticipants: 4,
-                maxHumans: 4,
-                maxBots: 0,
-                allowBotsFallbackOnLeave: false,
                 allowMatchSaveForAnalysis: false,
                 strictParticipantLock: false);
     }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.HomeMenu.UI;
@@ -12,25 +11,19 @@ using Zenject;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
-    internal class WorldCreationPanelService : IWorldCreationPanelService, IInitializable, IDisposable
+    internal sealed class WorldCreationPanelService : IInitializable, IDisposable
     {
         [Inject] private IWorldSetupViewController _viewController;
         [Inject] private INavigation _navigation;
         [Inject] private IGameplaySession _gameplaySession;
-        [Inject] private IHomeMenuGameStarter _gameStarter;
         [InjectOptional] private ILobbyService _lobbyService;
         [InjectOptional] private ISaveService _saveService;
         [InjectOptional] private ILocalGameSettingsService _localSettings;
         [InjectOptional] private IMultiplayerModeSelector _modeSelector;
-        [InjectOptional] private ISelectedGameModeService _selectedGameModeService;
-        [InjectOptional] private IBotViewController _botViewController;
         [InjectOptional] private WorldCreationDefaultsSO _worldCreationDefaults;
-        [InjectOptional] private IInfoPanelService _infoPanelService;
         [Inject(Id = "LobbyPanelName")] private string _lobbyPanelName;
-        private WolrdCreationMode _mode;
-        private bool _isStarting;
-        private CancellationTokenSource _startCts;
 
+        /// <summary>Підписує multiplayer world setup на UI та застосовує JSON defaults.</summary>
         public void Initialize()
         {
             _viewController.OnButtonNextClicked -= OnCreteWorldClicked;
@@ -41,17 +34,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Refresh();
         }
 
+        /// <summary>Відписує обробники UI під час закриття меню.</summary>
         public void Dispose()
         {
             _viewController.OnButtonNextClicked -= OnCreteWorldClicked;
             _viewController.OnSettingsChanged -= Refresh;
-
-            _startCts?.Cancel();
-            _startCts?.Dispose();
-            _startCts = null;
         }
 
-        private async void OnCreteWorldClicked()
+        private void OnCreteWorldClicked()
         {
             if (!CanProceed())
             {
@@ -59,117 +49,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
-            if (ShouldStoreMultiplayerDraft())
-            {
-                ApplyMultiplayerSessionDraft();
-                _navigation.Open(_lobbyPanelName);
-            }
-            else if (_mode == WolrdCreationMode.Solo)
-            {
-                if (_isStarting)
-                    return;
-
-                _isStarting = true;
-                _startCts?.Cancel();
-                _startCts?.Dispose();
-                _startCts = new CancellationTokenSource();
-                var ct = _startCts.Token;
-                try
-                {
-                    ApplySoloSession();
-                    await _gameStarter.StartGameAsync(ct);
-                }
-                catch (OperationCanceledException)
-                {
-                    Debug.Log("[WorldCreationPanelService] Solo start canceled.");
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"[WorldCreationPanelService] Solo start failed: {e}");
-                    _infoPanelService?.Show(new InfoMessage("Помилка старту", e.Message));
-                }
-                finally
-                {
-                    _isStarting = false;
-                    Refresh();
-                }
-            }
-            else
-            {
-                throw new InvalidOperationException($"Unsupported world creation mode: {_mode}");
-            }
+            ApplyMultiplayerSessionDraft();
+            _navigation.Open(_lobbyPanelName);
         }
 
-        public void Refresh()
+        private void Refresh()
         {
             if (_viewController.CreateWorldButton != null)
                 _viewController.CreateWorldButton.interactable = CanProceed();
         }
 
-        public void SetupMode(WolrdCreationMode mode)
-        {
-            _mode = mode;
-            Refresh();
-        }
-
         private bool CanProceed()
-        {
-            return !_isStarting
-                && !string.IsNullOrWhiteSpace(_viewController.WorldName)
+            => !string.IsNullOrWhiteSpace(_viewController.WorldName)
                 && _viewController.Seed != 0;
-        }
-
-        private bool ShouldStoreMultiplayerDraft()
-        {
-            if (_mode == WolrdCreationMode.Multiplayer)
-                return true;
-
-            var currentLobby = _lobbyService?.Current;
-            return currentLobby != null && !string.IsNullOrWhiteSpace(currentLobby.LobbyId ?? currentLobby.LobbyCode);
-        }
-
-        private void ApplySoloSession()
-        {
-            string localId = "local-player";
-            string playerName = string.IsNullOrWhiteSpace(_localSettings?.PlayerName)
-                ? "Player"
-                : _localSettings.PlayerName;
-
-            var players = new List<GameplayPlayer>
-            {
-                new GameplayPlayer(localId, playerName, isHost: true, isLocal: true)
-            };
-
-            int botCount = _selectedGameModeService != null
-                && _selectedGameModeService.SelectedGameMode == Kruty1918.Moyva.HomeMenu.API.GameMode.Bot
-                && _botViewController != null
-                    ? Mathf.Max(0, _botViewController.BotCount)
-                    : 0;
-
-            var worldSettings = new WorldSettingsDto(
-                _viewController.WorldName,
-                _viewController.Seed,
-                (int)_viewController.Size,
-                ResolveWorldWidth(),
-                ResolveWorldHeight(),
-                _viewController.MapType,
-                _viewController.Difficulty,
-                maxPlayers: 1 + botCount,
-                isPrivate: true);
-
-            GameLaunchContext.ConfigureMenuNewGame(
-                ResolveNewGameSlot(),
-                worldSettings.WorldName,
-                worldSettings.Seed,
-                worldSettings.Size,
-                (int)worldSettings.MapType,
-                (int)worldSettings.Difficulty,
-                worldSettings.MaxPlayers,
-                worldSettings.IsPrivate,
-                worldSettings.Width,
-                worldSettings.Height);
-            _gameplaySession.Apply(NetworkProviderType.Offline, worldSettings, players, localId);
-        }
 
         private void ApplyMultiplayerSessionDraft()
         {
@@ -303,18 +195,5 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             };
         }
 
-        private int ResolveNewGameSlot()
-        {
-            if (_saveService == null)
-                return 0;
-
-            for (int slot = 0; slot <= 99; slot++)
-            {
-                if (!_saveService.HasSave(slot))
-                    return slot;
-            }
-
-            return 0;
-        }
     }
 }

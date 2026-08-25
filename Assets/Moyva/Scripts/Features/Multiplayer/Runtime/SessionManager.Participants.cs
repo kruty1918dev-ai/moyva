@@ -20,7 +20,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         {
             var existing = _participants.Find(p => p.Identity.PlayerId == identity.PlayerId);
             if (existing == null)
-                _participants.Add(new Participant(identity, isBot: false, isHost));
+                _participants.Add(new Participant(identity, isHost));
         }
 
         private void OnLobbyUpdated(LobbyRoom snapshot)
@@ -42,7 +42,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                     continue;
 
                 var identity = new ParticipantIdentity(p.PlayerId, p.DisplayName);
-                _participants.Add(new Participant(identity, isBot: false, isHost: p.IsHost));
+                _participants.Add(new Participant(identity, isHost: p.IsHost));
                 _logger.Info($"[Lobby] Participant added: {p.PlayerId} ({p.DisplayName})");
             }
 
@@ -152,15 +152,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 SaveMigrationCheckpoint();
                 _logger.Warn($"Host disconnected. Migrated host to '{migrated.Identity.PlayerId}'.");
                 return;
-            }
-
-            // Bot fallback (non-host)
-            var rules = _currentRules ?? SoloFallbackRules;
-            var fallback = _participantFallback.GetFallback(leaving.Identity, _participants, rules);
-            if (fallback != null)
-            {
-                _participants.Add(fallback);
-                _logger.Info($"Bot fallback added: '{fallback.Identity.PlayerId}' replaces '{peerId}'.");
             }
 
             SaveMigrationCheckpoint();

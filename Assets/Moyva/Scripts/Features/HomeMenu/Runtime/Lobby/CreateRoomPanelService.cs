@@ -14,7 +14,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [Inject(Optional = true)] private ILobbyService _lobbyService;
         [InjectOptional] private IMultiplayerModeSelector _modeSelector;
         [Inject(Optional = true)] private ILobbyPanelViewController _lobbyPanelViewController;
-        [Inject] private IWorldCreationPanelService _worldCreationPanelService;
         [InjectOptional] private ILocalGameSettingsService _localGameSettings;
         [InjectOptional] private INetworkProvider _networkProvider;
         [InjectOptional] private IInfoPanelService _infoPanelService;
@@ -104,7 +103,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     {
                         var inviteCode = !string.IsNullOrWhiteSpace(room.LobbyCode) ? room.LobbyCode : room.LobbyId;
                         try { _lobbyPanelViewController?.SetLobbyInvateCode(inviteCode); } catch { }
-                        try { _worldCreationPanelService?.SetupMode(WolrdCreationMode.Multiplayer); } catch { }
                         try { _navigation.Open(_worldSetupPanelName); } catch { }
                     });
                 }

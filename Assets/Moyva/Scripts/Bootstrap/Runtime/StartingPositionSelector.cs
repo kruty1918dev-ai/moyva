@@ -76,7 +76,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
 
                 // Keep the topology alive, but relax constraints in an explicit
-                // order. Both human and bot slots go through the same selector.
+                // order. Every participant slot goes through the same selector.
                 if (isDirectGameplay &&
                     TryPickBestEffortDirectPosition(
                         signal,

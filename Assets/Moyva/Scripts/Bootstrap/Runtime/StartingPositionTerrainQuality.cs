@@ -35,7 +35,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
     /// <summary>
     /// Pure terrain scorer shared by every launch slot. It deliberately does not
-    /// know whether a slot belongs to a human or a bot.
+    /// know which network participant owns a slot.
     ///
     /// Hard constraints:
     /// - enough usable land around the start;

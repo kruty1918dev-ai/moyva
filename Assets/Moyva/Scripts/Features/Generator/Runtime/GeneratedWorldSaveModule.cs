@@ -122,7 +122,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 context.Writer.Write(assignments[i].SlotIndex);
                 context.Writer.Write(assignments[i].ParticipantId ?? string.Empty);
-                context.Writer.Write(assignments[i].IsBot);
+                context.Writer.Write(false);
                 context.Writer.Write(assignments[i].Position.x);
                 context.Writer.Write(assignments[i].Position.y);
             }
@@ -137,11 +137,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var assignments = new SpawnPositionAssignment[count];
             for (int i = 0; i < count; i++)
             {
+                int slotIndex = context.Reader.ReadInt32();
+                string participantId = context.Reader.ReadString();
+                context.Reader.ReadBoolean();
                 assignments[i] = new SpawnPositionAssignment
                 {
-                    SlotIndex = context.Reader.ReadInt32(),
-                    ParticipantId = context.Reader.ReadString(),
-                    IsBot = context.Reader.ReadBoolean(),
+                    SlotIndex = slotIndex,
+                    ParticipantId = participantId,
                     Position = new UnityEngine.Vector2Int(context.Reader.ReadInt32(), context.Reader.ReadInt32()),
                 };
             }

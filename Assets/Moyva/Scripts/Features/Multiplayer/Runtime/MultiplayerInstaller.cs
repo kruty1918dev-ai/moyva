@@ -438,9 +438,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .AsSingle();
             }
 
-            // NetworkModeController: orchestrates runtime switching and auto-probing
-            container.Bind<NetworkModeController>()
-                .AsSingle();
         }
 
         /// <summary>
@@ -491,13 +488,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             {
                 container.Bind<IHostMigrationCheckpointService>()
                     .To<HostMigrationCheckpointService>()
-                    .AsSingle();
-            }
-
-            if (!container.HasBinding(typeof(IParticipantFallbackService)))
-            {
-                container.Bind<IParticipantFallbackService>()
-                    .To<ParticipantFallbackService>()
                     .AsSingle();
             }
 

@@ -34,14 +34,13 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 identityConfigurator.SetLocalPeerId(_localPlayerId);
             _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.TransportSelected, $"provider={_config.ProviderType}, player={_localPlayerId}");
 
-            // Missing join target: fall back to local solo instead of attempting online join.
+            // A multiplayer join always requires an explicit room identifier.
             if (!options.CreateIfNotExists && string.IsNullOrWhiteSpace(options.RoomId))
             {
-                _logger.Warn("Join requested without room id. Falling back to local single-player session.");
+                _failurePolicy.HandleRecoverable(FailureCategory.ParticipantRejected, "Join requires a room id.");
                 _diagnostics?.SkipStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, "missing-room-id");
-                _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.GameplayReady, "fallback=offline-solo");
                 _diagnostics?.Report(flow);
-                return StartOfflineSolo(opts);
+                return false;
             }
 
             // Config consistency should be validated even for offline provider.
@@ -58,13 +57,13 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 }
             }
 
-            // Pure-offline / solo path
+            // Explicit local provider path used by direct gameplay and save inspection.
             if (_config.ProviderType == NetworkProviderType.Offline)
             {
                 _diagnostics?.SkipStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, "offline-provider");
                 _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.GameplayReady, "provider=offline");
                 _diagnostics?.Report(flow);
-                return StartOfflineSolo(opts);
+                return StartLocalSession(opts);
             }
 
             // Local participant policy
@@ -90,7 +89,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, e.Message);
                 _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.SessionStarted, "exception", e.Message);
                 _diagnostics?.Report(flow);
-                return await FallbackToOfflineSoloAsync(opts, "Unhandled exception in session flow.", ct);
+                return await FailSessionAsync(ct);
             }
         }
 
@@ -114,7 +113,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, error);
                 _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.SessionStarted, "host-session-failed", error);
                 _diagnostics?.Report(flow);
-                return await FallbackToOfflineSoloAsync(opts, error, ct);
+                return await FailSessionAsync(ct);
             }
             _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.SessionStarted, $"hostSessionId={hostResult.SessionId}");
 
@@ -123,7 +122,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             {
                 var error = $"Relay host returned invalid join code '{transportJoinCode}'.";
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, error);
-                return await FallbackToOfflineSoloAsync(opts, error, ct);
+                return await FailSessionAsync(ct);
             }
 
             var createOpts = new CreateRoomOptions(opts.RoomId, opts.Rules.MaxParticipants, isPrivate: false,
@@ -140,7 +139,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, "lobby-create-exception", e.Message);
                 try { await _network.LeaveSessionAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Leave after failed lobby create failed: {leaveError.Message}"); }
                 _diagnostics?.Report(flow);
-                return await FallbackToOfflineSoloAsync(opts, e.Message, ct);
+                return await FailSessionAsync(ct);
             }
 
             if (lobby == null)
@@ -149,7 +148,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, "lobby-create-null");
                 try { await _network.LeaveSessionAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Leave after failed lobby create failed: {leaveError.Message}"); }
                 _diagnostics?.Report(flow);
-                return await FallbackToOfflineSoloAsync(opts, "Failed to create lobby.", ct);
+                return await FailSessionAsync(ct);
             }
             _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, $"lobbyCode={lobby.LobbyCode}, host=true");
 
@@ -169,7 +168,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 try { await _lobby.LeaveAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Lobby leave after Relay code publish failed: {leaveError.Message}"); }
                 try { await _network.LeaveSessionAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Network leave after Relay code publish failed: {leaveError.Message}"); }
                 _diagnostics?.Report(flow);
-                return await FallbackToOfflineSoloAsync(opts, e.Message, ct);
+                return await FailSessionAsync(ct);
             }
 
             _currentSessionId = transportJoinCode;
@@ -206,7 +205,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Failed to join lobby.");
                 _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, "join-lobby-null");
                 _diagnostics?.Report(flow);
-                return await FallbackToOfflineSoloAsync(opts, "Failed to join lobby.", ct);
+                return await FailSessionAsync(ct);
             }
             _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, $"lobbyCode={lobby.LobbyCode}, host=false");
 
@@ -221,7 +220,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Relay code not published by host.");
                 _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.SessionStarted, "relay-code-missing");
                 _diagnostics?.Report(flow);
-                return await FallbackToOfflineSoloAsync(opts, "Relay code not published by host.", ct);
+                return await FailSessionAsync(ct);
             }
 
             var joinResult = await _network.JoinSessionAsync(relayCode, ct);
@@ -230,7 +229,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, joinResult.ErrorMessage);
                 _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.SessionStarted, "join-session-failed", joinResult.ErrorMessage);
                 _diagnostics?.Report(flow);
-                return await FallbackToOfflineSoloAsync(opts, joinResult.ErrorMessage, ct);
+                return await FailSessionAsync(ct);
             }
             _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.SessionStarted, $"sessionId={joinResult.SessionId}");
 

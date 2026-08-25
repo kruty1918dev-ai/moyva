@@ -86,7 +86,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
         public int ActionsThisTurn { get; private set; }
         public string ActiveOwnerId => _factions.Count == 0 ? string.Empty : _factions[_activeFactionIndex].OwnerId;
         public string LocalOwnerId { get; private set; } = string.Empty;
-        public bool IsActiveFactionBot => _factions.Count > 0 && _factions[_activeFactionIndex].IsBot;
         public IReadOnlyList<TurnFaction> Factions => _factions;
 
         public void Initialize()
@@ -342,9 +341,9 @@ namespace Kruty1918.Moyva.Turns.Runtime
             for (int index = 0; index < ordered.Length; index++)
             {
                 SpawnPositionAssignment assignment = ordered[index];
-                string ownerId = NormalizeOwner(assignment.ParticipantId, assignment.IsBot, assignment.SlotIndex);
+                string ownerId = NormalizeOwner(assignment.ParticipantId, assignment.SlotIndex);
                 if (seen.Add(ownerId))
-                    _factions.Add(new TurnFaction(ownerId, assignment.IsBot, assignment.Position));
+                    _factions.Add(new TurnFaction(ownerId, assignment.Position));
             }
 
             _eliminatedOwners.RemoveWhere(ownerId => !seen.Contains(ownerId));
@@ -368,7 +367,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
             // Turns does not own map geometry. Direct Gameplay must wait for
             // WorldSpawnPositionsSignal produced by the terrain-aware Bootstrap selector.
-            // Creating player_0 / bot-01 at Vector2Int.zero/one here would reintroduce
+            // Creating synthetic participants at Vector2Int.zero/one here would reintroduce
             // hard-coded spawn coordinates and bypass player-distance/land/water rules.
             Debug.LogWarning(
                 "[Turns] DirectGameplayTest currently has no generated spawn assignments; " +
@@ -391,12 +390,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
                 int match = _factions.FindIndex(f => string.Equals(f.OwnerId, resolved, StringComparison.Ordinal));
                 return match >= 0 ? _factions[match].OwnerId : string.Empty;
-            }
-
-            for (int index = 0; index < _factions.Count; index++)
-            {
-                if (!_factions[index].IsBot)
-                    return _factions[index].OwnerId;
             }
 
             return _factions[0].OwnerId;
@@ -482,9 +475,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
             // construction/recruitment counters and other participant state are restored by
             // their own save modules and must not receive a second turn-start side effect.
             Phase = TurnPhase.AwaitingInput;
-            Debug.Log(
-                $"[Turns] resumed round={Round} global={GlobalTurn} owner='{ActiveOwnerId}' " +
-                $"bot={IsActiveFactionBot} actions={ActionsThisTurn}.");
             StateChanged?.Invoke();
         }
 
@@ -514,7 +504,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
             }
 
             Phase = TurnPhase.AwaitingInput;
-            Debug.Log($"[Turns] started round={Round} global={GlobalTurn} owner='{ActiveOwnerId}' bot={IsActiveFactionBot}.");
             StateChanged?.Invoke();
             return true;
         }
@@ -695,15 +684,11 @@ namespace Kruty1918.Moyva.Turns.Runtime
             if (comparison != 0)
                 return comparison;
 
-            comparison = left.IsBot.CompareTo(right.IsBot);
-            if (comparison != 0)
-                return comparison;
-
             comparison = left.Position.x.CompareTo(right.Position.x);
             return comparison != 0 ? comparison : left.Position.y.CompareTo(right.Position.y);
         }
 
-        private static string NormalizeOwner(string raw, bool isBot, int slotIndex)
-            => string.IsNullOrWhiteSpace(raw) ? (isBot ? $"bot_{slotIndex}" : $"player_{slotIndex}") : raw.Trim();
+        private static string NormalizeOwner(string raw, int slotIndex)
+            => string.IsNullOrWhiteSpace(raw) ? $"player_{slotIndex}" : raw.Trim();
     }
 }

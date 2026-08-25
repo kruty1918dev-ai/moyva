@@ -7,17 +7,17 @@ namespace Kruty1918.Moyva.Multiplayer.Core
     /// </summary>
     public sealed class ParticipantIdentity : IEquatable<ParticipantIdentity>
     {
-        public const string BotIdPrefix = "BOT_";
-
         public string PlayerId { get; }
         public string Nickname { get; }
 
+        /// <summary>Створює стабільну ідентичність мережевого гравця.</summary>
         public ParticipantIdentity(string playerId, string nickname)
         {
             PlayerId = playerId ?? throw new ArgumentNullException(nameof(playerId));
             Nickname = nickname ?? throw new ArgumentNullException(nameof(nickname));
         }
 
+        /// <summary>Порівнює учасників за стабільним PlayerId.</summary>
         public bool Equals(ParticipantIdentity other)
         {
             if (other is null) return false;

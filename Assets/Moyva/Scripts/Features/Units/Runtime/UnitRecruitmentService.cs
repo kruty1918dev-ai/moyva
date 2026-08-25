@@ -255,7 +255,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             // P24A: ready recruitment jobs deliberately persist in the queue.
             // Unit creation happens only through TryDeployReady after an explicit
-            // player/bot tile selection.
+            // participant tile selection.
         }
 
         public void OnTurnEnding(TurnContext context) { }

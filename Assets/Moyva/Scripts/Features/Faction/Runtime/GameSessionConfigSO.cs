@@ -6,11 +6,7 @@ namespace Kruty1918.Moyva.Faction.Runtime
 {
     /// <summary>
     /// ScriptableObject — конфігурація сесії гри.
-    /// Визначає кількість і тип учасників: люди, боти, мережеві гравці.
-    ///
-    /// Приклад слотів:
-    ///   player_0 (Human), player_1 (Human), bot_0 (Bot), bot_1 (Bot)  → 2v2
-    ///   player_0 (Human), bot_0 (Bot)                                  → 1v1 з ботом
+    /// Визначає локальних і мережевих учасників сесії.
     /// </summary>
 [System.Serializable]
 public sealed class GameSessionConfigSO : MoyvaJsonConfigObject

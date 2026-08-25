@@ -1,7 +1,5 @@
 using Zenject;
-using Kruty1918.Moyva.BotAI.Runtime;
 using Kruty1918.Moyva.SaveSystem;
-using Kruty1918.Moyva.BotAI.Diagnostics;
 using UnityEngine;
 using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.Camera.API;
@@ -27,11 +25,6 @@ namespace Kruty1918.Moyva.Bootstrap
             UiActionsInstaller.Install(Container);
             var gameSettings = _config != null ? _config.GameSettings : _legacyGameSettings;
             var startingPositionSettings = _config != null ? _config.StartingPositionSettings : _legacyStartingPositionSettings;
-
-            // Bot diagnostics are bound from Bootstrap, not BotInstaller, so logging remains
-            // available even when the BotAI installer/runtime is the part that failed.
-            BotRuntimeBindings.Install(Container);
-            BotDiagnosticsBindings.Install(Container);
 
             if (_config == null)
                 Debug.LogWarning("[Bootstrap] BootstrapInstallerConfigSO не призначено. Використано legacy inline settings із BootstrapInstaller.");
@@ -79,7 +72,6 @@ namespace Kruty1918.Moyva.Bootstrap
             Container.BindExecutionOrder<TestUnitSpawner>(100);
 
             GameplayHudBindings.Install(Container);
-            Container.BindInterfacesTo<TurnBotDriver>().AsSingle().NonLazy();
 
             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
             // Виконується після TestUnitSpawner, щоб знати чи є збереження.

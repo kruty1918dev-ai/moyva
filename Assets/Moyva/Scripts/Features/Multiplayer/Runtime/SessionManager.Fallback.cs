@@ -14,15 +14,14 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 {
     public sealed partial class SessionManager
     {
-        private bool StartOfflineSolo(SessionConnectOptions opts)
+        private bool StartLocalSession(SessionConnectOptions opts)
         {
-            var roomId = $"{SoloSessionPrefix}-{Guid.NewGuid():N}";
+            var roomId = $"{LocalSessionPrefix}-{Guid.NewGuid():N}";
             _participants.Clear();
             _currentSessionId = roomId;
-            _currentRules = opts.Rules ?? SoloFallbackRules;
+            _currentRules = opts.Rules ?? LocalSessionRules;
             _isHost = true;
-            _participants.Add(new Participant(opts.LocalIdentity, isBot: false, isHost: true));
-            _logger.Info($"Offline solo session '{roomId}' started.");
+            _participants.Add(new Participant(opts.LocalIdentity, isHost: true));
             return true;
         }
 
@@ -59,13 +58,10 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 options.ConfigChecksum);
         }
 
-        private async Task<bool> FallbackToOfflineSoloAsync(SessionConnectOptions opts, string reason, CancellationToken ct)
+        private async Task<bool> FailSessionAsync(CancellationToken ct)
         {
-            if (!string.IsNullOrWhiteSpace(reason))
-                _logger.Warn($"Online session failed ({reason}). Falling back to local single-player.");
-
             await SafeCleanupAsync(ct);
-            return StartOfflineSolo(opts);
+            return false;
         }
 
         private void CleanupHostAliasParticipants()
