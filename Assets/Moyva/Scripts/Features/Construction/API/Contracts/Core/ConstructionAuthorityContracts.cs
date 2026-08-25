@@ -1,0 +1,84 @@
+using UnityEngine;
+
+namespace Kruty1918.Moyva.Construction.API
+{
+    public interface IConstructionPlacedBuildingDestruction
+    {
+        bool TryDestroyPlacedBuilding(
+            Vector2Int position,
+            string cause = null);
+    }
+
+    public interface IConstructionRuntimeAuthorityQuery
+    {
+        bool IsAuthoritativeRuntime { get; }
+    }
+
+    public interface IConstructionBuildingOwnershipQuery
+    {
+        bool TryGetPlacedBuildingOwner(
+            Vector2Int position,
+            out string ownerId);
+    }
+
+    public interface IConfirmedConstructionPlacementApplier
+    {
+        bool TryApplyConfirmedPlacement(
+            string buildingId,
+            Vector2Int position,
+            string ownerId);
+    }
+
+    public interface IConfirmedConstructionDemolitionApplier
+    {
+        bool TryApplyConfirmedDemolition(
+            Vector2Int position,
+            string ownerId);
+    }
+
+    public readonly struct ConstructionPlacementCommitIntent
+    {
+        public ConstructionPlacementCommitIntent(
+            Vector2Int? relocationSourcePosition = null,
+            string satisfiedReplacementBuildingId = null,
+            ConstructionRotation rotation = ConstructionRotation.Degrees0)
+        {
+            RelocationSourcePosition = relocationSourcePosition;
+            SatisfiedReplacementBuildingId = satisfiedReplacementBuildingId;
+            Rotation = ConstructionRotationUtility.Normalize((int)rotation);
+        }
+
+        public Vector2Int? RelocationSourcePosition { get; }
+        public bool HasRelocationSource => RelocationSourcePosition.HasValue;
+        public string SatisfiedReplacementBuildingId { get; }
+        public ConstructionRotation Rotation { get; }
+
+        public static ConstructionPlacementCommitIntent None =>
+            new ConstructionPlacementCommitIntent();
+    }
+
+    public interface IConstructionPendingPlacementIntentSource
+    {
+        bool TryGetPendingPlacementIntent(
+            Vector2Int position,
+            out ConstructionPlacementCommitIntent intent);
+    }
+
+    public interface IAuthoritativeConstructionPlacementExecutor
+    {
+        bool TryPlaceAuthoritatively(
+            string buildingId,
+            Vector2Int position,
+            string ownerId,
+            ConstructionPlacementCommitIntent intent);
+    }
+
+    public interface IConfirmedConstructionPlacementIntentApplier
+    {
+        bool TryApplyConfirmedPlacement(
+            string buildingId,
+            Vector2Int position,
+            string ownerId,
+            ConstructionPlacementCommitIntent intent);
+    }
+}

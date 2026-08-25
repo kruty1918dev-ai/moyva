@@ -21,7 +21,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// and unicasts it to that peer using <see cref="GameCommandType.WorldStateSnapshot"/>.
     ///
     /// Client behaviour: when a snapshot arrives, restores buildings via
-    /// <see cref="IConstructionService.RestoreFromSave"/> and resources via
+    /// <see cref="IConstructionSaveRestorer.RestoreFromSave"/> and resources via
     /// <see cref="EconomyManager.RestoreOwnerResourcePools"/>.
     /// </summary>
     internal sealed class WorldStateReplicationService : IInitializable, IDisposable
@@ -35,7 +35,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private readonly IGameCommandSyncService _commandSync;
         private readonly INetworkProvider _network;
         private readonly ISessionManager _sessionManager;
-        private readonly IConstructionService _constructionService;
+        private readonly IConstructionSaveSnapshotSource _placementSnapshots;
+        private readonly IConstructionSaveRestorer _placementRestorer;
+        private readonly IConstructionSessionCommands _constructionSession;
         private readonly IMultiplayerLogger _logger;
         private readonly EconomyManager _economyManager;
         private readonly List<IConstructionModuleStatePersistence>
@@ -45,7 +47,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             IGameCommandSyncService commandSync,
             INetworkProvider network,
             ISessionManager sessionManager,
-            IConstructionService constructionService,
+            IConstructionSaveSnapshotSource placementSnapshots,
+            IConstructionSaveRestorer placementRestorer,
+            IConstructionSessionCommands constructionSession,
             IMultiplayerLogger logger,
             [InjectOptional] EconomyManager economyManager = null,
             [InjectOptional]
@@ -55,7 +59,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _commandSync = commandSync;
             _network = network;
             _sessionManager = sessionManager;
-            _constructionService = constructionService;
+            _placementSnapshots = placementSnapshots;
+            _placementRestorer = placementRestorer;
+            _constructionSession = constructionSession;
             _logger = logger;
             _economyManager = economyManager;
             _stateProviders =
@@ -110,29 +116,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             // Buildings with owner identity.
             IReadOnlyList<ConstructionSavedPlacement> buildings =
-                (_constructionService
-                    as IConstructionSaveSnapshotSource)
-                    ?.GetSavedPlacements();
-
-            if (buildings == null)
-            {
-                var legacy =
-                    _constructionService
-                        .GetPlayerPlacedBuildings();
-                var fallback =
-                    new List<ConstructionSavedPlacement>(
-                        legacy.Count);
-                foreach (var pair in legacy)
-                {
-                    fallback.Add(
-                        new ConstructionSavedPlacement(
-                            pair.Key,
-                            pair.Value,
-                            _constructionService
-                                .GetActiveOwner()));
-                }
-                buildings = fallback;
-            }
+                _placementSnapshots.GetSavedPlacements();
 
             writer.Write(buildings.Count);
             for (int index = 0;
@@ -355,10 +339,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             // Buildings
             int buildingCount =
                 Math.Max(0, reader.ReadInt32());
-            IConstructionSaveRestorer restorer =
-                _constructionService
-                    as IConstructionSaveRestorer;
-
             for (int i = 0; i < buildingCount; i++)
             {
                 int x = reader.ReadInt32();
@@ -367,25 +347,16 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 string ownerId =
                     version >= 2
                         ? reader.ReadString()
-                        : _constructionService.GetActiveOwner();
+                        : _constructionSession.GetActiveOwner();
 
                 if (string.IsNullOrWhiteSpace(id))
                     continue;
 
                 var position = new Vector2Int(x, y);
-                if (restorer != null)
-                {
-                    restorer.RestoreFromSave(
-                        position,
-                        id,
-                        ownerId);
-                }
-                else
-                {
-                    _constructionService.RestoreFromSave(
-                        position,
-                        id);
-                }
+                _placementRestorer.RestoreFromSave(
+                    position,
+                    id,
+                    ownerId);
             }
 
             if (version >= 2)

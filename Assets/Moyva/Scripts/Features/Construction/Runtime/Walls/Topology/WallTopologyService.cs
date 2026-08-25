@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         IInitializable,
         IDisposable
     {
-        private readonly LazyInject<IConstructionService> _constructionService;
+        private readonly LazyInject<IConstructionSessionCommands> _constructionService;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IObjectsMapService _objectsMapService;
         private readonly ConstructionPlacedVisualService _placedVisuals;
@@ -28,7 +28,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         [Inject]
         public WallTopologyService(
-            LazyInject<IConstructionService> constructionService,
+            LazyInject<IConstructionSessionCommands> constructionService,
             IBuildingRegistry buildingRegistry,
             IObjectsMapService objectsMapService,
             SignalBus signalBus,

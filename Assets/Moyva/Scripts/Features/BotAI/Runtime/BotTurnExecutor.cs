@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.BotAI.API;
-using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Faction.API;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
@@ -26,14 +25,13 @@ namespace Kruty1918.Moyva.BotAI.Runtime
     public sealed class BotTurnExecutor : IBotTurnExecutor, ITurnBlocker, IDisposable
     {
         internal const int MaxMutatingActionsPerTurn = 6;
-        
-        
-        
-        
+
+
+
+
 
         private readonly ITurnService _turns;
         private readonly IFactionRegistry _factions;
-        private readonly IConstructionService _construction;
         private readonly IUnitRecruitmentService _recruitment;
         private readonly IUnitService _units;
         private readonly IUnitOwnershipQuery _ownership;
@@ -57,7 +55,6 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         public BotTurnExecutor(
             [InjectOptional] ITurnService turns = null,
             [InjectOptional] IFactionRegistry factions = null,
-            [InjectOptional] IConstructionService construction = null,
             [InjectOptional] IUnitRecruitmentService recruitment = null,
             [InjectOptional] IUnitService units = null,
             [InjectOptional] IUnitOwnershipQuery ownership = null,
@@ -77,7 +74,6 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         {
             _turns = turns;
             _factions = factions;
-            _construction = construction;
             _recruitment = recruitment;
             _units = units;
             _ownership = ownership;

@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class ConstructionPreviewVisualSignalHandler {
         private readonly IBuildingRegistry _buildingRegistry;
-        private readonly LazyInject<IConstructionService> _constructionService;
+        private readonly LazyInject<IConstructionSessionCommands> _constructionService;
         private readonly IWallTopologyService _wallTopologyService;
         private readonly ConstructionPreviewVisualService _previewVisuals;
         private readonly ConstructionPlacedVisualService _placedVisuals;
@@ -21,7 +21,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         [Inject]
         public ConstructionPreviewVisualSignalHandler(
             IBuildingRegistry buildingRegistry,
-            LazyInject<IConstructionService> constructionService,
+            LazyInject<IConstructionSessionCommands> constructionService,
             IWallTopologyService wallTopologyService,
             ConstructionPreviewVisualService previewVisuals,
             ConstructionPlacedVisualService placedVisuals,

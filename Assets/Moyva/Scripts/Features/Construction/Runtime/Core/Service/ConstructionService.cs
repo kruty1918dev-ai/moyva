@@ -36,44 +36,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             "[MoyvaConstructionModules]";
         private const string PerfLogTag = "[MoyvaConstructionPerf]";
 
-        private readonly struct PendingPlacement
-        {
-            public PendingPlacement(
-                Vector2Int position,
-                string buildingId,
-                Vector2Int? originalPosition = null,
-                string replacedPendingBuildingId = null,
-                ConstructionRotation rotation =
-                    ConstructionRotation.Degrees0)
-            {
-                Position = position;
-                BuildingId = buildingId;
-                OriginalPosition = originalPosition;
-                ReplacedPendingBuildingId =
-                    replacedPendingBuildingId;
-                Rotation = ConstructionRotationUtility.Normalize(
-                    (int)rotation);
-            }
-
-            public Vector2Int Position { get; }
-            public string BuildingId { get; }
-            public Vector2Int? OriginalPosition { get; }
-            public string ReplacedPendingBuildingId { get; }
-            public ConstructionRotation Rotation { get; }
-        }
-
-        private readonly struct PendingDemolition
-        {
-            public PendingDemolition(Vector2Int position, string buildingId)
-            {
-                Position = position;
-                BuildingId = buildingId;
-            }
-
-            public Vector2Int Position { get; }
-            public string BuildingId { get; }
-        }
-
         private readonly IObjectsMapService _objectsMapService;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IBuildingRegistry _placementBuildingRegistry;
@@ -104,38 +66,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private bool _initialized;
         private bool _disposed;
 
-        private string _selectedBuildingId;
-        private ConstructionRotation _selectedRotation;
-        private readonly List<PendingPlacement> _pendingPlacements = new();
-        private readonly List<BuildingPlacementSimulationEntry> _placementSimulationSnapshot = new();
-        private readonly List<BuildingPlacementSimulationEntry> _placedBuildingSimulationSnapshot = new();
-        private readonly HashSet<Vector2Int> _placementTileMatchWorkspace = new();
-        private readonly List<List<PendingPlacement>> _undoSnapshots = new();
-        private readonly List<List<PendingPlacement>> _redoSnapshots = new();
-        private int _pendingUndoBatchDepth;
-        private List<PendingPlacement> _pendingUndoBatchSnapshot;
-        private bool _pendingUndoBatchChanged;
-        private bool _pendingUndoBatchClearRedoHistory;
-        private int _pendingUndoBatchStartCount;
-        private string _pendingUndoBatchReason;
-        private readonly HashSet<Vector2Int> _pendingPositions = new();
-        private readonly Dictionary<Vector2Int, PendingPlacement> _pendingPlacementByPosition = new();
-        private readonly Dictionary<Vector2Int, ConstructionPendingPlacementStatus> _pendingPlacementStatuses = new();
-        private readonly List<PendingDemolition> _pendingDemolitions = new();
-        private readonly HashSet<Vector2Int> _pendingDemolitionPositions = new();
-        private readonly Dictionary<Vector2Int, string> _playerPlacedBuildings = new();
-        private readonly Dictionary<Vector2Int, ConstructionRotation>
-            _placedRotationByOrigin = new();
-        private string _activeOwnerId = DefaultOwnerId;
-        private string _lastActionMessage = string.Empty;
-        private readonly Dictionary<Vector2Int, (string BuildingId, string FactionId)> _factionPlacedBuildings = new();
-        private bool _isActive;
-        private int _pendingPlacementsVersion;
-        private int _placementSimulationSnapshotVersion = -1;
         private int _lastModuleAuditRevision = -1;
 
-        public BuildingPlacementState State { get; private set; } = BuildingPlacementState.Idle;
-        public bool IsDemolishMode { get; private set; }
         private bool VerboseLogs => _diagnosticsSettingsProvider?.EnableVerboseLogs ?? (Application.isEditor && Debug.isDebugBuild);
 
         [Inject]

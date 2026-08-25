@@ -36,7 +36,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly IUnitMovementService _unitMovementService;
         private readonly IUnitOwnershipQuery _unitOwnershipQuery;
         private readonly IUnitCombatService _unitCombatService;
-        private readonly IConstructionService _constructionService;
+        private readonly IConstructionSessionCommands _constructionService;
         private readonly IConstructionLifecycle _constructionLifecycle;
         private readonly IGameplayNotificationService _notifications;
         private readonly SignalBus _signalBus;
@@ -62,7 +62,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             [InjectOptional] IUnitMovementService unitMovementService,
             [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery,
             [InjectOptional] IUnitCombatService unitCombatService,
-            [InjectOptional] IConstructionService constructionService,
+            [InjectOptional] IConstructionSessionCommands constructionService,
             [InjectOptional] ITurnService turns,
             [InjectOptional] IConstructionLifecycle constructionLifecycle,
             [InjectOptional] IGameplayNotificationService notifications,

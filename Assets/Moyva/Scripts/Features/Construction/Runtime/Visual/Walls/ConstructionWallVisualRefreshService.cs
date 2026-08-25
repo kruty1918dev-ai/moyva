@@ -8,7 +8,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     internal sealed class ConstructionWallVisualRefreshService {
         private readonly IObjectsMapService _objectsMapService;
         private readonly IBuildingRegistry _buildingRegistry;
-        private readonly LazyInject<IConstructionService> _constructionService;
+        private readonly LazyInject<IConstructionSessionCommands> _constructionService;
         private readonly IWallVisualResolver _wallVisualResolver;
         private readonly ConstructionPlacedVisualService _placedVisuals;
         private readonly ConstructionPreviewVisualService _previewVisuals;
@@ -18,7 +18,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public ConstructionWallVisualRefreshService(
             IObjectsMapService objectsMapService,
             IBuildingRegistry buildingRegistry,
-            LazyInject<IConstructionService> constructionService,
+            LazyInject<IConstructionSessionCommands> constructionService,
             IWallVisualResolver wallVisualResolver,
             ConstructionPlacedVisualService placedVisuals,
             ConstructionPreviewVisualService previewVisuals,

@@ -26,7 +26,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IGridProjection _gridProjection;
         private readonly IMapVisualChunkRegistry _chunkRegistry;
         private readonly BuildModeGridStateController _stateController;
-        private readonly IConstructionService _constructionService;
+        private readonly IConstructionSessionCommands _constructionService;
 
         private bool _isConstructionModeActive;
         private bool _dirty = true;
@@ -47,7 +47,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] IGridProjection gridProjection = null,
             [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null,
             [InjectOptional] IMapVisualChunkRegistry chunkRegistry = null,
-            [InjectOptional] IConstructionService constructionService = null)
+            [InjectOptional] IConstructionSessionCommands constructionService = null)
         {
             _roots = roots;
             _tileCollector = tileCollector;

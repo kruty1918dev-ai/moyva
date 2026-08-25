@@ -32,18 +32,24 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private const int MaxStatePayloadBytes =
             16 * 1024 * 1024;
 
-        private readonly IConstructionService _constructionService;
+        private readonly IConstructionSaveSnapshotSource _placementSnapshots;
+        private readonly IConstructionSaveRestorer _placementRestorer;
+        private readonly IConstructionSessionCommands _session;
         private readonly List<IConstructionModuleStatePersistence>
             _stateProviders;
 
         [Inject]
         public ConstructionSaveModule(
-            IConstructionService constructionService,
+            IConstructionSaveSnapshotSource placementSnapshots,
+            IConstructionSaveRestorer placementRestorer,
+            IConstructionSessionCommands session,
             [InjectOptional]
             List<IConstructionModuleStatePersistence>
                 stateProviders = null)
         {
-            _constructionService = constructionService;
+            _placementSnapshots = placementSnapshots;
+            _placementRestorer = placementRestorer;
+            _session = session;
             _stateProviders =
                 stateProviders
                 ?? new List<IConstructionModuleStatePersistence>();
@@ -115,27 +121,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             long startedAt = Stopwatch.GetTimestamp();
 
             IReadOnlyList<ConstructionSavedPlacement> placements =
-                (_constructionService
-                    as IConstructionSaveSnapshotSource)
-                    ?.GetSavedPlacements();
-
-            if (placements == null)
-            {
-                var legacy =
-                    _constructionService.GetPlayerPlacedBuildings();
-                var fallback =
-                    new List<ConstructionSavedPlacement>(
-                        legacy.Count);
-                foreach (var pair in legacy)
-                {
-                    fallback.Add(
-                        new ConstructionSavedPlacement(
-                            pair.Key,
-                            pair.Value,
-                            _constructionService.GetActiveOwner()));
-                }
-                placements = fallback;
-            }
+                _placementSnapshots.GetSavedPlacements();
 
             context.Writer.Write(SchemaMagic);
             context.Writer.Write(SchemaVersion);
@@ -282,9 +268,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             int placementCount =
                 Math.Max(0, context.Reader.ReadInt32());
-            IConstructionSaveRestorer restorer =
-                _constructionService as IConstructionSaveRestorer;
-
             for (int index = 0;
                  index < placementCount;
                  index++)
@@ -301,20 +284,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     : ConstructionRotation.Degrees0;
                 var position = new Vector2Int(x, y);
 
-                if (restorer != null)
-                {
-                    restorer.RestoreFromSave(
-                        position,
-                        buildingId,
-                        ownerId,
-                        rotation);
-                }
-                else
-                {
-                    _constructionService.RestoreFromSave(
-                        position,
-                        buildingId);
-                }
+                _placementRestorer.RestoreFromSave(
+                    position,
+                    buildingId,
+                    ownerId,
+                    rotation);
             }
 
             var providersByKey =
@@ -429,9 +403,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 string buildingId =
                     context.Reader.ReadString();
 
-                _constructionService.RestoreFromSave(
+                _placementRestorer.RestoreFromSave(
                     new Vector2Int(x, y),
-                    buildingId);
+                    buildingId,
+                    _session.GetActiveOwner());
             }
         }
     }

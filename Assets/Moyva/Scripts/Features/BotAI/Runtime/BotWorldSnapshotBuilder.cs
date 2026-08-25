@@ -17,7 +17,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         private readonly IFactionRegistry _factions;
         private readonly IUnitService _units;
         private readonly IUnitOwnershipQuery _ownership;
-        private readonly IConstructionService _construction;
+        private readonly IConstructionSaveSnapshotSource _constructionSnapshot;
         private readonly IUnitRecruitmentService _recruitment;
         private readonly IFogOfWarServiceRegistry _fogRegistry;
         private readonly IBotMemoryStore _memory;
@@ -29,7 +29,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             [InjectOptional] IFactionRegistry factions = null,
             [InjectOptional] IUnitService units = null,
             [InjectOptional] IUnitOwnershipQuery ownership = null,
-            [InjectOptional] IConstructionService construction = null,
+            [InjectOptional] IConstructionSaveSnapshotSource constructionSnapshot = null,
             [InjectOptional] IUnitRecruitmentService recruitment = null,
             [InjectOptional] IFogOfWarServiceRegistry fogRegistry = null,
             [InjectOptional] IBotMemoryStore memory = null,
@@ -39,7 +39,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             _factions = factions;
             _units = units;
             _ownership = ownership;
-            _construction = construction;
+            _constructionSnapshot = constructionSnapshot;
             _recruitment = recruitment;
             _fogRegistry = fogRegistry;
             _memory = memory;
@@ -157,11 +157,11 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             List<BotBuildingSnapshot> ownBuildings,
             List<BotBuildingSnapshot> enemyCandidates)
         {
-            if (_construction is not IConstructionSaveSnapshotSource source)
+            if (_constructionSnapshot == null)
                 return;
 
             IReadOnlyList<ConstructionSavedPlacement> placements =
-                source.GetSavedPlacements();
+                _constructionSnapshot.GetSavedPlacements();
 
             if (placements == null)
                 return;

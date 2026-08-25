@@ -20,7 +20,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IUnitService _units;
         private readonly IUnitClassConfig _unitConfigs;
         private readonly IUnitRecruitmentService _recruitment;
-        private readonly IConstructionService _construction;
+        private readonly IConstructionSessionCommands _construction;
         private readonly IBuildingRegistry _buildings;
         private readonly SignalBus _signals;
         private readonly GameplayTurnHudView _view;
@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IUnitService units,
             IUnitClassConfig unitConfigs,
             IUnitRecruitmentService recruitment,
-            IConstructionService construction,
+            IConstructionSessionCommands construction,
             IBuildingRegistry buildings,
             SignalBus signals,
             GameplayTurnHudView view,

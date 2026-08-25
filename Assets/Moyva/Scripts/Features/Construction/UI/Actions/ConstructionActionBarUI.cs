@@ -20,19 +20,19 @@ namespace Kruty1918.Moyva.Construction.UI
     public class ConstructionActionBarUI : MonoBehaviour
     {
         [Header("Кнопки дій (перетягни в Inspector)")]
-        [Tooltip("Виклик IConstructionService.Confirm().")]
+        [Tooltip("Підтвердити поточну сесію будівництва.")]
         [SerializeField] private Button confirmButton;
 
-        [Tooltip("Виклик IConstructionService.Cancel().")]
+        [Tooltip("Скасувати поточну сесію будівництва.")]
         [SerializeField] private Button cancelButton;
 
-        [Tooltip("Виклик IConstructionService.UndoLast().")]
+        [Tooltip("Скасувати останню preview-дію.")]
         [SerializeField] private Button undoButton;
 
-        [Tooltip("Виклик IConstructionService.RedoLast().")]
+        [Tooltip("Повторити останню preview-дію.")]
         [SerializeField] private Button redoButton;
 
-        [Tooltip("Перемикач режиму знесення (IConstructionService.ToggleDemolishMode()). Необов'язковий.")]
+        [Tooltip("Перемикач режиму знесення. Необов'язковий.")]
         [SerializeField] private Button demolishButton;
 
         [Header("Анімація натиску (DOTween)")]

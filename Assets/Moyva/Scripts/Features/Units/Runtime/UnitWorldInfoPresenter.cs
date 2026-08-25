@@ -17,7 +17,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IEconomyInfoMediator _economyInfoMediator;
         private readonly IHealthRegistry _healthRegistry;
         private readonly IUnitOwnershipQuery _ownershipQuery;
-        private readonly IConstructionService _constructionService;
+        private readonly IConstructionSessionCommands _constructionService;
         private readonly IConstructionUnitGarrisonRuntime _garrisonRuntime;
 
         public UnitWorldInfoPresenter(
@@ -27,7 +27,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             [InjectOptional] IEconomyInfoMediator economyInfoMediator,
             [InjectOptional] IHealthRegistry healthRegistry = null,
             [InjectOptional] IUnitOwnershipQuery ownershipQuery = null,
-            [InjectOptional] IConstructionService constructionService = null,
+            [InjectOptional] IConstructionSessionCommands constructionService = null,
             [InjectOptional] IConstructionUnitGarrisonRuntime garrisonRuntime = null)
         {
             _signalBus = signalBus;

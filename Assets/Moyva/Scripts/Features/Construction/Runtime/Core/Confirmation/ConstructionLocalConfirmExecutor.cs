@@ -6,12 +6,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class ConstructionLocalConfirmExecutor : IConstructionConfirmRequestExecutor
     {
-        private readonly IConstructionService _constructionService;
+        private readonly IConstructionSessionCommands _constructionService;
         private readonly IConstructionDiagnostics _diagnostics;
         private readonly IConstructionDiagnosticsSession _diagnosticsSession;
 
         public ConstructionLocalConfirmExecutor(
-            IConstructionService constructionService,
+            IConstructionSessionCommands constructionService,
             [Zenject.InjectOptional] IConstructionDiagnostics diagnostics = null,
             [Zenject.InjectOptional] IConstructionDiagnosticsSession diagnosticsSession = null)
         {

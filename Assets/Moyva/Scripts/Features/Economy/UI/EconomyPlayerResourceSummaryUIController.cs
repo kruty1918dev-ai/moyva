@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         private IEconomyRuntimeApi _economyApi;
         private SignalBus _signalBus;
-        private IConstructionService _constructionService;
+        private IConstructionSessionCommands _constructionService;
         private bool _subscribed;
         private string _ownerId = EconomyManager.DefaultOwnerId;
 
@@ -30,7 +30,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         public void Construct(
             IEconomyRuntimeApi economyApi,
             SignalBus signalBus,
-            [InjectOptional] IConstructionService constructionService)
+            [InjectOptional] IConstructionSessionCommands constructionService)
         {
             _economyApi = economyApi;
             _signalBus = signalBus;

@@ -21,7 +21,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         // Construction can depend back on ITurnService. Active-owner fallback is
         // only needed when ResolveActiveOwnerId runs, not while this resolver is created.
-        private readonly LazyInject<IConstructionService> _constructionService;
+        private readonly LazyInject<IConstructionSessionCommands> _constructionService;
         private readonly IStartingPositionState _startingPositionState;
 
     #pragma warning disable CS0649
@@ -29,7 +29,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     #pragma warning restore CS0649
 
         public BootstrapOwnerIdResolver(
-            LazyInject<IConstructionService> constructionService,
+            LazyInject<IConstructionSessionCommands> constructionService,
             [InjectOptional] IStartingPositionState startingPositionState = null)
         {
             _constructionService = constructionService;

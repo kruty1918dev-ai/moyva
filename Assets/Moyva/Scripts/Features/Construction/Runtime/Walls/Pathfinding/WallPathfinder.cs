@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Vector2Int.left,
         };
 
-        private readonly LazyInject<IConstructionService> _constructionService;
+        private readonly LazyInject<IConstructionSessionCommands> _constructionService;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IGridService _gridService;
         private readonly IObjectsMapService _objectsMapService;
@@ -36,7 +36,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         [Inject]
         public WallPathfinder(
-            LazyInject<IConstructionService> constructionService,
+            LazyInject<IConstructionSessionCommands> constructionService,
             IBuildingRegistry buildingRegistry,
             IGridService gridService,
             IObjectsMapService objectsMapService,

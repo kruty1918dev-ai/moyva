@@ -18,7 +18,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private const string EconomySaveModuleFullName = "Kruty1918.Moyva.Economy.Runtime.EconomySaveModule";
         private const string StarterPackLogTag = "[Bootstrap][StarterPack]";
 
-        private readonly IConstructionService _constructionService;
+        private readonly IConstructionSessionCommands _constructionService;
         private readonly SignalBus _signalBus;
         private readonly ISaveService _saveService;
         private readonly BootstrapStarterPackState _starterPackState;
@@ -37,7 +37,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         [Inject]
         public BootstrapGameInitializer(
-            IConstructionService constructionService,
+            IConstructionSessionCommands constructionService,
             SignalBus signalBus,
             ISaveService saveService,
             BootstrapStarterPackState starterPackState,

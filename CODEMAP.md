@@ -29,7 +29,7 @@ Scene-authored feature installers still compose their own modules. Project and b
 | Units: recruitment | `Features/Units/API/IUnitRecruitmentService.cs`; `Features/Units/Runtime/UnitRecruitmentService.cs`; `Features/Units/Runtime/UnitRecruitmentQueueStateMachine.cs`; `Features/Units/Runtime/UnitRecruitmentDeploymentService.cs` | `UnitRecruitmentService` is the only enqueue/progress/deploy application boundary; the queue state machine owns paid queue state |
 | Unit combat | `Features/Combat/API/ICombatCommandService.cs`; `Features/Units/API/IUnitCombatService.cs`; `Features/Units/Runtime/UnitCombatCommandService.cs`; `Features/Units/Runtime/UnitCombatService.cs` | `UnitCombatCommandService` is the turn/owner-aware command boundary; `UnitCombatService` validates and applies unit attacks |
 | Health | `Features/Combat/API/IHealthRegistry.cs`; `Features/Combat/Runtime/CombatInstaller.cs`; `Features/Combat/Runtime/HealthRegistry.cs`; `Features/Construction/Runtime/Core/Health/BuildingHealthService.cs` | `HealthRegistry` indexes entity health; building health and garrison state are owned by `BuildingHealthService` |
-| Construction | `Features/Construction/API/Contracts/Core/IConstructionService.cs`; `Features/Construction/Runtime/Core/Installers/ConstructionInstaller.cs`; `Features/Construction/Runtime/Core/Service/ConstructionService.cs` | `ConstructionService` is the canonical selection, placement, confirmation, demolition and placed-building state authority |
+| Construction | `Features/Construction/API/Contracts/Core/ConstructionSessionContracts.cs`; `Features/Construction/API/Contracts/Core/ConstructionPersistenceContracts.cs`; `Features/Construction/Runtime/Core/Installers/ConstructionInstaller.cs`; `Features/Construction/Runtime/Core/Service/ConstructionService.cs` | one `ConstructionService` singleton implements the narrow session/query/persistence boundaries and remains the canonical mutation authority |
 | Construction lifecycle | `Features/Construction/API/Contracts/Core/IConstructionLifecycle.cs`; `Features/Construction/Runtime/Core/Service/ConstructionLifecycleService.cs`; `Features/Construction/Runtime/Core/Service/ConstructionLifecycleStateMachine.cs` | owns build progress, operational transitions and their persistence payload |
 | Economy | `Features/Economy/Runtime/EconomyInstaller.cs`; `Features/Economy/Runtime/EconomyManager.cs`; `Features/Economy/Runtime/EconomySettlementRegistryService.cs`; `Features/Economy/Runtime/EconomyOwnerResourcePoolService.cs` | `EconomyManager` coordinates construction/calendar signals; settlement states/registry and owner resource pool are authoritative stores |
 | Economy queries | `Features/Economy/Runtime/IEconomyRuntimeApi.cs`; `Features/Economy/Runtime/EconomyRuntimeApi.cs`; `Features/Economy/API/IMapObjectEconomyService.cs` | read-only projections for UI/BotAI and map-object inspection; mutations stay behind Economy services |
@@ -118,7 +118,7 @@ Scene-authored feature installers still compose their own modules. Project and b
 → gameplay signal/domain event
 → presentation and derived indexes
 
-Canonical command boundaries are Construction (`IConstructionService` / `IConstructionPlacementQuery`), movement (`IUnitMovementService` / `IUnitMovementQuery`), recruitment (`IUnitRecruitmentService`) and combat (`ICombatCommandService`).
+Canonical command boundaries are Construction (`IConstructionSessionCommands` / `IConstructionPlacementQuery`), movement (`IUnitMovementService` / `IUnitMovementQuery`), recruitment (`IUnitRecruitmentService`) and combat (`ICombatCommandService`).
 
 ### Bot turn
 
@@ -170,7 +170,7 @@ Canonical command boundaries are Construction (`IConstructionService` / `IConstr
 | occupancy | `IObjectsMapService`, synchronized from unit/map-object lifecycle | Construction placement, Units movement, BotAI snapshots, world-info UI |
 | turn state | `ITurnService`; `ITurnStateRestorer` only for persistence | Units and Construction participants, BotAI driver, HUD, SaveSystem |
 | unit state | `IUnitFactory`, `IUnitMovementService`, `IUnitRecruitmentService`, `ICombatCommandService`, unit restore boundary | ObjectsMap, Faction ownership, Fog, BotAI, Multiplayer adapters, UI |
-| construction state | `IConstructionService`, confirmed multiplayer apply contracts, construction restore contracts | Economy, Fog, ObjectsMap, Units traversal/garrison, BotAI, UI |
+| construction state | `IConstructionSessionCommands`, confirmed multiplayer apply contracts, construction restore contracts | Economy, Fog, ObjectsMap, Units traversal/garrison, BotAI, UI |
 | economy state | Economy construction/calendar integration, starter-pack grant, economy restore module | Construction affordability, UI summaries, BotAI queries |
 | fog state | fog map/reveal/vision-source contracts and fog restore module | Construction rules, BotAI perception, renderer culling and fog visuals |
 | calendar state | `RoundResolutionService`; calendar restore/sync boundaries | Economy tick and day/night visuals |
@@ -252,20 +252,28 @@ Do not open every `ConstructionService` partial for a focused task.
 
 | Task | Primary files |
 |---|---|
+| external session commands / state | `API/Contracts/Core/ConstructionSessionContracts.cs` |
+| placed-state and persistence contracts | `API/Contracts/Core/ConstructionPersistenceContracts.cs` |
 | service lifecycle / dependencies | `ConstructionService.cs` |
-| can-place / placement query / spacing | `ConstructionService.PlacementQuery.cs` |
-| selection / preview / placed rotation | `ConstructionService.PlacementState.cs` |
+| canonical session state | `ConstructionService.SessionStore.cs` |
+| placement query facade / global selection | `ConstructionService.PlacementQuery.cs`; `ConstructionService.PlacementSelection.cs` |
+| spatial evaluation / cache adapters | `ConstructionService.PlacementEvaluation.cs`; `ConstructionService.PlacementQueryCache.cs` |
+| selection / owner / bootstrap castle | `ConstructionService.PlacementState.cs` |
+| preview commands / pending mutations | `ConstructionService.PreviewSession.cs`; `ConstructionService.PendingMutations.cs` |
 | fog / terrain / tile placement rules | `ConstructionPlacementEnvironmentRules.cs` |
 | committed-building fog reveal | `ConstructionBuildingFogEffects.cs` |
 | placed footprint occupancy / origin mapping | `ConstructionFootprintStore.cs` |
 | replacement / gate-wall policy | `ConstructionReplacementPolicy.cs` |
 | settlement / influence-zone policy | `ConstructionInfluencePolicy.cs` |
-| cost / per-player limits / turn authority | `ConstructionService.EconomyAuthority.cs` |
-| confirm / demolish / undo-redo | `ConstructionService.CommitUndo.cs` |
-| save restore / singleton reconstruction / footprint rollback | `ConstructionService.Persistence.cs` |
+| costs / resource projection | `ConstructionService.Economy.cs` |
+| prerequisites / limits | `ConstructionService.Prerequisites.cs`; `ConstructionService.BuildingLimits.cs` |
+| turn / owner authority | `ConstructionTurnAuthority.cs`; `ConstructionService.Authority.cs` |
+| confirm / demolition / undo-redo | `ConstructionService.CommitUndo.cs`; `ConstructionService.DemolitionSession.cs`; `ConstructionService.UndoSession.cs` |
+| save restore / authoritative placement | `ConstructionService.Persistence.cs`; `ConstructionService.AuthoritativePlacement.cs` |
+| replica apply / relocation / destruction | `ConstructionService.ReplicaPlacement.cs`; `ConstructionService.UniqueRelocation.cs`; `ConstructionService.Destruction.cs` |
 | placement diagnostics | `ConstructionService.Diagnostics.cs` |
 
-Placement validation authority is `ConstructionService.EvaluatePlacement(...)` plus `BuildingPlacementEvaluator`; do not introduce a parallel `ConstructionPlacementValidator`.
+Placement validation authority is `ConstructionService.EvaluatePlacement(...)` plus the rule-group partials under `Runtime/Placement/Evaluation`; do not introduce a parallel validator.
 
 `ConstructionService.PlacementRules.cs` no longer exists. Follow the focused ownership rows above instead of searching for a monolithic rules partial.
 

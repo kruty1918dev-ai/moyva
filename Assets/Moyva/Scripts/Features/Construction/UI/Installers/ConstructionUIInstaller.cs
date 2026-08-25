@@ -15,7 +15,7 @@ namespace Kruty1918.Moyva.Construction.UI
     /// 3. Додай цей інсталер до списку <b>Mono Installers</b> у SceneContext.
     ///
     /// Залежності, що вирішуються автоматично з контейнера:
-    ///   - <c>IConstructionService</c>  (надається ConstructionInstaller)
+    ///   - <c>IConstructionSessionCommands</c> (надається ConstructionInstaller)
     ///   - <c>IBuildingRegistry</c>     (надається ConstructionInstaller)
     ///   - <c>SignalBus</c>             (надається SignalBusInstaller)
     /// </summary>
@@ -27,7 +27,7 @@ namespace Kruty1918.Moyva.Construction.UI
         public override void InstallBindings()
         {
             Debug.Log("[ConstructionUIInstaller] InstallBindings РОЗПОЧАТО...");
-            
+
             if (uiController == null)
             {
                 Debug.LogError("[ConstructionUIInstaller] КРИТИЧНА ПОМИЛКА: Поле 'uiController' НЕ ПРИСВОЄНО. " +
