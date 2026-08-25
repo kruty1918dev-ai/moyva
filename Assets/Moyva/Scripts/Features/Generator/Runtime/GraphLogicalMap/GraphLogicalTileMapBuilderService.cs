@@ -64,41 +64,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 projectedSurfaceHeight);
 
 
-            float buildLayerYOffset =
-                buildLayer != null
-                    ? buildLayer.layerYOffset
-                    : 0f;
-
-            int tileLayerCount =
-                buildLayer?.tileLayers?.Count ?? 0;
-
-            int generatedPositionCount =
-                blueprint.allPositions?.Count ?? 0;
-
-            ChunkFirstHeightAudit.TraceUnique(
-                "LOGICAL_LAYER",
-                layerMap.GraphLayerId,
-                $"layer={graphLayer.Name} " +
-                $"graphDefaultHeight={graphLayer.DefaultHeight:0.###} " +
-                $"blueprintDefaultHeight={blueprint.defaultLayerHeight:0.###} " +
-                $"projectedSurfaceHeight={projectedSurfaceHeight:0.###} " +
-                $"sampleHeight={layerHeight:0.###} " +
-                $"sampleSurfaceHeight={surfaceHeight:0.###} " +
-                $"buildLayerYOffset={buildLayerYOffset:0.###} " +
-                $"tileLayerCount={tileLayerCount} " +
-                $"positions={generatedPositionCount} " +
-                $"generateFlatSurface={buildLayer?.generateFlatSurface}");
-
-
-            ChunkFirstHeightAudit.RecordLogicalLayer(
-                layerMap.GraphLayerId,
-                graphLayer.Name,
-                graphLayer.DefaultHeight,
-                blueprint.defaultLayerHeight,
-                projectedSurfaceHeight,
-                layerHeight,
-                surfaceHeight);
-
             var data = CreateLayerData(
                 graph,
                 layerMap,

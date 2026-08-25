@@ -11,7 +11,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         : IGraphToConfigurationCompilerService
     {
         private readonly IGraphCompilerConfigurationService _configuration;
-        private readonly IGraphCompilerDiagnosticsService _diagnostics;
         private readonly IGraphCompilerBlueprintSyncService _blueprints;
         private readonly IGraphCompilerTileBuildLayerSyncService _buildLayers;
         private readonly IGraphCompilerPrecomputedMaskService _masks;
@@ -20,7 +19,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public GraphToConfigurationCompilerService(
             IGraphCompilerConfigurationService configuration,
-            IGraphCompilerDiagnosticsService diagnostics,
             IGraphCompilerBlueprintSyncService blueprints,
             IGraphCompilerTileBuildLayerSyncService buildLayers,
             IGraphCompilerPrecomputedMaskService masks,
@@ -28,7 +26,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IGraphCompilerObjectPlacementService objects)
         {
             _configuration = configuration;
-            _diagnostics = diagnostics;
             _blueprints = blueprints;
             _buildLayers = buildLayers;
             _masks = masks;
@@ -57,11 +54,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 _configuration.ResolveRequestedSize(
                     graph,
                     mapSizeOverride);
-
-            _diagnostics.LogEnter(
-                graph,
-                requestedSize,
-                effectiveSeed);
 
             if (graph == null
                 || manager == null
@@ -120,19 +112,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return result;
             }
 
-            GraphLayerCoverageAudit.LogEvaluation(
-                graph,
-                evaluationSnapshot);
-
             GraphCompilerBlueprintSyncResult sync =
                 _blueprints.Sync(
                     graph,
                     config,
                     skippedLayerIds);
-
-            _diagnostics.LogLayerOrder(
-                graph,
-                sync.OrderedLayers);
 
             _buildLayers.Sync(
                 graph,
@@ -149,16 +133,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     skippedLayerIds,
                     evaluationSnapshot);
 
-            GraphLayerCoverageAudit.LogCompilerMasks(
-                graph,
-                masks);
-
-            int topologyWarnings =
-                CompileModifiers(
-                    graph,
-                    config,
-                    sync,
-                    masks);
+            CompileModifiers(graph, config, sync, masks);
 
             _blueprints.DisableUnused(
                 sync.ExistingLayers,
@@ -178,16 +153,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 objectLayers,
                 sync.CompiledLayers);
 
-            _diagnostics.LogSkipped(
-                graph,
-                skippedLayerIds);
-
-            _diagnostics.LogResult(
-                graph,
-                config,
-                objectLayers?.Count ?? 0,
-                topologyWarnings);
-
             return sync.CompiledLayers;
         }
 
@@ -204,14 +169,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                        mapSize);
         }
 
-        private int CompileModifiers(
+        private void CompileModifiers(
             GraphAsset graph,
             Configuration config,
             GraphCompilerBlueprintSyncResult sync,
             IReadOnlyDictionary<string, bool[,]> masks)
         {
-            int warnings = 0;
-
             foreach (var layerDef in sync.OrderedLayers)
             {
                 if (!sync.BlueprintByGraphLayerId.TryGetValue(
@@ -228,11 +191,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                             layerDef.Id));
 
                 if (!plan.Success)
-                {
-
-                    warnings++;
                     continue;
-                }
 
                 _modifiers.Append(
                     blueprint,
@@ -244,7 +203,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     masks);
             }
 
-            return warnings;
         }
     }
 }

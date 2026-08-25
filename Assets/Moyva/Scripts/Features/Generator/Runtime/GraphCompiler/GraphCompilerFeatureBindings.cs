@@ -10,7 +10,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             container.Bind<IGraphCompilerMaskUtility>().To<GraphCompilerMaskUtility>().AsSingle();
             container.Bind<IGraphCompilerTileBuildLayerLookup>().To<GraphCompilerTileBuildLayerLookup>().AsSingle();
             container.Bind<IGraphCompilerConfigurationService>().To<GraphCompilerConfigurationService>().AsSingle();
-            container.Bind<IGraphCompilerDiagnosticsService>().To<GraphCompilerDiagnosticsService>().AsSingle();
             container.Bind<IGraphCompilerBlueprintSyncService>().To<GraphCompilerBlueprintSyncService>().AsSingle();
             container.Bind<IGraphCompilerTileBuildLayerSyncService>().To<GraphCompilerTileBuildLayerSyncService>().AsSingle();
             container.Bind<IGraphCompilerPrecomputedMaskService>().To<GraphCompilerPrecomputedMaskService>().AsSingle();

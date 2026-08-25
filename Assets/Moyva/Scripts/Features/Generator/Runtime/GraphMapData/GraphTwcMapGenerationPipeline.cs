@@ -14,7 +14,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IGraphToConfigurationCompilerService _compiler;
         private readonly IGraphTwcLogicalMapExportService _logicalMapExport;
         private readonly IGraphTwcTerrainHeightPublisher _terrainHeightPublisher;
-        private readonly IGraphTwcMapDataDiagnosticsService _diagnostics;
         private readonly IGraphTwcEmptyMapFactory _emptyMapFactory;
 
         public GraphTwcMapGenerationPipeline(
@@ -22,10 +21,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IGraphTwcMapSizeResolver sizeResolver,
             IGraphTwcValidationService validation,
             IGraphToConfigurationCompilerService compiler,
-            IGraphTwcWorldBuildService worldBuild,
             IGraphTwcLogicalMapExportService logicalMapExport,
             IGraphTwcTerrainHeightPublisher terrainHeightPublisher,
-            IGraphTwcMapDataDiagnosticsService diagnostics,
             IGraphTwcEmptyMapFactory emptyMapFactory)
         {
             _seedService = seedService;
@@ -34,7 +31,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _compiler = compiler;
             _logicalMapExport = logicalMapExport;
             _terrainHeightPublisher = terrainHeightPublisher;
-            _diagnostics = diagnostics;
             _emptyMapFactory = emptyMapFactory;
         }
 
@@ -42,11 +38,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             int seed = GlobalSeed.InitializeDeterministic(_seedService.Resolve(request.Graph));
             _terrainHeightPublisher.Clear();
-            _diagnostics.LogEnter(request.Graph, request.Manager, seed, request.Width, request.Height);
             Vector2Int mapSize = _sizeResolver.Resolve(request.Graph, request.Width, request.Height);
 
             if (request.Manager == null || request.Manager.configuration == null)
-                return FailMissingManager(request, seed, mapSize);
+            {
+                Debug.LogError("[GraphTwcGenerator] TileWorldCreatorManager configuration is missing.");
+                return _emptyMapFactory.Create(mapSize.x, mapSize.y);
+            }
 
             try
             {
@@ -54,7 +52,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
             catch (Exception exception)
             {
-                _diagnostics.LogException(exception);
+                Debug.LogException(exception);
                 return _emptyMapFactory.Create(mapSize.x, mapSize.y);
             }
         }
@@ -67,20 +65,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             GraphTwcValidationResult validation =
                 _validation.Validate(request.Graph);
 
-            _diagnostics.LogValidation(validation);
-
             if (validation.HasGlobalErrors)
-            {
-                return FailValidation(
-                    request,
-                    seed,
-                    mapSize,
-                    validation);
-            }
-
-            _diagnostics.LogSkippedLayers(
-                _validation,
-                validation);
+                return FailValidation(mapSize, validation);
 
             IReadOnlyList<CompiledLayerMap> compiled =
                 Compile(
@@ -103,26 +89,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         cellSize,
                         out bounds);
 
-            _diagnostics.LogTwcCall(
-                request.Manager);
-
-            long elapsedMs =
-                ExecuteLogicalBlueprintLayers(request);
-
-            GraphLayerCoverageAudit.LogBlueprintPositions(
-                request.Graph,
-                request.Manager,
-                compiled,
-                mapSize);
-
-            _diagnostics.EmitLayerLog(
-                request,
-                validation,
-                validation.SkippedLayerIds,
-                seed,
-                mapSize,
-                false,
-                compiled);
+            request.Manager.ExecuteBlueprintLayers();
 
             GraphLogicalTileMap logicalMap =
                 _logicalMapExport.Export(
@@ -130,12 +97,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     request.Manager,
                     compiled,
                     mapSize.x,
-                    mapSize.y,
-                    seed);
-
-            GraphLayerCoverageAudit.LogLogicalMap(
-                request.Graph,
-                logicalMap);
+                    mapSize.y);
 
             _terrainHeightPublisher.Publish(
                 logicalMap.SurfaceHeights);
@@ -148,44 +110,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     hasBounds,
                     bounds);
 
-            _diagnostics.LogTwcResult(
-                elapsedMs,
-                result.BiomeMap,
-                result.HeightMap,
-                result.ObjectMap);
-
-            _diagnostics.LogExit(
-                mapSize.x,
-                mapSize.y,
-                result.BiomeMap,
-                result.HeightMap,
-                result.ObjectMap,
-                result.BuildingMap);
-
             return result;
         }
 
         private IReadOnlyList<CompiledLayerMap> Compile(GraphTwcMapGenerationRequest request, int seed,
             Vector2Int mapSize, GraphTwcValidationResult validation)
         {
-            _diagnostics.LogCompileCall(request.Graph, mapSize.x, mapSize.y);
-            var compiled = _compiler.Compile(request.Graph, request.Manager, seed, validation.SkippedLayerIds, mapSize);
-            _diagnostics.LogCompileResult(request.Manager, compiled, validation.SkippedLayerIds.Count);
-            return compiled;
+            return _compiler.Compile(request.Graph, request.Manager, seed, validation.SkippedLayerIds, mapSize);
         }
 
-        private GraphTwcMapGenerationResult FailMissingManager(GraphTwcMapGenerationRequest request, int seed, Vector2Int mapSize)
+        private GraphTwcMapGenerationResult FailValidation(Vector2Int mapSize, GraphTwcValidationResult validation)
         {
-            _diagnostics.LogMissingManager();
-            _diagnostics.EmitLayerLog(request, null, null, seed, mapSize, false, request.LastCompiledLayers);
-            return _emptyMapFactory.Create(mapSize.x, mapSize.y);
-        }
-
-        private GraphTwcMapGenerationResult FailValidation(GraphTwcMapGenerationRequest request, int seed,
-            Vector2Int mapSize, GraphTwcValidationResult validation)
-        {
-            _diagnostics.LogValidationFailed(_validation, validation);
-            _diagnostics.EmitLayerLog(request, validation, null, seed, mapSize, false, Array.Empty<CompiledLayerMap>());
+            Debug.LogError($"[GraphTwcGenerator] Graph validation failed with {validation.GlobalErrors.Count} global error(s).");
             return _emptyMapFactory.Create(mapSize.x, mapSize.y);
         }
 
@@ -213,12 +149,5 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 : 1f;
         }
 
-        private long ExecuteLogicalBlueprintLayers(GraphTwcMapGenerationRequest request)
-        {
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            request.Manager.ExecuteBlueprintLayers();
-            stopwatch.Stop();
-            return stopwatch.ElapsedMilliseconds;
-        }
     }
 }

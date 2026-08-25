@@ -4,7 +4,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         public static IGraphToConfigurationCompilerService CreateDefault()
         {
-            var diagnostics = new GraphCompilerDiagnosticsService();
             var buildLayerLookup = new GraphCompilerTileBuildLayerLookup();
             var contextFactory = new GraphCompilerRuntimeContextFactory();
             var maskUtility = new GraphCompilerMaskUtility();
@@ -17,7 +16,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             return new GraphToConfigurationCompilerService(
                 configService,
-                diagnostics,
                 blueprintService,
                 buildLayerService,
                 maskService,

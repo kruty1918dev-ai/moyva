@@ -7,6 +7,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal static class GraphLogicalTileMapBuilder
     {
+        private static readonly IGraphLogicalTileMapBuilderService Builder =
+            new GraphLogicalTileMapBuilderService(
+                new GraphLogicalTileMapTwcLookup(),
+                new GraphLogicalTileMapCellWriter());
+
         public static GraphLogicalTileMap Build(
             GraphAsset graph,
             TileWorldCreatorManager manager,
@@ -14,8 +19,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int width,
             int height)
         {
-            return GraphLogicalTileMapServiceFactory.CreateBuilder()
-                .Build(graph, manager, compiled, width, height);
+            return Builder.Build(graph, manager, compiled, width, height);
         }
     }
 }

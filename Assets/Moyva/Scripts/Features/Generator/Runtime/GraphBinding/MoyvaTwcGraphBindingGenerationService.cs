@@ -40,7 +40,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public bool GenerateFromGraph(IMoyvaTwcGraphBindingContext context, int seed)
         {
-            if (!TryEnterGeneration(context, "Генерація вже виконується, повторний запуск пропущено."))
+            if (!TryEnterGeneration(context))
                 return false;
 
             int normalizedSeed = _resolver.NormalizeSeed(seed);
@@ -70,7 +70,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     return false;
 
                 IReadOnlyList<CompiledLayerMap> compiled =
-                    _compiler.Compile(context, seed, false);
+                    _compiler.Compile(context, seed);
                 if (context.GenerateBuildLayersAfterCompile
                     && !HasAuthoritativeRenderableLayer(context, compiled))
                 {
@@ -93,10 +93,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             if (context.Manager == null || context.Manager.configuration == null)
-            {
-                EmitGenerateLog(context, null, null, seed);
                 return false;
-            }
 
             bool succeeded;
             if (context.GenerateBuildLayersAfterCompile)
@@ -107,9 +104,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 succeeded = true;
             }
 
-            EmitLogicalMapDiagnostics(context, seed);
-            var report = _validation.Validate(context.GraphAsset);
-            EmitGenerateLog(context, report, _validation.GetInvalidLayerIds(report), seed);
             return succeeded;
         }
 
@@ -162,24 +156,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             return false;
-        }
-
-        private void EmitLogicalMapDiagnostics(IMoyvaTwcGraphBindingContext context, int seed)
-        {
-            var mapSize = _resolver.ResolveMapSize(context);
-            var logicalMap = GraphLogicalTileMapBuilder.Build(
-                context.GraphAsset,
-                context.Manager,
-                context.LastCompiledLayers,
-                mapSize.x,
-                mapSize.y);
-
-            GraphLogicalTileMapDiagnostics.EmitAndCompare(
-                "Scene build mask",
-                context.GraphAsset,
-                seed,
-                logicalMap,
-                context.LogContext);
         }
 
         private bool GenerateChunkFirstMap(IMoyvaTwcGraphBindingContext context, int seed)
@@ -319,22 +295,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 : 1f;
         }
 
-        private void EmitGenerateLog(IMoyvaTwcGraphBindingContext context, GraphValidationReport report, System.Collections.Generic.HashSet<string> skipped, int seed)
-        {
-            GraphGenerationLayerLog.Emit(
-                "Graph Binding Generate",
-                context.GraphAsset,
-                context.Manager,
-                context.LastCompiledLayers,
-                report,
-                skipped,
-                seed,
-                _resolver.ResolveMapSize(context),
-                context.GenerateBuildLayersAfterCompile,
-                context.LogContext);
-        }
-
-        private static bool TryEnterGeneration(IMoyvaTwcGraphBindingContext context, string warning)
+        private static bool TryEnterGeneration(IMoyvaTwcGraphBindingContext context)
         {
             if (context.IsGenerating)
             {

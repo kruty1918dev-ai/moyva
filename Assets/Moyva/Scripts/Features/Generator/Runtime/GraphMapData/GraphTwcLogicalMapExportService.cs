@@ -7,28 +7,22 @@ namespace Kruty1918.Moyva.Generator.Runtime
     internal interface IGraphTwcLogicalMapExportService
     {
         GraphLogicalTileMap Export(GraphAsset graph, TileWorldCreatorManager manager,
-            IReadOnlyList<CompiledLayerMap> compiledLayers, int width, int height, int seed);
+            IReadOnlyList<CompiledLayerMap> compiledLayers, int width, int height);
     }
 
     internal sealed class GraphTwcLogicalMapExportService : IGraphTwcLogicalMapExportService
     {
         private readonly IGraphLogicalTileMapBuilderService _builder;
-        private readonly IGraphLogicalTileMapDiagnosticsService _diagnostics;
 
-        public GraphTwcLogicalMapExportService(
-            IGraphLogicalTileMapBuilderService builder,
-            IGraphLogicalTileMapDiagnosticsService diagnostics)
+        public GraphTwcLogicalMapExportService(IGraphLogicalTileMapBuilderService builder)
         {
             _builder = builder;
-            _diagnostics = diagnostics;
         }
 
         public GraphLogicalTileMap Export(GraphAsset graph, TileWorldCreatorManager manager,
-            IReadOnlyList<CompiledLayerMap> compiledLayers, int width, int height, int seed)
+            IReadOnlyList<CompiledLayerMap> compiledLayers, int width, int height)
         {
-            var logicalMap = _builder.Build(graph, manager, compiledLayers, width, height);
-            _diagnostics.EmitAndCompare("Scene build mask", graph, seed, logicalMap);
-            return logicalMap;
+            return _builder.Build(graph, manager, compiledLayers, width, height);
         }
     }
 }

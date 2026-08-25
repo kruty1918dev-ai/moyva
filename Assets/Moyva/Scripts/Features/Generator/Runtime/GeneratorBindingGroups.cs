@@ -42,7 +42,6 @@ namespace Kruty1918.Moyva.Generator
                 .To<TileWorldCreatorTerrainBuildPolicyService>()
                 .AsSingle();
 
-            GraphGenerationLayerLogFeatureBindings.Install(container);
             GraphLogicalTileMapFeatureBindings.Install(container);
             GraphCompilerFeatureBindings.Install(container);
             GraphTwcMapDataFeatureBindings.Install(container);

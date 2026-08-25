@@ -6,6 +6,5 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         IReadOnlyList<CompiledLayerMap> Compile(IMoyvaTwcGraphBindingContext context);
         IReadOnlyList<CompiledLayerMap> Compile(IMoyvaTwcGraphBindingContext context, int seed);
-        IReadOnlyList<CompiledLayerMap> Compile(IMoyvaTwcGraphBindingContext context, int seed, bool emitLayerLog);
     }
 }

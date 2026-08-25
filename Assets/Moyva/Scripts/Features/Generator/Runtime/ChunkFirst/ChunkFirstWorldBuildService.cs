@@ -234,10 +234,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                                 lowestLayerHeight);
                     }
             }
-
-            GraphLayerCoverageAudit.LogResolvedWinners(
-                map,
-                _resolved);
         }
 
         private static float ResolveLowestTerrainHeight(GraphLogicalTileMap map)
