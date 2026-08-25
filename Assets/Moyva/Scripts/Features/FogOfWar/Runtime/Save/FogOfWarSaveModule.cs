@@ -1,6 +1,4 @@
 using Kruty1918.Moyva.FogOfWar.API;
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 
@@ -17,22 +15,14 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private readonly IFogExplorationSnapshotStore _fogSnapshotStore;
         private readonly FogOfWarService _runtimeFogOfWarService;
-        private readonly ISaveLoadDiagnostics _loadDiagnostics;
-        private readonly ISaveLoadDiagnosticsSession _loadDiagnosticsSession;
-
         /// <summary>
         /// Створює save module для поточного gameplay fog service.
         /// </summary>
         /// <param name="fogOfWarService">Fog service, з якого читається і в який завантажується save state.</param>
-        public FogOfWarSaveModule(
-            IFogExplorationSnapshotStore fogSnapshotStore,
-            [Zenject.InjectOptional] ISaveLoadDiagnostics loadDiagnostics = null,
-            [Zenject.InjectOptional] ISaveLoadDiagnosticsSession loadDiagnosticsSession = null)
+        public FogOfWarSaveModule(IFogExplorationSnapshotStore fogSnapshotStore)
         {
             _fogSnapshotStore = fogSnapshotStore;
             _runtimeFogOfWarService = fogSnapshotStore as FogOfWarService;
-            _loadDiagnostics = loadDiagnostics;
-            _loadDiagnosticsSession = loadDiagnosticsSession;
         }
 
         /// <summary>
@@ -75,12 +65,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (markerOrWidth < 0)
             {
                 ReadVersioned(context, markerOrWidth);
-                _loadDiagnostics?.CompleteStep(_loadDiagnosticsSession?.CurrentFlow, SaveLoadDiagnosticSteps.FogSnapshotRestored, $"version={markerOrWidth}");
                 return;
             }
 
             ReadLegacyExploredSnapshot(context, markerOrWidth);
-            _loadDiagnostics?.CompleteStep(_loadDiagnosticsSession?.CurrentFlow, SaveLoadDiagnosticSteps.FogSnapshotRestored, $"legacyWidth={markerOrWidth}");
         }
 
         private void WriteFixedVisionAreas(ISaveContext context)
@@ -107,7 +95,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             if (version != FormatVersionWithFixedVisionAreas)
             {
-                Debug.LogWarning($"[FogOfWarSave] Непідтримувана версія блоку: {version}.");
                 return;
             }
 

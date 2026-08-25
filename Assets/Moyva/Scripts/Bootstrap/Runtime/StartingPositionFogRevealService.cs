@@ -43,12 +43,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _debugTag = debugTag;
         }
 
-
         public void RegisterStartupCoreVisibility(int width, int height, Vector2Int revealCenter)
         {
             if (!_settings.keepCoreFullyVisible)
             {
-                Debug.Log($"{StartDiagTag} RegisterStartupCoreVisibility skipped center={revealCenter}, reason=keepCoreFullyVisible-disabled.");
                 return;
             }
 
@@ -60,25 +58,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 : _settings.ResolveCoreVisibleRadius(width, height);
             if (visibleRange <= 0)
             {
-                Debug.LogWarning($"{StartDiagTag} RegisterStartupCoreVisibility skipped center={revealCenter}, reason=radius<=0, radius={visibleRange}.");
                 return;
             }
 
             string anchorId = ResolveStartVisionAnchorId(0);
             var shape = _settings.ResolveRevealShape();
-            Debug.Log($"{DirectDiagTag} FogReveal.RegisterCore ENTER center={revealCenter}, radius={visibleRange}, shape={shape}, anchorId={anchorId}, hasFogService={_fogOfWarService != null}.");
-            Debug.Log($"{StartupChainTag} Fog.RegisterCore ENTER center={revealCenter}, radius={visibleRange}, shape={shape}, anchorId={anchorId}, beforeState={ResolveState(revealCenter)}, samples={FormatStateSamples(revealCenter)}.");
             _fogOfWarService.RegisterFixedVisionArea(ResolveStartVisionAnchorId(0), revealCenter, visibleRange, _settings.ResolveRevealShape());
             _startAnchorRegistered = true;
             _registeredStartAnchorCount = 1;
 
             bool isVisibleAfter = _fogOfWarService != null && _fogOfWarService.IsVisible(revealCenter);
             bool isExploredAfter = _fogOfWarService != null && _fogOfWarService.IsExplored(revealCenter);
-            Debug.Log($"{DirectDiagTag} FogReveal.RegisterCore AFTER centerVisible={isVisibleAfter}, centerExplored={isExploredAfter}.");
-            Debug.Log($"{StartupChainTag} Fog.RegisterCore EXIT center={revealCenter}, afterState={ResolveState(revealCenter)}, samples={FormatStateSamples(revealCenter)}.");
-            Debug.Log($"{StartDiagTag} RegisterStartupCoreVisibility center={revealCenter}, radius={visibleRange}, anchorId={anchorId}, shape={shape}, keepVisible=true, visibleAfter={isVisibleAfter}, exploredAfter={isExploredAfter}.");
         }
-
 
         public string ResolveStartVisionAnchorId(int index)
         {

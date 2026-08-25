@@ -280,7 +280,6 @@ namespace Kruty1918.Moyva.Shared.Graphics
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[GraphicsSettings] Failed to load graphics settings: {e.Message}. Defaults will be used.");
                 return _startupDefaults;
             }
         }

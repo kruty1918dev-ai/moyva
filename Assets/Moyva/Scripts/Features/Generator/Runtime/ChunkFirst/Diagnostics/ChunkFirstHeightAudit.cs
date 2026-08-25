@@ -36,9 +36,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             string uniqueKey = $"{stage}|{key}";
             if (!HeightTraceKeys.Add(uniqueKey))
                 return;
-
-            Debug.Log(
-                $"{HeightTracePrefix} stage={stage} {message}");
         }
 
         public static void Reset()
@@ -121,9 +118,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             record.FinalChunkBoundsMinY = bounds.min.y;
             record.FinalChunkBoundsMaxY = bounds.max.y;
             Records[graphLayerId] = record;
-
-            if (Logged.Add(graphLayerId))
-                Debug.Log(Format(record));
         }
 
         public static IReadOnlyList<string> SnapshotLines()

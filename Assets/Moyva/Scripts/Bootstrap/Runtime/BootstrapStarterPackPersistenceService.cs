@@ -76,17 +76,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             try
             {
                 _saveService?.Save(slot);
-                Debug.Log($"[Bootstrap] Автосейв {contextLabel} у слот {slot}.");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"[Bootstrap] Не вдалося зберегти {contextLabel}: {ex}");
                 return false;
             }
 
             if (hasStarterEntries && !HasPersistedStarterResources(slot, ownerId))
             {
-                Debug.LogWarning($"[Bootstrap] Після автосейву economy-блок у слоті {slot} не містить очікуваних стартових ресурсів owner '{ownerId}'. Маркер granted не записано.");
                 return false;
             }
 
@@ -95,12 +92,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             try
             {
                 _saveService?.Save(slot);
-                Debug.Log($"[Bootstrap] Маркер стартового пакета збережено для owner '{ownerId}' у слот {slot}.");
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"[Bootstrap] Не вдалося зберегти маркер стартового пакета для owner '{ownerId}': {ex}");
                 return false;
             }
         }
@@ -145,9 +140,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                 return resources.Count > 0;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"[Bootstrap] Не вдалося прочитати economy-блок слота {slot}: {ex.Message}");
                 resources.Clear();
                 return false;
             }

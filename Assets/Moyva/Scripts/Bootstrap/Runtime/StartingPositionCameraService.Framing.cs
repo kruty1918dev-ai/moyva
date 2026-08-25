@@ -9,34 +9,24 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     {
         public void TeleportMainCamera(Vector2Int startPos, WorldGeneratedDataSignal signal)
         {
-            Debug.Log($"{StartupChainTag} Camera.BootstrapTeleport ENTER start={startPos}, map={signal.Width}x{signal.Height}, hasCamera={_camera != null}, hasMovement={_cameraMovement != null}, before={FormatCameraState()}.");
             if (TryTeleportCameraToStartupFocus(startPos, signal))
             {
-                Debug.Log($"{StartupChainTag} Camera.BootstrapTeleport EXIT path=startup-focus start={startPos}, after={FormatCameraState()}.");
                 return;
             }
-
-            Debug.LogWarning($"{StartupChainTag} Camera.BootstrapTeleport FALLBACK path=raw-position start={startPos}, cameraZ={_settings.cameraZ}, before={FormatCameraState()}.");
             _cameraMovement.TeleportCamera(new Vector3(startPos.x, startPos.y, _settings.cameraZ));
-            Debug.Log($"{StartupChainTag} Camera.BootstrapTeleport EXIT path=raw-position start={startPos}, after={FormatCameraState()}.");
         }
 
         public bool TryTeleportCameraToStartupFocus(Vector2Int startPos, WorldGeneratedDataSignal signal)
         {
             if (_cameraMovement == null)
             {
-                Debug.LogWarning($"{StartupChainTag} Camera.BootstrapFocus SKIP reason=no-camera-movement start={startPos}, camera={FormatCameraState()}.");
                 return false;
             }
-
-            Debug.Log($"{StartupChainTag} Camera.BootstrapFocus ENTER start={startPos}, before={FormatCameraState()}.");
             ApplyConfiguredStartupCameraPose();
             Vector3 focusPoint = ResolveStartupFocusPoint(startPos, signal);
             float distance = ResolveStartupCameraDistance();
-            Debug.Log($"{StartupChainTag} Camera.BootstrapFocus CALL movement focusPoint={FormatVector(focusPoint)}, distance={distance:0.###}, projection={ResolveProjectionMode()}, cameraAfterPose={FormatCameraState()}.");
             _cameraMovement.TeleportCameraToFocusPoint(focusPoint, distance);
             ApplyStartupCameraZoom(startPos, focusPoint, signal);
-            Debug.Log($"{StartupChainTag} Camera.BootstrapFocus EXIT start={startPos}, focusPoint={FormatVector(focusPoint)}, distance={distance:0.###}, after={FormatCameraState()}.");
             return true;
         }
 
@@ -44,11 +34,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             if (_camera == null)
             {
-                Debug.LogWarning($"{StartupChainTag} Camera.BootstrapPose SKIP reason=no-camera.");
                 return;
             }
-
-            Debug.Log($"{StartupChainTag} Camera.BootstrapPose ENTER before={FormatCameraState()}.");
             _camera.transform.rotation = Quaternion.Euler(ResolveStartupCameraEuler());
             bool usePerspective = ResolveUsePerspectiveStartupCamera();
             _camera.orthographic = !usePerspective;
@@ -57,7 +44,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _camera.orthographicSize = ResolveStartupOrthographicSize();
             else
                 _camera.fieldOfView = ResolveStartupFieldOfView();
-            Debug.Log($"{StartupChainTag} Camera.BootstrapPose EXIT usePerspective={usePerspective}, after={FormatCameraState()}.");
         }
 
         public Vector3 ResolveStartupCameraEuler()

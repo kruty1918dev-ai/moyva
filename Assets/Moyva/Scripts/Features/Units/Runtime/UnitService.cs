@@ -83,10 +83,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             _gateStateService = gateStateService;
         }
 
-        [System.Diagnostics.Conditional("MOYVA_VERBOSE_MOVEMENT")]
-        private static void LogMovementVerbose(string message)
-            => Debug.Log(message);
-
         public void Initialize()
         {
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreated);
@@ -106,7 +102,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             var config = _unitClassConfig.GetConfig(signal.UnitTypeId);
             if (config == null)
             {
-                Debug.LogWarning($"[UnitService] OnUnitCreated: конфігурація для typeId='{signal.UnitTypeId}' (unitId='{signal.UnitId}') НЕ ЗНАЙДЕНА! Юніт НЕ буде зареєстрований.");
                 return;
             }
 
@@ -139,16 +134,12 @@ namespace Kruty1918.Moyva.Units.Runtime
                 _healthRegistry.Register(health);
             }
 
-            LogMovementVerbose(
-                $"[UnitService] Unit {signal.UnitId} registered. " +
-                $"Stamina={startStamina}, Position={signal.Position}");
         }
 
         private void OnUnitMoved(UnitMovedSignal signal)
         {
             if (!_unitStamina.ContainsKey(signal.UnitId))
             {
-                Debug.LogWarning($"[UnitService] OnUnitMoved: юніт '{signal.UnitId}' не зареєстрований у _unitStamina. Сигнал ігнорується.");
                 return;
             }
 
@@ -164,20 +155,11 @@ namespace Kruty1918.Moyva.Units.Runtime
                 {
                     UnitId = signal.UnitId,
                 });
-                Debug.LogWarning(
-                    $"[UnitService] Completed move signal rejected for " +
-                    $"{signal.UnitId}: stamina={staminaBefore}, " +
-                    $"cost={signal.Cost}, garrisoned=" +
-                    $"{_garrisonedUnitPositions.ContainsKey(signal.UnitId)}.");
                 return;
             }
 
             _unitStamina[signal.UnitId] -= signal.Cost;
             _unitPositions[signal.UnitId] = signal.NewPosition;
-
-            LogMovementVerbose(
-                $"[UnitService] Unit {signal.UnitId} -> {signal.NewPosition}. " +
-                $"Stamina {staminaBefore} -> {_unitStamina[signal.UnitId]}");
 
         }
 
@@ -404,10 +386,6 @@ namespace Kruty1918.Moyva.Units.Runtime
                         : 0,
                     OwnerId = GetUnitOwnerId(unitId),
                 });
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] garrison restore-unit " +
-                $"unit={unitId} building={buildingPosition}");
             return true;
         }
 

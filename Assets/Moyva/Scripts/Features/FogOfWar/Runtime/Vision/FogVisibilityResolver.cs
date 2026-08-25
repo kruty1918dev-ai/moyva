@@ -31,8 +31,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _gridService = gridService;
             _heightVisionService = heightVisionService;
             _settings = settings;
-            if (_gridService == null)
-                Debug.LogWarning("[FogOfWar] FogVisibilityResolver: IGridService is null. Using provided map bounds only.");
         }
 
         /// <summary>

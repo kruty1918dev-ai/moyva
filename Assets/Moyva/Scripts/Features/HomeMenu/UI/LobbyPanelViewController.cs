@@ -100,8 +100,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                     return;
                 }
             }
-
-            Debug.LogWarning($"[LobbyPanelViewController] RemoveUser: userId={userId} not found in UI list.");
         }
 
         public void ClearUsers()
@@ -150,12 +148,10 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (string.IsNullOrEmpty(_currentInviteCode))
             {
-                Debug.LogWarning("[LobbyPanelViewController] No invite code to copy.");
                 return;
             }
 
             GUIUtility.systemCopyBuffer = _currentInviteCode;
-            Debug.Log($"[LobbyPanelViewController] Copied invite code: {_currentInviteCode}");
         }
 
         private void OnDestroy()

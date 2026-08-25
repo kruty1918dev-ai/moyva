@@ -55,11 +55,6 @@ namespace Kruty1918.Moyva.Construction.UI
             _background = GetComponent<Image>();
             if (_background != null)
                 _defaultColor = _background.color;
-
-            if (label == null)
-                Debug.LogWarning($"[BuildingButtonUI] Поле 'label' не призначено на '{name}'. Назва будівлі не відображатиметься.", this);
-            if (button == null)
-                Debug.LogWarning($"[BuildingButtonUI] Button компонент не знайдено на '{name}'.", this);
         }
 
         /// <summary>

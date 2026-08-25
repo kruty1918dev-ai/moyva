@@ -182,8 +182,6 @@ LogWithSufix("Start the close process");
         {
             if (!VerboseLogging)
                 return;
-
-            Debug.Log($"[OverlayPanelLoader] {msg}");
         }
     }
 }

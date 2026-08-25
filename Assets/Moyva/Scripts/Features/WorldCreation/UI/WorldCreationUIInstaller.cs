@@ -27,8 +27,6 @@ namespace Kruty1918.Moyva.WorldCreation.UI
         {
             if (uiController == null)
             {
-                Debug.LogWarning("[WorldCreationUIInstaller] Поле 'uiController' не призначено. " +
-                                 "Перетягни WorldCreationUIController у поле цього інсталера.");
                 return;
             }
 

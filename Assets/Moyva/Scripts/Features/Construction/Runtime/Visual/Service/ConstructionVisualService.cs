@@ -52,13 +52,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Initialize()
         {
-            Debug.Log("[ConstructionVisual] Initializing visual stack...");
             _rootService.EnsureRoots();
             ResolveGridInvalidationRadii(out _localGridInvalidationRadius, out _gridInvalidationRadius);
             _radiusVisuals.Initialize();
             _buildGridOverlay.Initialize();
             SubscribeSignals();
-            Debug.Log("[ConstructionVisual] Initialized. Roots, overlays and signal subscriptions are ready.");
         }
 
         public void Dispose()

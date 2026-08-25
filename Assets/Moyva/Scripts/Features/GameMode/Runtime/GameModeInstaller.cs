@@ -41,7 +41,6 @@ namespace Kruty1918.Moyva.GameMode.Runtime
             }
             else
             {
-                Debug.LogWarning("[GameModeInstaller] GameModeUIController не знайдено у сцені. Кнопки перемикання режимів не будуть ініціалізовані.");
             }
 
             // Явний порядок Initialize() — менше число = раніше.

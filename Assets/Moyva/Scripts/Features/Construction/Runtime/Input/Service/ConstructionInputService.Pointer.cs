@@ -21,8 +21,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_isDraggingPendingPlacement)
             {
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Drag ended at {_draggedPlacementPosition}.");
 
                 SnapPendingPlacementToPointerTile(pointer.Position);
                 PublishPendingPlacementDragVisual(pointer.Position, _draggedPlacementPosition, snapToGrid: true);
@@ -35,9 +33,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _wallDragPendingPositions.Clear();
                 _wallHandleController.EndDrag();
                 EndWallUndoBatch();
-
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Wall drag ended at {_lastWallDragTile}.");
             }
         }
 
@@ -92,8 +87,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (TryResolvePendingPlacementSnapTarget(screenPosition, out Vector2Int snappedPosition)
                 && TryMoveDraggedPlacementTo(snappedPosition))
             {
-                if (VerboseLogs && snappedPosition != _draggedPlacementPosition)
-                    Debug.Log($"{LogTag} Drag snapped preview: {_draggedPlacementPosition} -> {snappedPosition}");
 
                 _draggedPlacementPosition = snappedPosition;
             }
@@ -237,7 +230,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             });
         }
 
-
         private bool TryResolveActualPointerTile(
             Vector2 screenPosition,
             out Vector2Int tile)
@@ -249,7 +241,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return _gridService != null
                 && _gridService.TryGetTileData(tile, out _);
         }
-
 
         private bool TryResolvePendingPlacementSnapTarget(Vector2 screenPosition, out Vector2Int tile)
         {
@@ -273,7 +264,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     buildingId,
                     _draggedPlacementPosition);
         }
-
 
         private void CachePendingPlacementSnapTarget(bool hasSnapTarget, Vector2Int snapTargetPosition)
         {
@@ -344,8 +334,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     planeY,
                     fallbackTile.y);
         }
-
-
 
         private ConstructionPointerSnapshot ReadPointerSnapshot() => _pointerInputSource.ReadPointerSnapshot();
     }

@@ -130,10 +130,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             writer.Flush();
 
-            Debug.Log(
-                $"[MoyvaConstructionModules] gate-save " +
-                $"open={openGates.Count}");
-
             return stream.ToArray();
         }
 
@@ -151,9 +147,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             int version = reader.ReadInt32();
             if (version != 1)
             {
-                Debug.LogWarning(
-                    $"[MoyvaConstructionModules] gate-load " +
-                    $"unsupported-version={version}");
                 return;
             }
 
@@ -188,10 +181,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     restored++;
                 }
             }
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] gate-load " +
-                $"open={restored} skipped={skipped}");
         }
 
         public bool IsWallOrGate(string buildingId)
@@ -254,10 +243,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 position,
                 isOpen,
                 speed);
-            Debug.Log(
-                $"[MoyvaConstructionModules] gate-state " +
-                $"building={buildingId}@{position} open={isOpen} " +
-                $"speed={speed:0.###} transition={transitionSeconds:0.###}s");
             return true;
         }
 

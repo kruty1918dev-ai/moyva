@@ -13,8 +13,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 if (_minSpacing <= 0)
                 {
-                    if (VerboseLogs)
-                        Debug.Log($"[Construction] IsBlockedBySpacing({position}): _minSpacing <= 0, spacing-перевірка відключена");
                     return false;
                 }
 
@@ -42,15 +40,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         bool isOccupied = _objectsMapService.IsOccupied(neighbor);
                         if (isOccupied || blockedByPending)
                         {
-                            if (VerboseLogs)
-                                Debug.Log($"[Construction] IsBlockedBySpacing({position}): BLOCKED біля {neighbor} (occupied={isOccupied}, pending={blockedByPending})");
                             return true;
                         }
                     }
                 }
-
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] IsBlockedBySpacing({position}): OK (spacing={_minSpacing})");
 
                 return false;
             }

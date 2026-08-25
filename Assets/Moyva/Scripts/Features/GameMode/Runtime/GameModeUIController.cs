@@ -66,12 +66,9 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 var button = enterConstructionButton.GetComponent<UnityEngine.UI.Button>();
                 if (button != null)
                     button.onClick.AddListener(OnEnterConstructionClicked);
-                else
-                    Debug.LogWarning("[GameModeUIController] Кнопка 'enterConstructionButton' не має компонента Button.", this);
             }
             else
             {
-                Debug.LogWarning("[GameModeUIController] Кнопка 'enterConstructionButton' не призначена.", this);
             }
 
             if (exitConstructionButton != null)
@@ -79,12 +76,9 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 var button = exitConstructionButton.GetComponent<UnityEngine.UI.Button>();
                 if (button != null)
                     button.onClick.AddListener(OnExitConstructionClicked);
-                else
-                    Debug.LogWarning("[GameModeUIController] Кнопка 'exitConstructionButton' не має компонента Button.", this);
             }
             else
             {
-                Debug.LogWarning("[GameModeUIController] Кнопка 'exitConstructionButton' не призначена.", this);
             }
 
             // Ініціалізуємо видимість кнопок за поточним режимом

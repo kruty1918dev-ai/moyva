@@ -146,8 +146,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus.Subscribe<FogStateChangedSignal>(InvalidateBuildGridHover);
             _signalBus.Subscribe<SettlementResourceChangedSignal>(InvalidateBuildGridHover);
             RegisterUiContexts();
-            if (VerboseLogs)
-                Debug.Log($"{LogTag} Initialized.");
         }
 
         public void Dispose()
@@ -163,8 +161,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus.TryUnsubscribe<SettlementResourceChangedSignal>(InvalidateBuildGridHover);
             _constructionModeContext?.Dispose();
             _buildingPlacementContext?.Dispose();
-            if (VerboseLogs)
-                Debug.Log($"{LogTag} Disposed.");
         }
 
         public void Tick()
@@ -211,8 +207,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (IsPointerOverInteractiveUI(pointer.Position, pointer.PointerId))
             {
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Click ignored: pointer over interactive UI.");
                 return;
             }
 

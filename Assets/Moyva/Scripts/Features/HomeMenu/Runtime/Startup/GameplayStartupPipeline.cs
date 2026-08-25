@@ -114,7 +114,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
 
             // 7: Позначаємо pipeline завершеним і пишемо фінальний лог успішного запуску.
             EnterPhase(GameplayStartupPhase.Completed);
-            Debug.Log($"{Prefix} Scene '{_sceneName}' loaded successfully.");
         }
 
         /// <summary>Перевести pipeline у нову фазу і, за потреби, залогувати її.</summary>
@@ -122,10 +121,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
         {
             // 1: Оновлюємо публічний стан пайплайна.
             CurrentPhase = phase;
-
-            // 2: Логуємо фазу або в verbose-режимі, або при фінальному завершенні процесу.
-            if (_gameplayProfile.IsVerboseLogging || phase == GameplayStartupPhase.Completed)
-                Debug.Log($"{Prefix} Phase => {phase}");
         }
 
         /// <summary>Виконати preload-фазу: overlay, ресурси, prewarm і асинхронне завантаження сцени.</summary>

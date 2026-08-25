@@ -462,10 +462,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 height,
                 revealedCenter,
                 settings.DiagnosticMaskRadiusCells);
-
-            Debug.Log(
-                builder.ToString(),
-                _root);
         }
 
     }

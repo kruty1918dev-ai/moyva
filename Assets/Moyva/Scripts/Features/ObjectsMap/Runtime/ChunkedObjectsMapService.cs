@@ -94,7 +94,6 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
         {
             if (_store.IsOccupied(signal.Position))
             {
-                Debug.LogWarning($"[ObjectsMap] Position {signal.Position} already occupied for unit '{signal.UnitId}'.");
                 return;
             }
 
@@ -121,9 +120,6 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
             {
                 if (!signal.AllowSharedOccupancy)
                 {
-                    Debug.LogWarning(
-                        $"[ObjectsMap] Destination {signal.NewPosition} " +
-                        $"already occupied by '{occupantId}'.");
                     return;
                 }
 
@@ -271,7 +267,6 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
         {
             if (_store.IsOccupied(signal.Position))
             {
-                Debug.LogWarning($"[ObjectsMap] Position {signal.Position} already occupied. Skipping '{signal.ObjectId}'.");
                 return;
             }
 

@@ -11,11 +11,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         public void SelectBuilding(string buildingId)
         {
-            Debug.Log($"[Construction] SelectBuilding('{buildingId}') викликана. active={_isActive}");
 
             if (!_isActive)
             {
-                Debug.LogWarning("[Construction] SelectBuilding: Construction mode ВИМКНЕНА");
                 return;
             }
 
@@ -24,13 +22,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     out string turnReason))
             {
                 _lastActionMessage = turnReason;
-                Debug.LogWarning($"[Construction] SelectBuilding rejected: {turnReason}");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(buildingId))
             {
-                Debug.LogWarning("[Construction] SelectBuilding: buildingId порожня");
                 return;
             }
 
@@ -38,9 +34,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _placementBuildingRegistry.GetById(buildingId);
             if (selectedDefinition == null)
             {
-                Debug.LogWarning(
-                    $"[MoyvaBuildGridDiag] selection-rejected " +
-                    $"building='{buildingId}' reason='definition-missing'");
                 return;
             }
 
@@ -54,10 +47,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 _lastActionMessage =
                     "Спочатку потрібно побудувати замок.";
-                Debug.Log(
-                    $"{ModuleLogTag} selection blocked " +
-                    $"owner={_activeOwnerId} requested={buildingId} " +
-                    $"requiredCastle={requiredCastleId}");
                 return;
             }
 
@@ -67,9 +56,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 _lastActionMessage =
                     "Замок цього гравця вже побудований.";
-                Debug.Log(
-                    $"{ModuleLogTag} castle selection blocked " +
-                    $"owner={_activeOwnerId} building={buildingId}");
                 return;
             }
 
@@ -85,11 +71,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     selectionAvailability.Reason)
                     ? "Будівля зараз недоступна."
                     : selectionAvailability.Reason;
-                Debug.LogWarning(
-                    $"[MoyvaConstructionAvailability] selection-rejected " +
-                    $"building='{buildingId}' owner='{NormalizeOwnerId(_activeOwnerId)}' " +
-                    $"code='{selectionAvailability.ReasonCode ?? "unavailable"}' " +
-                    $"reason='{_lastActionMessage}'");
                 return;
             }
 
@@ -98,8 +79,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ClearPendingDemolitionsPreview();
                 IsDemolishMode = false;
                 SetPlacementSelection(buildingId, BuildingPlacementState.Placing);
-
-                Debug.Log($"[Construction] ✓ SelectBuilding -> id='{_selectedBuildingId}', state={State}");
             }
             catch (Exception ex)
             {
@@ -321,11 +300,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             SelectBuilding(castleBuildingId);
-
-            Debug.Log(
-                $"{ModuleLogTag} castle-bootstrap " +
-                $"owner={_activeOwnerId} required=true " +
-                $"castle={castleBuildingId}");
         }
 
         public string GetActiveOwner()
@@ -337,7 +311,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (!_isActive)
             {
-                Debug.LogWarning("[Construction] ToggleDemolishMode called outside Construction mode.");
                 return;
             }
 
@@ -346,7 +319,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     out string turnReason))
             {
                 _lastActionMessage = turnReason;
-                Debug.LogWarning($"[Construction] ToggleDemolishMode rejected: {turnReason}");
                 return;
             }
 
@@ -356,9 +328,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ClearPendingDemolitionsPreview();
 
             PublishSelectionChanged();
-
-            if (VerboseLogs)
-                Debug.Log($"[Construction] ToggleDemolishMode -> {IsDemolishMode}");
         }
 
         private bool RevalidateActiveSelectionAvailability(
@@ -393,15 +362,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 string.IsNullOrWhiteSpace(availability.Reason)
                     ? "Будівля більше недоступна для нового розміщення."
                     : availability.Reason;
-
-            Debug.LogWarning(
-                $"[MoyvaConstructionAvailability] active-selection-cleared " +
-                $"trigger='{trigger ?? "unknown"}' " +
-                $"building='{selectedBuildingId}' " +
-                $"owner='{NormalizeOwnerId(_activeOwnerId)}' " +
-                $"code='{availability.ReasonCode ?? "unavailable"}' " +
-                $"pending={_pendingPlacements.Count} " +
-                $"reason='{_lastActionMessage}'");
 
             SetPlacementSelection(
                 null,
@@ -481,8 +441,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
 
             PublishSelectionChanged();
-            if (VerboseLogs)
-                Debug.Log($"[MoyvaBuildGridDiag] selection state={State} building='{_selectedBuildingId ?? "none"}' demolish={IsDemolishMode}");
             return true;
         }
     }

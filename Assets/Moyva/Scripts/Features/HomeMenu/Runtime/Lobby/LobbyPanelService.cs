@@ -272,7 +272,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             try
             {
-                UnityEngine.Debug.Log($"[LobbyPanelService] [{traceId}] StartGame requested by host");
                 if (_lobbyService != null)
                     await _lobbyService.LockAsync(true, worldSettingsBytes);
             }
@@ -285,11 +284,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             try
             {
                 _gameCommandSync?.SendCommand(GameCommandType.StartGame, worldSettingsBytes);
-                UnityEngine.Debug.Log($"[LobbyPanelService] [{traceId}] Start command propagated to peers");
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogWarning($"[LobbyPanelService] Failed to send StartGame command: {e.Message}");
             }
 
             // Локальний старт гри
@@ -309,11 +306,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _gameStateService?.StartGame();
                 if (_gameStarter != null)
                     await _gameStarter.StartGameAsync(ct);
-                UnityEngine.Debug.Log($"[LobbyPanelService] [{traceId}] Local start completed");
             }
             catch (OperationCanceledException)
             {
-                UnityEngine.Debug.Log("[LobbyPanelService] Start game operation canceled.");
             }
             catch (Exception e)
             {
@@ -413,7 +408,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogWarning($"[LobbyPanelService] Failed to restore multiplayer mode after kick: {e.Message}");
             }
 
             try
@@ -423,7 +417,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogWarning($"[LobbyPanelService] Failed to refresh rooms after kick: {e.Message}");
             }
 
             await MainThreadDispatcher.EnqueueAsync(() =>
@@ -440,7 +433,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogWarning($"[LobbyPanelService] InfoPanel notify failed: {e.Message}");
             }
         }
 
@@ -513,7 +505,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogWarning($"[LobbyPanelService] LeaveLobby failed: {e.Message}");
             }
 
             await MainThreadDispatcher.EnqueueAsync(() => _navigation.OpenLast());

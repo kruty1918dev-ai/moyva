@@ -220,9 +220,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _registry?.GetById(transition.BuildingId);
             if (definition == null)
             {
-                Debug.LogWarning(
-                    $"[ConstructionLifecycle] Operational transition for unknown building " +
-                    $"'{transition.BuildingId}' at {transition.Position} was deferred.");
                 return;
             }
 

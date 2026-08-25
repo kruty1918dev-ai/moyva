@@ -44,8 +44,6 @@ namespace Kruty1918.Moyva.Construction.API
                 else if (_issues[i].Severity == BuildingValidationSeverity.Warning)
                     warningCount++;
             }
-
-            UnityEngine.Debug.Log($"{LogTag} Validation finished for '{BuildingLabel}'. issues={_issues.Count}, errors={errorCount}, warnings={warningCount}.");
         }
 
         private void AddIssue(BuildingValidationSeverity severity, string code, string message)

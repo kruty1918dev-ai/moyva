@@ -154,9 +154,6 @@ namespace Kruty1918.Moyva.Signals
             if (_shader == null)
                 _shader = Shader.Find(ShaderName);
 
-            if (_shader == null)
-                Debug.LogWarning($"[SelectionHighlight] Shader '{ShaderName}' not found.");
-
             return _shader;
         }
 

@@ -24,20 +24,17 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
             if (_targetImage == null && !useLiveMeshPreview)
             {
-                Debug.LogWarning("[HomeMenuBackgroundPreview] RawImage не призначено. Прев'ю меню не буде згенеровано.");
                 return;
             }
 
             if (_graphAsset == null)
             {
-                Debug.LogWarning("[HomeMenuBackgroundPreview] GraphAsset не призначено. Прев'ю меню не буде згенеровано.");
                 return;
             }
 
             var tileRegistry = ResolveTileRegistry();
             if (tileRegistry == null)
             {
-                Debug.LogWarning("[HomeMenuBackgroundPreview] TileRegistry не знайдено (ні в override, ні в GraphAsset). Прев'ю меню не буде згенеровано.");
                 return;
             }
 
@@ -46,7 +43,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
             if (!MenuWorldPreviewGenerator.TryGenerate(_graphAsset, mapSize.x, mapSize.y, seed, out var previewData, out var errorMessage))
             {
-                Debug.LogWarning($"[HomeMenuBackgroundPreview] Не вдалося згенерувати прев'ю меню: {errorMessage}");
                 return;
             }
 
@@ -55,10 +51,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 var placementReport = _kingdomPlacementService != null
                     ? _kingdomPlacementService.Apply(previewData, _kingdomPlacement)
                     : MenuWorldPreviewKingdomPlacer.Apply(previewData, _kingdomPlacement);
-                if (!string.IsNullOrWhiteSpace(placementReport.Warning))
-                    Debug.LogWarning($"[HomeMenuBackgroundPreview] Kingdom placement warning: {placementReport.Warning}");
-
-                Debug.Log($"[HomeMenuBackgroundPreview] Kingdom placement: {placementReport}");
             }
 
             if (useLiveMeshPreview && TryBuildLiveMeshPreview(previewData, tileRegistry, projectSettings))
@@ -75,7 +67,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
             if (_targetImage == null)
             {
-                Debug.LogWarning("[HomeMenuBackgroundPreview] RawImage не призначено, а live mesh preview не вдалося побудувати.");
                 return;
             }
 
@@ -100,7 +91,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
             if (texture == null)
             {
-                Debug.LogWarning("[HomeMenuBackgroundPreview] Texture builder повернув null. Прев'ю меню не оновлено.");
                 return;
             }
 
@@ -160,18 +150,14 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
             if (_kingdomPlacement == null)
             {
-                Debug.LogWarning("[HomeMenuBackgroundPreview] Kingdom placement settings is null.");
                 return;
             }
 
             string issues = BuildKingdomPlacementIssues();
             if (string.IsNullOrEmpty(issues))
             {
-                Debug.Log("[HomeMenuBackgroundPreview] Kingdom placement rules look valid.");
                 return;
             }
-
-            Debug.LogWarning($"[HomeMenuBackgroundPreview] Kingdom placement rules warnings:\n{issues}");
         }
 
         private void ValidateKingdomPlacementSettings()

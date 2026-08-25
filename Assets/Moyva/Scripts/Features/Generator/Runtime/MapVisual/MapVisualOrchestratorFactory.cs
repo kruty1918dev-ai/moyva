@@ -1,5 +1,3 @@
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
@@ -19,21 +17,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IMapVisualWorldState state,
             IGridProjection projection,
             IGraphTwcMapDataDiagnostics graphDiagnostics,
-            IWorldGenerationDiagnostics worldDiagnostics,
-            ISaveLoadDiagnostics saveLoadDiagnostics,
-            ISaveLoadDiagnosticsSession saveLoadDiagnosticsSession,
-            IWorldGenerationSignalState signalState)
+            IWorldGenerationSignalState signalState,
+            ITileWorldCreatorWorldBuildBridge tileWorldCreatorBridge)
            {
             projection ??= new OrthogonalGridProjection();
             var tileResolver = new MapVisualTileIdResolver(tileRegistry);
             return new MapVisualWorldBuildOrchestrator(
                 state: state,
-                dataFactory: new MapVisualWorldDataFactory(gridService, projection, mapDataGenerator, graphDiagnostics, worldDiagnostics),
+                dataFactory: new MapVisualWorldDataFactory(gridService, projection, mapDataGenerator, graphDiagnostics),
                 gridWriter: new MapVisualGridWriter(gridService, tileResolver),
-                signals: new MapVisualWorldSignalPublisher(signalBus, projection, graphDiagnostics, signalState, worldDiagnostics,
-                    saveLoadDiagnostics, saveLoadDiagnosticsSession),
-                tileWorldCreatorBridge: null,
-                worldDiagnostics: worldDiagnostics);
+                signals: new MapVisualWorldSignalPublisher(signalBus, projection, graphDiagnostics, signalState),
+                tileWorldCreatorBridge: tileWorldCreatorBridge);
         }
     }
 }

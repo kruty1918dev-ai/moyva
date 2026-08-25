@@ -63,10 +63,6 @@ namespace Kruty1918.Moyva.Construction.UI
 
         private void Awake()
         {
-            if (tabContainer == null)
-                Debug.LogWarning($"[BuildingCategoryTabsUI] Поле 'tabContainer' не призначено на '{name}'.", this);
-            if (tabButtonPrefab == null)
-                Debug.LogWarning($"[BuildingCategoryTabsUI] Поле 'tabButtonPrefab' не призначено на '{name}'.", this);
         }
 
         /// <summary>
@@ -109,7 +105,6 @@ namespace Kruty1918.Moyva.Construction.UI
             if (btn == null && lbl != null)
             {
                 btn = go.AddComponent<Button>();
-                Debug.LogWarning($"[Construction UI] На вкладці '{labelText}' не було Button. Компонент додано автоматично.", this);
             }
 
             EnsureLayoutElement(go.transform as RectTransform);

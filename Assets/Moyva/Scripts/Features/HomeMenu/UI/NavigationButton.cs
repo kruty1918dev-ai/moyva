@@ -111,7 +111,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                     var prepared = await _joinRoomPanelService.PrepareForOpenAsync();
                     if (!prepared)
                     {
-                        Debug.LogWarning($"[NavigationButton] Join room panel '{_menuToOpen}' was not opened because room refresh failed or timed out.");
                         return;
                     }
                 }

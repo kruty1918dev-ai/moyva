@@ -34,20 +34,9 @@ namespace Kruty1918.Moyva.Construction.UI
 
             if (Debug.isDebugBuild)
             {
-                Debug.Log(
-                    $"{ModuleLogTag} menu rebuilt " +
-                    $"items={items.Count} " +
-                    $"owner={_constructionService?.GetActiveOwner()}",
-                    this);
             }
 
             int disabledCount = items.Count(item => !item.IsInteractable);
-            Debug.Log(
-                $"[MoyvaConstructionAvailability] menu-summary " +
-                $"items={items.Count} enabled={items.Count - disabledCount} " +
-                $"disabled={disabledCount} owner='{_constructionService.GetActiveOwner()}' " +
-                $"pending={_constructionService.GetPendingPlacements().Count}",
-                this);
 
             selectionPanel.Populate(items);
         }
@@ -112,11 +101,6 @@ namespace Kruty1918.Moyva.Construction.UI
 
                 if (Debug.isDebugBuild)
                 {
-                    Debug.Log(
-                        $"{ModuleLogTag} castle-bootstrap-ui " +
-                        $"owner={ownerId} required=true " +
-                        $"selected={_selectedBuildingId ?? "none"}",
-                        this);
                 }
                 return;
             }

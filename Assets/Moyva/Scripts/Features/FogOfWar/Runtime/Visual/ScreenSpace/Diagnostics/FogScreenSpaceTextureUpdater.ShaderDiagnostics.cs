@@ -146,7 +146,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             builder.Append(
                 screenSettings.EdgeSoftness.ToString("F3"));
 
-
             builder.Append(
                 " presentation=DepthAwareScreenSpace");
 
@@ -179,9 +178,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             {
                 builder.Append(
                     " camera=null");
-
-                Debug.Log(
-                    builder.ToString());
 
                 return;
             }
@@ -306,9 +302,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 gridOrigin,
                 worldToGrid,
                 screenSettings);
-
-            Debug.Log(
-                builder.ToString());
         }
 
         private void AppendShaderProbe(

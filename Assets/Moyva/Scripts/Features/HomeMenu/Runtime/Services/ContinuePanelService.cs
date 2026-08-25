@@ -82,7 +82,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 }
                 catch (Exception e)
                 {
-                    Debug.LogWarning($"[ContinuePanelService] Failed reading file times for {slotPath}: {e.Message}");
                 }
 
                 // Choose last modification time; if missing, fallback to creation time; if both missing, use info.LastWriteTimeUtc or now.
@@ -130,7 +129,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (OperationCanceledException)
             {
-                Debug.Log("[ContinuePanelService] Start game operation canceled.");
             }
             catch (Exception e)
             {

@@ -75,7 +75,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 CloseAllOpenPanels();
                 return;
             }
-            UnityEngine.Debug.Log($"[HomeMenuNavigation] Open('{menuName}') from: {new System.Diagnostics.StackTrace(1, true)}");
             var previous = CurrentMenu;
 
             // Close currently opened panel (if any) and push it to closed history.
@@ -194,7 +193,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 LogWarning("No closed menus to reopen.");
                 return;
             }
-            UnityEngine.Debug.Log($"[HomeMenuNavigation] OpenLast() from: {new System.Diagnostics.StackTrace(1, true)}");
             // Try to reopen the most-recently closed panel that still exists.
             while (_closedStack.Count > 0)
             {
@@ -286,16 +284,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _closedStack.Push(temp.Pop());
         }
 
-
         // --- Logging helpers ---
         private void LogInfo(string message)
         {
-            Debug.Log($"[HomeMenuNavigation] {message}");
         }
 
         private void LogWarning(string message)
         {
-            Debug.LogWarning($"[HomeMenuNavigation] {message}");
         }
 
         private void LogError(string message)
@@ -327,8 +322,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 CloseAllOpenPanels();
                 return;
             }
-
-            UnityEngine.Debug.Log($"[HomeMenuNavigation] OpenForce('{menuName}') from: {new System.Diagnostics.StackTrace(1, true)}");
             var previous = CurrentMenu;
 
             if (_menuStack.Count > 0)
@@ -344,7 +337,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void OpenLastForce()
         {
             if (_closedStack.Count == 0) return;
-            UnityEngine.Debug.Log($"[HomeMenuNavigation] OpenLastForce() from: {new System.Diagnostics.StackTrace(1, true)}");
 
             while (_closedStack.Count > 0)
             {

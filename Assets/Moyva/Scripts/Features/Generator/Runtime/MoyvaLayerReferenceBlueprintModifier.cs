@@ -29,8 +29,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             string currentKey = BuildLayerKey(asset, layer?.guid);
             if (!ResolvingLayerKeys.Add(currentKey))
             {
-                Debug.LogWarning(
-                    $"[MoyvaLayerRef] Circular blueprint layer reference detected on '{layer?.layerName ?? "unknown layer"}'.");
                 return fallback;
             }
 
@@ -57,8 +55,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (ResolvingLayerKeys.Contains(sourceKey))
             {
-                Debug.LogWarning(
-                    $"[MoyvaLayerRef] Circular blueprint layer reference detected between '{currentLayer?.layerName ?? "unknown layer"}' and '{sourceLayer.layerName ?? "unknown layer"}'.");
                 return;
             }
 

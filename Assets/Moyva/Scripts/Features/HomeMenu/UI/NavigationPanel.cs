@@ -19,14 +19,12 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         public void Open()
         {
             gameObject.SetActive(true);
-            Debug.Log($"[NavigationPanel] Opened panel '{_menuName}'.");
         }
 
         /// <summary>Закрити панель.</summary>
         public void Close()
         {
             gameObject.SetActive(false);
-            Debug.Log($"[NavigationPanel] Closed panel '{_menuName}'.");
         }
 
         /// <summary>Початкова ініціалізація стану панелі.</summary>

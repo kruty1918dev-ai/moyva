@@ -29,7 +29,6 @@ namespace Kruty1918.Moyva.Signals
             _worldGeneratedData = default;
             _hasWorldSpawnPositions = false;
             _worldSpawnPositions = default;
-            Debug.Log($"{LogTag} BeginWorldSnapshotCycle sequence={_currentWorldSequence}, session='{_currentSessionId}'.");
             return _currentWorldSequence;
         }
 
@@ -41,7 +40,6 @@ namespace Kruty1918.Moyva.Signals
             _worldSpawnPositions = default;
             _currentWorldSequence = 0;
             _currentSessionId = string.Empty;
-            Debug.Log($"{LogTag} Clear snapshots.");
         }
 
         public bool TryGetCurrentWorldIdentity(out long startupSequence, out string sessionId)
@@ -56,7 +54,6 @@ namespace Kruty1918.Moyva.Signals
             signal = NormalizeWorldGeneratedSignal(signal);
             _worldGeneratedData = CloneWorldGeneratedDataSignal(signal);
             _hasWorldGeneratedData = true;
-            Debug.Log($"{LogTag} Store WorldGeneratedData sequence={signal.StartupSequence}, revision={signal.SnapshotRevision}, source={signal.Source}, frame={signal.PublishedFrame}, session='{signal.StartupSessionId}', map={signal.Width}x{signal.Height}.");
             return CloneWorldGeneratedDataSignal(signal);
         }
 
@@ -77,7 +74,6 @@ namespace Kruty1918.Moyva.Signals
             signal = NormalizeWorldSpawnPositionsSignal(signal);
             if (!CanStoreSpawnSignal(signal, out string rejectReason))
             {
-                Debug.LogWarning($"{LogTag} Reject WorldSpawnPositions sequence={signal.StartupSequence}, source={signal.Source}, session='{signal.StartupSessionId}', reason={rejectReason}.");
                 storedSignal = default;
                 return false;
             }
@@ -85,7 +81,6 @@ namespace Kruty1918.Moyva.Signals
             _worldSpawnPositions = CloneWorldSpawnPositionsSignal(signal);
             _hasWorldSpawnPositions = true;
             storedSignal = CloneWorldSpawnPositionsSignal(signal);
-            Debug.Log($"{LogTag} Store WorldSpawnPositions sequence={signal.StartupSequence}, revision={signal.SnapshotRevision}, source={signal.Source}, frame={signal.PublishedFrame}, session='{signal.StartupSessionId}', assignments={signal.Assignments?.Length ?? 0}.");
             return true;
         }
 

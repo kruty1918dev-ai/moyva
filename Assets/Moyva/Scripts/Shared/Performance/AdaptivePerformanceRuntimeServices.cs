@@ -48,9 +48,6 @@ namespace Kruty1918.Moyva.Shared.Performance
                 _frameTimes.Dequeue();
 
             _frameTimes.Enqueue(frameMs);
-
-            if (frameMs > _budget.AlertCpuFrameMs)
-                Debug.LogWarning($"[PerfBudget] CPU frame alert: {frameMs:0.00}ms (threshold={_budget.AlertCpuFrameMs:0.00}ms)");
         }
 
         public void SetDegradationReason(string reason)
@@ -194,8 +191,6 @@ namespace Kruty1918.Moyva.Shared.Performance
                 : string.Empty;
             _suppressedBurstWarnings = 0;
             _nextWarningAt = Time.unscaledTime + WarningThrottleSeconds;
-
-            Debug.LogWarning($"[PerfGC] Allocation burst detected: +{delta / 1024f:0.0}KB in {_settings.SampleIntervalSeconds:0.0}s.{suppressed}");
         }
     }
 

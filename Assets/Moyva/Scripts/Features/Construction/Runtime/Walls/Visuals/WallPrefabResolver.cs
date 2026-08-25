@@ -117,10 +117,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string warningKey = $"{collectionId}:{(mask.North ? 1 : 0)}{(mask.East ? 1 : 0)}{(mask.South ? 1 : 0)}{(mask.West ? 1 : 0)}";
             if (!_missingPrefabWarnings.Add(warningKey))
                 return;
-
-            Debug.LogWarning(
-                $"[WallPlacement] Відсутній prefab для кейсу '{warningKey}'. " +
-                $"Використано fallback '{(fallback != null ? fallback.name : "NULL")}'.");
         }
     }
 }

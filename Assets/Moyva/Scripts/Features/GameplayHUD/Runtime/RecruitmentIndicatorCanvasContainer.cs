@@ -29,7 +29,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (!warningLogged)
                 {
                     warningLogged = true;
-                    Debug.LogWarning(missingCanvasWarning);
                 }
 
                 return false;

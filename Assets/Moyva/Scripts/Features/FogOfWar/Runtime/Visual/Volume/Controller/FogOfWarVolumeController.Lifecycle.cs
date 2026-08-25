@@ -31,7 +31,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _outputCleaner = outputCleaner;
             _validationService = validationService;
             _runtimeInjectionCompleted = true;
-            Debug.Log($"{StartDiagTag} VolumeController.Construct runtimeUpdater={(runtimeUpdater != null ? runtimeUpdater.GetType().Name : "null")}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}, settings={(_settings != null ? _settings.name : "null")}.");
             LogLifecycleOnce(ref _loggedConstruct, "Construct", $"runtimeUpdater={(runtimeUpdater != null ? runtimeUpdater.GetType().Name : "null")}, previewBuilder={(previewBuilder != null ? previewBuilder.GetType().Name : "null")}, sceneContextBuilder={(sceneContextBuilder != null ? sceneContextBuilder.GetType().Name : "null")}, outputCleaner={(outputCleaner != null ? outputCleaner.GetType().Name : "null")}, validationService={(validationService != null ? validationService.GetType().Name : "null")}, settings={(_settings != null ? _settings.name : "null")}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}");
             RegisterWithUpdater();
         }
@@ -74,12 +73,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (_runtimeUpdater == null)
             {
-                Debug.LogWarning($"{StartDiagTag} VolumeController.RegisterWithUpdater failed runtimeUpdater=null, object={name}, active={gameObject.activeInHierarchy}, enabled={enabled}.");
                 LogLifecycleOnce(ref _loggedRegisterWithoutUpdater, "RegisterWithUpdater skipped", "runtimeUpdater=null");
                 return;
             }
-
-            Debug.Log($"{StartDiagTag} VolumeController.RegisterWithUpdater success object={name}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}, settings={(_settings != null ? _settings.name : "null")}.");
             _runtimeUpdater.AttachController(this);
         }
 
@@ -87,8 +83,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             if (updater == null)
                 return;
-
-            Debug.Log($"{StartDiagTag} VolumeController.AttachPreviewUpdater object={name}, updater={updater.GetType().Name}.");
             updater.AttachController(this);
         }
 
@@ -98,7 +92,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 return;
 
             logged = true;
-            Debug.Log($"[FogOfWarVolumeController] {stage}: object='{name}', active={gameObject.activeInHierarchy}, enabled={enabled}, {details}.", this);
         }
     }
 }

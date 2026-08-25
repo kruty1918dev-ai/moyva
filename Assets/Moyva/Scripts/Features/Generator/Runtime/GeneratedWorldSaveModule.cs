@@ -1,5 +1,3 @@
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 
@@ -8,17 +6,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
     internal sealed class GeneratedWorldSaveModule : ISaveModule
     {
         private readonly MapVisualInstantiator _mapVisualInstantiator;
-        private readonly ISaveLoadDiagnostics _loadDiagnostics;
-        private readonly ISaveLoadDiagnosticsSession _loadDiagnosticsSession;
 
-        public GeneratedWorldSaveModule(
-            MapVisualInstantiator mapVisualInstantiator,
-            [Zenject.InjectOptional] ISaveLoadDiagnostics loadDiagnostics = null,
-            [Zenject.InjectOptional] ISaveLoadDiagnosticsSession loadDiagnosticsSession = null)
+        public GeneratedWorldSaveModule(MapVisualInstantiator mapVisualInstantiator)
         {
             _mapVisualInstantiator = mapVisualInstantiator;
-            _loadDiagnostics = loadDiagnostics;
-            _loadDiagnosticsSession = loadDiagnosticsSession;
         }
 
         public void OnSave(ISaveContext context)
@@ -74,10 +65,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             _mapVisualInstantiator.SetPendingWorldData(data);
-            _loadDiagnostics?.CompleteStep(
-                _loadDiagnosticsSession?.CurrentFlow,
-                SaveLoadDiagnosticSteps.WorldDataRestored,
-                $"map={data.Width}x{data.Height}, savedSpawns={data.SpawnPositions?.Length ?? 0}");
         }
 
         private static void WriteStringMap(ISaveContext context, string[,] map, int width, int height)

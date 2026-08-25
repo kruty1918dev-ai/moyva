@@ -87,10 +87,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     buildingId,
                     rotation))
             {
-                Debug.LogWarning(
-                    $"{ModuleLogTag} restore-placement skipped " +
-                    $"building={buildingId} position={position} " +
-                    "reason=footprint-occupied");
                 return;
             }
             _placedRotationByOrigin[position] = rotation;
@@ -116,10 +112,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (VerboseLogs)
             {
-                Debug.Log(
-                    $"{ModuleLogTag} restore-placement " +
-                    $"building={buildingId} position={position} " +
-                    $"owner={normalizedOwner}");
             }
         }
 

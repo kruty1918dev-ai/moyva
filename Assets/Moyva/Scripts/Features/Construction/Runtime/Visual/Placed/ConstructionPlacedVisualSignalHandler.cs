@@ -208,10 +208,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 $"placedVisual={placedVisualMs:F3} " +
                 $"wallRefresh={wallRefreshMs:F3}";
 
-            if (totalMs >= SignalHandlerWarnThresholdMs)
-                Debug.LogWarning(message);
-            else
-                Debug.Log(message);
         }
 
         public void Handle(BuildingDemolishedSignal signal)

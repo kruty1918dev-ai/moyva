@@ -1,4 +1,3 @@
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.SaveSystem;
@@ -13,20 +12,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IGridProjection _projection;
         private readonly IMapDataGenerator _generator;
         private readonly IGraphTwcMapDataDiagnostics _graphDiagnostics;
-        private readonly IWorldGenerationDiagnostics _worldDiagnostics;
 
         public MapVisualWorldDataFactory(
             IGridService gridService,
             IGridProjection projection,
             IMapDataGenerator generator,
-            [InjectOptional] IGraphTwcMapDataDiagnostics graphDiagnostics = null,
-            [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null)
+            [InjectOptional] IGraphTwcMapDataDiagnostics graphDiagnostics = null)
         {
             _gridService = gridService;
             _projection = projection;
             _generator = generator;
             _graphDiagnostics = graphDiagnostics;
-            _worldDiagnostics = worldDiagnostics;
         }
 
         public GeneratedWorldData Generate()
@@ -67,7 +63,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 data.BaseMapWorldBounds = bounds;
             }
             ApplyLaunchMetadata(data);
-            _worldDiagnostics?.GraphMapDataGenerated($"graph={_graphDiagnostics?.DiagnosticGraphName ?? "null"}, map={data.Width}x{data.Height}, seed={_graphDiagnostics?.DiagnosticSeed ?? 0}");
             return data;
         }
 

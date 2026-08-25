@@ -111,9 +111,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 if (_moveCts != null && !string.IsNullOrEmpty(_activeMoveUnitId))
                 {
                     _queuedResumeMove = (_activeMoveUnitId, _activeMoveTarget);
-
-                    if (VerboseLogs)
-                        Debug.Log($"[Interaction] Entered Construction mode. Movement paused for {_activeMoveUnitId}, queued target={_activeMoveTarget}");
                 }
 
                 CancelMovement(MovementCancelReason.ModeSwitch);
@@ -124,9 +121,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             {
                 var move = _queuedResumeMove.Value;
                 _queuedResumeMove = null;
-
-                if (VerboseLogs)
-                    Debug.Log($"[Interaction] Returned to Normal mode. Resuming movement for {move.unitId} to {move.target} with path recalculation.");
 
                 StartMove(move.unitId, move.target);
             }
@@ -193,8 +187,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
             if (!_gridService.TryGetTileData(position, out _))
             {
-                if (VerboseLogs)
-                    Debug.Log($"[Interaction] HandleTileClick ignored: позиція {position} поза межами grid.");
                 return;
             }
 
@@ -225,8 +217,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                         "Будівля ще будується",
                         GameplayNotificationKind.Warning,
                         dedupKey: "building-under-construction");
-                    if (VerboseLogs)
-                        Debug.Log($"[Interaction] Building '{occupantId}' at {position} is still under construction. Functional UI request ignored.");
                     return;
                 }
 
@@ -243,9 +233,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                         BuildingId = occupantId,
                         Position = position,
                     });
-
-                    if (VerboseLogs)
-                        Debug.Log($"[Interaction] Building info requested for '{occupantId}' at {position}. mode={_currentMode}");
                 }
 
                 // Знімаємо вибір юніта при кліку на будівлю
@@ -261,8 +248,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
                 if (!isMapObjectInteractable)
                 {
-                    if (VerboseLogs)
-                        Debug.Log($"[Interaction] Map object '{occupantId}' at {position} is not interactable. Ignored.");
                     return;
                 }
 
@@ -278,9 +263,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                         MapObjectId = occupantId,
                         Position = position,
                     });
-
-                    if (VerboseLogs)
-                        Debug.Log($"[Interaction] MapObject info requested for '{occupantId}' at {position}. mode={_currentMode}");
                 }
 
                 ClearSelectedUnit();
@@ -303,7 +285,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 {
                     ClearSelectedUnit(position);
                     _signalBus.Fire(new WorldInfoPanelClosedSignal());
-                    Debug.Log($"[Interaction] Вибір юніта скасовано (toggle): {occupantId}");
                     return;
                 }
 
@@ -318,9 +299,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                     UnitId = occupantId,
                     Position = position,
                 });
-                Debug.Log(_selectedUnitId != null
-                    ? $"[Interaction] Вибрано власного юніта: {_selectedUnitId} на позиції {position}"
-                    : $"[Interaction] Іноземний юніт '{occupantId}' відкритий лише для огляду.");
                 return;
             }
 
@@ -358,8 +336,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
             UnitAttackResult result;
             _unitCombatService.TryAttack(_selectedUnitId, targetUnitId, out result);
-            if (VerboseLogs && result.Succeeded)
-                Debug.Log($"[Combat] {_selectedUnitId} -> {targetUnitId}: damage={result.DamageApplied}, hp={result.TargetHpBefore}->{result.TargetHpAfter}, died={result.TargetDied}");
             return true;
         }
 
@@ -411,18 +387,9 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                         "Ця клітинка недоступна для руху",
                         GameplayNotificationKind.Warning,
                         dedupKey: "unit-move-unreachable");
-
-                    Debug.Log(
-                        $"[MOYVA_MOVE][INPUT_REJECT] "
-                        + $"unit={_selectedUnitId}; target={position}; "
-                        + "reason=not-reachable");
                     return true;
                 }
             }
-
-            Debug.Log(
-                $"[MOYVA_MOVE][INPUT_ACCEPT] "
-                + $"unit={_selectedUnitId}; target={position}");
 
             StartMove(_selectedUnitId, position);
             return true;
@@ -471,9 +438,6 @@ private void StartMove(string unitId, Vector2Int target)
         trace,
         "MOVE_REQUEST_FIRE_DONE",
         $"unit={unitId}; target={target}");
-
-    if (VerboseLogs)
-        Debug.Log($"[Interaction] Move requested for {unitId} to {target}");
 }
         private bool CanCommandUnit(string unitId)
         {

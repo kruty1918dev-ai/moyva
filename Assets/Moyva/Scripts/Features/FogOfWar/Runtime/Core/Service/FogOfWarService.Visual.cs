@@ -44,12 +44,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             bool hadVisualUpdater = _visualUpdater != null;
             bool updaterCalled = false;
             string updaterType = _visualUpdater != null ? _visualUpdater.GetType().Name : "null";
-            Debug.Log($"{DirectDiagTag} FogService.FlushVisual dirty={dirtyCount}, hasVisualUpdater={_visualUpdater != null}.");
-            Debug.Log($"{StartDiagTag} FlushVisual dirty={dirtyCount}, changes={changeCount}, hasVisualUpdater={_visualUpdater != null}, updateType=dirty-update.");
             CountFogStateTiles(out int visibleBeforeFlush, out int exploredBeforeFlush, out int unexploredBeforeFlush);
-            Debug.Log($"{StartupChainTag} Fog.FlushVisual ENTER dirty={dirtyCount}, changes={changeCount}, hasVisualUpdater={_visualUpdater != null}, stateVisible={visibleBeforeFlush}, stateExplored={exploredBeforeFlush}, stateUnexplored={unexploredBeforeFlush}, dirtySamples={FormatDirtyTileSamples()}.");
-            if (dirtyCount > 0 && _visualUpdater == null)
-                Debug.LogWarning($"{StartDiagTag} FlushVisual dirty tiles exist but visualUpdater is null dirty={dirtyCount}.");
             if (_visualUpdater != null)
             {
                 if (changeCount > 0)
@@ -58,16 +53,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     _visualUpdater.UpdateDirtyTiles(this, _visualDirtyBuffer.DirtyTiles);
 
                 updaterCalled = true;
-                Debug.Log($"{StartDiagTag} FlushVisual updaterCalled=true dirty={dirtyCount}, changes={changeCount}.");
-                Debug.Log($"{StartupChainTag} Fog.FlushVisual UPDATER_CALLED dirty={dirtyCount}, updater={_visualUpdater.GetType().Name}.");
             }
 
             if (dirtyCount > 0)
                 BumpVersion();
 
             _visualDirtyBuffer.Clear();
-            Debug.Log($"{StartupChainTag} Fog.FlushVisual EXIT dirtyAfterClear={_visualDirtyBuffer.DirtyCount}, version={Version}.");
-            Debug.Log($"{StartupRevealDiagTag} FlushVisualResult dirty={dirtyCount}, changes={changeCount}, hadVisualUpdater={hadVisualUpdater}, updaterCalled={updaterCalled}, updater={updaterType}, visualUpdateDispatched={updaterCalled}, versionBefore={versionBefore}, versionAfter={Version}, stateVisible={visibleBeforeFlush}, stateExplored={exploredBeforeFlush}, stateUnexplored={unexploredBeforeFlush}.");
             return new FogVisualFlushResult(
                 dirtyCount,
                 changeCount,

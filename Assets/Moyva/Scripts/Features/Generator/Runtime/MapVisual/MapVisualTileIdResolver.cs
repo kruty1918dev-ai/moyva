@@ -56,8 +56,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private void LogFallback(string sourceTileId, string fallbackTileId)
         {
             string key = $"{sourceTileId}->{fallbackTileId}";
-            if (_loggedFallbacks.Add(key))
-                Debug.LogWarning($"[MapInstantiator] Tile ID '{sourceTileId}' відсутній у поточному реєстрі. Використано сумісний fallback '{fallbackTileId}'.");
         }
     }
 }

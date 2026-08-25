@@ -63,7 +63,6 @@ namespace Kruty1918.Moyva.Grid.Runtime
                 if (!_reportedEmptyTileId)
                 {
                     _reportedEmptyTileId = true;
-                    Debug.LogWarning("TileSettingsService: GetTileWeight called with null or empty tileTypeId");
                 }
 
                 return 0f;
@@ -76,10 +75,6 @@ namespace Kruty1918.Moyva.Grid.Runtime
             // 3) Legacy happy-path: знайшли тайл у кеші реєстру.
             if (_cache.TryGetValue(tileTypeId, out var props))
                 return props.MovementCost;
-
-            // 4) Якщо ключ відсутній, логуємо попередження для діагностики даних.
-            if (_reportedMissingTileIds.Add(tileTypeId))
-                Debug.LogWarning($"TileSettingsService: Tile type ID '{tileTypeId}' not found in registry!");
 
             // 5) Повертаємо fallback, щоб ігрова логіка лишалась стабільною.
             return 0f;

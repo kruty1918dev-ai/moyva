@@ -124,8 +124,6 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             if (!_turns.TryRecordAction(owner, "unit-recruit-enqueue"))
             {
-                Debug.LogWarning(
-                    "[UnitRecruitment] Queue commit succeeded but turn action telemetry was rejected after commit.");
             }
 
             FireQueueChanged(enqueued);
@@ -261,8 +259,6 @@ namespace Kruty1918.Moyva.Units.Runtime
         public void OnTurnEnding(TurnContext context) { }
         public void OnRoundCompleted(int completedRound) { }
 
-
-
         private void FireQueueChanged(
             UnitRecruitmentQueueItemSnapshot item)
         {
@@ -341,7 +337,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
         }
 
-
         private readonly struct RecruitmentQueueSignalKey : IEquatable<RecruitmentQueueSignalKey>
         {
             public RecruitmentQueueSignalKey(string ownerId, Vector2Int position)
@@ -383,12 +378,10 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
         }
 
-
         private void OnBuildingDemolished(BuildingDemolishedSignal signal)
         {
             if (_queue.RemoveBuildingQueues(signal.Position))
             {
-                Debug.Log($"[UnitRecruitment] Dropped paid recruitment queue at demolished building {signal.Position}.");
                 _signalBus?.Fire(new UnitRecruitmentQueueChangedSignal
                 {
                     OwnerId = signal.OwnerId,
@@ -401,8 +394,6 @@ namespace Kruty1918.Moyva.Units.Runtime
                 });
             }
         }
-
-
 
         internal static Dictionary<string, float> BuildCostMap(IReadOnlyList<BuildingResourceAmount> source)
         {
@@ -452,8 +443,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
             return _economy.TryConsumeSettlementResources(settlement.SettlementId, costs, out reason);
         }
-
-
 
         private static string NormalizeRequiredId(string value)
             => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

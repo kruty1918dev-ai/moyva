@@ -108,8 +108,6 @@ namespace Kruty1918.Moyva.Construction.UI
 
             if (selectionPanel != null)
                 selectionPanel.OnBuildingClicked += OnBuildingSelected;
-            else
-                Debug.LogWarning("[ConstructionUIController] Поле 'selectionPanel' не призначено. Меню будівель не відображатиметься.", this);
 
             if (actionBar != null)
             {
@@ -121,10 +119,7 @@ namespace Kruty1918.Moyva.Construction.UI
             }
             else
             {
-                Debug.LogWarning("[ConstructionUIController] Поле 'actionBar' не призначено. Кнопки дій не будуть підключені.", this);
             }
-
-
 
             // Ховаємо UI будівництва при старті
             SetConstructionUIVisible(false);
@@ -252,11 +247,6 @@ namespace Kruty1918.Moyva.Construction.UI
                 string reason = string.IsNullOrWhiteSpace(availability.Reason)
                     ? "Будівля зараз недоступна."
                     : availability.Reason;
-                Debug.LogWarning(
-                    $"[MoyvaConstructionAvailability] ui-selection-rejected " +
-                    $"building='{buildingId}' code='{availability.ReasonCode ?? "unavailable"}' " +
-                    $"reason='{reason}'",
-                    this);
                 RequestBuildingListRefresh();
                 return;
             }
@@ -268,10 +258,6 @@ namespace Kruty1918.Moyva.Construction.UI
                     buildingId,
                     StringComparison.Ordinal))
             {
-                Debug.LogWarning(
-                    $"[MoyvaConstructionAvailability] ui-selection-service-rejected " +
-                    $"building='{buildingId}' accepted='{acceptedBuildingId ?? "none"}'",
-                    this);
                 RequestBuildingListRefresh();
                 return;
             }
@@ -312,11 +298,6 @@ namespace Kruty1918.Moyva.Construction.UI
             SettlementResourceChangedSignal signal)
         {
             RequestBuildingListRefresh();
-            Debug.Log(
-                $"[MoyvaConstructionAvailability] resource-change " +
-                $"owner='{signal.OwnerId}' resource='{signal.ResourceId}' " +
-                $"new={signal.NewAmount:0.###} delta={signal.Delta:0.###}",
-                this);
         }
 
         private static readonly ProfilerMarker BuildingPlacedUiMarker =

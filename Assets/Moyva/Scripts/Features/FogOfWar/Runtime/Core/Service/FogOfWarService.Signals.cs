@@ -1,5 +1,3 @@
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
@@ -61,12 +59,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             if (ShouldSkipWorldGeneratedSignal(signal))
                 return;
-
-            Debug.Log($"{WorldGenDiagTag} Receiver.Fog.WorldGenerated RECEIVED frame={Time.frameCount}, map={signal.Width}x{signal.Height}, initializedBefore={_initialized}");
-            _startupRevealFlow = _startupDiagnostics?.StartFlow(
-                "fog-startup",
-                new DiagnosticContext().Add("map", $"{signal.Width}x{signal.Height}"));
-            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.WorldGenerated, $"map={signal.Width}x{signal.Height}");
             _resolver.SetHeightMap(FogWorldVisualContextFactory.BuildVisibilityHeightMap(signal.TerrainLevelMap, signal.HeightMap));
 
             Vector2Int baseMapSize = FogWorldSignalUtility.ResolveBaseMapSize(signal);
@@ -75,8 +67,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _visualContext = FogWorldVisualContextFactory.CreateFromSignal(signal, signalWidth, signalHeight);
             ResetVisualHeightSampler();
             _visualUpdater?.SetWorldContext(_visualContext);
-            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.FogServiceInitializeMap, $"baseMap={signalWidth}x{signalHeight}");
-            Debug.Log($"{DebugTag} FogService.OnWorldGeneratedData signal={signal.Width}x{signal.Height}, baseMap={signalWidth}x{signalHeight}, initialized={_initialized}, current={_width}x{_height}, pendingReveals={_pendingRevealAreas.Count}.");
 
             if (!_initialized)
             {
@@ -88,15 +78,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 ResizeToWorldDimensions(signalWidth, signalHeight);
 
             ApplyPendingRevealAreas("WorldGeneratedData");
-            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.SpawnResolved, $"pendingReveals={_pendingRevealAreas.Count}");
-            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.RevealArea, $"reason=WorldGeneratedData");
-            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.RegisterCoreVision, $"fixedAreas={_fixedVisionShapes.Count}");
             RecalculateAllVisibility();
-            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.FlushVisual, $"visible={CountVisibleTiles()}, explored={CountExploredTiles()}");
-            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.VolumeUpdaterRebuild, $"visualUpdater={_visualUpdater != null}");
-            _startupDiagnostics?.Report(_startupRevealFlow);
-            Debug.Log($"{WorldGenDiagTag} Receiver.Fog.WorldGenerated APPLIED map={_width}x{_height}, initializedAfter={_initialized}, pendingRevealCount={_pendingRevealAreas.Count}");
-            Debug.Log($"{DebugTag} FogService.OnWorldGeneratedData end map={_width}x{_height}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}, pendingReveals={_pendingRevealAreas.Count}.");
         }
 
         private void ReplayCachedWorldGeneratedSignalIfAvailable()
@@ -106,7 +88,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (_worldGenerationSignalState.TryGetWorldGeneratedData(out var signal))
             {
-                Debug.Log($"{WorldGenDiagTag} Receiver.Fog.WorldGenerated REPLAY frame={Time.frameCount}, map={signal.Width}x{signal.Height}, initializedBefore={_initialized}");
                 OnWorldGeneratedData(signal);
             }
         }
@@ -118,8 +99,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _lastHandledWorldRevision = signal.SnapshotRevision;
                 return false;
             }
-
-            Debug.Log($"{WorldGenDiagTag} Receiver.Fog.WorldGenerated SKIP duplicate revision={signal.SnapshotRevision}, sequence={signal.StartupSequence}, source={signal.Source}.");
             return true;
         }
     }

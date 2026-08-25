@@ -48,8 +48,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
             // або додати спеціальне фокусне значення в налаштування.
             float focusZoom = (_settings.ResolveMinZoom() + _settings.ResolveMaxZoom()) * 0.5f;
             _cameraZoom.ForceZoomCamera(focusZoom);
-            
-            Debug.Log($"[CameraFocused] Focusing on {target.name} at {targetPos}");
         }
     }
 }

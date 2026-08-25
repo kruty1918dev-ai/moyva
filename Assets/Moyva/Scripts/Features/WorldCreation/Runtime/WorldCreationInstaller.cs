@@ -25,8 +25,6 @@ namespace Kruty1918.Moyva.WorldCreation.Runtime
         {
             if (defaults == null)
             {
-                Debug.LogWarning("[WorldCreationInstaller] Поле 'defaults' не призначено. " +
-                                 "WorldCreationService використає вбудовані значення за замовчуванням.");
             }
 
             Container.Bind<IWorldCreationService>()

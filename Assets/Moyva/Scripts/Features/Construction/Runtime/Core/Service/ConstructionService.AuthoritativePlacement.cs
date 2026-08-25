@@ -18,7 +18,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     out string turnReason))
             {
                 _lastActionMessage = turnReason;
-                Debug.LogWarning($"[Construction] TryDirectPlace rejected: {turnReason}");
                 return false;
             }
 
@@ -57,8 +56,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     out string turnReason))
             {
                 _lastActionMessage = turnReason;
-                Debug.LogWarning(
-                    $"[Construction] TryPlaceAuthoritatively rejected: {turnReason}");
                 return false;
             }
 
@@ -81,8 +78,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (string.IsNullOrWhiteSpace(buildingId))
             {
-                Debug.LogWarning(
-                    $"[Construction] Authoritative placement at {position}: buildingId is empty.");
                 return false;
             }
 
@@ -98,8 +93,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (relocationSource.HasValue
                 && relocationSource.Value == position)
             {
-                Debug.LogWarning(
-                    $"[Construction] Rejected relocation of '{buildingId}': source and target are both {position}.");
                 return false;
             }
 
@@ -107,10 +100,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (isRelocation
                 && IsCastleBuilding(buildingId))
             {
-                Debug.Log(
-                    $"{ModuleLogTag} castle authoritative relocation blocked " +
-                    $"owner={ownerId} source={relocationSource.Value} " +
-                    $"target={position}");
                 return false;
             }
 
@@ -120,9 +109,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     relocationSource.Value,
                     ownerId))
             {
-                Debug.LogWarning(
-                    $"[Construction] Rejected relocation of '{buildingId}' from {relocationSource.Value}: " +
-                    $"the source is not an owned relocatable placement for '{ownerId}'.");
                 return false;
             }
 
@@ -201,8 +187,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         ownerId,
                         out var resourceReason))
                 {
-                    if (VerboseLogs)
-                        Debug.Log($"[MoyvaBuildGridDiag] direct-placement-blocked building='{buildingId}' origin={position} reason='{resourceReason}'");
                     return false;
                 }
 
@@ -268,9 +252,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 isRelocation ? "building-relocate" : "building-place");
             if (VerboseLogs)
             {
-                Debug.Log(
-                    $"[Construction] Authoritative placement: '{buildingId}' at {position} by '{ownerId}', " +
-                    $"relocationSource={relocationSource?.ToString() ?? "none"}.");
             }
             return true;
         }

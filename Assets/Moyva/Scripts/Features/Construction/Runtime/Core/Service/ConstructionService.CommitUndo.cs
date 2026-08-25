@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
@@ -11,140 +8,22 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed partial class ConstructionService
     {
-        private const double ConfirmPerfWarnThresholdMs = 8d;
-        private const double ConfirmStageWarnThresholdMs = 4d;
-
-        private static double ConfirmElapsedMs(double startedAt)
-            => (Time.realtimeSinceStartupAsDouble - startedAt) * 1000d;
-
-        private static void AddConfirmStage(
-            ref double accumulatorMs,
-            double startedAt)
-        {
-            accumulatorMs += ConfirmElapsedMs(startedAt);
-        }
-
-        private static void LogConfirmPerformance(
-            int pendingAtStart,
-            int confirmedCount,
-            int skippedCount,
-            int remainingCount,
-            double totalMs,
-            double snapshotMs,
-            double validationMs,
-            double footprintMs,
-            double resourcesMs,
-            double signalMs,
-            double fogMs,
-            double cleanupMs,
-            double selectionMs,
-            double diagnosticsMs)
-        {
-            if (!Debug.isDebugBuild)
-                return;
-
-            double maxStage = Math.Max(
-                validationMs,
-                Math.Max(
-                    footprintMs,
-                    Math.Max(
-                        resourcesMs,
-                        Math.Max(
-                            signalMs,
-                            Math.Max(
-                                fogMs,
-                                Math.Max(
-                                    cleanupMs,
-                                    Math.Max(
-                                        selectionMs,
-                                        diagnosticsMs)))))));
-
-            string message =
-                $"{PerfLogTag} confirm " +
-                $"pending={pendingAtStart} confirmed={confirmedCount} " +
-                $"skipped={skippedCount} remaining={remainingCount} " +
-                $"totalMs={totalMs:F3} " +
-                $"snapshot={snapshotMs:F3} " +
-                $"validation={validationMs:F3} " +
-                $"footprint={footprintMs:F3} " +
-                $"resources={resourcesMs:F3} " +
-                $"signal={signalMs:F3} " +
-                $"fog={fogMs:F3} " +
-                $"cleanup={cleanupMs:F3} " +
-                $"selection={selectionMs:F3} " +
-                $"diagnostics={diagnosticsMs:F3}";
-
-            if (totalMs >= ConfirmPerfWarnThresholdMs
-                || maxStage >= ConfirmStageWarnThresholdMs)
-            {
-                Debug.LogWarning(message);
-            }
-            else
-            {
-                Debug.Log(message);
-            }
-        }
-
         public void Confirm()
         {
             if (!CanActiveOwnerAct(out string turnReason))
             {
                 _lastActionMessage = turnReason;
-                Debug.LogWarning($"[Construction] Confirm rejected: {turnReason}");
                 return;
             }
 
-            double confirmStartedAt =
-                Time.realtimeSinceStartupAsDouble;
-            int pendingAtStart = _pendingPlacements.Count;
-
-            double snapshotMs = 0d;
-            double validationMs = 0d;
-            double footprintMs = 0d;
-            double resourcesMs = 0d;
-            double signalMs = 0d;
-            double fogMs = 0d;
-            double cleanupMs = 0d;
-            double selectionMs = 0d;
-            double diagnosticsMs = 0d;
-
-            using var commitAudit =
-                ConstructionCommitAudit.Begin(
-                    _pendingPlacements.Count,
-                    IsDemolishMode,
-                    State.ToString());
-
-            IDiagnosticFlow flow = _diagnosticsSession?.CurrentFlow;
             if (IsDemolishMode)
             {
                 ConfirmPendingDemolitions();
-                _diagnostics?.SkipStep(flow, ConstructionDiagnosticSteps.BuildConfirmed, "demolish-mode");
-                _diagnostics?.Report(flow);
-                _diagnosticsSession?.Clear(flow);
                 return;
             }
-
-            if (VerboseLogs)
-                Debug.Log($"[MoyvaBuildGridDiag] placement-start pending={_pendingPlacements.Count} state={State}");
 
             if (_pendingPlacements.Count == 0)
-            {
-                if (VerboseLogs)
-                    Debug.Log("[Construction] Confirm ignored: no pending placements.");
-                _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.BuildConfirmed, "no-pending-placements");
-                _diagnostics?.Report(flow);
-                _diagnosticsSession?.Clear(flow);
                 return;
-            }
-
-            _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildConfirmed, $"pending={_pendingPlacements.Count}");
-
-            double snapshotStartedAt =
-                Time.realtimeSinceStartupAsDouble;
-
-            Debug.Log(
-                $"[MoyvaConstructionAvailability] confirm-start " +
-                $"pending={_pendingPlacements.Count} owner='{NormalizeOwnerId(_activeOwnerId)}'");
 
             _confirmPendingSnapshot.Clear();
             _confirmPendingSnapshot.AddRange(_pendingPlacements);
@@ -155,18 +34,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             HashSet<Vector2Int> confirmedPositions =
                 _confirmConfirmedPositions;
 
-            AddConfirmStage(
-                ref snapshotMs,
-                snapshotStartedAt);
-            commitAudit.Step("snapshot");
-            int confirmedCount = 0;
-            int skippedCount = 0;
-
             foreach (var placement in pendingSnapshot)
             {
                 var pos = placement.Position;
                 var id = placement.BuildingId;
-                commitAudit.ObservePlacement(id, pos);
                 bool isRelocation = IsRelocation(placement);
                 bool hasRelocationSource = placement.OriginalPosition.HasValue;
                 Vector2Int? relocationSource = placement.OriginalPosition;
@@ -182,13 +53,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     if (hasRelocationSource && relocationSource.Value == pos)
                     {
                         confirmedPositions.Add(pos);
-                        if (VerboseLogs)
-                            Debug.Log($"[MoyvaBuildGridDiag] placement-complete building='{id}' origin={pos} result='relocation-no-op'");
                         continue;
                     }
-
-                    double validationStartedAt =
-                        Time.realtimeSinceStartupAsDouble;
 
                     bool gateReplacementAllowed = _replacementPolicy.TryResolveGateReplacement(
                         pos,
@@ -209,31 +75,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         placement.ReplacedPendingBuildingId,
                         placement.Rotation);
 
-                    AddConfirmStage(
-                        ref validationMs,
-                        validationStartedAt);
-
                     if (!canPlace)
                     {
-                        skippedCount++;
-                        _diagnostics?.FailStep(
-                            flow,
-                            ConstructionDiagnosticSteps.GridCellValidated,
-                            "placement-invalid",
-                            $"building={id}, pos={pos}");
-                        Debug.LogWarning(
-                            $"[MoyvaBuildGridDiag] placement-failed " +
-                            $"building='{id}' origin={pos} reason='validation' " +
-                            $"occupied={tileOccupied} spacing={spacingBlocked} " +
-                            $"fog={fogBlocked} influence={influenceZoneBlocked} " +
-                            $"terrain={terrainBlocked}");
-                        commitAudit.Step("validation-failed");
                         continue;
                     }
-
-                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.GridCellValidated, $"building={id}, pos={pos}");
-                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.TerrainValidated, $"building={id}, pos={pos}");
-                    commitAudit.Step("validation");
 
                     if (hasRelocationSource
                         && relocationSource.HasValue
@@ -241,9 +86,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     {
                         relocationOwnerId = sourceFactionEntry.FactionId;
                     }
-
-                    double footprintStartedAt =
-                        Time.realtimeSinceStartupAsDouble;
 
                     if (gateReplacementAllowed)
                     {
@@ -270,13 +112,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                             id,
                             placement.Rotation);
 
-                    AddConfirmStage(
-                        ref footprintMs,
-                        footprintStartedAt);
-
                     if (!footprintRegistered)
                     {
-                        skippedCount++;
                         Debug.LogError(
                             $"[MoyvaBuildGridDiag] placement-failed " +
                             $"building='{id}' origin={pos} " +
@@ -285,11 +122,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     }
 
                     targetFootprintRegistered = true;
-                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildingRegistered, $"building={id}, pos={pos}");
-                    commitAudit.Step("footprint");
-
-                    double resourcesStartedAt =
-                        Time.realtimeSinceStartupAsDouble;
 
                     string resourceReason = null;
                     bool resourcesAccepted =
@@ -300,13 +132,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                             relocationOwnerId,
                             out resourceReason);
 
-                    AddConfirmStage(
-                        ref resourcesMs,
-                        resourcesStartedAt);
-
                     if (!resourcesAccepted)
                     {
-                        skippedCount++;
                         _lastActionMessage = resourceReason;
                         _signalBus.Fire(
                             new BuildingPreviewChangedSignal
@@ -316,30 +143,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                                 PreviewState =
                                     BuildingPreviewState.Unaffordable,
                             });
-                        _diagnostics?.FailStep(
-                            flow,
-                            ConstructionDiagnosticSteps.ResourcesChecked,
-                            "resources-blocked",
-                            resourceReason);
-                        Debug.LogWarning(
-                            $"[MoyvaBuildGridDiag] placement-failed " +
-                            $"building='{id}' origin={pos} " +
-                            $"reason='{resourceReason}'");
-                        Debug.LogWarning(
-                            $"[MoyvaConstructionAvailability] confirm-blocked " +
-                            $"building='{id}' origin={pos} code='resources' " +
-                            $"reason='{resourceReason}'");
-                        commitAudit.Step("resources-failed");
                         continue;
                     }
-
-                    if (!hasRelocationSource)
-                    {
-                        _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesChecked, $"building={id}, owner={relocationOwnerId}");
-                        _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesReserved, $"building={id}, owner={relocationOwnerId}");
-                    }
-
-                    commitAudit.Step("resources");
 
                     if (gateReplacementAllowed)
                         RemovePlacedRecordAt(replacedOrigin);
@@ -354,12 +159,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                     modelCommitted = true;
                     confirmedPositions.Add(pos);
-                    confirmedCount++;
-                    commitAudit.Step("model-commit");
                 }
                 catch (Exception ex)
                 {
-                    skippedCount++;
                     Debug.LogError($"[MoyvaBuildGridDiag] placement-failed building='{id}' origin={pos} reason='{ex.GetType().Name}: {ex.Message}'");
                 }
                 finally
@@ -389,9 +191,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     InvalidatePlacementAvailabilityCache();
 
-                    double signalStartedAt =
-                        Time.realtimeSinceStartupAsDouble;
-
                     _signalBus.Fire(new BuildingPlacedSignal
                     {
                         BuildingId = id,
@@ -407,16 +206,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         relocationOwnerId,
                         isRelocation ? "building-relocate" : "building-place");
 
-                    AddConfirmStage(
-                        ref signalMs,
-                        signalStartedAt);
-                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildingSpawned, $"building={id}, pos={pos}");
-                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ConstructionSignalFired, $"building={id}, pos={pos}");
-                    commitAudit.Step("building-placed-signal");
-
-                    double fogStartedAt =
-                        Time.realtimeSinceStartupAsDouble;
-
                     try
                     {
                         if (isRelocation && relocationSource.HasValue)
@@ -428,26 +217,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     {
                         Debug.LogError($"[Construction] Fog reveal failed for '{id}' at {pos}: {fogEx.GetType().Name} - {fogEx.Message}");
                     }
-                    finally
-                    {
-                        AddConfirmStage(
-                            ref fogMs,
-                            fogStartedAt);
-                    }
-
-                    commitAudit.Step("fog-reveal");
-
-                    if (VerboseLogs)
-                        Debug.Log($"[MoyvaBuildGridDiag] placement-complete building='{id}' origin={pos} result='{(isRelocation ? "relocated" : "placed")}' source={relocationSource?.ToString() ?? "none"}");
                 }
                 catch (Exception ex)
                 {
                     Debug.LogError($"[MoyvaBuildGridDiag] placement-notification-failed building='{id}' origin={pos} reason='{ex.GetType().Name}: {ex.Message}'");
                 }
             }
-
-            double cleanupStartedAt =
-                Time.realtimeSinceStartupAsDouble;
 
             if (confirmedPositions.Count > 0)
             {
@@ -473,14 +248,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
             }
 
-            AddConfirmStage(
-                ref cleanupMs,
-                cleanupStartedAt);
-            commitAudit.Step("preview-cleanup");
-
-            double selectionStartedAt =
-                Time.realtimeSinceStartupAsDouble;
-
             _undoSnapshots.Clear();
             _redoSnapshots.Clear();
 
@@ -491,58 +258,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     _pendingPlacements[_pendingPlacements.Count - 1].BuildingId,
                     BuildingPlacementState.Placing);
 
-            AddConfirmStage(
-                ref selectionMs,
-                selectionStartedAt);
-            commitAudit.Step("selection-state");
-
-            if (VerboseLogs)
-                Debug.Log($"[MoyvaBuildGridDiag] placement-batch-complete confirmed={confirmedCount} skipped={skippedCount} remaining={_pendingPlacements.Count} state={State}");
-
-            double diagnosticsStartedAt =
-                Time.realtimeSinceStartupAsDouble;
-
-            if (confirmedPositions.Count > 0)
-                _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.UiUpdated, $"confirmed={confirmedCount}, skipped={skippedCount}");
-            else
-                _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.BuildingSpawned, "no-buildings-confirmed", $"skipped={skippedCount}");
-
-            Debug.Log(
-                $"[MoyvaConstructionAvailability] confirm-end " +
-                $"confirmed={confirmedCount} blocked={skippedCount} " +
-                $"remaining={_pendingPlacements.Count}");
-
-            commitAudit.SetOutcome(
-                confirmedCount,
-                skippedCount,
-                _pendingPlacements.Count);
-            commitAudit.Step("finalize");
-
-            _diagnostics?.Report(flow);
-            _diagnosticsSession?.Clear(flow);
-
-            AddConfirmStage(
-                ref diagnosticsMs,
-                diagnosticsStartedAt);
-
-            double totalMs =
-                ConfirmElapsedMs(confirmStartedAt);
-
-            LogConfirmPerformance(
-                pendingAtStart,
-                confirmedCount,
-                skippedCount,
-                _pendingPlacements.Count,
-                totalMs,
-                snapshotMs,
-                validationMs,
-                footprintMs,
-                resourcesMs,
-                signalMs,
-                fogMs,
-                cleanupMs,
-                selectionMs,
-                diagnosticsMs);
         }
     }
 }

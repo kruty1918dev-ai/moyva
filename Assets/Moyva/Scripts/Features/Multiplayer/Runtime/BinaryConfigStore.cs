@@ -44,9 +44,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 var migrated = MultiplayerConfigMigrationPipeline.MigrateToLatest(raw);
                 return MultiplayerConfigLifecycle.ValidateAndFreeze(migrated);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Debug.LogWarning($"[Multiplayer] Failed to load config: {e.Message}. Using defaults.");
                 return MultiplayerConfigLifecycle.ValidateAndFreeze(MultiplayerConfig.Default());
             }
         }

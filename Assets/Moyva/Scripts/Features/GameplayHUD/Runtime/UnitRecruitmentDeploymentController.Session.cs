@@ -29,7 +29,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string owner = NormalizeId(signal.OwnerId);
             if (owner == null || signal.QueueId < 1)
             {
-                Debug.LogWarning($"{LogTag} Ignored ready indicator with invalid identity.");
                 return;
             }
 
@@ -37,22 +36,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (localOwner != null
                 && !string.Equals(owner, localOwner, StringComparison.Ordinal))
             {
-                Debug.LogWarning(
-                    $"{LogTag} Ignored ready indicator for non-local owner '{owner}'.");
                 return;
             }
 
             if (!_turns.CanOwnerAct(owner, out string reason))
             {
-                Debug.LogWarning($"{LogTag} Cannot enter deployment: {reason}");
                 return;
             }
 
             if (_gameModeService != null
                 && _gameModeService.CurrentMode != GameModeType.Normal)
             {
-                Debug.LogWarning(
-                    $"{LogTag} Cannot enter deployment while game mode is {_gameModeService.CurrentMode}.");
                 return;
             }
 
@@ -62,8 +56,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     out UnitRecruitmentQueueItemSnapshot ready)
                 || ready.QueueId != signal.QueueId)
             {
-                Debug.LogWarning(
-                    $"{LogTag} Ready job {signal.QueueId} is no longer the queue head.");
                 return;
             }
 
@@ -102,8 +94,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _gridOverlay?.Acquire(GridActionOverlayOwner.Deployment) == true;
             if (!_session.OverlayAcquired)
             {
-                Debug.LogWarning(
-                    $"{LogTag} Shared grid overlay is unavailable or owned by another mode; deployment remains functional without tile highlights.");
             }
 
             EnsureWorldRoots();
@@ -111,12 +101,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             RefreshDeploymentTiles();
             SetControlsVisible(true);
             UpdateConfirmInteractable();
-
-            Debug.Log(
-                $"{LogTag} Deployment session started queue={queueId} unit={unitTypeId} building={recruitingBuildingPosition}.");
         }
-
-
 
         private void HandleKeyboard()
         {
@@ -150,8 +135,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             SelectTile(tile);
         }
 
-
-
         private bool TryRevalidateTarget(
             Vector2Int target,
             out string reason)
@@ -184,9 +167,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             if (_session == null)
                 return;
-
-            Debug.Log(
-                $"{LogTag} Deployment session cancelled queue={_session.QueueId}.");
             EndSession(destroyPreview: true);
         }
 
@@ -201,7 +181,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             ClearSelectedTile(destroyPreview);
             SetControlsVisible(false);
         }
-
 
     }
 }

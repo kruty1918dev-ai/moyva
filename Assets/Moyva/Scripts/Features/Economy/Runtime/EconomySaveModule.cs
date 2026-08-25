@@ -77,21 +77,9 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 * 1000d
                 / Stopwatch.Frequency;
 
-            Debug.Log(
-                $"{ModuleLogTag} economy-save schema={SchemaVersion} " +
-                $"owners={ownerPools.Count} " +
-                $"settlements={runtime.Settlements.Count} " +
-                $"buildings={runtime.BuildingCount} " +
-                $"elapsedMs={elapsedMs:0.###}");
-
             if (Debug.isDebugBuild
                 && elapsedMs >= SlowSaveThresholdMs)
             {
-                Debug.Log(
-                    $"{PerfLogTag} economy-save " +
-                    $"settlements={runtime.Settlements.Count} " +
-                    $"buildings={runtime.BuildingCount} " +
-                    $"elapsedMs={elapsedMs:0.###}");
             }
         }
 
@@ -104,9 +92,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (version != 1
                 && version != SchemaVersion)
             {
-                Debug.LogWarning(
-                    $"{ModuleLogTag} economy-load rejected " +
-                    $"version={version}");
                 return;
             }
 
@@ -178,21 +163,9 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 * 1000d
                 / Stopwatch.Frequency;
 
-            Debug.Log(
-                $"{ModuleLogTag} economy-load schema={version} " +
-                $"owners={restored.Count} " +
-                $"settlements={runtime?.Settlements.Count ?? 0} " +
-                $"buildings={runtime?.BuildingCount ?? 0} " +
-                $"elapsedMs={elapsedMs:0.###}");
-
             if (Debug.isDebugBuild
                 && elapsedMs >= SlowSaveThresholdMs)
             {
-                Debug.Log(
-                    $"{PerfLogTag} economy-load " +
-                    $"settlements={runtime?.Settlements.Count ?? 0} " +
-                    $"buildings={runtime?.BuildingCount ?? 0} " +
-                    $"elapsedMs={elapsedMs:0.###}");
             }
         }
 

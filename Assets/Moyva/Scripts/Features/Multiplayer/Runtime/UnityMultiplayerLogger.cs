@@ -35,13 +35,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         public void Info(string message)
         {
             if (!IsEnabled(message, isTrace: false)) return;
-            Debug.Log(Format("INFO", message));
         }
 
         public void Warn(string message)
         {
             if (!IsEnabled(message, isTrace: false)) return;
-            Debug.LogWarning(Format("WARN", message));
         }
 
         public void Error(string message)
@@ -60,7 +58,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 return;
 
             _lastTraceTimeByMessage[hash] = now;
-            Debug.Log(Format("TRACE", message));
         }
 
         // ---- Helpers -------------------------------------------------------

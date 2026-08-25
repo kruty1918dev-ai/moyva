@@ -64,14 +64,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     $"Неможливо скомпілювати граф: {globalErrors.Count} global validation error(s).\n{MoyvaTwcGraphValidationText.FormatIssues(globalErrors)}", report);
 
             skippedLayerIds = _validation.GetInvalidLayerIds(report);
-            if (skippedLayerIds.Count > 0)
-                Debug.LogWarning($"[Moyva TWC Graph Binding] {skippedLayerIds.Count} layer(s) skipped because of validation errors.\n{MoyvaTwcGraphValidationText.FormatReport(report)}", context.LogContext);
             return true;
         }
 
         private bool Fail(IMoyvaTwcGraphBindingContext context, int seed, bool emitLayerLog, string message, object report)
         {
-            Debug.LogWarning($"[Moyva TWC Graph Binding] {message}", context.LogContext);
             context.SetLastCompiledLayers(Array.Empty<CompiledLayerMap>());
             EmitLayerLog(context, report, null, seed, emitLayerLog);
             return false;

@@ -89,9 +89,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                 if (outputNodes.Length > 0 && result.Count == before)
                 {
-                    Debug.LogWarning(
-                        $"[MoyvaObjectPlacement] Layer '{layerDef.Name ?? layerDef.Id}' has Object Output nodes, " +
-                        "but the shared evaluation snapshot contains no ObjectPlacementLayer.");
                 }
             }
 

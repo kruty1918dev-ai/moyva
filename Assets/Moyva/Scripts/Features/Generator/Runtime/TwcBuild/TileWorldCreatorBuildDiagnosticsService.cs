@@ -31,14 +31,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public void LogBuildStart(GeneratedWorldData worldData, Configuration configuration)
         {
-            Debug.Log($"{LogTag} Build start: manager='{_manager.name}', config='{configuration.name}', mapping='{_mapping.name}', world={worldData.Width}x{worldData.Height}, seed={worldData.Seed}, biomeMap={TileWorldCreatorMapFormatUtility.FormatMapSize(worldData.BiomeMap)}, heightMap={TileWorldCreatorMapFormatUtility.FormatMapSize(worldData.HeightMap)}, terrainLevelMap={TileWorldCreatorMapFormatUtility.FormatMapSize(worldData.TerrainLevelMap)}, options={FormatOptions()}.");
             LogConfigurationFolders(configuration);
             LogLevelMap("initial", worldData.TerrainLevelMap);
-            Debug.Log($"{LogTag} HeightMap stats: {TileWorldCreatorMapFormatUtility.FormatFloatMapStats(worldData.HeightMap)}.");
         }
 
         public void LogLevelMap(string label, int[,] levelMap)
-            => Debug.Log($"{LogTag} LevelMap {label}: {TileWorldCreatorMapFormatUtility.FormatLevelStats(levelMap)}.");
+        {
+        }
 
         public void LogMappedLayerSummary(string label, Dictionary<string, HashSet<Vector2>> positions, HashSet<string> mappedIds, Configuration configuration)
         {
@@ -57,8 +56,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     .Append(" count=").Append(pair.Value?.Count ?? 0)
                     .Append(" bounds=").Append(TileWorldCreatorMapFormatUtility.FormatPositionBounds(pair.Value));
             }
-
-            Debug.Log(builder.ToString());
         }
 
         public int CountComponentsInManager<T>() where T : Component
@@ -103,8 +100,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 blueprintLayerCount += configuration.blueprintLayerFolders[i]?.blueprintLayers?.Count ?? 0;
             for (int i = 0; i < (configuration.buildLayerFolders?.Count ?? 0); i++)
                 buildLayerCount += configuration.buildLayerFolders[i]?.buildLayers?.Count ?? 0;
-
-            Debug.Log($"{LogTag} TWC configuration layers: blueprintFolders={configuration.blueprintLayerFolders?.Count ?? 0}, blueprintLayers={blueprintLayerCount}, buildFolders={configuration.buildLayerFolders?.Count ?? 0}, buildLayers={buildLayerCount}.");
         }
     }
 }

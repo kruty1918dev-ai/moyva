@@ -20,9 +20,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 _lastActionMessage =
                     "Недостатньо ресурсів: pending-розміщення не створено.";
-                Debug.LogWarning(
-                    $"[MoyvaConstructionAvailability] pending-invariant-rejected " +
-                    $"building='{buildingId}' origin={position} code='resources'");
                 return false;
             }
 
@@ -67,14 +64,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     PreviewState = ResolvePreviewState(isAffordable)
                 });
 
-                Debug.Log(
-                    $"[MoyvaConstructionAvailability] pending-added " +
-                    $"building='{buildingId}' origin={position} " +
-                    $"pending={_pendingPlacements.Count}");
-
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] ✓ Pending placement додана для '{buildingId}' at {position}. relocationFrom={originalPosition?.ToString() ?? "none"}, pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
-
                 return true;
             }
             catch (Exception ex)
@@ -98,14 +87,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     if (_pendingPlacements[i].Position == position)
                     {
-                        if (VerboseLogs)
-                            Debug.Log($"[Construction] FindPendingPlacementIndex({position}): знайдена на індексі {i}");
                         return i;
                     }
                 }
-
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] FindPendingPlacementIndex({position}): не знайдена (повертаю -1)");
 
                 return -1;
             }
@@ -125,16 +109,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (string.IsNullOrWhiteSpace(
                         replacementBuildingId))
                 {
-                    if (VerboseLogs)
-                        Debug.Log("[Construction] Pending replacement building id is empty.");
                     return false;
                 }
 
                 int index = FindPendingPlacementIndex(position);
                 if (index < 0)
                 {
-                    if (VerboseLogs)
-                        Debug.Log($"[Construction] Pending replacement at {position} was not found.");
                     return false;
                 }
 
@@ -220,10 +200,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     LogPlacementAttempt(
                         placement,
                         emitRejectedAction: true);
-                    Debug.LogWarning(
-                        $"[MoyvaConstructionAvailability] pending-replacement-rejected " +
-                        $"building='{replacementBuildingId}' origin={position} " +
-                        $"code='resources' reason='{placement.Reason}'");
                     return false;
                 }
 
@@ -255,8 +231,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 if (VerboseLogs)
                 {
-                    Debug.Log(
-                        $"[Construction] Pending '{current.BuildingId}' at {position} replaced with '{replacementBuildingId}'.");
                 }
 
                 return true;

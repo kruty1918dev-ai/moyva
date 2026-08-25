@@ -85,7 +85,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             int visibleBefore = CountVisibleTiles();
             int exploredBefore = CountExploredTiles();
-            Debug.Log($"{StartupRevealDiagTag} RecalculateAllVisibilityBegin source=vision-recalculation, units={_unitPositions.Count}, fixedAreas={_fixedVisionShapes.Count}, visibleBefore={visibleBefore}, exploredBefore={exploredBefore}, map={_width}x{_height}, visualUpdater={(_visualUpdater != null ? _visualUpdater.GetType().Name : "null")}.");
             _stateGrid.ClearVisibility();
             _unitVisibleTiles.Clear();
 
@@ -104,8 +103,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _visualUpdater?.RebuildFullVisual(this);
             BumpVersion();
             _visualDirtyBuffer.Clear();
-            Debug.Log($"{DebugTag} FogService.RecalculateAllVisibility map={_width}x{_height}, units={_unitPositions.Count}, fixedAreas={_fixedVisionShapes.Count}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}, version={Version}.");
-            Debug.Log($"{StartupRevealDiagTag} RecalculateAllVisibilityResult source=vision-recalculation, units={_unitPositions.Count}, fixedAreas={_fixedVisionShapes.Count}, visibleBefore={visibleBefore}, visibleAfter={CountVisibleTiles()}, exploredBefore={exploredBefore}, exploredAfter={CountExploredTiles()}, gameplayChanged={visibleBefore != CountVisibleTiles() || exploredBefore != CountExploredTiles()}, visualUpdateDispatched={_visualUpdater != null}, visualFogDispersed={_visualUpdater != null && CountVisibleTiles() > 0}, version={Version}.");
         }
 
         private int CountVisibleTiles()

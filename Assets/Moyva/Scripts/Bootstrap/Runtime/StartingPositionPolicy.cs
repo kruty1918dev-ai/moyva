@@ -73,7 +73,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_startingPositionState.IsSet)
             {
                 result = true;
-                Debug.Log($"{DirectDiagTag} Policy.CanRunStartLogic mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, hasSession={hasSession}, participants={participantCount}, result={result}, reason=start-state-set.");
                 LogPolicyDecision(nameof(CanRunStartLogic), participantCount, hasSession, isHost, localPlayerId, isMultiplayerContext, result, "start-state-set");
                 return result;
             }
@@ -81,7 +80,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (isHost)
             {
                 result = true;
-                Debug.Log($"{DirectDiagTag} Policy.CanRunStartLogic mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, hasSession={hasSession}, participants={participantCount}, result={result}, reason=local-host.");
                 LogPolicyDecision(nameof(CanRunStartLogic), participantCount, hasSession, isHost, localPlayerId, isMultiplayerContext, result, "local-host");
                 return result;
             }
@@ -89,13 +87,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_sessionManager == null || _sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
             {
                 result = !isMultiplayerContext;
-                Debug.Log($"{DirectDiagTag} Policy.CanRunStartLogic mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, hasSession={hasSession}, participants={participantCount}, result={result}, reason=no-session-or-participants.");
                 LogPolicyDecision(nameof(CanRunStartLogic), participantCount, hasSession, isHost, localPlayerId, isMultiplayerContext, result, "no-session-or-participants");
                 return result;
             }
 
             result = false;
-            Debug.Log($"{DirectDiagTag} Policy.CanRunStartLogic mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, hasSession={hasSession}, participants={participantCount}, result={result}, reason=remote-participant-context.");
             LogPolicyDecision(nameof(CanRunStartLogic), participantCount, hasSession, isHost, localPlayerId, isMultiplayerContext, result, "remote-participant-context");
             return result;
         }
@@ -119,18 +115,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_sessionManager == null || _sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
             {
                 result = !isMultiplayerContext;
-                Debug.Log($"{DirectDiagTag} Policy.ShouldComputeHostStartPositions mode={GameLaunchContext.Mode}, isMultiplayer={isMultiplayerContext}, hasSession={hasSession}, participants={participantCount}, isLocalHost={isHost}, localPlayerId={(string.IsNullOrEmpty(localPlayerId) ? "<empty>" : localPlayerId)}, result={result}, reason=no-session-or-participants.");
                 LogPolicyDecision(nameof(ShouldComputeHostStartPositions), participantCount, hasSession, isHost, localPlayerId, isMultiplayerContext, result, "no-session-or-participants");
                 return result;
             }
 
             result = _sessionManager.IsLocalPlayerHost;
-            Debug.Log($"{DirectDiagTag} Policy.ShouldComputeHostStartPositions mode={GameLaunchContext.Mode}, isMultiplayer={isMultiplayerContext}, hasSession={hasSession}, participants={participantCount}, isLocalHost={isHost}, localPlayerId={(string.IsNullOrEmpty(localPlayerId) ? "<empty>" : localPlayerId)}, result={result}, reason=participants-present.");
             LogPolicyDecision(nameof(ShouldComputeHostStartPositions), participantCount, hasSession, isHost, localPlayerId, isMultiplayerContext, result, "participants-present");
             return result;
         }
-
-
 
     }
 }

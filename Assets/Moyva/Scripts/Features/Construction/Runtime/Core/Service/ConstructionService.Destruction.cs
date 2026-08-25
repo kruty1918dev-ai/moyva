@@ -51,11 +51,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     SourceFactionId = ownerId,
                 });
 
-            Debug.Log(
-                $"{ModuleLogTag} building-destroyed " +
-                $"building={buildingId} position={origin} " +
-                $"owner={ownerId} cause={cause ?? "unknown"}");
-
             return true;
         }
 
@@ -69,8 +64,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     out string turnReason))
             {
                 _lastActionMessage = turnReason;
-                Debug.LogWarning(
-                    $"[Construction] TryDemolishByFaction rejected: {turnReason}");
                 return false;
             }
 

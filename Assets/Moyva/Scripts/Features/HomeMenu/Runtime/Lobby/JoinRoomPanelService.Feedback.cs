@@ -14,7 +14,6 @@ using Zenject;
 using System.Threading;
 using System.Threading.Tasks;
 
-
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal partial class JoinRoomPanelService
@@ -30,7 +29,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] LeaveSessionAsync after join failure failed: {e.Message}");
             }
 
             try
@@ -40,7 +38,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] LeaveAsync after join failure failed: {e.Message}");
             }
 
             await MainThreadDispatcher.EnqueueAsync(() =>
@@ -125,7 +122,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] TryProbeRoomForPasswordAsync failed: {e.Message}");
             }
             return new ProbeResult(false, target.Value);
         }

@@ -167,7 +167,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (state.IsConnected)
             {
                 string userId = GetAuthenticatedUserId();
-                Debug.Log($"{prefix} Initialized. Authenticated user id: {userId}.");
                 return;
             }
 
@@ -224,13 +223,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _overlayLoader?.StopOverlay(true);
 
                 string userId = GetAuthenticatedUserId();
-                Debug.Log($"{prefix} Multiplayer ready. Authenticated user id: {userId}.");
             }
             catch (OperationCanceledException)
             {
                 overlayResult?.SetLoading(false, overlayResult?.Progress ?? 0f);
                 _overlayLoader?.StopOverlay();
-                Debug.Log($"{prefix} Multiplayer initialization cancelled.");
             }
             catch (TimeoutException exception)
             {
@@ -271,7 +268,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private void LogWithPrefix(string msg)
         {
-            Debug.Log($"{Prefix} {msg}");
         }
 
         private void LogErrorWithPrefix(string msg)
@@ -281,8 +277,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private void LogVerbose(string msg)
         {
-            if (_menuProfile.IsVerboseLogging)
-                Debug.Log($"{Prefix} {msg}");
         }
 
         private void ApplyMenuGraphicsPolicy()

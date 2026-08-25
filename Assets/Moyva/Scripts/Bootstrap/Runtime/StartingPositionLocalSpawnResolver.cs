@@ -27,11 +27,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public bool TryGetLocalSpawnPosition(out Vector2Int position)
         {
             string localPlayerId = _sessionManager?.LocalPlayerId;
-            Debug.Log($"{DirectDiagTag} LocalSpawnResolver.ENTER stateSet={_startingPositionState.IsSet}, assignments={_startingPositionState.SpawnAssignments.Count}, localPlayerId={localPlayerId}.");
             if (!string.IsNullOrEmpty(localPlayerId) &&
                 _startingPositionState.PlayerStartPositions.TryGetValue(localPlayerId, out position))
             {
-                Debug.Log($"{DirectDiagTag} LocalSpawnResolver.RESULT center={position}, source=player-start-dictionary, found=true.");
                 return true;
             }
 
@@ -43,7 +41,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             position = default;
-            Debug.Log($"{DirectDiagTag} LocalSpawnResolver.RESULT center={position}, source=none, found=false.");
             return false;
         }
 
@@ -52,14 +49,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (TryGetLocalSpawnPosition(out Vector2Int localSpawn))
             {
                 Vector2Int center = StartingPositionMapUtility.ClampToMap(localSpawn, width, height);
-                Debug.Log($"{DirectDiagTag} LocalSpawnResolver.RESULT center={center}, source=local-spawn, found=true.");
                 return center;
             }
 
             if (_startingPositionState.IsSet)
             {
                 Vector2Int center = StartingPositionMapUtility.ClampToMap(_startingPositionState.StartPosition, width, height);
-                Debug.Log($"{DirectDiagTag} LocalSpawnResolver.RESULT center={center}, source=start-state, found=true.");
                 return center;
             }
 
@@ -69,7 +64,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 minMarginFromBorder: 0,
                 relativeMarginFactor: 0f,
                 out int seed);
-            Debug.Log($"{DirectDiagTag} LocalSpawnResolver.RESULT center={fallbackCenter}, source=random-map-fallback, seed={seed}, found=false.");
             return fallbackCenter;
         }
     }

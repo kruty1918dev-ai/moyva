@@ -13,11 +13,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public void Emit(GraphGenerationLayerLogRequest request)
         {
-            string log = Build(request);
-            if (request.Context != null)
-                Debug.Log(log, request.Context);
-            else
-                Debug.Log(log);
         }
 
         public string Build(GraphGenerationLayerLogRequest request)

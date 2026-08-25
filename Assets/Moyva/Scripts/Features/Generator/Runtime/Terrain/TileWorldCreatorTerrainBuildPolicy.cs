@@ -44,10 +44,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             if (configuration == null)
                 return;
-
-            Debug.Log(
-                $"{LogTag} Terrain build policy apply: source={source}, mode={policy.Mode}, chunk={policy.ChunkSizeTiles}, " +
-                $"forceMergeTiles={policy.ForceMergeTiles}, chunkFirst={policy.UsesChunkFirstComposite}, precomputedHeights={policy.UsesPrecomputedHeights}, legacyProjector={policy.UsesLegacyHeightProjection}.");
             TileWorldCreatorChunkBatchingUtility.Apply(configuration, policy.ChunkSizeTiles, policy.ForceMergeTiles, source);
         }
     }

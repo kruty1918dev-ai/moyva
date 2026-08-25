@@ -21,7 +21,6 @@ namespace Kruty1918.Moyva.Clouds.Runtime
         {
             if (_settings == null)
             {
-                Debug.LogWarning("[Clouds] CloudsSettings не призначено. Система хмаринок не буде запущена.");
                 return;
             }
 

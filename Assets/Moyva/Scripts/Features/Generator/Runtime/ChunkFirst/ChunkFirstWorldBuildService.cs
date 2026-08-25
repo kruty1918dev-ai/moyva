@@ -283,9 +283,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             int removed = pruner.RemoveRootsOutside(_activeChunkCoords);
             if (removed > 0)
             {
-                Debug.Log(
-                    "[MOYVA_CHUNK_SIZE] STALE_CHUNKS_REMOVED " +
-                    $"count={removed} activeChunks={_activeChunkCoords.Count}");
             }
         }
 

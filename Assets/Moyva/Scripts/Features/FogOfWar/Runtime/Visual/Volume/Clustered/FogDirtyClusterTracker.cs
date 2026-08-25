@@ -37,9 +37,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
                 MarkCellCluster(change.Cell, clusterSize, padding, clusterCountX, clusterCountY);
             }
-
-            if (ShouldLogClusterUpdates())
-                Debug.Log($"{ClusterDiagTag} DirtyClustersResolved changes={changes.Count}, clusters={_dirtyClusters.Count}, clusterSize={clusterSize}, padding={padding}.");
         }
 
         public IReadOnlyList<FogClusterKey> ConsumeDirtyClusters()

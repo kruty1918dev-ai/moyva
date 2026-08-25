@@ -138,10 +138,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             stopwatch.Stop();
             _cache[unitId] = new MovementRangeCacheEntry(startPosition, movement, _worldVersion, ordered);
             string tag = stopwatch.Elapsed.TotalMilliseconds >= 20d ? "SLOW" : "OK";
-            Debug.Log(
-                $"[MOYVA_MOVE][RANGE_{tag}] unit={unitId}; start={startPosition}; " +
-                $"movement={movement:0.###}; reachable={ordered.Count}; expanded={expanded}; " +
-                $"edges={edges}; ms={stopwatch.Elapsed.TotalMilliseconds:0.###}");
             return ordered;
         }
 

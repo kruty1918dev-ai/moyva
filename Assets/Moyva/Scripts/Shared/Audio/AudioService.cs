@@ -70,9 +70,6 @@ namespace Kruty1918.Moyva.Audio.Runtime
             var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             if (activeScene.IsValid())
                 OnSceneLoaded(activeScene, UnityEngine.SceneManagement.LoadSceneMode.Single);
-
-            if (_registry != null && _registry.VerboseLogs)
-                Debug.Log($"[AudioService] Initialized with {_available.Count} pooled AudioSource objects.");
         }
 
         public void Tick()
@@ -148,14 +145,12 @@ namespace Kruty1918.Moyva.Audio.Runtime
         {
             if (!TryGetSound(key, out var sound))
             {
-                Debug.LogWarning($"[AudioService] Sound key '{key}' not found.");
                 return default;
             }
 
             var clip = ResolveClip(sound);
             if (clip == null)
             {
-                Debug.LogWarning($"[AudioService] Sound key '{key}' has no AudioClip.");
                 return default;
             }
 
@@ -164,7 +159,6 @@ namespace Kruty1918.Moyva.Audio.Runtime
                 if (_registry != null && _registry.VerboseLogs)
                 {
                     _activeCountByKey.TryGetValue(sound.Key, out int cnt);
-                    Debug.LogWarning($"[AudioService] Play blocked for '{sound.Key}': MaxSimultaneous={Mathf.Max(1, sound.MaxSimultaneous)}, Active={cnt}.");
                 }
                 return default;
             }

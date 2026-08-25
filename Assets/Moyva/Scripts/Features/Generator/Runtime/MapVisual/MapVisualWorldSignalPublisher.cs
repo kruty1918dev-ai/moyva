@@ -1,5 +1,3 @@
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
@@ -14,26 +12,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IGridProjection _projection;
         private readonly IGraphTwcMapDataDiagnostics _graphDiagnostics;
         private readonly IWorldGenerationSignalState _signalState;
-        private readonly IWorldGenerationDiagnostics _worldDiagnostics;
-        private readonly ISaveLoadDiagnostics _saveLoadDiagnostics;
-        private readonly ISaveLoadDiagnosticsSession _saveLoadDiagnosticsSession;
 
         public MapVisualWorldSignalPublisher(
             SignalBus signalBus,
             IGridProjection projection,
             [InjectOptional] IGraphTwcMapDataDiagnostics graphDiagnostics = null,
-            [InjectOptional] IWorldGenerationSignalState signalState = null,
-            [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null,
-            [InjectOptional] ISaveLoadDiagnostics saveLoadDiagnostics = null,
-            [InjectOptional] ISaveLoadDiagnosticsSession saveLoadDiagnosticsSession = null)
+            [InjectOptional] IWorldGenerationSignalState signalState = null)
         {
             _signalBus = signalBus;
             _projection = projection;
             _graphDiagnostics = graphDiagnostics;
             _signalState = signalState;
-            _worldDiagnostics = worldDiagnostics;
-            _saveLoadDiagnostics = saveLoadDiagnostics;
-            _saveLoadDiagnosticsSession = saveLoadDiagnosticsSession;
         }
 
         public void Publish(GeneratedWorldData worldData, string source)
@@ -43,10 +32,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             PublishSavedSpawns(worldData, sequence, sessionId);
             var signal = CreateWorldGeneratedSignal(worldData, source, sequence, sessionId);
             signal = _signalState != null ? _signalState.StoreWorldGeneratedData(signal) : signal;
-            _worldDiagnostics?.WorldGeneratedSignalFired($"map={worldData.Width}x{worldData.Height}, frame={Time.frameCount}");
-            _saveLoadDiagnostics?.CompleteStep(_saveLoadDiagnosticsSession?.CurrentFlow,
-                SaveLoadDiagnosticSteps.WorldGeneratedDataSignalFired,
-                $"source={source}, map={worldData.Width}x{worldData.Height}");
             _signalBus.Fire(signal);
         }
 

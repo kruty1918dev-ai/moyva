@@ -218,13 +218,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (!diagnostic.IsValid)
             {
-                if (emitRejectedAction || ShouldAlwaysLogSource(diagnostic.Source))
-                    Debug.LogWarning(ConstructionPlacementDiagnosticFormatter.FormatSingleLine(diagnostic));
                 return;
             }
-
-            if (VerboseLogs && ShouldAlwaysLogSource(diagnostic.Source))
-                Debug.Log(ConstructionPlacementDiagnosticFormatter.FormatSingleLine(diagnostic));
         }
 
         private void LogSyntheticPlacementRejection(
@@ -274,7 +269,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ignoredPendingPosition: null,
                 ignoredOccupiedPosition: null,
                 blockers: null);
-            Debug.LogWarning(ConstructionPlacementDiagnosticFormatter.FormatSingleLine(diagnostic));
         }
 
         private static bool ShouldCaptureDiagnostic(

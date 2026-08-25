@@ -19,7 +19,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             CopyIdentity(current, replacement, layerName);
             ReplaceInConfiguration(configuration, current, replacement);
-            Debug.Log($"[MoyvaTWCChunks] Upgraded TWC build layer '{layerName}' to height-aware merged terrain layer. preservedGuid='{replacement.guid}'.");
             return replacement;
         }
 

@@ -238,10 +238,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             _lastLoggedMode = mode;
-
-            Debug.Log(
-                "[FogOfWar] Visual presentation mode: " +
-                $"{mode}.");
         }
     }
 }

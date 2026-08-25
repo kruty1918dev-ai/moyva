@@ -85,8 +85,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.WFC
 #if UNITY_EDITOR
         public void OpenEditorWindow()
         {
-            // WFC Editor window will be created in Phase 5.3
-            Debug.Log("[WFC] Editor window not yet implemented.");
         }
 #endif
     }

@@ -35,8 +35,6 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     orderIndex: -1,
                     inputDependencyCount: plan.GetIncomingConnections(node.NodeId).Count));
             }
-
-            Debug.LogWarning("[GraphRunner] " + message);
             return new GraphExecutionResult(
                 nodeId,
                 message,
@@ -81,8 +79,6 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 int deps = plan.GetIncomingConnections(node.NodeId).Count;
                 sb.AppendLine($"  {i:00}. {node.Title} ({ShortId(node.NodeId)}) deps={deps}");
             }
-
-            Debug.Log(sb.ToString());
         }
 
         private static string ResolveLayerName(GraphExecutionScope scope)

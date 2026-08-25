@@ -28,7 +28,6 @@ namespace Kruty1918.Moyva.Construction.API
             }
 
             var definitions = registry.GetAll() ?? Array.Empty<BuildingDefinition>();
-            Debug.Log($"{LogTag} ValidateRegistry started. definitions={definitions.Length}, knownResources={resourceIds?.Count ?? 0}.");
 
             var ids = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < definitions.Length; i++)

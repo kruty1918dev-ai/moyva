@@ -156,7 +156,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
         {
             if (signal.Entries == null || signal.Entries.Length == 0)
             {
-                Debug.LogWarning($"{StarterPackLogTag} Economy received empty starter-pack payload for owner '{NormalizeOwnerId(signal.OwnerId)}'.");
                 return;
             }
 
@@ -165,7 +164,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (string.IsNullOrWhiteSpace(signal.SettlementId))
             {
                 string ownerId = NormalizeOwnerId(signal.OwnerId);
-                Debug.Log($"{StarterPackLogTag} Economy applying starter-pack to owner pool: owner='{ownerId}', entries=[{entriesDescription}].");
                 for (int index = 0; index < signal.Entries.Length; index++)
                 {
                     var entry = signal.Entries[index];
@@ -183,7 +181,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
             var state = _settlementRegistry.GetSettlement(signal.SettlementId);
             if (state == null || !state.IsActive)
             {
-                Debug.LogWarning($"{StarterPackLogTag} Economy cannot apply starter-pack: settlement '{signal.SettlementId}' is missing or inactive for owner '{NormalizeOwnerId(signal.OwnerId)}'. Entries=[{entriesDescription}].");
                 return;
             }
 
@@ -191,11 +188,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
             string ownerFromSettlement = NormalizeOwnerId(state.OwnerId);
             if (!string.Equals(ownerFromSignal, ownerFromSettlement, StringComparison.Ordinal))
             {
-                Debug.LogWarning($"[Economy] Пропущено стартовий пакет: owner mismatch signal='{ownerFromSignal}', settlement='{ownerFromSettlement}'.");
                 return;
             }
-
-            Debug.Log($"{StarterPackLogTag} Economy applying starter-pack to settlement='{signal.SettlementId}', owner='{ownerFromSignal}', entries=[{entriesDescription}].");
 
             for (int index = 0; index < signal.Entries.Length; index++)
             {
@@ -363,12 +357,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 state.EnsureWarehouseConsistency();
                 refreshedSettlements++;
             }
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] live-refresh economy " +
-                $"revision={revision} " +
-                $"settlements={refreshedSettlements} " +
-                $"buildings={refreshedBuildings}");
         }
 
         // ───────────────────────── Public API for UI / other systems
@@ -694,10 +682,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             if (_pendingRuntimeSaveSnapshot.Settlements.Count == 0)
                 _pendingRuntimeSaveSnapshot = null;
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] economy-runtime-restore " +
-                $"applied={applied} deferred={deferred}");
         }
 
         private static bool HasAllSavedBuildingInstances(

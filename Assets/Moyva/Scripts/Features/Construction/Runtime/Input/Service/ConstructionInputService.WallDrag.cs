@@ -68,9 +68,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             batch.BeginPendingUndoBatch("wall-drag");
             _wallUndoBatchActive = true;
-
-            if (VerboseLogs)
-                Debug.Log($"{PerfLogTag} wall undo batch opened.");
         }
 
         private void EndWallUndoBatch()
@@ -85,9 +82,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             _wallUndoBatchActive = false;
-
-            if (VerboseLogs)
-                Debug.Log($"{PerfLogTag} wall undo batch closed.");
         }
     }
 }

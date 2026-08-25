@@ -11,30 +11,21 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (!skipUiCheck && IsPointerOverInteractiveUI(screenPos, pointerId))
             {
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Click ignored: pointer over interactive UI.");
                 return;
             }
 
             if (!TryResolvePointerTile(screenPos, out Vector2Int tilePos))
             {
-                if (VerboseLogs)
-                    Debug.LogWarning($"{LogTag} Pointer is outside the generated map. Selection ignored.");
                 return;
             }
 
             if (VerboseLogs)
             {
                 string inputKind = selectionOnRelease ? "ReleaseSelect" : "PressSelect";
-                Debug.Log(
-                    $"{LogTag} {inputKind} screen={screenPos}, tile={tilePos}, " +
-                    $"state={_constructionService.State}, demolish={_constructionService.IsDemolishMode}");
             }
 
             if (!_gridService.TryGetTileData(tilePos, out _))
             {
-                if (VerboseLogs)
-                    Debug.LogWarning($"{LogTag} Tile {tilePos} is outside grid. Click ignored.");
                 return;
             }
 
@@ -42,8 +33,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 ClearTouchPlacementState();
                 bool result = _constructionService.TryDemolishAt(tilePos);
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} TryDemolishAt({tilePos}) => {result}");
                 return;
             }
 
@@ -52,9 +41,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 HandlePlacementSelection(tilePos, allowDragStart, selectionOnRelease);
                 return;
             }
-
-            if (VerboseLogs)
-                Debug.Log($"{LogTag} Click ignored: placement state is {_constructionService.State}.");
         }
 
         private void HandlePlacementSelection(Vector2Int tilePos, bool allowDragStart, bool selectionOnRelease)
@@ -77,9 +63,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _wallDragPendingPositions.Clear();
                 _wallDragPendingPositions.Add(tilePos);
 
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Wall drag started from existing segment at {tilePos}");
-
                 return;
             }
 
@@ -93,17 +76,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         return;
 
                     bool placed = _constructionService.TryPreviewAt(tilePos);
-                    if (VerboseLogs)
-                        Debug.Log($"{LogTag} Gate placement on pending tile {tilePos} => {placed}");
                     return;
                 }
 
                 _isDraggingPendingPlacement = allowDragStart && _enableMousePendingPreviewDrag;
                 _draggedPlacementPosition = tilePos;
                 ClearPendingPlacementSnapTarget();
-
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Drag started for preview at {tilePos}");
 
                 return;
             }
@@ -121,17 +99,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     _lastWallDragTile = tilePos;
                     _wallDragPendingPositions.Clear();
                     _wallDragPendingPositions.Add(tilePos);
-
-                    if (VerboseLogs)
-                        Debug.Log($"{LogTag} Wall drag started from empty tile at {tilePos}");
                 }
 
                 return;
             }
 
             bool result = _constructionService.TryPreviewAt(tilePos);
-            if (VerboseLogs)
-                Debug.Log($"{LogTag} TryPreviewAt({tilePos}) => {result}");
 
             if (result && allowDragStart && _enableMousePendingPreviewDrag)
             {
@@ -162,10 +135,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         rotation: ResolveSelectedRotation()));
             if (result.CanPreview)
                 return true;
-
-            Debug.LogWarning(
-                ConstructionPlacementDiagnosticFormatter.FormatSingleLine(
-                    result.Diagnostic));
             _signalBus.Fire(
                 new BuildingPreviewChangedSignal
                 {

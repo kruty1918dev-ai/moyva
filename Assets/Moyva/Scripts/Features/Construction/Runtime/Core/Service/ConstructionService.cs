@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
@@ -51,8 +49,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ITileSettingsService _tileSettings;
         private readonly IConstructionPlacementRulesProvider _placementRulesProvider;
         private readonly IConstructionDiagnosticsSettingsProvider _diagnosticsSettingsProvider;
-        private readonly IConstructionDiagnostics _diagnostics;
-        private readonly IConstructionDiagnosticsSession _diagnosticsSession;
         private readonly IConstructionPlacementAuthorityPolicy
             _placementAuthorityPolicy;
         private readonly IReadOnlyList<IBuildingPlacementRuleEvaluator>
@@ -86,8 +82,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] ITileSettingsService tileSettings = null,
             [InjectOptional] IConstructionPlacementRulesProvider placementRulesProvider = null,
             [InjectOptional] IConstructionDiagnosticsSettingsProvider diagnosticsSettingsProvider = null,
-            [InjectOptional] IConstructionDiagnostics diagnostics = null,
-            [InjectOptional] IConstructionDiagnosticsSession diagnosticsSession = null,
             [InjectOptional] IConstructionPlacementAuthorityPolicy
                 placementAuthorityPolicy = null,
             [InjectOptional] List<IBuildingPlacementRuleEvaluator>
@@ -109,8 +103,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _tileSettings = tileSettings;
             _placementRulesProvider = placementRulesProvider;
             _diagnosticsSettingsProvider = diagnosticsSettingsProvider;
-            _diagnostics = diagnostics;
-            _diagnosticsSession = diagnosticsSession;
             _placementAuthorityPolicy = placementAuthorityPolicy;
             _placementRuleEvaluators = placementRuleEvaluators
                 ?? (IReadOnlyList<IBuildingPlacementRuleEvaluator>)
@@ -159,8 +151,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (_disposed || _initialized)
                 return;
 
-            Debug.Log("[Construction] Initialize() почало роботу...");
-
             try
             {
                 if (_signalBus == null)
@@ -175,7 +165,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     OnBuildingDefinitionRuntimeRevisionChanged;
                 _initialized = true;
                 AuditModuleRegistryIfNeeded(force: true);
-                Debug.Log("[Construction] ✓ GameModeChangedSignal підписано");
             }
             catch (Exception ex)
             {
@@ -189,13 +178,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
 
             _disposed = true;
-            Debug.Log("[Construction] Dispose() почало роботу...");
 
             try
             {
                 if (_signalBus == null)
                 {
-                    Debug.LogWarning("[Construction] Dispose: _signalBus == null");
                     return;
                 }
 
@@ -203,7 +190,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _signalBus.TryUnsubscribe<SettlementResourceChangedSignal>(OnSettlementResourceChanged);
                 BuildingDefinitionAsset.RuntimeRevisionChanged -=
                     OnBuildingDefinitionRuntimeRevisionChanged;
-                Debug.Log("[Construction] ✓ GameModeChangedSignal відписано");
             }
             catch (Exception ex)
             {
@@ -214,8 +200,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private void OnGameModeChanged(GameModeChangedSignal signal)
         {
             _isActive = signal.NewMode == GameModeType.Construction;
-            if (VerboseLogs)
-                Debug.Log($"[Construction] GameModeChanged -> active={_isActive}, state={State}, demolish={IsDemolishMode}");
 
             if (_isActive)
             {
@@ -294,14 +278,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         warnings++;
                 }
             }
-
-            Debug.Log(
-                $"{ModuleLogTag} registry-audit " +
-                $"schema={BuildingDefinitionCapabilities.ModuleSchemaVersion} " +
-                $"revision={revision} " +
-                $"buildings={buildings} enabledModules={modules} " +
-                $"canonical={canonicalModules} legacy={legacyModules} " +
-                $"errors={errors} warnings={warnings}");
         }
 
         private void OnBuildingDefinitionRuntimeRevisionChanged(
@@ -332,10 +308,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             InvalidatePlacementResourceValidationCache();
             AuditModuleRegistryIfNeeded(force: true);
-
-            Debug.Log(
-                $"{ModuleLogTag} live-refresh construction " +
-                $"revision={revision} placed={refreshed}");
         }
 
         private void OnSettlementResourceChanged(
@@ -346,10 +318,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!RevalidateActiveSelectionAvailability(
                     "resource-change"))
             {
-                Debug.LogWarning(
-                    $"[MoyvaConstructionAvailability] resource-invalidated-selection " +
-                    $"owner='{signal.OwnerId}' resource='{signal.ResourceId}' " +
-                    $"new={signal.NewAmount:0.###} delta={signal.Delta:0.###}");
             }
         }
     }

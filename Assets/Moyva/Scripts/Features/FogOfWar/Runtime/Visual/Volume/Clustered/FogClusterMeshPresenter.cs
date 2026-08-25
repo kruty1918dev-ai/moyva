@@ -34,7 +34,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (!_loggedMissingMaterial && ShouldWarnMissingMaterial())
             {
                 _loggedMissingMaterial = true;
-                Debug.LogWarning($"{ClusterDiagTag} Clustered fog renderer could not resolve one or more materials from FogOfWarSettings tile presets. Cluster meshes may render with Unity fallback material.");
             }
         }
 

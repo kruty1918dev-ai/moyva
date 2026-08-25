@@ -150,7 +150,6 @@ namespace Kruty1918.Moyva.Construction.UI
             if (byId.ContainsKey(id))
                 return;
 
-
 			var existing = buildingRegistry?.GetById(id);
 			if (existing != null)
 			{
@@ -171,7 +170,6 @@ namespace Kruty1918.Moyva.Construction.UI
 				Prefab = prefab,
 			            };
         }
-
 
 		public Sprite ExtractSpriteForMenu(BuildingDefinition building, IBuildingRegistry buildingRegistry, UnityEngine.Object context)
 		{
@@ -218,7 +216,6 @@ namespace Kruty1918.Moyva.Construction.UI
 
 			if (fallbackPrefab == null)
 			{
-				Debug.LogWarning($"[Construction UI] Для будівлі '{building.Id}' не задано prefab. Використовую поле Icon з реєстру.", context);
 				return building.Icon;
 			}
 

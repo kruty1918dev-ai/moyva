@@ -375,7 +375,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 return;
 
             logged = true;
-            Debug.Log($"{LogTag} {message}");
         }
 
         private bool ShouldLogLifecycle(bool alreadyLogged)

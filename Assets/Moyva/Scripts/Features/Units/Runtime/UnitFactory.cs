@@ -60,7 +60,6 @@ namespace Kruty1918.Moyva.Units.Runtime
 			if (_objectsMapService.IsOccupied(gridPosition))
 			{
 				_objectsMapService.TryGetOccupant(gridPosition, out var occupantId);
-				Debug.LogWarning($"[UnitFactory] Cannot create unit '{typeId}' at {gridPosition}: tile is already occupied by '{occupantId}'.");
 				_typeCounters[typeId]--;
 				return null;
 			}
@@ -99,7 +98,6 @@ namespace Kruty1918.Moyva.Units.Runtime
 			if (_objectsMapService.IsOccupied(gridPosition))
 			{
 				_objectsMapService.TryGetOccupant(gridPosition, out var occupantId);
-				Debug.LogWarning($"[UnitFactory] CreateUnitWithId: tile {gridPosition} already occupied by '{occupantId}'.");
 				return null;
 			}
 

@@ -130,8 +130,6 @@ namespace Kruty1918.Moyva.Grid.Runtime
             if (!_loggedSurfaceFallback)
             {
                 _loggedSurfaceFallback = true;
-                Debug.LogWarning(
-                    $"{LogTag} Surface-aware pointer mapping found no generated terrain surface; falling back to the grid plane.");
             }
 
             return false;

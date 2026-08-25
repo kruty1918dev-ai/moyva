@@ -36,42 +36,30 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public void LogEnter(GraphAsset graph, TileWorldCreatorManager manager, int seed, int width, int height)
         {
-            Debug.Log($"{WorldGenDiagTag} GraphMapData.Generate ENTER frame={Time.frameCount}, graph={(graph != null ? graph.name : "null")}, " +
-                      $"seed={seed}, map={width}x{height}, hasGraph={graph != null}, hasTwcManager={manager != null}");
         }
 
         public void LogValidation(GraphTwcValidationResult validation)
         {
-            Debug.Log($"{WorldGenDiagTag} GraphMapData.Validation result={(validation.HasGlobalErrors ? "invalid" : "valid")}, " +
-                      $"errors={validation.ErrorCount}, warnings={validation.WarningCount}");
         }
 
         public void LogCompileCall(GraphAsset graph, int width, int height)
         {
-            Debug.Log($"{WorldGenDiagTag} GraphMapData.CALL GraphToConfigurationCompiler.Compile graph={(graph != null ? graph.name : "null")}, map={width}x{height}");
         }
 
         public void LogCompileResult(TileWorldCreatorManager manager, IReadOnlyList<CompiledLayerMap> compiled, int skippedCount)
         {
-            Debug.Log($"{WorldGenDiagTag} GraphMapData.Compile.RESULT config={(manager.configuration != null ? manager.configuration.name : "null")}, " +
-                      $"layers={compiled?.Count ?? 0}, renderableLayers={CountRenderableLayers(compiled)}, skippedLayers={skippedCount}");
         }
 
         public void LogTwcCall(TileWorldCreatorManager manager)
         {
-            Debug.Log($"{WorldGenDiagTag} GraphMapData.CALL TWC.GenerateCompleteMap frame={Time.frameCount}, config={(manager.configuration != null ? manager.configuration.name : "null")}");
         }
 
         public void LogTwcResult(long elapsedMs, Array biomeMap, Array heightMap, Array objectMap)
         {
-            Debug.Log($"{WorldGenDiagTag} GraphMapData.TWC.RESULT frame={Time.frameCount}, elapsedMs={elapsedMs}, " +
-                      $"hasBiomeMap={biomeMap != null}, hasHeightMap={heightMap != null}, hasObjectMap={objectMap != null}");
         }
 
         public void LogExit(int width, int height, Array biomeMap, Array heightMap, Array objectMap, Array buildingMap)
         {
-            Debug.Log($"{WorldGenDiagTag} GraphMapData.EXIT worldData map={width}x{height}, biomeMap={FormatMapSize(biomeMap)}, " +
-                      $"heightMap={FormatMapSize(heightMap)}, objectMap={FormatMapSize(objectMap)}, buildingMap={FormatMapSize(buildingMap)}");
         }
 
         public void LogMissingManager()
@@ -86,8 +74,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public void LogSkippedLayers(IGraphTwcValidationService validationService, GraphTwcValidationResult validation)
         {
-            if (validation.SkippedLayerIds.Count > 0)
-                Debug.LogWarning($"[GraphTwcGenerator] {validation.SkippedLayerIds.Count} layer(s) skipped because of validation errors:\n{validationService.FormatReport(validation.Report)}");
         }
 
         public void LogException(Exception exception)

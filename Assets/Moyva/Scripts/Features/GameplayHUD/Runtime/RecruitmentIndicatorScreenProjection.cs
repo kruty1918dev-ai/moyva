@@ -19,7 +19,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (cached == null && !warningLogged)
             {
                 warningLogged = true;
-                Debug.LogWarning(missingCameraWarning);
             }
 
             return cached;

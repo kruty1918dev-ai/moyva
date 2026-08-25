@@ -36,7 +36,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _loggedNoRuntimeLayers = false;
             _loggedUnexploredPresetProblem = false;
             _loggedExploredPresetProblem = false;
-            Debug.Log($"{StartDiagTag} VolumeUpdater.AttachController controller={(controller != null ? controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, settings={(controller.Settings != null ? controller.Settings.name : "null")}, hasLastFogService={_pendingWorkState.FogService != null}, hasBuilt={_hasBuiltAtLeastOnce}.");
             LogUpdaterOnce(ref _loggedAttach, $"AttachController: controller='{controller.name}', manager={(_manager != null ? _manager.name : "null")}, settings={(controller.Settings != null ? controller.Settings.name : "null")}, hasLastFogService={_pendingWorkState.FogService != null}, hasBuilt={_hasBuiltAtLeastOnce}.");
             RequestVisualRebuild();
             if (_pendingWorkState.FogService != null && !_hasBuiltAtLeastOnce)
@@ -135,14 +134,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             if (_pendingWorkState.FogService != null)
             {
-                Debug.Log($"{LogTag} PreviewRevealArea skipped: gameplay fog service is active and will drive visual state.");
                 return;
             }
 
             if (!_context.IsValid)
                 _context = CreateFallbackContext(_mapWidth, _mapHeight);
-
-            Debug.Log($"{LogTag} PreviewRevealArea center={center}, radius={Mathf.Max(0, radius)}, shape={shape}, keepVisible={keepVisible}, context={_context.Width}x{_context.Height}.");
             Initialize(_context.Width, _context.Height, _context);
             RebuildFullVisual(_startupFogServiceFactory.Create(_context.Width, _context.Height, center, radius, shape, keepVisible));
         }
@@ -161,16 +157,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 && (requested >= LargeDirtyRequestThreshold
                     || accepted >= LargeDirtyRequestThreshold))
             {
-                Debug.Log(
-                    $"{ConstructionPerfTag} fog-dirty-request " +
-                    $"requested={requested} accepted={accepted} " +
-                    $"map={_mapWidth}x{_mapHeight} " +
-                    $"full={_pendingWorkState.FullRebuildRequested}");
             }
             if (ShouldLogLifecycle(_loggedDirtyUpdate))
             {
                 _loggedDirtyUpdate = true;
-                Debug.Log($"{LogTag} UpdateDirtyTiles: fogService={(fogService != null ? fogService.GetType().Name : "null")}, requested={requested}, acceptedPending={accepted}, map={_mapWidth}x{_mapHeight}, updateMode={_visualUpdateScheduleState.CurrentUpdateMode}, immediate={_visualUpdateRequestPolicy.ShouldExecuteImmediateRequest()}, controller={(_controller != null ? _controller.name : "null")}.");
             }
             if (_visualUpdateRequestPolicy.ShouldExecuteImmediateRequest())
                 ExecutePendingVisualWork();
@@ -199,10 +189,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 && (requested >= LargeDirtyRequestThreshold
                     || accepted >= LargeDirtyRequestThreshold))
             {
-                Debug.Log(
-                    $"{ConstructionPerfTag} fog-cell-request " +
-                    $"requested={requested} accepted={accepted} " +
-                    $"context={_context.Width}x{_context.Height}");
             }
             if (_visualUpdateRequestPolicy.ShouldExecuteImmediateRequest())
                 ExecutePendingVisualWork();
@@ -217,11 +203,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (fogService != null)
                 _loggedMissingFogService = false;
             _pendingWorkRequests.RequestFullRebuild(fogService);
-            Debug.Log($"{StartDiagTag} VolumeUpdater.RebuildFullVisual hasFogService={fogService != null}, map={_mapWidth}x{_mapHeight}, controller={(_controller != null ? _controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, contextValid={_context.IsValid}, hasBuilt={_hasBuiltAtLeastOnce}, contextChanged={_worldContextChangedSinceBuild}.");
             if (ShouldLogLifecycle(_loggedRebuildRequest))
             {
                 _loggedRebuildRequest = true;
-                Debug.Log($"{LogTag} RebuildFullVisual: fogService={(fogService != null ? fogService.GetType().Name : "null")}, map={_mapWidth}x{_mapHeight}, contextValid={_context.IsValid}, hasController={_controller != null}, hasManager={_manager != null}, hasBuilt={_hasBuiltAtLeastOnce}, contextChanged={_worldContextChangedSinceBuild}, updateMode={_visualUpdateScheduleState.CurrentUpdateMode}.");
             }
             if (_visualUpdateRequestPolicy.ShouldExecuteFullRebuildRequestImmediately(_hasBuiltAtLeastOnce, _worldContextChangedSinceBuild))
                 ExecutePendingVisualWork();
@@ -300,21 +284,16 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (_pendingWorkState.FogService != null)
             {
-                Debug.Log($"{LogTag} Startup build skipped: gameplay fog service is already available.");
                 return;
             }
 
             if (_hasBuiltAtLeastOnce)
             {
-                Debug.Log($"{LogTag} Startup build skipped: fog volume has already been built.");
                 return;
             }
 
             if (!context.IsValid)
                 context = CreateFallbackContext(_mapWidth, _mapHeight);
-
-            Debug.Log($"{StartDiagTag} VolumeUpdater.RequestStartupBuildFromController controller={(controller != null ? controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, context={context.Width}x{context.Height}, cell={context.CellSize:0.###}, visibleCenter={(visibleCenter.HasValue ? visibleCenter.Value.ToString() : "none")}, visibleRadius={Mathf.Max(0, visibleRadius)}, keepVisible={keepVisible}, hasLastFogService={_pendingWorkState.FogService != null}, hasBuilt={_hasBuiltAtLeastOnce}.");
-            Debug.Log($"{LogTag} Startup build requested by controller='{(controller != null ? controller.name : "null")}', context={context.Width}x{context.Height}, cell={context.CellSize:0.###}, bounds={FormatBounds(context)}, heightMap={FormatMapSize(context.HeightMap)}, terrainLevelMap={FormatMapSize(context.TerrainLevelMap)}, visibleCenter={(visibleCenter.HasValue ? visibleCenter.Value.ToString() : "none")}, visibleRadius={Mathf.Max(0, visibleRadius)}, visibleShape={visibleShape}, keepVisible={keepVisible}.");
             Initialize(context.Width, context.Height, context);
             RebuildFullVisual(visibleCenter.HasValue
                 ? _startupFogServiceFactory.Create(context.Width, context.Height, visibleCenter.Value, visibleRadius, visibleShape, keepVisible)
@@ -332,7 +311,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             _runtimeConfigurationDirty = true;
             _pendingWorkRequests.RequestFullRebuildWhenFogServiceAvailable();
-            Debug.Log($"{StartDiagTag} VolumeUpdater.RequestFullRebuildFromController controller={(controller != null ? controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, hasLastFogService={_pendingWorkState.FogService != null}, context={_context.Width}x{_context.Height}.");
 
             if (_pendingWorkState.HasPendingWork)
                 ExecutePendingVisualWork();

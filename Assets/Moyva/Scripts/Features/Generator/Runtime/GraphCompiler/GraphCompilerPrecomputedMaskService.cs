@@ -96,9 +96,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (evaluationSnapshot == null)
             {
-                Debug.LogWarning(
-                    $"[GraphToConfigurationCompiler] Layer '{layer.Name}' graph-output mask was not precomputed: " +
-                    "evaluation snapshot is missing.");
                 return;
             }
 

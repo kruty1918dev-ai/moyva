@@ -27,7 +27,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             Application.quitting += OnApplicationQuitting;
             Application.wantsToQuit += OnApplicationWantsToQuit;
-            Debug.Log($"{Prefix} Initialized; will auto-leave session on app quit.");
         }
 
         public void Dispose()
@@ -46,9 +45,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             {
                 TryLeaveSessionSync();
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Debug.LogWarning($"{Prefix} wantsToQuit leave failed: {e.Message}");
             }
             return true;
         }
@@ -63,9 +61,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             {
                 TryLeaveSessionSync();
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Debug.LogWarning($"{Prefix} quitting leave failed: {e.Message}");
             }
         }
 
@@ -88,11 +85,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
                 // Чекаємо коротко; не блокуємо shutdown більше ніж на LeaveTimeoutMs.
                 task.Wait(LeaveTimeoutMs);
-                Debug.Log($"{Prefix} Auto-leave completed (status={task.Status}).");
             }
-            catch (AggregateException ae)
+            catch (AggregateException)
             {
-                Debug.LogWarning($"{Prefix} Auto-leave inner: {ae.InnerException?.Message ?? ae.Message}");
             }
         }
     }

@@ -54,7 +54,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnSpawnPositions);
             ReplayCachedWorldSignalsIfAvailable();
-            Debug.Log($"{WorldGenDiagTag} Receiver.Camera.Initialize subscribed frame={Time.frameCount}");
         }
 
         public void Dispose()
@@ -67,8 +66,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
         {
             if (ShouldSkipWorldSignal(signal))
                 return;
-
-            Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldGenerated RECEIVED frame={Time.frameCount}, map={signal.Width}x{signal.Height}");
             if (_currentStartupSequence != signal.StartupSequence)
             {
                 _currentStartupSequence = signal.StartupSequence;
@@ -86,8 +83,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
         {
             if (ShouldSkipSpawnSignal(signal))
                 return;
-
-            Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldSpawnPositions RECEIVED frame={Time.frameCount}, assignments={signal.Assignments?.Length ?? 0}");
             if (_currentSpawnSequence != signal.StartupSequence)
             {
                 _currentSpawnSequence = signal.StartupSequence;
@@ -107,11 +102,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
             string skipReason = ResolveAutoFrameSkipReason();
             if (skipReason != null)
             {
-                Debug.Log($"{StartupChainTag} Camera.AutoFrame SKIP reason={skipReason}, hasWorld={_hasWorld}, assignments={_lastSpawnAssignments?.Length ?? 0}, applied={_hasAppliedStartupFrame}, hasMovement={_cameraMovement != null}, camera={FormatCameraState()}.");
                 return;
             }
-
-            Debug.Log($"{StartupChainTag} Camera.AutoFrame ENTER before={FormatCameraState()}, assignments={_lastSpawnAssignments.Length}, world={_lastWorld.Width}x{_lastWorld.Height}.");
             ConfigureStartupCameraPose();
 
             Vector2Int focusGrid = ResolveFocusGridPosition(_lastWorld.Width, _lastWorld.Height);
@@ -121,18 +113,15 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 : new Vector3(focusGrid.x, focusGrid.y, 0f);
 
             float distance = ResolveStartupCameraDistance();
-            Debug.Log($"{StartupChainTag} Camera.AutoFrame CALL movement focusGrid={focusGrid}, elevation={elevation:0.###}, focusPoint={FormatVector(focusPoint)}, distance={distance:0.###}, afterPose={FormatCameraState()}.");
             _cameraMovement.TeleportCameraToFocusPoint(focusPoint, distance);
             _hasAppliedStartupFrame = true;
 
             if (_cameraZoom == null)
             {
-                Debug.Log($"{StartupChainTag} Camera.AutoFrame EXIT zoomSkipped=true reason=no-camera-zoom, after={FormatCameraState()}.");
                 return;
             }
 
             _cameraZoom.ForceZoomCamera(ResolveCurrentCameraZoomLevel());
-            Debug.Log($"{StartupChainTag} Camera.AutoFrame EXIT focusGrid={focusGrid}, focusPoint={FormatVector(focusPoint)}, after={FormatCameraState()}.");
         }
 
         private string ResolveAutoFrameSkipReason()
@@ -160,13 +149,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             if (_worldGenerationSignalState.TryGetWorldGeneratedData(out var worldSignal))
             {
-                Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldGenerated REPLAY frame={Time.frameCount}, map={worldSignal.Width}x{worldSignal.Height}");
                 OnWorldGenerated(worldSignal);
             }
 
             if (_worldGenerationSignalState.TryGetWorldSpawnPositions(out var spawnSignal))
             {
-                Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldSpawnPositions REPLAY frame={Time.frameCount}, assignments={spawnSignal.Assignments?.Length ?? 0}");
                 OnSpawnPositions(spawnSignal);
             }
         }
@@ -178,8 +165,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 _lastHandledWorldRevision = signal.SnapshotRevision;
                 return false;
             }
-
-            Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldGenerated SKIP duplicate revision={signal.SnapshotRevision}, sequence={signal.StartupSequence}, source={signal.Source}");
             return true;
         }
 
@@ -190,14 +175,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 _lastHandledSpawnRevision = signal.SnapshotRevision;
                 return false;
             }
-
-            Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldSpawnPositions SKIP duplicate revision={signal.SnapshotRevision}, sequence={signal.StartupSequence}, source={signal.Source}");
             return true;
         }
 
         private void ConfigureStartupCameraPose()
         {
-            Debug.Log($"{StartupChainTag} Camera.AutoFramePose ENTER before={FormatCameraState()}.");
             _camera.transform.rotation = Quaternion.Euler(ResolveStartupCameraEuler());
             bool usePerspective = ResolveUsePerspectiveStartupCamera();
             _camera.orthographic = !usePerspective;
@@ -205,7 +187,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 _camera.orthographicSize = ResolveStartupOrthographicSize();
             else
                 _camera.fieldOfView = ResolveStartupFieldOfView();
-            Debug.Log($"{StartupChainTag} Camera.AutoFramePose EXIT usePerspective={usePerspective}, after={FormatCameraState()}.");
         }
 
         private Vector3 ResolveStartupCameraEuler()

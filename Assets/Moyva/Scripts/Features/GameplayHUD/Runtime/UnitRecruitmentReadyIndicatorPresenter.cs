@@ -254,8 +254,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (sprite == null && _missingSpriteWarnings.Add(key))
             {
-                Debug.LogWarning(
-                    "[UnitRecruitmentReadyIndicator] Unit ready indicator has no CustomSprite. Neutral indicator will be shown.");
             }
 
             return sprite;

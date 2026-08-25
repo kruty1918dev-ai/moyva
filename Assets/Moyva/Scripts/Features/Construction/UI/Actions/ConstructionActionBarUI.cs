@@ -65,14 +65,6 @@ namespace Kruty1918.Moyva.Construction.UI
 
         private void Awake()
         {
-            if (confirmButton == null)
-                Debug.LogWarning($"[ConstructionActionBarUI] Поле 'confirmButton' не призначено на '{name}'.", this);
-            if (cancelButton == null)
-                Debug.LogWarning($"[ConstructionActionBarUI] Поле 'cancelButton' не призначено на '{name}'.", this);
-            if (undoButton == null)
-                Debug.LogWarning($"[ConstructionActionBarUI] Поле 'undoButton' не призначено на '{name}'.", this);
-            if (redoButton == null)
-                Debug.LogWarning($"[ConstructionActionBarUI] Поле 'redoButton' не призначено на '{name}'.", this);
 
             if (confirmButton != null) confirmButton.onClick.AddListener(HandleConfirm);
             if (cancelButton  != null) cancelButton.onClick.AddListener(HandleCancel);

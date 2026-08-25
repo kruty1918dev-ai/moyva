@@ -24,7 +24,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             bool stoppedPendingBuildCoroutines = StopPendingTileWorldBuildCoroutines(generatedChildrenBeforeClear, layerObjectsBeforeBuild);
             int clearedGeneratedChildren = ClearGeneratedOutputBeforeBuild();
             int generatedChildrenAfterClear = CountGeneratedOutputChildren();
-            Debug.Log($"{StartupChainTag} FogVolume.TWCBuild BEFORE manager={_manager.name}, rebuild={(wasFullRebuild ? "full" : "dirty")}, reason={reason}, requestedDirty={requestedDirtyTiles}, runtimeLayers={_runtimeLayers.Count}, clusters={clustersBeforeBuild}, layerObjects={layerObjectsBeforeBuild}, generatedChildrenBeforeClear={generatedChildrenBeforeClear}, stoppedPendingBuildCoroutines={stoppedPendingBuildCoroutines}, clearedGeneratedChildren={clearedGeneratedChildren}, generatedChildrenAfterClear={generatedChildrenAfterClear}, config={_runtimeConfiguration.name}.");
             _manager.configuration = _runtimeConfiguration;
             ApplyFogBatchingBudget();
             _manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
@@ -32,14 +31,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _worldContextChangedSinceBuild = false;
             int clustersAfterBuild = CountGeneratedClusters();
             int layerObjectsAfterBuild = CountLayerObjects();
-            Debug.Log($"{StartDiagTag} VolumeUpdater.ExecuteTileWorldCreatorBuild manager={_manager.name}, runtimeConfig={_runtimeConfiguration.name}, map={_mapWidth}x{_mapHeight}, rebuild={(wasFullRebuild ? "full" : "dirty")}, reason={reason}, dirtyRequested={requestedDirtyTiles}, runtimeLayers={_runtimeLayers.Count}, unexploredCells={_stateCache.UnexploredCellCount}, exploredCells={_stateCache.ExploredCellCount}.");
-            Debug.Log($"{StartupChainTag} FogVolume.TWCBuild AFTER manager={_manager.name}, rebuild={(wasFullRebuild ? "full" : "dirty")}, reason={reason}, requestedDirty={requestedDirtyTiles}, runtimeLayers={_runtimeLayers.Count}, clustersBefore={clustersBeforeBuild}, clustersAfterImmediate={clustersAfterBuild}, layerObjectsBefore={layerObjectsBeforeBuild}, layerObjectsAfterImmediate={layerObjectsAfterBuild}, stoppedPendingBuildCoroutines={stoppedPendingBuildCoroutines}, clearedGeneratedChildren={clearedGeneratedChildren}.");
-            Debug.Log($"{StartupChainTag} FogVolume.VisualBuildApplied visualFogDispersed={Mathf.Max(0, _mapWidth * _mapHeight - _stateCache.UnexploredCellCount - _stateCache.ExploredCellCount) > 0}, visibleCells={Mathf.Max(0, _mapWidth * _mapHeight - _stateCache.UnexploredCellCount - _stateCache.ExploredCellCount)}, exploredCells={_stateCache.ExploredCellCount}, unexploredCells={_stateCache.UnexploredCellCount}, runtimeLayers={_runtimeLayers.Count}, clustersAfter={clustersAfterBuild}, layerObjectsAfter={layerObjectsAfterBuild}, stoppedPendingBuildCoroutines={stoppedPendingBuildCoroutines}, clearedGeneratedChildren={clearedGeneratedChildren}, reason={reason}.");
 
             if (ShouldLogBuildSummary(contextChanged))
             {
                 _loggedFirstBuild = true;
-                Debug.Log(BuildSummaryLog(isInitialBuild, contextChanged, wasFullRebuild, requestedDirtyTiles));
             }
         }
 
@@ -94,11 +89,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (clusterChanged || mergeOverrideCount > 0)
             {
                 int estimatedClusters = EstimateClusterCount(maxLayerWidth, maxLayerHeight, _runtimeConfiguration.clusterCellSize) * safeLayerCount;
-                Debug.Log(
-                    $"{LogTag} Fog batching applied: mergeTiles={_runtimeConfiguration.mergeTiles}, " +
-                    $"clusterCellSize={_runtimeConfiguration.clusterCellSize}, activeLayers={activeLayerCount}, " +
-                    $"estimatedClusters={estimatedClusters}, target={TargetFogClusterBudget}, " +
-                    $"layerMergeOverridesEnabled={mergeOverrideCount}.");
             }
         }
 

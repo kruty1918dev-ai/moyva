@@ -127,10 +127,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _calendarService.OnHourChanged += OnDefenseTurn;
             BuildingDefinitionAsset.RuntimeRevisionChanged +=
                 OnBuildingDefinitionRuntimeRevisionChanged;
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] defense-authority " +
-                $"authoritative={IsAuthoritativeRuntime}");
         }
 
         public void Dispose()
@@ -173,7 +169,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var definition = _buildingRegistry.GetById(signal.BuildingId);
             if (definition == null)
             {
-                Debug.LogWarning($"[BuildingHealthService] Визначення будівлі '{signal.BuildingId}' не знайдено; health не буде зареєстроване.");
                 return;
             }
 
@@ -242,11 +237,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     * 1000d;
                 if (elapsedMs >= HealthPlacementPerfThresholdMs)
                 {
-                    Debug.Log(
-                        $"{PerfLogTag} health-register " +
-                        $"building={signal.BuildingId} " +
-                        $"pos={signal.Position} hp={maxHp} " +
-                        $"elapsedMs={elapsedMs:F3}");
                 }
             }
         }
@@ -272,11 +262,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ReleaseGarrisonForBuilding(position);
             _buildingOwners.Remove(position);
             _buildingIds.Remove(position);
-
-            Debug.LogWarning(
-                $"[MoyvaConstructionModules] building-destroyed " +
-                $"position={position} cause=health-zero " +
-                "constructionSink=missing-or-rejected");
         }
 
         private void OnBuildingDemolished(
@@ -428,11 +413,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             writer.Flush();
 
-            Debug.Log(
-                $"[MoyvaConstructionModules] building-runtime-save " +
-                $"health={healthEntries.Count} " +
-                $"garrisonUnits={unitIds.Count}");
-
             return stream.ToArray();
         }
 
@@ -451,9 +431,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             int version = reader.ReadInt32();
             if (version != 2)
             {
-                Debug.LogWarning(
-                    $"[MoyvaConstructionModules] building-runtime-load " +
-                    $"unsupported-version={version}");
                 return;
             }
 
@@ -537,14 +514,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (_pendingGarrisonRestoreByUnit.Count < before)
                     restoredGarrison++;
             }
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] building-runtime-load " +
-                $"health={restoredHealth}/{healthCount} " +
-                $"healthSkipped={skippedHealth} " +
-                $"garrisonQueued={queued} " +
-                $"garrisonRestored={restoredGarrison} " +
-                $"garrisonPending={_pendingGarrisonRestoreByUnit.Count}");
         }
 
         private void TryRestorePendingGarrisonsForBuilding(
@@ -593,10 +562,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (capacity <= 0)
             {
                 _pendingGarrisonRestoreByUnit.Remove(unitId);
-                Debug.LogWarning(
-                    $"[MoyvaConstructionModules] garrison-load drop " +
-                    $"unit={unitId} building={buildingPosition} " +
-                    "reason=no-capacity");
                 return;
             }
 
@@ -612,10 +577,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (units.Count >= capacity)
             {
                 _pendingGarrisonRestoreByUnit.Remove(unitId);
-                Debug.LogWarning(
-                    $"[MoyvaConstructionModules] garrison-load drop " +
-                    $"unit={unitId} building={buildingPosition} " +
-                    $"reason=capacity count={units.Count}/{capacity}");
                 return;
             }
 
@@ -634,11 +595,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     StringComparison.Ordinal))
             {
                 _pendingGarrisonRestoreByUnit.Remove(unitId);
-                Debug.LogWarning(
-                    $"[MoyvaConstructionModules] garrison-load drop " +
-                    $"unit={unitId} building={buildingPosition} " +
-                    $"reason=owner-mismatch " +
-                    $"unitOwner={unitOwner} buildingOwner={buildingOwner}");
                 return;
             }
 
@@ -656,11 +612,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _garrisonBuildingByUnit[unitId] =
                 buildingPosition;
             _pendingGarrisonRestoreByUnit.Remove(unitId);
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] garrison-load restored " +
-                $"unit={unitId} building={buildingPosition} " +
-                $"count={units.Count}/{capacity}");
         }
 
         public bool TryGarrisonUnit(
@@ -732,10 +683,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             units.Add(unitId);
             _garrisonBuildingByUnit[unitId] = buildingPosition;
-            Debug.Log(
-                $"[MoyvaConstructionModules] garrison enter " +
-                $"building={buildingId}@{buildingPosition} unit={unitId} " +
-                $"count={units.Count}/{capacity}");
             return true;
         }
 
@@ -765,9 +712,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             RemoveUnitFromGarrisonCollections(unitId);
-            Debug.Log(
-                $"[MoyvaConstructionModules] garrison exit " +
-                $"building={buildingPosition} unit={unitId} target={targetPosition}");
             return true;
         }
 
@@ -877,11 +821,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     RemoveUnitFromGarrisonCollections(unitId);
                     released++;
-
-                    Debug.Log(
-                        $"[MoyvaConstructionModules] garrison release " +
-                        $"building={buildingPosition} unit={unitId} " +
-                        $"target={target}");
                 }
                 else
                 {
@@ -892,11 +831,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         $"reason={reason}");
                 }
             }
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] garrison release-summary " +
-                $"building={buildingPosition} " +
-                $"released={released} failed={failed}");
         }
 
         private void EnforceGarrisonCapacity(
@@ -948,11 +882,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 RemoveUnitFromGarrisonCollections(unitId);
                 mustRelease--;
-
-                Debug.Log(
-                    $"[MoyvaConstructionModules] garrison capacity-trim " +
-                    $"building={buildingPosition} unit={unitId} " +
-                    $"target={target} capacity={capacity}");
             }
         }
 
@@ -1020,10 +949,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 refreshed++;
             }
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] live-refresh building-runtime " +
-                $"revision={revision} buildings={refreshed}");
         }
 
         private bool IsAuthoritativeRuntime =>
@@ -1037,9 +962,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (!_loggedReplicaDefenseSuppression)
                 {
                     _loggedReplicaDefenseSuppression = true;
-                    Debug.Log(
-                        "[MoyvaConstructionModules] defense-turn " +
-                        "suppressed=replica");
                 }
                 return;
             }

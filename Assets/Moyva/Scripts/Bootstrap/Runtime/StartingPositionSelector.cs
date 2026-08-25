@@ -48,14 +48,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 1,
                 _settings.startCandidateAttempts);
 
-            Debug.Log(
-                $"{DirectDiagTag} Selector.ENTER requestedCount={positionsCount}, " +
-                $"map={signal.Width}x{signal.Height}, " +
-                $"minDistance={Mathf.Max(1, _settings.minAStarDistanceBetweenPlayers)}, " +
-                $"terrainRadius={Mathf.Max(1, _settings.startTerrainSampleRadius)}, " +
-                $"minLandRatio={Mathf.Clamp01(_settings.minimumLandRatioAroundStart):0.00}, " +
-                $"preferWater={_settings.preferWaterNearStart}, attempts={attempts}.");
-
             bool isDirectGameplay =
                 signal.Source == WorldGeneratedDataSource.DirectGameplayTest ||
                 GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest ||
@@ -86,11 +78,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         out position))
                 {
                     positions.Add(position);
-                    Debug.LogWarning(
-                        $"{DirectDiagTag} Selector.DIRECT_FALLBACK_RELAX_DISTANCE " +
-                        $"slot={positionIndex}, position={position}. " +
-                        "Terrain quality and valid height were preserved; only " +
-                        "the configured inter-player path distance was relaxed.");
                     continue;
                 }
 
@@ -103,11 +90,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         out position))
                 {
                     positions.Add(position);
-                    Debug.LogWarning(
-                        $"{DirectDiagTag} Selector.DIRECT_FALLBACK_RELAX_TERRAIN_QUALITY " +
-                        $"slot={positionIndex}, position={position}. " +
-                        "Valid center height is preserved, but the regional land-ratio " +
-                        "threshold could not be satisfied.");
                     continue;
                 }
 
@@ -120,11 +102,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         out position))
                 {
                     positions.Add(position);
-                    Debug.LogWarning(
-                        $"{DirectDiagTag} Selector.DIRECT_FALLBACK_LAST_RESORT " +
-                        $"slot={positionIndex}, position={position}. " +
-                        "No unique tile satisfied normal terrain constraints. " +
-                        "This is a degraded startup and should be investigated.");
                     continue;
                 }
 
@@ -135,14 +112,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (positions.Count > 1)
             {
-                Debug.Log(
-                    $"[Bootstrap] Reserved terrain-aware start positions: " +
-                    $"{string.Join(", ", positions)}");
             }
-
-            Debug.Log(
-                $"{DirectDiagTag} Selector.RESULT selected={positions.Count}, " +
-                $"selectedShort={FormatPositions(positions)}.");
 
             return positions;
         }
@@ -273,15 +243,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
             }
 
-            Debug.Log(
-                $"{DirectDiagTag} Selector.Candidates " +
-                $"accepted={(found ? 1 : 0)}, rejectedOutOfBounds={rejectedBounds}, " +
-                $"rejectedHeight={rejectedHeight}, rejectedDistance={rejectedDistance}, " +
-                $"rejectedTerrain={rejectedTerrain}, " +
-                $"best={(found ? best.ToString() : "none")}, " +
-                $"bestScore={(found ? bestScore : int.MinValue)}, " +
-                $"terrain={(found ? bestQuality.Reason : "none")}.");
-
             position = best;
             return found;
         }
@@ -308,10 +269,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     _settings.minMarginFromBorder,
                     _settings.relativeMarginFactor,
                     out int seed);
-
-            Debug.Log(
-                $"{DirectDiagTag} Selector.PickRandom " +
-                $"position={position}, seed={seed}, map={width}x{height}.");
 
             return position;
         }

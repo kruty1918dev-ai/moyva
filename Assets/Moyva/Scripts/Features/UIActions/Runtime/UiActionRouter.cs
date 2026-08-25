@@ -42,14 +42,12 @@ namespace Kruty1918.Moyva.UIActions.Runtime
         {
             if (!UiActionId.IsValid(request.ActionId.Value))
             {
-                Debug.LogWarning("[UIActions] Rejected invalid UI action request.");
                 return UiActionResult.Rejected(UiActionReason.ActionUnavailable);
             }
 
             if (!_handlers.TryGetValue(request.ActionId, out IUiActionHandler handler)
                 || handler == null)
             {
-                Debug.LogWarning($"[UIActions] No handler registered for action '{request.ActionId}'.");
                 return UiActionResult.Rejected(UiActionReason.ActionUnavailable);
             }
 

@@ -80,9 +80,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (!_turns.TryRecordAction(normalizedOwner, actionId))
             {
-                Debug.LogWarning(
-                    $"[ConstructionTurnAuthority] Failed to record action '{actionId}' " +
-                    $"for owner '{normalizedOwner}'.");
             }
         }
 

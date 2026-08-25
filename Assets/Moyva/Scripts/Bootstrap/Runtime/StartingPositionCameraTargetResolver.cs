@@ -105,13 +105,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (TryFindNearestVisibleTile(clamped, width, height, out Vector2Int visiblePosition))
             {
-                Debug.LogWarning($"[Bootstrap] Камера мала стартувати над чорним туманом у {clamped}. Переміщено до найближчої видимої ділянки {visiblePosition}.");
                 return visiblePosition;
             }
 
             if (TryFindNearestExploredTile(clamped, width, height, out Vector2Int exploredPosition))
             {
-                Debug.LogWarning($"[Bootstrap] Видимих тайлів для старту камери не знайдено. Використано найближчу розвідану ділянку {exploredPosition}.");
                 return exploredPosition;
             }
 

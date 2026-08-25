@@ -23,21 +23,17 @@ namespace Kruty1918.Moyva.Calendar.Runtime
         public CalendarConfig Load()
         {
             if (!Exists())
-                return CalendarConfigLifecycle.ValidateAndFreeze(CalendarConfig.Default(),
-                    message => Debug.LogWarning($"[Calendar] {message}"));
+                return CalendarConfigLifecycle.ValidateAndFreeze(CalendarConfig.Default());
 
             try
             {
                 using var fs = File.OpenRead(_filePath);
                 using var br = new BinaryReader(fs);
-                return CalendarConfigLifecycle.ValidateAndFreeze(ReadConfig(br),
-                    message => Debug.LogWarning($"[Calendar] {message}"));
+                return CalendarConfigLifecycle.ValidateAndFreeze(ReadConfig(br));
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Debug.LogWarning($"[Calendar] Failed to load config: {e.Message}. Using defaults.");
-                return CalendarConfigLifecycle.ValidateAndFreeze(CalendarConfig.Default(),
-                    message => Debug.LogWarning($"[Calendar] {message}"));
+                return CalendarConfigLifecycle.ValidateAndFreeze(CalendarConfig.Default());
             }
         }
 

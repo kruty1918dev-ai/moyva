@@ -113,7 +113,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (_saveService == null)
             {
-                Debug.LogWarning("[LocalGameSettingsService] ISaveService is not available; cannot delete saves.");
                 return;
             }
             for (int slot = 0; slot <= 99; slot++)
@@ -151,7 +150,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[LocalGameSettingsService] Failed to load settings: {e.Message}. Defaults will be used.");
                 return CreateDefaultSettings();
             }
         }
@@ -229,7 +227,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             // 0..1 → -80..0 dB (логарифмічно).
             float db = linear01 <= 0.0001f ? -80f : Mathf.Log10(Mathf.Max(0.0001f, linear01)) * 20f;
             try { _mixerBindings.mixer.SetFloat(paramName, db); }
-            catch (Exception e) { Debug.LogWarning($"[LocalGameSettingsService] SetFloat('{paramName}') failed: {e.Message}"); }
+            catch (Exception e) { }
         }
     }
 }

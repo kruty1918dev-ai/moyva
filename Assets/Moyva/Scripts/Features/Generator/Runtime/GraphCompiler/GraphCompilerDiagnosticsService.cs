@@ -22,14 +22,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public void LogEnter(GraphAsset graph, Vector2Int mapSize, int seed)
         {
-            Debug.Log($"{Tag} GraphCompiler.Compile ENTER graph={(graph != null ? graph.name : "null")}, map={mapSize.x}x{mapSize.y}, seed={seed}");
         }
 
         public void LogLayerOrder(GraphAsset graph, IReadOnlyList<GeneratorLayerDefinition> orderedLayers)
         {
             int outputCount = CountOutputLayers(graph, orderedLayers);
-            Debug.Log($"{Tag} GraphCompiler.LayerOrder total={graph.Layers?.Count ?? 0}, enabled={orderedLayers?.Count ?? 0}, " +
-                      $"outputLayers={outputCount}, helperLayers={Mathf.Max(0, (orderedLayers?.Count ?? 0) - outputCount)}");
         }
 
         public void LogSkipped(GraphAsset graph, ISet<string> skippedLayerIds)
@@ -39,15 +36,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             var names = skippedLayerIds
                 .Select(id => graph?.GetLayerById(id)?.Name ?? id);
-            Debug.Log($"{Tag} GraphCompiler.SKIPPED skipped={skippedLayerIds.Count}, reasons={string.Join(", ", names)}");
         }
 
         public void LogResult(GraphAsset graph, Configuration config, int objectLayerCount, int warnings)
         {
             int buildLayerCount = GraphCompilerLayerAssetUtility.CountBuildLayers(config);
             int tileSettingsCount = graph.Nodes?.OfType<TileSettingsNode>().Count() ?? 0;
-            Debug.Log($"{Tag} GraphCompiler.RESULT config={config.name}, buildLayers={buildLayerCount}, " +
-                      $"tileSettings={tileSettingsCount}, objectPlacementLayers={objectLayerCount}, warnings={warnings}, errors=0");
         }
 
         private static int CountOutputLayers(GraphAsset graph, IReadOnlyList<GeneratorLayerDefinition> orderedLayers)

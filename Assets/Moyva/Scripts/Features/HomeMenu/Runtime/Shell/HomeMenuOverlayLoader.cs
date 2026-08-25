@@ -42,8 +42,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 ? 0f
                 : Mathf.Clamp01(_currentValue / _currentMax) * 100f;
 
-            Debug.Log($"[HomeMenuOverlayLoader] Show overlay {progressValue:0.##}{_currentSuffix} ({_currentValue}/{_currentMax})");
-
             OverlayLoaderResult result = null;
             // Use an async waiter instead of blocking GetResult() to avoid thread-pool blocking.
             result = OverlayLoaderResult.Start(
@@ -77,11 +75,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (_lockCount > 0)
             {
-                Debug.Log("[HomeMenuOverlayLoader] StopOverlay ignored (overlay is locked).");
                 return;
             }
-
-            Debug.Log("[HomeMenuOverlayLoader] StopOverlay called.");
             _overlayCompletionSource?.TrySetResult(true);
             StopLoading(_currentResult, forceImmediate);
             _currentResult = null;
@@ -91,13 +86,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void LockOverlay()
         {
             _lockCount++;
-            Debug.Log($"[HomeMenuOverlayLoader] Overlay locked (count={_lockCount}).");
         }
 
         public void UnlockOverlay()
         {
             _lockCount = Math.Max(0, _lockCount - 1);
-            Debug.Log($"[HomeMenuOverlayLoader] Overlay unlocked (count={_lockCount}).");
         }
 
         private void StopLoading(OverlayLoaderResult result, bool forceImmediate = false)
@@ -110,12 +103,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (forceImmediate)
             {
                 if (_panel != null) _panel.ForceHide();
-                Debug.Log("[HomeMenuOverlayLoader] Overlay ready. Forced panel hide.");
             }
             else
             {
                 if (_panel != null) _panel.EnsureHiddenAfterDelay(2f);
-                Debug.Log("[HomeMenuOverlayLoader] Overlay ready. Requested panel hide.");
             }
         }
     }

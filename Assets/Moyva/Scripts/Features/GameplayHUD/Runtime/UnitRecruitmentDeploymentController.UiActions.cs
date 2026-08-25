@@ -97,8 +97,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_camera == null && !_warnedMissingCamera)
             {
                 _warnedMissingCamera = true;
-                Debug.LogWarning(
-                    $"{LogTag} Main Camera not found. Deployment pointer fallback and sprite preview facing are disabled.");
             }
 
             return _camera;

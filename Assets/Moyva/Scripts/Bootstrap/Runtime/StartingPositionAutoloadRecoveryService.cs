@@ -35,7 +35,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public bool RepairLoadedFogIfNeeded(WorldGeneratedDataSignal signal)
         {
-            Debug.Log($"{DirectDiagTag} Workflow.RepairLoadedFogIfNeeded ENTER map={signal.Width}x{signal.Height}, canRunPolicyAvailable={_policy != null}, localSpawnResolver={_localSpawnResolver != null}, stateSet={_startingPositionState.IsSet}.");
             bool repaired = _loadedFogRepairService.RepairLoadedFogIfNeeded(
                 signal,
                 _policy.CanRunStartLogic,
@@ -43,20 +42,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _startingPositionState.IsSet,
                 _startingPositionState.StartPosition,
                 _cameraTargetResolver.TryGetClosestUnitPosition);
-            Debug.Log($"{DirectDiagTag} Workflow.RepairLoadedFogIfNeeded EXIT.");
             return repaired;
         }
 
         public Vector2Int ResolveStartupCameraTarget(int width, int height, bool preferStartTile)
         {
-            Debug.Log($"{DirectDiagTag} Workflow.ResolveStartupCameraTarget ENTER width={width}, height={height}, preferStartTile={preferStartTile}, stateSet={_startingPositionState.IsSet}.");
             Vector2Int target = _cameraTargetResolver.ResolveStartupCameraTarget(
                 width,
                 height,
                 preferStartTile,
                 _localSpawnResolver.TryGetLocalSpawnPosition,
                 ResolveRepairCenter);
-            Debug.Log($"{DirectDiagTag} Workflow.ResolveStartupCameraTarget RESULT target={target}.");
             return target;
         }
 

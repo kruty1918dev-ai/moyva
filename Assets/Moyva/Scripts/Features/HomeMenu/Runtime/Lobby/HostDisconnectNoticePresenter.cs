@@ -27,7 +27,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogWarning($"[HostDisconnectNoticePresenter] {e.Message}");
             }
         }
 

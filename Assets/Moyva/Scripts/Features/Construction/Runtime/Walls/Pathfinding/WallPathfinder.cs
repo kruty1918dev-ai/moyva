@@ -344,13 +344,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 return;
             }
-
-            Debug.Log(
-                $"{PerfLogTag} wall-path " +
-                $"start={start} end={end} " +
-                $"success={success} path={pathLength} " +
-                $"expanded={expandedNodes} " +
-                $"elapsedMs={elapsedMs:F3}");
         }
 
         private readonly struct OpenNode

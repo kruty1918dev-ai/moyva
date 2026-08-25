@@ -56,20 +56,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private static void Emit(string message, UObject context, bool warning)
         {
-            if (warning)
-            {
-                if (context != null)
-                    Debug.LogWarning(message, context);
-                else
-                    Debug.LogWarning(message);
-
-                return;
-            }
-
-            if (context != null)
-                Debug.Log(message, context);
-            else
-                Debug.Log(message);
         }
     }
 }

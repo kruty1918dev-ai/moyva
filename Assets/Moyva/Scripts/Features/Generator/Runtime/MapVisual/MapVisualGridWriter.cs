@@ -181,11 +181,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 double elapsedMs =
                     (Time.realtimeSinceStartupAsDouble - startedAt)
                     * 1000d;
-                Debug.Log(
-                    $"{PerfLogTag} tile-id invariant validated: " +
-                    $"grid={width}x{height} " +
-                    $"assigned={width * height} missing=0 " +
-                    $"elapsedMs={elapsedMs:F3}");
             }
         }
 
@@ -198,8 +193,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (_gridService is IGridResizeService resizeService)
                 resizeService.Resize(width, height);
-            else
-                Debug.LogWarning($"[MapVisualInstantiator] Grid size {_gridService.GridWidth}x{_gridService.GridHeight} does not match world size {width}x{height}, and the grid service cannot resize.");
         }
     }
 }

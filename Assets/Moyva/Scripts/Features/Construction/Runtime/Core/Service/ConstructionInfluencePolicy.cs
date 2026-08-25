@@ -49,9 +49,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 if (_verboseLogs())
                 {
-                    Debug.Log(
-                        $"[Construction] IsBlockedByInfluenceZone({position}, {buildingId}): " +
-                        "profile disabled influence rule");
                 }
 
                 return false;
@@ -59,8 +56,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (string.IsNullOrWhiteSpace(buildingId))
             {
-                Debug.LogWarning(
-                    "[Construction] IsBlockedByInfluenceZone: buildingId порожній");
                 return false;
             }
 
@@ -75,8 +70,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _buildingRegistry.GetById(buildingId);
             if (candidate == null)
             {
-                Debug.LogWarning(
-                    $"[Construction] IsBlockedByInfluenceZone: будівля '{buildingId}' не знайдена у реєстрі");
                 return false;
             }
 
@@ -84,9 +77,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 if (_verboseLogs())
                 {
-                    Debug.Log(
-                        "[Construction] IsBlockedByInfluenceZone: RuleDisabled - " +
-                        "немає центру поселення з SettlementCenterBuildingModule у реєстрі");
                 }
 
                 return false;
@@ -100,9 +90,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 if (_verboseLogs())
                 {
-                    Debug.Log(
-                        $"[Construction] IsBlockedByInfluenceZone: " +
-                        $"ruleRadius <= 0 ({ruleRadius}) - правило відключено");
                 }
 
                 return false;
@@ -118,10 +105,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_verboseLogs())
             {
-                Debug.Log(
-                    $"[Construction] IsBlockedByInfluenceZone({position}, {buildingId}): " +
-                    $"ruleRadius={ruleRadius}, " +
-                    $"hasInfluenceCenterInRange={hasInfluenceCenterInRange}");
             }
 
             bool requireInfluenceCenterInRange;
@@ -136,10 +119,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 if (_verboseLogs())
                 {
-                    Debug.Log(
-                        "[Construction] IsBlockedByInfluenceZone: CustomRules - " +
-                        $"require={requireInfluenceCenterInRange}, " +
-                        $"blockWhenExists={blockWhenInfluenceCenterExists}");
                 }
             }
             else
@@ -153,11 +132,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 if (_verboseLogs())
                 {
-                    Debug.Log(
-                        "[Construction] IsBlockedByInfluenceZone: DefaultRules - " +
-                        $"isInfluenceCenter={isInfluenceCenter}, " +
-                        $"require={requireInfluenceCenterInRange}, " +
-                        $"blockWhenExists={blockWhenInfluenceCenterExists}");
                 }
             }
 
@@ -166,9 +140,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 if (_verboseLogs())
                 {
-                    Debug.Log(
-                        "[Construction] IsBlockedByInfluenceZone: BLOCKED - " +
-                        $"потрібен центр поселення у радіусі {ruleRadius}");
                 }
 
                 return true;
@@ -190,11 +161,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 if (_verboseLogs())
                 {
-                    Debug.Log(
-                        "[Construction] IsBlockedByInfluenceZone: BLOCKED - " +
-                        $"зона '{buildingId}' radius={candidateInfluenceRadius} " +
-                        $"перетинається з '{overlapBuildingId}' " +
-                        $"на {overlapPosition} radius={overlapRadius}");
                 }
 
                 return true;
@@ -202,8 +168,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_verboseLogs())
             {
-                Debug.Log(
-                    "[Construction] IsBlockedByInfluenceZone: ALLOWED");
             }
 
             return false;

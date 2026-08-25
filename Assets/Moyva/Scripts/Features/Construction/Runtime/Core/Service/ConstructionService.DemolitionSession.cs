@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
@@ -15,14 +13,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (!CanActiveOwnerAct(out string turnReason))
             {
-                Debug.LogWarning($"[Construction] Demolition rejected: {turnReason}");
                 return false;
             }
 
             if (!_isActive || !IsDemolishMode)
             {
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] TryDemolishAt({position}) ignored: active={_isActive}, demolish={IsDemolishMode}");
                 return false;
             }
 
@@ -35,8 +30,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     out string ownershipReason))
             {
                 _lastActionMessage = ownershipReason;
-                Debug.LogWarning(
-                    $"[Construction] TryDemolishAt({position}) rejected: {ownershipReason}");
                 return false;
             }
 
@@ -57,15 +50,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                             PreviewState = BuildingPreviewState.None
                         });
 
-                        if (VerboseLogs)
-                            Debug.Log($"[Construction] Pending demolition unmarked for '{pendingBuildingId}' at {position}. pendingCount={_pendingDemolitions.Count}");
-
                         return true;
                     }
                 }
-
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] TryDemolishAt({position}) ignored: pending position exists but mark entry was not found.");
                 return true;
             }
 
@@ -78,9 +65,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 BuildingId = buildingId,
                 PreviewState = BuildingPreviewState.Valid
             });
-
-            if (VerboseLogs)
-                Debug.Log($"[Construction] Pending demolition marked for '{buildingId}' at {position}. pendingCount={_pendingDemolitions.Count}");
 
             return true;
         }
@@ -111,8 +95,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void ConfirmPendingDemolitions()
         {
-            if (VerboseLogs)
-                Debug.Log($"[Construction] Confirm demolish requested. count={_pendingDemolitions.Count}");
 
             for (int i = 0; i < _pendingDemolitions.Count; i++)
             {
@@ -126,16 +108,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     continue;
                 }
-
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] Confirm demolished '{id}' at {pos}");
             }
 
             _pendingDemolitions.Clear();
             _pendingDemolitionPositions.Clear();
-
-            if (VerboseLogs)
-                Debug.Log("[Construction] Confirm demolish completed.");
         }
     }
 }

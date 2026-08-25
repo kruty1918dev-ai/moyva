@@ -163,8 +163,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (!VerboseLogging)
                 return;
-
-            Debug.Log($"[ConfirmationPanel] {msg}");
         }
         #endregion
 

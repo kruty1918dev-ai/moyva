@@ -38,7 +38,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (_networkProvider == null)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] INetworkProvider not available; lobby joined without transport connection.");
                 return Result.Success();
             }
 
@@ -64,8 +63,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 await LeaveLobbyAfterFailedTransportJoinAsync(traceId, ct);
                 return Result.Fail(DomainErrorCode.Validation, "Отримано невалідний Relay join code.");
             }
-
-            Debug.Log($"[JoinRoomPanelService] [{traceId}] Joining transport session '{normalizedJoinCode}' using provider '{providerType}'.");
             var result = await MultiplayerReliabilityPolicy.RetryWithBackoffAndJitterAsync(
                 async token => await _networkProvider.JoinSessionAsync(normalizedJoinCode, token),
                 candidate => candidate != null && candidate.Success,
@@ -92,7 +89,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var switchable = _switchableNetworkProvider ?? _networkProvider as SwitchableNetworkProvider;
             if (switchable == null)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] Network provider is not switchable; cannot force transport provider {providerType}.");
                 return true;
             }
 
@@ -102,7 +98,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             try
             {
                 await switchable.SwitchToAsync(providerType, ct);
-                Debug.Log($"[JoinRoomPanelService] Transport provider switched to {switchable.CurrentType} before lobby join transport step.");
                 return switchable.CurrentType == providerType;
             }
             catch (Exception e)
@@ -138,14 +133,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                                         string.Equals(candidate.LobbyCode, room?.LobbyCode, StringComparison.OrdinalIgnoreCase);
                         if (sameLobby && TryNormalizeTransportJoinCode(candidate.RelayJoinCode, providerType, out var candidateJoinCode))
                         {
-                            Debug.Log($"[JoinRoomPanelService] [{traceId}] ResolveNetworkJoinCodeAsync found relay code in query list for lobby '{candidate.LobbyId}'.");
                             return candidateJoinCode;
                         }
                     }
                 }
                 catch (Exception e)
                 {
-                    Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] ResolveNetworkJoinCodeAsync query failed: {e.Message}");
                 }
 
                 return null;
@@ -161,8 +154,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (!string.IsNullOrWhiteSpace(resolved))
                 return resolved;
-
-            Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] ResolveNetworkJoinCodeAsync timed out after {_menuProfile.JoinCodeResolveTimeout.TotalSeconds:0.#}s for lobbyId='{room?.LobbyId}' lobbyCode='{room?.LobbyCode}' provider='{providerType}'.");
 
             if (providerType == NetworkProviderType.Relay || providerType == NetworkProviderType.Lan)
                 return null;
@@ -190,7 +181,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Leave after failed transport join failed: {e.Message}");
             }
         }
     }

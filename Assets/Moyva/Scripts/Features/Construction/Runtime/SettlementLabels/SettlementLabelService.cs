@@ -77,7 +77,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (!_placedVisualLookup.TryGetPlacedVisual(signal.Position, out var buildingGo))
             {
-                Debug.LogWarning($"[SettlementLabel] Візуал будівлі '{signal.BuildingId}' не знайдено на {signal.Position}.");
                 return;
             }
 

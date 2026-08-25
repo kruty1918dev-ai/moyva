@@ -39,7 +39,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (_commandSync == null) return;
             _commandSync.RegisterHandler(GameCommandType.StartGame, OnStartGameCommand);
-            Debug.Log($"{Prefix} Registered handler for StartGame.");
         }
 
         public void Dispose()
@@ -54,11 +53,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             try
             {
-                Debug.Log($"{Prefix} StartGame received from '{senderId}', payload={payload?.Length ?? 0} bytes.");
 
                 if (!WorldSettingsDto.TryFromBytes(payload, out var dto))
                 {
-                    Debug.LogWarning($"{Prefix} Empty or invalid WorldSettings payload — using defaults.");
                     dto = new WorldSettingsDto(0, 1, MapType.Continents, Difficulty.Normal, 4, false);
                 }
 
@@ -82,7 +79,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 {
                     if (_gameStarter == null)
                     {
-                        Debug.LogWarning($"{Prefix} IHomeMenuGameStarter не підключений — гра не запущена.");
                         return;
                     }
 

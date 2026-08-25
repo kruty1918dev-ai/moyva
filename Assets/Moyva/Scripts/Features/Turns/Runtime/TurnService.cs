@@ -116,10 +116,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 : new List<ITurnParticipant>();
             _resolvedParticipants.Sort(
                 (left, right) => left.TurnOrder.CompareTo(right.TurnOrder));
-
-            Debug.Log(
-                $"[MOYVA_DIAG][TURN][INFO] participants-resolved " +
-                $"count={_resolvedParticipants.Count}");
             return _resolvedParticipants;
         }
 
@@ -133,10 +129,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
             _resolvedBlockers = source != null
                 ? new List<ITurnBlocker>(source)
                 : new List<ITurnBlocker>();
-
-            Debug.Log(
-                $"[MOYVA_DIAG][TURN][INFO] blockers-resolved " +
-                $"count={_resolvedBlockers.Count}");
             return _resolvedBlockers;
         }
 
@@ -149,10 +141,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 _explicitLocalOwnerResolver ?? _lazyLocalOwnerResolver?.Value;
             _resolvedLocalOwnerResolver = resolved;
             _localOwnerResolverResolutionAttempted = true;
-
-            Debug.Log(
-                $"[MOYVA_DIAG][TURN][INFO] local-owner-resolver-resolved " +
-                $"bound={resolved != null}");
             return resolved;
         }
 
@@ -190,7 +178,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 return false;
 
             ActionsThisTurn++;
-            Debug.Log($"[Turns] action turn={GlobalTurn} owner='{ownerId}' id='{actionId}' count={ActionsThisTurn}.");
             StateChanged?.Invoke();
             return true;
         }
@@ -275,10 +262,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 Phase = TurnPhase.Initializing;
                 StateChanged?.Invoke();
             }
-
-            Debug.Log(
-                $"[Turns] restore queued round={_pendingRestore.Round} global={_pendingRestore.GlobalTurn} " +
-                $"owner='{_pendingRestore.ActiveOwnerId}' actions={_pendingRestore.Actions}.");
             TryStart();
         }
 
@@ -308,16 +291,12 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 f => string.Equals(f.OwnerId, ownerId, StringComparison.Ordinal)) >= 0;
             if (!configured)
             {
-                Debug.Log($"[Turns] faction elimination queued before registry configuration owner='{ownerId}'.");
                 return;
             }
-
-            Debug.Log($"[Turns] faction eliminated owner='{ownerId}'.");
             StateChanged?.Invoke();
 
             if (_worldReady && Phase == TurnPhase.AwaitingInput && IsOwnerActive(ownerId))
             {
-                Debug.Log($"[Turns] active faction '{ownerId}' eliminated; advancing without player input.");
                 EndCurrentTurn();
             }
         }
@@ -364,15 +343,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
         {
             if (_factions.Count != 0)
                 return;
-
-            // Turns does not own map geometry. Direct Gameplay must wait for
-            // WorldSpawnPositionsSignal produced by the terrain-aware Bootstrap selector.
-            // Creating synthetic participants at Vector2Int.zero/one here would reintroduce
-            // hard-coded spawn coordinates and bypass player-distance/land/water rules.
-            Debug.LogWarning(
-                "[Turns] DirectGameplayTest currently has no generated spawn assignments; " +
-                "synthetic start coordinates are disabled. Waiting for Bootstrap " +
-                "WorldSpawnPositionsSignal.");
         }
 
         private string ResolveLocalOwnerId()
@@ -411,7 +381,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
             if (_eliminatedOwners.Contains(ActiveOwnerId) && !TrySelectFirstEligibleFaction())
             {
-                Debug.LogWarning("[Turns] Cannot start: every configured faction is eliminated.");
                 return;
             }
 
@@ -449,8 +418,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 faction => string.Equals(faction.OwnerId, ownerId, StringComparison.Ordinal));
             if (restoredIndex < 0)
             {
-                Debug.LogWarning(
-                    $"[Turns] Saved owner '{ownerId}' is not in the current faction registry; restore remains pending.");
                 return false;
             }
 
@@ -499,7 +466,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
             if (_eliminatedOwners.Contains(ActiveOwnerId))
             {
-                Debug.Log($"[Turns] faction '{ActiveOwnerId}' was eliminated while its turn was starting; advancing.");
                 return EndCurrentTurn();
             }
 
@@ -529,7 +495,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
             if (!TryFindNextEligibleFaction(out int nextIndex, out bool completedRound))
             {
                 Phase = TurnPhase.Resolving;
-                Debug.LogWarning("[Turns] No eligible faction remains; turn loop is awaiting game-over resolution.");
                 StateChanged?.Invoke();
                 return true;
             }

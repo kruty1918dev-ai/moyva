@@ -31,8 +31,6 @@ namespace Kruty1918.Moyva.Construction.API
                 collector.LogSummary();
                 return collector.Issues;
             }
-
-            Debug.Log($"{LogTag} Validate started for '{collector.BuildingLabel}'. validators={_validators.Count}, hasRegistry={context?.Registry != null}, knownResources={context?.ResourceIds?.Count ?? 0}.");
             var validationContext = new BuildingDefinitionValidationContext(definition, context, collector);
 
             for (int i = 0; i < _validators.Count; i++)

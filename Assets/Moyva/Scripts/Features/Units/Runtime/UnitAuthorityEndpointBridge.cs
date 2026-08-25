@@ -36,10 +36,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             _registry.AttachUnitCommandServices(
                 _movementService,
                 _ownershipQuery);
-
-            Debug.Log(
-                "[MOYVA_MOVE][AUTHORITY_BRIDGE] "
-                + "movement and ownership endpoints attached.");
         }
 
         public void Dispose()

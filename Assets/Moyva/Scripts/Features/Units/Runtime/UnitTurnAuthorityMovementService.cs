@@ -92,9 +92,6 @@ public async Task MoveUnitAsync(
             $"phase={_turns?.Phase}; round={_turns?.Round}; " +
             $"globalTurn={_turns?.GlobalTurn}; " +
             $"activeOwner={UnitMovementDiagnostics.Safe(_turns?.ActiveOwnerId)}");
-
-        Debug.LogWarning(
-            $"[UnitTurnAuthority] Move rejected for '{unitId ?? "<null>"}': {reason}");
         return;
     }
 
@@ -138,9 +135,6 @@ public async Task MoveUnitAsync(
                 trace,
                 "TURN_GATE_CANCEL_BEFORE_DELEGATE",
                 $"unit={unitId}; reason={reason}");
-
-            Debug.LogWarning(
-                $"[UnitTurnAuthority] Move cancelled before start for '{unitId}': {reason}");
             return;
         }
 

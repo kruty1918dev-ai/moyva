@@ -23,7 +23,6 @@ namespace Kruty1918.Moyva.InfoPanel.UI
 
             if (panelPrefab == null)
             {
-                Debug.LogWarning("[WorldInfoPanelInstaller] panelPrefab не присвоєно. Панель інформації вимкнена.");
                 return;
             }
 

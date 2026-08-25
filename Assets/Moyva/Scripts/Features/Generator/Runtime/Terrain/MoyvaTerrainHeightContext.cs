@@ -15,13 +15,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             _terrainLevelMap = terrainLevelMap;
             _heightStep = Mathf.Max(1, heightStep);
-            Debug.Log($"{LogTag} Height context configured. map={FormatMap(terrainLevelMap)}, heightStep={_heightStep}.");
         }
 
         public void Clear(string reason)
         {
             _terrainLevelMap = null;
-            Debug.Log($"{LogTag} Height context cleared. reason='{reason}'.");
         }
 
         public bool TryGetTileHeight(Vector2 tilePosition, bool useDualGrid, out float height)

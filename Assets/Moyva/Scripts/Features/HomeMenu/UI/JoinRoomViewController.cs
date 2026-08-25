@@ -69,11 +69,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 _refreshButton.onClick.AddListener(_refreshButtonAction);
             }
 
-            if (_roomsContainer == null)
-                Debug.LogWarning("[JoinRoomViewController] _roomsContainer is not assigned.");
-            if (_roomPrefab == null)
-                Debug.LogWarning("[JoinRoomViewController] _roomPrefab is not assigned.");
-
             // 3: Позначаємо контролер як ініціалізований.
             _bound = true;
         }

@@ -42,7 +42,6 @@ namespace Kruty1918.Moyva.Visuals
                 Shader.SetGlobalFloat(DayNightLerpId, 1f);
                 Shader.SetGlobalFloat(DayPhaseId, EncodePhase(DayPhase.Day));
                 Shader.SetGlobalFloat(TimeOfDay01Id, 0.5f);
-                Debug.LogWarning("[DayNight] ICalendarService не знайдено. Використовую статичний денний стан.");
                 return;
             }
 

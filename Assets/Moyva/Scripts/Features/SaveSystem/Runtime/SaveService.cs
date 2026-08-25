@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Signals;
+using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.SaveSystem
@@ -23,18 +22,13 @@ namespace Kruty1918.Moyva.SaveSystem
         private readonly ISaveLoadService _loadService;
         private readonly ISaveSlotPolicyService _slotPolicyService;
         private readonly ISaveModuleRegistry _moduleRegistry;
-        private readonly ISaveLoadDiagnostics _loadDiagnostics;
-        private readonly ISaveLoadDiagnosticsSession _loadDiagnosticsSession;
-
         public SaveService(
             List<ISaveModule> modules,
             SignalBus signalBus,
             [InjectOptional] ISaveWriteService writeService = null,
             [InjectOptional] ISaveLoadService loadService = null,
             [InjectOptional] ISaveSlotPolicyService slotPolicyService = null,
-            [InjectOptional] ISaveModuleRegistry moduleRegistry = null,
-            [InjectOptional] ISaveLoadDiagnostics loadDiagnostics = null,
-            [InjectOptional] ISaveLoadDiagnosticsSession loadDiagnosticsSession = null)
+            [InjectOptional] ISaveModuleRegistry moduleRegistry = null)
         {
             _modules = modules ?? new List<ISaveModule>();
             _signalBus = signalBus;
@@ -42,8 +36,6 @@ namespace Kruty1918.Moyva.SaveSystem
             _loadService = loadService ?? new SaveLoadService();
             _slotPolicyService = slotPolicyService ?? new SaveSlotPolicyService();
             _moduleRegistry = moduleRegistry;
-            _loadDiagnostics = loadDiagnostics;
-            _loadDiagnosticsSession = loadDiagnosticsSession;
         }
 
         // ─── IInitializable / IDisposable ──────────────────────────────────
@@ -77,31 +69,8 @@ namespace Kruty1918.Moyva.SaveSystem
         public void Load(int slot = 0)
         {
             var modules = GetCurrentModulesSnapshot();
-            IDiagnosticFlow flow = _loadDiagnostics?.StartFlow(
-                $"save-slot-{slot:D2}",
-                new DiagnosticContext().Add("slot", slot).Add("source", "SaveService.Load"));
-            _loadDiagnostics?.CompleteStep(flow, SaveLoadDiagnosticSteps.LoadRequested, $"slot={slot}");
-            _loadDiagnostics?.CompleteStep(flow, SaveLoadDiagnosticSteps.SlotResolved, $"slot={slot}, hasSave={HasSave(slot)}");
-            _loadDiagnosticsSession?.Begin(flow);
-
-            bool loaded = false;
-            try
-            {
-                loaded = _loadService.TryLoad(slot, modules, GeneratedWorldSaveModuleFullName, flow, out string errorMessage);
-                if (!loaded)
-                {
-                    _loadDiagnostics?.FailStep(flow, SaveLoadDiagnosticSteps.LoadCompleted, "load-failed", errorMessage);
-                    _loadDiagnostics?.Report(flow);
-                    _loadDiagnosticsSession?.Clear(flow);
-                }
-            }
-            catch (Exception exception)
-            {
-                _loadDiagnostics?.FailStep(flow, SaveLoadDiagnosticSteps.LoadCompleted, "load-exception", exception.Message);
-                _loadDiagnostics?.Report(flow);
-                _loadDiagnosticsSession?.Clear(flow);
-                throw;
-            }
+            if (!_loadService.TryLoad(slot, modules, GeneratedWorldSaveModuleFullName, out string errorMessage))
+                Debug.LogError($"Load failed: {errorMessage}");
         }
 
         public bool HasSave(int slot = 0)

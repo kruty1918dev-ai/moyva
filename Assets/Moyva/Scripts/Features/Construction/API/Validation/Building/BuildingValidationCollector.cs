@@ -39,7 +39,6 @@ namespace Kruty1918.Moyva.Construction.API
                 Code = code,
                 Message = message,
             });
-            Debug.LogWarning($"{LogTag} [{BuildingLabel}] {code}: {message}");
         }
 
         public void ImportIssues(IReadOnlyList<BuildingValidationIssue> issues)
@@ -70,7 +69,6 @@ namespace Kruty1918.Moyva.Construction.API
             }
 
             string label = string.IsNullOrWhiteSpace(scope) ? BuildingLabel : scope;
-            Debug.Log($"{LogTag} Validation finished for '{label}'. issues={_issues.Count}, errors={errorCount}, warnings={warningCount}.");
         }
     }
 }

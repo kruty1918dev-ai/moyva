@@ -29,7 +29,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
 
             worldData.TerrainLevelMap = levelMap;
-            Debug.LogWarning($"{LogTag} TerrainLevelMap was missing; applied fallback integer terrain levels from height/biome map. HeightMap={TileWorldCreatorMapFormatUtility.FormatMapSize(worldData.HeightMap)}, BiomeMap={TileWorldCreatorMapFormatUtility.FormatMapSize(worldData.BiomeMap)}, fallbackStats={TileWorldCreatorMapFormatUtility.FormatLevelStats(levelMap)}.");
         }
 
         public void NormalizeForTileWorldCreator(GeneratedWorldData worldData)
@@ -43,7 +42,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
 
             FindCapturedLandLevelRange(worldData, width, height, out int capturedMin, out int capturedMax);
-            Debug.Log($"{LogTag} NormalizeTerrainLevelsForTileWorldCreator input: size={width}x{height}, capturedLandRange={capturedMin}..{capturedMax}, targetLevels water={_options.WaterTerrainLevel}, shore={_options.ShoreTerrainLevel}, land={_options.LandTerrainLevel}, hill={_options.HillTerrainLevel}, max={_options.MaxTerrainLevel}.");
 
             for (int x = 0; x < width; x++)
             for (int y = 0; y < height; y++)
@@ -96,7 +94,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private int[,] BuildBiomeFallback(GeneratedWorldData worldData, int width, int height)
         {
-            Debug.LogWarning($"{LogTag} BuildFallbackTerrainLevelMap falls back to biome-only levels because HeightMap size does not match. BiomeMap={width}x{height}, HeightMap={TileWorldCreatorMapFormatUtility.FormatMapSize(worldData.HeightMap)}.");
             var levelMap = new int[width, height];
             for (int x = 0; x < width; x++)
             for (int y = 0; y < height; y++)

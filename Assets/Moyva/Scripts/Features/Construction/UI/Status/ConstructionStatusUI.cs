@@ -37,12 +37,6 @@ namespace Kruty1918.Moyva.Construction.UI
 
         private void Awake()
         {
-            if (placementStateLabel == null)
-                Debug.LogWarning($"[ConstructionStatusUI] Поле 'placementStateLabel' не призначено на '{name}'.", this);
-            if (selectedBuildingLabel == null)
-                Debug.LogWarning($"[ConstructionStatusUI] Поле 'selectedBuildingLabel' не призначено на '{name}'.", this);
-            if (previewStateLabel == null)
-                Debug.LogWarning($"[ConstructionStatusUI] Поле 'previewStateLabel' не призначено на '{name}'.", this);
         }
 
         /// <summary>

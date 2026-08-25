@@ -57,8 +57,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             if (!_options.ResetConfigurationBeforeBuild)
                 return;
-
-            Debug.Log($"{LogTag} ResetConfiguration before build. Renderers before reset={_diagnostics.CountComponentsInManager<Renderer>()}, transforms before reset={_diagnostics.CountManagerChildren()}.");
             _manager.ResetConfiguration();
         }
 
@@ -67,28 +65,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var occlusion = TileWorldCreatorLayerOcclusionOptimizer.CullOccludedTileCells(configuration);
             if (occlusion.RemovedCellCount > 0)
             {
-                Debug.Log($"{LogTag} Removed {occlusion.RemovedCellCount} occluded TWC tile cells across {occlusion.ProcessedLayerCount} build layers before spawning. occupied={occlusion.OccupiedCellCount}, skipped={occlusion.SkippedLayerCount}.");
             }
         }
 
         private void ApplyChunkAlignedBatching(Configuration configuration, TileWorldCreatorTerrainBuildPolicyResult terrainPolicy)
         {
-            Debug.Log($"{LogTag} ApplyChunkAlignedBatching requested: chunkSizeTiles={terrainPolicy.ChunkSizeTiles}, forceMergeTiles={terrainPolicy.ForceMergeTiles}, applyIntegerHeights={_options.ApplyIntegerTerrainHeights}, mode={terrainPolicy.Mode}, configClusterSizeBefore={configuration.clusterCellSize}, configMergeTilesBefore={configuration.mergeTiles}.");
             _terrainPolicyService.Apply(configuration, terrainPolicy, "runtime-bridge");
-            Debug.Log($"{LogTag} ApplyChunkAlignedBatching result: configClusterSizeAfter={configuration.clusterCellSize}, configMergeTilesAfter={configuration.mergeTiles}, layers={TileWorldCreatorChunkBatchingUtility.DescribeActiveTileLayers(configuration)}.");
         }
 
         private void ExecuteBuildLayers(Configuration configuration, int terrainLayerCount)
         {
-            Debug.Log($"{LogTag} Calling ExecuteBuildLayers(FromScratch). Config size={configuration.width}x{configuration.height}, cellSize={configuration.cellSize}, mergeTiles={configuration.mergeTiles}, terrainLayers={terrainLayerCount}.");
-            Debug.Log($"{WorldGenDiagTag} TWCBuild.START manager={_manager.name}, config={configuration.name}, map={configuration.width}x{configuration.height}, frame={Time.frameCount}, childrenBefore={_diagnostics.CountManagerChildren()}, asyncHint=coroutine/delayed");
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             _manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
             stopwatch.Stop();
-
-            Debug.Log($"{LogTag} ExecuteBuildLayers returned. Immediate renderers={_diagnostics.CountComponentsInManager<Renderer>()}, meshFilters={_diagnostics.CountComponentsInManager<MeshFilter>()}, childTransforms={_diagnostics.CountManagerChildren()}.");
-            Debug.Log($"{WorldGenDiagTag} TWCBuild.RETURN manager={_manager.name}, frame={Time.frameCount}, elapsedMs={stopwatch.ElapsedMilliseconds}, childrenAfterReturn={_diagnostics.CountManagerChildren()}, mayContinueAsync=true");
         }
 
         private void ReportChunkAudit(Configuration configuration)

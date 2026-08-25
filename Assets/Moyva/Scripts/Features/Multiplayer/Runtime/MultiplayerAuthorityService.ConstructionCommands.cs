@@ -19,7 +19,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             if (_constructionService == null)
             {
-                Debug.LogWarning("[MultiplayerAuthority] PlaceBuildingConfirmRequestSignal received, but IConstructionService is not bound in this scene.");
                 return false;
             }
 
@@ -150,7 +149,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             if (_constructionService == null)
             {
-                Debug.LogWarning("[MultiplayerAuthority] BuildingPlace command received, but IConstructionService is not bound in this scene.");
                 return;
             }
 
@@ -165,8 +163,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         out string authorizedOwnerId,
                         out string authorizationReason))
                 {
-                    Debug.LogWarning(
-                        $"[Authority] Rejected BuildingPlace from '{senderId}': {authorizationReason}");
                     return;
                 }
 
@@ -223,8 +219,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     }
                     else
                     {
-                        Debug.LogWarning($"[Authority] Хост відхилив BuildingPlace від {senderId}: " +
-                                         $"buildingId={data.BuildingId} pos={data.Position}");
                     }
                 }
                 finally
@@ -238,8 +232,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 if (IsOfflineOrHost()) return;
                 if (!IsAuthorizedHostSender(senderId))
                 {
-                    Debug.LogWarning(
-                        $"[Authority] Ignored BuildingPlace confirmation from non-host '{senderId}'.");
                     return;
                 }
 
@@ -312,7 +304,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             if (_constructionService == null)
             {
-                Debug.LogWarning("[MultiplayerAuthority] BuildingDemolish command received, but IConstructionService is not bound in this scene.");
                 return;
             }
 
@@ -326,8 +317,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         out string authorizedOwnerId,
                         out string authorizationReason))
                 {
-                    Debug.LogWarning(
-                        $"[Authority] Rejected BuildingDemolish from '{senderId}': {authorizationReason}");
                     return;
                 }
 
@@ -357,8 +346,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 if (IsOfflineOrHost()) return;
                 if (!IsAuthorizedHostSender(senderId))
                 {
-                    Debug.LogWarning(
-                        $"[Authority] Ignored BuildingDemolish confirmation from non-host '{senderId}'.");
                     return;
                 }
 
@@ -377,8 +364,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                             data.Position,
                             data.OwnerId))
                     {
-                        Debug.LogWarning(
-                            $"[Authority] Host-confirmed demolition could not be applied at {data.Position} for owner '{data.OwnerId}'.");
                     }
                 }
                 finally { _applyingNetworkEvent = false; }

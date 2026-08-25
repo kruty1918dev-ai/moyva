@@ -32,7 +32,6 @@ namespace Kruty1918.Moyva.SaveSystem
         {
             if (modules == null || modules.Count == 0)
             {
-                Debug.LogWarning("[SaveSystem] SaveConfig: no modules provided.");
                 return;
             }
 
@@ -58,13 +57,11 @@ namespace Kruty1918.Moyva.SaveSystem
         {
             if (modules == null || modules.Count == 0)
             {
-                Debug.LogWarning("[SaveSystem] LoadConfig: no modules provided.");
                 return;
             }
 
             if (!HasConfig())
             {
-                Debug.LogWarning("[SaveSystem] Config file not found.");
                 return;
             }
 

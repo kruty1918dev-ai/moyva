@@ -92,14 +92,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!TryResolveBounds(signal, out Bounds bounds))
             {
                 _hasGeneratedBounds = false;
-                Debug.LogWarning($"{LogTag} Missing generated map bounds from {source}; falling back to grid projection.");
                 return;
             }
 
             _mapBounds = bounds;
             _cellSize = ResolveCellSize(signal, bounds);
             _hasGeneratedBounds = true;
-            Debug.Log($"{LogTag} Ready from {source}: boundsCenter={bounds.center}, boundsSize={bounds.size}, cellSize={_cellSize:0.###}.");
         }
 
         private static float ResolveCellSize(WorldGeneratedDataSignal signal, Bounds bounds)

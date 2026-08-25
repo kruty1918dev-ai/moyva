@@ -31,8 +31,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _canvas = ResolveCanvas();
             if (_canvas == null)
             {
-                Debug.LogWarning(
-                    $"{LogTag} Gameplay Canvas not found. Deployment tile selection still works, but Confirm/Cancel UI is disabled.");
                 return;
             }
 
@@ -142,7 +140,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_controlsRoot != null)
                 _controlsRoot.gameObject.SetActive(visible);
         }
-
 
     }
 }

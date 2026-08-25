@@ -168,23 +168,15 @@ namespace Kruty1918.Moyva.WorldCreation.UI
         {
             if (createWorldButton != null)
                 createWorldButton.onClick.AddListener(OnCreateWorldClicked);
-            else
-                Debug.LogWarning("[WorldCreationUIController] 'createWorldButton' не призначено.", this);
 
             if (cancelButton != null)
                 cancelButton.onClick.AddListener(OnCancelClicked);
-            else
-                Debug.LogWarning("[WorldCreationUIController] 'cancelButton' не призначено.", this);
 
             if (resetDefaultsButton != null)
                 resetDefaultsButton.onClick.AddListener(OnResetDefaultsClicked);
-            else
-                Debug.LogWarning("[WorldCreationUIController] 'resetDefaultsButton' не призначено.", this);
 
             if (randomSeedButton != null)
                 randomSeedButton.onClick.AddListener(OnRandomSeedClicked);
-            else
-                Debug.LogWarning("[WorldCreationUIController] 'randomSeedButton' не призначено.", this);
         }
 
         private void BindInputs()

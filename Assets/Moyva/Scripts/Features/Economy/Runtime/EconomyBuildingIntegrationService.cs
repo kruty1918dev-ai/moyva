@@ -113,7 +113,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
             // Otherwise, assign building to nearest settlement of the same owner
             if (!registry.TryFindNearestSettlement(signal.Position, ownerId, out var state))
             {
-                Debug.LogWarning($"[Economy] Будівлю '{signal.BuildingId}' (owner='{ownerId}') розміщено за межами поселень цього власника.");
                 return null;
             }
 
@@ -217,7 +216,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             if (activeCount >= rules.Settlement.MaxSettlements)
             {
-                Debug.LogWarning($"[Economy] Ліміт поселень ({rules.Settlement.MaxSettlements}) досягнуто.");
                 return null;
             }
 
@@ -252,8 +250,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 OwnerId = ownerId,
                 TownHallPosition = position,
             });
-
-            Debug.Log($"[Economy] Поселення '{id}' (owner='{ownerId}') створено на позиції {position}.");
             return state;
         }
 
@@ -442,11 +438,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     * 1000d;
                 if (elapsedMs >= EconomyPlacementPerfThresholdMs)
                 {
-                    Debug.Log(
-                        $"{PerfLogTag} economy-module-validation " +
-                        $"building={definition.Id} " +
-                        $"errors={hasErrors} " +
-                        $"elapsedMs={elapsedMs:F3}");
                 }
             }
 

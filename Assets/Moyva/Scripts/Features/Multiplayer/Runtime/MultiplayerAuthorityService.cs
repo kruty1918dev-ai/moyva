@@ -74,8 +74,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     _constructionService,
                     constructionService))
             {
-                Debug.LogWarning(
-                    "[MultiplayerAuthority] Replacing a stale construction scene endpoint.");
             }
 
             _constructionService = constructionService;
@@ -102,9 +100,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             _unitMovementService = movementService;
             _unitOwnershipQuery = ownershipQuery;
-
-            Debug.Log(
-                "[MOYVA_MOVE][AUTHORITY_BRIDGE] authority endpoint attached.");
         }
 
         public void DetachUnitCommandServices(

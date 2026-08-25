@@ -150,8 +150,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     await FailRoomCreationAsync(warning, leaveLobby: false, stopTransport: false);
                     return null;
                 }
-
-                UnityEngine.Debug.LogWarning($"[CreateRoomPanelService] {warning}");
                 return string.Empty;
             }
 
@@ -233,13 +231,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (leaveLobby)
             {
                 try { if (_lobbyService != null) await _lobbyService.LeaveAsync(); }
-                catch (Exception leaveError) { UnityEngine.Debug.LogWarning($"[CreateRoomPanelService] Leave after failed room creation failed: {leaveError.Message}"); }
+                catch (Exception leaveError) { }
             }
 
             if (stopTransport)
             {
                 try { if (_networkProvider != null) await _networkProvider.LeaveSessionAsync(); }
-                catch (Exception leaveError) { UnityEngine.Debug.LogWarning($"[CreateRoomPanelService] Transport cleanup after failed room creation failed: {leaveError.Message}"); }
+                catch (Exception leaveError) { }
             }
 
             _infoPanelService?.Show(new InfoMessage("Помилка кімнати", error));

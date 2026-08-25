@@ -8,12 +8,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         IReadOnlyList<CompiledLayerMap> LastCompiledLayers { get; }
         GraphLogicalTileMap LastLogicalMap { get; }
         float LastCellSize { get; }
-        string DiagnosticGraphName { get; }
-        bool HasGraphAsset { get; }
-        bool HasSharedMapSize { get; }
-        Vector2Int DiagnosticSharedMapSize { get; }
-        int DiagnosticSeed { get; }
-        bool HasTileWorldCreatorManager { get; }
         bool TryGetLastBaseMapWorldBounds(out Bounds bounds);
     }
 }

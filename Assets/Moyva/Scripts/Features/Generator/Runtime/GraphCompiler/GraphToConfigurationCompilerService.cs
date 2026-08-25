@@ -229,10 +229,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                 if (!plan.Success)
                 {
-                    Debug.LogWarning(
-                        "[GraphToConfigurationCompiler] " +
-                        $"Layer '{layerDef.Name}' skipped while compiling " +
-                        $"TWC modifiers: {plan.ErrorMessage}");
 
                     warnings++;
                     continue;

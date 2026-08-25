@@ -75,10 +75,6 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_traversalPolicy = traversalPolicy;
 		}
 
-		[System.Diagnostics.Conditional("MOYVA_VERBOSE_MOVEMENT")]
-		private static void LogMovementVerbose(string message)
-			=> Debug.Log(message);
-
 		public void Initialize()
 		{
 			_signalBus.Subscribe<InterruptMovementSignal>(OnInterruptRequested);
@@ -144,33 +140,28 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 			if (string.IsNullOrEmpty(unitId))
 			{
-				Debug.LogWarning("[UnitMovement] MoveUnitAsync: unitId пустий або null. Рух скасовано.");
 				return;
 			}
 
 			string ownerId = _ownership?.GetUnitOwnerId(unitId);
 			if (_turns != null && !_turns.CanOwnerAct(ownerId, out string turnReason))
 			{
-				Debug.LogWarning($"[UnitMovement] Move rejected for '{unitId}': {turnReason}");
 				return;
 			}
 
 			if (_activeMovements.TryGetValue(unitId, out var oldCts))
 			{
-				Debug.Log($"[UnitMovement] Скасування попереднього руху для {unitId}.");
 				oldCts.Cancel();
 				oldCts.Dispose();
 			}
 
 			if (!_unitService.TryGetUnitPosition(unitId, out var startPosition))
 			{
-				Debug.LogWarning($"[UnitMovement] MoveUnitAsync: позиція юніта '{unitId}' не знайдена в UnitService. Юніт не зареєстрований?");
 				return;
 			}
 
 			if (startPosition == targetPosition)
 			{
-				Debug.Log($"[UnitMovement] MoveUnitAsync: '{unitId}' вже знаходиться на {targetPosition}. Рух не потрібен.");
 				return;
 			}
 
@@ -181,14 +172,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 					unitId,
 					targetPosition))
 			{
-				Debug.LogWarning(
-					$"[UnitMovement] MoveUnitAsync: ціль {targetPosition} " +
-					$"зайнята '{targetOccupantId}' і не є прохідною.");
 				return;
 			}
 
-			LogMovementVerbose(
-				$"[UnitMovement] path {unitId}: {startPosition} -> {targetPosition}");
 			double __diagPathStarted = UnitMovementDiagnostics.NowMs();
 			List<Vector2Int> path;
 if (_traversalPolicy != null
@@ -225,7 +211,6 @@ else
 }
 if (path == null || path.Count <= 1)
 			{
-				Debug.LogWarning($"[UnitMovement] MoveUnitAsync: шлях не знайдено або занадто короткий для '{unitId}' ({startPosition} → {targetPosition}). path={path?.Count ?? 0} точок.");
 				return;
 			}
 
@@ -245,10 +230,6 @@ if (_traversalPolicy != null)
 				out float pathStepCost,
 				out string pathStepReason))
 		{
-			Debug.LogWarning(
-				$"[MOYVA_MOVE][PATH_REJECT] unit={unitId}; "
-				+ $"from={path[pathIndex - 1]}; "
-				+ $"to={path[pathIndex]}; reason={pathStepReason}");
 			return;
 		}
 
@@ -258,26 +239,13 @@ if (_traversalPolicy != null)
 	float availableMovement = _unitService.GetStamina(unitId);
 	if (requiredMovement > availableMovement + 0.0001f)
 	{
-		Debug.LogWarning(
-			$"[MOYVA_MOVE][PATH_REJECT_BUDGET] unit={unitId}; "
-			+ $"required={requiredMovement:0.###}; "
-			+ $"available={availableMovement:0.###}; "
-			+ $"target={targetPosition}");
 		return;
 	}
-
-	Debug.Log(
-		$"[MOYVA_MOVE][PATH_ACCEPT] unit={unitId}; "
-		+ $"nodes={path.Count}; cost={requiredMovement:0.###}; "
-		+ $"available={availableMovement:0.###}; "
-		+ $"target={targetPosition}");
 }
-
 
 			var unitObj = _unitService.GetUnitObject(unitId);
 			if (unitObj == null)
 			{
-				Debug.LogWarning($"[UnitMovement] MoveUnitAsync: GameObject для '{unitId}' не знайдено в UnitService. Юніт не зареєстрований або об'єкт знищено?");
 				return;
 			}
 
@@ -291,8 +259,6 @@ if (_traversalPolicy != null)
 			{
 				var unitTypeId = _unitService.GetUnitTypeId(unitId);
 				var config = string.IsNullOrEmpty(unitTypeId) ? null : _unitClassConfig.GetConfig(unitTypeId);
-				if (config == null)
-					Debug.LogWarning($"[UnitMovement] Конфігурація для unitId='{unitId}' (typeId='{unitTypeId}') не знайдена. Використовую PathAnimationSettings.Default.");
 
 				var settings = _unitGameplayProfileService.ResolveMovementAnimationSettings(unitTypeId);
 				settings.CanPerformStep = stepPos => CanMakeStep(unitId, stepPos);
@@ -318,7 +284,6 @@ if (_traversalPolicy != null)
 			}
 			catch (OperationCanceledException)
 			{
-				Debug.Log($"[UnitMovement] Рух юніта {unitId} перервано (стаміна або команда).");
 			}
 			catch (Exception e)
 			{
@@ -386,11 +351,6 @@ private bool CanMakeStep(string unitId, Vector2Int stepPos)
 
 		if (!allowed)
 		{
-			Debug.LogWarning(
-				$"[MOYVA_MOVE][STEP_REJECT] unit={unitId}; "
-				+ $"from={from}; to={stepPos}; "
-				+ $"movement={currentMovement:0.###}; "
-				+ $"cost={exactCost:0.###}; reason={exactReason}");
 		}
 
 		return allowed;
@@ -404,15 +364,8 @@ private bool CanMakeStep(string unitId, Vector2Int stepPos)
 		out float cost,
 		out string reason);
 
-	if (!canStep && !string.IsNullOrWhiteSpace(reason))
-		Debug.Log(
-			$"[UnitMovement] Перевірка кроку для {unitId} "
-			+ $"на {stepPos}: BLOCKED ({reason}).");
-
 	return canStep;
 }
-
-
 
 		private bool TryEvaluateMovementStep(
 			string unitId,

@@ -48,17 +48,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 LogShaderDiagnosticsIfNeeded(
                     shaderStateChanged,
                     shaderStateHash);
-
-                Debug.Log(
-                    StateSyncDiagnosticPrefix
-                    + " COMMIT source="
-                    + source
-                    + " previewActive="
-                    + _previewActive
-                    + " previewSequence="
-                    + _previewSequence
-                    + " stateHash="
-                    + shaderStateHash);
             }
         }
 

@@ -46,7 +46,6 @@ namespace Kruty1918.Moyva.Faction.Runtime
             {
                 if (string.IsNullOrWhiteSpace(slot.FactionId))
                 {
-                    Debug.LogWarning("[FactionInstaller] Слот з порожнім FactionId пропущено.");
                     continue;
                 }
 

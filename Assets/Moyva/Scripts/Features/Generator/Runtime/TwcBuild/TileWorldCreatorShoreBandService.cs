@@ -36,7 +36,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int convertedCount = ConvertLandSideShore(biomeMap, originalIsWater, shoreBand, width, height, shoreId);
             MarkExistingSandShoreBand(biomeMap, originalIsWater, shoreBand, width, height);
             int raisedLevelCount = RaiseShoreLevelsToWater(worldData.TerrainLevelMap, shoreBand, originalIsWater, width, height);
-            Debug.Log($"{LogTag} ExpandSandShoreBand: size={width}x{height}, shoreId='{shoreId}', originalWater={waterCount}, originalSand={sandCount}, convertedLandToShore={convertedCount}, finalShoreBand={CountTrue(shoreBand, width, height)}, raisedLevelCells={raisedLevelCount}, levels={TileWorldCreatorMapFormatUtility.FormatLevelStats(worldData.TerrainLevelMap)}.");
         }
 
         private static void CountOriginalBiomes(string[,] biomeMap, bool[,] originalIsWater, int width, int height, out int waterCount, out int sandCount)

@@ -24,7 +24,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 : _uiHitTester.IsPointerOverAnyUI(screenPosition, pointerId);
         }
 
-
         // From ConstructionInputService.State.cs
         private void CancelActivePointerDrags()
         {
@@ -87,9 +86,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ClearBuildGridHover();
                 CancelActiveDrags();
             }
-
-            if (VerboseLogs)
-                Debug.Log($"{LogTag} Active changed -> {_isActive}");
         }
     }
 }

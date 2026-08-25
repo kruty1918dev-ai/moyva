@@ -44,10 +44,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     _lastActionMessage =
                         $"Замок уже побудований на {existingCastlePosition}. " +
                         "Другий замок для цього гравця заборонений.";
-                    Debug.Log(
-                        $"{ModuleLogTag} castle-placement blocked " +
-                        $"owner={_activeOwnerId} " +
-                        $"existing={existingCastlePosition}");
                     return true;
                 }
 
@@ -126,9 +122,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 Vector2Int currentPosition = _pendingPlacements[pendingIndex].Position;
                 if (VerboseLogs)
                 {
-                    Debug.Log(
-                        $"[Construction] Unique placement '{_selectedBuildingId}' scope={scope} already has " +
-                        $"pending preview at {currentPosition}. Redirecting move to {targetPosition}.");
                 }
 
                 placementSucceeded = currentPosition == targetPosition
@@ -203,9 +196,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             LogPlacementAttempt(relocationResult, emitRejectedAction: false);
             if (VerboseLogs)
             {
-                Debug.Log(
-                    $"[Construction] Unique placement '{_selectedBuildingId}' scope={scope} entered " +
-                    $"relocation preview {originalPosition} -> {targetPosition}.");
             }
 
             return true;

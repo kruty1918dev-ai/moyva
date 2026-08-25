@@ -18,12 +18,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool realMultiplayerMode = GameLaunchContext.Mode == GameLaunchMode.MenuJoinGame
                 || GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame;
 
-            Debug.Log(
-                $"{PolicyDiagTag} Policy.{nameof(IsMultiplayerLaunchContext)} mode={GameLaunchContext.Mode}, maxPlayers={GameLaunchContext.MaxPlayers}, " +
-                $"maxPlayersSuggestsMultiplayer={maxPlayersSuggestsMultiplayer}, realMultiplayerMode={realMultiplayerMode}, hasSession={hasSession}, " +
-                $"participants={participantCount}, isHost={isHost}, localPlayerId={(string.IsNullOrEmpty(localPlayerId) ? "<empty>" : localPlayerId)}, result={result}.");
-            Debug.Log($"{DirectDiagTag} Policy.IsMultiplayerLaunchContext mode={GameLaunchContext.Mode}, maxPlayers={GameLaunchContext.MaxPlayers}, maxPlayersSuggestsMultiplayer={maxPlayersSuggestsMultiplayer}, realMultiplayerMode={realMultiplayerMode}, result={result}.");
-
             return result;
         }
 
@@ -46,12 +40,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool maxPlayersSuggestsMultiplayer = GameLaunchContext.MaxPlayers > 1;
             bool realMultiplayerMode = GameLaunchContext.Mode == GameLaunchMode.MenuJoinGame
                 || GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame;
-
-            Debug.Log(
-                $"{PolicyDiagTag} Policy.{methodName} mode={GameLaunchContext.Mode}, maxPlayers={GameLaunchContext.MaxPlayers}, " +
-                $"maxPlayersSuggestsMultiplayer={maxPlayersSuggestsMultiplayer}, realMultiplayerMode={realMultiplayerMode}, " +
-                $"isMultiplayerContext={isMultiplayerContext}, hasSession={hasSession}, participants={participantCount}, " +
-                $"isHost={isHost}, localPlayerId={(string.IsNullOrEmpty(localPlayerId) ? "<empty>" : localPlayerId)}, result={result}, reason={reason}.");
         }
     }
 }

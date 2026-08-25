@@ -242,9 +242,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void ApplyCellsToRuntimeLayers()
         {
-            Debug.Log($"{StartDiagTag} VolumeUpdater.ApplyCellsToRuntimeLayers runtimeLayers={_runtimeLayers.Count}, unexploredCells={_stateCache.UnexploredCellCount}, exploredCells={_stateCache.ExploredCellCount}, unexploredHeightLayers={_stateCache.UnexploredCellsByHeight.Count}, exploredHeightLayers={_stateCache.ExploredCellsByHeight.Count}.");
             int visibleCells = Mathf.Max(0, _mapWidth * _mapHeight - _stateCache.UnexploredCellCount - _stateCache.ExploredCellCount);
-            Debug.Log($"{StartupChainTag} FogVolume.ApplyCellsToRuntimeLayers runtimeLayers={_runtimeLayers.Count}, visibleCells={visibleCells}, exploredCells={_stateCache.ExploredCellCount}, unexploredCells={_stateCache.UnexploredCellCount}, exploredHeightLayers={_stateCache.CountNonEmptyHeightLayers(_stateCache.ExploredCellsByHeight)}, unexploredHeightLayers={_stateCache.CountNonEmptyHeightLayers(_stateCache.UnexploredCellsByHeight)}, layerSummary={FormatRuntimeLayerSummary()}.");
             for (int i = 0; i < _runtimeLayers.Count; i++)
             {
                 var runtimeLayer = _runtimeLayers[i];

@@ -25,7 +25,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (_viewController == null)
             {
-                Debug.LogWarning("[PasswordPanelService] IPasswordPanelViewController не підключено — приватні кімнати недоступні.");
                 return;
             }
 

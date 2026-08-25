@@ -45,39 +45,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 CountBufferMismatches(
                     _committedPixels,
                     _pixels);
-
-            Debug.Log(
-                StateSyncDiagnosticPrefix
-                + " source="
-                + source
-                + " previewActive="
-                + _previewActive
-                + " keepVisible="
-                + keepVisible
-                + " previewCenter="
-                + previewCenter
-                + " previewRadius="
-                + previewRadius
-                + " previewShape="
-                + previewShape
-                + " operationCells="
-                + operationCells
-                + " visualChanges="
-                + visualChanges
-                + " committed[V,E,U]="
-                + committedVisible
-                + ","
-                + committedExplored
-                + ","
-                + committedUnexplored
-                + " visual[V,E,U]="
-                + visualVisible
-                + ","
-                + visualExplored
-                + ","
-                + visualUnexplored
-                + " mismatches="
-                + mismatches);
         }
 
         private static void CountBufferStates(

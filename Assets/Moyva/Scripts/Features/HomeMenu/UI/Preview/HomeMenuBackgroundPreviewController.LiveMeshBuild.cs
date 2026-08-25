@@ -69,13 +69,10 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
                 ConfigureLivePreviewCamera(builder.WorldBounds, projectSettings, previewLayer);
                 ConfigureLivePreviewLight(projectSettings, previewLayer);
-
-                Debug.Log($"[HomeMenuBackgroundPreview] Live 3D mesh preview built: terrain={terrainCount}, objects={objectCount}, buildings={buildingCount}, meshObjects={meshObjectCount}, stride={tileStride}.");
                 return true;
             }
             catch (Exception exception)
             {
-                Debug.LogWarning($"[HomeMenuBackgroundPreview] Live 3D mesh preview failed. Falling back to texture preview. {exception.Message}");
                 DestroyLiveMeshPreview();
                 return false;
             }

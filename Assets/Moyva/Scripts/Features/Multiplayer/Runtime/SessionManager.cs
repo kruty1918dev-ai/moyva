@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
@@ -35,7 +33,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private readonly IWorldSnapshotStore _snapshotStore;
         private readonly IConfigStore _configStore;
         private readonly IMultiplayerLogger _logger;
-        private readonly IMultiplayerSessionDiagnostics _diagnostics;
         private readonly IFailureHandlingPolicy _failurePolicy;
         private readonly IHostMigrationService _hostMigration;
         private readonly IHostMigrationCheckpointService _hostMigrationCheckpoint;
@@ -69,7 +66,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             IWorldSnapshotStore snapshotStore,
             IConfigStore configStore,
             IMultiplayerLogger logger,
-            [Zenject.InjectOptional] IMultiplayerSessionDiagnostics diagnostics,
             IFailureHandlingPolicy failurePolicy,
             IHostMigrationService hostMigration,
             IHostMigrationCheckpointService hostMigrationCheckpoint = null)
@@ -81,7 +77,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _snapshotStore       = snapshotStore       ?? throw new ArgumentNullException(nameof(snapshotStore));
             _configStore         = configStore         ?? throw new ArgumentNullException(nameof(configStore));
             _logger              = logger              ?? throw new ArgumentNullException(nameof(logger));
-            _diagnostics         = diagnostics;
             _failurePolicy       = failurePolicy       ?? throw new ArgumentNullException(nameof(failurePolicy));
             _hostMigration       = hostMigration       ?? throw new ArgumentNullException(nameof(hostMigration));
             _hostMigrationCheckpoint = hostMigrationCheckpoint;
@@ -90,32 +85,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _network.PeerDisconnected += OnPeerDisconnected;
             _lobby.LobbyUpdated       += OnLobbyUpdated;
             _lobby.KickedFromLobby    += OnKickedFromLobby;
-        }
-
-        public SessionManager(
-            INetworkProvider network,
-            ILobbyService lobby,
-            IParticipantPolicyService participantPolicy,
-            IWorldConsistencyService consistency,
-            IWorldSnapshotStore snapshotStore,
-            IConfigStore configStore,
-            IMultiplayerLogger logger,
-            IFailureHandlingPolicy failurePolicy,
-            IHostMigrationService hostMigration,
-            IHostMigrationCheckpointService hostMigrationCheckpoint = null)
-            : this(
-                network,
-                lobby,
-                participantPolicy,
-                consistency,
-                snapshotStore,
-                configStore,
-                logger,
-                diagnostics: null,
-                failurePolicy,
-                hostMigration,
-                hostMigrationCheckpoint)
-        {
         }
 
         public void Dispose()

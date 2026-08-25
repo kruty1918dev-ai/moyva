@@ -32,8 +32,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             string message = $"phase={phase}, expectedChunks={expected}, actualClusters={clusters.Length}, " +
                 $"map={configuration.width}x{configuration.height}, clusterCellSize={configuration.clusterCellSize}, " +
                 $"mergeTiles={configuration.mergeTiles}, layers={TileWorldCreatorChunkBatchingUtility.DescribeActiveTileLayers(configuration)}, samples=[{string.Join(" | ", _samples)}]";
-            Debug.Log($"{LogTag} Audit {message}");
-            Debug.Log($"{WorldGenDiagTag} TWCChunkAudit {message}");
         }
 
         public void RequestDelayedReport(TileWorldCreatorManager manager, Configuration configuration, string phase)

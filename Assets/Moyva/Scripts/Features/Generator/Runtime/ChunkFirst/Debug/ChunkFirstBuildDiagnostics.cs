@@ -9,12 +9,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         public void LogStart(TileWorldCreatorTerrainBuildMode mode, GeneratedWorldData worldData, int chunkSize)
         {
-            Debug.Log($"{LogTag} START mode={mode}, map={worldData?.Width ?? 0}x{worldData?.Height ?? 0}, chunkSize={chunkSize}, hasStackMap={worldData?.LogicalTileMap != null}.");
         }
 
         public void LogPlan(int chunkCount, int stackSamples, int resolvedTerrain, int objectCandidates)
         {
-            Debug.Log($"{LogTag} PLAN chunks={chunkCount}, stackSamples={stackSamples}, resolvedTerrain={resolvedTerrain}, objectCandidates={objectCandidates}.");
         }
 
         public void LogChunkMesh(
@@ -34,15 +32,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             int culledFaces = Mathf.Max(
                 0,
                 sourceTriangles - processedTriangles);
-            Debug.Log(
-                $"{LogTag} CHUNK mesh='{chunkName}', sourceVertices={sourceVertices}, " +
-                $"sourceIndices={sourceIndices}, sourceTriangles={sourceTriangles}, " +
-                $"processedVertices={processedVertices}, processedIndices={processedIndices}, " +
-                $"processedTriangles={processedTriangles}, emittedVertices={emittedVertices}, " +
-                $"emittedIndices={emittedIndices}, emittedTriangles={emittedTriangles}, " +
-                $"culledFaces={culledFaces}, " +
-                $"unreferencedVerticesRemoved={Mathf.Max(0, unreferencedVerticesRemoved)}, " +
-                $"exactDuplicateVerticesRemoved={Mathf.Max(0, exactDuplicateVerticesRemoved)}.");
         }
 
         public void LogLegacyAttempt(string caller)
@@ -52,7 +41,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         public void LogTwcVisualCleanup(int layerObjects, int orphanClusters)
         {
-            Debug.Log($"{LogTag} TWC visual cleanup layerObjects={layerObjects}, orphanClusters={orphanClusters}.");
         }
 
         public void LogFailure(string reason)
@@ -62,7 +50,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         public void LogComplete(int chunksBuilt, int objectsSpawned)
         {
-            Debug.Log($"{LogTag} COMPLETE chunksBuilt={chunksBuilt}, objectsSpawned={objectsSpawned}, legacyTwcVisualBuildAttempted=false.");
         }
     }
 }

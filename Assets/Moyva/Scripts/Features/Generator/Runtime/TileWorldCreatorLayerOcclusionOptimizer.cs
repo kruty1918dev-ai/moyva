@@ -35,9 +35,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return default;
 
             int childrenBefore = manager.transform.childCount;
-            Debug.Log(
-                $"{WorldGenDiagTag} TWCBuild.START manager={manager.name}, config={manager.configuration.name}, " +
-                $"map={manager.configuration.width}x{manager.configuration.height}, frame={Time.frameCount}, childrenBefore={childrenBefore}, asyncHint=unknown");
             var result = GenerateBlueprintMap(manager);
             LogOcclusionResult(result, "GenerateCompleteMap");
             if (chunkSizeTiles > 0)
@@ -48,9 +45,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
             stopwatch.Stop();
             manager.OnMapReady?.Invoke();
-            Debug.Log(
-                $"{WorldGenDiagTag} TWCBuild.RETURN manager={manager.name}, frame={Time.frameCount}, elapsedMs={stopwatch.ElapsedMilliseconds}, " +
-                $"childrenAfterReturn={manager.transform.childCount}, mayContinueAsync=unknown");
             return result;
         }
 
@@ -162,11 +156,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (mergeChanged || clusterChanged || mergeOverrideCount > 0)
             {
                 int estimatedClusters = EstimateClusterCount(maxLayerWidth, maxLayerHeight, configuration.clusterCellSize) * safeLayerCount;
-                Debug.Log(
-                    $"[Moyva TWC Batching] Tile batching applied: mergeTiles={configuration.mergeTiles}, " +
-                    $"clusterCellSize={configuration.clusterCellSize}, activeTileLayers={activeTileLayerCount}, " +
-                    $"estimatedTileClusters={estimatedClusters}, target={TargetTileClusterBudget}, " +
-                    $"layerMergeOverridesEnabled={mergeOverrideCount}.");
             }
         }
 
@@ -214,8 +203,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             if (result.RemovedCellCount <= 0)
                 return;
-
-            Debug.Log($"[Moyva TWC Occlusion] {context}: removed {result.RemovedCellCount} lower-layer cells, processed={result.ProcessedLayerCount}, occupied={result.OccupiedCellCount}, skipped={result.SkippedLayerCount}.");
         }
 
         private static List<BlueprintLayer> GetBuildOrderedBlueprintLayers(Configuration configuration)

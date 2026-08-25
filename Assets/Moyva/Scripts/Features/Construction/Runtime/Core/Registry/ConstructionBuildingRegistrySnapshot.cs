@@ -73,9 +73,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (Application.isEditor && Debug.isDebugBuild)
             {
-                Debug.Log(
-                    $"[MoyvaConstructionModules] registry-snapshot refreshed " +
-                    $"revision={currentRevision} definitions={_definitions.Length}");
             }
         }
     }

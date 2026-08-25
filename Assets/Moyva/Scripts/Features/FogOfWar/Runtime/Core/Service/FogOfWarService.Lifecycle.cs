@@ -23,7 +23,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGeneratedData);
             ReplayCachedWorldGeneratedSignalIfAvailable();
-            Debug.Log($"{WorldGenDiagTag} Receiver.Fog.Initialize subscribed frame={Time.frameCount}");
         }
 
         /// <summary>
@@ -51,9 +50,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             width = Mathf.Max(1, width);
             height = Mathf.Max(1, height);
 
-            Debug.Log($"{StartDiagTag} FogService.Initialize map={width}x{height}, wasInitialized={wasInitialized}, pendingRevealCount={_pendingRevealAreas.Count}, pendingUnits={_pendingUnits.Count}, fixedAreas={_fixedVisionShapes.Count}.");
-            Debug.Log($"{DebugTag} FogService.Initialize begin requested={width}x{height}, wasInitialized={wasInitialized}, previous={_width}x{_height}, pendingReveals={_pendingRevealAreas.Count}, units={_unitPositions.Count}, fixedAreas={_fixedVisionShapes.Count}.");
-
             _width = width;
             _height = height;
 
@@ -71,8 +67,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             var snapshot = _pendingExploredSnapshot ?? _saveProvider?.LoadExploredData();
             bool hasLoadedSnapshot = snapshot != null;
-            Debug.Log($"{StartDiagTag} FogService.Initialize snapshot={(snapshot != null ? $"{snapshot.GetLength(0)}x{snapshot.GetLength(1)}" : "null")}, willApplyPendingReveals={_pendingRevealAreas.Count > 0}.");
-            Debug.Log($"{DebugTag} FogService.Initialize snapshot={(snapshot != null ? $"{snapshot.GetLength(0)}x{snapshot.GetLength(1)}" : "null")}.");
             if (snapshot != null)
                 LoadFromSnapshot(snapshot);
             _pendingExploredSnapshot = null;
@@ -95,7 +89,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _visualUpdater?.RebuildFullVisual(this);
             LogStartupRevealFinalState("InitializeAfterFullVisualRebuild");
             BumpVersion();
-            Debug.Log($"{DebugTag} FogService.Initialize end map={_width}x{_height}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}, pendingReveals={_pendingRevealAreas.Count}, version={Version}.");
         }
 
         /// <summary>
@@ -105,7 +98,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private void ResizeToWorldDimensions(int width, int height)
         {
             var exploredSnapshot = GetExploredSnapshot();
-            Debug.Log($"{DebugTag} FogService.ResizeToWorldDimensions from={_width}x{_height} to={Mathf.Max(1, width)}x{Mathf.Max(1, height)}, snapshot={(exploredSnapshot != null ? $"{exploredSnapshot.GetLength(0)}x{exploredSnapshot.GetLength(1)}" : "null")}.");
 
             _width = Mathf.Max(1, width);
             _height = Mathf.Max(1, height);

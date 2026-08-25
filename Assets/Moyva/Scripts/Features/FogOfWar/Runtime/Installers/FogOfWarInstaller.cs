@@ -29,9 +29,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
             else
             {
-                Debug.LogWarning(
-                    "[FogOfWar] FogOfWarInstaller did not find " +
-                    "FogOfWarSettings on any FogOfWarVolumeController.");
             }
 
             int controllerCount =
@@ -57,8 +54,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 "; presentation=" +
                 presentationName +
                 ".";
-
-            Debug.Log(installerMessage);
 
             MapChunkFeatureBindings.Install(Container);
 

@@ -66,9 +66,6 @@ namespace Kruty1918.Moyva.SaveSystem
                 Type type = module.GetType();
                 if (!seenTypes.Add(type))
                 {
-                    Debug.LogWarning(
-                        $"[SaveSystem] Duplicate save module type '{type.FullName ?? type.Name}' " +
-                        "was registered more than once. Only one instance will participate in the pipeline.");
                     continue;
                 }
 

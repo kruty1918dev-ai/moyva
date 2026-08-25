@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
@@ -54,8 +52,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IUnitFactory _unitFactory;
         private readonly IUnitOwnershipQuery _ownership;
         private readonly SignalBus _signalBus;
-        private readonly ISaveLoadDiagnostics _loadDiagnostics;
-        private readonly ISaveLoadDiagnosticsSession _loadDiagnosticsSession;
         private readonly IUnitRecruitmentStateStore _recruitmentState;
         private readonly IHealthRegistry _healthRegistry;
         private readonly List<UnitRecord> _pendingRecords = new();
@@ -68,8 +64,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IUnitFactory unitFactory,
             IUnitOwnershipQuery ownership,
             SignalBus signalBus,
-            [InjectOptional] ISaveLoadDiagnostics loadDiagnostics = null,
-            [InjectOptional] ISaveLoadDiagnosticsSession loadDiagnosticsSession = null,
             [InjectOptional] IUnitRecruitmentStateStore recruitmentState = null,
             [InjectOptional] IHealthRegistry healthRegistry = null)
         {
@@ -77,8 +71,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _unitFactory = unitFactory;
             _ownership = ownership;
             _signalBus = signalBus;
-            _loadDiagnostics = loadDiagnostics;
-            _loadDiagnosticsSession = loadDiagnosticsSession;
             _recruitmentState = recruitmentState;
             _healthRegistry = healthRegistry;
         }
@@ -184,7 +176,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 context.Reader.BaseStream.Position = payloadStart;
                 if (!TryParseLegacyRecords(context.Reader, legacyCount, out legacyRecords))
                 {
-                    Debug.LogWarning("[UnitsSave] Failed to parse unit block in versioned or legacy form.");
                     return;
                 }
             }
@@ -267,10 +258,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (recruitment != null)
                     _pendingRecruitment.AddRange(recruitment);
                 _hasPendingRecruitmentState = true;
-                _loadDiagnostics?.CompleteStep(
-                    _loadDiagnosticsSession?.CurrentFlow,
-                    SaveLoadDiagnosticSteps.UnitsRestored,
-                    $"deferred={records.Count}");
                 return;
             }
 
@@ -328,10 +315,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         health.TakeDamage(damageToRestore);
                 }
             }
-            _loadDiagnostics?.CompleteStep(
-                _loadDiagnosticsSession?.CurrentFlow,
-                SaveLoadDiagnosticSteps.UnitsRestored,
-                $"spawned={records.Count}");
         }
 
         private static bool TryParseRecordsWithStamina(BinaryReader reader, int count, out List<UnitRecord> records)

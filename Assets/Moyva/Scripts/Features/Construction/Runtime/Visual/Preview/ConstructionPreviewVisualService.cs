@@ -217,7 +217,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     : ResolvePreviewDragSharpness());
         }
 
-
         public bool TryRelease(Vector2Int position, out GameObject visual)
         {
             if (!_previewByPosition.TryGetValue(position, out visual) || visual == null)
@@ -286,12 +285,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (Debug.isDebugBuild)
             {
-                Debug.Log(
-                    $"{PerfLogTag} preview-pool summary " +
-                    $"created={_poolCreatedCount} " +
-                    $"reused={_poolReusedCount} " +
-                    $"released={_poolReleasedCount} " +
-                    $"overflowDestroyed={_poolOverflowDestroyedCount}");
             }
 
             for (int index = 0; index < _gridHoverHighlights.Count; index++)
@@ -407,9 +400,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (Debug.isDebugBuild
                     && _loggedPoolReusePrefabIds.Add(prefabId))
                 {
-                    Debug.Log(
-                        $"{PerfLogTag} preview-pool first-reuse " +
-                        $"prefab={prefab.name}");
                 }
             }
             else
@@ -505,10 +495,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 if (Debug.isDebugBuild)
                 {
-                    Debug.Log(
-                        $"{PerfLogTag} preview-pool overflow " +
-                        $"prefabId={prefabId} " +
-                        $"cap={MaxPooledInstancesPerPrefab}");
                 }
                 return;
             }
@@ -657,7 +643,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _snapHighlight.SetActive(true);
         }
 
-
         private void HideSnapTargetHighlight()
         {
             ClearGridHover();
@@ -685,7 +670,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (shader == null)
             {
-                Debug.LogWarning("[ConstructionVisual] Snap target highlight shader not found.");
                 Object.Destroy(_snapHighlight);
                 _snapHighlight = null;
                 return;

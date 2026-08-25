@@ -54,7 +54,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (_session.InvalidReasons.TryGetValue(tile, out string reason)
                     && !string.IsNullOrWhiteSpace(reason))
                 {
-                    Debug.Log($"{LogTag} Invalid deployment tile {tile}: {reason}");
                 }
 
                 return;
@@ -79,8 +78,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Vector2Int target = _session.SelectedTile.Value;
             if (!TryRevalidateTarget(target, out string reason))
             {
-                Debug.LogWarning(
-                    $"{LogTag} Selected deployment tile became invalid: {reason}");
                 RefreshDeploymentTiles();
                 return;
             }
@@ -99,14 +96,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                 if (!deployed)
                 {
-                    Debug.LogWarning(
-                        $"{LogTag} Deployment confirm failed: {reason}");
                     RefreshDeploymentTiles();
                     return;
                 }
-
-                Debug.Log(
-                    $"{LogTag} Deployment confirmed queue={session.QueueId} unitId={unitId} tile={target}.");
                 if (_session != null)
                     EndSession(destroyPreview: true);
             }

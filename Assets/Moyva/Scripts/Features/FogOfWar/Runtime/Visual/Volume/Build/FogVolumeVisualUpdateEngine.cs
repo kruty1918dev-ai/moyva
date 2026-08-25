@@ -107,10 +107,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _dirtyClusterTracker = dirtyClusterTracker;
             _clusteredVolumeRenderer = clusteredVolumeRenderer;
             _outputCleaner = outputCleaner ?? new FogVolumeOutputCleaner();
-            if (settings != null)
-                Debug.Log($"{LogTag} Updater constructed: injectedSettings='{settings.name}'.");
-            else
-                Debug.LogWarning($"{LogTag} Updater constructed without injected FogOfWarSettings. It will use settings from FogOfWarVolumeController if one attaches.");
         }
 
         private static FogVolumePendingWorkQueue ResolvePendingWorkQueueFallback(

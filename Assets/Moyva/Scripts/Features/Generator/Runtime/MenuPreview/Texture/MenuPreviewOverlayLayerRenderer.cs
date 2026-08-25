@@ -29,7 +29,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             if (context.Request.BuildingRegistry == null && MenuPreviewMapUtility.HasAnyValue(context.Request.PreviewData.BuildingMap))
             {
-                Debug.LogWarning("[MenuPreview] BuildingMap has values, but BuildingRegistry is not assigned. Building overlay will be skipped.");
                 return;
             }
 
@@ -68,9 +67,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     dots++;
                 }
             }
-
-            if (dots > 0)
-                Debug.Log($"[MenuPreview] {label} fallback dots: {dots}, sprite overlays: {sprites}.");
         }
 
         private void DrawSprite(MenuPreviewTextureBuildContext context, int x, int y, MenuPreviewSpriteData sprite, float scale)

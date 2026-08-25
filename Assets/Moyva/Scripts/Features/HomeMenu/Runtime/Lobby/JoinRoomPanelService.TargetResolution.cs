@@ -14,7 +14,6 @@ using Zenject;
 using System.Threading;
 using System.Threading.Tasks;
 
-
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal partial class JoinRoomPanelService
@@ -40,14 +39,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     return joinedWithoutPassword;
 
                 try { await _lobbyService.LeaveAsync(ct); }
-                catch (Exception e) { Debug.LogWarning($"[JoinRoomPanelService] Leave before password retry failed: {e.Message}"); }
+                catch (Exception e) { }
 
                 probe = new ProbeResult(true, room.Name);
             }
 
             if (_passwordPanelService == null)
             {
-                Debug.LogWarning("[JoinRoomPanelService] Кімната потребує пароль, але IPasswordPanelService не підключений.");
                 _infoPanelService?.Show(new InfoMessage("Приватна кімната", "Ця кімната потребує пароль, але панель введення недоступна."));
                 return Result<LobbyRoom>.Fail(DomainErrorCode.Validation, "Панель введення пароля недоступна.");
             }
@@ -90,8 +88,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 return room;
             }
-
-            Debug.LogWarning($"[JoinRoomPanelService] Join by code '{target.Value}' returned null; retrying as {resolved.Kind}='{resolved.Value}'.");
             return await JoinExactTargetAsync(resolved, password, ct);
         }
 
@@ -141,16 +137,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return Result<LobbyRoom>.Fail(DomainErrorCode.Validation, "LobbyId порожній.");
 
             var normalizedLobbyId = lobbyId.Trim();
-            Debug.Log($"[JoinRoomPanelService] JoinByIdWithOptionalPasswordAsync: calling JoinByIdAsync('{normalizedLobbyId}')...");
             var room = await _lobbyService.JoinByIdAsync(normalizedLobbyId, GetPlayerName(), ct);
-            Debug.Log($"[JoinRoomPanelService] JoinByIdWithOptionalPasswordAsync: JoinByIdAsync returned {(room == null ? "null" : $"room '{room.LobbyId}'")}.");
             if (room == null)
             {
                 var fallback = await ResolveJoinCodeAliasAsync(normalizedLobbyId, ct);
                 if (fallback.IsValid &&
                     !(fallback.Kind == JoinRoomTargetKind.LobbyId && string.Equals(fallback.Value, normalizedLobbyId, StringComparison.OrdinalIgnoreCase)))
                 {
-                    Debug.LogWarning($"[JoinRoomPanelService] JoinByIdAsync returned null for lobbyId='{normalizedLobbyId}', retrying via {fallback.Kind}='{fallback.Value}'.");
                     var fallbackResult = await JoinExactTargetAsync(fallback, password, ct);
                     if (fallbackResult.IsFailure)
                         return fallbackResult;
@@ -159,7 +152,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 }
                 else
                 {
-                    Debug.LogWarning($"[JoinRoomPanelService] JoinByIdAsync returned null for lobbyId='{normalizedLobbyId}', fallback={fallback.Kind}/'{fallback.Value}' isValid={fallback.IsValid} — giving up.");
                 }
 
                 if (room == null)
@@ -219,7 +211,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] ResolveJoinCodeAliasAsync failed for '{value}': {e.Message}");
             }
 
             return new JoinRoomTarget(JoinRoomTargetKind.None, string.Empty);

@@ -48,10 +48,8 @@ namespace Kruty1918.Moyva.SaveSystem
                 {
                     module.OnSave(new SaveContext(bw, null));
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Debug.LogWarning(
-                        $"[SaveSystem] '{module.GetType().FullName}' OnSave threw: {e.Message}. Block skipped.");
                     continue;
                 }
 
@@ -60,8 +58,6 @@ namespace Kruty1918.Moyva.SaveSystem
 
                 if (payload.Length == 0)
                 {
-                    Debug.LogWarning(
-                        $"[SaveSystem] '{module.GetType().FullName}' wrote 0 bytes. Block skipped.");
                     continue;
                 }
 
@@ -144,9 +140,8 @@ namespace Kruty1918.Moyva.SaveSystem
             if (File.Exists(finalPath))
             {
                 try { File.Copy(finalPath, backup, overwrite: true); }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Debug.LogWarning($"[SaveSystem] Backup failed: {e.Message}");
                 }
             }
 
@@ -179,7 +174,6 @@ namespace Kruty1918.Moyva.SaveSystem
 
             if (result != SaveFileCodec.DecodeError.None)
             {
-                Debug.LogWarning($"[SaveSystem] Decode failed ({contextLabel}): {error}");
                 return false;
             }
 
@@ -189,9 +183,6 @@ namespace Kruty1918.Moyva.SaveSystem
                 var block = decodedBlocks[index];
                 if (payloadByBlockId.ContainsKey(block.blockId))
                 {
-                    Debug.LogWarning(
-                        $"[SaveSystem] Duplicate blockId={block.blockId:X8} detected ({contextLabel}). " +
-                        "Load rejected before module mutation.");
                     return false;
                 }
 
@@ -232,16 +223,9 @@ namespace Kruty1918.Moyva.SaveSystem
                     module.OnLoad(new SaveContext(null, br));
 
                     long unread = ms.Length - ms.Position;
-                    if (unread > 0)
-                        Debug.LogWarning(
-                            $"[SaveSystem] '{moduleName}' left {unread}b unread. " +
-                            $"Data version mismatch?");
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Debug.LogWarning(
-                        $"[SaveSystem] '{moduleName}' OnLoad threw: " +
-                        $"{e.GetType().Name} — {e.Message}");
                 }
 
                 payloadByBlockId.Remove(blockId);
@@ -255,9 +239,6 @@ namespace Kruty1918.Moyva.SaveSystem
                 {
                     uint blockId = unknownIds[index];
                     byte[] payload = payloadByBlockId[blockId];
-                    Debug.LogWarning(
-                        $"[SaveSystem] Unknown blockId={blockId:X8} ({payload.Length}b). " +
-                        $"Module removed or newer format. Skipped.");
                 }
             }
 
@@ -270,7 +251,6 @@ namespace Kruty1918.Moyva.SaveSystem
         internal static bool ValidateSlot(int slot)
         {
             if (slot >= 0 && slot <= MaxSlots) return true;
-            Debug.LogWarning($"[SaveSystem] Invalid slot={slot}. Must be 0–{MaxSlots}.");
             return false;
         }
 
@@ -287,7 +267,7 @@ namespace Kruty1918.Moyva.SaveSystem
                 error = null;
                 return true;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 error = e.Message;
                 return false;
@@ -304,7 +284,6 @@ namespace Kruty1918.Moyva.SaveSystem
             try { if (File.Exists(path)) File.Delete(path); }
             catch (Exception e)
             {
-                Debug.LogWarning($"[SaveSystem] Delete failed '{path}': {e.Message}");
             }
         }
 

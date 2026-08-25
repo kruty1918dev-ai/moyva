@@ -21,10 +21,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 if (configuration != null)
                 {
-                    Debug.LogWarning(
-                        $"{LogTag} Chunk-aligned batching skipped: source={source}, requestedChunkSize={chunkSizeTiles}, " +
-                        $"configClusterSize={configuration.clusterCellSize}, configMergeTiles={configuration.mergeTiles}, " +
-                        $"activeTileLayers={CountActiveTileLayers(configuration)}.");
                 }
 
                 return;
@@ -74,11 +70,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (mergeChanged || clusterChanged || meshOverrideCount > 0 || mergeOverrideCount > 0)
             {
-                Debug.Log(
-                    $"{LogTag} Chunk-aligned batching applied: source={source}, chunk={clusterSize}x{clusterSize} tiles, " +
-                    $"mergeTiles={configuration.mergeTiles}, activeTileLayers={activeTileLayers}, " +
-                    $"meshOverridesEnabled={meshOverrideCount}, layerMergeOverridesEnabled={mergeOverrideCount}, " +
-                    $"layers={DescribeActiveTileLayers(configuration)}.");
             }
         }
 

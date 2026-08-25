@@ -43,7 +43,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             // 1: Якщо старт уже триває, не запускаємо другий паралельний pipeline.
             if (_isStarting)
             {
-                Debug.LogWarning($"{Prefix} StartGameAsync викликано повторно — ігнорування.");
                 return;
             }
 
@@ -62,7 +61,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 // 5: При скасуванні розблоковуємо overlay і прибираємо його негайно.
                 _overlayLoader.UnlockOverlay();
                 _overlayLoader.StopOverlay(forceImmediate: true);
-                Debug.Log($"{Prefix} Запуск скасовано.");
                 throw;
             }
             catch (Exception e)
@@ -83,14 +81,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         /// <summary>Виконати внутрішній startup workflow і залогувати його межі.</summary>
         private async Task RunAsync(CancellationToken ct)
         {
-            // 1: Логуємо початок pipeline для діагностики запуску.
-            Debug.Log($"{Prefix} Startup pipeline begin.");
 
             // 2: Передаємо керування startup-пайплайну, який виконає всі фази переходу в gameplay.
             await _startupPipeline.RunAsync(ct);
-
-            // 3: Логуємо завершення та фінальну фазу для простішого troubleshooting.
-            Debug.Log($"{Prefix} Startup pipeline completed. Final phase={_startupPipeline.CurrentPhase}.");
         }
     }
 }

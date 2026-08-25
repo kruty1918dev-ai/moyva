@@ -255,9 +255,6 @@ namespace Kruty1918.Moyva.InfoPanel.UI
                 return;
 
             _loggedDatabaseResolution = true;
-            Debug.Log(
-                $"[P23.2ResourcePresentation] database='{database.name}' " +
-                $"resources={database.Resources?.Count ?? 0} source={source}");
         }
 
         private static void LogFallbackFailureOnce(
@@ -268,9 +265,6 @@ namespace Kruty1918.Moyva.InfoPanel.UI
                 return;
 
             _loggedFallbackFailure = true;
-            Debug.LogWarning(
-                $"[P23.2ResourcePresentation] {reason}: " +
-                $"{ex.GetType().Name}: {ex.Message}");
         }
 
         private static void WarnMissingOnce(
@@ -279,10 +273,6 @@ namespace Kruty1918.Moyva.InfoPanel.UI
         {
             if (!MissingResourceIds.Add(resourceId))
                 return;
-
-            Debug.LogWarning(
-                "[P23.2ResourcePresentation] Cannot resolve player-facing " +
-                $"presentation for resourceId='{resourceId}': {reason}.");
         }
     }
 }

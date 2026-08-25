@@ -49,12 +49,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     isDirectGameplay,
                     launchParticipantCount);
 
-            Debug.Log(
-                $"{DirectDiagTag} AssignmentFactory.ENTER positions={positions.Count}, " +
-                $"participants={participantCount}, mode={Kruty1918.Moyva.SaveSystem.GameLaunchContext.Mode}, source={Kruty1918.Moyva.SaveSystem.GameLaunchContext.Source}, " +
-                $"localPlayerId={localPlayerId}, launchParticipantCount={launchParticipantCount}, " +
-                $"assignmentCount={assignmentCount}, direct={isDirectGameplay}.");
-
             var assignments = new SpawnPositionAssignment[assignmentCount];
 
             for (int index = 0; index < assignmentCount; index++)

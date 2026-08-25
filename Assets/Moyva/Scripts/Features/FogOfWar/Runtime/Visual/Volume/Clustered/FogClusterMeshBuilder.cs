@@ -81,9 +81,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             _geometryBuilder.ApplyTo(mesh);
-
-            if (ShouldLogClusterUpdates())
-                Debug.Log($"{ClusterDiagTag} RebuildCluster key={key} cellsChecked={cellsChecked}, quads={quads}, sides={sides}.");
         }
 
         private static int ResolveSubMeshIndex(FogStateType state)

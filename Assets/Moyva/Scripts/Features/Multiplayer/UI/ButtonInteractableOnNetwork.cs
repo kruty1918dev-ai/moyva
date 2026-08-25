@@ -41,21 +41,17 @@ namespace Kruty1918.Moyva.Shared.Notifications
 
         private void Awake()
         {
-            Debug.Log($"{Prefix} Awake start. targetButtonAssigned={targetButton != null}");
             if (targetButton == null)
                 targetButton = GetComponent<Button>();
-            Debug.Log($"{Prefix} Awake end. targetButtonSet={targetButton != null}");
         }
 
         public void Construct([InjectOptional] IMultiplayerState multiplayerState = null)
         {
             _multiplayerState = multiplayerState;
-            Debug.Log($"{Prefix} Construct called. multiplayerStateInjected={_multiplayerState != null}");
         }
 
         private void OnEnable()
         {
-            Debug.Log($"{Prefix} OnEnable start. startDisabledUntilChecked={startDisabledUntilChecked}, pollingInterval={pollingInterval}");
             if (startDisabledUntilChecked && targetButton != null)
                 targetButton.interactable = false;
 
@@ -76,19 +72,16 @@ namespace Kruty1918.Moyva.Shared.Notifications
 
             _cts = new CancellationTokenSource();
             _ = MonitorLoopAsync(_cts.Token);
-            Debug.Log($"{Prefix} Monitor loop started.");
         }
 
         private void OnDisable()
         {
-            Debug.Log($"{Prefix} OnDisable called. Cancelling monitor if exists.");
             _cts?.Cancel();
             _cts = null;
         }
 
         private async Task MonitorLoopAsync(CancellationToken ct)
         {
-            Debug.Log($"{Prefix} MonitorLoopAsync start.");
             await CheckAndApplyAsync();
 
             if (pollingInterval <= 0f)
@@ -104,12 +97,10 @@ namespace Kruty1918.Moyva.Shared.Notifications
 
                 await CheckAndApplyAsync();
             }
-            Debug.Log($"{Prefix} MonitorLoopAsync exiting.");
         }
 
         private async Task CheckAndApplyAsync()
         {
-            Debug.Log($"{Prefix} CheckAndApplyAsync start.");
             bool online = false;
 
             if (_multiplayerState != null)
@@ -130,23 +121,18 @@ namespace Kruty1918.Moyva.Shared.Notifications
             if (targetButton != null)
                 targetButton.interactable = (online == interactableWhenOnline);
 
-            Debug.Log($"{Prefix} Check result: online={online}, interactableSet={(targetButton!=null?targetButton.interactable.ToString():"no-button")}");
-
             if (online != _lastIsOnline)
             {
                 _lastIsOnline = online;
                 if (online)
                 {
-                    Debug.Log($"{Prefix} Status changed to ONLINE. Invoking OnOnline.");
                     OnOnline?.Invoke();
                 }
                 else
                 {
-                    Debug.Log($"{Prefix} Status changed to OFFLINE. Invoking OnOffline.");
                     OnOffline?.Invoke();
                 }
             }
-            Debug.Log($"{Prefix} CheckAndApplyAsync end.");
         }
     }
 }

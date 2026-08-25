@@ -5,7 +5,6 @@ using System.Text;
 using Kruty1918.Moyva.MapChunks.API;
 using UnityEngine;
 
-
 namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
     /// <summary>
@@ -70,13 +69,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _physicalMismatchLogs = 0;
             _active = true;
             _hasReported = false;
-
-            Debug.Log(
-                $"{LogPrefix} BEGIN " +
-                $"map={_mapWidth}x{_mapHeight} " +
-                $"cellSize={F(_cellSize)} " +
-                $"hasWorldBounds={hasWorldBounds} " +
-                $"worldBounds={FormatBounds(worldBounds)}");
         }
 
         public static void BeginChunk(
@@ -425,55 +417,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 }
             }
 
-            Debug.Log(
-                $"{LogPrefix} COMPLETE " +
-                $"chunks={Records.Count} " +
-                $"logicalCells={_mapWidth * _mapHeight} " +
-                $"missingLogicalOwners={missingLogicalOwners} " +
-                $"duplicateLogicalOwners={duplicateLogicalOwners} " +
-                $"duplicateEmittedCells={duplicateEmittedCells} " +
-                $"duplicateFragments={duplicateFragments} " +
-                $"physicalOwnerMismatchFragments=" +
-                $"{_physicalOwnerMismatchFragments} " +
-                $"missingTerrainMeshes={missingTerrainMeshes} " +
-                $"sourceCellsOutsideCore={sourceCellsOutsideCore} " +
-                $"invalidSources={invalidSources} " +
-                $"maxOverhang=" +
-                $"({F(maxOverhangNegativeX)}," +
-                $"{F(maxOverhangPositiveX)}," +
-                $"{F(maxOverhangNegativeZ)}," +
-                $"{F(maxOverhangPositiveZ)})");
-
             _active = false;
         }
 
         private static void LogChunk(
             ChunkAuditRecord record)
         {
-            Debug.Log(
-                $"{LogPrefix} CHUNK " +
-                $"coord={record.Coord} " +
-                $"core={FormatRect(record.CoreRect)} " +
-                $"sample={FormatRect(record.SampleRect)} " +
-                $"coreCells={record.CoreRect.width * record.CoreRect.height} " +
-                $"terrainCells={record.ExpectedTerrainCells} " +
-                $"providerEmittedCells={record.ProviderEmittedCells.Count} " +
-                $"sources={record.SourceCount} " +
-                $"invalidSources={record.InvalidSourceCount} " +
-                $"physicalOwnerMismatches=" +
-                $"{record.PhysicalOwnerMismatchCount} " +
-                $"sourceCellsOutsideCore={record.SourceCellsOutsideCore} " +
-                $"missingTerrainSources={record.MissingTerrainMeshCells.Count} " +
-                $"mesh={FormatMesh(record.FinalMesh)} " +
-                $"coreBounds={FormatBounds(record.LogicalCoreBounds)} " +
-                $"meshBounds={FormatBounds(record.FinalMeshBounds)} " +
-                $"sourceBounds={FormatBounds(record.SourceBounds)} " +
-                $"footprintBounds={FormatBounds(record.SourceFootprintBounds)} " +
-                $"overhang=" +
-                $"({F(record.OverhangNegativeX)}," +
-                $"{F(record.OverhangPositiveX)}," +
-                $"{F(record.OverhangNegativeZ)}," +
-                $"{F(record.OverhangPositiveZ)})");
         }
 
         private static void AttachGizmo(
@@ -658,17 +607,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
 
             _physicalMismatchLogs++;
-
-            Debug.LogWarning(
-                $"{LogPrefix} PHYSICAL_OWNER_MISMATCH " +
-                $"actualChunk={area.Coord} " +
-                $"physicalChunk={physicalOwner} " +
-                $"sourceCell={FormatCell(logicalCell)} " +
-                $"center=({F(source.TileCenterXZ.x)}," +
-                $"{F(source.TileCenterXZ.y)}) " +
-                $"halfExtent={F(source.TileHalfExtent)} " +
-                $"mesh={source.Mesh?.name ?? "<null>"} " +
-                $"layer={source.GraphLayerName ?? "<none>"}");
         }
 
         private static MapChunkCoord ResolvePhysicalOwner(

@@ -26,9 +26,6 @@ namespace Kruty1918.Moyva.Bootstrap
             var gameSettings = _config != null ? _config.GameSettings : _legacyGameSettings;
             var startingPositionSettings = _config != null ? _config.StartingPositionSettings : _legacyStartingPositionSettings;
 
-            if (_config == null)
-                Debug.LogWarning("[Bootstrap] BootstrapInstallerConfigSO не призначено. Використано legacy inline settings із BootstrapInstaller.");
-
             // Спільний стан стартової позиції (читається BootstrapGameInitializer після того,
             // як StartingPositionInitializer запише значення при обробці WorldGeneratedDataSignal).
             Container.BindInterfacesAndSelfTo<BootstrapStartingPositionState>().AsSingle();
@@ -64,7 +61,6 @@ namespace Kruty1918.Moyva.Bootstrap
             // Має ініціалізуватись після усіх сервісів.
             Container.BindInterfacesTo<DirectGameplayLaunchModeInitializer>()
                 .AsSingle()
-                .WithArguments(gameObject.scene.name)
                 .NonLazy();
             Container.BindExecutionOrder<DirectGameplayLaunchModeInitializer>(90);
 

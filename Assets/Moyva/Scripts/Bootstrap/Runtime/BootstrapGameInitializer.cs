@@ -112,7 +112,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 _starterPackGrantEnabled = false;
                 _bootstrapApplied = true;
-                Debug.Log("[Bootstrap] Multiplayer client detected — skipping starter pack grant; awaiting host snapshot.");
                 return;
             }
 
@@ -125,7 +124,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 if (_starterPackState.HasGranted(activeOwnerId))
                 {
-                    Debug.Log($"{StarterPackLogTag} Skip grant: owner '{activeOwnerId}' already has granted marker in slot {slot}.");
                     _starterPackGrantEnabled = false;
                     _bootstrapApplied = true;
                     return;
@@ -133,7 +131,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                 if (_persistenceService.HasPersistedEconomyBlock(slot))
                 {
-                    Debug.Log($"{StarterPackLogTag} Skip grant: save slot {slot} already contains economy block for owner '{activeOwnerId}'.");
                     _starterPackState.MarkGranted(activeOwnerId);
                     _starterPackGrantEnabled = false;
                     _bootstrapApplied = true;
@@ -141,13 +138,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
 
                 _starterPackGrantEnabled = true;
-                Debug.LogWarning($"[Bootstrap] Save slot {slot} не містить economy-блоку. Виконується міграційна видача стартових ресурсів для owner '{activeOwnerId}'.");
-                Debug.Log($"{StarterPackLogTag} Migration grant enabled for slot {slot}, owner '{activeOwnerId}', entries=[{_grantService.DescribeConfiguredEntries()}].");
             }
             else
             {
                 _starterPackGrantEnabled = _decisionService.ShouldGrantForCurrentLaunch();
-                Debug.Log($"{StarterPackLogTag} New-world decision: grantEnabled={_starterPackGrantEnabled}, mode={GameLaunchContext.Mode}, slot={slot}, owner='{activeOwnerId}', entries=[{_grantService.DescribeConfiguredEntries()}].");
             }
 
             if (_starterPackGrantEnabled && !_starterPackState.HasGranted(activeOwnerId))
@@ -215,7 +209,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void LogStarterPackBootstrapEvaluation(string ownerId, int slot, bool autoLoadEnabled, bool hasSave)
         {
-            Debug.Log($"{StarterPackLogTag} Evaluate bootstrap: mode={GameLaunchContext.Mode}, slot={slot}, autoLoad={autoLoadEnabled}, autoSave={GameLaunchContext.IsAutoSaveEnabled()}, hasSave={hasSave}, owner='{ownerId}', alreadyGranted={_starterPackState.HasGranted(ownerId)}, entries=[{_grantService.DescribeConfiguredEntries()}].");
         }
 
         private static string NormalizeOwnerId(string ownerId)
@@ -247,7 +240,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _bootstrapApplied = false;
             _starterPackGrantEnabled = false;
             _latestSpawnAssignments = Array.Empty<SpawnPositionAssignment>();
-            Debug.Log($"{StarterPackLogTag} Reset for startup world sequence={startupSequence}, session='{startupSessionId}', reason={reason}.");
         }
 
         private bool ShouldSkipWorldSignal(WorldGeneratedDataSignal signal)
@@ -257,8 +249,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _lastHandledWorldRevision = signal.SnapshotRevision;
                 return false;
             }
-
-            Debug.Log($"{StarterPackLogTag} Skip duplicate world signal revision={signal.SnapshotRevision}, sequence={signal.StartupSequence}, source={signal.Source}.");
             return true;
         }
 
@@ -269,8 +259,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _lastHandledSpawnRevision = signal.SnapshotRevision;
                 return false;
             }
-
-            Debug.Log($"{StarterPackLogTag} Skip duplicate spawn signal revision={signal.SnapshotRevision}, sequence={signal.StartupSequence}, source={signal.Source}.");
             return true;
         }
 
@@ -341,7 +329,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int version = context.Reader.ReadInt32();
             if (version != SchemaVersion)
             {
-                Debug.LogWarning($"[Bootstrap] Непідтримувана версія starter-pack блоку: {version}.");
                 return;
             }
 

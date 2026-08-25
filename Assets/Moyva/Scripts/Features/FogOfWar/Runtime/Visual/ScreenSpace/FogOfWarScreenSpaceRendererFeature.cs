@@ -214,47 +214,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 && !_loggedReady)
             {
                 _loggedReady = true;
-
-                Debug.Log(
-                    "[MOYVA_FOG_PRESENTATION] " +
-                    "pipeline=DepthAwareScreenSpace " +
-                    "surfaceDepth=DedicatedOverridePass " +
-                    "stateMorphology=DebugOnly " +
-                    "morphologyPasses=" +
-                    (
-                        _enableMorphologyDebugPasses
-                            ? "Enabled"
-                            : "Skipped"
-                    ) +
-                    " sceneViewDuringPlay=" +
-                    _applyInSceneViewDuringPlay +
-                    " edgeMode=SurfaceLockedGridEdge " +
-                    "cornerJoin=RadialSoftUnion " +
-                    "diagonalCornerCaps=True " +
-                    "edgeSide=UnexploredCellOnly " +
-                    "cameraExtrusion=False " +
-                    "screenNeighbourSampling=False " +
-                    "fallbackPlane=False " +
-                    "depthOcclusion=False " +
-                    "legacyCurtain=False " +
-                    "stateScale=" +
-                    (
-                        _forceFullResolutionState
-                            ? 1f
-                            : Mathf.Clamp(
-                                _screenStateScale,
-                                0.5f,
-                                1f)
-                    ).ToString("F2") +
-                    " zoomStable=True " +
-                    "depthSource=ImmutableSurfaceEyeDepth " +
-                    "maskDepthDecoupled=True " +
-                    "presentationSafety=SurfaceLocked " +
-                    "finalMask=RawPointState " +
-                    "finalEvent=" +
-                    (int)FogRenderPassEvent +
-                    " layerMask=" +
-                    _fogSurfaceLayerMask.value);
             }
         }
 
@@ -419,13 +378,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             _loggedBackBufferWarning = true;
-
-            Debug.LogWarning(
-                "[MOYVA_FOG_PRESENTATION] " +
-                "activeColor is BackBuffer and cannot be sampled. " +
-                "The feature requests Color input, but the renderer " +
-                "still did not create an intermediate color texture. " +
-                "Set Intermediate Texture to Auto/Always in URP Renderer.");
         }
 
         protected override void Dispose(

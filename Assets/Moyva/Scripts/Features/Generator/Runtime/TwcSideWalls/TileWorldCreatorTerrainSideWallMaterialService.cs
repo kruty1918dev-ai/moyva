@@ -22,7 +22,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (state.RuntimeMaterial != null && state.RuntimeMaterial.HasProperty("_Cull"))
             {
                 state.RuntimeMaterial.SetFloat("_Cull", (float)CullMode.Back);
-                Debug.Log($"{ArtifactLogTag} Runtime side-wall material uses back-face culling for one-sided wall quads. material='{state.RuntimeMaterial.name}', materialCull={TileWorldCreatorTerrainSideWallFormat.FormatMaterialCull(state.RuntimeMaterial)}.");
             }
 
             return state.RuntimeMaterial;
@@ -38,7 +37,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (shader == null)
             {
-                Debug.LogWarning($"{LogTag} Could not find a shader for generated side-wall material.");
                 return null;
             }
 

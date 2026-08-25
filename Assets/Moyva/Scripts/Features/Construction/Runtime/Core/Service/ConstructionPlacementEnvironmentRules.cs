@@ -48,9 +48,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     if (_verboseLogs())
                     {
-                        Debug.Log(
-                            $"[Construction] IsBlockedByFog({position}): " +
-                            "profile disabled fog rule");
                     }
 
                     return false;
@@ -60,9 +57,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     if (_verboseLogs())
                     {
-                        Debug.Log(
-                            $"[Construction] IsBlockedByFog({position}): " +
-                            "_fogOfWarService == null, fog-перевірка відключена");
                     }
 
                     return false;
@@ -74,9 +68,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 if (_verboseLogs() && isBlocked)
                 {
-                    Debug.Log(
-                        $"[Construction] IsBlockedByFog({position}): " +
-                        $"BLOCKED (fogState={fogState})");
                 }
 
                 return isBlocked;

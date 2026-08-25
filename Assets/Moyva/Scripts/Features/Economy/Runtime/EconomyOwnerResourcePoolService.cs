@@ -94,10 +94,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
             var pendingTransfer = GetOwnerPoolResourceTotals(normalizedOwnerId);
             if (pendingTransfer.Count == 0)
                 return false;
-
-            // Gameplay contract: starter resources live at owner level until the first warehouse exists,
-            // then the remaining owner-pool is moved into that warehouse so normal settlement storage takes over.
-            Debug.Log($"{logTag} Moving owner-pool resources into first warehouse: owner='{normalizedOwnerId}', settlement='{settlement.SettlementId}', warehouse='{warehouseKey}', entries=[{DescribeResourceEntries(pendingTransfer)}].");
             TransferOwnerResourcesToWarehouse(normalizedOwnerId, settlement, warehouseKey, signalBus);
             return true;
         }

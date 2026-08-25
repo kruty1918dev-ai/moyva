@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
@@ -30,8 +28,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_undoSnapshots.Count == 0)
             {
-                if (VerboseLogs)
-                    Debug.Log("[Construction] UndoLast ignored: undo history is empty.");
                 return;
             }
 
@@ -45,9 +41,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_pendingPlacements.Count == 0 && State == BuildingPlacementState.Idle)
                 SetPlacementSelection(_selectedBuildingId, BuildingPlacementState.Placing);
-
-            if (VerboseLogs)
-                Debug.Log($"[Construction] UndoLast completed. pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
         }
 
         public void RedoLast()
@@ -64,15 +57,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_redoSnapshots.Count == 0)
             {
-                if (VerboseLogs)
-                    Debug.Log("[Construction] RedoLast ignored: redo stack is empty.");
                 return;
             }
 
             if (!_isActive)
             {
-                if (VerboseLogs)
-                    Debug.Log("[Construction] RedoLast ignored: construction mode is not active.");
                 return;
             }
 
@@ -94,16 +83,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 SetPlacementSelection(_selectedBuildingId, BuildingPlacementState.Placing);
             }
-
-            if (VerboseLogs)
-                Debug.Log($"[Construction] RedoLast completed. pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
         }
         private void ResetSession(bool clearRedoHistory)
         {
             ResetPendingUndoBatchState();
-
-            if (VerboseLogs)
-                Debug.Log($"[Construction] ResetSession requested. pendingCount={_pendingPlacements.Count}, redoCount={_redoSnapshots.Count}, clearRedoHistory={clearRedoHistory}");
 
             if (!clearRedoHistory && _pendingPlacements.Count > 0)
             {
@@ -138,9 +121,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus.Fire(new BuildingCancelledSignal());
             SetPlacementSelection(null, BuildingPlacementState.Idle);
             ApplyBootstrapCastleSelectionIfNeeded();
-
-            if (VerboseLogs)
-                Debug.Log($"[Construction] ResetSession completed. state={State}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
         }
 
         private void ClearPendingDemolitionsPreview()
@@ -176,10 +156,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 if (VerboseLogs)
                 {
-                    Debug.Log(
-                        $"{PerfLogTag} undo-batch begin " +
-                        $"reason={_pendingUndoBatchReason} " +
-                        $"pending={_pendingUndoBatchStartCount}");
                 }
             }
 
@@ -207,20 +183,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (VerboseLogs)
                 {
                     int finalCount = _pendingPlacements.Count;
-                    Debug.Log(
-                        $"{PerfLogTag} undo-batch commit " +
-                        $"reason={_pendingUndoBatchReason} " +
-                        $"start={_pendingUndoBatchStartCount} " +
-                        $"end={finalCount} " +
-                        $"delta={finalCount - _pendingUndoBatchStartCount} " +
-                        $"undoCount={_undoSnapshots.Count}");
                 }
             }
             else if (VerboseLogs)
             {
-                Debug.Log(
-                    $"{PerfLogTag} undo-batch end-no-change " +
-                    $"reason={_pendingUndoBatchReason}");
             }
 
             ResetPendingUndoBatchState();
@@ -276,9 +242,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (VerboseLogs)
             {
-                Debug.Log(
-                    $"{PerfLogTag} pending-index rebuilt after snapshot: " +
-                    $"count={_pendingPlacementByPosition.Count}");
             }
 
             var previousByPosition = new Dictionary<Vector2Int, PendingPlacement>();

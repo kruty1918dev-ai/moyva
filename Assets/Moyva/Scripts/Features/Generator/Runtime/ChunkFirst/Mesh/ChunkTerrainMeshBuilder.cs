@@ -512,23 +512,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 assignedSourceCount +=
                     pair.Value?.Count ?? 0;
             }
-
-            Debug.Log(
-                "[MOYVA_CHUNK_OWNERSHIP] PLAN " +
-                $"map={_canonicalMapWidth}x{_canonicalMapHeight} " +
-                $"chunkSize={_canonicalChunkSize} " +
-                $"chunkSizeSource=CoreStride " +
-                $"chunks={chunkCountX}x{chunkCountY} " +
-                $"resolvedCells={resolvedCellCount} " +
-                $"sources={sourceCount} " +
-                $"assignedSources={assignedSourceCount} " +
-                $"validSources={validSourceCount} " +
-                $"invalidSources={invalidSourceCount} " +
-                $"reassignedSources={reassignedSourceCount} " +
-                $"outOfMapSources={outOfMapSourceCount} " +
-                $"lattice=CanonicalCellCenters " +
-                $"dualPhaseOffset=+0.5 " +
-                $"buckets={_canonicalSourcesByChunk.Count}");
         }
 
         private List<CanonicalTileMeshSource>

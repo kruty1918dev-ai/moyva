@@ -45,9 +45,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (VerboseLogs)
             {
-                Debug.Log(
-                    $"[ObjectTypePicker] source='{sourceBuildingId}' mask(N={mask.North},E={mask.East},S={mask.South},W={mask.West}) " +
-                    $"resolvedCase={resolvedCase} resolvedId='{resolvedBuildingId}' variants={variants.Count}");
             }
 
             return !string.IsNullOrWhiteSpace(resolvedBuildingId);

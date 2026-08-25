@@ -79,8 +79,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             buildLayer.layerYOffset = 0f;
             DisableLegacyMergeIfNeeded(buildLayer);
             NormalizeTileLayerHeights(buildLayer);
-
-            Debug.Log($"{LogTag} Prepared terrain build layer: idPattern='{mapping.IdPattern}', blueprintGuid='{blueprintLayerGuid}', blueprintName='{mapping.BlueprintLayerName}', buildLayer='{buildLayer.layerName}', preset='{mapping.TilePreset.name}', presetGrid={mapping.TilePreset.gridtype}, useDualGrid {oldUseDualGrid}->{buildLayer.useDualGrid}, scaleToCell {oldScaleToCell}->{buildLayer.scaleTileToCellSize}, layerYOffset {oldLayerYOffset}->{buildLayer.layerYOffset}, buildMerge {oldLayerMerge}->{buildLayer.mergeTiles}, tileLayers={buildLayer.tileLayers.Count}.");
         }
 
         private void DisableLegacyMergeIfNeeded(TilesBuildLayer buildLayer)
@@ -92,8 +90,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 return;
             }
-
-            Debug.LogWarning($"{LogTag} Disabling buildLayer.mergeTiles for '{buildLayer.layerName}' because meshGenerationOverride was forcing merged cluster meshes.");
             buildLayer.mergeTiles = false;
         }
 
@@ -113,8 +109,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private void LogInvalidBuildLayerOnce(TileWorldCreatorIdMappingSO.LayerMapping mapping, string reason)
         {
             string key = $"{mapping?.IdPattern}:{reason}";
-            if (_loggedInvalidBuildLayers.Add(key))
-                Debug.LogWarning($"{LogTag} Cannot prepare TWC terrain layer for ID pattern '{mapping?.IdPattern}': {reason}.");
         }
     }
 }

@@ -67,9 +67,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 return BuildResourceProjectionForPlacement(position, buildingId, _activeOwnerId, ignoredPendingPosition: position);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"[Construction] GetResourceProjection error: {ex.Message}");
                 return ConstructionResourceProjection.Empty;
             }
         }

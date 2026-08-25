@@ -372,16 +372,12 @@ namespace Kruty1918.Moyva.Shared.UI
         {
             if (!_enableDebugLogs)
                 return;
-
-            Debug.Log($"[UIBackgroundBlur:{name}] {message}", this);
         }
 
         private void LogWarn(string message)
         {
             if (!_enableDebugLogs)
                 return;
-
-            Debug.LogWarning($"[UIBackgroundBlur:{name}] {message}", this);
         }
 
         private float GetDeltaTime()
@@ -845,7 +841,6 @@ namespace Kruty1918.Moyva.Shared.UI
                 {
                     if (instance != null && instance.DebugLogsEnabled)
                     {
-                        Debug.Log($"[UIBackgroundBlur:CaptureService] {message}", instance);
                         return;
                     }
                 }
@@ -857,7 +852,6 @@ namespace Kruty1918.Moyva.Shared.UI
                 {
                     if (instance != null && instance.DebugLogsEnabled)
                     {
-                        Debug.LogWarning($"[UIBackgroundBlur:CaptureService] {message}", instance);
                         return;
                     }
                 }

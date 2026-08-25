@@ -15,7 +15,7 @@ namespace Kruty1918.Moyva.Animations.Runtime
             CancellationToken cancellationToken = default)
         {
             if (target == null || path == null || path.Count <= 1) return;
-    
+
             for (int i = 1; i < path.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -26,7 +26,6 @@ namespace Kruty1918.Moyva.Animations.Runtime
                 // Викликаємо делегат перед початком руху до наступного тайла
                 if (settings.CanPerformStep != null && !settings.CanPerformStep.Invoke(nextGridPos))
                 {
-                    Debug.Log($"[MovementAnimation] Рух зупинено: крок до {nextGridPos} відхилено логікою.");
                     break; // Виходимо з циклу, юніт залишається на поточному місці
                 }
 
@@ -44,7 +43,7 @@ namespace Kruty1918.Moyva.Animations.Runtime
 
                     elapsed += Time.deltaTime;
                     float t = Mathf.Clamp01(elapsed / settings.MoveDurationPerTile);
-                    
+
                     target.position = Vector3.Lerp(startPos, endPos, t);
 
                     await Task.Yield(); 

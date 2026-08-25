@@ -14,7 +14,6 @@ using Zenject;
 using System.Threading;
 using System.Threading.Tasks;
 
-
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal partial class JoinRoomPanelService
@@ -66,11 +65,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     {
                         if (string.IsNullOrEmpty(roomInfo.JoinCode) && !string.IsNullOrEmpty(roomInfo.LobbyId))
                         {
-                            Debug.LogWarning($"[JoinRoomPanelService] Room '{roomInfo.RoomName}' has empty join code, will try join by lobby ID.");
                         }
                         else if (string.IsNullOrEmpty(roomInfo.JoinCode) && string.IsNullOrEmpty(roomInfo.LobbyId))
                         {
-                            Debug.LogWarning($"[JoinRoomPanelService] Room '{roomInfo.RoomName}' has no join code and no lobby ID.");
                         }
 
                         _viewController.AddRoomToList(roomInfo);
@@ -104,7 +101,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 }
                 catch (Exception e)
                 {
-                    Debug.LogWarning($"[JoinRoomPanelService] Failed to stop overlay: {e.Message}");
                 }
             }
         }

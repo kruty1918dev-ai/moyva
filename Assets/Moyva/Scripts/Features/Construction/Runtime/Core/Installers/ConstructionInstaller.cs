@@ -245,7 +245,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (TryResolveTownHallBuildRadiusFromProfile(_sceneContext?.SystemProfile?.EconomyRulesProfile, out int profileRadius))
             {
-                Debug.Log($"[ConstructionInstaller] townHallBuildRadius resolved from ConstructionSystemProfile.EconomyRulesProfile.Settlement.MinTownHallDistance = {profileRadius}");
                 return profileRadius;
             }
 
@@ -303,7 +302,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 throw new InvalidOperationException("MinTownHallDistance has invalid type.");
 
             int resolved = Mathf.Max(0, minDistance);
-            Debug.Log($"[ConstructionInstaller] townHallBuildRadius resolved from Economy.Settlement.MinTownHallDistance = {resolved}");
             return resolved;
         }
 

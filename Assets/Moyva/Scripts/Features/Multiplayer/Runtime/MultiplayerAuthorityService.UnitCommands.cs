@@ -33,9 +33,6 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
             trace,
             "AUTHORITY_REJECT_SERVICES",
             "unit movement or ownership service is not bound");
-
-        Debug.LogWarning(
-            "[MultiplayerAuthority] Move request rejected because unit command services are not bound in this scene.");
         return;
     }
 
@@ -60,10 +57,6 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
             $"unit={signal.UnitId}; " +
             $"requester={UnitMovementDiagnostics.Safe(requesterOwnerId)}; " +
             $"unitOwner={UnitMovementDiagnostics.Safe(unitOwnerId)}");
-
-        Debug.LogWarning(
-            $"[Authority] Rejected local UnitMove for '{signal.UnitId}': " +
-            $"requester '{requesterOwnerId}' does not own unit '{unitOwnerId}'.");
         return;
     }
 
@@ -140,7 +133,6 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
 
             if (_unitMovementService == null)
             {
-                Debug.LogWarning("[MultiplayerAuthority] UnitMove command received, but IUnitMovementService is not bound in this scene.");
                 return;
             }
 
@@ -159,8 +151,6 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
                         out _,
                         out string authorizationReason))
                 {
-                    Debug.LogWarning(
-                        $"[Authority] Rejected UnitMove from '{senderId}' for '{data.UnitId}': {authorizationReason}");
                     return;
                 }
                 // Хост виконує рух; UnitMovedSignal транслює кожен крок через OnUnitMovedLocally.
@@ -172,8 +162,6 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
                 if (IsOfflineOrHost()) return;
                 if (!IsAuthorizedHostSender(senderId))
                 {
-                    Debug.LogWarning(
-                        $"[Authority] Ignored UnitMove confirmation from non-host '{senderId}'.");
                     return;
                 }
 
@@ -187,7 +175,6 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
 
             if (_unitFactory == null)
             {
-                Debug.LogWarning("[MultiplayerAuthority] UnitSpawn command received, but IUnitFactory is not bound in this scene.");
                 return;
             }
 

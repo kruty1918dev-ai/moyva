@@ -14,7 +14,6 @@ using Zenject;
 using System.Threading;
 using System.Threading.Tasks;
 
-
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal partial class JoinRoomPanelService
@@ -37,7 +36,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var target = JoinRoomResolver.FromManualInput(_viewController.JoinCode);
             if (!target.IsValid)
             {
-                Debug.LogWarning("[JoinRoomPanelService] Join code is empty.");
                 return;
             }
 
@@ -92,7 +90,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var providerType = GetCurrentProviderType();
             if (room.ProviderType != providerType)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] Ignoring room '{room.RoomName}' from {room.ProviderType}; current provider is {providerType}.");
                 RefreshRoomList();
                 return;
             }
@@ -100,7 +97,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var target = JoinRoomResolver.FromRoom(room);
             if (!target.IsValid)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] Selected room '{room.RoomName}' has neither join code nor lobby ID.");
                 return;
             }
 
@@ -145,10 +141,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var overlay = _loader?.LoadOverlay(0f, 100f, "%");
             try
             {
-                Debug.Log($"[JoinRoomPanelService] [{traceId}] JoinRoomAsync start: kind={target.Kind} value='{target.Value}' provider={joinProviderType} currentMenu='{_uiGateway?.CurrentMenu}'.");
                 _joinState = JoinPipelineState.ResolvingTarget;
                 await ApplySelectedProviderAsync(ct);
-                Debug.Log($"[JoinRoomPanelService] [{traceId}] JoinRoomAsync provider applied; effective={GetCurrentProviderType()} requested={joinProviderType}.");
 
                 if (_multiplayerState != null)
                     await _multiplayerState.WaitUntilReadyAsync(ct);
@@ -173,12 +167,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
                 if (room != null)
                 {
-                    Debug.Log($"[JoinRoomPanelService] [{traceId}] JoinRoomAsync lobby join ok: lobbyId='{room.LobbyId}' code='{room.LobbyCode}' relay='{room.RelayJoinCode}' players={room.Players?.Count ?? 0} state={room.State}.");
                     var blockReason = JoinRoomDomainLogic.GetPostJoinBlockReason(room, GetPlayerName(), ResolveReconnectToleranceSeconds());
                     if (!string.IsNullOrEmpty(blockReason))
                     {
                         shouldRefreshRoomListAfterFailure = true;
-                        Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Join blocked after lobby join: {blockReason}");
                         await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Кімната недоступна", blockReason + "\n\nДія: Оновіть список кімнат.", ct);
                         return;
                     }
@@ -189,7 +181,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         if (!_roomAccessPolicy.CanJoin(room, localPlayerId, out var policyReason))
                         {
                             shouldRefreshRoomListAfterFailure = true;
-                            Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Join blocked by room access policy: {policyReason}");
                             await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Доступ заборонено", policyReason + "\n\nДія: Оберіть іншу кімнату.", ct);
                         return;
                         }
@@ -212,7 +203,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         }
 
                         shouldRefreshRoomListAfterFailure = true;
-                        Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Join transport phase failed for lobby '{room.LobbyId}'.");
                         await ReturnToLobbyChooserWithMessageAsync(
                             joinPanelName,
                             "Помилка приєднання",
@@ -229,7 +219,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         if (!reconnected)
                         {
                             shouldRefreshRoomListAfterFailure = true;
-                            Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Reconnect flow failed: started room has no valid world settings.");
                             await ReturnToLobbyChooserWithMessageAsync(
                                 joinPanelName,
                                 "Не вдалося перепідключитися",
@@ -249,12 +238,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (OperationCanceledException)
             {
-                Debug.Log($"[JoinRoomPanelService] [{traceId}] JoinRoomAsync canceled.");
                 _joinState = JoinPipelineState.Failed;
             }
             catch (RoomFullException ex)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Room full: {ex.Message}");
                 shouldRefreshRoomListAfterFailure = true;
                 await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Кімната переповнена",
                     new MultiplayerUserFacingError(ex.ErrorCode, ex.Message, "Оберіть іншу кімнату.", traceId).BuildDisplayMessage(), ct);
@@ -262,7 +249,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (RoomAccessDeniedException ex)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Access denied: {ex.Reason}");
                 shouldRefreshRoomListAfterFailure = true;
                 await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Доступ заборонено",
                     new MultiplayerUserFacingError(ex.ErrorCode, ex.Message, "Зверніться до організатора кімнати.", traceId).BuildDisplayMessage(), ct);
@@ -270,7 +256,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (SessionExpiredException ex)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Session expired: {ex.Message}");
                 shouldRefreshRoomListAfterFailure = true;
                 await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Сесія застаріла",
                     new MultiplayerUserFacingError(ex.ErrorCode, ex.Message, "Оновіть список кімнат.", traceId).BuildDisplayMessage(), ct);
@@ -328,8 +313,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (fallback == current)
                 return false;
-
-            Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Transport fallback: {current} -> {fallback}");
             await _modeSelector.SetModeAsync(fallback, ct);
             var retry = await TransportAdapter.JoinNetworkSessionAsync(room, traceId, ct);
             return retry.IsSuccess;
@@ -379,7 +362,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[JoinRoomPanelService] Failed to load reconnect tolerance: {e.Message}");
                 return 120f;
             }
         }

@@ -157,8 +157,6 @@ namespace Kruty1918.Moyva.SaveSystem
 
                 if (ms.Position + blockSize > dataBodyEnd)
                 {
-                    Debug.LogWarning(
-                        $"[SaveFileCodec] Block id={blockId:X8} extends beyond body. Truncated.");
                     break;
                 }
 
@@ -167,9 +165,6 @@ namespace Kruty1918.Moyva.SaveSystem
 
                 if (actualCrc != blockCrc)
                 {
-                    Debug.LogWarning(
-                        $"[SaveFileCodec] Block id={blockId:X8} CRC mismatch " +
-                        $"(stored={blockCrc:X8}, actual={actualCrc:X8}). Skipped.");
                     continue;
                 }
 

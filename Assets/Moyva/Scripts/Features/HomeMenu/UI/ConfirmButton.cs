@@ -32,7 +32,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             // 2: Логуємо попередження для порожніх текстів запиту, щоб не губити UX-контекст.
             if (string.IsNullOrWhiteSpace(_label) || string.IsNullOrWhiteSpace(_message))
             {
-                Debug.LogWarning($"[ConfirmButton] Label or message is empty. Please set them in the inspector.");
             }
 
             // 3: Підписуємо обробник натискання.
@@ -49,13 +48,10 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         /// <summary>Побудувати і відправити запит підтвердження за замовчуванням.</summary>
         protected virtual void OnButtonClicked()
         {
-            // 1: Формуємо confirmation request з текстами і стандартними debug-колбеками.
             RaiseOnClicked(new ConfirmationRequest
             {
                 LabelText = _label,
                 MessageText = _message,
-                OnConfirm = () => Debug.Log($"[ConfirmButton] Confirm action executed for button with label '{_label}'."),
-                OnCancel = () => Debug.Log($"[ConfirmButton] Cancel action executed for button with label '{_label}'.")
             });
         }
 
@@ -67,9 +63,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         /// <summary>Увімкнути або вимкнути кнопку.</summary>
         public void SetInteractable(bool interactable)
-        {   
+        {
             _button.interactable = interactable;
-            Debug.Log($"[ConfirmButton] Set interactable to {interactable} for button with label '{_label}'.");
         }
     }
 }

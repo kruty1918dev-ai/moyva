@@ -112,16 +112,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             {
                 return;
             }
-
-            Debug.Log(
-                $"{PerfLogTag} fog-register " +
-                $"id={unitId} pos={position} " +
-                $"range={visionRange} tiles={tiles.Count} " +
-                $"dirty={dirtyBeforeFlush} " +
-                $"changes={changesBeforeFlush} " +
-                $"flushDirty={flushResult.DirtyCount} " +
-                $"flushChanges={flushResult.ChangeCount} " +
-                $"elapsedMs={elapsedMs:F3}");
         }
 
         public void UpdateUnitPosition(string unitId, Vector2Int newPosition)

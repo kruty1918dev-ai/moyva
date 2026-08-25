@@ -54,7 +54,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         // are always resolvable by other installers during scene startup.
         public override void InstallBindings()
         {
-            Debug.Log($"{Prefix} InstallBindings start.");
 
             // Logging and config store required by switchable wrappers
             Container.Bind<IMultiplayerLogger>()
@@ -128,13 +127,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             // `async void` to avoid race conditions where other installers run before
             // the wrapper bindings exist.
             var _ = Install(Container);
-
-            Debug.Log($"{Prefix} InstallBindings end.");
         }
 
         public static async Task Install(DiContainer container)
         {
-            Debug.Log("[MultiplayerInstaller] Install start.");
             // If this static Install() is invoked directly (ProjectServicesInstaller calls it),
             // ensure the minimal, switchable wrappers are bound synchronously so other
             // installers can resolve `ILobbyService` immediately.
@@ -190,46 +186,38 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 if (!container.HasBinding(typeof(StartingPositionSyncService)))
                     container.BindInterfacesTo<StartingPositionSyncService>().AsSingle().NonLazy();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"[MultiplayerInstaller] Ensure minimal bindings failed: {ex.Message}");
             }
-            Debug.Log($"[MultiplayerInstaller] Ensure minimal bindings: ILobbyServiceBound={container.HasBinding(typeof(ILobbyService))}, SwitchableLobbyServiceBound={container.HasBinding(typeof(SwitchableLobbyService))}");
             var canUseUgs = false;
             var hasInternet = false;
             try
             {
-                Debug.Log($"{Prefix} Probing Unity Services initialization (timeout 6s)");
                 var initTask = UnityServices.InitializeAsync();
                 var initTimeout = Task.Delay(TimeSpan.FromSeconds(6));
                 var initCompleted = await Task.WhenAny(initTask, initTimeout);
 
                 if (initCompleted == initTask)
                 {
-                    Debug.Log($"{Prefix} UnityServices.InitializeAsync completed.");
                     try
                     {
                         // Try quick anonymous sign-in if not already signed in/authorized
                         if (!AuthenticationService.Instance.IsSignedIn || !AuthenticationService.Instance.IsAuthorized)
                         {
                             MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded();
-                            Debug.Log($"{Prefix} Attempting anonymous sign-in (timeout 6s)");
                             var signInTask = AuthenticationService.Instance.SignInAnonymouslyAsync();
                             var signInCompleted = await Task.WhenAny(signInTask, Task.Delay(TimeSpan.FromSeconds(6)));
                             if (signInCompleted == signInTask && AuthenticationService.Instance.IsSignedIn && AuthenticationService.Instance.IsAuthorized)
                             {
-                                Debug.Log($"{Prefix} Anonymous sign-in succeeded.");
                                 canUseUgs = true;
                                 hasInternet = true;
                             }
                             else
                             {
-                                Debug.Log($"{Prefix} Anonymous sign-in timed out or failed.");
                             }
                         }
                         else
                         {
-                            Debug.Log($"{Prefix} Already signed in and authorized.");
                             canUseUgs = true;
                             hasInternet = true;
                         }
@@ -241,22 +229,17 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 }
                 else
                 {
-                    Debug.Log($"{Prefix} UnityServices.InitializeAsync timed out.");
                 }
 
                 if (!canUseUgs)
                 {
-                    Debug.Log($"{Prefix} Falling back to HTTP-based InternetChecker probe.");
                     try { hasInternet = await InternetChecker.HasInternetAsync(3, 3); } catch (Exception ex) { Debug.LogError($"{Prefix} HTTP probe failed: {ex.Message}"); hasInternet = false; }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"{Prefix} Connectivity probe failed: {ex.Message}");
                 try { hasInternet = await InternetChecker.HasInternetAsync(3, 3); } catch (Exception innerEx) { Debug.LogError($"{Prefix} HTTP probe fallback failed: {innerEx.Message}"); hasInternet = false; }
             }
-
-            Debug.Log($"{Prefix} Connectivity probe result: hasInternet={hasInternet}");
 
             // We bound a preliminary MultiplayerConfig and logger synchronously in InstallBindings
             // so the switchable wrappers are resolvable during startup. Now compute the final
@@ -271,7 +254,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             MultiplayerConfig finalCfg;
             if (!canUseUgs)
             {
-                Debug.LogWarning($"{Prefix} UGS unavailable due to initialization/auth failure. Falling back to configured fallback provider ({cfg.FallbackProviderType}).");
                 finalCfg = new MultiplayerConfig(
                     cfg.SchemaVersion,
                     cfg.FallbackProviderType,
@@ -306,7 +288,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
                 if (!ugsPresent)
                 {
-                    Debug.LogWarning($"{Prefix} UGS Lobby package not detected. Falling back to LAN provider to keep ILobbyService operational.");
                     finalCfg = new MultiplayerConfig(
                         cfg.SchemaVersion,
                         NetworkProviderType.Lan,
@@ -330,8 +311,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         var fallbackType = cfg.FallbackProviderType == NetworkProviderType.Relay
                             ? NetworkProviderType.Offline
                             : cfg.FallbackProviderType;
-
-                        Debug.LogWarning($"{Prefix} Relay reflection metadata is invalid: {reflectionError}. Falling back to {fallbackType}.");
                         finalCfg = new MultiplayerConfig(
                             cfg.SchemaVersion,
                             fallbackType,
@@ -357,11 +336,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             {
                 var switchable = container.Resolve<SwitchableLobbyService>();
                 await switchable.SwitchToAsync(finalCfg.ProviderType);
-                Debug.Log($"{Prefix} SwitchableLobbyService active provider: {switchable.CurrentProviderType}");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"{Prefix} Failed to switch SwitchableLobbyService provider: {ex.Message}");
             }
 
             try
@@ -370,12 +347,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 {
                     var switchableNetwork = container.Resolve<SwitchableNetworkProvider>();
                     await switchableNetwork.SwitchToAsync(ResolveNetworkBootstrapProviderType(finalCfg));
-                    Debug.Log($"{Prefix} SwitchableNetworkProvider active type: {switchableNetwork.CurrentType}");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"{Prefix} Failed to switch SwitchableNetworkProvider provider: {ex.Message}");
             }
 
             try
@@ -384,12 +359,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 {
                     var modeSelector = container.Resolve<IMultiplayerModeSelector>();
                     await modeSelector.SetModeAsync(finalCfg.ProviderType);
-                    Debug.Log($"{Prefix} MultiplayerModeSelector active mode: {modeSelector.CurrentMode}, effective lobby provider: {modeSelector.EffectiveMode}");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"{Prefix} Failed to sync MultiplayerModeSelector provider: {ex.Message}");
             }
 
             // Автоматичний leave сесії при виході з гри (Application.quitting / wantsToQuit).
@@ -551,8 +524,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             if (providerType == config.ProviderType && fallbackType == config.FallbackProviderType)
                 return config;
 
-            Debug.LogWarning($"{Prefix} Relay provider is disabled by feature toggle. Provider '{config.ProviderType}' is mapped to '{providerType}', fallback '{config.FallbackProviderType}' -> '{fallbackType}'.");
-
             return new MultiplayerConfig(
                 config.SchemaVersion,
                 providerType,
@@ -580,8 +551,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var fallbackType = config.FallbackProviderType == NetworkProviderType.Relay
                 ? NetworkProviderType.Offline
                 : config.FallbackProviderType;
-
-            Debug.LogWarning($"{Prefix} Relay transport runtime is unavailable (missing package and/or MOYVA_UGS_RELAY define). Lobby provider stays Relay for room listing; network provider falls back to {fallbackType} until Relay becomes available.");
             return fallbackType;
         }
     }

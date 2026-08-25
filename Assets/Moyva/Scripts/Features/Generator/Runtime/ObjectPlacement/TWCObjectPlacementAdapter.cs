@@ -39,7 +39,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
                     var layer = objectLayers[i];
                     if (!CanApply(layer, out string reason))
                     {
-                        Debug.LogWarning($"[MoyvaObjectPlacement] Skipped object layer '{layer?.LayerName ?? "<null>"}': {reason}");
                         continue;
                     }
 
@@ -328,10 +327,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             if (spawned == 0)
             {
                 DestroyObject(layerObject);
-                Debug.LogWarning(
-                    $"[MoyvaObjectPlacement] Direct object layer '{source.LayerName}' created no instances. " +
-                    $"Candidates={source.Candidates.Count}, outOfBounds={outOfBounds}, missingPrefab={missingPrefab}, " +
-                    $"instantiateFailed={instantiateFailed}, map={mapWidth}x{mapHeight}, targetLayer='{source.TargetGraphLayerId ?? "<none>"}'.");
             }
         }
 
@@ -347,10 +342,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             {
                 RemoveGeneratedLayerByName(config, generatedName);
                 MarkSceneDirty(manager);
-                Debug.LogWarning(
-                    $"[MoyvaObjectPlacement] TWC object layer '{source.LayerName}' has no in-bounds cells after filtering. " +
-                    $"Candidates={source.Candidates.Count}, outOfBounds={outOfBounds}, map={Mathf.Max(1, config.width)}x{Mathf.Max(1, config.height)}, " +
-                    $"targetLayer='{source.TargetGraphLayerId ?? "<none>"}'.");
                 return;
             }
 

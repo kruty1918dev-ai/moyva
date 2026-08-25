@@ -18,9 +18,7 @@ namespace Kruty1918.Moyva.Calendar.Runtime
                 ? _sessionConfig.BuildConfig()
                 : CalendarConfig.Default();
 
-            CalendarConfig config = CalendarConfigLifecycle.ValidateAndFreeze(
-                rawConfig,
-                message => Debug.LogWarning($"[CalendarInstaller] {message}"));
+            CalendarConfig config = CalendarConfigLifecycle.ValidateAndFreeze(rawConfig);
 
             InstallIfMissing(Container, config);
         }
@@ -29,10 +27,7 @@ namespace Kruty1918.Moyva.Calendar.Runtime
         {
             InstallIfMissing(
                 container,
-                CalendarConfigLifecycle.ValidateAndFreeze(
-                    CalendarConfig.Default(),
-                    message => Debug.LogWarning(
-                        $"[CalendarInstaller] {message}")));
+                CalendarConfigLifecycle.ValidateAndFreeze(CalendarConfig.Default()));
         }
 
         private static void InstallIfMissing(

@@ -108,12 +108,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     $"invalid={invalid} keys=[{keySummary}]");
                 return;
             }
-
-            Debug.Log(
-                $"{ModuleLogTag} state-provider-audit " +
-                $"phase={phase} " +
-                $"schema={BuildingDefinitionCapabilities.RuntimeStateSchemaVersion} " +
-                $"providers={keys.Count} keys=[{keySummary}]");
         }
 
         public void OnSave(ISaveContext context)
@@ -187,12 +181,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         provider.CaptureState()
                         ?? Array.Empty<byte>();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Debug.LogWarning(
-                        $"{ModuleLogTag} save-state failed " +
-                        $"key={provider.StateKey} " +
-                        $"error={ex.GetType().Name}:{ex.Message}");
                     payload = Array.Empty<byte>();
                 }
 
@@ -210,21 +200,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 * 1000d
                 / Stopwatch.Frequency;
 
-            Debug.Log(
-                $"{ModuleLogTag} save schema={SchemaVersion} " +
-                $"placements={placements.Count} " +
-                $"providers={providers.Count} " +
-                $"states={savedStates} " +
-                $"elapsedMs={elapsedMs:0.###}");
-
             if (Debug.isDebugBuild
                 && elapsedMs >= SlowSaveThresholdMs)
             {
-                Debug.Log(
-                    $"{PerfLogTag} construction-save " +
-                    $"placements={placements.Count} " +
-                    $"providers={providers.Count} " +
-                    $"elapsedMs={elapsedMs:0.###}");
             }
         }
 
@@ -240,29 +218,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 RestoreLegacyPlacements(
                     context,
                     markerOrLegacyCount);
-
-                Debug.Log(
-                    $"{ModuleLogTag} load legacy " +
-                    $"placements={markerOrLegacyCount}");
                 return;
             }
 
             if (markerOrLegacyCount != SchemaMagic)
             {
-                Debug.LogWarning(
-                    $"{ModuleLogTag} load rejected " +
-                    $"reason=unknown-schema-marker " +
-                    $"marker={markerOrLegacyCount}");
                 return;
             }
 
             int version = context.Reader.ReadInt32();
             if (version != 2 && version != SchemaVersion)
             {
-                Debug.LogWarning(
-                    $"{ModuleLogTag} load rejected " +
-                    $"reason=unsupported-version " +
-                    $"version={version} expected={SchemaVersion}");
                 return;
             }
 
@@ -327,9 +293,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (length < 0
                     || length > MaxStatePayloadBytes)
                 {
-                    Debug.LogWarning(
-                        $"{ModuleLogTag} load-state rejected " +
-                        $"key={key} length={length}");
                     return;
                 }
 
@@ -337,10 +300,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     context.Reader.ReadBytes(length);
                 if (payload.Length != length)
                 {
-                    Debug.LogWarning(
-                        $"{ModuleLogTag} load-state truncated " +
-                        $"key={key} expected={length} " +
-                        $"actual={payload.Length}");
                     return;
                 }
 
@@ -348,9 +307,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         key,
                         out IConstructionModuleStatePersistence provider))
                 {
-                    Debug.LogWarning(
-                        $"{ModuleLogTag} load-state skipped " +
-                        $"key={key} reason=provider-missing");
                     continue;
                 }
 
@@ -359,12 +315,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     provider.RestoreState(payload);
                     restoredStates++;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Debug.LogWarning(
-                        $"{ModuleLogTag} load-state failed " +
-                        $"key={key} " +
-                        $"error={ex.GetType().Name}:{ex.Message}");
                 }
             }
 
@@ -373,20 +325,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 * 1000d
                 / Stopwatch.Frequency;
 
-            Debug.Log(
-                $"{ModuleLogTag} load schema={version} " +
-                $"placements={placementCount} " +
-                $"states={restoredStates}/{stateCount} " +
-                $"elapsedMs={elapsedMs:0.###}");
-
             if (Debug.isDebugBuild
                 && elapsedMs >= SlowSaveThresholdMs)
             {
-                Debug.Log(
-                    $"{PerfLogTag} construction-load " +
-                    $"placements={placementCount} " +
-                    $"states={stateCount} " +
-                    $"elapsedMs={elapsedMs:0.###}");
             }
         }
 

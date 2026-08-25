@@ -76,7 +76,6 @@ namespace Kruty1918.Moyva.Units.API
             string stage,
             string message)
         {
-            Debug.Log(Format(traceId, stage, message));
         }
 
         public static void Warn(
@@ -84,7 +83,6 @@ namespace Kruty1918.Moyva.Units.API
             string stage,
             string message)
         {
-            Debug.LogWarning(Format(traceId, stage, message));
         }
 
         public static void Error(

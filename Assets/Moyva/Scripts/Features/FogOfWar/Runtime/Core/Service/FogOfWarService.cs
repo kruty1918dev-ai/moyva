@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Kruty1918.Moyva.Diagnostics.API;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
@@ -30,7 +28,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private readonly IFogVisualUpdater _visualUpdater;
         private readonly IFogSaveDataProvider _saveProvider;
         private readonly SignalBus _signalBus;
-        private readonly IFogStartupDiagnostics _startupDiagnostics;
         private readonly IWorldGenerationSignalState _worldGenerationSignalState;
         private readonly FogOfWarSettings _settings;
 
@@ -66,7 +63,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private FogWorldVisualContext _visualContext;
         private FogVolumeHeightSampler _visualHeightSampler;
         private bool _hasVisualHeightSampler;
-        private IDiagnosticFlow _startupRevealFlow;
         private int _lastHandledWorldRevision;
 
         /// <summary>
@@ -90,7 +86,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             IFogSaveDataProvider saveProvider,
             SignalBus signalBus,
             [InjectOptional] FogOfWarSettings settings,
-            [InjectOptional] IFogStartupDiagnostics startupDiagnostics = null,
             [InjectOptional] IWorldGenerationSignalState worldGenerationSignalState = null)
         {
             _resolver = resolver;
@@ -99,13 +94,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _saveProvider = saveProvider;
             _signalBus = signalBus;
             _settings = settings;
-            _startupDiagnostics = startupDiagnostics;
             _worldGenerationSignalState = worldGenerationSignalState;
 
             if (_settings != null)
                 _defaultVisionRange = _settings.DefaultVisionRange;
-            else
-                Debug.LogWarning("[FogOfWar] FogOfWarService: FogOfWarSettings is null. Using DefaultVisionRange=5.");
         }
     }
 }

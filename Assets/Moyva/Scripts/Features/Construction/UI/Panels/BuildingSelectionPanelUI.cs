@@ -63,10 +63,6 @@ namespace Kruty1918.Moyva.Construction.UI
 
         private void Awake()
         {
-            if (itemContainer == null)
-                Debug.LogWarning($"[BuildingSelectionPanelUI] Поле 'itemContainer' не призначено на '{name}'. Кнопки не відображатимуться.", this);
-            if (buttonPrefab == null)
-                Debug.LogWarning($"[BuildingSelectionPanelUI] Поле 'buttonPrefab' не призначено на '{name}'. Кнопки не відображатимуться.", this);
 
             if (categoryTabs != null)
                 categoryTabs.OnCategorySelected += SetCategoryFilter;
@@ -293,12 +289,6 @@ namespace Kruty1918.Moyva.Construction.UI
                 }
                 else
                 {
-                    Debug.LogWarning(
-                        $"[Construction UI] На префабі " +
-                        $"'{buttonPrefab.name}' відсутній " +
-                        $"BuildingButtonUI. Запис '{item.Id}' " +
-                        "не буде керованим.",
-                        this);
                 }
 
                 usedCount++;

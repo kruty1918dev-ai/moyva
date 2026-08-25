@@ -56,7 +56,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
                 var delayMs = baseDelay.TotalMilliseconds * pow;
                 var jitter = random.NextDouble() * 0.25d * delayMs;
                 var totalDelay = TimeSpan.FromMilliseconds(delayMs + jitter);
-                Debug.LogWarning($"[MultiplayerReliability] {operationName} attempt {attempt}/{maxAttempts} failed, retrying in {totalDelay.TotalMilliseconds:0} ms");
                 await Task.Delay(totalDelay, ct);
             }
 

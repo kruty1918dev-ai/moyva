@@ -75,10 +75,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (ShouldLogClusterUpdates())
             {
-                Debug.Log(
-                    $"{ClusterDiagTag} FullClusterRebuild START " +
-                    $"clusters={_fullRebuildBuffer.Count}, " +
-                    $"context={context.Width}x{context.Height}.");
             }
 
             RebuildClusters(
@@ -107,9 +103,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             long startedAt = Stopwatch.GetTimestamp();
             if (ShouldLogClusterUpdates())
             {
-                Debug.Log(
-                    $"{ClusterDiagTag} PartialClusterRebuild START " +
-                    $"clusters={dirtyClusters.Count}.");
             }
 
             for (int i = 0; i < dirtyClusters.Count; i++)
@@ -129,19 +122,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (ShouldLogClusterUpdates())
             {
-                Debug.Log(
-                    $"{ClusterDiagTag} PartialClusterRebuild DONE " +
-                    $"clusters={dirtyClusters.Count}, " +
-                    $"elapsedMs={elapsedMs:0.###}.");
             }
 
             if (Debug.isDebugBuild
                 && elapsedMs >= SlowClusterRebuildThresholdMs)
             {
-                Debug.Log(
-                    $"{PerfLogTag} fog-clusters " +
-                    $"clusters={dirtyClusters.Count} " +
-                    $"elapsedMs={elapsedMs:0.###}");
             }
         }
 

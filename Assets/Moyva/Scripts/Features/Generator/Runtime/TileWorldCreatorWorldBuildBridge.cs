@@ -70,7 +70,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Configuration configuration = manager.configuration;
             if (configuration == null)
             {
-                Debug.LogWarning($"{LogTag} TileWorldCreatorManager has no configuration assigned.");
                 return TileWorldCreatorWorldBuildResult.Disabled;
             }
 
@@ -90,7 +89,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             LogPositionSummaries(positions, configuration);
             if (!positions.HasAnyMappedLayer)
             {
-                Debug.LogWarning($"{LogTag} TWC build disabled: no mapped terrain/object/building positions were collected. BiomeMap={TileWorldCreatorMapFormatUtility.FormatMapSize(worldData.BiomeMap)}.");
                 return TileWorldCreatorWorldBuildResult.Disabled;
             }
 

@@ -1,5 +1,4 @@
 using GiantGrey.TileWorldCreator;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.GraphSystem.API;
@@ -17,8 +16,6 @@ namespace Kruty1918.Moyva.Generator
     /// </summary>
     public sealed class GeneratorInstaller : MonoInstaller
     {
-        private IWorldGenerationDiagnostics _worldDiagnostics;
-
         [Header("Scene Graph Source")]
         [SerializeField] private MoyvaTileWorldCreatorGraphBinding _graphBinding;
         [SerializeField] private TileWorldCreatorManager _tileWorldCreatorManager;
@@ -34,17 +31,9 @@ namespace Kruty1918.Moyva.Generator
             new TileWorldCreatorBuildOptions();
         [SerializeField] private WaterLayerMaterialSettings _waterLayerMaterialSettings;
 
-        [Inject]
-        public void Construct(
-            [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null)
-        {
-            _worldDiagnostics = worldDiagnostics;
-        }
-
         public override void InstallBindings()
         {
-            bool directFallbackApplied =
-                GameLaunchContext.EnsureDirectGameplayTestFallback();
+            GameLaunchContext.EnsureDirectGameplayTestFallback();
             ResolveSceneReferences();
             MapChunkFeatureBindings.Install(Container);
 
@@ -65,15 +54,6 @@ namespace Kruty1918.Moyva.Generator
                 Container,
                 _waterLayerMaterialSettings);
             GeneratorBindingGroups.InstallStartup(Container);
-
-            string summary =
-                $"scene={gameObject.scene.name} mode={GameLaunchContext.Mode} " +
-                $"directFallback={directFallbackApplied} " +
-                $"graph={(_graphAsset != null ? _graphAsset.name : "null")} " +
-                $"twc={_tileWorldCreatorManager != null} " +
-                $"mapping={_tileWorldCreatorMapping != null}";
-            _worldDiagnostics?.GeneratorInstallerInstalled(summary);
-            Debug.Log($"[GeneratorInstaller] installed {summary}");
         }
 
         private new void Start()
@@ -113,10 +93,6 @@ namespace Kruty1918.Moyva.Generator
             var configuration = ScriptableObject.CreateInstance<Configuration>();
             configuration.name = "Moyva Runtime TWC Configuration";
             _tileWorldCreatorManager.configuration = configuration;
-            Debug.LogWarning(
-                "[GeneratorInstaller] Created transient TWC configuration " +
-                "because the scene reference was missing.",
-                _tileWorldCreatorManager);
         }
 
         private TileRegistrySO ResolveTileRegistry()

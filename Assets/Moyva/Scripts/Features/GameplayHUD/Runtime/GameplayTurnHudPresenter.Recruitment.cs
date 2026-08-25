@@ -148,9 +148,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (skippedForCapacity > 0)
             {
-                Debug.LogWarning(
-                    $"[GameplayTurnHud] Recruitment recipes exceed authored scene slots. " +
-                    $"Visible={_recipeButtons.Count}, skipped={skippedForCapacity}.");
             }
 
             SelectFirstRecipeIfAvailable();

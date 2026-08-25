@@ -21,14 +21,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (State != BuildingPlacementState.Placing)
             {
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] TryPreviewAt({position}) проігнорована: неправильний стан {State}");
                 return false;
             }
 
             if (string.IsNullOrWhiteSpace(_selectedBuildingId))
             {
-                Debug.LogWarning("[Construction] TryPreviewAt: _selectedBuildingId порожній або null");
                 return false;
             }
 
@@ -36,9 +33,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     "pointer-click",
                     position))
             {
-                Debug.LogWarning(
-                    $"[MoyvaConstructionAvailability] placement-rejected-stale-selection " +
-                    $"origin={position}");
                 return false;
             }
 
@@ -51,8 +45,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_pendingPositions.Contains(position))
             {
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] TryPreviewAt({position}): позиція вже у pending-списку");
 
                 if (TryReplacePendingPlacement(
                         position,
@@ -115,18 +107,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 LogPlacementAttempt(
                     placementResult,
                     emitRejectedAction: true);
-                Debug.LogWarning(
-                    $"[MoyvaConstructionAvailability] pending-rejected " +
-                    $"building='{_selectedBuildingId}' owner='{NormalizeOwnerId(_activeOwnerId)}' " +
-                    $"origin={position} code='resources' reason='{placementResult.Reason}'");
                 return false;
             }
 
             LogPlacementAttempt(
                 placementResult,
                 emitRejectedAction: false);
-            if (VerboseLogs)
-                Debug.Log($"[Construction] TryPreviewAt({position}) -> VALID для {_selectedBuildingId}");
 
             return AddPendingPlacement(
                 position,
@@ -200,16 +186,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (State != BuildingPlacementState.Placing)
             {
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) ignored: state={State}");
                 return false;
             }
 
             int index = FindPendingPlacementIndex(fromPosition);
             if (index < 0)
             {
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) ignored: source preview not found.");
                 return false;
             }
 
@@ -254,10 +236,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 LogPlacementAttempt(
                     moveResult,
                     emitRejectedAction: true);
-                Debug.LogWarning(
-                    $"[MoyvaConstructionAvailability] pending-move-rejected " +
-                    $"building='{placement.BuildingId}' from={fromPosition} to={toPosition} " +
-                    $"code='resources' reason='{moveResult.Reason}'");
                 return false;
             }
 
@@ -305,9 +283,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             SetPlacementSelection(placement.BuildingId, BuildingPlacementState.Placing);
 
-            if (VerboseLogs)
-                Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> VALID. relocation={IsRelocation(placement)}");
-
             return true;
         }
 
@@ -331,9 +306,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 BuildingId = placement.BuildingId,
                 PreviewState = BuildingPreviewState.None
             });
-
-            if (VerboseLogs)
-                Debug.Log($"[Construction] RemovePendingAt({position}) -> removed '{placement.BuildingId}'. pendingCount={_pendingPlacements.Count}");
 
             if (_pendingPlacements.Count == 0)
                 SetPlacementSelection(_selectedBuildingId, BuildingPlacementState.Placing);

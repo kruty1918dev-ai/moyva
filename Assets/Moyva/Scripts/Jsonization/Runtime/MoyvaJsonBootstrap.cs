@@ -13,9 +13,6 @@ namespace Kruty1918.Moyva.Jsonization
 
                 if (Application.isEditor || Debug.isDebugBuild)
                 {
-                    Debug.Log(
-                        "[MoyvaJson] Runtime bootstrap PASS " +
-                        $"fingerprint={MoyvaJsonRuntime.ConfigFingerprint}");
                 }
             }
             catch (System.Exception ex)
