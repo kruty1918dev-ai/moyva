@@ -285,7 +285,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 _gameCommandSync?.SendCommand(GameCommandType.StartGame, worldSettingsBytes);
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
 
@@ -406,7 +406,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 if (_modeSelector != null)
                     await _modeSelector.SetModeAsync(providerType);
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
 
@@ -415,7 +415,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 if (_joinRoomPanelService != null)
                     await _joinRoomPanelService.RefreshRoomListAsync();
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
 
@@ -431,7 +431,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 _infoPanelService?.Show(new InfoMessage("Видалено з лобі", BuildLobbyExitMessage(reason)));
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
         }
@@ -503,7 +503,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     await _lobbyService.LeaveAsync();
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
 

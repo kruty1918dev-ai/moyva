@@ -13,7 +13,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private readonly SwitchableNetworkProvider _networkProvider;
         private readonly SwitchableLobbyService _lobbyService;
         private readonly MultiplayerConfig _config;
-        private readonly IMultiplayerLogger _logger;
         private readonly SemaphoreSlim _switchLock = new SemaphoreSlim(1, 1);
 
         public event Action<NetworkProviderType> OnModeChanged;
@@ -24,13 +23,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         public MultiplayerModeSelector(
             SwitchableNetworkProvider networkProvider,
             SwitchableLobbyService lobbyService,
-            MultiplayerConfig config,
-            IMultiplayerLogger logger)
+            MultiplayerConfig config)
         {
             _networkProvider = networkProvider ?? throw new ArgumentNullException(nameof(networkProvider));
             _lobbyService = lobbyService ?? throw new ArgumentNullException(nameof(lobbyService));
             _config = config;
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             var initialMode = config != null ? config.ProviderType : _lobbyService.RequestedProviderType;
             CurrentMode = initialMode;
@@ -54,7 +51,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
                 if (changed)
                 {
-                    _logger.Info($"[MultiplayerModeSelector] Mode switched to {mode}; effective lobby provider is {EffectiveMode}, network provider is {resolvedNetworkMode}.");
                     OnModeChanged?.Invoke(mode);
                 }
             }
@@ -72,8 +68,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var fallbackMode = _config != null ? _config.FallbackProviderType : NetworkProviderType.Offline;
             if (fallbackMode == NetworkProviderType.Relay)
                 fallbackMode = NetworkProviderType.Offline;
-
-            _logger.Warn($"[MultiplayerModeSelector] Relay mode requested, but Relay runtime is unavailable. Falling back to {fallbackMode}.");
             return fallbackMode;
         }
 

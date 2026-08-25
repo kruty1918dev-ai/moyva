@@ -45,13 +45,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 }
                 catch (LobbyServiceException e) when (IsUnauthorized(e))
                 {
-                    _logger.Warn("[UgsLobby] Heartbeat unauthorized. Closing local lobby state.");
                     CloseLobbyState("unauthorized");
                     return;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    _logger.Warn($"[UgsLobby] Heartbeat failed: {e}");
                 }
 
                 try { await Task.Delay(TimeSpan.FromSeconds(HeartbeatSeconds), ct); }
@@ -94,7 +92,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         }
                         if (!stillIn)
                         {
-                            _logger.Warn("[UgsLobby] Kicked / removed from lobby.");
                             KickedFromLobby?.Invoke("removed");
                             StopLoops();
                             _lobby = null;
@@ -106,7 +103,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 }
                 catch (LobbyServiceException e) when ((int)e.Reason == (int)LobbyExceptionReason.LobbyNotFound)
                 {
-                    _logger.Warn("[UgsLobby] Lobby no longer exists.");
                     KickedFromLobby?.Invoke("lobby_closed");
                     StopLoops();
                     _lobby = null;
@@ -116,13 +112,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 }
                 catch (LobbyServiceException e) when (IsUnauthorized(e))
                 {
-                    _logger.Warn("[UgsLobby] Poll unauthorized. Closing local lobby state.");
                     CloseLobbyState("unauthorized");
                     return;
                 }
                 catch (Exception e)
                 {
-                    _logger.Warn($"[UgsLobby] Poll failed: {e}");
                     var delaySeconds = e.Message != null && e.Message.Contains("Too Many Requests") ? PollBackoffSeconds : PollSeconds;
                     try { await Task.Delay(TimeSpan.FromSeconds(delaySeconds), ct); }
                     catch (OperationCanceledException) { return; }

@@ -17,8 +17,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private async Task SafeCleanupAsync(CancellationToken ct = default)
         {
             CancelAllPendingDisconnects();
-            try { await _network.LeaveSessionAsync(ct); } catch (Exception e) { _logger.Warn($"Net leave: {e.Message}"); }
-            try { await _lobby.LeaveAsync(ct); } catch (Exception e) { _logger.Warn($"Lobby leave: {e.Message}"); }
+            try { await _network.LeaveSessionAsync(ct); } catch (Exception) { }
+            try { await _lobby.LeaveAsync(ct); } catch (Exception) { }
 
             _participants.Clear();
             _currentSessionId = null;
@@ -61,7 +61,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         {
             if (!IsPeerPresentInCurrentLobby(peerId))
             {
-                _logger.Warn($"Peer '{peerId}' disconnected and is absent from current lobby snapshot. Finalizing immediately.");
                 FinalizePeerDisconnect(peerId);
                 return;
             }
@@ -70,7 +69,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             var cts = new CancellationTokenSource();
             _pendingDisconnects[peerId] = cts;
             var delay = TimeSpan.FromSeconds(Math.Max(1f, _config?.GracefulReconnectWindowSeconds ?? 8f));
-            _logger.Warn($"Peer '{peerId}' disconnected. Waiting {delay.TotalSeconds:0.#}s graceful reconnect window.");
             _ = FinalizeDisconnectAfterDelayAsync(peerId, cts.Token, delay);
         }
 

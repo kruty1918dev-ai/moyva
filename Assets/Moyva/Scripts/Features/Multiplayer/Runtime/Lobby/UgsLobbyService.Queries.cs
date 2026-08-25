@@ -23,7 +23,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             if (LobbyService.Instance == null)
             {
-                _logger.Warn("[UgsLobby] QueryRoomsAsync skipped: LobbyService.Instance is unavailable.");
                 return Array.Empty<LobbyRoom>();
             }
 
@@ -51,18 +50,14 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     list.Add(Project(l));
                 }
 
-                _logger.Info($"[UgsLobby] QueryRoomsAsync returned {list.Count}/{result.Results.Count} lobbies after Moyva relay filtering.");
-
                 return list;
             }
             catch (LobbyServiceException e) when (e.Message != null && e.Message.Contains("Too Many Requests"))
             {
-                _logger.Warn("[UgsLobby] QueryRoomsAsync rate limited, returning empty room list.");
                 return Array.Empty<LobbyRoom>();
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                _logger.Warn($"[UgsLobby] QueryRoomsAsync failed: {e}");
                 return Array.Empty<LobbyRoom>();
             }
         }
@@ -79,9 +74,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 else
                     await LobbyService.Instance.RemovePlayerAsync(_lobby.Id, AuthenticationService.Instance.PlayerId);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                _logger.Warn($"[UgsLobby] LeaveAsync failed: {e}");
             }
             finally
             {
@@ -112,7 +106,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             if (!string.IsNullOrEmpty(normalizedRelayJoinCode) && !RelayJoinCodeUtility.IsValid(normalizedRelayJoinCode))
             {
                 var message = $"[UgsLobby] Refusing to publish invalid Relay join code '{normalizedRelayJoinCode}' for lobby '{_lobby.Id}'.";
-                _logger.Warn(message);
                 throw new ArgumentException(message, nameof(relayJoinCode));
             }
 

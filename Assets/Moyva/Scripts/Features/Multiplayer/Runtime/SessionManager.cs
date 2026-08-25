@@ -32,7 +32,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private readonly IWorldConsistencyService _consistency;
         private readonly IWorldSnapshotStore _snapshotStore;
         private readonly IConfigStore _configStore;
-        private readonly IMultiplayerLogger _logger;
         private readonly IFailureHandlingPolicy _failurePolicy;
         private readonly IHostMigrationService _hostMigration;
         private readonly IHostMigrationCheckpointService _hostMigrationCheckpoint;
@@ -65,7 +64,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             IWorldConsistencyService consistency,
             IWorldSnapshotStore snapshotStore,
             IConfigStore configStore,
-            IMultiplayerLogger logger,
             IFailureHandlingPolicy failurePolicy,
             IHostMigrationService hostMigration,
             IHostMigrationCheckpointService hostMigrationCheckpoint = null)
@@ -76,7 +74,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _consistency         = consistency         ?? throw new ArgumentNullException(nameof(consistency));
             _snapshotStore       = snapshotStore       ?? throw new ArgumentNullException(nameof(snapshotStore));
             _configStore         = configStore         ?? throw new ArgumentNullException(nameof(configStore));
-            _logger              = logger              ?? throw new ArgumentNullException(nameof(logger));
             _failurePolicy       = failurePolicy       ?? throw new ArgumentNullException(nameof(failurePolicy));
             _hostMigration       = hostMigration       ?? throw new ArgumentNullException(nameof(hostMigration));
             _hostMigrationCheckpoint = hostMigrationCheckpoint;

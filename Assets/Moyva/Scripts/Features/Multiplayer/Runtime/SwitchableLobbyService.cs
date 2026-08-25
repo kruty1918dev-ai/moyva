@@ -15,7 +15,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
     public sealed class SwitchableLobbyService : ILobbyService, IDisposable
     {
         private readonly MultiplayerConfig _config;
-        private readonly IMultiplayerLogger _logger;
 
         private ILobbyService _inner;
         private NetworkProviderType _requestedProviderType;
@@ -29,10 +28,9 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public LobbyRoom Current => _inner?.Current;
         public LobbyState State => _inner?.State ?? LobbyState.Closed;
 
-        public SwitchableLobbyService(MultiplayerConfig config, IMultiplayerLogger logger)
+        public SwitchableLobbyService(MultiplayerConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _requestedProviderType = _config.ProviderType;
             _inner = CreateByType(_requestedProviderType, out _effectiveProviderType);
@@ -42,8 +40,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public NetworkProviderType RequestedProviderType => _requestedProviderType;
 
         /// <summary>
-        /// Current active provider type represented by the inner implementation.
-        /// Useful for diagnostics and logging.
+        /// Фактичний тип активної lobby-реалізації.
         /// </summary>
         public NetworkProviderType CurrentProviderType => _effectiveProviderType;
 
@@ -52,13 +49,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             if (type == NetworkProviderType.Lan)
             {
                 effectiveType = NetworkProviderType.Lan;
-                return new LanLobbyService(_logger);
+                return new LanLobbyService();
             }
 
             if (type == NetworkProviderType.Offline)
             {
                 effectiveType = NetworkProviderType.Offline;
-                return new OfflineLobbyService(_logger);
+                return new OfflineLobbyService();
             }
 
             // For Relay (UGS) provider: if the Unity Lobbies package isn't installed in the project,
@@ -77,15 +74,14 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                             name.StartsWith("Unity.Services.Multiplayer", StringComparison.OrdinalIgnoreCase))
                         {
                             effectiveType = NetworkProviderType.Relay;
-                            return new UgsLobbyService(_logger);
+                            return new UgsLobbyService();
                         }
                     }
                 }
                 catch { }
 
             effectiveType = NetworkProviderType.Offline;
-            _logger?.Warn($"[SwitchableLobbyService] Lobby provider '{type}' is unavailable - falling back to OfflineLobbyService.");
-            return new OfflineLobbyService(_logger);
+            return new OfflineLobbyService();
         }
 
         private void HookInner(ILobbyService service)
@@ -123,11 +119,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 if (_requestedProviderType == type)
                 {
-                    _logger.Trace($"[SwitchableLobbyService] SwitchToAsync skipped: requested={type}, effective={_effectiveProviderType}.");
                     return;
                 }
-
-                _logger.Info($"[SwitchableLobbyService] Switching lobby provider: requested={_requestedProviderType} effective={_effectiveProviderType} -> requested={type}.");
 
                 try { await _inner.LeaveAsync(ct).ConfigureAwait(false); } catch { }
                 UnhookInner(_inner);
@@ -136,13 +129,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 _requestedProviderType = type;
                 _inner = CreateByType(type, out _effectiveProviderType);
                 HookInner(_inner);
-
-                _logger.Info($"[SwitchableLobbyService] Lobby provider switched: requested={_requestedProviderType}, effective={_effectiveProviderType}, impl={_inner.GetType().Name}.");
-            }
-            catch (Exception e)
-            {
-                _logger.Error($"[SwitchableLobbyService] SwitchToAsync failed: {e}");
-                throw;
             }
             finally { _switchLock.Release(); }
         }

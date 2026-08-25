@@ -20,7 +20,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private readonly SignalBus _signalBus;
         private readonly INetworkProvider _networkProvider;
         private readonly IGameCommandSyncService _commandSyncService;
-        private readonly IMultiplayerLogger _logger;
         private readonly IWorldGenerationSignalState _worldGenerationSignalState;
 
     #pragma warning disable CS0649
@@ -33,13 +32,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             SignalBus signalBus,
             INetworkProvider networkProvider,
             IGameCommandSyncService commandSyncService,
-            IMultiplayerLogger logger,
             [InjectOptional] IWorldGenerationSignalState worldGenerationSignalState = null)
         {
             _signalBus = signalBus ?? throw new ArgumentNullException(nameof(signalBus));
             _networkProvider = networkProvider ?? throw new ArgumentNullException(nameof(networkProvider));
             _commandSyncService = commandSyncService ?? throw new ArgumentNullException(nameof(commandSyncService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _worldGenerationSignalState = worldGenerationSignalState;
         }
 
@@ -79,8 +76,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             if (string.IsNullOrEmpty(peerId) || !ShouldBroadcastFromThisPeer() || _cachedAssignments == null || _cachedAssignments.Length == 0)
                 return;
-
-            _logger.Trace($"StartingPositionSyncService: rebroadcasting spawn positions to peer {peerId}.");
             _commandSyncService.SendCommand(GameCommandType.StartingPositions, SerializeAssignments(_cachedAssignments));
         }
 
@@ -94,7 +89,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 return;
 
             CacheAssignments(assignments);
-            _logger.Trace($"StartingPositionSyncService: received {assignments.Length} assignments from {senderId}.");
             _suppressNextBroadcast = true;
             long startupSequence = 0;
             string startupSessionId = null;
@@ -171,7 +165,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 int version = reader.ReadInt32();
                 if (version != PayloadVersion)
                 {
-                    _logger.Warn($"StartingPositionSyncService: unsupported payload version {version}.");
                     return null;
                 }
 
@@ -195,9 +188,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
                 return assignments;
             }
-            catch (Exception exception)
+            catch (Exception)
             {
-                _logger.Warn($"StartingPositionSyncService: failed to deserialize assignments: {exception.Message}");
                 return null;
             }
         }

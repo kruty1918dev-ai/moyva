@@ -21,7 +21,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             _cts = new CancellationTokenSource();
             _listenUdp = CreateListeningClient(DiscoveryPort);
             var ct = _cts.Token;
-            _logger.Info($"[LanLobby] StartBroadcastLoop host='{ResolveHostDisplayName(_current)}' lobbyId='{_current?.LobbyId}' join='{_current?.RelayJoinCode}' discoveryPort={DiscoveryPort}.");
             _ = Task.Run(async () =>
             {
                 while (!ct.IsCancellationRequested)
@@ -32,7 +31,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         var bytes = Encoding.UTF8.GetBytes(payload);
                         await SendDiscoveryPayloadAsync(bytes).ConfigureAwait(false);
                     }
-                    catch (Exception e) { _logger.Warn($"[LanLobby] Broadcast error: {e.Message}"); }
+                    catch (Exception) { }
                     try { await Task.Delay(BroadcastIntervalMs, ct); } catch (OperationCanceledException) { break; }
                 }
             }, ct);
@@ -55,12 +54,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         }
 
                         if (!TryParsePayload(json, out var incomingRoom, out _))
-                        {
-                            _invalidPayloadCount++;
-                            if (_invalidPayloadCount <= 5 || _invalidPayloadCount % 20 == 0)
-                                _logger.Warn($"[LanLobby] Ignored invalid discovery payload. count={_invalidPayloadCount}.");
                             continue;
-                        }
 
                         RememberDiscoveredRoom(incomingRoom);
                         if (MergeCurrentRoom(incomingRoom))
@@ -68,7 +62,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     }
                     catch (OperationCanceledException) { break; }
                     catch (ObjectDisposedException) { break; }
-                    catch (Exception e) { _logger.Warn($"[LanLobby] Receive error: {e.Message}"); }
+                    catch (Exception) { }
                 }
             }, ct);
         }
@@ -106,27 +100,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 await _udp.SendAsync(bytes, bytes.Length, _loopbackEndPoint).ConfigureAwait(false);
             }
-            catch (Exception e)
-            {
-                if (!_loopbackWarningLogged)
-                {
-                    _loopbackWarningLogged = true;
-                    _logger.Warn($"[LanLobby] Loopback discovery send failed: {e.Message}");
-                }
-            }
+            catch (Exception) { }
 
             try
             {
                 await _udp.SendAsync(bytes, bytes.Length, _broadcastEndPoint).ConfigureAwait(false);
             }
-            catch (Exception e)
-            {
-                if (!_broadcastWarningLogged)
-                {
-                    _broadcastWarningLogged = true;
-                    _logger.Warn($"[LanLobby] Broadcast discovery send failed: {e.Message}");
-                }
-            }
+            catch (Exception) { }
         }
 
         private async Task SendDiscoveryQueryAsync(UdpClient client)
@@ -137,27 +117,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 await client.SendAsync(bytes, bytes.Length, _loopbackEndPoint).ConfigureAwait(false);
             }
-            catch (Exception e)
-            {
-                if (!_loopbackWarningLogged)
-                {
-                    _loopbackWarningLogged = true;
-                    _logger.Warn($"[LanLobby] Loopback discovery query failed: {e.Message}");
-                }
-            }
+            catch (Exception) { }
 
             try
             {
                 await client.SendAsync(bytes, bytes.Length, _broadcastEndPoint).ConfigureAwait(false);
             }
-            catch (Exception e)
-            {
-                if (!_broadcastWarningLogged)
-                {
-                    _broadcastWarningLogged = true;
-                    _logger.Warn($"[LanLobby] Broadcast discovery query failed: {e.Message}");
-                }
-            }
+            catch (Exception) { }
         }
 
         private Task SendDiscoveryResponseAsync(IPEndPoint remoteEndPoint)

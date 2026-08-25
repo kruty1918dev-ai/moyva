@@ -80,7 +80,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         creationUtc = File.GetCreationTimeUtc(slotPath);
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                 }
 

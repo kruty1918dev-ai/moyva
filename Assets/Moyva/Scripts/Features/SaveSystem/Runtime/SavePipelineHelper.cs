@@ -267,7 +267,7 @@ namespace Kruty1918.Moyva.SaveSystem
                 error = null;
                 return true;
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 error = e.Message;
                 return false;

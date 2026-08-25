@@ -36,11 +36,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             _current = new LobbyRoom(roomId, lobbyCode, options.Name, options.MaxPlayers, options.IsPrivate,
                 hostPlayerId: hostPlayerId, relayJoinCode: joinCode, players: players, passwordHash: _currentPasswordHash, state: LobbyState.Open);
 
-            if (ip.StartsWith("127.", StringComparison.Ordinal))
-                _logger.Warn($"[LanLobby] CreateRoomAsync detected loopback address '{ip}'. Other devices will not be able to connect.");
-
-            _logger.Info($"[LanLobby] CreateRoomAsync created room='{options.Name}', lobbyId='{roomId}', joinCode='{joinCode}', hostId='{hostPlayerId}', maxPlayers={options.MaxPlayers}, private={options.IsPrivate}.");
-
             StartBroadcastLoop();
             LobbyUpdated?.Invoke(_current);
             PublishState(LobbyState.Open);
@@ -56,11 +51,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 var value = lobbyCode?.Trim();
                 if (string.IsNullOrWhiteSpace(value))
                 {
-                    _logger.Warn("[LanLobby] JoinByCodeAsync: порожній код приєднання.");
                     return null;
                 }
-
-                _logger.Info($"[LanLobby] JoinByCodeAsync: code='{value}', cacheSize={_discoveredRooms.Count}.");
 
                 try
                 {
@@ -68,21 +60,16 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     var cachedRoom = FindDiscoveredRoom(value);
                     if (cachedRoom != null)
                     {
-                        _logger.Info($"[LanLobby] JoinByCodeAsync: знайдено в кеші lobbyId='{cachedRoom.LobbyId}', relay='{cachedRoom.RelayJoinCode}'.");
                         _current = AddLocalPlayer(cachedRoom, displayName);
                         StartBroadcastLoop();
                         LobbyUpdated?.Invoke(_current);
                         return _current;
                     }
-
-                    _logger.Info("[LanLobby] JoinByCodeAsync: немає в кеші, запускаю активний QueryRoomsAsync.");
                     var rooms = await QueryRoomsAsync(ct).ConfigureAwait(false);
-                    _logger.Info($"[LanLobby] JoinByCodeAsync: QueryRoomsAsync повернув {rooms.Count} кімнат(и).");
                     foreach (var r in rooms)
                     {
                         if (MatchesJoinInput(r, value))
                         {
-                            _logger.Info($"[LanLobby] JoinByCodeAsync: збіг через активний пошук lobbyId='{r.LobbyId}'.");
                             _current = AddLocalPlayer(r, displayName);
                             StartBroadcastLoop();
                             LobbyUpdated?.Invoke(_current);
@@ -90,20 +77,16 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         }
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    _logger.Warn($"[LanLobby] JoinByCodeAsync: помилка пошуку: {e.Message}");
                 }
 
                 if (IsLanJoinCode(value))
                 {
-                    _logger.Info($"[LanLobby] JoinByCodeAsync: пряме приєднання за lan-кодом '{value}'.");
                     _current = CreateDirectJoinRoom(value, displayName);
                     LobbyUpdated?.Invoke(_current);
                     return _current;
                 }
-
-                _logger.Warn($"[LanLobby] JoinByCodeAsync: кімнату не знайдено за кодом '{value}'.");
                 return null;
             }, ct);
         }
@@ -140,13 +123,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             if (matched == null)
             {
-                _logger.Warn($"[LanLobby] JoinByCodeWithPasswordAsync: кімнату не знайдено за '{value}'.");
                 return null;
             }
 
             if (matched.HasPassword && !LobbyPasswordHasher.Verify(password, matched.PasswordHash))
             {
-                _logger.Warn($"[LanLobby] JoinByCodeWithPasswordAsync: невірний пароль для '{value}'.");
                 throw new WrongPasswordException();
             }
 
@@ -159,16 +140,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public async Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(CancellationToken ct = default)
         {
             var roomsByKey = new Dictionary<string, LobbyRoom>(StringComparer.Ordinal);
-            var responses = 0;
-            var parsed = 0;
-            var invalid = 0;
-
             using (var client = CreateQueryClient())
             {
                 var deadline = DateTime.UtcNow.AddMilliseconds(QueryTimeoutMs);
                 try
                 {
-                    _logger.Trace($"[LanLobby] QueryRoomsAsync started. timeoutMs={QueryTimeoutMs}, discoveryPort={DiscoveryPort}, broadcast='{_broadcastEndPoint.Address}:{_broadcastEndPoint.Port}'.");
                     await SendDiscoveryQueryAsync(client).ConfigureAwait(false);
 
                     while (DateTime.UtcNow < deadline)
@@ -181,44 +157,27 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
                             var result = await ReceiveResultWithTimeoutAsync(client, remaining, ct).ConfigureAwait(false);
                             if (!result.HasValue) break;
-                            responses++;
-
                             var json = Encoding.UTF8.GetString(result.Value.Buffer);
                             if (IsDiscoveryQuery(json))
                                 continue;
 
                             if (TryParsePayload(json, out var room, out var joinCode))
                             {
-                                parsed++;
                                 var key = $"{room.LobbyId}:{joinCode}";
                                 roomsByKey[key] = roomsByKey.TryGetValue(key, out var existing)
                                     ? MergeRooms(existing, room)
                                     : room;
                                 RememberDiscoveredRoom(roomsByKey[key]);
                             }
-                            else
-                            {
-                                invalid++;
-                            }
                         }
                         catch (SocketException) { break; }
                         catch (OperationCanceledException) { break; }
-                        catch (Exception e)
+                        catch (Exception)
                         {
-                            _logger.Warn($"[LanLobby] Query parse error: {e.Message}");
                         }
                     }
                 }
                 catch { }
-            }
-
-            if (roomsByKey.Count == 0)
-            {
-                _logger.Warn($"[LanLobby] QueryRoomsAsync discovered no rooms (responses={responses}, parsed={parsed}, invalid={invalid}). Check same subnet, firewall/UDP broadcast, and host advertised IP.");
-            }
-            else
-            {
-                _logger.Info($"[LanLobby] QueryRoomsAsync discovered {roomsByKey.Count} room(s) (responses={responses}, parsed={parsed}, invalid={invalid}).");
             }
 
             return new List<LobbyRoom>(roomsByKey.Values);

@@ -18,7 +18,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
 
-            _config = MultiplayerConfigLifecycle.LoadValidateFreeze(_configStore, _logger);
+            _config = MultiplayerConfigLifecycle.LoadValidateFreeze(_configStore);
             var opts = NormalizeOptions(options);
             _localPlayerId = opts.LocalIdentity.PlayerId;
             if (_network is INetworkPeerIdentityConfigurator identityConfigurator)

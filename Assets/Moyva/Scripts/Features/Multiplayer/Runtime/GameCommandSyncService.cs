@@ -25,32 +25,27 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             public void OnError(Exception error)
             {
-                _owner._logger.Warn($"GameCommandSyncService stream error: {error.Message}");
             }
 
             public void OnCompleted()
             {
-                _owner._logger.Trace("GameCommandSyncService stream completed");
             }
         }
 
         private readonly INetworkProvider _network;
-        private readonly IMultiplayerLogger _logger;
         private readonly Dictionary<GameCommandType, Action<string, byte[]>> _handlers = new();
         private readonly IDisposable _subscription;
 
-        public GameCommandSyncService(INetworkProvider network, IMultiplayerLogger logger)
+        public GameCommandSyncService(INetworkProvider network)
         {
             _network = network;
-            _logger  = logger;
-
             _subscription = _network.Messages.Subscribe(new NetworkMessageObserver(this));
         }
 
         public void SendCommand(GameCommandType type, byte[] payload)
         {
             var packet = BuildPacket(type, payload);
-            // Надсилання всім пірам (fire-and-forget); помилки логуються провайдером.
+            // Надсилання всім пірам без очікування відповіді.
             _ = _network.SendMessageAsync("*", packet, CancellationToken.None);
         }
 
@@ -58,7 +53,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             if (string.IsNullOrEmpty(peerId))
             {
-                _logger.Warn("SendCommandToPeer called with null/empty peerId.");
                 return;
             }
 
@@ -85,7 +79,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             if (!_handlers.TryGetValue(type, out var handler))
             {
-                _logger.Trace($"GameCommandSyncService: немає обробника для {type}");
                 return;
             }
 

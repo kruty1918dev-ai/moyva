@@ -71,7 +71,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 ConfigureLivePreviewLight(projectSettings, previewLayer);
                 return true;
             }
-            catch (Exception exception)
+            catch (Exception)
             {
                 DestroyLiveMeshPreview();
                 return false;

@@ -25,7 +25,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private const int BroadcastIntervalMs = 1000;
         private const int QueryTimeoutMs = 2500;
 
-        private readonly IMultiplayerLogger _logger;
         private readonly UdpClient _udp;
         private readonly IPEndPoint _broadcastEndPoint;
         private readonly IPEndPoint _loopbackEndPoint;
@@ -37,9 +36,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private LobbyRoom _current;
         private string _currentPasswordHash = string.Empty;
         private LobbyState _state = LobbyState.Closed;
-        private bool _broadcastWarningLogged;
-        private bool _loopbackWarningLogged;
-        private int _invalidPayloadCount;
 
         public event Action<LobbyRoom> LobbyUpdated;
         public event Action<LobbyState> StateChanged;
@@ -50,9 +46,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public LobbyRoom Current => _current;
         public LobbyState State => _state;
 
-        public LanLobbyService(IMultiplayerLogger logger)
+        public LanLobbyService()
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _udp = new UdpClient();
             _udp.EnableBroadcast = true;
             _broadcastEndPoint = new IPEndPoint(IPAddress.Broadcast, DiscoveryPort);

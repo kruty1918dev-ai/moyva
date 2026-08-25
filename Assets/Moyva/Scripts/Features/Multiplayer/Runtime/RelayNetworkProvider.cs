@@ -70,7 +70,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         private const int MaxFrameBodyBytes = 60 * 1024;
         private const int HandshakeTimeoutMs = 15_000;
         private readonly RelayProviderSettings _settings;
-        private readonly IMultiplayerLogger _logger;
         private readonly MultiplayerTransportPump _transportPump;
         private readonly List<IObserver<NetworkMessage>> _observers = new List<IObserver<NetworkMessage>>();
         private string _configuredLocalPeerId;
@@ -81,11 +80,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     #pragma warning restore CS0067
         public IObservable<NetworkMessage> Messages => new MessageObservable(_observers);
 
-        public RelayNetworkProvider(RelayProviderSettings settings, IMultiplayerLogger logger)
+        public RelayNetworkProvider(RelayProviderSettings settings)
         {
             _settings = settings ?? RelayProviderSettings.Default();
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _transportPump = new MultiplayerTransportPump(_logger, "Relay");
+            _transportPump = new MultiplayerTransportPump();
         }
 
         public void SetLocalPeerId(string playerId)
@@ -165,8 +163,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 if (!RelayJoinCodeUtility.IsValid(joinCode))
                     return await FailAndShutdownAsync($"Relay GetJoinCodeAsync returned invalid join code '{joinCode ?? string.Empty}'.");
 
-                _logger.Info($"[Relay] Hosted allocation. Join code: {joinCode}");
-
                 var relayServerData = BuildRelayServerData(allocation, RelayConnectionType, isHostAllocation: true);
                 var netSettings = new NetworkSettings();
                 netSettings.WithRelayParameters(ref relayServerData);
@@ -189,7 +185,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             catch (Exception e)
             {
                 await SafeShutdownAfterFailureAsync();
-                _logger.Error($"[Relay] HostAsync failed: {e.Message}");
                 return SessionResult.Fail(e.Message);
             }
         }
@@ -237,8 +232,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     if (DateTime.UtcNow > deadline) return await FailAndShutdownAsync("Relay handshake timeout.");
                     await Task.Delay(50, ct);
                 }
-
-                _logger.Info($"[Relay] Joined allocation. Host={_hostPeerId}");
                 return SessionResult.Ok(normalizedJoinCode);
             }
             catch (OperationCanceledException)
@@ -249,7 +242,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             catch (Exception e)
             {
                 await SafeShutdownAfterFailureAsync();
-                _logger.Error($"[Relay] JoinAsync failed: {e.Message}");
                 return SessionResult.Fail(e.Message);
             }
         }
@@ -274,9 +266,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             {
                 await ShutdownTransportAsync();
             }
-            catch (Exception shutdownError)
+            catch (Exception)
             {
-                _logger.Warn($"[Relay] Shutdown after failure also failed: {shutdownError.Message}");
                 CleanupTransportImmediate();
             }
         }
@@ -285,7 +276,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             if (!_driver.IsCreated)
             {
-                _logger.Warn("[Relay] SendMessage ignored: driver is not created.");
                 return Task.CompletedTask;
             }
 
@@ -328,15 +318,13 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             if (UnityServices.State != ServicesInitializationState.Initialized)
             {
                 await UnityServices.InitializeAsync();
-                _logger.Info("[Relay] Unity Services initialized.");
             }
 
-            MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded(_logger);
+            MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded();
 
             if (!AuthenticationService.Instance.IsSignedIn)
             {
                 await AuthenticationService.Instance.SignInAnonymouslyAsync();
-                _logger.Info("[Relay] Signed in anonymously.");
             }
         }
 
@@ -494,7 +482,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 switch (eventType)
                 {
                     case NetworkEvent.Type.Connect:
-                        _logger.Info("[Relay] Client connected to host; sending Hello+Identity.");
                         SendFrame(_serverConnection, BuildHelloFrame(_localPeerId));
                         SendFrame(_serverConnection, BuildIdentityFrame(_localPeerId));
                         break;
@@ -502,7 +489,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         HandleFrame(_serverConnection, stream, isHostSide: false);
                         break;
                     case NetworkEvent.Type.Disconnect:
-                        _logger.Warn("[Relay] Client disconnected from host.");
                         _serverConnection = default;
                         if (!string.IsNullOrEmpty(_hostPeerId))
                             PeerDisconnected?.Invoke(_hostPeerId);
@@ -515,7 +501,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             if (!TryReadFrame(stream, out byte type, out byte[] body))
             {
-                _logger.Warn("[Relay] Failed to read frame.");
                 return;
             }
 
@@ -526,7 +511,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 case FrameUserData: HandleUserData(source, body, isHostSide); break;
                 case FrameBye:      break;
                 default:
-                    _logger.Warn($"[Relay] Unknown frame type {type}.");
                     break;
             }
         }
@@ -535,14 +519,12 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             if (body == null || body.Length < 4)
             {
-                _logger.Warn("[Relay] Invalid Hello frame.");
                 return;
             }
 
             uint version = BitConverter.ToUInt32(body, 0);
             if (version != ProtocolVersion)
             {
-                _logger.Warn($"[Relay] Protocol mismatch: remote={version}, local={ProtocolVersion}. Dropping.");
                 _driver.Disconnect(source);
                 return;
             }
@@ -565,7 +547,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             string peerId = body != null && body.Length > 0 ? Encoding.UTF8.GetString(body) : string.Empty;
             if (string.IsNullOrEmpty(peerId))
             {
-                _logger.Warn("[Relay] Empty Identity frame, ignoring.");
                 return;
             }
 
@@ -591,7 +572,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     out string senderId,
                     out byte[] payload))
             {
-                _logger.Warn("[Relay] Malformed UserData frame.");
                 return;
             }
 
@@ -604,8 +584,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     || string.IsNullOrWhiteSpace(
                         authoritativeSenderId))
                 {
-                    _logger.Warn(
-                        "[Relay] UserData arrived before an authenticated peer identity; dropping.");
                     return;
                 }
 
@@ -614,8 +592,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         authoritativeSenderId,
                         StringComparison.Ordinal))
                 {
-                    _logger.Warn(
-                        $"[Relay] Replaced spoofed sender '{senderId}' with transport identity '{authoritativeSenderId}'.");
                 }
 
                 senderId = authoritativeSenderId;
@@ -659,13 +635,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             if (!_driver.IsCreated || !connection.IsCreated || frame == null) return;
             if (frame.Length > MaxFrameBodyBytes + 3)
             {
-                _logger.Warn($"[Relay] Frame too large ({frame.Length}B), dropping.");
                 return;
             }
 
             if (_driver.BeginSend(connection, out var writer) != 0)
             {
-                _logger.Warn("[Relay] BeginSend failed.");
                 return;
             }
 
@@ -743,7 +717,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             for (int i = _observers.Count - 1; i >= 0; i--)
             {
                 try { _observers[i].OnNext(msg); }
-                catch (Exception e) { _logger.Warn($"[Relay] Observer error: {e.Message}"); }
+                catch (Exception) { }
             }
         }
 
@@ -768,9 +742,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 {
                     _driver.ScheduleUpdate().Complete();
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    _logger.Warn($"[Relay] Final transport update failed during shutdown: {e.Message}");
                 }
 
                 _driver.Dispose();
@@ -826,7 +799,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             const string msg = "Unity Relay SDK not installed. Add com.unity.services.relay + com.unity.transport " +
                                "and enable MOYVA_UGS_RELAY scripting define.";
-            _logger.Warn($"[Relay] {msg}");
             return SessionResult.Fail(msg);
         }
 

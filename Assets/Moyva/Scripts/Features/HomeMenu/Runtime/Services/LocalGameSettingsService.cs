@@ -148,7 +148,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 }
                 return CreateDefaultSettings();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return CreateDefaultSettings();
             }
@@ -227,7 +227,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             // 0..1 → -80..0 dB (логарифмічно).
             float db = linear01 <= 0.0001f ? -80f : Mathf.Log10(Mathf.Max(0.0001f, linear01)) * 20f;
             try { _mixerBindings.mixer.SetFloat(paramName, db); }
-            catch (Exception e) { }
+            catch (Exception) { }
         }
     }
 }

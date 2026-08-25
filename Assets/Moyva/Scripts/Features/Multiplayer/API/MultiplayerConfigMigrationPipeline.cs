@@ -4,19 +4,18 @@ using Kruty1918.Moyva.Multiplayer.Networking;
 namespace Kruty1918.Moyva.Multiplayer.Config
 {
     /// <summary>
-    /// Step-by-step migration pipeline for multiplayer config schema upgrades.
-    /// Ensures older persisted configs are migrated to the current runtime format.
+    /// Послідовно оновлює збережену конфігурацію мультиплеєра до поточної схеми.
     /// </summary>
     public static class MultiplayerConfigMigrationPipeline
     {
-        public static MultiplayerConfig MigrateToLatest(MultiplayerConfig source, IMultiplayerLogger logger = null)
+        /// <summary>Мігрує конфігурацію до поточної версії без зміни вихідного об'єкта.</summary>
+        public static MultiplayerConfig MigrateToLatest(MultiplayerConfig source)
         {
             if (source == null)
                 return MultiplayerConfig.Default();
 
             if (source.SchemaVersion <= 0)
             {
-                logger?.Warn("[MultiplayerConfigMigration] Invalid schema version detected. Falling back to defaults.");
                 return MultiplayerConfig.Default();
             }
 
@@ -25,20 +24,19 @@ namespace Kruty1918.Moyva.Multiplayer.Config
             {
                 migrated = migrated.SchemaVersion switch
                 {
-                    1 => MigrateV1ToV2(migrated, logger),
-                    2 => MigrateV2ToV3(migrated, logger),
-                    3 => MigrateV3ToV4(migrated, logger),
-                    4 => MigrateV4ToV5(migrated, logger),
-                    _ => MigrateUnknownLegacy(migrated, logger)
+                    1 => MigrateV1ToV2(migrated),
+                    2 => MigrateV2ToV3(migrated),
+                    3 => MigrateV3ToV4(migrated),
+                    4 => MigrateV4ToV5(migrated),
+                    _ => MigrateUnknownLegacy(migrated)
                 };
             }
 
             return migrated;
         }
 
-        private static MultiplayerConfig MigrateV1ToV2(MultiplayerConfig source, IMultiplayerLogger logger)
+        private static MultiplayerConfig MigrateV1ToV2(MultiplayerConfig source)
         {
-            logger?.Info("[MultiplayerConfigMigration] Migrating config v1 -> v2.");
             return new MultiplayerConfig(
                 schemaVersion: 2,
                 providerType: source.ProviderType,
@@ -54,9 +52,8 @@ namespace Kruty1918.Moyva.Multiplayer.Config
                 enableHostMigration: true);
         }
 
-        private static MultiplayerConfig MigrateV2ToV3(MultiplayerConfig source, IMultiplayerLogger logger)
+        private static MultiplayerConfig MigrateV2ToV3(MultiplayerConfig source)
         {
-            logger?.Info("[MultiplayerConfigMigration] Migrating config v2 -> v3.");
             return new MultiplayerConfig(
                 schemaVersion: 3,
                 providerType: source.ProviderType,
@@ -72,9 +69,8 @@ namespace Kruty1918.Moyva.Multiplayer.Config
                 enableHostMigration: true);
         }
 
-        private static MultiplayerConfig MigrateV3ToV4(MultiplayerConfig source, IMultiplayerLogger logger)
+        private static MultiplayerConfig MigrateV3ToV4(MultiplayerConfig source)
         {
-            logger?.Info("[MultiplayerConfigMigration] Migrating config v3 -> v4.");
             return new MultiplayerConfig(
                 schemaVersion: 4,
                 providerType: source.ProviderType,
@@ -91,10 +87,9 @@ namespace Kruty1918.Moyva.Multiplayer.Config
                 enableHostMigration: source.EnableHostMigration);
         }
 
-            private static MultiplayerConfig MigrateV4ToV5(MultiplayerConfig source, IMultiplayerLogger logger)
-            {
-                logger?.Info("[MultiplayerConfigMigration] Migrating config v4 -> v5.");
-                return new MultiplayerConfig(
+        private static MultiplayerConfig MigrateV4ToV5(MultiplayerConfig source)
+        {
+            return new MultiplayerConfig(
                 schemaVersion: 5,
                 providerType: source.ProviderType,
                 defaultSessionRules: source.DefaultSessionRules,
@@ -108,11 +103,10 @@ namespace Kruty1918.Moyva.Multiplayer.Config
                 gracefulReconnectWindowSeconds: 8f,
                 enableRelayProvider: source.EnableRelayProvider,
                 enableHostMigration: source.EnableHostMigration);
-            }
+        }
 
-        private static MultiplayerConfig MigrateUnknownLegacy(MultiplayerConfig source, IMultiplayerLogger logger)
+        private static MultiplayerConfig MigrateUnknownLegacy(MultiplayerConfig source)
         {
-            logger?.Warn($"[MultiplayerConfigMigration] Unsupported legacy schema '{source.SchemaVersion}'. Rebuilding to current schema with safe defaults.");
             return new MultiplayerConfig(
                 schemaVersion: MultiplayerConfig.CurrentSchemaVersion,
                 providerType: NormalizeProvider(source.ProviderType),

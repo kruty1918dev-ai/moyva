@@ -41,7 +41,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
                 var identity = new ParticipantIdentity(p.PlayerId, p.DisplayName);
                 _participants.Add(new Participant(identity, isHost: p.IsHost));
-                _logger.Info($"[Lobby] Participant added: {p.PlayerId} ({p.DisplayName})");
             }
 
             // Remove participants no longer in the lobby.
@@ -56,14 +55,12 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 if (!stillInLobby)
                 {
                     _participants.RemoveAt(i);
-                    _logger.Info($"[Lobby] Participant removed: {p.Identity.PlayerId}");
                 }
             }
         }
 
         private void OnKickedFromLobby(string reason)
         {
-            _logger.Warn($"Kicked from lobby: {reason}");
 
             // If the local player has already moved to the gameplay scene
             // (i.e. active scene name is not the HomeMenu scene), surface a
@@ -79,9 +76,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                     SceneManager.LoadScene("HomeMenu", LoadSceneMode.Single);
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                _logger.Warn($"Failed to schedule HomeMenu transition after host-left: {e.Message}");
             }
 
             _ = SafeCleanupAsync();
@@ -91,7 +87,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         {
             if (string.IsNullOrEmpty(peerId) || peerId == _localPlayerId) return;
             CancelPendingDisconnect(peerId);
-            _logger.Info($"[Net] Peer connected: {peerId}");
             // Lobby update will fill identity; nothing to add here unless missing.
         }
 
@@ -101,7 +96,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
             if (!_participants.Exists(p => p.Identity.PlayerId == peerId))
             {
-                _logger.Warn($"OnPeerDisconnected: unknown peer '{peerId}' - ignoring.");
                 return;
             }
 
@@ -116,18 +110,15 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             var leaving = _participants.Find(p => p.Identity.PlayerId == peerId);
             if (leaving == null)
             {
-                _logger.Warn($"OnPeerDisconnected: unknown peer '{peerId}' - ignoring.");
                 return;
             }
 
             _participants.Remove(leaving);
-            _logger.Info($"Participant '{peerId}' left. Remaining: {_participants.Count}");
 
             if (leaving.IsHost && _participants.Count > 0)
             {
                 if (_config != null && !_config.EnableHostMigration)
                 {
-                    _logger.Warn("Host disconnected and host migration feature toggle is disabled. Ending session.");
                     _failurePolicy.HandleNonRecoverable(FailureCategory.HostMigrationFailed, "Host migration is disabled by feature toggle.");
                     _ = SafeCleanupAsync();
                     return;
@@ -136,7 +127,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 var migrated = _hostMigration.ChooseNewHost(_participants);
                 if (migrated == null)
                 {
-                    _logger.Warn("Host disconnected and migration failed. Ending session.");
                     _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Host disconnected.");
                     _ = SafeCleanupAsync();
                     return;
@@ -148,7 +138,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
                 _isHost = string.Equals(migrated.Identity.PlayerId, _localPlayerId, StringComparison.Ordinal);
                 SaveMigrationCheckpoint();
-                _logger.Warn($"Host disconnected. Migrated host to '{migrated.Identity.PlayerId}'.");
                 return;
             }
 

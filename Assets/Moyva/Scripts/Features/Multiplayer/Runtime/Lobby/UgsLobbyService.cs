@@ -43,7 +43,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private const float PollBackoffSeconds = 20f;
         private const float JoinRequestTimeoutSeconds = 20f;
 
-        private readonly IMultiplayerLogger _logger;
         private readonly SemaphoreSlim _operationLock = new SemaphoreSlim(1, 1);
         private LobbyRoom _current;
         private LobbyState _state = LobbyState.Closed;
@@ -60,11 +59,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public event Action<LobbyRoom> LobbyUpdated;
         public event Action<string> KickedFromLobby;
         public event Action<LobbyState> StateChanged;
-
-        public UgsLobbyService(IMultiplayerLogger logger)
-        {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
 
         private Lobby _lobby;
 

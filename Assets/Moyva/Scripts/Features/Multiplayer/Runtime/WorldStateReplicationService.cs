@@ -29,16 +29,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private const byte SchemaVersion = 2;
         private const int MaxStatePayloadBytes =
             16 * 1024 * 1024;
-        private const string ModuleLogTag =
-            "[MoyvaConstructionModules]";
-
         private readonly IGameCommandSyncService _commandSync;
         private readonly INetworkProvider _network;
         private readonly ISessionManager _sessionManager;
         private readonly IConstructionSaveSnapshotSource _placementSnapshots;
         private readonly IConstructionSaveRestorer _placementRestorer;
         private readonly IConstructionSessionCommands _constructionSession;
-        private readonly IMultiplayerLogger _logger;
         private readonly EconomyManager _economyManager;
         private readonly List<IConstructionModuleStatePersistence>
             _stateProviders;
@@ -50,7 +46,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             IConstructionSaveSnapshotSource placementSnapshots,
             IConstructionSaveRestorer placementRestorer,
             IConstructionSessionCommands constructionSession,
-            IMultiplayerLogger logger,
             [InjectOptional] EconomyManager economyManager = null,
             [InjectOptional]
             List<IConstructionModuleStatePersistence>
@@ -62,7 +57,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _placementSnapshots = placementSnapshots;
             _placementRestorer = placementRestorer;
             _constructionSession = constructionSession;
-            _logger = logger;
             _economyManager = economyManager;
             _stateProviders =
                 stateProviders
@@ -96,14 +90,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             {
                 byte[] payload = BuildSnapshotPayload();
                 _commandSync.SendCommandToPeer(peerId, GameCommandType.WorldStateSnapshot, payload);
-                _logger.Info(
-                    $"{ModuleLogTag} world-state sent " +
-                    $"peer={peerId} schema={SchemaVersion} " +
-                    $"bytes={payload.Length}");
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                _logger.Warn($"[WorldStateReplication] Failed to build/send snapshot for '{peerId}': {e.Message}");
             }
         }
 
@@ -208,11 +197,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         provider.CaptureState()
                         ?? Array.Empty<byte>();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    _logger.Warn(
-                        $"{ModuleLogTag} world-state capture failed " +
-                        $"key={provider.StateKey} error={ex.Message}");
                     payload = Array.Empty<byte>();
                 }
 
@@ -278,19 +264,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         key,
                         out IConstructionModuleStatePersistence provider))
                 {
-                    _logger.Warn(
-                        $"{ModuleLogTag} world-state skipped " +
-                        $"key={key} reason=provider-missing");
                     continue;
                 }
 
                 provider.RestoreState(payload);
                 restored++;
             }
-
-            _logger.Info(
-                $"{ModuleLogTag} world-state module-states " +
-                $"restored={restored}/{stateCount}");
         }
 
         // ── Client side ────────────────────────────────────────────────────────
@@ -304,20 +283,15 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
             if (payload == null || payload.Length < 1)
             {
-                _logger.Warn("[WorldStateReplication] Received empty snapshot payload.");
                 return;
             }
 
             try
             {
                 ApplySnapshotPayload(payload);
-                _logger.Info(
-                    $"{ModuleLogTag} world-state applied " +
-                    $"host={senderId} bytes={payload.Length}");
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                _logger.Warn($"[WorldStateReplication] Failed to apply snapshot: {e.Message}");
             }
         }
 
@@ -330,9 +304,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             if (version != 1
                 && version != SchemaVersion)
             {
-                _logger.Warn(
-                    $"[WorldStateReplication] Unsupported snapshot version " +
-                    $"{version}; ignored.");
                 return;
             }
 

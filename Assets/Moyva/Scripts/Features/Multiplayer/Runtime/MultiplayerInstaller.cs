@@ -48,17 +48,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
     public sealed class MultiplayerInstaller : MonoInstaller
     {
-        private const string Prefix = "[MultiplayerInstaller]";
-
         // Bind minimal, switchable wrappers synchronously so ILobbyService and INetworkProvider
         // are always resolvable by other installers during scene startup.
         public override void InstallBindings()
         {
-
-            // Logging and config store required by switchable wrappers
-            Container.Bind<IMultiplayerLogger>()
-                .To<UnityMultiplayerLogger>()
-                .AsSingle();
 
             Container.Bind<IConfigStore>()
                 .To<BinaryConfigStore>()
@@ -68,8 +61,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 .FromMethod(ctx =>
                 {
                     var store = ctx.Container.Resolve<IConfigStore>();
-                    var logger = ctx.Container.Resolve<IMultiplayerLogger>();
-                    return MultiplayerConfigLifecycle.LoadValidateFreeze(store, logger);
+                    return MultiplayerConfigLifecycle.LoadValidateFreeze(store);
                 })
                 .AsSingle();
 
@@ -138,10 +130,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             {
                 if (!container.HasBinding(typeof(ILobbyService)))
                 {
-                    // Logging and config store required by switchable wrappers
-                    if (!container.HasBinding(typeof(IMultiplayerLogger)))
-                        container.Bind<IMultiplayerLogger>().To<UnityMultiplayerLogger>().AsSingle();
-
                     if (!container.HasBinding(typeof(IConfigStore)))
                         container.Bind<IConfigStore>().To<BinaryConfigStore>().AsSingle();
 
@@ -149,8 +137,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         container.Bind<MultiplayerConfig>().FromMethod(ctx =>
                         {
                             var store = ctx.Container.Resolve<IConfigStore>();
-                            var logger = ctx.Container.Resolve<IMultiplayerLogger>();
-                            return MultiplayerConfigLifecycle.LoadValidateFreeze(store, logger);
+                            return MultiplayerConfigLifecycle.LoadValidateFreeze(store);
                         }).AsSingle();
 
                     if (!container.HasBinding(typeof(SwitchableNetworkProvider)))
@@ -212,9 +199,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                                 canUseUgs = true;
                                 hasInternet = true;
                             }
-                            else
-                            {
-                            }
                         }
                         else
                         {
@@ -222,34 +206,27 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                             hasInternet = true;
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        Debug.LogError($"{Prefix} Exception during sign-in check: {ex.Message}");
-                    }
-                }
-                else
-                {
+                    catch (Exception) { }
                 }
 
                 if (!canUseUgs)
                 {
-                    try { hasInternet = await InternetChecker.HasInternetAsync(3, 3); } catch (Exception ex) { Debug.LogError($"{Prefix} HTTP probe failed: {ex.Message}"); hasInternet = false; }
+                    try { hasInternet = await InternetChecker.HasInternetAsync(3, 3); }
+                    catch (Exception) { hasInternet = false; }
                 }
             }
             catch (Exception)
             {
-                try { hasInternet = await InternetChecker.HasInternetAsync(3, 3); } catch (Exception innerEx) { Debug.LogError($"{Prefix} HTTP probe fallback failed: {innerEx.Message}"); hasInternet = false; }
+                try { hasInternet = await InternetChecker.HasInternetAsync(3, 3); }
+                catch (Exception) { hasInternet = false; }
             }
 
-            // We bound a preliminary MultiplayerConfig and logger synchronously in InstallBindings
+            // We bound a preliminary MultiplayerConfig synchronously in InstallBindings
             // so the switchable wrappers are resolvable during startup. Now compute the final
             // config taking connectivity into account and update the container + switchable
             // lobby provider accordingly.
             var store = container.Resolve<IConfigStore>();
-            IMultiplayerLogger logger = container.HasBinding(typeof(IMultiplayerLogger))
-                ? container.Resolve<IMultiplayerLogger>()
-                : null;
-            var cfg = MultiplayerConfigLifecycle.LoadValidateFreeze(store, logger);
+            var cfg = MultiplayerConfigLifecycle.LoadValidateFreeze(store);
             cfg = ApplyRiskFeatureToggles(cfg);
             MultiplayerConfig finalCfg;
             if (!canUseUgs)
@@ -305,7 +282,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 }
                 else
                 {
-                    var relayReflectionValid = RelayNetworkProvider.TryValidateReflectionBindings(out var reflectionError);
+                    var relayReflectionValid = RelayNetworkProvider.TryValidateReflectionBindings(out _);
                     if (cfg.ProviderType == NetworkProviderType.Relay && !relayReflectionValid)
                     {
                         var fallbackType = cfg.FallbackProviderType == NetworkProviderType.Relay

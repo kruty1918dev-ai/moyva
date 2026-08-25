@@ -33,7 +33,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 if (_lobby != null && _current != null)
                 {
-                    _logger.Warn($"[UgsLobby] CreateRoomAsync ignored because local player is already in lobby '{_current.Name}' id={_current.LobbyId}.");
                     return _current;
                 }
 
@@ -60,16 +59,12 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 {
                     _lobby = await LobbyService.Instance.CreateLobbyAsync(options.Name, options.MaxPlayers, createOptions);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    _logger.Warn($"[UgsLobby] CreateLobbyAsync failed: {e}");
-                    if (e is NullReferenceException)
-                        _logger.Warn("[UgsLobby] CreateLobbyAsync null reference during UGS lobby creation.");
                     throw;
                 }
                 if (_lobby == null)
                 {
-                    _logger.Warn("[UgsLobby] CreateLobbyAsync returned null.");
                     return null;
                 }
 
@@ -79,7 +74,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 PublishState(_current.State);
 
                 StartLoops();
-                _logger.Info($"[UgsLobby] Created '{options.Name}' id={_lobby.Id} code={_lobby.LobbyCode} relay={initialRelayJoinCode}");
                 return _current;
             }
             finally
@@ -113,7 +107,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 }
                 catch (LobbyServiceException e) when (e.Reason == LobbyExceptionReason.Conflict || e.Reason == LobbyExceptionReason.LobbyConflict)
                 {
-                    _logger.Warn($"[UgsLobby] JoinByCodeAsync: already member of lobby '{lobbyCode}'; returning current lobby.");
                     if (_current != null)
                         return _current;
 
@@ -128,7 +121,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
                 if (_lobby == null)
                 {
-                    _logger.Warn("[UgsLobby] JoinLobbyByCodeAsync returned null.");
                     return null;
                 }
 
@@ -138,7 +130,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 PublishState(_current.State);
 
                 StartLoops();
-                _logger.Info($"[UgsLobby] Joined by code '{lobbyCode}' id={_lobby.Id}");
                 return _current;
             }
             finally
@@ -157,7 +148,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             if (room.HasPassword && !LobbyPasswordHasher.Verify(password, room.PasswordHash))
             {
-                _logger.Warn($"[UgsLobby] JoinByCodeWithPasswordAsync: невірний пароль для '{lobbyCode}'.");
                 try { await LeaveAsync(ct).ConfigureAwait(false); } catch { }
                 throw new WrongPasswordException();
             }
@@ -188,7 +178,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     $"JoinLobbyByIdAsync('{lobbyId}')");
                 if (_lobby == null)
                 {
-                    _logger.Warn("[UgsLobby] JoinLobbyByIdAsync returned null.");
                     return null;
                 }
                 _isHost = false;
@@ -197,7 +186,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 PublishState(_current.State);
 
                 StartLoops();
-                _logger.Info($"[UgsLobby] Joined by id '{lobbyId}'");
                 return _current;
             }
             finally

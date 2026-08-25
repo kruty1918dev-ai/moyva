@@ -39,7 +39,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     return joinedWithoutPassword;
 
                 try { await _lobbyService.LeaveAsync(ct); }
-                catch (Exception e) { }
+                catch (Exception) { }
 
                 probe = new ProbeResult(true, room.Name);
             }
@@ -209,7 +209,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
 

@@ -22,7 +22,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var playerId = AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn
                 ? AuthenticationService.Instance.PlayerId
                 : "<not-signed-in>";
-            _logger.Trace($"[UgsLobby] {action} context: profile={profile}, playerId={playerId}, services={UnityServices.State}, signedIn={(AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn)}.");
         }
 
         private async Task PublishReconnectRecordsForRemovedPlayersAsync(LobbyRoom previous, LobbyRoom current, CancellationToken ct)

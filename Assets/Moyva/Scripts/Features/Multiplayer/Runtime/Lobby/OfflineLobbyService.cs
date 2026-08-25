@@ -13,7 +13,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
     /// </summary>
     public sealed class OfflineLobbyService : ILobbyService
     {
-        private readonly IMultiplayerLogger _logger;
         private LobbyRoom _current;
         private LobbyState _state = LobbyState.Closed;
 
@@ -25,11 +24,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public event Action<string> KickedFromLobby;
 #pragma warning restore CS0067
         public event Action<LobbyState> StateChanged;
-
-        public OfflineLobbyService(IMultiplayerLogger logger = null)
-        {
-            _logger = logger;
-        }
 
         public Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, CancellationToken ct = default)
         {
@@ -44,8 +38,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             _current = new LobbyRoom(lobbyId, code, options.Name, options.MaxPlayers,
                 options.IsPrivate, hostId, relayJoinCode: options.RelayJoinCode, players: players);
-
-            _logger?.Info($"[OfflineLobby] Created room '{options.Name}' code={code}");
             LobbyUpdated?.Invoke(_current);
             PublishState(LobbyState.Open);
             return Task.FromResult(_current);
@@ -70,8 +62,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 hostPlayerId: hostId,
                 relayJoinCode: code,
                 players: new List<LobbyPlayer>());
-
-            _logger?.Info($"[OfflineLobby] Joined synthetic room code={code}");
             LobbyUpdated?.Invoke(_current);
             PublishState(LobbyState.Open);
             return Task.FromResult(_current);

@@ -25,7 +25,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         INetworkPeerIdentityConfigurator
     {
         private readonly MultiplayerConfig _config;
-        private readonly IMultiplayerLogger _logger;
         private readonly MultiplayerTransportPump _transportPump;
         private string _configuredLocalPeerId;
 
@@ -37,11 +36,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         public IObservable<NetworkMessage> Messages => new MessageObservable(_observers);
 
-        public LanNetworkProvider(MultiplayerConfig config, IMultiplayerLogger logger)
+        public LanNetworkProvider(MultiplayerConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _transportPump = new MultiplayerTransportPump(_logger, "Lan");
+            _transportPump = new MultiplayerTransportPump();
         }
 
         private static string GetLocalIPAddress()
@@ -128,12 +126,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                         var ip = GetLocalIPAddress() ?? "127.0.0.1";
                         var joinCode = $"lan:{ip}:{LanLobbyService.DefaultPort}";
-                        _logger.Info($"[Lan] Hosted on {ip}:{LanLobbyService.DefaultPort}");
                         return SessionResult.Ok(joinCode);
                     }
                     catch (Exception e)
                     {
-                        _logger.Error($"[Lan] Host failed: {e.Message}");
                         return SessionResult.Fail(e.Message);
                     }
                 }
@@ -175,8 +171,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                             if (DateTime.UtcNow > deadline) return SessionResult.Fail("LAN handshake timeout.");
                             await Task.Delay(50, ct);
                         }
-
-                        _logger.Info($"[Lan] Joined host={_hostPeerId}");
                         return SessionResult.Ok(joinCode);
                     }
                     catch (OperationCanceledException)
@@ -185,7 +179,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     }
                     catch (Exception e)
                     {
-                        _logger.Error($"[Lan] Join failed: {e.Message}");
                         return SessionResult.Fail(e.Message);
                     }
                 }
@@ -227,7 +220,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         switch (eventType)
                         {
                             case NetworkEvent.Type.Connect:
-                                _logger.Info("[Lan] Connected to host; sending Hello+Identity.");
                                 SendFrame(_serverConnection, BuildHelloFrame(_localPeerId));
                                 SendFrame(_serverConnection, BuildIdentityFrame(_localPeerId));
                                 break;
@@ -235,7 +227,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                                 HandleFrame(_serverConnection, stream, isHostSide: false);
                                 break;
                             case NetworkEvent.Type.Disconnect:
-                                _logger.Warn("[Lan] Disconnected from host.");
                                 _serverConnection = default;
                                 if (!string.IsNullOrEmpty(_hostPeerId))
                                     PeerDisconnected?.Invoke(_hostPeerId);
@@ -248,7 +239,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 {
                     if (!TryReadFrame(stream, out byte type, out byte[] body))
                     {
-                        _logger.Warn("[Lan] Failed to read frame.");
                         return;
                     }
 
@@ -259,7 +249,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         case FrameUserData: HandleUserData(source, body, isHostSide); break;
                         case FrameBye:      break;
                         default:
-                            _logger.Warn($"[Lan] Unknown frame type {type}.");
                             break;
                     }
                 }
@@ -268,14 +257,12 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 {
                     if (body == null || body.Length < 4)
                     {
-                        _logger.Warn("[Lan] Invalid Hello frame.");
                         return;
                     }
 
                     uint version = BitConverter.ToUInt32(body, 0);
                     if (version != 1)
                     {
-                        _logger.Warn($"[Lan] Protocol mismatch: remote={version}, local=1. Dropping.");
                         _driver.Disconnect(source);
                         return;
                     }
@@ -298,7 +285,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     string peerId = body != null && body.Length > 0 ? System.Text.Encoding.UTF8.GetString(body) : string.Empty;
                     if (string.IsNullOrEmpty(peerId))
                     {
-                        _logger.Warn("[Lan] Empty Identity frame, ignoring.");
                         return;
                     }
 
@@ -324,7 +310,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                             out string senderId,
                             out byte[] payload))
                     {
-                        _logger.Warn("[Lan] Malformed UserData frame.");
                         return;
                     }
 
@@ -337,8 +322,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                             || string.IsNullOrWhiteSpace(
                                 authoritativeSenderId))
                         {
-                            _logger.Warn(
-                                "[Lan] UserData arrived before peer identity; dropping.");
                             return;
                         }
 
@@ -347,8 +330,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                                 authoritativeSenderId,
                                 StringComparison.Ordinal))
                         {
-                            _logger.Warn(
-                                $"[Lan] Replaced spoofed sender '{senderId}' with transport identity '{authoritativeSenderId}'.");
                         }
 
                         senderId = authoritativeSenderId;
@@ -382,7 +363,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 {
                     if (!_driver.IsCreated)
                     {
-                        _logger.Warn("[Lan] SendMessage ignored: driver is not created.");
                         return Task.CompletedTask;
                     }
 
@@ -423,11 +403,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 private void SendFrame(NetworkConnection connection, byte[] frame)
                 {
                     if (!_driver.IsCreated || !connection.IsCreated || frame == null) return;
-                    if (frame.Length > MaxFrameBodyBytes + 3) { _logger.Warn($"[Lan] Frame too large ({frame.Length}B), dropping."); return; }
+                    if (frame.Length > MaxFrameBodyBytes + 3) { return; }
 
                     if (_driver.BeginSend(connection, out var writer) != 0)
                     {
-                        _logger.Warn("[Lan] BeginSend failed.");
                         return;
                     }
 
@@ -515,7 +494,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     for (int i = _observers.Count - 1; i >= 0; i--)
                     {
                         try { _observers[i].OnNext(msg); }
-                        catch (Exception e) { _logger.Warn($"[Lan] Observer error: {e.Message}"); }
+                        catch (Exception) { }
                     }
                 }
 

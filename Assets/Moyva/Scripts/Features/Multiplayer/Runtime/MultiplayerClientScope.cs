@@ -1,6 +1,5 @@
 using System;
 using System.Text;
-using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Shared.Common;
 using Unity.Services.Authentication;
 
@@ -15,7 +14,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         public static string BuildScopedFileName(string fileName) => Scope.BuildScopedFileName(fileName);
         public static string CreateDefaultPlayerName() => Scope.CreateDefaultPlayerName();
 
-        public static void ApplyAuthenticationProfileIfNeeded(IMultiplayerLogger logger = null)
+        public static void ApplyAuthenticationProfileIfNeeded()
         {
             if (Scope.IsDefault)
                 return;
@@ -28,11 +27,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
                 authentication.SwitchProfile(BuildAuthenticationProfileName(Scope.ScopeId));
             }
-            catch (Exception exception)
+            catch (Exception)
             {
-                logger?.Warn(
-                    $"[MultiplayerClientScope] Failed to switch UGS auth profile " +
-                    $"for scope '{Scope.ScopeId}': {exception.Message}");
             }
         }
 

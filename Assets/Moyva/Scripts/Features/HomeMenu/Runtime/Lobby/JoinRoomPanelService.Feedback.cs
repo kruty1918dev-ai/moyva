@@ -27,7 +27,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 if (_networkProvider != null)
                     await _networkProvider.LeaveSessionAsync(ct);
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
 
@@ -36,7 +36,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 if (_lobbyService != null)
                     await _lobbyService.LeaveAsync(ct);
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
 
@@ -120,7 +120,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
             return new ProbeResult(false, target.Value);

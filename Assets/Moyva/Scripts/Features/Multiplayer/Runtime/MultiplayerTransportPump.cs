@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Kruty1918.Moyva.Multiplayer.Core;
+using UnityEngine;
 
 namespace Kruty1918.Moyva.Multiplayer.Networking
 {
@@ -9,20 +9,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     {
         private const int PumpDelayMilliseconds = 16;
 
-        private readonly IMultiplayerLogger _logger;
-        private readonly string _transportName;
         private CancellationTokenSource _cancellation;
         private Task _task;
-
-        public MultiplayerTransportPump(
-            IMultiplayerLogger logger,
-            string transportName)
-        {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _transportName = string.IsNullOrWhiteSpace(transportName)
-                ? "Transport"
-                : transportName.Trim();
-        }
 
         public void Start(
             CancellationToken externalToken,
@@ -80,7 +68,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 }
                 catch (Exception exception)
                 {
-                    _logger.Warn($"[{_transportName}] Pump error: {exception.Message}");
+                    Debug.LogError($"Multiplayer transport update failed: {exception.Message}");
+                    return;
                 }
 
                 try

@@ -5,79 +5,55 @@ using Kruty1918.Moyva.Multiplayer.Networking;
 namespace Kruty1918.Moyva.Multiplayer.Config
 {
     /// <summary>
-    /// Unified runtime lifecycle for multiplayer config:
-    /// Load -> Validate -> Freeze.
+    /// Завантажує, нормалізує та заморожує конфігурацію мультиплеєра.
     /// </summary>
     public static class MultiplayerConfigLifecycle
     {
-        public static MultiplayerConfig LoadValidateFreeze(IConfigStore store, IMultiplayerLogger logger = null)
+        /// <summary>Завантажує конфігурацію зі сховища та повертає валідний runtime-знімок.</summary>
+        public static MultiplayerConfig LoadValidateFreeze(IConfigStore store)
         {
             if (store == null)
                 throw new ArgumentNullException(nameof(store));
 
             MultiplayerConfig loaded = store.Exists() ? store.Load() : MultiplayerConfig.Default();
-            return ValidateAndFreeze(loaded, logger);
+            return ValidateAndFreeze(loaded);
         }
 
-        public static MultiplayerConfig ValidateAndFreeze(MultiplayerConfig config, IMultiplayerLogger logger = null)
+        /// <summary>Нормалізує конфігурацію та повертає незалежний незмінний знімок.</summary>
+        public static MultiplayerConfig ValidateAndFreeze(MultiplayerConfig config)
         {
-            bool corrected = false;
-
             if (config == null)
-            {
-                corrected = true;
                 config = MultiplayerConfig.Default();
-            }
 
             int schemaVersion = MultiplayerConfig.CurrentSchemaVersion;
-            if (schemaVersion != config.SchemaVersion)
-                corrected = true;
 
             NetworkProviderType providerType = IsDefinedNetworkProvider(config.ProviderType)
                 ? config.ProviderType
                 : NetworkProviderType.Offline;
-            if (providerType != config.ProviderType)
-                corrected = true;
 
             NetworkProviderType fallbackProviderType = IsDefinedNetworkProvider(config.FallbackProviderType)
                 ? config.FallbackProviderType
                 : NetworkProviderType.Offline;
-            if (fallbackProviderType != config.FallbackProviderType)
-                corrected = true;
 
             SessionRules rules = config.DefaultSessionRules ?? SessionRules.Default();
-            if (config.DefaultSessionRules == null)
-                corrected = true;
 
             SessionMode mode = Enum.IsDefined(typeof(SessionMode), rules.Mode)
                 ? rules.Mode
                 : SessionMode.Multiplayer;
-            if (mode != rules.Mode)
-                corrected = true;
 
             int maxParticipants = rules.MaxParticipants >= 1 ? rules.MaxParticipants : 1;
-            if (maxParticipants != rules.MaxParticipants)
-                corrected = true;
 
             float reconnectTolerance = config.ReconnectLocalTimeToleranceSeconds >= 0f
                 ? config.ReconnectLocalTimeToleranceSeconds
                 : 0f;
-            if (Math.Abs(reconnectTolerance - config.ReconnectLocalTimeToleranceSeconds) > 0.0001f)
-                corrected = true;
 
             float gracefulReconnectWindow = config.GracefulReconnectWindowSeconds >= 1f
                 ? config.GracefulReconnectWindowSeconds
                 : 1f;
-            if (Math.Abs(gracefulReconnectWindow - config.GracefulReconnectWindowSeconds) > 0.0001f)
-                corrected = true;
 
             RelayProviderSettings relay = FreezeRelay(config.RelaySettings);
-            if (config.RelaySettings == null)
-                corrected = true;
 
             WebSocketProviderSettings webSocket = FreezeWebSocket(config.WebSocketSettings);
-            if (config.WebSocketSettings == null)
-                corrected = true;
 
             SessionRules frozenRules = new SessionRules(
                 mode,
@@ -99,9 +75,6 @@ namespace Kruty1918.Moyva.Multiplayer.Config
                 gracefulReconnectWindow,
                 config.EnableRelayProvider,
                 config.EnableHostMigration);
-
-            if (corrected)
-                logger?.Warn("Multiplayer config normalized during runtime lifecycle (Load/Validate/Freeze).");
 
             return frozen;
         }
@@ -132,15 +105,5 @@ namespace Kruty1918.Moyva.Multiplayer.Config
                 source.ReconnectDelaySeconds);
         }
 
-        private static int Clamp(int value, int min, int max)
-        {
-            if (value < min)
-                return min;
-
-            if (value > max)
-                return max;
-
-            return value;
-        }
     }
 }

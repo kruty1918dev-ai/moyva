@@ -360,7 +360,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 return _configStore?.Load()?.ReconnectLocalTimeToleranceSeconds ?? 120f;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return 120f;
             }

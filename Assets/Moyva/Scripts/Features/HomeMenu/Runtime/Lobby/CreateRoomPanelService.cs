@@ -231,13 +231,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (leaveLobby)
             {
                 try { if (_lobbyService != null) await _lobbyService.LeaveAsync(); }
-                catch (Exception leaveError) { }
+                catch (Exception) { }
             }
 
             if (stopTransport)
             {
                 try { if (_networkProvider != null) await _networkProvider.LeaveSessionAsync(); }
-                catch (Exception leaveError) { }
+                catch (Exception) { }
             }
 
             _infoPanelService?.Show(new InfoMessage("Помилка кімнати", error));

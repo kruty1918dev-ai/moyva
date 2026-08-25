@@ -99,7 +99,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         _loader?.StopOverlay(true);
                     });
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                 }
             }

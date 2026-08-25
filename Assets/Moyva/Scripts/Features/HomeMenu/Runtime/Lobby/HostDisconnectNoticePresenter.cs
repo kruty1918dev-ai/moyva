@@ -25,7 +25,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
                 var message = BuildMessage(reason);
                 _infoPanelService?.Show(new InfoMessage("Хост покинув гру", message));
             }
-            catch (Exception e)
+            catch (Exception)
             {
             }
         }

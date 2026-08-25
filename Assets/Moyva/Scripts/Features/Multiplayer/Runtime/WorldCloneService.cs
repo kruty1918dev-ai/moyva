@@ -11,17 +11,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// </summary>
     internal sealed class WorldCloneService : IWorldCloneService
     {
-        private readonly IMultiplayerLogger _logger;
-
-        public WorldCloneService(IMultiplayerLogger logger)
-        {
-            _logger = logger;
-        }
-
         public string CloneWorld(string sourceWorldId, SessionRules newRules, SlotMapping mapping)
         {
             string newWorldId = Guid.NewGuid().ToString("N");
-            _logger.Info($"WorldCloneService: клонування '{sourceWorldId}' → '{newWorldId}' (режим: {newRules.Mode})");
             return newWorldId;
         }
     }

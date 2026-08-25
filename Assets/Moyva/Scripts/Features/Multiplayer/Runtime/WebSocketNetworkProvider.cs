@@ -56,7 +56,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 throwOnInvalidBytes: true);
 
         private readonly WebSocketProviderSettings _settings;
-        private readonly IMultiplayerLogger _logger;
         private readonly IMultiplayerQosMonitorService _qosMonitor;
         private readonly List<IObserver<NetworkMessage>> _observers = new List<IObserver<NetworkMessage>>();
 
@@ -71,10 +70,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         public event Action<string> PeerDisconnected;
         public IObservable<NetworkMessage> Messages => new MessageObservable(_observers);
 
-        public WebSocketNetworkProvider(WebSocketProviderSettings settings, IMultiplayerLogger logger, IMultiplayerQosMonitorService qosMonitor = null)
+        public WebSocketNetworkProvider(WebSocketProviderSettings settings, IMultiplayerQosMonitorService qosMonitor = null)
         {
             _settings = settings ?? WebSocketProviderSettings.Default();
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _qosMonitor = qosMonitor;
         }
 
@@ -110,9 +108,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 {
                     await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "leave", CancellationToken.None);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    _logger.Warn($"[WebSocket] Close error: {e.Message}");
                 }
             }
             _socket?.Dispose();
@@ -124,7 +121,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             if (_socket?.State != WebSocketState.Open)
             {
-                _logger.Warn("[WebSocket] SendMessage: socket not open.");
                 return;
             }
 
@@ -134,10 +130,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 var frame = BuildDataFrame(_localPeerId ?? "unknown", payload);
                 await _socket.SendAsync(new ArraySegment<byte>(frame), WebSocketMessageType.Binary, true, ct);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 _qosMonitor?.RecordPacketDropped("websocket-send-failed");
-                _logger.Error($"[WebSocket] SendMessage failed: {e.Message}");
             }
         }
 
@@ -153,7 +148,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             }
             catch (Exception e)
             {
-                _logger.Error($"[WebSocket] Connect failed: {e.Message}");
                 return SessionResult.Fail(e.Message);
             }
 
@@ -165,7 +159,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             }
             catch (Exception e)
             {
-                _logger.Error($"[WebSocket] Handshake send failed: {e.Message}");
                 return SessionResult.Fail(e.Message);
             }
 
@@ -177,8 +170,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             // Start background receive loop
             _receiveCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             _ = ReceiveLoopAsync(_receiveCts.Token);
-
-            _logger.Info($"[WebSocket] Connected to {_settings.ServerUrl}:{_settings.Port}, session={sessionId}");
             return SessionResult.Ok(sessionId);
         }
 
@@ -250,7 +241,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        _logger.Info("[WebSocket] Server closed connection.");
                         break;
                     }
 
@@ -268,10 +258,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 {
                     break;
                 }
-                catch (WebSocketException wse)
+                catch (WebSocketException)
                 {
                     _qosMonitor?.RecordPacketDropped("websocket-receive-error");
-                    _logger.Error($"[WebSocket] Receive error: {wse.Message}");
                     if (!ct.IsCancellationRequested && _reconnectCount < _settings.ReconnectAttempts)
                     {
                         if (await TryReconnectAsync(ct))
@@ -287,13 +276,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             if (text.StartsWith("PEER_CONNECTED:"))
             {
                 var peerId = text.Substring("PEER_CONNECTED:".Length);
-                _logger.Info($"[WebSocket] Peer connected: {peerId}");
                 PeerConnected?.Invoke(peerId);
             }
             else if (text.StartsWith("PEER_DISCONNECTED:"))
             {
                 var peerId = text.Substring("PEER_DISCONNECTED:".Length);
-                _logger.Info($"[WebSocket] Peer disconnected: {peerId}");
                 PeerDisconnected?.Invoke(peerId);
             }
         }
@@ -308,8 +295,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             {
                 _qosMonitor?.RecordPacketDropped(
                     "websocket-malformed-data-frame");
-                _logger.Warn(
-                    $"[WebSocket] Dropped malformed binary frame ({count} bytes).");
                 return;
             }
 
@@ -324,7 +309,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             _reconnectCount++;
             _qosMonitor?.RecordReconnect("websocket", _reconnectCount);
-            _logger.Warn($"[WebSocket] Reconnect attempt {_reconnectCount}/{_settings.ReconnectAttempts}...");
 
             await Task.Delay(TimeSpan.FromSeconds(_settings.ReconnectDelaySeconds), ct);
 
@@ -337,13 +321,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 var ack = await WaitForAckAsync(ct);
                 if (ack.Success)
                 {
-                    _logger.Info($"[WebSocket] Reconnected successfully.");
                     return true;
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                _logger.Error($"[WebSocket] Reconnect failed: {e.Message}");
             }
             return false;
         }
