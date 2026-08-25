@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Kruty1918.Moyva.FogOfWar.API;
-using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Jsonization;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
@@ -104,59 +98,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             float resolvedSurfaceOffsetY =
                 surfaceCalibration.OffsetY;
 
-            ResolveLogicalSurfaceRange(
-                context,
-                width,
-                height,
-                out float minimumLogicalSurfaceHeight,
-                out float maximumLogicalSurfaceHeight);
-
-            float sharedBottomY =
-                minimumLogicalSurfaceHeight
-                + resolvedSurfaceOffsetY
-                - screenSettings.CurtainWorldDepth
-                - screenSettings.CurtainBottomPadding;
-
             _vertices.Clear();
             _uvs.Clear();
-            _colors.Clear();
             _triangles.Clear();
-            _diagnosticSegments.Clear();
-
-            int revealedCellCount = 0;
-            int unexploredCellCount = 0;
-            int boundaryEdgeCount = 0;
-            int outsideBoundaryCount = 0;
-            int topCapCount = 0;
-
-            int perEdgeProbeSuccessCount = 0;
-            int perEdgeProbeFailureCount = 0;
-
-            float minimumPerEdgeProbeOffset =
-                float.PositiveInfinity;
-
-            float maximumPerEdgeProbeOffset =
-                float.NegativeInfinity;
-
-            int leftEdges = 0;
-            int rightEdges = 0;
-            int downEdges = 0;
-            int upEdges = 0;
-
-            long revealedSumX = 0;
-            long revealedSumY = 0;
-
-            float minimumTopY =
-                float.PositiveInfinity;
-
-            float maximumTopY =
-                float.NegativeInfinity;
-
-            float minimumBottomY =
-                float.PositiveInfinity;
-
-            float maximumBottomY =
-                float.NegativeInfinity;
 
             for (int y = 0;
                  y < height;
@@ -172,13 +116,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                             x,
                             y))
                     {
-                        unexploredCellCount++;
                         continue;
                     }
-
-                    revealedCellCount++;
-                    revealedSumX += x;
-                    revealedSumY += y;
 
                     var cell =
                         new Vector2Int(
@@ -280,80 +219,28 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                             hiddenHeight
                             + resolvedSurfaceOffsetY;
 
-                        bool revealedProbeSucceeded =
-                            false;
-
-                        bool hiddenProbeSucceeded =
-                            false;
-
                         if (screenSettings
                             .CurtainPerEdgeSurfaceProbe)
                         {
-                            revealedProbeSucceeded =
-                                TryProbeActualSurfaceHeight(
+                            if (TryProbeActualSurfaceHeight(
                                     cellCenter,
                                     revealedHeight,
                                     screenSettings,
-                                    out float actualRevealedSurfaceY);
-
-                            if (revealedProbeSucceeded)
+                                    out float actualRevealedSurfaceY))
                             {
                                 revealedSurfaceY =
                                     actualRevealedSurfaceY;
-
-                                float revealedProbeOffset =
-                                    actualRevealedSurfaceY
-                                    - revealedHeight;
-
-                                minimumPerEdgeProbeOffset =
-                                    Mathf.Min(
-                                        minimumPerEdgeProbeOffset,
-                                        revealedProbeOffset);
-
-                                maximumPerEdgeProbeOffset =
-                                    Mathf.Max(
-                                        maximumPerEdgeProbeOffset,
-                                        revealedProbeOffset);
                             }
 
-                            if (!neighbourOutside)
+                            if (!neighbourOutside
+                                && TryProbeActualSurfaceHeight(
+                                    neighbourCenter,
+                                    hiddenHeight,
+                                    screenSettings,
+                                    out float actualHiddenSurfaceY))
                             {
-                                hiddenProbeSucceeded =
-                                    TryProbeActualSurfaceHeight(
-                                        neighbourCenter,
-                                        hiddenHeight,
-                                        screenSettings,
-                                        out float actualHiddenSurfaceY);
-
-                                if (hiddenProbeSucceeded)
-                                {
-                                    hiddenSurfaceY =
-                                        actualHiddenSurfaceY;
-
-                                    float hiddenProbeOffset =
-                                        actualHiddenSurfaceY
-                                        - hiddenHeight;
-
-                                    minimumPerEdgeProbeOffset =
-                                        Mathf.Min(
-                                            minimumPerEdgeProbeOffset,
-                                            hiddenProbeOffset);
-
-                                    maximumPerEdgeProbeOffset =
-                                        Mathf.Max(
-                                            maximumPerEdgeProbeOffset,
-                                            hiddenProbeOffset);
-                                }
-                            }
-
-                            if (revealedProbeSucceeded
-                                || hiddenProbeSucceeded)
-                            {
-                                perEdgeProbeSuccessCount++;
-                            }
-                            else
-                            {
-                                perEdgeProbeFailureCount++;
+                                hiddenSurfaceY =
+                                    actualHiddenSurfaceY;
                             }
                         }
 
@@ -361,12 +248,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                             Mathf.Max(
                                 revealedSurfaceY,
                                 hiddenSurfaceY);
-
-                        ResolveBoundaryEndpointKeys(
-                            cell,
-                            directionIndex,
-                            out Vector2Int endpointAKey,
-                            out Vector2Int endpointBKey);
 
                         float edgeTopY =
                             edgeSurfaceY
@@ -443,86 +324,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         bottomA.y = bottomAY;
                         bottomB.y = bottomBY;
 
-                        float segmentMinimumTopY =
-                            Mathf.Min(
-                                topAY,
-                                topBY);
-
-                        float segmentMaximumTopY =
-                            Mathf.Max(
-                                topAY,
-                                topBY);
-
-                        float segmentMinimumBottomY =
-                            Mathf.Min(
-                                bottomAY,
-                                bottomBY);
-
-                        float segmentMaximumBottomY =
-                            Mathf.Max(
-                                bottomAY,
-                                bottomBY);
-
-                        boundaryEdgeCount++;
-
-                        if (neighbourOutside)
-                            outsideBoundaryCount++;
-
-                        switch (directionIndex)
-                        {
-                            case 0:
-                                leftEdges++;
-                                break;
-
-                            case 1:
-                                rightEdges++;
-                                break;
-
-                            case 2:
-                                downEdges++;
-                                break;
-
-                            default:
-                                upEdges++;
-                                break;
-                        }
-
-                        minimumTopY =
-                            Mathf.Min(
-                                minimumTopY,
-                                segmentMinimumTopY);
-
-                        maximumTopY =
-                            Mathf.Max(
-                                maximumTopY,
-                                segmentMaximumTopY);
-
-                        minimumBottomY =
-                            Mathf.Min(
-                                minimumBottomY,
-                                segmentMinimumBottomY);
-
-                        maximumBottomY =
-                            Mathf.Max(
-                                maximumBottomY,
-                                segmentMaximumBottomY);
-
-                        Color32 debugColor =
-                            ResolveDebugColor(
-                                screenSettings,
-                                cell,
-                                directionIndex,
-                                segmentMaximumTopY,
-                                revealedHeight,
-                                hiddenHeight);
-
                         AddQuad(
                             bottomA,
                             bottomB,
                             topB,
                             topA,
-                            outward,
-                            debugColor);
+                            outward);
 
                         if (buildTopLip)
                         {
@@ -569,77 +376,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                                 capInnerA,
                                 capInnerB,
                                 capOuterB,
-                                capOuterA,
-                                debugColor);
-
-                            topCapCount++;
+                                capOuterA);
                         }
-
-                        _diagnosticSegments.Add(
-                            new DiagnosticSegment(
-                                cell,
-                                neighbour,
-                                directionIndex,
-                                cellCenter,
-                                revealedHeight,
-                                hiddenHeight,
-                                topAY,
-                                topBY,
-                                bottomAY,
-                                bottomBY,
-                                endpointAKey,
-                                endpointBKey,
-                                neighbourOutside));
                     }
                 }
             }
 
             ApplyMesh();
-
-            Vector2 revealedCenter =
-                revealedCellCount > 0
-                    ? new Vector2(
-                        (float)revealedSumX
-                            / revealedCellCount,
-                        (float)revealedSumY
-                            / revealedCellCount)
-                    : new Vector2(
-                        (width - 1) * 0.5f,
-                        (height - 1) * 0.5f);
-
-            LogDiagnosticsIfNeeded(
-                screenSettings,
-                fogPixels,
-                width,
-                height,
-                context,
-                gridOrigin,
-                xBasis,
-                yBasis,
-                referenceCellSize,
-                revealedCellCount,
-                unexploredCellCount,
-                boundaryEdgeCount,
-                outsideBoundaryCount,
-                topCapCount,
-                buildTopLip,
-                surfaceCalibration,
-                minimumLogicalSurfaceHeight,
-                maximumLogicalSurfaceHeight,
-                sharedBottomY,
-                leftEdges,
-                rightEdges,
-                downEdges,
-                upEdges,
-                minimumTopY,
-                maximumTopY,
-                minimumBottomY,
-                maximumBottomY,
-                perEdgeProbeSuccessCount,
-                perEdgeProbeFailureCount,
-                minimumPerEdgeProbeOffset,
-                maximumPerEdgeProbeOffset,
-                revealedCenter);
         }
 
     }

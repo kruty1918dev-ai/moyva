@@ -1,11 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-using GiantGrey.TileWorldCreator;
-using GiantGrey.TileWorldCreator.Components;
 using Kruty1918.Moyva.FogOfWar.API;
-using UnityEngine;
-using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
@@ -16,10 +9,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             var work = _pendingWorkState.Snapshot;
             IFogOfWarService fogService = work.FogService;
             if (fogService == null)
-            {
-                LogMissingFogServiceOnce();
                 return;
-            }
 
             if (ShouldUseClusteredRuntimeRenderer())
             {
@@ -29,23 +19,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     return;
                 }
             }
-            CountAuthoritativeFogStates(
-                fogService,
-                out int authoritativeVisible,
-                out int authoritativeExplored,
-                out int authoritativeUnexplored,
-                out int dirtyVisible,
-                out int dirtyExplored,
-                out int dirtyUnexplored,
-                out int dirtyOutOfBounds);
-            bool wasFullRebuild = work.FullRebuildRequested;
-            int requestedDirtyTiles = work.DirtyTileCount;
             if (work.FullRebuildRequested)
                 RebuildStateCaches(fogService);
             else
                 ApplyDirtyStateCacheChanges(fogService);
-
-            int cachedVisible = Mathf.Max(0, _mapWidth * _mapHeight - _stateCache.UnexploredCellCount - _stateCache.ExploredCellCount);
 
             _pendingWorkMaintenance.Complete();
 
@@ -53,10 +30,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 return;
 
             ApplyCellsToRuntimeLayers();
-            ExecuteTileWorldCreatorBuild(
-                wasFullRebuild,
-                requestedDirtyTiles,
-                wasFullRebuild ? "explicit-or-context-full-rebuild" : "legacy-dirty-update-fallback");
+            ExecuteTileWorldCreatorBuild();
         }
 
         private void ExecuteClusteredPendingVisualWork()

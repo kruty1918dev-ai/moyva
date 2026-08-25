@@ -1,12 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
-using UnityEngine.Rendering;
-
-using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     /// <summary>
@@ -27,12 +23,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private const string CurtainObjectName =
             "Moyva_FogBoundaryCurtain";
 
-        private const string DiagnosticPrefix =
-            "[MOYVA_FOG_CURTAIN_DIAG]";
-
-        private const string MaskDiagnosticPrefix =
-            "[MOYVA_FOG_MASK_DIAG]";
-
         private static readonly int TopColorId =
             Shader.PropertyToID(
                 "_TopColor");
@@ -48,10 +38,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private static readonly int GradientPowerId =
             Shader.PropertyToID(
                 "_GradientPower");
-
-        private static readonly int DebugVisualModeId =
-            Shader.PropertyToID(
-                "_DebugVisualMode");
 
         private static readonly int CullModeId =
             Shader.PropertyToID(
@@ -75,12 +61,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private readonly List<Vector2> _uvs =
             new List<Vector2>(4096);
 
-        private readonly List<Color32> _colors =
-            new List<Color32>(4096);
-
-        private readonly List<DiagnosticSegment> _diagnosticSegments =
-            new List<DiagnosticSegment>(1024);
-
         private readonly List<float> _surfaceOffsetSamples =
             new List<float>(64);
 
@@ -96,13 +76,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private bool _shaderErrorLogged;
         private bool _disposed;
-
-        private float _lastDiagnosticTime =
-            float.NegativeInfinity;
-
-        private int _rebuildSequence;
-        private int _lastBoundaryHash =
-            int.MinValue;
 
         public FogBoundaryCurtainRenderer(
             FogOfWarSettings settings,

@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using GiantGrey.TileWorldCreator;
-using GiantGrey.TileWorldCreator.Components;
 using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
 using Zenject;
@@ -16,12 +14,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     internal sealed partial class FogVolumeVisualUpdateEngine : IFogVisualUpdater, IFogVolumeRuntimeUpdater, ITickable, IDisposable
     {
         private const string LogTag = "[FogOfWarVolume]";
-        private const string StartDiagTag = "[MoyvaFogStartDiag]";
-        private const string StartupChainTag = "[MoyvaStartupChain]";
-        private const string ClusterDiagTag = "[MoyvaFogClusterDiag]";
-        private const string ConstructionPerfTag =
-            "[MoyvaConstructionPerf]";
-        private const int LargeDirtyRequestThreshold = 64;
         private const string FolderName = "Fog Volume";
         private const int TargetFogClusterBudget = 32;
         private const int TargetFogHeightLayerBudget = 8;
@@ -51,22 +43,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private bool _runtimeConfigurationDirty = true;
         private bool _hasBuiltAtLeastOnce;
         private bool _worldContextChangedSinceBuild;
-        private bool _loggedFirstBuild;
         private int _mapWidth = 1;
         private int _mapHeight = 1;
-        private bool _loggedMissingController;
-        private bool _loggedMissingManager;
         private bool _loggedMissingSettings;
-        private bool _loggedMissingFogService;
-        private bool _loggedNoRuntimeLayers;
         private bool _loggedUnexploredPresetProblem;
         private bool _loggedExploredPresetProblem;
-        private bool _loggedAttach;
-        private bool _loggedInitialize;
-        private bool _loggedWorldContext;
-        private bool _loggedRebuildRequest;
-        private bool _loggedDirtyUpdate;
-        private bool _loggedTickWaitingForInterval;
         private float _cachedEffectiveHeightLayerSnap = -1f;
 
         /// <summary>
@@ -132,21 +113,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 ?? (visualUpdateSchedulerFactory ?? new FogVisualUpdateSchedulerFactory())
                     .Create(ResolveUpdateMode, ResolveRebuildIntervalSeconds);
         }
-
-        /// <summary>
-        /// Діагностична кількість unexplored-клітинок у поточному кеші visual state.
-        /// </summary>
-        internal int DebugUnexploredCellCount => _stateCache.UnexploredCellCount;
-
-        /// <summary>
-        /// Діагностична кількість explored-клітинок у поточному кеші visual state.
-        /// </summary>
-        internal int DebugExploredCellCount => _stateCache.ExploredCellCount;
-
-        /// <summary>
-        /// Діагностичний доступ до runtime TWC configuration clone.
-        /// </summary>
-        internal Configuration DebugRuntimeConfiguration => _runtimeConfiguration;
 
     }
 }

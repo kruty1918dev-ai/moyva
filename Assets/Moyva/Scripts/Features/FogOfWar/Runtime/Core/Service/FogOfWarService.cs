@@ -14,14 +14,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// </summary>
     internal sealed partial class FogOfWarService : IFogOfWarService, IInitializable, IDisposable
     {
-        private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
-        private const string StartupChainTag = "[MoyvaStartupChain]";
         private const string BuildingVisionAreaPrefix = "building:";
         private const string StartupFallbackRevealAreaId = "fog-service-startup-fallback-reveal";
-        private const string DebugTag = "[MoyvaFogTrace]";
-        private const string StartDiagTag = "[MoyvaFogStartDiag]";
-        private const string StartupRevealDiagTag = "[MoyvaFogStartupReveal]";
-        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
 
         private readonly IFogVisibilityResolver _resolver;
         private readonly IHeightAwareVisionService _heightVisionService;

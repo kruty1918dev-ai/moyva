@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-using GiantGrey.TileWorldCreator;
 using GiantGrey.TileWorldCreator.Components;
 using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
-using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
@@ -75,44 +70,17 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private static string FormatHeightKey(int heightKey)
             => heightKey.ToString(System.Globalization.CultureInfo.InvariantCulture).Replace("-", "m");
 
-        private void LogMissingControllerOnce()
-        {
-            if (_loggedMissingController)
-                return;
-
-            _loggedMissingController = true;
-        }
-
-        private void LogMissingManagerOnce()
-        {
-            if (_loggedMissingManager)
-                return;
-
-            _loggedMissingManager = true;
-        }
-
         private void LogMissingSettingsOnce()
         {
-            if (_loggedMissingSettings || !ShouldLogValidationWarnings())
+            if (_loggedMissingSettings)
                 return;
 
             _loggedMissingSettings = true;
             Debug.LogError($"{LogTag} FogOfWarSettings is missing. Runtime fog state can still update, but TWC fog volume has no configured TilePresets.");
         }
 
-        private void LogMissingFogServiceOnce()
-        {
-            if (_loggedMissingFogService || !ShouldLogValidationWarnings())
-                return;
-
-            _loggedMissingFogService = true;
-        }
-
         private void LogRuntimeLayerValidation()
         {
-            if (!ShouldLogValidationWarnings())
-                return;
-
             var volume = GetSettings()?.Volume;
             bool unexploredNeedsPreset = _stateCache.UnexploredCellCount > 0 && IsStateEnabled(volume?.Unexplored, true);
             bool exploredNeedsPreset = _stateCache.ExploredCellCount > 0 && IsStateEnabled(volume?.Explored, true);
@@ -129,16 +97,43 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 Debug.LogError($"{LogTag} Explored fog has {_stateCache.ExploredCellCount} cells, but no usable dual-grid TilePreset is configured. Assign at least one preset in FogOfWarSettings > TWC Volume > Explored Fog.");
             }
 
-            if (_runtimeLayers.Count == 0
-                && (_stateCache.UnexploredCellCount > 0 || _stateCache.ExploredCellCount > 0)
-                && !_loggedNoRuntimeLayers)
-            {
-                _loggedNoRuntimeLayers = true;
-            }
         }
 
-        private bool ShouldLogValidationWarnings()
-            => _controller == null || _controller.LogValidationWarnings;
+        private void ClearGeneratedOutputBeforeBuild()
+        {
+            if (_manager == null || _outputCleaner == null)
+                return;
+
+            _outputCleaner.ClearGeneratedChildren(
+                _manager,
+                forceImmediate: true);
+
+            ClearRuntimeBuildLayerClusterCaches();
+        }
+
+        private void StopPendingTileWorldBuildCoroutines()
+        {
+            if (_manager == null || !Application.isPlaying)
+                return;
+
+            if (!_hasBuiltAtLeastOnce
+                && _manager.transform.childCount == 0
+                && _manager.GetComponentsInChildren<LayerIdentifier>(true).Length == 0)
+            {
+                return;
+            }
+
+            _manager.StopAllCoroutines();
+        }
+
+        private void ClearRuntimeBuildLayerClusterCaches()
+        {
+            for (int i = 0; i < _runtimeLayers.Count; i++)
+                _runtimeLayers[i]?.BuildLayer?.availableClusters?.Clear();
+        }
+
+        private void RequestVisualRebuild()
+            => _pendingWorkRequests.RequestFullRebuildWhenFogServiceAvailable();
 
         private static bool HasUsablePreset(FogVolumeStateTileSettings settings)
         {

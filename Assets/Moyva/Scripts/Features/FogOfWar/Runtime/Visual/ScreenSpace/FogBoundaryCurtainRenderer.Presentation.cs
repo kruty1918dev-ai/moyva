@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Kruty1918.Moyva.FogOfWar.API;
-using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Jsonization;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -31,9 +27,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             _vertices.Clear();
             _uvs.Clear();
-            _colors.Clear();
             _triangles.Clear();
-            _diagnosticSegments.Clear();
             _surfaceOffsetSamples.Clear();
         }
 
@@ -183,16 +177,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 GradientPowerId,
                 settings.CurtainGradientPower);
 
-            _material.SetFloat(
-                DebugVisualModeId,
-                (float)settings.CurtainDebugVisualMode);
-
             bool effectiveDoubleSided =
                 settings.CurtainDoubleSided
-                || (settings
-                        .CurtainForceDoubleSidedInNormalMode
-                    && settings.CurtainDebugVisualMode
-                        == FogCurtainDebugVisualMode.Off);
+                || settings.CurtainForceDoubleSidedInNormalMode;
 
             _material.SetFloat(
                 CullModeId,
@@ -229,9 +216,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 0,
                 _uvs);
 
-            _mesh.SetColors(
-                _colors);
-
             _mesh.SetTriangles(
                 _triangles,
                 0,
@@ -267,8 +251,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             Vector3 bottomB,
             Vector3 topB,
             Vector3 topA,
-            Vector3 outward,
-            Color32 debugColor)
+            Vector3 outward)
         {
             int vertexStart =
                 _vertices.Count;
@@ -297,18 +280,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 new Vector2(
                     0f,
                     1f));
-
-            _colors.Add(
-                debugColor);
-
-            _colors.Add(
-                debugColor);
-
-            _colors.Add(
-                debugColor);
-
-            _colors.Add(
-                debugColor);
 
             Vector3 candidateNormal =
                 Vector3.Cross(
@@ -343,22 +314,5 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
         }
 
-        private static void DestroyUnityObject(
-            UnityEngine.Object value)
-        {
-            if (value == null)
-                return;
-
-            if (Application.isPlaying)
-            {
-                UnityEngine.Object.Destroy(
-                    value);
-            }
-            else
-            {
-                UnityEngine.Object.DestroyImmediate(
-                    value);
-            }
-        }
     }
 }

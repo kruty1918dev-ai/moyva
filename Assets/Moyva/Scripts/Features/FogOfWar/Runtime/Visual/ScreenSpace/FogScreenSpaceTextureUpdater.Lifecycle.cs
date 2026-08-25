@@ -1,10 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.Text;
 using Kruty1918.Moyva.FogOfWar.API;
-using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
-using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
@@ -42,8 +38,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             CopyCommittedToVisual();
 
-            CommitVisualState(
-                "Initialize");
+            CommitVisualState();
         }
 
         public void SetWorldContext(
@@ -81,9 +76,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     0,
                     radius);
 
-            int previewTouched = 0;
-            int previewChanged = 0;
-
             for (int y =
                      center.y - safeRadius;
                  y <=
@@ -113,22 +105,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         continue;
                     }
 
-                    previewTouched++;
-
-                    int index =
-                        tile.x
-                        + tile.y * _width;
-
-                    Color32 before =
-                        _pixels[index];
-
-                    if (!AreEqual(
-                            before,
-                            VisibleValue))
-                    {
-                        previewChanged++;
-                    }
-
                     SetPixelValue(
                         tile,
                         VisibleValue);
@@ -141,21 +117,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
              *
              * keepVisible=false теж лишається non-destructive:
              * preview не має права змінювати gameplay-authority.
-             */
+            */
             _previewActive = true;
-            _previewSequence++;
 
-            LogStateSynchronization(
-                "PreviewRevealArea",
-                keepVisible,
-                center,
-                safeRadius,
-                shape,
-                previewTouched,
-                previewChanged);
-
-            CommitVisualState(
-                "PreviewRevealArea");
+            CommitVisualState();
         }
 
         public void UpdateDirtyTiles(
@@ -196,17 +161,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             EndPreviewAndCopyCommittedToVisual();
 
-            LogStateSynchronization(
-                "UpdateDirtyTiles",
-                false,
-                default,
-                0,
-                default,
-                0,
-                0);
-
-            CommitVisualState(
-                "UpdateDirtyTiles");
+            CommitVisualState();
         }
 
         public void RequestCellsUpdate(
@@ -234,17 +189,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
                 EndPreviewAndCopyCommittedToVisual();
 
-                LogStateSynchronization(
-                    "RequestCellsUpdate.Empty.EndPreview",
-                    false,
-                    default,
-                    0,
-                    default,
-                    0,
-                    0);
-
-                CommitVisualState(
-                    "RequestCellsUpdate.Empty.EndPreview");
+                CommitVisualState();
 
                 return;
             }
@@ -289,17 +234,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             EndPreviewAndCopyCommittedToVisual();
 
-            LogStateSynchronization(
-                "RequestCellsUpdate",
-                false,
-                default,
-                0,
-                default,
-                changes.Count,
-                0);
-
-            CommitVisualState(
-                "RequestCellsUpdate");
+            CommitVisualState();
         }
 
         public void RebuildFullVisual(
@@ -335,17 +270,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             EndPreviewAndCopyCommittedToVisual();
 
-            LogStateSynchronization(
-                "RebuildFullVisual",
-                false,
-                default,
-                0,
-                default,
-                _width * _height,
-                0);
-
-            CommitVisualState(
-                "RebuildFullVisual");
+            CommitVisualState();
         }
 
         public void Dispose()
@@ -410,17 +335,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (commit)
             {
-                LogStateSynchronization(
-                    "SetWorldContext",
-                    false,
-                    default,
-                    0,
-                    default,
-                    0,
-                    0);
-
-                CommitVisualState(
-                    "SetWorldContext");
+                CommitVisualState();
             }
         }
 

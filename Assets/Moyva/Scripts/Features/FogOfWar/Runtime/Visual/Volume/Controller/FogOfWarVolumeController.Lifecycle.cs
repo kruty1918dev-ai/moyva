@@ -11,8 +11,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void Awake()
         {
-            LogLifecycleOnce(ref _loggedAwake, "Awake", $"settings={(_settings != null ? _settings.name : "null")}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}, clearPreview={(_settings != null && _settings.Volume.ClearPreviewOnRuntimeStart)}");
-
             if (_settings != null && _settings.Volume.ClearPreviewOnRuntimeStart)
                 _deferRuntimePreviewCleanupUntilStart = !TryClearGeneratedFogOutput();
         }
@@ -31,7 +29,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _outputCleaner = outputCleaner;
             _validationService = validationService;
             _runtimeInjectionCompleted = true;
-            LogLifecycleOnce(ref _loggedConstruct, "Construct", $"runtimeUpdater={(runtimeUpdater != null ? runtimeUpdater.GetType().Name : "null")}, previewBuilder={(previewBuilder != null ? previewBuilder.GetType().Name : "null")}, sceneContextBuilder={(sceneContextBuilder != null ? sceneContextBuilder.GetType().Name : "null")}, outputCleaner={(outputCleaner != null ? outputCleaner.GetType().Name : "null")}, validationService={(validationService != null ? validationService.GetType().Name : "null")}, settings={(_settings != null ? _settings.name : "null")}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}");
             RegisterWithUpdater();
         }
 
@@ -72,10 +69,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 return;
 
             if (_runtimeUpdater == null)
-            {
-                LogLifecycleOnce(ref _loggedRegisterWithoutUpdater, "RegisterWithUpdater skipped", "runtimeUpdater=null");
                 return;
-            }
+
             _runtimeUpdater.AttachController(this);
         }
 
@@ -86,12 +81,5 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             updater.AttachController(this);
         }
 
-        private void LogLifecycleOnce(ref bool logged, string stage, string details)
-        {
-            if (logged || !(_logBuildSummary || _logValidationWarnings))
-                return;
-
-            logged = true;
-        }
     }
 }

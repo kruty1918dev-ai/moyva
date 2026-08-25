@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Kruty1918.Moyva.FogOfWar.API;
-using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
-using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
@@ -158,54 +153,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 screenSettings.DepthAwareEdgeGradientPower);
 
 
-            Shader.SetGlobalFloat(
-                DepthAwareStateCloseRadiusId,
-                screenSettings.DepthAwareStateCloseRadiusPixels);
-
-            Shader.SetGlobalFloat(
-                DepthAwareBoundarySoftnessId,
-                screenSettings.DepthAwareBoundarySoftnessPixels);
-
-            Shader.SetGlobalFloat(
-                DebugModeId,
-                (float)screenSettings.ShaderDebugMode);
-
-            Shader.SetGlobalFloat(
-                DebugGridLineWidthId,
-                screenSettings.ShaderDebugGridLineWidthPixels);
-        }
-
-        private int ComputeFogStateHash()
-        {
-            if (_pixels == null)
-                return 0;
-
-            unchecked
-            {
-                int hash = 17;
-
-                /*
-                 * Повний hash для 80x80 = лише 6400 дешевих ітерацій.
-                 * Він виконується тільки під час visual commit.
-                 */
-                for (int i = 0;
-                     i < _pixels.Length;
-                     i++)
-                {
-                    Color32 pixel =
-                        _pixels[i];
-
-                    hash =
-                        hash * 31
-                        + pixel.r;
-
-                    hash =
-                        hash * 31
-                        + pixel.g;
-                }
-
-                return hash;
-            }
         }
 
     }

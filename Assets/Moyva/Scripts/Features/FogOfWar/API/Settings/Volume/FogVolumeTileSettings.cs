@@ -80,12 +80,6 @@ namespace Kruty1918.Moyva.FogOfWar.API
         public float FullRebuildDirtyClusterRatioThreshold = 0.35f;
 
         /// <summary>
-        /// Чи логувати clustered fog update diagnostics.
-        /// </summary>
-        [BoxGroup("Runtime Clustered Renderer")]
-        public bool LogClusterUpdates = true;
-
-        /// <summary>
         /// Додатковий простір над світом для об'ємного fog volume.
         /// </summary>
         [BoxGroup("Runtime")]

@@ -14,8 +14,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// </summary>
     public sealed partial class FogOfWarVolumeController : MonoBehaviour
     {
-        private const string StartDiagTag = "[MoyvaFogStartDiag]";
-
         [TitleGroup("Settings")]
         [Required]
         [ValidateInput(nameof(HasSettings), "Assign FogOfWarSettings.")]
@@ -47,16 +45,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         [MinValue(0f)]
         [SerializeField] private float _additionalTopClearance;
 
-        [TitleGroup("Debug Logging")]
-        [SerializeField] private bool _logBuildSummary = true;
-
-        [TitleGroup("Debug Logging")]
-        [ShowIf(nameof(_logBuildSummary))]
-        [SerializeField] private bool _logEveryVolumeUpdate;
-
-        [TitleGroup("Debug Logging")]
-        [SerializeField] private bool _logValidationWarnings = true;
-
         [TitleGroup("Validation")]
         [ShowInInspector]
         [ReadOnly]
@@ -79,9 +67,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private IFogVolumeOutputCleaner _outputCleaner;
         private IFogVolumeValidationService _validationService;
         private TileWorldCreatorManager _tileWorldCreatorManager;
-        private bool _loggedAwake;
-        private bool _loggedConstruct;
-        private bool _loggedRegisterWithoutUpdater;
         private bool _deferRuntimePreviewCleanupUntilStart;
 
         public FogOfWarSettings Settings => _settings;
@@ -99,12 +84,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 : (_settings != null ? _settings.Volume.RebuildIntervalSeconds : 0.1f));
 
         public float AdditionalTopClearance => Mathf.Max(0f, _additionalTopClearance);
-
-        public bool LogBuildSummary => _logBuildSummary;
-
-        public bool LogEveryVolumeUpdate => _logEveryVolumeUpdate;
-
-        public bool LogValidationWarnings => _logValidationWarnings;
 
         private bool UsesIntervalUpdate => EffectiveUpdateMode == FogVolumeUpdateMode.Interval;
 

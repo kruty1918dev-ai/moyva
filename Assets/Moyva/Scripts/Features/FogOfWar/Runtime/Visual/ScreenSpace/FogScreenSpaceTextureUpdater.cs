@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
@@ -137,28 +135,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             Shader.PropertyToID(
                 "_MoyvaFogVirtualDepthGradientPower");
 
-        private static readonly int DepthAwareStateCloseRadiusId =
-            Shader.PropertyToID(
-                "_MoyvaFogScreenCloseRadiusPixels");
-
-        private static readonly int DepthAwareBoundarySoftnessId =
-            Shader.PropertyToID(
-                "_MoyvaFogScreenBoundarySoftnessPixels");
-
-        private static readonly int DebugModeId =
-            Shader.PropertyToID(
-                "_MoyvaFogDebugMode");
-
-        private static readonly int DebugGridLineWidthId =
-            Shader.PropertyToID(
-                "_MoyvaFogDebugGridLineWidthPixels");
-
         private readonly FogOfWarSettings _settings;
         private readonly IGridProjection _gridProjection;
         private readonly FogBoundaryCurtainRenderer _curtainRenderer;
-
-        private const string StateSyncDiagnosticPrefix =
-            "[MOYVA_FOG_STATE_SYNC]";
 
         private Texture2D _texture;
 
@@ -175,21 +154,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private FogWorldVisualContext _context;
 
         private bool _previewActive;
-        private int _previewSequence;
 
         private int _width = 1;
         private int _height = 1;
 
         private bool _isDirty;
         private bool _disposed;
-
-        private float _lastShaderDiagnosticTime =
-            float.NegativeInfinity;
-
-        private int _shaderDiagnosticSequence;
-
-        private int _lastShaderStateHash =
-            int.MinValue;
 
         [Inject]
         public FogScreenSpaceTextureUpdater(

@@ -6,10 +6,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     internal sealed partial class FogOfWarService
     {
-        private const string PerfLogTag =
-            "[MoyvaConstructionPerf]";
-        private const double FogVisionPerfLogThresholdMs = 0.5d;
-
         public void RegisterUnit(string unitId, Vector2Int position, int visionRange)
             => RegisterVisionArea(unitId, position, visionRange, null);
 
@@ -63,9 +59,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (string.IsNullOrWhiteSpace(unitId))
                 return;
 
-            double startedAt =
-                Time.realtimeSinceStartupAsDouble;
-
             if (!_initialized)
             {
                 _pendingUnits[unitId] =
@@ -95,23 +88,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             foreach (Vector2Int tile in tiles)
                 AddVisibleTile(tile);
 
-            int dirtyBeforeFlush =
-                _visualDirtyBuffer.DirtyCount;
-            int changesBeforeFlush =
-                _visualDirtyBuffer.ChangeCount;
-            var flushResult = FlushVisual();
-
-            if (!Debug.isDebugBuild)
-                return;
-
-            double elapsedMs =
-                (Time.realtimeSinceStartupAsDouble - startedAt)
-                * 1000d;
-            if (elapsedMs < FogVisionPerfLogThresholdMs
-                && tiles.Count < 64)
-            {
-                return;
-            }
+            FlushVisual();
         }
 
         public void UpdateUnitPosition(string unitId, Vector2Int newPosition)

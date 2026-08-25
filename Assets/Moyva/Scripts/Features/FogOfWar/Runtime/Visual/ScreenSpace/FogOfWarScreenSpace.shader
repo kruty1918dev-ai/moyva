@@ -28,9 +28,6 @@ Shader "Moyva/FogOfWar/ScreenSpace"
         TEXTURE2D_X(_MoyvaFogScreenStateRawTexture);
         SAMPLER(sampler_MoyvaFogScreenStateRawTexture);
 
-        TEXTURE2D_X(_MoyvaFogScreenStateTexture);
-        SAMPLER(sampler_MoyvaFogScreenStateTexture);
-
         float4 _MoyvaFogMapSize;
         float4 _MoyvaFogGridOrigin;
         float4 _MoyvaFogWorldToGrid;
@@ -56,13 +53,6 @@ Shader "Moyva/FogOfWar/ScreenSpace"
         float _MoyvaFogVirtualDepthSamples;
         float _MoyvaFogVirtualDepthOcclusionBias;
         float _MoyvaFogVirtualDepthGradientPower;
-
-        float _MoyvaFogScreenCloseRadiusPixels;
-        float _MoyvaFogScreenBoundarySoftnessPixels;
-        float4 _MoyvaFogScreenStateTexelSize;
-
-        float _MoyvaFogDebugMode;
-        float _MoyvaFogDebugGridLineWidthPixels;
 
         float2 ResolveFogTexelUv(float2 cell)
         {
@@ -531,34 +521,10 @@ Shader "Moyva/FogOfWar/ScreenSpace"
             return false;
         }
 
-        float4 SampleClosedState(float2 screenUv)
-        {
-            return SAMPLE_TEXTURE2D_X(
-                _MoyvaFogScreenStateTexture,
-                sampler_LinearClamp,
-                saturate(screenUv));
-        }
-
-        float4 SampleRawState(float2 screenUv)
-        {
-            return SAMPLE_TEXTURE2D_X(
-                _MoyvaFogScreenStateRawTexture,
-                sampler_LinearClamp,
-                saturate(screenUv));
-        }
-
         float4 SampleRawStatePoint(float2 screenUv)
         {
             return SAMPLE_TEXTURE2D_X(
                 _MoyvaFogScreenStateRawTexture,
-                sampler_PointClamp,
-                saturate(screenUv));
-        }
-
-        float4 SampleClosedStatePoint(float2 screenUv)
-        {
-            return SAMPLE_TEXTURE2D_X(
-                _MoyvaFogScreenStateTexture,
                 sampler_PointClamp,
                 saturate(screenUv));
         }
@@ -1039,156 +1005,6 @@ Shader "Moyva/FogOfWar/ScreenSpace"
 
         Pass
         {
-            Name "DilateScreenState"
-
-            HLSLPROGRAM
-
-            #pragma vertex Vert
-            #pragma fragment FragDilate
-
-            float4 FragDilate(Varyings input) : SV_Target
-            {
-                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-
-                float4 center =
-                    SAMPLE_TEXTURE2D_X(
-                        _BlitTexture,
-                        sampler_PointClamp,
-                        input.texcoord);
-
-                int radius =
-                    (int)clamp(
-                        floor(
-                            _MoyvaFogScreenCloseRadiusPixels
-                            + 0.5),
-                        0.0,
-                        3.0);
-
-                float hidden = center.r;
-                float unexplored = center.g;
-
-                [unroll]
-                for (int y = -3; y <= 3; y++)
-                {
-                    [unroll]
-                    for (int x = -3; x <= 3; x++)
-                    {
-                        if (abs(x) > radius
-                            || abs(y) > radius)
-                        {
-                            continue;
-                        }
-
-                        float2 uv =
-                            input.texcoord
-                            + float2((float)x, (float)y)
-                            * _BlitTexture_TexelSize.xy;
-
-                        float2 sampleState =
-                            SAMPLE_TEXTURE2D_X(
-                                _BlitTexture,
-                                sampler_PointClamp,
-                                uv).rg;
-
-                        hidden =
-                            max(hidden, sampleState.r);
-
-                        unexplored =
-                            max(unexplored, sampleState.g);
-                    }
-                }
-
-                /*
-                 * Only RG are authoritative after morphology.
-                 * BA remain debug-only center data.
-                 */
-                return float4(
-                    hidden,
-                    min(unexplored, hidden),
-                    center.b,
-                    center.a);
-            }
-
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "ErodeScreenState"
-
-            HLSLPROGRAM
-
-            #pragma vertex Vert
-            #pragma fragment FragErode
-
-            float4 FragErode(Varyings input) : SV_Target
-            {
-                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-
-                float4 center =
-                    SAMPLE_TEXTURE2D_X(
-                        _BlitTexture,
-                        sampler_PointClamp,
-                        input.texcoord);
-
-                int radius =
-                    (int)clamp(
-                        floor(
-                            _MoyvaFogScreenCloseRadiusPixels
-                            + 0.5),
-                        0.0,
-                        3.0);
-
-                float hidden = center.r;
-                float unexplored = center.g;
-
-                [unroll]
-                for (int y = -3; y <= 3; y++)
-                {
-                    [unroll]
-                    for (int x = -3; x <= 3; x++)
-                    {
-                        if (abs(x) > radius
-                            || abs(y) > radius)
-                        {
-                            continue;
-                        }
-
-                        float2 uv =
-                            input.texcoord
-                            + float2((float)x, (float)y)
-                            * _BlitTexture_TexelSize.xy;
-
-                        float2 sampleState =
-                            SAMPLE_TEXTURE2D_X(
-                                _BlitTexture,
-                                sampler_PointClamp,
-                                uv).rg;
-
-                        hidden =
-                            min(hidden, sampleState.r);
-
-                        unexplored =
-                            min(unexplored, sampleState.g);
-                    }
-                }
-
-                /*
-                 * Only RG are authoritative after morphology.
-                 * BA remain debug-only center data.
-                 */
-                return float4(
-                    hidden,
-                    min(unexplored, hidden),
-                    center.b,
-                    center.a);
-            }
-
-            ENDHLSL
-        }
-
-        Pass
-        {
             Name "DepthAwareComposite"
 
             HLSLPROGRAM
@@ -1211,31 +1027,14 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                 if (_MoyvaFogEnabled < 0.5)
                     return source;
 
-                float4 rawState =
-                    SampleRawState(screenUv);
-
                 float4 rawStatePoint =
                     SampleRawStatePoint(
                         screenUv);
-
-                float4 state =
-                    SampleClosedState(screenUv);
-
-                float4 stateData =
-                    SampleClosedStatePoint(
-                        screenUv);
-
-                /*
-                 * BA in the morphed screen state are not geometry data.
-                 * Geometry always comes from the immutable surface depth.
-                 */
                 float surfaceEyeDepth;
                 float surfaceValid;
 
                 /*
-                 * Final fog shape comes from the antialiased RawScreenState.
-                 * Dilate/Erode remains available only in debug views and can
-                 * no longer expand, shrink or deform the visible boundary.
+                 * Fog shape comes directly from the point-stable state mask.
                  */
                 float hiddenWeight =
                     saturate(
@@ -1261,158 +1060,11 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                         surfaceEyeDepth,
                         surfaceValid);
 
-                /*
-                 * ClosedScreenState remains authoritative for fog coverage.
-                 * Missing dedicated surface depth must not force the entire
-                 * Game View into Unexplored.
-                 */
                 float2 gridPosition =
                     worldResolved
                         ? WorldToFogGrid(
                             worldPosition)
                         : 0.0.xx;
-
-                if (_MoyvaFogDebugMode > 0.5)
-                {
-                    if (!worldResolved
-                        && _MoyvaFogDebugMode >= 1.5)
-                    {
-                        return half4(
-                            rawState.r,
-                            rawState.g,
-                            0.0,
-                            1.0);
-                    }
-
-                    if (_MoyvaFogDebugMode < 1.5)
-                    {
-                        float3 stateColor =
-                            float3(0.1, 0.9, 0.2);
-
-                        stateColor =
-                            lerp(
-                                stateColor,
-                                float3(1.0, 0.85, 0.05),
-                                exploredWeight);
-
-                        stateColor =
-                            lerp(
-                                stateColor,
-                                float3(1.0, 0.05, 0.05),
-                                unexploredWeight);
-
-                        return half4(stateColor, 1.0);
-                    }
-
-                    if (_MoyvaFogDebugMode < 2.5)
-                    {
-                        float2 cellFraction =
-                            frac(gridPosition + 0.5.xx);
-
-                        float2 edgeDistance =
-                            min(
-                                cellFraction,
-                                1.0.xx - cellFraction);
-
-                        float2 footprint =
-                            max(
-                                fwidth(gridPosition),
-                                0.00001.xx);
-
-                        float lineWidth =
-                            max(
-                                0.5,
-                                _MoyvaFogDebugGridLineWidthPixels);
-
-                        float cellLine =
-                            1.0
-                            - saturate(
-                                min(
-                                    edgeDistance.x / footprint.x,
-                                    edgeDistance.y / footprint.y)
-                                / lineWidth);
-
-                        return half4(
-                            lerp(
-                                float3(0.08, 0.12, 0.16),
-                                1.0.xxx,
-                                cellLine),
-                            1.0);
-                    }
-
-                    if (_MoyvaFogDebugMode < 3.5)
-                    {
-                        float depthView =
-                            1.0 - exp(-surfaceEyeDepth * 0.025);
-
-                        return half4(
-                            depthView.xxx,
-                            1.0);
-                    }
-
-                    if (_MoyvaFogDebugMode < 4.5)
-                    {
-                        float2 fractionalGrid =
-                            frac(gridPosition * 0.1);
-
-                        return half4(
-                            fractionalGrid.x,
-                            fractionalGrid.y,
-                            0.25,
-                            1.0);
-                    }
-
-                    if (_MoyvaFogDebugMode < 5.5)
-                    {
-                        float valid = surfaceValid;
-                        float depthView =
-                            1.0 - exp(-surfaceEyeDepth * 0.025);
-
-                        return half4(
-                            depthView,
-                            valid,
-                            1.0 - valid,
-                            1.0);
-                    }
-
-                    if (_MoyvaFogDebugMode < 6.5)
-                    {
-                        return half4(
-                            rawState.r,
-                            rawState.g,
-                            rawState.a,
-                            1.0);
-                    }
-
-                    if (_MoyvaFogDebugMode < 7.5)
-                    {
-                        return half4(
-                            state.r,
-                            state.g,
-                            state.a,
-                            1.0);
-                    }
-
-                    float innerEdgeDebug =
-                        worldResolved
-                            ? ResolveSurfaceLockedGridEdge(
-                                gridPosition,
-                                surfaceValid)
-                            : 0.0;
-
-                    if (_MoyvaFogDebugMode < 8.5)
-                    {
-                        return half4(
-                            innerEdgeDebug.xxx,
-                            1.0);
-                    }
-
-                    return half4(
-                        innerEdgeDebug,
-                        0.1,
-                        1.0 - innerEdgeDebug,
-                        1.0);
-                }
 
                 float3 exploredSource =
                     ApplySaturation(

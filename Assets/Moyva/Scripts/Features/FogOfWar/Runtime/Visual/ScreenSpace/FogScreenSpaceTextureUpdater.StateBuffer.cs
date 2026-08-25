@@ -1,17 +1,12 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Kruty1918.Moyva.FogOfWar.API;
-using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
-using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     internal sealed partial class FogScreenSpaceTextureUpdater
     {
-        private void CommitVisualState(
-            string source)
+        private void CommitVisualState()
         {
             FogScreenSpaceSettings screenSettings =
                 ResolveScreenSettings();
@@ -33,22 +28,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _curtainRenderer.ClearPresentation();
             }
 
-            if (screenSettings?.LogShaderDiagnostics == true)
-            {
-                int shaderStateHash =
-                    ComputeFogStateHash();
-
-                bool shaderStateChanged =
-                    shaderStateHash
-                    != _lastShaderStateHash;
-
-                _lastShaderStateHash =
-                    shaderStateHash;
-
-                LogShaderDiagnosticsIfNeeded(
-                    shaderStateChanged,
-                    shaderStateHash);
-            }
         }
 
         private void EnsureTexture(

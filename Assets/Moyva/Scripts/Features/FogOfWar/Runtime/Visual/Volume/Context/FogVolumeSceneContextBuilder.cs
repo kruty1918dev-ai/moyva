@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
@@ -12,7 +11,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// Збирає <see cref="FogWorldVisualContext"/> з наявного TWC world source у сцені.
     /// Якщо source відсутній, переходить на безпечний preview fallback.
     /// </summary>
-    [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
     internal sealed class FogVolumeSceneContextBuilder : IFogVolumeSceneContextBuilder
     {
         /// <summary>
@@ -163,9 +161,5 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             max = Vector3.Max(max, point);
         }
 
-        private string GetDebuggerDisplay()
-        {
-            return ToString();
-        }
     }
 }

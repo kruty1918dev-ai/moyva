@@ -4,7 +4,6 @@ using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
-using Unity.Profiling;
 using UnityEngine.Tilemaps;
 using Zenject;
 
@@ -173,14 +172,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             RequestDiscovery();
         }
 
-        private static readonly ProfilerMarker BuildingPlacedMarker =
-            new("Moyva.BuildCommit.Subscriber.FogRendererDiscovery");
-
         private void OnBuildingPlaced(BuildingPlacedSignal _)
-        {
-            using var marker = BuildingPlacedMarker.Auto();
-            RequestDiscovery();
-        }
+            => RequestDiscovery();
 
         private void OnBuildingDemolished(BuildingDemolishedSignal _)
             => RequestDiscovery();

@@ -1,24 +1,18 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
 using Zenject;
-using Debug = UnityEngine.Debug;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     internal sealed class FogClusteredVolumeRenderer : IFogClusteredVolumeRenderer
     {
-        private const string ClusterDiagTag = "[MoyvaFogClusterDiag]";
+        private const string LogTag = "[FogVolume]";
         private readonly IFogClusterMeshRegistry _registry;
         private readonly IFogClusterMeshBuilder _meshBuilder;
         private readonly IFogClusterMaterialProvider _materialProvider;
         private readonly IFogClusterMeshPresenter _meshPresenter;
         private readonly FogOfWarSettings _settings;
-        private const string PerfLogTag =
-            "[MoyvaConstructionPerf]";
-        private const double SlowClusterRebuildThresholdMs = 1.0d;
-
         private readonly HashSet<FogClusterKey> _fullRebuildKeys =
             new HashSet<FogClusterKey>();
         private readonly List<FogClusterKey> _fullRebuildBuffer =
@@ -42,7 +36,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             if (_registry == null || _meshBuilder == null)
             {
-                Debug.LogError($"{ClusterDiagTag} ERROR missingMeshRegistry");
+                Debug.LogError($"{LogTag} Cluster mesh registry or builder is missing.");
                 return;
             }
 
@@ -51,7 +45,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (!context.IsValid || fogService == null)
             {
-                Debug.LogError($"{ClusterDiagTag} ERROR missingContext contextValid={context.IsValid}, hasFogService={fogService != null}");
+                Debug.LogError($"{LogTag} Cannot rebuild clusters without a valid world context and fog state.");
                 return;
             }
 
@@ -73,10 +67,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             foreach (FogClusterKey key in _fullRebuildKeys)
                 _fullRebuildBuffer.Add(key);
 
-            if (ShouldLogClusterUpdates())
-            {
-            }
-
             RebuildClusters(
                 _fullRebuildBuffer,
                 context,
@@ -87,7 +77,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             if (_registry == null || _meshBuilder == null)
             {
-                Debug.LogError($"{ClusterDiagTag} ERROR missingMeshRegistry");
+                Debug.LogError($"{LogTag} Cluster mesh registry or builder is missing.");
                 return;
             }
 
@@ -96,13 +86,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (!context.IsValid || fogService == null)
             {
-                Debug.LogError($"{ClusterDiagTag} ERROR missingContext contextValid={context.IsValid}, hasFogService={fogService != null}");
+                Debug.LogError($"{LogTag} Cannot rebuild clusters without a valid world context and fog state.");
                 return;
-            }
-
-            long startedAt = Stopwatch.GetTimestamp();
-            if (ShouldLogClusterUpdates())
-            {
             }
 
             for (int i = 0; i < dirtyClusters.Count; i++)
@@ -115,19 +100,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _meshPresenter.Apply(handle, hasGeometry);
             }
 
-            double elapsedMs =
-                (Stopwatch.GetTimestamp() - startedAt)
-                * 1000d
-                / Stopwatch.Frequency;
-
-            if (ShouldLogClusterUpdates())
-            {
-            }
-
-            if (Debug.isDebugBuild
-                && elapsedMs >= SlowClusterRebuildThresholdMs)
-            {
-            }
         }
 
         public void Clear()
@@ -140,9 +112,5 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _registry?.SetRootParent(parent);
         }
 
-        private bool ShouldLogClusterUpdates()
-            => Debug.isDebugBuild
-                && _settings != null
-                && _settings.Volume.LogClusterUpdates;
     }
 }

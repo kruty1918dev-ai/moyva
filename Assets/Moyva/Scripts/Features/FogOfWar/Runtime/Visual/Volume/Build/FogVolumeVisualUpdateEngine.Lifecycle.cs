@@ -1,11 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.Text;
-using GiantGrey.TileWorldCreator;
-using GiantGrey.TileWorldCreator.Components;
 using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
-using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
@@ -30,13 +25,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (_runtimeConfiguration == null)
                 _previousManagerConfiguration = _manager != null ? _manager.configuration : null;
             _runtimeConfigurationDirty = true;
-            _loggedMissingController = false;
-            _loggedMissingManager = false;
             _loggedMissingSettings = false;
-            _loggedNoRuntimeLayers = false;
             _loggedUnexploredPresetProblem = false;
             _loggedExploredPresetProblem = false;
-            LogUpdaterOnce(ref _loggedAttach, $"AttachController: controller='{controller.name}', manager={(_manager != null ? _manager.name : "null")}, settings={(controller.Settings != null ? controller.Settings.name : "null")}, hasLastFogService={_pendingWorkState.FogService != null}, hasBuilt={_hasBuiltAtLeastOnce}.");
             RequestVisualRebuild();
             if (_pendingWorkState.FogService != null && !_hasBuiltAtLeastOnce)
                 ExecutePendingVisualWork();
@@ -81,13 +72,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _pendingWorkRequests.RequestFullRebuild();
             _hasBuiltAtLeastOnce = false;
             _worldContextChangedSinceBuild = true;
-            _loggedNoRuntimeLayers = false;
             _loggedUnexploredPresetProblem = false;
             _loggedExploredPresetProblem = false;
-            _loggedTickWaitingForInterval = false;
             _cachedEffectiveHeightLayerSnap = -1f;
             _pendingWorkMaintenance.ClearCellChanges();
-            LogUpdaterOnce(ref _loggedInitialize, $"Initialize: requested={width}x{height}, effective={_mapWidth}x{_mapHeight}, contextValid={context.IsValid}, contextCell={context.CellSize:0.###}, storedCell={_context.CellSize:0.###}, bounds={FormatBounds(_context)}, heightMap={FormatMapSize(_context.HeightMap)}, terrainLevelMap={FormatMapSize(_context.TerrainLevelMap)}, controller={(_controller != null ? _controller.name : "null")}.");
         }
 
         /// <summary>
@@ -116,10 +104,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             _worldContextChangedSinceBuild = true;
             _pendingWorkRequests.RequestFullRebuild();
-            _loggedWorldContext = false;
             _cachedEffectiveHeightLayerSnap = -1f;
             _pendingWorkMaintenance.ClearCellChanges();
-            LogUpdaterOnce(ref _loggedWorldContext, $"SetWorldContext: map={_mapWidth}x{_mapHeight}, cell={_context.CellSize:0.###}, sizeChanged={sizeChanged}, cellSizeChanged={cellSizeChanged}, boundsChanged={boundsChanged}, bounds={FormatBounds(_context)}, heightMap={FormatMapSize(_context.HeightMap)}, terrainLevelMap={FormatMapSize(_context.TerrainLevelMap)}.");
         }
 
         /// <summary>
@@ -150,18 +136,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// <param name="dirtyTiles">Клітинки, чий стан змінився з останнього update.</param>
         public void UpdateDirtyTiles(IFogOfWarService fogService, IEnumerable<Vector2Int> dirtyTiles)
         {
-            if (fogService != null)
-                _loggedMissingFogService = false;
-            int accepted = _pendingWorkRequests.RequestDirtyTiles(fogService, dirtyTiles, out int requested);
-            if (Debug.isDebugBuild
-                && (requested >= LargeDirtyRequestThreshold
-                    || accepted >= LargeDirtyRequestThreshold))
-            {
-            }
-            if (ShouldLogLifecycle(_loggedDirtyUpdate))
-            {
-                _loggedDirtyUpdate = true;
-            }
+            _pendingWorkRequests.RequestDirtyTiles(fogService, dirtyTiles, out _);
             if (_visualUpdateRequestPolicy.ShouldExecuteImmediateRequest())
                 ExecutePendingVisualWork();
         }
@@ -171,9 +146,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             IReadOnlyList<FogCellVisualChange> changes,
             FogWorldVisualContext context)
         {
-            if (fogService != null)
-                _loggedMissingFogService = false;
-
             if (context.IsValid)
             {
                 _context = context.WithSize(context.Width, context.Height);
@@ -182,14 +154,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _pendingWorkMaintenance.SetMapSize(_mapWidth, _mapHeight);
             }
 
-            int accepted = _pendingWorkRequests.RequestCellsUpdate(fogService, changes);
-            int requested =
-                changes?.Count ?? 0;
-            if (Debug.isDebugBuild
-                && (requested >= LargeDirtyRequestThreshold
-                    || accepted >= LargeDirtyRequestThreshold))
-            {
-            }
+            _pendingWorkRequests.RequestCellsUpdate(fogService, changes);
             if (_visualUpdateRequestPolicy.ShouldExecuteImmediateRequest())
                 ExecutePendingVisualWork();
         }
@@ -200,13 +165,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// <param name="fogService">Gameplay source of truth для fog state.</param>
         public void RebuildFullVisual(IFogOfWarService fogService)
         {
-            if (fogService != null)
-                _loggedMissingFogService = false;
             _pendingWorkRequests.RequestFullRebuild(fogService);
-            if (ShouldLogLifecycle(_loggedRebuildRequest))
-            {
-                _loggedRebuildRequest = true;
-            }
             if (_visualUpdateRequestPolicy.ShouldExecuteFullRebuildRequestImmediately(_hasBuiltAtLeastOnce, _worldContextChangedSinceBuild))
                 ExecutePendingVisualWork();
         }
@@ -217,12 +176,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// </summary>
         public void Tick()
         {
-            if (!_visualUpdateTickGate.ShouldExecute(_pendingWorkState.Snapshot, out string waitingMessage))
-            {
-                if (!string.IsNullOrEmpty(waitingMessage))
-                    LogUpdaterOnce(ref _loggedTickWaitingForInterval, waitingMessage);
+            if (!_visualUpdateTickGate.ShouldExecute(_pendingWorkState.Snapshot, out _))
                 return;
-            }
 
             ExecutePendingVisualWork();
         }
@@ -236,22 +191,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _dirtyClusterTracker?.Clear();
             DisposeRuntimeConfiguration();
         }
-
-        /// <summary>
-        /// Діагностично перевіряє, чи кеш unexplored state містить задану клітинку.
-        /// </summary>
-        /// <param name="tile">Клітинка для перевірки.</param>
-        /// <returns><see langword="true"/>, якщо клітинка входить до unexplored-кешу.</returns>
-        internal bool DebugHasUnexploredCell(Vector2Int tile)
-            => _stateCache.HasUnexploredCell(tile);
-
-        /// <summary>
-        /// Діагностично перевіряє, чи кеш explored state містить задану клітинку.
-        /// </summary>
-        /// <param name="tile">Клітинка для перевірки.</param>
-        /// <returns><see langword="true"/>, якщо клітинка входить до explored-кешу.</returns>
-        internal bool DebugHasExploredCell(Vector2Int tile)
-            => _stateCache.HasExploredCell(tile);
 
         /// <summary>
         /// Запитує первинну startup build для controller-а без локальної visible області.

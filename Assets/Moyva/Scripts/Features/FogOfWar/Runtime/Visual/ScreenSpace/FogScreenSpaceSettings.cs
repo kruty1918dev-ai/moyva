@@ -4,29 +4,6 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.FogOfWar.API
 {
-    public enum FogCurtainDebugVisualMode
-    {
-        Off = 0,
-        BoundaryDirection = 1,
-        HeightBands = 2,
-        SegmentParity = 3,
-        HeightRelation = 4
-    }
-
-    public enum FogScreenShaderDebugMode
-    {
-        Off = 0,
-        FogState = 1,
-        GridCoordinates = 2,
-        SceneDepth = 3,
-        WorldGridPosition = 4,
-        FogSurfaceDepth = 5,
-        RawScreenState = 6,
-        ClosedScreenState = 7,
-        ScreenBoundary = 8,
-        VirtualDepth = 9
-    }
-
     /// <summary>
     /// Налаштування screen-space FogOfWar і world-space boundary curtain.
     /// Gameplay visibility ці параметри не змінюють.
@@ -167,20 +144,6 @@ namespace Kruty1918.Moyva.FogOfWar.API
             "Форма згасання фаски вглиб туману. Більше значення " +
             "робить темну частину вужчою.")]
         public float DepthAwareEdgeGradientPower = 1.5f;
-
-        [BoxGroup("Depth-Aware Screen Edge")]
-        [Range(0, 3)]
-        [Tooltip(
-            "Використовується лише для debug ClosedScreenState. " +
-            "Фінальна форма fog береться з RawScreenState.")]
-        public int DepthAwareStateCloseRadiusPixels = 0;
-
-        [BoxGroup("Depth-Aware Screen Edge")]
-        [Range(0f, 4f)]
-        [Tooltip(
-            "М'якість внутрішньої фаски. Не впливає на логічну " +
-            "форму основної fog mask.")]
-        public float DepthAwareBoundarySoftnessPixels = 0.65f;
 
         [BoxGroup("World Curtain")]
         [Tooltip(
@@ -368,66 +331,6 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [BoxGroup("Debug")]
         public bool ApplyInSceneView = true;
 
-        [BoxGroup("Diagnostics")]
-        [Tooltip(
-            "Пише summary та boundary-сегменти у Console " +
-            "з префіксом [MOYVA_FOG_CURTAIN_DIAG].")]
-        public bool LogCurtainDiagnostics;
-
-        [BoxGroup("Diagnostics")]
-        [Tooltip(
-            "Пише camera/world-to-grid probes у Console " +
-            "з префіксом [MOYVA_FOG_SHADER_DIAG].")]
-        public bool LogShaderDiagnostics;
-
-        [BoxGroup("Diagnostics")]
-        [MinValue(0.1f)]
-        public float DiagnosticLogIntervalSeconds = 1.5f;
-
-        [BoxGroup("Diagnostics")]
-        [Range(1, 64)]
-        public int DiagnosticMaxSegmentLogs = 24;
-
-        [BoxGroup("Diagnostics")]
-        [Range(1, 30)]
-        [Tooltip(
-            "Радіус навколо центра відкритої області, " +
-            "з якого boundary-сегменти потрапляють у детальний лог.")]
-        public int DiagnosticCenterRadiusCells = 12;
-
-        [BoxGroup("Diagnostics")]
-        [Range(3, 20)]
-        [Tooltip(
-            "Радіус ASCII-знімка fog mask. " +
-            "V=Visible, e=Explored, B=boundary, #=Unexplored.")]
-        public int DiagnosticMaskRadiusCells = 10;
-
-        [BoxGroup("Diagnostics")]
-        [Range(1, 16)]
-        public int DiagnosticMaxComponentLogs = 8;
-
-        [BoxGroup("Diagnostics")]
-        [Tooltip(
-            "BoundaryDirection: Left=red, Right=green, " +
-            "Down=blue, Up=yellow.")]
-        public FogCurtainDebugVisualMode CurtainDebugVisualMode =
-            FogCurtainDebugVisualMode.Off;
-
-        [BoxGroup("Diagnostics")]
-        public FogScreenShaderDebugMode ShaderDebugMode =
-            FogScreenShaderDebugMode.Off;
-
-        [BoxGroup("Diagnostics")]
-        [Range(0.5f, 6f)]
-        public float ShaderDebugGridLineWidthPixels = 1.5f;
-
-        [BoxGroup("Diagnostics")]
-        public LayerMask ShaderDiagnosticRaycastMask = -1;
-
-        [BoxGroup("Diagnostics")]
-        [MinValue(1f)]
-        public float ShaderDiagnosticRaycastDistance = 1000f;
-
         public void EnsureDefaults()
         {
             /*
@@ -439,8 +342,6 @@ namespace Kruty1918.Moyva.FogOfWar.API
                 DepthAwareEdgeOpacity = 0.82f;
                 DepthAwareEdgeMaxPixels = 6f;
                 DepthAwareEdgeGradientPower = 1.5f;
-                DepthAwareBoundarySoftnessPixels = 0.65f;
-                DepthAwareStateCloseRadiusPixels = 0;
 
                 _cornerJoinRevision =
                     CurrentCornerJoinRevision;
@@ -484,18 +385,6 @@ namespace Kruty1918.Moyva.FogOfWar.API
                 Mathf.Clamp(
                     DepthAwareEdgeGradientPower,
                     0.25f,
-                    4f);
-
-            /*
-             * Morphology is debug-only in Inner Fog Bevel mode.
-             */
-            DepthAwareStateCloseRadiusPixels =
-                0;
-
-            DepthAwareBoundarySoftnessPixels =
-                Mathf.Clamp(
-                    DepthAwareBoundarySoftnessPixels,
-                    0f,
                     4f);
 
             TransparentFallbackPlaneOffsetY =
@@ -638,45 +527,6 @@ namespace Kruty1918.Moyva.FogOfWar.API
                     0f,
                     HideDuration);
 
-            DiagnosticLogIntervalSeconds =
-                Mathf.Max(
-                    0.1f,
-                    DiagnosticLogIntervalSeconds);
-
-            DiagnosticMaxSegmentLogs =
-                Mathf.Clamp(
-                    DiagnosticMaxSegmentLogs,
-                    1,
-                    64);
-
-            DiagnosticCenterRadiusCells =
-                Mathf.Clamp(
-                    DiagnosticCenterRadiusCells,
-                    1,
-                    30);
-
-            DiagnosticMaskRadiusCells =
-                Mathf.Clamp(
-                    DiagnosticMaskRadiusCells,
-                    3,
-                    20);
-
-            DiagnosticMaxComponentLogs =
-                Mathf.Clamp(
-                    DiagnosticMaxComponentLogs,
-                    1,
-                    16);
-
-            ShaderDebugGridLineWidthPixels =
-                Mathf.Clamp(
-                    ShaderDebugGridLineWidthPixels,
-                    0.5f,
-                    6f);
-
-            ShaderDiagnosticRaycastDistance =
-                Mathf.Max(
-                    1f,
-                    ShaderDiagnosticRaycastDistance);
         }
     }
 }

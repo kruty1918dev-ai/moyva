@@ -1,41 +1,22 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using GiantGrey.TileWorldCreator;
-using GiantGrey.TileWorldCreator.Components;
-using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
-using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     internal sealed partial class FogVolumeVisualUpdateEngine
     {
-        private void ExecuteTileWorldCreatorBuild(bool wasFullRebuild, int requestedDirtyTiles, string reason)
+        private void ExecuteTileWorldCreatorBuild()
         {
             if (_manager == null || _runtimeConfiguration == null)
                 return;
 
-            bool isInitialBuild = !_hasBuiltAtLeastOnce;
-            bool contextChanged = _worldContextChangedSinceBuild;
-            int clustersBeforeBuild = CountGeneratedClusters();
-            int layerObjectsBeforeBuild = CountLayerObjects();
-            int generatedChildrenBeforeClear = CountGeneratedOutputChildren();
-            bool stoppedPendingBuildCoroutines = StopPendingTileWorldBuildCoroutines(generatedChildrenBeforeClear, layerObjectsBeforeBuild);
-            int clearedGeneratedChildren = ClearGeneratedOutputBeforeBuild();
-            int generatedChildrenAfterClear = CountGeneratedOutputChildren();
+            StopPendingTileWorldBuildCoroutines();
+            ClearGeneratedOutputBeforeBuild();
             _manager.configuration = _runtimeConfiguration;
             ApplyFogBatchingBudget();
             _manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
             _hasBuiltAtLeastOnce = true;
             _worldContextChangedSinceBuild = false;
-            int clustersAfterBuild = CountGeneratedClusters();
-            int layerObjectsAfterBuild = CountLayerObjects();
-
-            if (ShouldLogBuildSummary(contextChanged))
-            {
-                _loggedFirstBuild = true;
-            }
         }
 
         private void ApplyFogBatchingBudget()
@@ -48,7 +29,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             int activeLayerCount = 0;
             int maxLayerWidth = Mathf.Max(1, _runtimeConfiguration.width);
             int maxLayerHeight = Mathf.Max(1, _runtimeConfiguration.height);
-            int mergeOverrideCount = 0;
 
             for (int i = 0; i < _runtimeLayers.Count; i++)
             {
@@ -61,11 +41,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     continue;
 
                 activeLayerCount++;
-                if (!runtimeLayer.BuildLayer.mergeTiles)
-                {
-                    runtimeLayer.BuildLayer.mergeTiles = true;
-                    mergeOverrideCount++;
-                }
+                runtimeLayer.BuildLayer.mergeTiles = true;
 
                 if (runtimeLayer.BlueprintLayer != null)
                 {
@@ -82,14 +58,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 perLayerClusterBudget);
             requestedClusterCellSize = Mathf.Max(MinimumFogClusterCellSize, requestedClusterCellSize);
 
-            bool clusterChanged = _runtimeConfiguration.clusterCellSize < requestedClusterCellSize;
-            if (clusterChanged)
+            if (_runtimeConfiguration.clusterCellSize < requestedClusterCellSize)
                 _runtimeConfiguration.clusterCellSize = requestedClusterCellSize;
-
-            if (clusterChanged || mergeOverrideCount > 0)
-            {
-                int estimatedClusters = EstimateClusterCount(maxLayerWidth, maxLayerHeight, _runtimeConfiguration.clusterCellSize) * safeLayerCount;
-            }
         }
 
         private static int ResolveClusterCellSizeForBudget(int width, int height, int clusterBudget)
@@ -113,16 +83,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             int safeClusterCellSize = Mathf.Max(1, clusterCellSize);
             return Mathf.CeilToInt(Mathf.Max(1, width) / (float)safeClusterCellSize)
                 * Mathf.CeilToInt(Mathf.Max(1, height) / (float)safeClusterCellSize);
-        }
-
-        private bool ShouldLogBuildSummary(bool contextChanged)
-        {
-            if (_controller != null && !_controller.LogBuildSummary)
-                return false;
-
-            return !_loggedFirstBuild
-                || contextChanged
-                || (_controller != null && _controller.LogEveryVolumeUpdate);
         }
 
     }

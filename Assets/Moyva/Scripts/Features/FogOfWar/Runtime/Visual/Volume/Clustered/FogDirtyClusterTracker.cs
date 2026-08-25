@@ -2,13 +2,11 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
 using Zenject;
-using Debug = UnityEngine.Debug;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     internal sealed class FogDirtyClusterTracker : IFogDirtyClusterTracker
     {
-        private const string ClusterDiagTag = "[MoyvaFogClusterDiag]";
         private readonly FogOfWarSettings _settings;
         private readonly HashSet<FogClusterKey> _dirtyClusters = new HashSet<FogClusterKey>();
         private readonly List<FogClusterKey> _consumeBuffer = new List<FogClusterKey>();
@@ -133,11 +131,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 1,
                 clusterSize);
         }
-
-        private bool ShouldLogClusterUpdates()
-            => Debug.isDebugBuild
-                && _settings != null
-                && _settings.Volume.LogClusterUpdates;
 
         private static int PositiveModulo(int value, int modulo)
         {

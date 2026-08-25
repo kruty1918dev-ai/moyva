@@ -36003,9 +36003,6 @@ MonoBehaviour:
   _overrideCellSize: 0
   _cellSizeOverride: 1
   _additionalTopClearance: 0.5
-  _logBuildSummary: 1
-  _logEveryVolumeUpdate: 1
-  _logValidationWarnings: 1
 --- !u!1 &2017014816
 GameObject:
   m_ObjectHideFlags: 0

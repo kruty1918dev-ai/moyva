@@ -14,17 +14,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private bool EnsureRuntimeConfiguration()
         {
             if (_controller == null)
-            {
-                LogMissingControllerOnce();
                 return false;
-            }
 
             _manager = _controller.TileWorldCreatorManager;
             if (_manager == null)
-            {
-                LogMissingManagerOnce();
                 return false;
-            }
 
             if (GetSettings() == null)
                 LogMissingSettingsOnce();
