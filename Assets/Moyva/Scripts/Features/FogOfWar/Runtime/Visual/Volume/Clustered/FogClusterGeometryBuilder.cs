@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
-    internal sealed class FogClusterGeometryBuilder : IFogClusterGeometryBuilder
+    internal sealed class FogClusterGeometryBuilder
     {
         private readonly List<Vector3> _vertices = new List<Vector3>(1024);
         private readonly List<int> _unexploredTriangles = new List<int>(1536);

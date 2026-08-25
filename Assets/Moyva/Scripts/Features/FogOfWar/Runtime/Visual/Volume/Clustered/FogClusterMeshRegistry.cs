@@ -5,7 +5,7 @@ using Object = UnityEngine.Object;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
-    internal sealed class FogClusterMeshRegistry : IFogClusterMeshRegistry
+    internal sealed class FogClusterMeshRegistry
     {
         private readonly Dictionary<FogClusterKey, FogClusterMeshHandle> _handles = new Dictionary<FogClusterKey, FogClusterMeshHandle>();
         private GameObject _root;

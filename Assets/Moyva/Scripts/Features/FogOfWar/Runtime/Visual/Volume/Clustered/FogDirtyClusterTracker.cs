@@ -5,7 +5,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
-    internal sealed class FogDirtyClusterTracker : IFogDirtyClusterTracker
+    internal sealed class FogDirtyClusterTracker
     {
         private readonly FogOfWarSettings _settings;
         private readonly HashSet<FogClusterKey> _dirtyClusters = new HashSet<FogClusterKey>();

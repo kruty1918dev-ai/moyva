@@ -4,7 +4,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
-    internal sealed class FogClusterMaterialProvider : IFogClusterMaterialProvider
+    internal sealed class FogClusterMaterialProvider
     {
         private readonly FogOfWarSettings _settings;
 

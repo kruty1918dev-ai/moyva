@@ -4,12 +4,12 @@ using UnityEngine.Rendering;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
-    internal sealed class FogClusterMeshPresenter : IFogClusterMeshPresenter
+    internal sealed class FogClusterMeshPresenter
     {
-        private readonly IFogClusterMaterialProvider _materialProvider;
+        private readonly FogClusterMaterialProvider _materialProvider;
         private readonly Material[] _materials = new Material[2];
 
-        public FogClusterMeshPresenter(IFogClusterMaterialProvider materialProvider)
+        public FogClusterMeshPresenter(FogClusterMaterialProvider materialProvider)
         {
             _materialProvider = materialProvider;
         }

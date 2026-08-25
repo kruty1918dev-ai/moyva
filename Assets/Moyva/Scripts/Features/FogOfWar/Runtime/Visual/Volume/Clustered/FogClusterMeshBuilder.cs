@@ -4,18 +4,18 @@ using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
-    internal sealed class FogClusterMeshBuilder : IFogClusterMeshBuilder
+    internal sealed class FogClusterMeshBuilder
     {
         private const float HeightEpsilon = 0.001f;
         private const float BoundarySurfaceOverlap = 0.02f;
         private readonly FogOfWarSettings _settings;
-        private readonly IFogClusterGeometryBuilder _geometryBuilder;
-        private readonly IFogClusterMaterialProvider _materialProvider;
+        private readonly FogClusterGeometryBuilder _geometryBuilder;
+        private readonly FogClusterMaterialProvider _materialProvider;
 
         public FogClusterMeshBuilder(
             [InjectOptional] FogOfWarSettings settings = null,
-            [InjectOptional] IFogClusterGeometryBuilder geometryBuilder = null,
-            [InjectOptional] IFogClusterMaterialProvider materialProvider = null)
+            [InjectOptional] FogClusterGeometryBuilder geometryBuilder = null,
+            [InjectOptional] FogClusterMaterialProvider materialProvider = null)
         {
             _settings = settings;
             _geometryBuilder = geometryBuilder ?? new FogClusterGeometryBuilder();

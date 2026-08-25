@@ -5,13 +5,13 @@ using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
-    internal sealed class FogClusteredVolumeRenderer : IFogClusteredVolumeRenderer
+    internal sealed class FogClusteredVolumeRenderer
     {
         private const string LogTag = "[FogVolume]";
-        private readonly IFogClusterMeshRegistry _registry;
-        private readonly IFogClusterMeshBuilder _meshBuilder;
-        private readonly IFogClusterMaterialProvider _materialProvider;
-        private readonly IFogClusterMeshPresenter _meshPresenter;
+        private readonly FogClusterMeshRegistry _registry;
+        private readonly FogClusterMeshBuilder _meshBuilder;
+        private readonly FogClusterMaterialProvider _materialProvider;
+        private readonly FogClusterMeshPresenter _meshPresenter;
         private readonly FogOfWarSettings _settings;
         private readonly HashSet<FogClusterKey> _fullRebuildKeys =
             new HashSet<FogClusterKey>();
@@ -19,10 +19,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             new List<FogClusterKey>();
 
         public FogClusteredVolumeRenderer(
-            IFogClusterMeshRegistry registry,
-            IFogClusterMeshBuilder meshBuilder,
-            [InjectOptional] IFogClusterMaterialProvider materialProvider = null,
-            [InjectOptional] IFogClusterMeshPresenter meshPresenter = null,
+            FogClusterMeshRegistry registry,
+            FogClusterMeshBuilder meshBuilder,
+            [InjectOptional] FogClusterMaterialProvider materialProvider = null,
+            [InjectOptional] FogClusterMeshPresenter meshPresenter = null,
             [InjectOptional] FogOfWarSettings settings = null)
         {
             _registry = registry;

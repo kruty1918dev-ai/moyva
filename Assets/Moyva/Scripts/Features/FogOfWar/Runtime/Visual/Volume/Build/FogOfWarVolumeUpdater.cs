@@ -24,8 +24,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             [InjectOptional] FogOfWarSettings settings = null,
             [InjectOptional] IFogVolumeStateCache stateCache = null,
             [InjectOptional] IFogStartupFogServiceFactory startupFogServiceFactory = null,
-            [InjectOptional] IFogDirtyClusterTracker dirtyClusterTracker = null,
-            [InjectOptional] IFogClusteredVolumeRenderer clusteredVolumeRenderer = null)
+            [InjectOptional] FogDirtyClusterTracker dirtyClusterTracker = null,
+            [InjectOptional] FogClusteredVolumeRenderer clusteredVolumeRenderer = null)
             : this(new FogVolumeVisualUpdateEngine(
                 settings,
                 null,

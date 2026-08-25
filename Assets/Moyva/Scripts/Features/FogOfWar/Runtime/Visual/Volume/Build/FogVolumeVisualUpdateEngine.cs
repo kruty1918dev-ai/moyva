@@ -31,8 +31,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private readonly IFogStartupFogServiceFactory _startupFogServiceFactory;
         private readonly Dictionary<int, float> _heightByKey = new Dictionary<int, float>();
         private readonly List<RuntimeLayer> _runtimeLayers = new List<RuntimeLayer>();
-        private readonly IFogDirtyClusterTracker _dirtyClusterTracker;
-        private readonly IFogClusteredVolumeRenderer _clusteredVolumeRenderer;
+        private readonly FogDirtyClusterTracker _dirtyClusterTracker;
+        private readonly FogClusteredVolumeRenderer _clusteredVolumeRenderer;
         private readonly IFogVolumeOutputCleaner _outputCleaner;
 
         private FogOfWarVolumeController _controller;
@@ -66,8 +66,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             [InjectOptional] IFogVisualUpdateSchedulerFactory visualUpdateSchedulerFactory = null,
             [InjectOptional] IFogVolumeStateCache stateCache = null,
             [InjectOptional] IFogStartupFogServiceFactory startupFogServiceFactory = null,
-            [InjectOptional] IFogDirtyClusterTracker dirtyClusterTracker = null,
-            [InjectOptional] IFogClusteredVolumeRenderer clusteredVolumeRenderer = null,
+            [InjectOptional] FogDirtyClusterTracker dirtyClusterTracker = null,
+            [InjectOptional] FogClusteredVolumeRenderer clusteredVolumeRenderer = null,
             [InjectOptional] IFogVolumeOutputCleaner outputCleaner = null)
         {
             _injectedSettings = settings;

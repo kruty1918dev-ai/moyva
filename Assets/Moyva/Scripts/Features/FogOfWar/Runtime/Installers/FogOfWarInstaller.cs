@@ -108,32 +108,25 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 .To<FogVisualUpdateSchedulerFactory>()
                 .AsSingle();
 
-            Container.Bind<IFogDirtyClusterTracker>()
-                .To<FogDirtyClusterTracker>()
+            Container.Bind<FogDirtyClusterTracker>()
                 .AsSingle();
 
-            Container.Bind<IFogClusterGeometryBuilder>()
-                .To<FogClusterGeometryBuilder>()
+            Container.Bind<FogClusterGeometryBuilder>()
                 .AsSingle();
 
-            Container.Bind<IFogClusterMaterialProvider>()
-                .To<FogClusterMaterialProvider>()
+            Container.Bind<FogClusterMaterialProvider>()
                 .AsSingle();
 
-            Container.Bind<IFogClusterMeshPresenter>()
-                .To<FogClusterMeshPresenter>()
+            Container.Bind<FogClusterMeshPresenter>()
                 .AsSingle();
 
-            Container.Bind<IFogClusterMeshRegistry>()
-                .To<FogClusterMeshRegistry>()
+            Container.Bind<FogClusterMeshRegistry>()
                 .AsSingle();
 
-            Container.Bind<IFogClusterMeshBuilder>()
-                .To<FogClusterMeshBuilder>()
+            Container.Bind<FogClusterMeshBuilder>()
                 .AsSingle();
 
-            Container.Bind<IFogClusteredVolumeRenderer>()
-                .To<FogClusteredVolumeRenderer>()
+            Container.Bind<FogClusteredVolumeRenderer>()
                 .AsSingle();
 
             Container.Bind<FogVolumeVisualUpdateEngine>()
