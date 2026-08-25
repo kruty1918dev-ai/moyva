@@ -13,24 +13,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
     internal sealed class TileWorldCreatorBuildExecutionService : ITileWorldCreatorBuildExecutionService
     {
         private const string LogTag = "[MoyvaTWCHeight]";
-        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
         private readonly TileWorldCreatorManager _manager;
         private readonly TileWorldCreatorBuildOptions _options;
         private readonly ITileWorldCreatorLayerPositionApplier _positionApplier;
         private readonly ITileWorldCreatorTerrainBuildPolicyService _terrainPolicyService;
-        private readonly ITileWorldCreatorBuildDiagnosticsService _diagnostics;
 
         public TileWorldCreatorBuildExecutionService(
             ITileWorldCreatorBuildEnvironment environment,
             ITileWorldCreatorLayerPositionApplier positionApplier,
-            ITileWorldCreatorTerrainBuildPolicyService terrainPolicyService,
-            ITileWorldCreatorBuildDiagnosticsService diagnostics)
+            ITileWorldCreatorTerrainBuildPolicyService terrainPolicyService)
         {
             _manager = environment.Manager;
             _options = environment.Options;
             _positionApplier = positionApplier;
             _terrainPolicyService = terrainPolicyService;
-            _diagnostics = diagnostics;
         }
 
         public void Execute(Configuration configuration, TileWorldCreatorLayerPositionSet positions, TileWorldCreatorTerrainBuildPolicyResult terrainPolicy)
@@ -49,8 +45,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _positionApplier.Apply(positions.BuildingPositions);
             CullOccludedCells(configuration);
             ApplyChunkAlignedBatching(configuration, terrainPolicy);
-            ExecuteBuildLayers(configuration, positions.TerrainPositions.Count);
-            ReportChunkAudit(configuration);
+            ExecuteBuildLayers();
         }
 
         private void ResetIfNeeded()
@@ -62,10 +57,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private static void CullOccludedCells(Configuration configuration)
         {
-            var occlusion = TileWorldCreatorLayerOcclusionOptimizer.CullOccludedTileCells(configuration);
-            if (occlusion.RemovedCellCount > 0)
-            {
-            }
+            TileWorldCreatorLayerOcclusionOptimizer.CullOccludedTileCells(configuration);
         }
 
         private void ApplyChunkAlignedBatching(Configuration configuration, TileWorldCreatorTerrainBuildPolicyResult terrainPolicy)
@@ -73,23 +65,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _terrainPolicyService.Apply(configuration, terrainPolicy, "runtime-bridge");
         }
 
-        private void ExecuteBuildLayers(Configuration configuration, int terrainLayerCount)
+        private void ExecuteBuildLayers()
         {
-
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             _manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
-            stopwatch.Stop();
-        }
-
-        private void ReportChunkAudit(Configuration configuration)
-        {
-            var reporter = _manager.GetComponent<TileWorldCreatorChunkAuditReporter>();
-            if (reporter == null)
-                reporter = _manager.gameObject.AddComponent<TileWorldCreatorChunkAuditReporter>();
-
-            reporter.hideFlags = HideFlags.HideInInspector | HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
-            reporter.Report(_manager, configuration, "after-execute-return");
-            reporter.RequestDelayedReport(_manager, configuration, "after-twc-coroutines");
         }
     }
 }

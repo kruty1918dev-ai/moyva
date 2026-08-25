@@ -20,7 +20,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly ITileWorldCreatorConfigurationPreparationService _configurationPreparation;
         private readonly ITileWorldCreatorTerrainBuildLayerConfigurationService _buildLayerConfiguration;
         private readonly ITileWorldCreatorLayerPositionCollector _positionCollector;
-        private readonly ITileWorldCreatorBuildDiagnosticsService _diagnostics;
         private readonly ITileWorldCreatorBuildExecutionService _execution;
         private readonly ITileWorldCreatorTerrainVisualPostProcessor _visualPostProcessor;
         private readonly ITileWorldCreatorTerrainHeightPublisher _heightPublisher;
@@ -34,7 +33,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ITileWorldCreatorConfigurationPreparationService configurationPreparation,
             ITileWorldCreatorTerrainBuildLayerConfigurationService buildLayerConfiguration,
             ITileWorldCreatorLayerPositionCollector positionCollector,
-            ITileWorldCreatorBuildDiagnosticsService diagnostics,
             ITileWorldCreatorBuildExecutionService execution,
             ITileWorldCreatorTerrainVisualPostProcessor visualPostProcessor,
             ITileWorldCreatorTerrainHeightPublisher heightPublisher,
@@ -49,7 +47,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _configurationPreparation = configurationPreparation;
             _buildLayerConfiguration = buildLayerConfiguration;
             _positionCollector = positionCollector;
-            _diagnostics = diagnostics;
             _execution = execution;
             _visualPostProcessor = visualPostProcessor;
             _heightPublisher = heightPublisher;
@@ -79,14 +76,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     _chunkSettings?.ChunkSize ?? 0,
                     options.ApplyIntegerTerrainHeights)
                 : _terrainPolicyService.Resolve(options, _chunkSettings?.ChunkSize ?? 0);
-            _diagnostics.LogBuildStart(worldData, configuration);
             PrepareTerrainData(worldData, options);
 
             if (terrainPolicy.UsesChunkFirstComposite)
                 return BuildChunkFirst(worldData, configuration, terrainPolicy);
 
             TileWorldCreatorLayerPositionSet positions = _positionCollector.Collect(worldData, configuration);
-            LogPositionSummaries(positions, configuration);
             if (!positions.HasAnyMappedLayer)
             {
                 return TileWorldCreatorWorldBuildResult.Disabled;
@@ -156,12 +151,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (options.ApplyIntegerTerrainHeights)
                 _terrainLevels.Ensure(worldData);
 
-            _diagnostics.LogLevelMap("after EnsureTerrainLevelMap", worldData?.TerrainLevelMap);
             if (options.NormalizeTerrainLevelsForTileWorldCreator)
             {
-                _diagnostics.LogLevelMap("before NormalizeTerrainLevelsForTileWorldCreator", worldData?.TerrainLevelMap);
                 _terrainLevels.NormalizeForTileWorldCreator(worldData);
-                _diagnostics.LogLevelMap("after NormalizeTerrainLevelsForTileWorldCreator", worldData?.TerrainLevelMap);
             }
 
             if (options.ExpandSandShoreBand)
@@ -169,18 +161,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (options.ApplyIntegerTerrainHeights && options.NormalizeTerrainLevelsForTileWorldCreator)
             {
-                _diagnostics.LogLevelMap("before post-shore NormalizeTerrainLevelsForTileWorldCreator", worldData?.TerrainLevelMap);
                 _terrainLevels.NormalizeForTileWorldCreator(worldData);
-                _diagnostics.LogLevelMap("after post-shore NormalizeTerrainLevelsForTileWorldCreator", worldData?.TerrainLevelMap);
             }
         }
-
-        private void LogPositionSummaries(TileWorldCreatorLayerPositionSet positions, Configuration configuration)
-        {
-            _diagnostics.LogMappedLayerSummary("terrain", positions.TerrainPositions, positions.TerrainIds, configuration);
-            _diagnostics.LogMappedLayerSummary("objects", positions.ObjectPositions, positions.ObjectIds, configuration);
-            _diagnostics.LogMappedLayerSummary("buildings", positions.BuildingPositions, positions.BuildingIds, configuration);
-        }
-
     }
 }

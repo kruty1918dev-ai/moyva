@@ -12,12 +12,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
     internal sealed class TileWorldCreatorTerrainBuildLayerConfigurationService : ITileWorldCreatorTerrainBuildLayerConfigurationService
     {
-        private const string LogTag = "[MoyvaTWCHeight]";
         private readonly TileWorldCreatorManager _manager;
         private readonly TileWorldCreatorIdMappingSO _mapping;
         private readonly TileWorldCreatorBuildOptions _options;
         private readonly ITileWorldCreatorBlueprintLayerResolver _resolver;
-        private readonly HashSet<string> _loggedInvalidBuildLayers = new();
 
         public TileWorldCreatorTerrainBuildLayerConfigurationService(
             ITileWorldCreatorBuildEnvironment environment,
@@ -52,25 +50,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             var buildLayer = TileWorldCreatorBuildLayerLookup.FindTilesBuildLayer(configuration, blueprintLayerGuid);
             if (buildLayer == null)
-            {
-                LogInvalidBuildLayerOnce(mapping, "no TilesBuildLayer is assigned to the resolved blueprint layer");
                 return;
-            }
 
             if (_options.TerrainBuildMode != TileWorldCreatorTerrainBuildMode.LegacyPostBuildHeightProjection)
                 buildLayer = MoyvaTerrainBuildLayerUpgradeUtility.EnsureHeightAware(_manager, configuration, buildLayer, buildLayer.layerName);
 
             bool useDualGrid = TileWorldCreatorTerrainPresetUtility.ShouldUseDualGrid(mapping.TilePreset, mapping.UseDualGrid);
             if (!TileWorldCreatorTerrainPresetUtility.HasUsableTilePreset(mapping.TilePreset, useDualGrid))
-            {
-                LogInvalidBuildLayerOnce(mapping, $"tile preset '{mapping.TilePreset.name}' has no usable {(useDualGrid ? "dual" : "normal")} prefab references");
                 return;
-            }
-
-            bool oldUseDualGrid = buildLayer.useDualGrid;
-            bool oldScaleToCell = buildLayer.scaleTileToCellSize;
-            bool oldLayerMerge = buildLayer.mergeTiles;
-            float oldLayerYOffset = buildLayer.layerYOffset;
 
             buildLayer.SetBlueprintLayer(blueprintLayerGuid);
             buildLayer.SetNewTilePreset(mapping.TilePreset);
@@ -104,11 +91,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 buildLayer.tileLayers[i] ??= new TilesBuildLayer.TileLayers();
                 buildLayer.tileLayers[i].heightOffset = 0f;
             }
-        }
-
-        private void LogInvalidBuildLayerOnce(TileWorldCreatorIdMappingSO.LayerMapping mapping, string reason)
-        {
-            string key = $"{mapping?.IdPattern}:{reason}";
         }
     }
 }

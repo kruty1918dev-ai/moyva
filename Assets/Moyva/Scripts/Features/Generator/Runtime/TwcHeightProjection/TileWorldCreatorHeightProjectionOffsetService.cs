@@ -53,23 +53,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             sample.Transform.position = pos;
             state.AppliedYOffsetByTransformId[sample.Transform.GetInstanceID()] = next;
             stats.Changed++;
-            AddSample(state, sample.Transform.name, local, rawX, rawY, cellX, cellY, level, previous, next);
-        }
-
-        private static void AddSample(
-            TileWorldCreatorHeightProjectionState state,
-            string name,
-            Vector3 local,
-            int rawX,
-            int rawY,
-            int cellX,
-            int cellY,
-            int level,
-            float previous,
-            float next)
-        {
-            if (state.SampleApplications.Count < 12)
-                state.SampleApplications.Add($"'{name}' local=({local.x:0.##},{local.z:0.##}) rawCell=({rawX},{rawY}) cell=({cellX},{cellY}) level={level} offset {previous:0.##}->{next:0.##}");
         }
     }
 }

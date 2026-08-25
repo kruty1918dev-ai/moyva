@@ -128,7 +128,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6909657}
-  - component: {fileID: 6909658}
   m_Layer: 0
   m_Name: MapChunk_4_2
   m_TagString: Untagged
@@ -152,27 +151,6 @@ Transform:
   - {fileID: 426404321}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6909658
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6909656}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!43 &16433975
 Mesh:
   m_ObjectHideFlags: 0
@@ -375,7 +353,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 17417583}
-  - component: {fileID: 17417584}
   m_Layer: 0
   m_Name: MapChunk_3_1
   m_TagString: Untagged
@@ -399,27 +376,6 @@ Transform:
   - {fileID: 805767544}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &17417584
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 17417582}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &31189854
 GameObject:
   m_ObjectHideFlags: 0
@@ -3776,7 +3732,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 170439072}
-  - component: {fileID: 170439073}
   m_Layer: 0
   m_Name: MapChunk_4_0
   m_TagString: Untagged
@@ -3800,27 +3755,6 @@ Transform:
   - {fileID: 1856912660}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &170439073
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 170439071}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &194989856
 GameObject:
   m_ObjectHideFlags: 0
@@ -4152,7 +4086,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 223553787}
-  - component: {fileID: 223553788}
   m_Layer: 0
   m_Name: MapChunk_1_2
   m_TagString: Untagged
@@ -4176,27 +4109,6 @@ Transform:
   - {fileID: 2065545664}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &223553788
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 223553786}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &230045340
 GameObject:
   m_ObjectHideFlags: 0
@@ -6285,7 +6197,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 365134303}
-  - component: {fileID: 365134304}
   m_Layer: 0
   m_Name: MapChunk_2_3
   m_TagString: Untagged
@@ -6309,27 +6220,6 @@ Transform:
   - {fileID: 1979879776}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &365134304
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 365134302}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &369068995
 GameObject:
   m_ObjectHideFlags: 0
@@ -7232,7 +7122,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 407071428}
-  - component: {fileID: 407071429}
   m_Layer: 0
   m_Name: MapChunk_1_0
   m_TagString: Untagged
@@ -7256,27 +7145,6 @@ Transform:
   - {fileID: 2086613747}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &407071429
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 407071427}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -8403,7 +8271,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 433540075}
-  - component: {fileID: 433540076}
   m_Layer: 0
   m_Name: MapChunk_0_4
   m_TagString: Untagged
@@ -8427,27 +8294,6 @@ Transform:
   - {fileID: 967915651}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &433540076
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 433540074}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &437223213
 GameObject:
   m_ObjectHideFlags: 0
@@ -9550,7 +9396,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 533902874}
-  - component: {fileID: 533902875}
   m_Layer: 0
   m_Name: MapChunk_5_5
   m_TagString: Untagged
@@ -9574,27 +9419,6 @@ Transform:
   - {fileID: 1959922174}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &533902875
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 533902873}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &537359259
 GameObject:
   m_ObjectHideFlags: 0
@@ -11943,7 +11767,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 699626000}
-  - component: {fileID: 699626001}
   m_Layer: 0
   m_Name: MapChunk_3_4
   m_TagString: Untagged
@@ -11967,27 +11790,6 @@ Transform:
   - {fileID: 1703938919}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &699626001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 699625999}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &702274153
 GameObject:
   m_ObjectHideFlags: 0
@@ -12142,7 +11944,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 705993448}
-  - component: {fileID: 705993449}
   m_Layer: 0
   m_Name: MapChunk_1_1
   m_TagString: Untagged
@@ -12166,27 +11967,6 @@ Transform:
   - {fileID: 90101376}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &705993449
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 705993447}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &712836414
 GameObject:
   m_ObjectHideFlags: 0
@@ -12429,7 +12209,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 724349431}
-  - component: {fileID: 724349432}
   m_Layer: 0
   m_Name: MapChunk_4_1
   m_TagString: Untagged
@@ -12453,27 +12232,6 @@ Transform:
   - {fileID: 1127171131}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &724349432
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 724349430}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &728449954
 GameObject:
   m_ObjectHideFlags: 0
@@ -12641,7 +12399,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 738250552}
-  - component: {fileID: 738250553}
   m_Layer: 0
   m_Name: MapChunk_5_3
   m_TagString: Untagged
@@ -12665,27 +12422,6 @@ Transform:
   - {fileID: 913044863}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &738250553
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 738250551}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &740376496
 GameObject:
   m_ObjectHideFlags: 0
@@ -16533,7 +16269,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 921661543}
-  - component: {fileID: 921661544}
   m_Layer: 0
   m_Name: MapChunk_4_3
   m_TagString: Untagged
@@ -16557,27 +16292,6 @@ Transform:
   - {fileID: 980936653}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &921661544
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 921661542}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &934139139
 GameObject:
   m_ObjectHideFlags: 0
@@ -17421,7 +17135,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 959656839}
-  - component: {fileID: 959656840}
   m_Layer: 0
   m_Name: MapChunk_0_1
   m_TagString: Untagged
@@ -17445,27 +17158,6 @@ Transform:
   - {fileID: 2050007952}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &959656840
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 959656838}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &960908737
 GameObject:
   m_ObjectHideFlags: 0
@@ -17884,7 +17576,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 992197150}
-  - component: {fileID: 992197151}
   m_Layer: 0
   m_Name: MapChunk_3_3
   m_TagString: Untagged
@@ -17908,27 +17599,6 @@ Transform:
   - {fileID: 473725180}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &992197151
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 992197149}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &998765899
 GameObject:
   m_ObjectHideFlags: 0
@@ -17938,7 +17608,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 998765900}
-  - component: {fileID: 998765901}
   m_Layer: 0
   m_Name: MapChunk_1_5
   m_TagString: Untagged
@@ -17962,27 +17631,6 @@ Transform:
   - {fileID: 1822012612}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &998765901
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 998765899}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1002158793
 GameObject:
   m_ObjectHideFlags: 0
@@ -18488,7 +18136,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1047527912}
-  - component: {fileID: 1047527913}
   m_Layer: 0
   m_Name: MapChunk_2_2
   m_TagString: Untagged
@@ -18512,27 +18159,6 @@ Transform:
   - {fileID: 235185870}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1047527913
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1047527911}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1062384870
 GameObject:
   m_ObjectHideFlags: 0
@@ -19727,7 +19353,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1122184127}
-  - component: {fileID: 1122184128}
   m_Layer: 0
   m_Name: MapChunk_2_4
   m_TagString: Untagged
@@ -19751,27 +19376,6 @@ Transform:
   - {fileID: 418379784}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1122184128
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1122184126}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1122831285
 GameObject:
   m_ObjectHideFlags: 0
@@ -21108,7 +20712,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1159447914}
-  - component: {fileID: 1159447915}
   m_Layer: 0
   m_Name: MapChunk_5_1
   m_TagString: Untagged
@@ -21132,27 +20735,6 @@ Transform:
   - {fileID: 373938576}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1159447915
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1159447913}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1162874641
 GameObject:
   m_ObjectHideFlags: 0
@@ -21162,7 +20744,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1162874642}
-  - component: {fileID: 1162874643}
   m_Layer: 0
   m_Name: MapChunk_3_2
   m_TagString: Untagged
@@ -21186,27 +20767,6 @@ Transform:
   - {fileID: 1341079643}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1162874643
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1162874641}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1171016761
 GameObject:
   m_ObjectHideFlags: 0
@@ -21825,7 +21385,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1203525339}
-  - component: {fileID: 1203525340}
   m_Layer: 0
   m_Name: MapChunk_2_5
   m_TagString: Untagged
@@ -21849,27 +21408,6 @@ Transform:
   - {fileID: 771335493}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1203525340
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1203525338}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1209207947
 GameObject:
   m_ObjectHideFlags: 0
@@ -22412,7 +21950,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1253263603}
-  - component: {fileID: 1253263604}
   m_Layer: 0
   m_Name: MapChunk_2_1
   m_TagString: Untagged
@@ -22436,27 +21973,6 @@ Transform:
   - {fileID: 1340372921}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1253263604
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1253263602}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!43 &1255860561
 Mesh:
   m_ObjectHideFlags: 0
@@ -23614,7 +23130,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1308590685}
-  - component: {fileID: 1308590686}
   m_Layer: 0
   m_Name: MapChunk_4_4
   m_TagString: Untagged
@@ -23638,27 +23153,6 @@ Transform:
   - {fileID: 861376608}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1308590686
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1308590684}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1309808495
 GameObject:
   m_ObjectHideFlags: 0
@@ -25593,7 +25087,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1380105539}
-  - component: {fileID: 1380105540}
   m_Layer: 0
   m_Name: MapChunk_0_3
   m_TagString: Untagged
@@ -25617,27 +25110,6 @@ Transform:
   - {fileID: 1739012610}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1380105540
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380105538}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1384785553
 GameObject:
   m_ObjectHideFlags: 0
@@ -26649,7 +26121,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1445954426}
-  - component: {fileID: 1445954427}
   m_Layer: 0
   m_Name: MapChunk_0_0
   m_TagString: Untagged
@@ -26673,27 +26144,6 @@ Transform:
   - {fileID: 345903023}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1445954427
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1445954425}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1452124633
 GameObject:
   m_ObjectHideFlags: 0
@@ -27339,7 +26789,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1475611862}
-  - component: {fileID: 1475611863}
   m_Layer: 0
   m_Name: MapChunk_0_2
   m_TagString: Untagged
@@ -27363,27 +26812,6 @@ Transform:
   - {fileID: 856846223}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1475611863
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1475611861}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1490513036
 GameObject:
   m_ObjectHideFlags: 0
@@ -28268,7 +27696,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1525852009}
-  - component: {fileID: 1525852010}
   m_Layer: 0
   m_Name: MapChunk_5_2
   m_TagString: Untagged
@@ -28292,27 +27719,6 @@ Transform:
   - {fileID: 1321622163}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1525852010
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1525852008}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1537667075
 GameObject:
   m_ObjectHideFlags: 0
@@ -29375,7 +28781,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1588507659}
-  - component: {fileID: 1588507660}
   m_Layer: 0
   m_Name: MapChunk_3_5
   m_TagString: Untagged
@@ -29399,27 +28804,6 @@ Transform:
   - {fileID: 1912149425}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1588507660
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1588507658}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1596259590
 GameObject:
   m_ObjectHideFlags: 0
@@ -30396,7 +29780,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1652119491}
-  - component: {fileID: 1652119492}
   m_Layer: 0
   m_Name: MapChunk_5_4
   m_TagString: Untagged
@@ -30420,27 +29803,6 @@ Transform:
   - {fileID: 194989857}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1652119492
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1652119490}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1658081725
 GameObject:
   m_ObjectHideFlags: 0
@@ -30450,7 +29812,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1658081726}
-  - component: {fileID: 1658081727}
   m_Layer: 0
   m_Name: MapChunk_1_4
   m_TagString: Untagged
@@ -30474,27 +29835,6 @@ Transform:
   - {fileID: 1886526184}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1658081727
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1658081725}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1667942600
 GameObject:
   m_ObjectHideFlags: 0
@@ -30986,7 +30326,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1689995470}
-  - component: {fileID: 1689995471}
   m_Layer: 0
   m_Name: MapChunk_0_5
   m_TagString: Untagged
@@ -31010,27 +30349,6 @@ Transform:
   - {fileID: 505970280}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1689995471
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1689995469}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1696467764
 GameObject:
   m_ObjectHideFlags: 0
@@ -33697,7 +33015,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1852017507}
-  - component: {fileID: 1852017508}
   m_Layer: 0
   m_Name: MapChunk_1_3
   m_TagString: Untagged
@@ -33721,27 +33038,6 @@ Transform:
   - {fileID: 857088554}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1852017508
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1852017506}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1856910798
 GameObject:
   m_ObjectHideFlags: 0
@@ -34003,7 +33299,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1858891308}
-  - component: {fileID: 1858891309}
   m_Layer: 0
   m_Name: MapChunk_3_0
   m_TagString: Untagged
@@ -34027,27 +33322,6 @@ Transform:
   - {fileID: 1558372767}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1858891309
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1858891307}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1866335165
 GameObject:
   m_ObjectHideFlags: 0
@@ -34963,7 +34237,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1903146947}
-  - component: {fileID: 1903146948}
   m_Layer: 0
   m_Name: MapChunk_2_0
   m_TagString: Untagged
@@ -34987,27 +34260,6 @@ Transform:
   - {fileID: 564633125}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1903146948
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1903146946}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!43 &1910948067
 Mesh:
   m_ObjectHideFlags: 0
@@ -35482,7 +34734,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1924437274}
-  - component: {fileID: 1924437275}
   m_Layer: 0
   m_Name: MapChunk_5_0
   m_TagString: Untagged
@@ -35506,27 +34757,6 @@ Transform:
   - {fileID: 311065258}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1924437275
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1924437273}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &1934566116
 GameObject:
   m_ObjectHideFlags: 0
@@ -38299,7 +37529,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2073106086}
-  - component: {fileID: 2073106087}
   m_Layer: 0
   m_Name: MapChunk_4_5
   m_TagString: Untagged
@@ -38323,27 +37552,6 @@ Transform:
   - {fileID: 1640366057}
   m_Father: {fileID: 1316673325}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2073106087
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2073106085}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3224dbd50d1603648dd0b39e167832a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.ChunkFirst.ChunkAuditGizmo
-  drawCoreRect: 1
-  drawFinalMeshBounds: 1
-  drawActualMeshWhenSelected: 1
-  drawSelectedLabel: 1
-  drawSampleRect: 1
-  drawSourceBounds: 1
-  drawSourceFootprints: 1
-  drawEmittedCellsWhenSelected: 1
-  drawAllChunkLabels: 0
 --- !u!1 &2080970445
 GameObject:
   m_ObjectHideFlags: 0

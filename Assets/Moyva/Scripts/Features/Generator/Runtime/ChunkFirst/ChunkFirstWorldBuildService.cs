@@ -22,7 +22,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly IChunkTerrainMeshBuilder _meshBuilder;
         private readonly IChunkFirstObjectSpawner _objectSpawner;
         private readonly ChunkFirstRuntimeMeshRegistry _meshRegistry;
-        private readonly ChunkFirstBuildDiagnostics _diagnostics;
         private readonly Dictionary<Vector2Int, ResolvedTileComposition> _resolved = new Dictionary<Vector2Int, ResolvedTileComposition>();
         private readonly List<MapChunkCoord> _singleChunk = new List<MapChunkCoord>(1);
         private readonly HashSet<MapChunkCoord> _activeChunkCoords = new HashSet<MapChunkCoord>();
@@ -39,8 +38,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             IChunkFirstTwcVisualCleanupService twcVisualCleanup,
             IChunkTerrainMeshBuilder meshBuilder,
             IChunkFirstObjectSpawner objectSpawner,
-            ChunkFirstRuntimeMeshRegistry meshRegistry,
-            ChunkFirstBuildDiagnostics diagnostics)
+            ChunkFirstRuntimeMeshRegistry meshRegistry)
         {
             _environment = environment;
             _chunkSettings = chunkSettings;
@@ -54,23 +52,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _meshBuilder = meshBuilder;
             _objectSpawner = objectSpawner;
             _meshRegistry = meshRegistry;
-            _diagnostics = diagnostics;
         }
 
+        /// <summary>Будує авторитетні chunk-first меші та реєструє їх для показу мапи.</summary>
         public TileWorldCreatorWorldBuildResult Build(
             GeneratedWorldData worldData,
             Configuration configuration,
             TileWorldCreatorTerrainBuildPolicyResult terrainPolicy)
         {
-            ChunkFirstHeightAudit.Reset();
-            _diagnostics.LogStart(terrainPolicy.Mode, worldData, _chunkSettings.ChunkSize);
             if (worldData?.LogicalTileMap == null)
             {
-                _diagnostics.LogFailure("Chunk-first selected but logical tile stack map is missing.");
+                Debug.LogError("[MoyvaChunkFirst] Logical tile stack map is missing.");
                 return TileWorldCreatorWorldBuildResult.Disabled;
             }
-
-            TraceLogicalHeightSummary(worldData.LogicalTileMap);
 
             using (TileWorldCreatorChunkFirstGuard.Enter())
             {
@@ -89,114 +83,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     worldData.BaseMapWorldBounds,
                     NeighborhoodHalo);
 
-                ChunkAuditRuntime.BeginBuild(
-                    worldData.Width,
-                    worldData.Height,
-                    ResolveCellSize(worldData, configuration),
-                    worldData.HasBaseMapWorldBounds,
-                    worldData.BaseMapWorldBounds);
-
                 ReconcileVisualChunkRoots(areas);
                 ResolveCompositions(worldData.LogicalTileMap, areas);
-                int objectCandidates = CountObjectLikeSamples(worldData.LogicalTileMap)
-                                       + CountCells(worldData.ObjectMap)
-                                       + CountCells(worldData.BuildingMap);
-                _diagnostics.LogPlan(
-                    areas.Count,
-                    CountStackSamples(worldData.LogicalTileMap),
-                    CountResolvedTerrain(),
-                    objectCandidates);
-
-                int chunksBuilt = BuildTerrainMeshes(areas);
-                int objectsSpawned = _objectSpawner.Spawn(worldData);
-                _diagnostics.LogComplete(chunksBuilt, objectsSpawned);
+                BuildTerrainMeshes(areas);
+                _objectSpawner.Spawn(worldData);
 
                 return CreateResult(worldData, configuration);
             }
-        }
-
-        [System.Diagnostics.Conditional("MOYVA_DEEP_GENERATION_DIAGNOSTICS")]
-        private static void TraceLogicalHeightSummary(
-            GraphLogicalTileMap map)
-        {
-            if (map == null)
-                return;
-
-            bool hasSample = false;
-
-            float minHeight = 0f;
-            float maxHeight = 0f;
-            float minSurface = 0f;
-            float maxSurface = 0f;
-
-            int sampleCount = 0;
-
-            var distinctHeights = new HashSet<int>();
-            var distinctSurfaces = new HashSet<int>();
-
-            for (int x = 0; x < map.Width; x++)
-                for (int y = 0; y < map.Height; y++)
-                {
-                    TileStackCell stack = map.GetCellStack(x, y);
-                    if (stack == null)
-                        continue;
-
-                    for (int i = 0; i < stack.Samples.Count; i++)
-                    {
-                        GraphTileLayerSample sample = stack.Samples[i];
-
-                        if (!IsFiniteHeightTraceValue(sample.Height)
-                            || !IsFiniteHeightTraceValue(sample.SurfaceHeight))
-                        {
-                            continue;
-                        }
-
-                        if (!hasSample)
-                        {
-                            minHeight = maxHeight = sample.Height;
-                            minSurface = maxSurface = sample.SurfaceHeight;
-                            hasSample = true;
-                        }
-                        else
-                        {
-                            minHeight = Mathf.Min(minHeight, sample.Height);
-                            maxHeight = Mathf.Max(maxHeight, sample.Height);
-                            minSurface = Mathf.Min(
-                                minSurface,
-                                sample.SurfaceHeight);
-                            maxSurface = Mathf.Max(
-                                maxSurface,
-                                sample.SurfaceHeight);
-                        }
-
-                        distinctHeights.Add(
-                            Mathf.RoundToInt(sample.Height * 1000f));
-
-                        distinctSurfaces.Add(
-                            Mathf.RoundToInt(
-                                sample.SurfaceHeight * 1000f));
-
-                        sampleCount++;
-                    }
-                }
-
-            ChunkFirstHeightAudit.TraceUnique(
-                "LOGICAL_SUMMARY",
-                "world",
-                $"map={map.Width}x{map.Height} " +
-                $"samples={sampleCount} " +
-                $"minHeight={minHeight:0.###} " +
-                $"maxHeight={maxHeight:0.###} " +
-                $"distinctHeights={distinctHeights.Count} " +
-                $"minSurface={minSurface:0.###} " +
-                $"maxSurface={maxSurface:0.###} " +
-                $"distinctSurfaces={distinctSurfaces.Count}");
-        }
-
-        private static bool IsFiniteHeightTraceValue(float value)
-        {
-            return !float.IsNaN(value)
-                   && !float.IsInfinity(value);
         }
 
         private void ResolveCompositions(
@@ -276,36 +169,17 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (_roots is not IMapVisualChunkRootPruner pruner)
                 return;
 
-            int removed = pruner.RemoveRootsOutside(_activeChunkCoords);
-            if (removed > 0)
-            {
-            }
+            pruner.RemoveRootsOutside(_activeChunkCoords);
         }
 
-        private int BuildTerrainMeshes(IReadOnlyList<ChunkBuildArea> areas)
+        private void BuildTerrainMeshes(IReadOnlyList<ChunkBuildArea> areas)
         {
-            int built = 0;
             for (int i = 0; i < areas.Count; i++)
             {
                 Transform chunkRoot = _roots.GetOrCreateRoot(areas[i].Coord);
-                built += _meshBuilder.Build(chunkRoot, areas[i], _resolved, _meshSource);
+                _meshBuilder.Build(chunkRoot, areas[i], _resolved, _meshSource);
                 RegisterChunkRenderer(chunkRoot, areas[i].Coord);
             }
-
-            ChunkAuditRuntime.CompleteBuild();
-            return built;
-        }
-
-        private int CountResolvedTerrain()
-        {
-            int count = 0;
-            foreach (var pair in _resolved)
-            {
-                if (pair.Value.HasMainTerrain)
-                    count++;
-            }
-
-            return count;
         }
 
         private void RegisterChunkRenderer(Transform chunkRoot, MapChunkCoord coord)
@@ -359,52 +233,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     if (!string.IsNullOrWhiteSpace(id) && resolveLayer(id, out _))
                         ids.Add(id);
                 }
-        }
-
-        private static int CountStackSamples(GraphLogicalTileMap map)
-        {
-            int count = 0;
-            for (int x = 0; x < map.Width; x++)
-                for (int y = 0; y < map.Height; y++)
-                    count += map.GetCellStack(x, y)?.Count ?? 0;
-            return count;
-        }
-
-        private static int CountCells(string[,] map)
-        {
-            if (map == null)
-                return 0;
-
-            int count = 0;
-            for (int x = 0; x < map.GetLength(0); x++)
-                for (int y = 0; y < map.GetLength(1); y++)
-                    if (!string.IsNullOrWhiteSpace(map[x, y]))
-                        count++;
-            return count;
-        }
-
-        private static int CountObjectLikeSamples(GraphLogicalTileMap map)
-        {
-            if (map == null)
-                return 0;
-
-            int count = 0;
-            for (int x = 0; x < map.Width; x++)
-                for (int y = 0; y < map.Height; y++)
-                {
-                    var stack = map.GetCellStack(x, y);
-                    if (stack == null)
-                        continue;
-
-                    for (int i = 0; i < stack.Samples.Count; i++)
-                    {
-                        var kind = stack.Samples[i].LayerKind;
-                        if (kind == LayerKind.ObjectSpawn || kind == LayerKind.Building || kind == LayerKind.Decoration)
-                            count++;
-                    }
-                }
-
-            return count;
         }
 
         private static float ResolveCellSize(GeneratedWorldData worldData, Configuration configuration)

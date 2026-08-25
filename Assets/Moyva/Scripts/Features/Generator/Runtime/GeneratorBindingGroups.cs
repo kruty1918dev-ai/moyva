@@ -103,8 +103,6 @@ namespace Kruty1918.Moyva.Generator
                 .To<TileWorldCreatorLayerPositionCollector>().AsSingle();
             container.Bind<ITileWorldCreatorLayerPositionApplier>()
                 .To<TileWorldCreatorLayerPositionApplier>().AsSingle();
-            container.Bind<ITileWorldCreatorBuildDiagnosticsService>()
-                .To<TileWorldCreatorBuildDiagnosticsService>().AsSingle();
             container.Bind<ITileWorldCreatorBuildExecutionService>()
                 .To<TileWorldCreatorBuildExecutionService>().AsSingle();
             container.Bind<ITileWorldCreatorTerrainBaseHeightResolver>()

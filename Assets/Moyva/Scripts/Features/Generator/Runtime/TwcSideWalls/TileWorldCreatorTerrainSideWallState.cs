@@ -8,8 +8,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public readonly List<Vector3> Vertices = new List<Vector3>(4096);
         public readonly List<int> Triangles = new List<int>(6144);
         public readonly List<Vector2> Uvs = new List<Vector2>(4096);
-        public readonly List<string> Samples = new List<string>(16);
-        public readonly List<string> ArtifactSamples = new List<string>(24);
 
         public Mesh Mesh;
         public MeshFilter MeshFilter;
@@ -22,8 +20,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Vertices.Clear();
             Triangles.Clear();
             Uvs.Clear();
-            Samples.Clear();
-            ArtifactSamples.Clear();
         }
     }
 }

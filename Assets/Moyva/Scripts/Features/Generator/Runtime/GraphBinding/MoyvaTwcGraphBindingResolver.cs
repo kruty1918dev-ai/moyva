@@ -28,19 +28,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public Vector2Int ResolveMapSize(IMoyvaTwcGraphBindingContext context)
         {
             Vector2Int requested;
-            string source;
 
             if (GameLaunchContext.TryGetWorldDimensions(out int launchWidth, out int launchHeight))
             {
                 requested = ClampMapSize(launchWidth, launchHeight);
-                source = "GameLaunchContext";
             }
             else if (context.GraphAsset?.SharedSettings != null && context.GraphAsset.SharedSettings.HasMapSize)
             {
                 requested = ClampMapSize(
                     context.GraphAsset.SharedSettings.MapWidth,
                     context.GraphAsset.SharedSettings.MapHeight);
-                source = "GraphSharedSettings";
             }
             else
             {
@@ -48,13 +45,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 requested = configuration != null
                     ? ClampMapSize(configuration.width, configuration.height)
                     : new Vector2Int(1, 1);
-                source = configuration != null ? "TwcConfiguration" : "Fallback";
             }
 
-            return ChunkAlignedMapSizeUtility.CropToSceneChunks(
-                requested,
-                source,
-                context?.LogContext);
+            return ChunkAlignedMapSizeUtility.CropToSceneChunks(requested);
         }
 
         public int NormalizeSeed(int seed)

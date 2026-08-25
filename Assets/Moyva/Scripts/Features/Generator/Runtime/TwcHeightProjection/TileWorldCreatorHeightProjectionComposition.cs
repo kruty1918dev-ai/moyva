@@ -4,12 +4,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         public static ITileWorldCreatorHeightProjectionService Create()
         {
-            var diagnostics = new TileWorldCreatorHeightProjectionDiagnostics();
             var collector = new TileWorldCreatorTileTransformCollector();
             var offsets = new TileWorldCreatorHeightProjectionOffsetService();
-            var applier = new TileWorldCreatorHeightProjectionApplier(collector, offsets, diagnostics);
+            var applier = new TileWorldCreatorHeightProjectionApplier(collector, offsets);
             var stableActions = new TileWorldCreatorHeightProjectionStableActionService();
-            return new TileWorldCreatorHeightProjectionService(applier, diagnostics, stableActions);
+            return new TileWorldCreatorHeightProjectionService(applier, stableActions);
         }
     }
 }

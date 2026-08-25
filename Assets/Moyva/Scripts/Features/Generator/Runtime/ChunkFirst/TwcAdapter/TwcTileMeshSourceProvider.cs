@@ -246,10 +246,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 templates,
                 unplacedRootMatrix,
                 preferFlatSurfaceTemplates);
-            float prefabBottomOffset = ResolveAggregateTransformedBoundsBottom(
-                templates,
-                unplacedRootMatrix,
-                preferFlatSurfaceTemplates);
             float placementHeight = ResolveSurfaceAlignedPlacementHeight(
                 sample.SurfaceHeight,
                 fallbackPlacementHeight,
@@ -262,58 +258,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             float visibleBottomY = sample.TileGeometryMode == TileGeometryMode.SolidTerrain
                 ? ResolveVisibleBottomY(composition)
                 : float.NaN;
-            float actualTopWorldY = placementHeight + prefabTopOffset;
-            float authoredBottomWorldY = placementHeight + prefabBottomOffset;
-            float actualBottomWorldY = sample.TileGeometryMode == TileGeometryMode.SolidTerrain
-                && IsFinite(visibleBottomY)
-                ? Mathf.Min(authoredBottomWorldY, visibleBottomY)
-                : authoredBottomWorldY;
-
-
-            float topDelta =
-                actualTopWorldY - sample.SurfaceHeight;
-
-            string placementTraceKey =
-                $"{sample.GraphLayerId}|" +
-                $"{prefab.name}|" +
-                $"{tileType}|" +
-                $"{sample.Height:0.###}|" +
-                $"{sample.SurfaceHeight:0.###}|" +
-                $"{prefabTopOffset:0.###}|" +
-                $"{placementHeight:0.###}";
-
-            ChunkFirstHeightAudit.TraceUnique(
-                "PLACEMENT",
-                placementTraceKey,
-                $"cell=({composition.Cell.x},{composition.Cell.y}) " +
-                $"layer={sample.GraphLayerName} " +
-                $"tileId={sample.TileId} " +
-                $"prefab={prefab.name} " +
-                $"tileType={tileType} " +
-                $"sampleHeight={sample.Height:0.###} " +
-                $"sampleSurfaceHeight={sample.SurfaceHeight:0.###} " +
-                $"fallbackPlacementHeight={fallbackPlacementHeight:0.###} " +
-                $"prefabTopOffset={prefabTopOffset:0.###} " +
-                $"prefabBottomOffset={prefabBottomOffset:0.###} " +
-                $"placementY={placementHeight:0.###} " +
-                $"actualTopWorldY={actualTopWorldY:0.###} " +
-                $"actualBottomWorldY={actualBottomWorldY:0.###} " +
-                $"topDelta={topDelta:0.#####} " +
-                $"buildLayerYOffset={buildLayer.layerYOffset:0.###}");
-
-
-            ChunkFirstHeightAudit.RecordPlacement(
-                sample.GraphLayerId,
-                sample.GraphLayerName,
-                composition.Cell,
-                composition.MainTerrain.GraphLayerName,
-                composition.MainTerrain.SurfaceHeight,
-                composition.SupportHeight,
-                prefabTopOffset,
-                prefabBottomOffset,
-                rootMatrix.m13,
-                actualTopWorldY,
-                actualBottomWorldY);
 
             int missingClosureOwner =
                 sample.TileGeometryMode == TileGeometryMode.SolidTerrain
@@ -355,35 +299,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     generateMissingClosure: i == missingClosureOwner);
                     
                 if (!meshSource.IsValid)
-                {
-                    ChunkFirstHeightAudit.TraceUnique(
-                        "SOURCE_REJECTED_INVALID",
-                        $"{sample.GraphLayerId}|{prefab.name}|{tileType}|{i}",
-                        $"cell=({composition.Cell.x},{composition.Cell.y}) " +
-                        $"layer={sample.GraphLayerName} " +
-                        $"prefab={prefab.name} " +
-                        $"templateMesh={template.Mesh?.name ?? "<null>"} " +
-                        $"vertexCount={template.Mesh?.vertexCount ?? 0} " +
-                        $"matrixY={rootMatrix.m13:0.###}");
-
                     continue;
-                }
 
                 results.Add(meshSource);
                 added++;
-
-                ChunkFirstHeightAudit.TraceUnique(
-                    "SOURCE_EMITTED",
-                    $"{sample.GraphLayerId}|{prefab.name}|{tileType}|{i}",
-                    $"cell=({composition.Cell.x},{composition.Cell.y}) " +
-                    $"layer={sample.GraphLayerName} " +
-                    $"prefab={prefab.name} " +
-                    $"templateMesh={template.Mesh.name} " +
-                    $"vertexCount={template.Mesh.vertexCount} " +
-                    $"materials={meshSource.Materials?.Length ?? 0} " +
-                    $"localMatrixY={meshSource.LocalMatrix.m13:0.###} " +
-                    $"visibleBottomY={meshSource.VisibleBottomY:0.###} " +
-                    $"addedCount={added}");
             }
 
             return added;

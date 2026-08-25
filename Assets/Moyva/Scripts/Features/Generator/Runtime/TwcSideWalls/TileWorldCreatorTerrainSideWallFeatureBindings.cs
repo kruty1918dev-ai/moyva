@@ -13,7 +13,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             container.Bind<ITileWorldCreatorTerrainSideWallComponentService>().To<TileWorldCreatorTerrainSideWallComponentService>().AsSingle();
             container.Bind<ITileWorldCreatorTerrainSideWallEdgeAppender>().To<TileWorldCreatorTerrainSideWallEdgeAppender>().AsSingle();
             container.Bind<ITileWorldCreatorTerrainSideWallMeshBuilder>().To<TileWorldCreatorTerrainSideWallMeshBuilder>().AsSingle();
-            container.Bind<ITileWorldCreatorTerrainSideWallDiagnostics>().To<TileWorldCreatorTerrainSideWallDiagnostics>().AsSingle();
             container.Bind<ITileWorldCreatorTerrainSideWallService>().To<TileWorldCreatorTerrainSideWallService>().AsSingle();
         }
     }

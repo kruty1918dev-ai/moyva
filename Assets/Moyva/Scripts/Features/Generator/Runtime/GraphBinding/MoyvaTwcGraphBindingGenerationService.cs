@@ -30,7 +30,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _compiler = compiler;
             _validation = validation;
             _worldBuild = worldBuild;
-            _twcVisualCleanup = twcVisualCleanup ?? new ChunkFirstTwcVisualCleanupService(new ChunkFirstBuildDiagnostics());
+            _twcVisualCleanup = twcVisualCleanup ?? new ChunkFirstTwcVisualCleanupService();
         }
 
         public bool GenerateFromGraph(IMoyvaTwcGraphBindingContext context)
@@ -236,7 +236,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 var layout = new MapChunkLayoutService(settings);
                 var roots = new MapVisualChunkRootService();
                 var registry = new MapVisualChunkRegistry();
-                var diagnostics = new ChunkFirstBuildDiagnostics();
                 var meshRegistry = new ChunkFirstRuntimeMeshRegistry();
                 var environment = new TileWorldCreatorBuildEnvironment(
                     manager,
@@ -252,10 +251,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     new ResolvedTileCompositionResolver(),
                     new TwcTileMeshSourceProvider(environment),
                     _twcVisualCleanup,
-                    new ChunkTerrainMeshBuilder(meshRegistry, diagnostics),
+                    new ChunkTerrainMeshBuilder(meshRegistry),
                     new ChunkFirstObjectSpawner(environment, layout, roots),
-                    meshRegistry,
-                    diagnostics);
+                    meshRegistry);
                 return builder.Build(
                     worldData,
                     manager.configuration,

@@ -11,7 +11,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             container.Bind<ITileWorldCreatorClusterStatsService>().To<TileWorldCreatorClusterStatsService>().AsSingle();
             container.Bind<ITileWorldCreatorClusterCombineService>().To<TileWorldCreatorClusterCombineService>().AsSingle();
-            container.Bind<TileWorldCreatorRuntimeMeshOptimizerDiagnostics>().AsSingle();
             container.Bind<ITileWorldCreatorRuntimeMeshOptimizerService>().To<TileWorldCreatorRuntimeMeshOptimizerService>().AsSingle();
         }
     }

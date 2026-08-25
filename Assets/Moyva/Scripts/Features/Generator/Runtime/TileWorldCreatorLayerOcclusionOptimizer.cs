@@ -6,46 +6,25 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
-    internal readonly struct TileWorldCreatorLayerOcclusionResult
-    {
-        public readonly int ProcessedLayerCount;
-        public readonly int RemovedCellCount;
-        public readonly int OccupiedCellCount;
-        public readonly int SkippedLayerCount;
-
-        public TileWorldCreatorLayerOcclusionResult(int processedLayerCount, int removedCellCount, int occupiedCellCount = 0, int skippedLayerCount = 0)
-        {
-            ProcessedLayerCount = processedLayerCount;
-            RemovedCellCount = removedCellCount;
-            OccupiedCellCount = occupiedCellCount;
-            SkippedLayerCount = skippedLayerCount;
-        }
-    }
-
     internal static class TileWorldCreatorLayerOcclusionOptimizer
     {
         private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
         private const int TargetTileClusterBudget = 32;
         private const int MinimumClusterCellSize = 8;
 
-        public static TileWorldCreatorLayerOcclusionResult GenerateCompleteMap(TileWorldCreatorManager manager, int chunkSizeTiles = 0)
+        public static void GenerateCompleteMap(TileWorldCreatorManager manager, int chunkSizeTiles = 0)
         {
             GuardChunkFirstVisualBuild();
             if (manager == null || manager.configuration == null)
-                return default;
+                return;
 
-            int childrenBefore = manager.transform.childCount;
-            var result = GenerateBlueprintMap(manager);
-            LogOcclusionResult(result, "GenerateCompleteMap");
+            GenerateBlueprintMap(manager);
             if (chunkSizeTiles > 0)
                 TileWorldCreatorChunkBatchingUtility.Apply(manager.configuration, chunkSizeTiles, true, "graph-binding");
             else
                 ApplyTileBatchingBudget(manager.configuration);
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
-            stopwatch.Stop();
             manager.OnMapReady?.Invoke();
-            return result;
         }
 
         private static void GuardChunkFirstVisualBuild()
@@ -59,43 +38,35 @@ namespace Kruty1918.Moyva.Generator.Runtime
 #endif
         }
 
-        public static TileWorldCreatorLayerOcclusionResult GenerateBlueprintMap(TileWorldCreatorManager manager)
+        public static void GenerateBlueprintMap(TileWorldCreatorManager manager)
         {
             if (manager == null || manager.configuration == null)
-                return default;
+                return;
 
             manager.ExecuteBlueprintLayers();
-            return CullOccludedTileCells(manager.configuration);
+            CullOccludedTileCells(manager.configuration);
         }
 
-        public static TileWorldCreatorLayerOcclusionResult CullOccludedTileCells(Configuration configuration)
+        public static void CullOccludedTileCells(Configuration configuration)
         {
             var layers = GetBuildOrderedBlueprintLayers(configuration);
             if (layers.Count <= 1)
-                return new TileWorldCreatorLayerOcclusionResult(layers.Count, 0);
+                return;
 
             var occupiedByHigherLayers = new HashSet<Vector2Int>();
-            int removedCount = 0;
-            int skippedCount = 0;
 
             for (int i = layers.Count - 1; i >= 0; i--)
             {
                 var layer = layers[i];
                 if (layer?.allPositions == null || layer.allPositions.Count == 0)
-                {
-                    skippedCount++;
                     continue;
-                }
 
-                int before = layer.allPositions.Count;
                 layer.allPositions.RemoveWhere(position => occupiedByHigherLayers.Contains(ToCellKey(position)));
-                removedCount += before - layer.allPositions.Count;
 
                 foreach (var position in layer.allPositions)
                     occupiedByHigherLayers.Add(ToCellKey(position));
             }
 
-            return new TileWorldCreatorLayerOcclusionResult(layers.Count, removedCount, occupiedByHigherLayers.Count, skippedCount);
         }
 
         private static void ApplyTileBatchingBudget(Configuration configuration)
@@ -106,7 +77,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int activeTileLayerCount = 0;
             int maxLayerWidth = Mathf.Max(1, configuration.width);
             int maxLayerHeight = Mathf.Max(1, configuration.height);
-            int mergeOverrideCount = 0;
 
             if (configuration.buildLayerFolders != null)
             {
@@ -130,10 +100,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         maxLayerHeight = Mathf.Max(maxLayerHeight, configuration.GetBlueprintLayerHeight(blueprint));
 
                         if (buildLayer.meshGenerationOverride && !buildLayer.mergeTiles)
-                        {
                             buildLayer.mergeTiles = true;
-                            mergeOverrideCount++;
-                        }
                     }
                 }
             }
@@ -153,10 +120,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (clusterChanged)
                 configuration.clusterCellSize = requestedClusterCellSize;
 
-            if (mergeChanged || clusterChanged || mergeOverrideCount > 0)
-            {
-                int estimatedClusters = EstimateClusterCount(maxLayerWidth, maxLayerHeight, configuration.clusterCellSize) * safeLayerCount;
-            }
         }
 
         private static BlueprintLayer ResolveBlueprintLayer(Configuration configuration, TilesBuildLayer buildLayer)
@@ -198,12 +161,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private static Vector2Int ToCellKey(Vector2 position)
             => new Vector2Int(Mathf.RoundToInt(position.x), Mathf.RoundToInt(position.y));
-
-        private static void LogOcclusionResult(TileWorldCreatorLayerOcclusionResult result, string context)
-        {
-            if (result.RemovedCellCount <= 0)
-                return;
-        }
 
         private static List<BlueprintLayer> GetBuildOrderedBlueprintLayers(Configuration configuration)
         {

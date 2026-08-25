@@ -8,7 +8,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
     internal sealed class MapVisualTileIdResolver : IMapVisualTileIdResolver
     {
         private readonly Dictionary<string, TileTypeDefinition> _definitions = new();
-        private readonly HashSet<string> _loggedFallbacks = new();
 
         public MapVisualTileIdResolver(TileRegistrySO tileRegistry)
         {
@@ -37,7 +36,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 if (!TryGet(fallback, out tileType))
                     continue;
                 resolvedTileId = fallback;
-                LogFallback(tileId, fallback);
                 return true;
             }
 
@@ -51,11 +49,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return true;
             tileType = null;
             return false;
-        }
-
-        private void LogFallback(string sourceTileId, string fallbackTileId)
-        {
-            string key = $"{sourceTileId}->{fallbackTileId}";
         }
     }
 }

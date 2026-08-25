@@ -52,8 +52,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public void ClearGeneratedMap(IMoyvaTwcGraphBindingContext context)
         {
-            var cleanup = new ChunkFirstTwcVisualCleanupService(
-                new ChunkFirstBuildDiagnostics());
+            var cleanup = new ChunkFirstTwcVisualCleanupService();
             cleanup.ClearVisualBuildOutput(context?.Manager);
 
             GameObject chunkRoot = GameObject.Find("MapVisualChunks");

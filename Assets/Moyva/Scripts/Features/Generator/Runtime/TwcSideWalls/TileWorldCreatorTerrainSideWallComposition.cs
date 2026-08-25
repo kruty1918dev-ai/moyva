@@ -8,8 +8,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var components = new TileWorldCreatorTerrainSideWallComponentService(materials);
             var edgeAppender = new TileWorldCreatorTerrainSideWallEdgeAppender();
             var meshBuilder = new TileWorldCreatorTerrainSideWallMeshBuilder(edgeAppender);
-            var diagnostics = new TileWorldCreatorTerrainSideWallDiagnostics();
-            return new TileWorldCreatorTerrainSideWallService(components, meshBuilder, diagnostics);
+            return new TileWorldCreatorTerrainSideWallService(components, meshBuilder);
         }
     }
 }

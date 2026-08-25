@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     lowestLayerHeight)
                 : float.NaN;
 
-            var result = new ResolvedTileComposition(
+            return new ResolvedTileComposition(
                 cell,
                 main,
                 overlay,
@@ -58,31 +58,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 southEastSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.SouthEast),
                 southWestSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.SouthWest),
                 northWestSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.NorthWest));
-
-            if (hasMain)
-            {
-                string traceKey =
-                    $"{main.GraphLayerId}|" +
-                    $"{main.Height:0.###}|" +
-                    $"{main.SurfaceHeight:0.###}|" +
-                    $"{supportHeight:0.###}|" +
-                    $"{neighborhood.Center.Count}";
-
-                ChunkFirstHeightAudit.TraceUnique(
-                    "RESOLVE",
-                    traceKey,
-                    $"exampleCell=({cell.x},{cell.y}) " +
-                    $"stackCount={neighborhood.Center.Count} " +
-                    $"winnerLayer={main.GraphLayerName} " +
-                    $"winnerTile={main.TileId} " +
-                    $"winnerHeight={main.Height:0.###} " +
-                    $"winnerSurface={main.SurfaceHeight:0.###} " +
-                    $"supportHeight={supportHeight:0.###} " +
-                    $"sortingOrder={main.SortingOrder} " +
-                    $"terrainPriority={main.TerrainPriority}");
-            }
-
-            return result;
         }
 
         private float ResolveNeighborSurfaceHeight(TileStackCell cell)

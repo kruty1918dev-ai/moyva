@@ -9,8 +9,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (container == null)
                 return;
 
-            container.Bind<ChunkFirstBuildDiagnostics>().AsSingle();
-            container.Bind<ChunkFirstCellResolutionDebug>().AsSingle();
             container.Bind<ChunkFirstRuntimeMeshRegistry>().AsSingle();
             container.Bind<IChunkBuildAreaPlanner>().To<ChunkBuildAreaPlanner>().AsSingle();
             container.Bind<ITileNeighborhoodFactory>().To<TileNeighborhoodFactory>().AsSingle();
