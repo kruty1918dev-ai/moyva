@@ -26,6 +26,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     {
         private readonly MultiplayerConfig _config;
         private readonly IMultiplayerLogger _logger;
+        private readonly MultiplayerTransportPump _transportPump;
         private string _configuredLocalPeerId;
 
         // Observers subscribed to this provider's Messages
@@ -40,6 +41,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _transportPump = new MultiplayerTransportPump(_logger, "Lan");
         }
 
         private static string GetLocalIPAddress()
@@ -91,7 +93,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 private const int MaxFrameBodyBytes = 60 * 1024;
                 private const int HandshakeTimeoutMs = 10_000;
-                private const int PumpDelayMs = 16;
 
                 private NetworkDriver _driver;
                 private NetworkConnection _serverConnection;
@@ -101,8 +102,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 private string _localPeerId;
                 private string _hostPeerId;
                 private bool _hostHelloReceived;
-                private CancellationTokenSource _pumpCts;
-                private Task _pumpTask;
 
                 private async Task<SessionResult> HostViaLanAsync(string sessionId, CancellationToken ct)
                 {
@@ -193,33 +192,19 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 private void StartPumpLoop(CancellationToken externalCt)
                 {
-                    _pumpCts?.Cancel();
-                    _pumpCts?.Dispose();
-                    _pumpCts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
-                    _pumpTask = PumpLoopAsync(_pumpCts.Token);
+                    _transportPump.Start(
+                        externalCt,
+                        () => _driver.IsCreated,
+                        PumpTransportOnce);
                 }
 
-                private async Task PumpLoopAsync(CancellationToken ct)
+                private void PumpTransportOnce()
                 {
-                    while (!ct.IsCancellationRequested && _driver.IsCreated)
-                    {
-                        try
-                        {
-                            _driver.ScheduleUpdate().Complete();
-
-                            if (_isHost)
-                                PumpHost();
-                            else
-                                PumpClient();
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.Warn($"[Lan] Pump error: {e.Message}");
-                        }
-
-                        try { await Task.Delay(PumpDelayMs, ct); }
-                        catch (OperationCanceledException) { return; }
-                    }
+                    _driver.ScheduleUpdate().Complete();
+                    if (_isHost)
+                        PumpHost();
+                    else
+                        PumpClient();
                 }
 
                 private void PumpHost()
@@ -536,15 +521,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 private async Task ShutdownTransportAsync()
                 {
-                    if (_pumpCts != null)
-                    {
-                        _pumpCts.Cancel();
-                        try { if (_pumpTask != null) await _pumpTask; }
-                        catch (OperationCanceledException) { /* expected */ }
-                        _pumpTask = null;
-                        _pumpCts.Dispose();
-                        _pumpCts = null;
-                    }
+                    await _transportPump.StopAsync();
 
                     try
                     {

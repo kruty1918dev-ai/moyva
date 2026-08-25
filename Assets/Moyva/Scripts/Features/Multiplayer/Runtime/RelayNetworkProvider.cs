@@ -69,10 +69,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private const int MaxFrameBodyBytes = 60 * 1024;
         private const int HandshakeTimeoutMs = 15_000;
-        private const int PumpDelayMs = 16;
-
         private readonly RelayProviderSettings _settings;
         private readonly IMultiplayerLogger _logger;
+        private readonly MultiplayerTransportPump _transportPump;
         private readonly List<IObserver<NetworkMessage>> _observers = new List<IObserver<NetworkMessage>>();
         private string _configuredLocalPeerId;
 
@@ -86,6 +85,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             _settings = settings ?? RelayProviderSettings.Default();
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _transportPump = new MultiplayerTransportPump(_logger, "Relay");
         }
 
         public void SetLocalPeerId(string playerId)
@@ -142,8 +142,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         private bool _isHost;
         private string _localPeerId;
         private string _hostPeerId;
-        private CancellationTokenSource _pumpCts;
-        private Task _pumpTask;
 
         private async Task<SessionResult> HostViaRelayAsync(CancellationToken ct)
         {
@@ -461,33 +459,19 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private void StartPumpLoop(CancellationToken externalCt)
         {
-            _pumpCts?.Cancel();
-            _pumpCts?.Dispose();
-            _pumpCts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
-            _pumpTask = PumpLoopAsync(_pumpCts.Token);
+            _transportPump.Start(
+                externalCt,
+                () => _driver.IsCreated,
+                PumpTransportOnce);
         }
 
-        private async Task PumpLoopAsync(CancellationToken ct)
+        private void PumpTransportOnce()
         {
-            while (!ct.IsCancellationRequested && _driver.IsCreated)
-            {
-                try
-                {
-                    _driver.ScheduleUpdate().Complete();
-
-                    if (_isHost)
-                        PumpHost();
-                    else
-                        PumpClient();
-                }
-                catch (Exception e)
-                {
-                    _logger.Warn($"[Relay] Pump error: {e.Message}");
-                }
-
-                try { await Task.Delay(PumpDelayMs, ct); }
-                catch (OperationCanceledException) { return; }
-            }
+            _driver.ScheduleUpdate().Complete();
+            if (_isHost)
+                PumpHost();
+            else
+                PumpClient();
         }
 
         private void PumpHost()
@@ -765,15 +749,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private async Task ShutdownTransportAsync()
         {
-            if (_pumpCts != null)
-            {
-                _pumpCts.Cancel();
-                try { if (_pumpTask != null) await _pumpTask; }
-                catch (OperationCanceledException) { /* expected */ }
-                _pumpTask = null;
-                _pumpCts.Dispose();
-                _pumpCts = null;
-            }
+            await _transportPump.StopAsync();
 
             if (_driver.IsCreated)
             {
@@ -813,20 +789,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private void CleanupTransportImmediate()
         {
-            try
-            {
-                _pumpCts?.Cancel();
-            }
-            catch { }
-
-            try
-            {
-                _pumpCts?.Dispose();
-            }
-            catch { }
-
-            _pumpCts = null;
-            _pumpTask = null;
+            _transportPump.Dispose();
 
             try
             {

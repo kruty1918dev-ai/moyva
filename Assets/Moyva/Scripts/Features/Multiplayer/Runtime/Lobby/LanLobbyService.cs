@@ -1,0 +1,63 @@
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Multiplayer.Runtime;
+using UnityEngine;
+
+namespace Kruty1918.Moyva.Multiplayer.Lobbies
+{
+    /// <summary>
+    /// Simple LAN lobby service using UDP broadcast for discovery.
+    /// This is a lightweight implementation intended as a skeleton.
+    /// </summary>
+    public sealed partial class LanLobbyService : ILobbyService, IDisposable
+    {
+        public const int DefaultPort = 54545;
+        private const int DiscoveryPort = 54544;
+        private const string PayloadProtocol = "MOYVA_LAN_LOBBY_V1";
+        private const string DiscoveryQuery = "QUERY";
+        private const int BroadcastIntervalMs = 1000;
+        private const int QueryTimeoutMs = 2500;
+
+        private readonly IMultiplayerLogger _logger;
+        private readonly UdpClient _udp;
+        private readonly IPEndPoint _broadcastEndPoint;
+        private readonly IPEndPoint _loopbackEndPoint;
+        private readonly object _stateLock = new object();
+        private readonly Dictionary<string, LobbyRoom> _discoveredRooms = new Dictionary<string, LobbyRoom>(StringComparer.OrdinalIgnoreCase);
+
+        private CancellationTokenSource _cts;
+        private UdpClient _listenUdp;
+        private LobbyRoom _current;
+        private string _currentPasswordHash = string.Empty;
+        private LobbyState _state = LobbyState.Closed;
+        private bool _broadcastWarningLogged;
+        private bool _loopbackWarningLogged;
+        private int _invalidPayloadCount;
+
+        public event Action<LobbyRoom> LobbyUpdated;
+        public event Action<LobbyState> StateChanged;
+#pragma warning disable CS0067
+        public event Action<string> KickedFromLobby;
+#pragma warning restore CS0067
+
+        public LobbyRoom Current => _current;
+        public LobbyState State => _state;
+
+        public LanLobbyService(IMultiplayerLogger logger)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _udp = new UdpClient();
+            _udp.EnableBroadcast = true;
+            _broadcastEndPoint = new IPEndPoint(IPAddress.Broadcast, DiscoveryPort);
+            _loopbackEndPoint = new IPEndPoint(IPAddress.Loopback, DiscoveryPort);
+        }
+
+    }
+}

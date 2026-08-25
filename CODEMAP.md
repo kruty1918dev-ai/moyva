@@ -43,8 +43,8 @@ Scene-authored feature installers still compose their own modules. Project and b
 | Calendar | `Features/Calendar/API/ICalendarService.cs`; `Features/Calendar/Runtime/CalendarInstaller.cs`; `Features/Calendar/Runtime/GameCalendarService.cs` | `GameCalendarService` owns game date/time; round resolution advances it exactly once per completed round |
 | Game mode / pause | `Features/GameMode/API/`; `Features/GameMode/Runtime/GameModeInstaller.cs`; `Features/GameMode/Runtime/GameModeService.cs`; `Features/GameMode/Runtime/GameStateService.cs` | `GameModeService` owns interaction mode; `GameStateService` owns playing/paused/game-over lifecycle; exit sequencing is `ExitMatchCoordinator` |
 | Save / restore | `Features/SaveSystem/API/`; `Features/SaveSystem/Runtime/SaveSystemInstaller.cs`; `Features/SaveSystem/Runtime/SaveService.cs`; `Features/SaveSystem/Runtime/SaveModuleRegistry.cs` | `SaveService` sequences registered `ISaveModule` payloads; feature modules capture/restore their own state |
-| Multiplayer session | `Features/Multiplayer/API/ISessionManager.cs`; `Features/Multiplayer/Runtime/MultiplayerInstaller.cs`; `Features/Multiplayer/Runtime/SessionManager.cs` | `SessionManager` owns session/participant lifecycle; switchable lobby/network providers own transport selection |
-| Multiplayer commands | `Features/Multiplayer/API/IGameCommandSyncService.cs`; `Features/Multiplayer/Runtime/GameCommandSyncService.cs`; `Features/Multiplayer/Runtime/MultiplayerAuthorityService.cs` | routes commands and host confirmations; confirmed gameplay changes delegate to canonical Construction/Units services |
+| Multiplayer session | `Features/Multiplayer/API/ISessionManager.cs`; `Features/Multiplayer/Runtime/MultiplayerInstaller.cs`; `Features/Multiplayer/Runtime/SessionManager.cs`; `SessionManager.Connection.cs` | `SessionManager` owns session lifecycle and delegates participant/reconnect state to focused partials; switchable providers own transport selection |
+| Multiplayer commands | `Features/Multiplayer/API/IGameCommandSyncService.cs`; `Features/Multiplayer/Runtime/GameCommandSyncService.cs`; `Features/Multiplayer/Runtime/MultiplayerAuthorityService.cs`; `MultiplayerAuthorityService.Authorization.cs` | routes commands and host confirmations; Construction and Units handlers delegate mutations to canonical gameplay services |
 | World creation settings | `Features/WorldCreation/API/IWorldCreationService.cs`; `Features/WorldCreation/Runtime/WorldCreationInstaller.cs`; `Features/WorldCreation/Runtime/WorldCreationService.cs` | owns editable menu configuration; menu startup freezes it into session/launch settings |
 | Home menu / launch | `Features/HomeMenu/API/`; `Features/HomeMenu/Runtime/HomeMenuInstaller.cs`; `Features/HomeMenu/Runtime/HomeMenuGameStarter.cs`; `Features/HomeMenu/Runtime/Startup/GameplayStartupPipeline.cs` | menu services prepare `GameplaySession`; startup sets `GameLaunchContext`, preloads and activates Gameplay |
 | Graph model / evaluation | `Features/GraphSystem/API/GraphAsset.cs`; `Features/GraphSystem/API/IGraphRunner.cs`; `Features/GraphSystem/Runtime/GraphRunner.cs`; `Features/GraphSystem/Runtime/GraphValidator.cs` | `GraphAsset` owns graph/node data; `GraphRunner` evaluates it. Generator constructs it through `GraphEvaluationPipeline` |
@@ -355,3 +355,21 @@ Recruitment is owned by `Features/Units`; do not create a parallel `Features/Rec
 | gameplay scene transition | `Runtime/HomeMenuGameStarter.cs`; `Runtime/Startup/GameplayStartupPipeline.cs` |
 
 Lobby, preview and startup are separate task packets. Do not load preview mesh/cloud files for room or scene-transition work.
+
+## Multiplayer reading map
+
+| Task | Primary files |
+|---|---|
+| public session / lobby contracts | `API/ISessionManager.cs`; `API/Lobby/ILobbyService.cs`; `API/Lobby/LobbyDtos.cs` |
+| composition / provider selection | `Runtime/MultiplayerInstaller.cs`; `SwitchableLobbyService.cs`; `SwitchableNetworkProvider.cs` |
+| host / join connection flow | `SessionManager.cs`; `SessionManager.Connection.cs` |
+| participant state / lobby updates | `SessionManager.Participants.cs` |
+| reconnect / migration / cleanup | `SessionManager.Reconnect.cs`; `HostMigrationService.cs` |
+| offline fallback / option normalization | `SessionManager.Fallback.cs` |
+| lobby implementations | `Runtime/Lobby/LanLobbyService.cs`; `UgsLobbyService.cs`; `OfflineLobbyService.cs` |
+| command router / endpoint lifecycle | `MultiplayerAuthorityService.cs`; `MultiplayerAuthorityService.Authorization.cs` |
+| Construction network commands | `MultiplayerAuthorityService.ConstructionCommands.cs` |
+| Units network commands | `MultiplayerAuthorityService.UnitCommands.cs` |
+| LAN / Relay frame and pump lifecycle | `MultiplayerFrameCodec.cs`; `MultiplayerTransportPump.cs`; the selected provider only |
+
+Concrete lobby implementations stay out of `API`. Do not load both LAN and Relay providers unless changing their shared frame or pump contract.
