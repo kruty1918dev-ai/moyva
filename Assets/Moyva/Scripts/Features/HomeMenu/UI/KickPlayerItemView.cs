@@ -24,7 +24,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             _playerInfo = playerInfo;
 
             if (_nameText != null)
-                _nameText.text = string.IsNullOrWhiteSpace(playerInfo.DisplayName) ? "Гравець" : playerInfo.DisplayName.Trim();
+                _nameText.text = string.IsNullOrWhiteSpace(playerInfo.DisplayName) ? "Player" : playerInfo.DisplayName.Trim();
 
             if (_statusText != null)
                 _statusText.text = BuildStatusText(playerInfo);
@@ -58,9 +58,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 return playerInfo.StatusLabel;
 
             if (playerInfo.IsHost)
-                return "Хост";
+                return "Host";
 
-            return playerInfo.IsLocalPlayer ? "Це ти" : "Можна кікнути";
+            return playerInfo.IsLocalPlayer ? "You" : "Can kick";
         }
     }
 }

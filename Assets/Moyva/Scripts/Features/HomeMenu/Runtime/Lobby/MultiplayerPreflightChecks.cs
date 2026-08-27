@@ -15,15 +15,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
         {
             // 1: Без lobby service неможливо знайти кімнату або виконати join на рівні лобі.
             if (!hasLobbyService)
-                return Result.Fail(DomainErrorCode.NotFound, "Lobby service недоступний.");
+                return Result.Fail(DomainErrorCode.NotFound, "Lobby service is unavailable.");
 
             // 2: Без network provider неможливо встановити транспортне підключення після входу до лобі.
             if (!hasNetworkProvider)
-                return Result.Fail(DomainErrorCode.NotFound, "Network provider недоступний.");
+                return Result.Fail(DomainErrorCode.NotFound, "Network provider is unavailable.");
 
             // 3: Без mode selector не можна коректно визначити режим роботи multiplayer-стеку.
             if (!hasModeSelector)
-                return Result.Fail(DomainErrorCode.Validation, "Mode selector недоступний.");
+                return Result.Fail(DomainErrorCode.Validation, "Mode selector is unavailable.");
 
             // 4: Усі необхідні залежності доступні, join-flow можна продовжувати.
             return Result.Success();
@@ -36,15 +36,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
         {
             // 1: Без lobby service немає надійного джерела стану кімнати та складу гравців.
             if (!hasLobbyService)
-                return Result.Fail(DomainErrorCode.NotFound, "Lobby service недоступний.");
+                return Result.Fail(DomainErrorCode.NotFound, "Lobby service is unavailable.");
 
             // 2: Без game starter неможливо перейти з HomeMenu до gameplay-сцени.
             if (!hasGameStarter)
-                return Result.Fail(DomainErrorCode.NotFound, "Game starter недоступний.");
+                return Result.Fail(DomainErrorCode.NotFound, "Game starter is unavailable.");
 
             // 3: Без command sync неможливо координувати мультиплеєрний старт сесії.
             if (!hasCommandSync)
-                return Result.Fail(DomainErrorCode.NotFound, "Command sync service недоступний.");
+                return Result.Fail(DomainErrorCode.NotFound, "Command sync service is unavailable.");
 
             // 4: Сесія має всі залежності для подальших multiplayer-операцій.
             return Result.Success();

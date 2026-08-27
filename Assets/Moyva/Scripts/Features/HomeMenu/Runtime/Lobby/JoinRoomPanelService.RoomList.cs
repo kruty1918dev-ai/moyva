@@ -126,10 +126,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_isJoining)
             {
                 _infoPanelService?.Show(new InfoMessage(
-                    "Кімната недоступна",
+                    "Room Unavailable",
                     state == LobbyState.Started
-                        ? "Гру вже розпочато. Оберіть іншу кімнату."
-                        : "Кімнату закрито. Оберіть іншу кімнату."));
+                        ? "The game has already started. Choose another room."
+                        : "The room is closed. Choose another room."));
             }
 
             RefreshRoomList();

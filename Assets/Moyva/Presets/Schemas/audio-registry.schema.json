@@ -444,10 +444,6 @@
     "dontDestroyOnLoad": {
       "type": "boolean",
       "title": "Dont Destroy On Load"
-    },
-    "verboseLogs": {
-      "type": "boolean",
-      "title": "Verbose Logs"
     }
   }
 }

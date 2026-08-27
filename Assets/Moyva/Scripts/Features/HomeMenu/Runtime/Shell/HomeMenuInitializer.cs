@@ -133,8 +133,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 _confirmationService.Show(new ConfirmationRequest
                 {
-                    LabelText = "Офлайн режим",
-                    MessageText = "Мультиплеєрні сервіси недоступні. Ви будете грати в офлайн режимі без можливості взаємодії з іншими гравцями. Бажаєте продовжити?",
+                    LabelText = "Offline Mode",
+                    MessageText = "Multiplayer services are unavailable. You can continue offline without interaction with other players. Do you want to continue?",
                     OnConfirm = () => LogWithPrefix("Player acknowledged offline mode."),
                     OnCancel = () =>
                     {

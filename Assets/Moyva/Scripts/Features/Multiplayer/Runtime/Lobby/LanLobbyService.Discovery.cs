@@ -83,7 +83,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var name = _current?.Name ?? "Room";
             var max = _current?.MaxPlayers ?? 4;
             var ip = GetLocalIPAddress() ?? "127.0.0.1";
-            var port = DefaultPort.ToString();
+            var port = ResolveAdvertisedTransportPort(_current).ToString();
             var hostId = _current?.HostPlayerId ?? BuildLocalHostId();
             var hostName = ResolveHostDisplayName(_current);
             var players = SerializePlayers(_current);
@@ -92,6 +92,25 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var state = ((int)(_current?.State ?? LobbyState.Open)).ToString();
             var worldSettings = EncodeBytes(_current?.StartedWorldSettingsBytes);
             return string.Join('|', PayloadProtocol, roomId, name, max.ToString(), ip, port, hostId, hostName, players, isPrivate, passwordHash, state, worldSettings);
+        }
+
+        private static int ResolveAdvertisedTransportPort(LobbyRoom room)
+        {
+            var joinCode = room?.RelayJoinCode;
+            if (!string.IsNullOrWhiteSpace(joinCode))
+            {
+                var parts = joinCode.Trim().Split(':');
+                if (parts.Length >= 3 &&
+                    string.Equals(parts[0], "lan", StringComparison.OrdinalIgnoreCase) &&
+                    int.TryParse(parts[2], out var parsedPort) &&
+                    parsedPort > 0 &&
+                    parsedPort <= 65535)
+                {
+                    return parsedPort;
+                }
+            }
+
+            return DefaultPort;
         }
 
         private async Task SendDiscoveryPayloadAsync(byte[] bytes)

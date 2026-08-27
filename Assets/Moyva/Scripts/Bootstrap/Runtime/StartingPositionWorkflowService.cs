@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
+using UnityEngine;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
@@ -39,6 +40,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void HandleWorldGenerated(WorldGeneratedDataSignal signal)
         {
+            Debug.Log($"{StartingPositionInitializer.DebugTag} WorldGenerated received. " +
+                      $"sequence={signal.StartupSequence}, session='{signal.StartupSessionId}', " +
+                      $"revision={signal.SnapshotRevision}, source={signal.Source}, " +
+                      $"hasPendingSpawn={_startingPositionState.IsSet}.");
             ResetForNewStartupWorldIfNeeded(signal.StartupSequence, signal.StartupSessionId);
             _workflowState.PendingWorldGeneratedSignal = signal;
             _workflowState.HasPendingWorldGeneratedSignal = true;
@@ -47,9 +52,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void HandleWorldSpawnPositions(WorldSpawnPositionsSignal signal)
         {
+            Debug.Log($"{StartingPositionInitializer.DebugTag} WorldSpawnPositions received. " +
+                      $"sequence={signal.StartupSequence}, session='{signal.StartupSessionId}', " +
+                      $"revision={signal.SnapshotRevision}, source={signal.Source}, " +
+                      $"assignments={signal.Assignments?.Length ?? 0}.");
             ResetForNewStartupWorldIfNeeded(signal.StartupSequence, signal.StartupSessionId);
             if (signal.Assignments == null || signal.Assignments.Length == 0)
             {
+                Debug.LogWarning($"{StartingPositionInitializer.DebugTag} WorldSpawnPositions ignored because assignments are empty.");
                 return;
             }
 
@@ -58,13 +68,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 && _workflowState.PendingWorldGeneratedSignal.StartupSequence > 0
                 && signal.StartupSequence < _workflowState.PendingWorldGeneratedSignal.StartupSequence)
             {
+                Debug.LogWarning($"{StartingPositionInitializer.DebugTag} WorldSpawnPositions ignored because it belongs to an older startup sequence.");
                 return;
             }
 
             _startingPositionState.Set(signal.Assignments);
 
             if (!_workflowState.HasPendingWorldGeneratedSignal)
+            {
+                Debug.Log($"{StartingPositionInitializer.DebugTag} Spawn positions stored; waiting for WorldGenerated before reveal.");
                 return;
+            }
 
             if (_workflowState.StartLogicApplied)
             {
@@ -96,6 +110,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _workflowState.HasPendingWorldGeneratedSignal = false;
             _workflowState.PendingWorldGeneratedSignal = default;
             _startingPositionState.Reset();
+            Debug.Log($"{StartingPositionInitializer.DebugTag} Reset startup workflow for sequence={startupSequence}, session='{startupSessionId}'.");
         }
 
     }

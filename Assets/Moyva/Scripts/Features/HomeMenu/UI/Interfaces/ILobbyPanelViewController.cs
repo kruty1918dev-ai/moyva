@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         Button BackButton { get; }
 
         /// <summary>Показати код запрошення до лобі.</summary>
-        void SetLobbyInvateCode(string code);
+        void SetInviteCode(LobbyInviteCodePresentation presentation);
 
         /// <summary>Очистити код запрошення в UI.</summary>
         void ClearLobbyInvateCode();

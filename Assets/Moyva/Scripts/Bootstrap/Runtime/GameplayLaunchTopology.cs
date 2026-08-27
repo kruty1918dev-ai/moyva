@@ -38,14 +38,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (mode == GameLaunchMode.DirectGameplayTest)
                 return 1;
 
-            int participantCount = Mathf.Max(1, sessionParticipantCount);
-            if (participantCount > 1 || isMultiplayerHost)
-                return Mathf.Max(participantCount, multiplayerStartSlots);
-
-            if (hasWorldSettings && maxPlayers > 1)
-                return Mathf.Max(maxPlayers, multiplayerStartSlots);
-
-            return 1;
+            int participantCount = Mathf.Max(0, sessionParticipantCount);
+            return Mathf.Max(1, participantCount);
         }
 
         public static string ResolveLocalPlayerId(

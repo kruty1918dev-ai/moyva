@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.HomeMenu.API;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,11 +25,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         public Button StartGameButton => _startGameButton;
         public Button BackButton => _backButton;
 
-        public void SetLobbyInvateCode(string code)
+        public void SetInviteCode(LobbyInviteCodePresentation presentation)
         {
             if (_inviteCodeText != null)
-                _inviteCodeText.text = $"Invite Code: {code}";
-            _currentInviteCode = code;
+                _inviteCodeText.text = presentation.DisplayText;
+            _currentInviteCode = presentation.Code;
         }
 
         public void ClearLobbyInvateCode()

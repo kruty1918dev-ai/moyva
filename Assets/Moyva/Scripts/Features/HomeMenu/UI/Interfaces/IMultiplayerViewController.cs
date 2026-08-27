@@ -1,4 +1,5 @@
 using System;
+using Kruty1918.Moyva.Multiplayer.Networking;
 using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
@@ -16,9 +17,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         Button ButtonJoinToRoom { get; set; }
 
         /// <summary>Подія натискання Create Room.</summary>
-        event Action OnCreateRoomClicked;
+        event Action<NetworkProviderType> OnCreateRoomClicked;
 
         /// <summary>Подія натискання Join Room.</summary>
-        event Action OnJoinRoomClicked;
+        event Action<NetworkProviderType> OnJoinRoomClicked;
     }
 }

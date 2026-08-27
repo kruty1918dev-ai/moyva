@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
@@ -26,7 +27,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public bool TryGetLocalSpawnPosition(out Vector2Int position)
         {
-            string localPlayerId = _sessionManager?.LocalPlayerId;
+            string localPlayerId = !string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId)
+                ? _sessionManager.LocalPlayerId
+                : (GameLaunchContext.HasLocalPlayerRole ? GameLaunchContext.LocalPlayerId : string.Empty);
             if (!string.IsNullOrEmpty(localPlayerId) &&
                 _startingPositionState.PlayerStartPositions.TryGetValue(localPlayerId, out position))
             {

@@ -1079,7 +1079,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041F\u0440\u0438\u0454\u0434\u043D\u0430\u0442\u0438\u0441\u044C"
+  m_text: Join Room
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1252,7 +1252,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Refresh
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -1365,7 +1365,7 @@ RectTransform:
   m_Father: {fileID: 1100186252}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -1591,7 +1591,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Reset Defaults
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -1733,8 +1733,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0412\u0432\u0435\u0434\u0438 \u043A\u043E\u0434 \u0430\u0431\u043E \u043E\u0431\u0435\u0440\u0438
-    \u0437 \u043F\u0443\u0431\u043B\u0456\u0447\u043D\u043E\u0433\u043E \u0441\u043F\u0438\u0441\u043A\u0443."
+  m_text: Enter a code or choose from the public list.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2008,8 +2007,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0412\u0438 \u0432\u043F\u0435\u0432\u043D\u0435\u043D\u0456, \u0449\u043E
-    \u0445\u043E\u0447\u0435\u0442\u0435 \u0432\u0438\u0439\u0442\u0438?"
+  m_text: Are you sure you want to quit?
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2554,7 +2552,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u200B"
+  m_text: 12345
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3272,7 +3270,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u200B"
+  m_text: New World
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -4279,7 +4277,7 @@ MonoBehaviour:
   m_CaretColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
   m_CustomCaretColor: 0
   m_SelectionColor: {r: 0.65882355, g: 0.80784315, b: 1, a: 0.7529412}
-  m_Text: 
+  m_Text: 12345
   m_CaretBlinkRate: 0.85
   m_CaretWidth: 1
   m_ReadOnly: 0
@@ -4471,7 +4469,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &235180089
 GameObject:
   m_ObjectHideFlags: 0
@@ -4529,7 +4526,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0413\u043B\u043E\u0431\u0430\u043B\u044C\u043D\u0438\u0439 \u041C\u0443\u043B\u044C\u0442\u0438\u043F\u043B\u0435\u0454\u0440"
+  m_text: Global Multiplayer
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -4687,7 +4684,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041E\u0441\u043D\u043E\u0432\u043D\u0456"
+  m_text: Basics
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -4957,8 +4954,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 844.1139, y: -14}
-  m_SizeDelta: {x: 1688.2278, y: 28}
+  m_AnchoredPosition: {x: 958.675, y: -14}
+  m_SizeDelta: {x: 1917.35, y: 28}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &250928493
 MonoBehaviour:
@@ -5000,7 +4997,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041F\u0430\u0440\u0430\u043C\u0435\u0442\u0440\u0438 \u043A\u0456\u043C\u043D\u0430\u0442\u0438"
+  m_text: Room Settings
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5219,7 +5216,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &254789275
 GameObject:
   m_ObjectHideFlags: 0
@@ -5384,7 +5380,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041F\u0440\u0438\u0454\u0434\u043D\u0430\u0442\u0438\u0441\u044C"
+  m_text: Join Room
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5661,7 +5657,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Random Seed
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -6237,7 +6233,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Join Code
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -6918,8 +6914,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041F\u0440\u0438\u0454\u0434\u043D\u0430\u043D\u043D\u044F \u0437\u0430
-    \u043A\u043E\u0434\u043E\u043C"
+  m_text: Join by Code
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -7138,7 +7133,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &329728782
 GameObject:
   m_ObjectHideFlags: 0
@@ -7196,7 +7190,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0421\u0442\u0432\u043E\u0440\u0438\u0442\u0438 \u043A\u0456\u043C\u043D\u0430\u0442\u0443"
+  m_text: Create Room
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -7333,7 +7327,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041F\u0440\u043E\u0434\u043E\u0432\u0436\u0438\u0442\u0438"
+  m_text: Continue
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -7570,7 +7564,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &352495796
 GameObject:
   m_ObjectHideFlags: 0
@@ -7710,7 +7703,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &361590620
 GameObject:
   m_ObjectHideFlags: 0
@@ -8072,7 +8064,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 366336134}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
@@ -8085,7 +8077,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041D\u043E\u0432\u0438\u0439 \u0441\u0432\u0456\u0442"
+  m_text: New World
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -8884,7 +8876,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &399940577
 GameObject:
   m_ObjectHideFlags: 0
@@ -9039,7 +9030,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Back
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -9303,7 +9294,7 @@ MonoBehaviour:
   m_CaretColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
   m_CustomCaretColor: 0
   m_SelectionColor: {r: 0.65882355, g: 0.80784315, b: 1, a: 0.7529412}
-  m_Text: 
+  m_Text: My Room
   m_CaretBlinkRate: 0.85
   m_CaretWidth: 1
   m_ReadOnly: 0
@@ -9533,7 +9524,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &431089925
 GameObject:
   m_ObjectHideFlags: 0
@@ -9760,8 +9750,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 844.1139, y: -120}
-  m_SizeDelta: {x: 1688.2278, y: 48}
+  m_AnchoredPosition: {x: 958.675, y: -120}
+  m_SizeDelta: {x: 1917.35, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &453453181
 MonoBehaviour:
@@ -9950,7 +9940,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Copy Code
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -10087,7 +10077,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Back
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -10362,7 +10352,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041B\u043E\u043A\u0430\u043B\u044C\u043D\u0430 \u0433\u0440\u0430"
+  m_text: Local Game
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -10829,7 +10819,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Back
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -11102,7 +11092,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
-  _menuToOpen: 'GlobalMultiplayerPanel '
+  _menuToOpen: GlobalMultiplayerPanel
   _menuToClose: 
   _openLast: 0
 --- !u!114 &537050245
@@ -11226,7 +11216,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &542466450
 GameObject:
   m_ObjectHideFlags: 0
@@ -11349,8 +11338,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0413\u0440\u0430\u0439\u0442\u0435 \u0437 \u0433\u0440\u0430\u0432\u0446\u044F\u043C\u0438
-    \u0456\u0437 \u0446\u0456\u043B\u043E\u0433\u043E \u0441\u0432\u0456\u0442\u0443!"
+  m_text: Play with players around the world.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -11487,7 +11475,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Public Room
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -11514,7 +11502,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 80
+  m_fontSize: 54.85
   m_fontSizeBase: 80
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -11761,7 +11749,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Play
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -11949,7 +11937,7 @@ RectTransform:
   m_Father: {fileID: 2010208466}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -12092,7 +12080,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Resolution
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -12251,8 +12239,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0410\u0431\u043E \u0437 \u043F\u0443\u0431\u043B\u0456\u0447\u043D\u043E\u0433\u043E
-    \u0441\u043F\u0438\u0441\u043A\u0443"
+  m_text: Public Rooms
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -12614,7 +12601,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0413\u0440\u0430"
+  m_text: Game
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -12731,7 +12718,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 238}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &588727385
 MonoBehaviour:
@@ -13094,7 +13081,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &602324401
 GameObject:
   m_ObjectHideFlags: 0
@@ -13352,7 +13338,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: NO
+  m_text: YES
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -13571,7 +13557,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &610174632
 GameObject:
   m_ObjectHideFlags: 0
@@ -14097,7 +14082,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041A\u0456\u043C\u043D\u0430\u0442\u0430 #3 (4/8)"
+  m_text: Room #3 (4/8)
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -14764,8 +14749,8 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 365489599}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMin: {x: 1, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -14864,8 +14849,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0421\u0442\u0432\u043E\u0440\u0438 \u0441\u0432\u043E\u044E \u0433\u0440\u0443
-    \u0442\u0430 \u0437\u0430\u043F\u0440\u043E\u0441\u0438 \u0434\u0440\u0443\u0437\u0456\u0432."
+  m_text: Create a game and invite friends.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -15692,7 +15676,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &690967072
 GameObject:
   m_ObjectHideFlags: 0
@@ -16240,7 +16223,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &709907757
 GameObject:
   m_ObjectHideFlags: 0
@@ -16435,7 +16417,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u200B"
+  m_text: "My Room\u200B"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -16709,7 +16691,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041A\u0456\u043C\u043D\u0430\u0442\u0430 #4 (5/8)"
+  m_text: Room #4 (5/8)
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -17008,7 +16990,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &754404470
 GameObject:
   m_ObjectHideFlags: 0
@@ -17404,7 +17385,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Language
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -17908,7 +17889,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Back
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -17935,7 +17916,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 80
+  m_fontSize: 72
   m_fontSizeBase: 80
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -18066,7 +18047,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041E\u0431\u0435\u0440\u0456\u0442\u044C \u0432\u0430\u0440\u0456\u0430\u043D\u0442"
+  m_text: Choose an Option
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -18224,7 +18205,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041F\u0440\u0430\u0432\u0438\u043B\u0430"
+  m_text: Rules
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -18585,8 +18566,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1270.1709, y: -32}
-  m_SizeDelta: {x: 836.1139, y: 64}
+  m_AnchoredPosition: {x: 1442.0125, y: -32}
+  m_SizeDelta: {x: 950.675, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &827738556
 MonoBehaviour:
@@ -18687,7 +18668,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &829916990
 GameObject:
   m_ObjectHideFlags: 0
@@ -18827,7 +18807,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &830315464
 GameObject:
   m_ObjectHideFlags: 0
@@ -19589,7 +19568,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0417\u0431\u0435\u0440\u0435\u0436\u0435\u043D\u0456 \u0441\u0432\u0456\u0442\u0438"
+  m_text: Saved Worlds
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -19880,7 +19859,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Map Type
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -20853,7 +20832,7 @@ GameObject:
   - component: {fileID: 928641259}
   - component: {fileID: 928641258}
   m_Layer: 5
-  m_Name: 'GlobalMultiplayerPanel '
+  m_Name: GlobalMultiplayerPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -20896,6 +20875,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MultiplayerViewController
   _createRoomButton: {fileID: 1703230488}
   _joinRoomButton: {fileID: 1659762363}
+  _provider: 0
 --- !u!114 &928641259
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20908,7 +20888,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 120e3f1826522dedd8fadca5a24bec9c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationPanel
-  _menuName: 'GlobalMultiplayerPanel '
+  _menuName: GlobalMultiplayerPanel
 --- !u!114 &928641260
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21105,7 +21085,7 @@ RectTransform:
   m_Father: {fileID: 1971477576}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -21226,7 +21206,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0413\u0440\u0430\u0432\u0446\u0456\u0432 \u043F\u0456\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u043E"
+  m_text: Connected Players
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -21399,7 +21379,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: World Name
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -21771,7 +21751,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &976000048
 GameObject:
   m_ObjectHideFlags: 0
@@ -21911,7 +21890,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &976452950
 GameObject:
   m_ObjectHideFlags: 0
@@ -22044,7 +22022,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Starting Food
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -22181,7 +22159,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: YES
+  m_text: NO
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -22294,7 +22272,7 @@ RectTransform:
   m_Father: {fileID: 217380496}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0.266, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -22544,10 +22522,10 @@ RectTransform:
   - {fileID: 959407798}
   m_Father: {fileID: 1423974080}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 72.5776}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 958.675, y: -201.444}
+  m_SizeDelta: {x: 1917.35, y: 72.5776}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1002458396
 MonoBehaviour:
@@ -22826,7 +22804,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Refresh
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -23049,10 +23027,10 @@ RectTransform:
   - {fileID: 1849262261}
   m_Father: {fileID: 2041793098}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 570, y: -35}
+  m_SizeDelta: {x: 220, y: 70}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1071735479
 MonoBehaviour:
@@ -23071,7 +23049,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!114 &1071735480
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23211,7 +23188,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Start Game
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -23324,10 +23301,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 588727384}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 844.1139, y: -14}
-  m_SizeDelta: {x: 1688.2278, y: 28}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 28}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1085493751
 MonoBehaviour:
@@ -23369,7 +23346,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041E\u0431\u0435\u0440\u0456\u0442\u044C \u0432\u0430\u0440\u0456\u0430\u043D\u0442"
+  m_text: Choose an Option
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -23506,8 +23483,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "21 \u043A\u0432\u0456\u0442\u043D\u044F 2026 \u2022 \u0421\u0435\u0440\u0435\u0434\u043D\u0456\u0439
-    \u2022 \u041D\u043E\u0440\u043C\u0430\u043B\u044C\u043D\u043E"
+  m_text: April 21, 2026 - Medium - Normal
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -23839,7 +23815,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Max Players
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -23866,7 +23842,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 80
+  m_fontSize: 54.85
   m_fontSizeBase: 80
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -24122,15 +24098,15 @@ RectTransform:
   m_Children:
   - {fileID: 1427730701}
   - {fileID: 1157967422}
+  - {fileID: 1052124902}
   - {fileID: 830315465}
   - {fileID: 1643596094}
   - {fileID: 928641257}
   - {fileID: 1280243280}
-  - {fileID: 653502589}
-  - {fileID: 1498291304}
-  - {fileID: 2105000001}
-  - {fileID: 1052124902}
   - {fileID: 275840566}
+  - {fileID: 1498291304}
+  - {fileID: 653502589}
+  - {fileID: 2105000001}
   m_Father: {fileID: 1372784659}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -24371,8 +24347,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 418.05695, y: -32}
-  m_SizeDelta: {x: 836.1139, y: 64}
+  m_AnchoredPosition: {x: 475.3375, y: -32}
+  m_SizeDelta: {x: 950.675, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1145700844
 MonoBehaviour:
@@ -24488,7 +24464,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1147083825
 GameObject:
   m_ObjectHideFlags: 0
@@ -24546,7 +24521,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Back
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -25051,7 +25026,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1157227176
 GameObject:
   m_ObjectHideFlags: 0
@@ -25134,7 +25108,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1157967420
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25729,7 +25703,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1168926931
 GameObject:
   m_ObjectHideFlags: 0
@@ -26258,7 +26231,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041B\u043E\u0431\u0431\u0456"
+  m_text: Lobby
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -26524,8 +26497,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "21 \u043A\u0432\u0456\u0442\u043D\u044F 2026 \u2022 \u0421\u0435\u0440\u0435\u0434\u043D\u0456\u0439
-    \u2022 \u041D\u043E\u0440\u043C\u0430\u043B\u044C\u043D\u043E"
+  m_text: April 21, 2026 - Medium - Normal
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -27229,7 +27201,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1246246053
 GameObject:
   m_ObjectHideFlags: 0
@@ -27287,8 +27258,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0412\u0432\u0435\u0434\u0438 \u043A\u043E\u0434 \u0430\u0431\u043E \u043E\u0431\u0435\u0440\u0438
-    \u0437 \u043F\u0443\u0431\u043B\u0456\u0447\u043D\u043E\u0433\u043E \u0441\u043F\u0438\u0441\u043A\u0443."
+  m_text: Enter a code or choose from the public list.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -27403,8 +27373,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 844.1139, y: -62}
-  m_SizeDelta: {x: 1688.2278, y: 48}
+  m_AnchoredPosition: {x: 958.675, y: -62}
+  m_SizeDelta: {x: 1917.35, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1251832832
 MonoBehaviour:
@@ -27763,7 +27733,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: WFC
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -28015,10 +27985,10 @@ RectTransform:
   - {fileID: 1564572861}
   m_Father: {fileID: 1423974080}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 72.5776}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 958.675, y: -366.59918}
+  m_SizeDelta: {x: 1917.35, y: 72.5776}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1277470006
 MonoBehaviour:
@@ -28152,6 +28122,9 @@ MonoBehaviour:
   _maxPlayersInput: {fileID: 1242340289}
   _maxPlayersLabel: {fileID: 1098078980}
   _nextButton: {fileID: 827738556}
+  _titleText: {fileID: 0}
+  _sectionTitleText: {fileID: 0}
+  _nextButtonLabel: {fileID: 0}
 --- !u!1 &1287199495
 GameObject:
   m_ObjectHideFlags: 0
@@ -28209,7 +28182,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: English
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -28346,7 +28319,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0421\u0432\u0456\u0442 #2"
+  m_text: World #2
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -28462,10 +28435,10 @@ RectTransform:
   - {fileID: 106965449}
   m_Father: {fileID: 1423974080}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 83.5356}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 958.675, y: -667.2334}
+  m_SizeDelta: {x: 1917.35, y: 83.5356}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1290484279
 MonoBehaviour:
@@ -28586,7 +28559,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1295903553
 GameObject:
   m_ObjectHideFlags: 0
@@ -29058,7 +29030,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Starting Gold
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -29298,7 +29270,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1319665903
 GameObject:
   m_ObjectHideFlags: 0
@@ -29469,10 +29440,10 @@ RectTransform:
   - {fileID: 1636005078}
   m_Father: {fileID: 1423974080}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 72.5776}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 958.675, y: -449.1768}
+  m_SizeDelta: {x: 1917.35, y: 72.5776}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1333748760
 MonoBehaviour:
@@ -29775,8 +29746,8 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 57698439}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.266, y: 0}
+  m_AnchorMax: {x: 0.266, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -29981,7 +29952,7 @@ MonoBehaviour:
   m_BlockingObjects: 0
   m_BlockingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 503
 --- !u!114 &1372784657
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -30111,7 +30082,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0412\u0438\u0431\u0456\u0440 \u041C\u0443\u043B\u044C\u0442\u0438\u043F\u043B\u0435\u0454\u0440\u0443"
+  m_text: Multiplayer Mode
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -30385,7 +30356,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0421\u0432\u0456\u0442 #3"
+  m_text: World #3
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -30683,7 +30654,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 170, y: -524.4977}
+  m_AnchoredPosition: {x: 170, y: -450}
   m_SizeDelta: {x: 340, y: 240}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1391855614
@@ -30800,7 +30771,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1393020174
 GameObject:
   m_ObjectHideFlags: 0
@@ -30858,7 +30828,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0412\u0432\u0435\u0434\u0456\u0442\u044C \u0437\u043D\u0430\u0447\u0435\u043D\u043D\u044F\u2026"
+  m_text: Enter value...
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -31132,7 +31102,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0421\u0442\u0432\u043E\u0440\u0438\u0442\u0438 \u043A\u0456\u043C\u043D\u0430\u0442\u0443"
+  m_text: Create Room
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -31345,10 +31315,10 @@ RectTransform:
   - {fileID: 2014730996}
   m_Father: {fileID: 24733053}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 97.4093, y: -32}
+  m_SizeDelta: {x: 194.8186, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1415812546
 MonoBehaviour:
@@ -31464,7 +31434,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1418592882
 GameObject:
   m_ObjectHideFlags: 0
@@ -31522,7 +31491,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Size
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -31659,7 +31628,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: VSync
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -31788,7 +31757,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 709.00116}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1423974081
 MonoBehaviour:
@@ -32172,7 +32141,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Forest
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -32309,7 +32278,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Fullscreen
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -32401,7 +32370,6 @@ GameObject:
   - component: {fileID: 1461487381}
   - component: {fileID: 1461487380}
   - component: {fileID: 1461487379}
-  - component: {fileID: 1461487382}
   - component: {fileID: 1461487383}
   m_Layer: 5
   m_Name: Card_CreateRoom
@@ -32427,10 +32395,10 @@ RectTransform:
   - {fileID: 1931203127}
   m_Father: {fileID: 2059101608}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 160, y: -90}
-  m_SizeDelta: {x: 320, y: 180}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1461487379
 MonoBehaviour:
@@ -32514,21 +32482,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1461487376}
   m_CullTransparentMesh: 1
---- !u!114 &1461487382
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1461487376}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
-  _menuToOpen: CreateRoomPanel
-  _menuToClose: 
-  _openLast: 0
 --- !u!114 &1461487383
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32546,7 +32499,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1470086817
 GameObject:
   m_ObjectHideFlags: 0
@@ -32711,7 +32663,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Next
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -32738,7 +32690,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 80
+  m_fontSize: 72
   m_fontSizeBase: 80
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -32972,7 +32924,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1485742017}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
@@ -33101,10 +33053,10 @@ RectTransform:
   - {fileID: 783295241}
   m_Father: {fileID: 1905219670}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 844.1139, y: -32}
-  m_SizeDelta: {x: 1688.2278, y: 64}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1486479230
 MonoBehaviour:
@@ -33220,7 +33172,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1487205405
 GameObject:
   m_ObjectHideFlags: 0
@@ -33525,7 +33476,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.LobbyPanelViewController
   _startGameButton: {fileID: 976000051}
-  _backButton: {fileID: 0}
+  _backButton: {fileID: 1243697396}
   _inviteCodeText: {fileID: 2095778972}
   _userListContainer: {fileID: 2114383037}
   _userListItemPrefab: {fileID: 8460362479510992607, guid: 38c5658f143a25738b4a9fe65ee4bfd1, type: 3}
@@ -33639,7 +33590,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Water
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -33855,7 +33806,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0413\u0435\u043D\u0435\u0440\u0430\u0446\u0456\u044F"
+  m_text: Generation
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -34716,7 +34667,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: OK
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -34921,7 +34872,7 @@ MonoBehaviour:
   m_CaretColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
   m_CustomCaretColor: 0
   m_SelectionColor: {r: 0.65882355, g: 0.80784315, b: 1, a: 0.7529412}
-  m_Text: 
+  m_Text: New World
   m_CaretBlinkRate: 0.85
   m_CaretWidth: 1
   m_ReadOnly: 0
@@ -35177,7 +35128,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041E\u0431\u0435\u0440\u0456\u0442\u044C \u0432\u0430\u0440\u0456\u0430\u043D\u0442"
+  m_text: Choose an Option
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -35291,10 +35242,10 @@ RectTransform:
   - {fileID: 827227058}
   m_Father: {fileID: 1423974080}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 72.5776}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 958.675, y: -284.02158}
+  m_SizeDelta: {x: 1917.35, y: 72.5776}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1579706709
 MonoBehaviour:
@@ -35409,7 +35360,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041A\u0456\u043C\u043D\u0430\u0442\u0430 #2 (3/8)"
+  m_text: Room #2 (3/8)
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -36251,7 +36202,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1643596094
 RectTransform:
   m_ObjectHideFlags: 0
@@ -36340,6 +36291,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MultiplayerViewController
   _createRoomButton: {fileID: 1461487379}
   _joinRoomButton: {fileID: 2021469315}
+  _provider: 3
 --- !u!1 &1646615458
 GameObject:
   m_ObjectHideFlags: 0
@@ -36623,7 +36575,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1659248849
 GameObject:
   m_ObjectHideFlags: 0
@@ -36807,7 +36758,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1659601568}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
@@ -36820,7 +36771,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041C\u043E\u044F \u043A\u0456\u043C\u043D\u0430\u0442\u0430"
+  m_text: My Room
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -36912,7 +36863,6 @@ GameObject:
   - component: {fileID: 1659762365}
   - component: {fileID: 1659762364}
   - component: {fileID: 1659762363}
-  - component: {fileID: 1659762362}
   - component: {fileID: 1659762366}
   m_Layer: 5
   m_Name: Card_JoinRoom
@@ -36943,21 +36893,6 @@ RectTransform:
   m_AnchoredPosition: {x: 500, y: -90}
   m_SizeDelta: {x: 320, y: 180}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1659762362
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1659762360}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
-  _menuToOpen: JoinRoomPanel
-  _menuToClose: 
-  _openLast: 0
 --- !u!114 &1659762363
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -37057,7 +36992,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1663554643
 GameObject:
   m_ObjectHideFlags: 0
@@ -37785,7 +37719,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Rivers
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -37922,7 +37856,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041F\u0440\u0438\u0454\u0434\u043D\u0430\u0442\u0438\u0441\u044C"
+  m_text: Join Room
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -38014,7 +37948,6 @@ GameObject:
   - component: {fileID: 1703230490}
   - component: {fileID: 1703230489}
   - component: {fileID: 1703230488}
-  - component: {fileID: 1703230487}
   - component: {fileID: 1703230491}
   m_Layer: 5
   m_Name: Card_CreateRoom
@@ -38045,21 +37978,6 @@ RectTransform:
   m_AnchoredPosition: {x: 160, y: -90}
   m_SizeDelta: {x: 320, y: 180}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1703230487
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1703230485}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
-  _menuToOpen: CreateRoomPanel
-  _menuToClose: 
-  _openLast: 0
 --- !u!114 &1703230488
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -38159,7 +38077,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1707944974
 GameObject:
   m_ObjectHideFlags: 0
@@ -38549,7 +38466,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Mountains
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -39052,10 +38969,10 @@ RectTransform:
   - {fileID: 1388797907}
   m_Father: {fileID: 1423974080}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 72.5776}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 958.675, y: -36.2888}
+  m_SizeDelta: {x: 1917.35, y: 72.5776}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1751669741
 MonoBehaviour:
@@ -39272,7 +39189,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Biomes
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -39409,7 +39326,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0421\u0442\u0432\u043E\u0440\u0438\u0442\u0438 \u043A\u0456\u043C\u043D\u0430\u0442\u0443"
+  m_text: Create Room
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -39621,7 +39538,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Open Lobby
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -40030,7 +39947,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1786882769
 GameObject:
   m_ObjectHideFlags: 0
@@ -40088,7 +40004,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Villages
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -40352,7 +40268,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Back
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -40626,7 +40542,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Play
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -40883,7 +40799,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1828203842
 GameObject:
   m_ObjectHideFlags: 0
@@ -41211,8 +41126,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0413\u0440\u0430\u0439\u0442\u0435 \u0437 \u0434\u0440\u0443\u0437\u044F\u043C\u0438
-    \u0431\u0443\u0434\u0443\u0447\u0438 \u0432 \u043E\u0434\u043D\u0456\u0439 \u043C\u0435\u0440\u0435\u0436\u0456!"
+  m_text: Play with friends on the same network.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -41776,8 +41690,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 844.1139, y: -236}
-  m_SizeDelta: {x: 1688.2278, y: 48}
+  m_AnchoredPosition: {x: 958.675, y: -236}
+  m_SizeDelta: {x: 1917.35, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1904308315
 MonoBehaviour:
@@ -42337,7 +42251,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &1923974564
 GameObject:
   m_ObjectHideFlags: 0
@@ -42576,7 +42489,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041B\u043E\u043A\u0430\u043B\u044C\u043D\u0438\u0439 \u041C\u0443\u043B\u044C\u0442\u0438\u043F\u043B\u0435\u0454\u0440"
+  m_text: Local Multiplayer
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -42688,8 +42601,8 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1580673289}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMin: {x: 1, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -42788,8 +42701,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0421\u0442\u0432\u043E\u0440\u0438 \u0441\u0432\u043E\u044E \u0433\u0440\u0443
-    \u0442\u0430 \u0437\u0430\u043F\u0440\u043E\u0441\u0438 \u0434\u0440\u0443\u0437\u0456\u0432."
+  m_text: Create a game and invite friends.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -43156,7 +43068,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Room Name
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -43183,7 +43095,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 80
+  m_fontSize: 54.85
   m_fontSizeBase: 80
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -43293,7 +43205,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0413\u043B\u043E\u0431\u0430\u043B\u044C\u043D\u0430 \u0433\u0440\u0430"
+  m_text: Global Game
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -43430,7 +43342,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Back
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -43580,10 +43492,10 @@ RectTransform:
   - {fileID: 1721374516}
   m_Father: {fileID: 1423974080}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 72.5776}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 958.675, y: -118.866394}
+  m_SizeDelta: {x: 1917.35, y: 72.5776}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1965499000
 MonoBehaviour:
@@ -43826,7 +43738,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Password
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -43853,7 +43765,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 80
+  m_fontSize: 54.85
   m_fontSizeBase: 80
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -44100,7 +44012,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Seed
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -44815,7 +44727,6 @@ GameObject:
   - component: {fileID: 2021469317}
   - component: {fileID: 2021469316}
   - component: {fileID: 2021469315}
-  - component: {fileID: 2021469318}
   - component: {fileID: 2021469319}
   m_Layer: 5
   m_Name: Card_JoinRoom
@@ -44841,10 +44752,10 @@ RectTransform:
   - {fileID: 1246246054}
   m_Father: {fileID: 2059101608}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 500, y: -90}
-  m_SizeDelta: {x: 320, y: 180}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2021469315
 MonoBehaviour:
@@ -44928,21 +44839,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2021469312}
   m_CullTransparentMesh: 1
---- !u!114 &2021469318
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2021469312}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
-  _menuToOpen: JoinRoomPanel
-  _menuToClose: 
-  _openLast: 0
 --- !u!114 &2021469319
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -44960,7 +44856,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &2024725731
 GameObject:
   m_ObjectHideFlags: 0
@@ -45114,10 +45009,10 @@ RectTransform:
   - {fileID: 1912650507}
   m_Father: {fileID: 2041793098}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 340, y: -35}
+  m_SizeDelta: {x: 220, y: 70}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2026830664
 MonoBehaviour:
@@ -45136,7 +45031,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!114 &2026830665
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -45241,7 +45135,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &2036073086
 GameObject:
   m_ObjectHideFlags: 0
@@ -45352,10 +45245,10 @@ RectTransform:
   - {fileID: 393514472}
   m_Father: {fileID: 2041793098}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 110, y: -35}
+  m_SizeDelta: {x: 220, y: 70}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2039796955
 MonoBehaviour:
@@ -45456,7 +45349,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &2041793097
 GameObject:
   m_ObjectHideFlags: 0
@@ -45492,10 +45384,10 @@ RectTransform:
   - {fileID: 1071735478}
   m_Father: {fileID: 1423974080}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 120}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 958.675, y: -555.4656}
+  m_SizeDelta: {x: 1917.35, y: 120}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2041793099
 MonoBehaviour:
@@ -45598,7 +45490,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Join
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -45849,7 +45741,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Difficulty
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -45999,10 +45891,10 @@ RectTransform:
   - {fileID: 2021469313}
   m_Father: {fileID: 588727384}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 844.1139, y: -138}
-  m_SizeDelta: {x: 1688.2278, y: 200}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2059101609
 MonoBehaviour:
@@ -46141,7 +46033,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0412\u0438\u0439\u0442\u0438 \u0437 \u0433\u0440\u0438"
+  m_text: Quit Game
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -46353,7 +46245,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Resolution
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -46781,7 +46673,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &2095778970
 GameObject:
   m_ObjectHideFlags: 0
@@ -47202,7 +47093,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041A\u0456\u043A \u0433\u0440\u0430\u0432\u0446\u0456\u0432"
+  m_text: Manage Players
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -47927,7 +47818,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &2105000080
 GameObject:
   m_ObjectHideFlags: 0
@@ -47993,7 +47883,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0413\u0440\u0430\u0432\u0435\u0446\u044C"
+  m_text: Player
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -48130,7 +48020,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u0421\u0442\u0430\u0442\u0443\u0441"
+  m_text: Status
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -48341,7 +48231,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &2105000110
 GameObject:
   m_ObjectHideFlags: 0
@@ -48407,7 +48296,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Close
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -48618,7 +48507,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &2105000130
 GameObject:
   m_ObjectHideFlags: 0
@@ -48684,7 +48572,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Refresh
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -48911,7 +48799,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &2105000210
 GameObject:
   m_ObjectHideFlags: 0
@@ -48977,7 +48864,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Manage Players
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -49243,8 +49130,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041D\u0430\u043B\u0430\u0448\u0442\u0443\u0432\u0430\u043D\u043D\u044F
-    \u0441\u0432\u0456\u0442\u0443"
+  m_text: World Settings
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -49360,8 +49246,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 844.1139, y: -178}
-  m_SizeDelta: {x: 1688.2278, y: 48}
+  m_AnchoredPosition: {x: 958.675, y: -178}
+  m_SizeDelta: {x: 1917.35, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2112336414
 MonoBehaviour:
@@ -49840,7 +49726,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Text Button
+  m_text: Back
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
   m_sharedMaterial: {fileID: 1231001594281757362, guid: 20023d9e9a0763c4d9674ecb7040912c, type: 2}
@@ -49867,7 +49753,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 80
+  m_fontSize: 72
   m_fontSizeBase: 80
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -49959,7 +49845,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 534, y: -524.4977}
+  m_AnchoredPosition: {x: 534, y: -450}
   m_SizeDelta: {x: 340, y: 240}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2144015530
@@ -50076,7 +49962,6 @@ MonoBehaviour:
     _sounds: []
     _defaultPoolSize: 12
     _dontDestroyOnLoad: 1
-    _verboseLogs: 0
 --- !u!1 &2144829845
 GameObject:
   m_ObjectHideFlags: 0
@@ -50190,8 +50075,8 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 515163902}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMin: {x: 1, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -50275,7 +50160,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3171841602611228201, guid: a9843b9e563e684aba172319b37eb754, type: 3}
       propertyPath: m_text
-      value: Text Button
+      value: Play
       objectReference: {fileID: 0}
     - target: {fileID: 3171841602611228201, guid: a9843b9e563e684aba172319b37eb754, type: 3}
       propertyPath: m_fontSize
@@ -50336,6 +50221,14 @@ PrefabInstance:
     - target: {fileID: 3171841602611228201, guid: a9843b9e563e684aba172319b37eb754, type: 3}
       propertyPath: m_EditorClassIdentifier
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6504186789061632142, guid: a9843b9e563e684aba172319b37eb754, type: 3}
+      propertyPath: m_text
+      value: World #1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7481004312544314861, guid: a9843b9e563e684aba172319b37eb754, type: 3}
+      propertyPath: m_text
+      value: April 21, 2026 - Medium - Normal
       objectReference: {fileID: 0}
     - target: {fileID: 8697371016898288963, guid: a9843b9e563e684aba172319b37eb754, type: 3}
       propertyPath: m_Name
@@ -50437,6 +50330,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2144829846}
     m_Modifications:
+    - target: {fileID: 6464194771970357967, guid: b25b83cfa82cbb285b22ce998e08c1f4, type: 3}
+      propertyPath: m_text
+      value: Room #1 (2/8)
+      objectReference: {fileID: 0}
     - target: {fileID: 6768137367784619239, guid: b25b83cfa82cbb285b22ce998e08c1f4, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5

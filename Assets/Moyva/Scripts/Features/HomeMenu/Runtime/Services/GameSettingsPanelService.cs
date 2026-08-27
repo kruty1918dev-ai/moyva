@@ -198,8 +198,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             _confirmationService.Show(new ConfirmationRequest
             {
-                LabelText = "Підтвердження",
-                MessageText = "Видалити всі локальні збереження?",
+                LabelText = "Confirmation",
+                MessageText = "Delete all local saves?",
                 OnConfirm = _settingsService.DeleteAllSaves,
                 OnCancel = () => { }
             });

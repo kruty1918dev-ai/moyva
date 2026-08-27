@@ -41,9 +41,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             int requestedPlayerCount = _policy.ResolveStartPositionCount();
             Vector2Int baseMapSize = StartingPositionMapUtility.ResolveBaseMapSize(signal);
+            bool shouldCompute = _policy.ShouldComputeHostStartPositions();
 
-            if (!_policy.ShouldComputeHostStartPositions() || _startingPositionState.IsSet)
+            if (!shouldCompute || _startingPositionState.IsSet)
+            {
+                Debug.Log($"{StartingPositionInitializer.DebugTag} Host start position preparation skipped. " +
+                          $"shouldCompute={shouldCompute}, stateIsSet={_startingPositionState.IsSet}, " +
+                          $"requestedPlayers={requestedPlayerCount}, map={baseMapSize.x}x{baseMapSize.y}.");
                 return false;
+            }
 
             List<Vector2Int> startPositions = _selector.PickStartingPositions(signal, requestedPlayerCount);
             Vector2Int startPos = startPositions.Count > 0
@@ -68,6 +74,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (_startingPositionState.SpawnAssignments.Count > 0)
             {
+                Debug.Log($"{StartingPositionInitializer.DebugTag} Publishing start positions. " +
+                          $"assignments={_startingPositionState.SpawnAssignments.Count}, requestedPlayers={requestedPlayerCount}, " +
+                          $"localPlayer='{_policy.ResolveLocalPlayerId()}', map={baseMapSize.x}x{baseMapSize.y}.");
                 var spawnPositionsSignal = new WorldSpawnPositionsSignal
                 {
                     StartupSequence = signal.StartupSequence,

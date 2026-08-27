@@ -12,15 +12,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public static string GetPostJoinBlockReason(LobbyRoom room, string playerName, float reconnectToleranceSeconds)
         {
             if (room == null)
-                return "Кімната недоступна.";
+                return "Room is unavailable.";
 
             if (room.State == LobbyState.Closed)
-                return "Кімната вже закрита.";
+                return "Room is already closed.";
 
             if (room.State == LobbyState.Started &&
                 !MultiplayerRoomLifecycle.IsReconnectAllowed(room, playerName, reconnectToleranceSeconds))
             {
-                return "Гра вже запущена. Приєднання доступне лише для перепідключення з тим самим ніком і коректним локальним часом.";
+                return "Game has already started. Joining is only available for reconnect with the same nickname and correct local time.";
             }
 
             return null;

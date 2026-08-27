@@ -98,6 +98,7 @@
   <Project Path="Unity.VisualScripting.State.csproj" />
   <Project Path="Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.Bootstrap.csproj" />
   <Project Path="Kruty1918.Moyva.Multiplayer.csproj" />
   <Project Path="Unity.2D.Animation.Editor.csproj" />
   <Project Path="Unity.Networking.Editor.csproj" />
@@ -208,6 +209,7 @@
   <Project Path="Unity.Rendering.LightTransport.Editor.csproj" />
   <Project Path="Unity.Collections.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Adapters.Ngo1WithUtp2.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.HomeMenu.csproj" />
   <Project Path="Unity.VisualScripting.DocCodeExamples.csproj" />
   <Project Path="Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.csproj" />
   <Project Path="Unity.RenderPipelines.Core.ShaderLibrary.csproj" />

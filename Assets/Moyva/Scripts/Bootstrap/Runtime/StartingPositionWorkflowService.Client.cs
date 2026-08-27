@@ -18,16 +18,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool canRun = _policy.CanRunStartLogic();
             if (!hasPendingWorldSignal)
             {
+                Debug.Log($"{StartingPositionInitializer.DebugTag} Start logic skipped: no pending WorldGenerated signal.");
                 return;
             }
 
             if (_workflowState.StartLogicApplied)
             {
+                Debug.Log($"{StartingPositionInitializer.DebugTag} Start logic skipped: already applied.");
                 return;
             }
 
             if (autoLoad && hasSave)
             {
+                Debug.Log($"{StartingPositionInitializer.DebugTag} Applying autoload fog/camera recovery. slot={slot}.");
                 _autoloadRecoveryService.RepairLoadedFogIfNeeded(signal);
                 Vector2Int baseMapSize = StartingPositionMapUtility.ResolveBaseMapSize(signal);
                 _revealPresentationService.TeleportMainCamera(
@@ -39,15 +42,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (_spawnSetupService.TryPrepareStartingPositions(signal)
                 && _workflowState.StartLogicApplied)
+            {
+                Debug.Log($"{StartingPositionInitializer.DebugTag} Start logic completed while preparing host start positions.");
                 return;
+            }
 
             if (!canRun)
             {
+                Debug.LogWarning($"{StartingPositionInitializer.DebugTag} Start logic blocked by policy. " +
+                                 $"mode={GameLaunchContext.Mode}, source={GameLaunchContext.Source}, " +
+                                 $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, " +
+                                 $"launchHasRole={GameLaunchContext.HasLocalPlayerRole}, launchHost={GameLaunchContext.IsLocalPlayerHost}, " +
+                                 $"launchLocal='{GameLaunchContext.LocalPlayerId}'.");
                 return;
             }
 
             if (!_startingPositionState.IsSet)
             {
+                Debug.LogWarning($"{StartingPositionInitializer.DebugTag} Start logic waiting for start positions. " +
+                                 $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, " +
+                                 $"launchHost={GameLaunchContext.IsLocalPlayerHost}, launchLocal='{GameLaunchContext.LocalPlayerId}'.");
                 return;
             }
 
@@ -65,6 +79,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (revealChanged)
             {
+                Debug.Log($"{StartingPositionInitializer.DebugTag} Applying start reveal. " +
+                          $"map={baseMapSize.x}x{baseMapSize.y}, center={revealCenter}, teleportCamera={teleportCamera}.");
                 _revealPresentationService.ApplyReveal(baseMapSize.x, baseMapSize.y, revealCenter);
                 _workflowState.StartRevealApplied = true;
                 _workflowState.AppliedStartRevealWidth = baseMapSize.x;
@@ -74,11 +90,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (teleportCamera && !_workflowState.StartupCameraTeleported)
             {
+                Debug.Log($"{StartingPositionInitializer.DebugTag} Teleporting startup camera to {revealCenter}.");
                 _revealPresentationService.TeleportMainCamera(revealCenter, signal);
                 _workflowState.StartupCameraTeleported = true;
             }
 
             _workflowState.StartLogicApplied = true;
+            Debug.Log($"{StartingPositionInitializer.DebugTag} Start logic applied.");
         }
 
         private void ReapplyStartRevealIfNeeded(WorldGeneratedDataSignal signal)

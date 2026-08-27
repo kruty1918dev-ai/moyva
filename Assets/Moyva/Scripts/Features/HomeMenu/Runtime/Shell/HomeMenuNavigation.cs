@@ -71,8 +71,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             // просто закриваємо весь стек відкритих панелей без confirm flow.
             if (_menuStack.Count > 0 && _menuStack.Peek() == menuName)
             {
-                LogInfo($"Menu '{menuName}' already open. Closing all open panels.");
-                CloseAllOpenPanels();
+                LogInfo($"Menu '{menuName}' already open. Ignoring duplicate open.");
                 return;
             }
             var previous = CurrentMenu;
@@ -114,8 +113,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 _confirmationService.Show(new ConfirmationRequest
                 {
-                    LabelText = "Підтвердження",
-                    MessageText = "Ви впевнені, що хочете повернутися назад?",
+                    LabelText = "Confirmation",
+                    MessageText = "Are you sure you want to go back?",
                     OnConfirm = () => DoClose(menuName),
                     OnCancel = () => LogInfo($"Close of '{menuName}' was cancelled by user.")
                 });
@@ -174,8 +173,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 _confirmationService.Show(new ConfirmationRequest
                 {
-                    LabelText = "Підтвердження",
-                    MessageText = "Ви впевнені, що хочете повернутися назад?",
+                    LabelText = "Confirmation",
+                    MessageText = "Are you sure you want to go back?",
                     OnConfirm = () => DoClose(menuName),
                     OnCancel = () => LogInfo($"CloseLast of '{menuName}' was cancelled by user.")
                 });
@@ -287,10 +286,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         // --- Logging helpers ---
         private void LogInfo(string message)
         {
+            Debug.Log(message);
         }
 
         private void LogWarning(string message)
         {
+              Debug.LogWarning(message);
         }
 
         private void LogError(string message)
@@ -318,8 +319,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (_menuStack.Count > 0 && _menuStack.Peek() == menuName)
             {
-                LogInfo($"Menu '{menuName}' already open during force open. Closing all open panels.");
-                CloseAllOpenPanels();
+                LogInfo($"Menu '{menuName}' already open during force open. Ignoring duplicate open.");
                 return;
             }
             var previous = CurrentMenu;

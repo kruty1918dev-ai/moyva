@@ -48,10 +48,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 1,
                 _settings.startCandidateAttempts);
 
-            bool isDirectGameplay =
+            bool allowBestEffortFallback =
                 signal.Source == WorldGeneratedDataSource.DirectGameplayTest ||
+                signal.Source == WorldGeneratedDataSource.GeneratedHost ||
                 GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest ||
-                GameLaunchContext.Source == GameLaunchSource.DirectGameplayTest;
+                GameLaunchContext.Source == GameLaunchSource.DirectGameplayTest ||
+                GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame;
 
             for (int positionIndex = 0;
                  positionIndex < positionsCount;
@@ -69,8 +71,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                 // Keep the topology alive, but relax constraints in an explicit
                 // order. Every participant slot goes through the same selector.
-                if (isDirectGameplay &&
-                    TryPickBestEffortDirectPosition(
+                if (allowBestEffortFallback &&
+                    TryPickBestEffortPosition(
                         signal,
                         positions,
                         requireTerrainQuality: true,
@@ -81,8 +83,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     continue;
                 }
 
-                if (isDirectGameplay &&
-                    TryPickBestEffortDirectPosition(
+                if (allowBestEffortFallback &&
+                    TryPickBestEffortPosition(
                         signal,
                         positions,
                         requireTerrainQuality: false,
@@ -93,8 +95,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     continue;
                 }
 
-                if (isDirectGameplay &&
-                    TryPickBestEffortDirectPosition(
+                if (allowBestEffortFallback &&
+                    TryPickBestEffortPosition(
                         signal,
                         positions,
                         requireTerrainQuality: false,
@@ -388,7 +390,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 Vector2.Distance(first, second));
         }
 
-        private bool TryPickBestEffortDirectPosition(
+        private bool TryPickBestEffortPosition(
             WorldGeneratedDataSignal signal,
             IReadOnlyList<Vector2Int> existingPositions,
             bool requireTerrainQuality,

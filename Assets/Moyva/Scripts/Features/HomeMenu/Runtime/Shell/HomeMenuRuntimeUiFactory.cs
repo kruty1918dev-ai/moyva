@@ -51,7 +51,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var card = CreateCard(root.transform, new Vector2(InfoCardWidth, InfoCardHeight));
             CreateVerticalLayout(card, InfoCardSpacing, ModalPadding);
 
-            var title = CreateText(card.transform, "Title", "Повідомлення", 24, FontStyles.Bold, TextAlignmentOptions.Center);
+            var title = CreateText(card.transform, "Title", "Message", 24, FontStyles.Bold, TextAlignmentOptions.Center);
             var message = CreateText(card.transform, "Message", string.Empty, 18, FontStyles.Normal, TextAlignmentOptions.Center);
             SetFlexible(message.gameObject, preferredHeight: InfoMessagePreferredHeight, flexibleHeight: 1f);
             var okButton = CreateButton(card.transform, "Button_OK", "OK", new Vector2(InfoPrimaryButtonWidth, InfoPrimaryButtonHeight));
@@ -69,8 +69,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var card = CreateCard(root.transform, new Vector2(PasswordCardWidth, PasswordCardHeight));
             CreateVerticalLayout(card, PasswordCardSpacing, ModalPadding);
 
-            var title = CreateText(card.transform, "Title", "Введіть пароль", 24, FontStyles.Bold, TextAlignmentOptions.Center);
-            var input = CreateInputField(card.transform, "Input_Password", "Пароль");
+            var title = CreateText(card.transform, "Title", "Enter Password", 24, FontStyles.Bold, TextAlignmentOptions.Center);
+            var input = CreateInputField(card.transform, "Input_Password", "Password");
             var error = CreateText(card.transform, "Error", string.Empty, 16, FontStyles.Normal, TextAlignmentOptions.Center);
             error.color = new Color(1f, 0.42f, 0.42f, 1f);
             error.gameObject.SetActive(false);
@@ -89,7 +89,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             SetFlexible(buttons, preferredHeight: PasswordActionsRowHeight);
 
             var okButton = CreateButton(buttons.transform, "Button_OK", "OK", new Vector2(PasswordActionButtonWidth, PasswordActionButtonHeight));
-            var cancelButton = CreateButton(buttons.transform, "Button_Cancel", "Скасувати", new Vector2(PasswordActionButtonWidth, PasswordActionButtonHeight));
+            var cancelButton = CreateButton(buttons.transform, "Button_Cancel", "Cancel", new Vector2(PasswordActionButtonWidth, PasswordActionButtonHeight));
 
             var controller = root.AddComponent<PasswordPanelViewController>();
             controller.ConfigureReferences(root, title, input, error, okButton, cancelButton);

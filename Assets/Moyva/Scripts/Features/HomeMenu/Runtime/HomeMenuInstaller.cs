@@ -168,6 +168,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Container.BindInterfacesAndSelfTo<MultiplayerPanelService>()
                 .AsSingle();
 
+            Container.BindInterfacesAndSelfTo<LobbyFlowContext>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<CreateRoomPanelService>()
                 .AsSingle();
 

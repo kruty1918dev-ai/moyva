@@ -72,8 +72,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (_titleText != null)
                 _titleText.text = string.IsNullOrWhiteSpace(roomDisplayName)
-                    ? "Введіть пароль"
-                    : $"Пароль для «{roomDisplayName}»";
+                    ? "Enter Password"
+                    : $"Password for \"{roomDisplayName}\"";
             if (_passwordInput != null) _passwordInput.text = string.Empty;
             SetErrorText(errorText);
             if (_root != null) _root.SetActive(true);

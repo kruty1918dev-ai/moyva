@@ -89,7 +89,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 _currentLobby = null;
                 _viewController?.ClearPlayers();
-                _viewController?.SetStatus("Тебе видалили з лобі.");
+                _viewController?.SetStatus("You were removed from the lobby.");
             });
         }
 
@@ -108,7 +108,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (!playerInfo.CanKick)
             {
-                _viewController?.SetStatus("Цього гравця не можна кікнути.");
+                _viewController?.SetStatus("This player cannot be kicked.");
                 return;
             }
 
@@ -120,8 +120,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             _confirmationService.Show(new ConfirmationRequest
             {
-                LabelText = "Кікнути гравця",
-                MessageText = $"Видалити {playerInfo.DisplayName} з кімнати?",
+                LabelText = "Kick Player",
+                MessageText = $"Remove {playerInfo.DisplayName} from the room?",
                 OnConfirm = () => _ = KickPlayerAsync(playerInfo),
                 OnCancel = () => { }
             });
@@ -134,7 +134,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             _isKicking = true;
             _viewController?.SetInteractable(false);
-            _viewController?.SetStatus("Видаляю гравця...");
+            _viewController?.SetStatus("Removing player...");
 
             try
             {
@@ -143,7 +143,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception exception)
             {
-                _viewController?.SetStatus($"Не вдалося кікнути: {exception.Message}");
+                _viewController?.SetStatus($"Kick failed: {exception.Message}");
             }
             finally
             {
@@ -186,7 +186,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 result.Add(new KickPlayerInfo
                 {
                     PlayerId = player.PlayerId,
-                    DisplayName = string.IsNullOrWhiteSpace(player.DisplayName) ? "Гравець" : player.DisplayName,
+                    DisplayName = string.IsNullOrWhiteSpace(player.DisplayName) ? "Player" : player.DisplayName,
                     IsHost = isHost,
                     IsLocalPlayer = isLocalPlayer,
                     CanKick = canKick,
@@ -322,29 +322,29 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private static string BuildStatusText(LobbyRoom lobby, bool canManageLobby, List<KickPlayerInfo> players)
         {
             if (lobby == null)
-                return "Лобі ще не створено.";
+                return "Lobby has not been created yet.";
 
             if (!canManageLobby)
-                return "Тільки хост може кікати гравців.";
+                return "Only the host can kick players.";
 
             foreach (var player in players)
             {
                 if (player.CanKick)
-                    return "Натисни на гравця, щоб кікнути його з кімнати.";
+                    return "Select a player to kick them from the room.";
             }
 
-            return "Немає гравців, яких можна кікнути.";
+            return "There are no players that can be kicked.";
         }
 
         private static string BuildPlayerStatus(bool isHost, bool isLocalPlayer, bool canKick)
         {
             if (isHost)
-                return "Хост";
+                return "Host";
 
             if (isLocalPlayer)
-                return "Це ти";
+                return "You";
 
-            return canKick ? "Можна кікнути" : "Недоступно";
+            return canKick ? "Can kick" : "Unavailable";
         }
     }
 }

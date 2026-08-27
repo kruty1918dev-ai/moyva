@@ -28,7 +28,10 @@ namespace Kruty1918.Moyva.Generator
         private void AttemptStartup()
         {
             if (_buildTriggered)
+            {
+                Debug.Log("[GeneratorStartup] Attempt ignored because build was already triggered.");
                 return;
+            }
 
             bool hasInstantiator = _mapVisualInstantiator != null;
             bool hasCurrentWorld = hasInstantiator
@@ -39,6 +42,14 @@ namespace Kruty1918.Moyva.Generator
 
             if (!shouldBuild)
             {
+                Debug.LogWarning(
+                    "[GeneratorStartup] World build skipped. " +
+                    $"hasInstantiator={hasInstantiator}, hasCurrentWorld={hasCurrentWorld}, " +
+                    $"mode={GameLaunchContext.Mode}, source={GameLaunchContext.Source}, " +
+                    $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, world='{GameLaunchContext.WorldName}', " +
+                    $"seed={GameLaunchContext.Seed}, size={GameLaunchContext.Size}, " +
+                    $"dimensions={GameLaunchContext.Width}x{GameLaunchContext.Height}");
+
                 if (GameLaunchContext.Mode == GameLaunchMode.Unknown)
                 {
                     Debug.LogError(
@@ -50,6 +61,12 @@ namespace Kruty1918.Moyva.Generator
             }
 
             _buildTriggered = true;
+            Debug.Log(
+                "[GeneratorStartup] Building world. " +
+                $"mode={GameLaunchContext.Mode}, source={GameLaunchContext.Source}, " +
+                $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, world='{GameLaunchContext.WorldName}', " +
+                $"seed={GameLaunchContext.Seed}, size={GameLaunchContext.Size}, " +
+                $"dimensions={GameLaunchContext.Width}x{GameLaunchContext.Height}");
             _mapVisualInstantiator.BuildWorld();
         }
 

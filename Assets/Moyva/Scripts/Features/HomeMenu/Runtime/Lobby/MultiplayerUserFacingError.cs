@@ -45,17 +45,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
             switch (error.Code)
             {
                 case DomainErrorCode.WrongPassword:
-                    return new MultiplayerUserFacingError("MP-JOIN-401", "Невірний пароль кімнати.", "Перевірте пароль і повторіть спробу.", traceId);
+                    return new MultiplayerUserFacingError("MP-JOIN-401", "Wrong room password.", "Check the password and try again.", traceId);
                 case DomainErrorCode.NotFound:
-                    return new MultiplayerUserFacingError("MP-JOIN-404", "Кімнату не знайдено або вона вже закрита.", "Оновіть список і оберіть іншу кімнату.", traceId);
+                    return new MultiplayerUserFacingError("MP-JOIN-404", "Room was not found or is already closed.", "Refresh the list and choose another room.", traceId);
                 case DomainErrorCode.Timeout:
-                    return new MultiplayerUserFacingError("MP-NET-408", "Операція перевищила ліміт часу.", "Перевірте мережу та повторіть спробу.", traceId);
+                    return new MultiplayerUserFacingError("MP-NET-408", "Operation timed out.", "Check your network and try again.", traceId);
                 case DomainErrorCode.Network:
-                    return new MultiplayerUserFacingError("MP-NET-503", "Мережева операція не виконана.", "Спробуйте ще раз за кілька секунд.", traceId);
+                    return new MultiplayerUserFacingError("MP-NET-503", "Network operation failed.", "Try again in a few seconds.", traceId);
                 case DomainErrorCode.Validation:
-                    return new MultiplayerUserFacingError("MP-REQ-422", string.IsNullOrWhiteSpace(error.Message) ? "Некоректний запит." : error.Message, "Перевірте вхідні параметри.", traceId);
+                    return new MultiplayerUserFacingError("MP-REQ-422", string.IsNullOrWhiteSpace(error.Message) ? "Invalid request." : error.Message, "Check the input parameters.", traceId);
                 default:
-                    return new MultiplayerUserFacingError("MP-UNKNOWN", string.IsNullOrWhiteSpace(error.Message) ? "Невідома помилка мультиплеєра." : error.Message, "Повторіть спробу або перезайдіть у меню.", traceId);
+                    return new MultiplayerUserFacingError("MP-UNKNOWN", string.IsNullOrWhiteSpace(error.Message) ? "Unknown multiplayer error." : error.Message, "Try again or re-enter the menu.", traceId);
             }
         }
 
@@ -68,7 +68,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
             var tracePart = string.IsNullOrWhiteSpace(TraceId) ? string.Empty : $"\nTraceId: {TraceId}";
 
             // 2: Додаємо action hint тільки для сценаріїв, де є корисна порада користувачу.
-            var hintPart = string.IsNullOrWhiteSpace(ActionHint) ? string.Empty : $"\nПідказка: {ActionHint}";
+            var hintPart = string.IsNullOrWhiteSpace(ActionHint) ? string.Empty : $"\nHint: {ActionHint}";
 
             // 3: Повертаємо один форматований рядок/блок для прямого показу в InfoPanel.
             return $"[{ErrorCode}] {UserMessage}{hintPart}{tracePart}";

@@ -1,4 +1,5 @@
 using System;
+using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.Runtime;
 using TMPro;
 using UnityEngine;
@@ -15,6 +16,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         [SerializeField] private Slider _maxPlayersInput;
         [SerializeField] private TMP_Text _maxPlayersLabel;
         [SerializeField] private Button _nextButton;
+        [SerializeField] private TMP_Text _titleText;
+        [SerializeField] private TMP_Text _sectionTitleText;
+        [SerializeField] private TMP_Text _nextButtonLabel;
 
         public string RoomName { get; set; }
         public string Password { get; set; }
@@ -42,6 +46,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 return;
 
             EnsureRuntimeControls();
+            ResolvePresentationTargets();
 
             if (_roomNameInput != null)
                 _roomNameInput.onEndEdit.AddListener(OnRoomNameEdited);
@@ -150,6 +155,56 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
             var parent = _maxPlayersInput.transform.parent != null ? _maxPlayersInput.transform.parent : transform;
             _maxPlayersLabel = HomeMenuRuntimeUiFactory.CreateText(parent, "Label_MaxPlayersValue", string.Empty, 16, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+        }
+
+        public void ApplyPresentation(CreateRoomPanelPresentation presentation)
+        {
+            ResolvePresentationTargets();
+
+            if (_titleText != null && !string.IsNullOrWhiteSpace(presentation.Title))
+                _titleText.text = presentation.Title;
+
+            if (_sectionTitleText != null && !string.IsNullOrWhiteSpace(presentation.SectionTitle))
+                _sectionTitleText.text = presentation.SectionTitle;
+
+            if (_nextButtonLabel != null && !string.IsNullOrWhiteSpace(presentation.NextButtonText))
+                _nextButtonLabel.text = presentation.NextButtonText;
+        }
+
+        private void ResolvePresentationTargets()
+        {
+            if (_titleText == null)
+                _titleText = FindChildText("Title");
+
+            if (_sectionTitleText == null)
+                _sectionTitleText = FindFirstTextContaining("Room Settings");
+
+            if (_nextButtonLabel == null && _nextButton != null)
+                _nextButtonLabel = _nextButton.GetComponentInChildren<TMP_Text>(true);
+        }
+
+        private TMP_Text FindChildText(string objectName)
+        {
+            var texts = GetComponentsInChildren<TMP_Text>(true);
+            foreach (var text in texts)
+            {
+                if (text != null && string.Equals(text.gameObject.name, objectName, StringComparison.Ordinal))
+                    return text;
+            }
+
+            return null;
+        }
+
+        private TMP_Text FindFirstTextContaining(string value)
+        {
+            var texts = GetComponentsInChildren<TMP_Text>(true);
+            foreach (var text in texts)
+            {
+                if (text != null && !string.IsNullOrWhiteSpace(text.text) && text.text.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0)
+                    return text;
+            }
+
+            return null;
         }
         // This class would be implemented by the actual MonoBehaviour that has the UI elements.
     }

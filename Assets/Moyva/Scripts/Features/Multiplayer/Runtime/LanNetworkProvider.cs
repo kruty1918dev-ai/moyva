@@ -6,6 +6,7 @@ using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Runtime;
 using System.Net;
+using System.Net.Sockets;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Unity.Collections;
 using Unity.Networking.Transport;
@@ -91,6 +92,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 private const int MaxFrameBodyBytes = 60 * 1024;
                 private const int HandshakeTimeoutMs = 10_000;
+                private const int HostPortSearchCount = 32;
 
                 private NetworkDriver _driver;
                 private NetworkConnection _serverConnection;
@@ -109,29 +111,99 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                         await ShutdownTransportAsync();
 
-                        var netSettings = new NetworkSettings();
-                        _driver = NetworkDriver.Create(netSettings);
-                        _serverConnections = new NativeList<NetworkConnection>(Math.Max(4, 4), Allocator.Persistent);
-
-                        var endpoint = NetworkEndpoint.AnyIpv4.WithPort((ushort)LanLobbyService.DefaultPort);
-                        if (_driver.Bind(endpoint) != 0)
-                            return SessionResult.Fail("LAN host bind failed.");
-
-                        if (_driver.Listen() != 0)
-                            return SessionResult.Fail("LAN host listen failed.");
+                        if (!TryStartHostDriver(out var boundPort, out var error))
+                            return SessionResult.Fail(error);
 
                         _isHost = true;
                         StartPumpLoop(ct);
                         PeerConnected?.Invoke(_localPeerId);
 
                         var ip = GetLocalIPAddress() ?? "127.0.0.1";
-                        var joinCode = $"lan:{ip}:{LanLobbyService.DefaultPort}";
+                        var joinCode = $"lan:{ip}:{boundPort}";
                         return SessionResult.Ok(joinCode);
                     }
                     catch (Exception e)
                     {
                         return SessionResult.Fail(e.Message);
                     }
+                }
+
+                private bool TryStartHostDriver(out ushort boundPort, out string error)
+                {
+                    boundPort = 0;
+                    error = null;
+
+                    for (var i = 0; i < HostPortSearchCount; i++)
+                    {
+                        var candidatePort = LanLobbyService.DefaultPort + i;
+                        if (candidatePort > ushort.MaxValue)
+                            break;
+
+                        if (!IsUdpPortAvailable(candidatePort))
+                            continue;
+
+                        var netSettings = new NetworkSettings();
+                        var candidateDriver = NetworkDriver.Create(netSettings);
+                        var candidateConnections = new NativeList<NetworkConnection>(4, Allocator.Persistent);
+                        var endpoint = NetworkEndpoint.AnyIpv4.WithPort((ushort)candidatePort);
+
+                        if (candidateDriver.Bind(endpoint) != 0)
+                        {
+                            DisposeCandidate(candidateDriver, candidateConnections);
+                            continue;
+                        }
+
+                        if (candidateDriver.Listen() != 0)
+                        {
+                            DisposeCandidate(candidateDriver, candidateConnections);
+                            continue;
+                        }
+
+                        _driver = candidateDriver;
+                        _serverConnections = candidateConnections;
+                        boundPort = (ushort)candidatePort;
+                        return true;
+                    }
+
+                    error = $"LAN host bind failed. No free UDP port found in range {LanLobbyService.DefaultPort}-{LanLobbyService.DefaultPort + HostPortSearchCount - 1}.";
+                    return false;
+                }
+
+                private static bool IsUdpPortAvailable(int port)
+                {
+                    try
+                    {
+                        using (var client = new UdpClient(AddressFamily.InterNetwork))
+                        {
+                            client.Client.Bind(new IPEndPoint(IPAddress.Any, port));
+                            return true;
+                        }
+                    }
+                    catch (SocketException)
+                    {
+                        return false;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        return false;
+                    }
+                }
+
+                private static void DisposeCandidate(NetworkDriver driver, NativeList<NetworkConnection> connections)
+                {
+                    try
+                    {
+                        if (driver.IsCreated)
+                            driver.Dispose();
+                    }
+                    catch { }
+
+                    try
+                    {
+                        if (connections.IsCreated)
+                            connections.Dispose();
+                    }
+                    catch { }
                 }
 
                 private async Task<SessionResult> JoinViaLanAsync(string joinCode, CancellationToken ct)

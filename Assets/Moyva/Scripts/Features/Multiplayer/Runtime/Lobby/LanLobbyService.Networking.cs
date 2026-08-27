@@ -39,12 +39,25 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private static async Task<UdpReceiveResult?> ReceiveResultWithTimeoutAsync(UdpClient client, TimeSpan timeout, CancellationToken ct)
         {
             var receiveTask = client.ReceiveAsync();
+            ObserveFaultedReceiveTask(receiveTask);
             var delayTask = Task.Delay(timeout, ct);
             var completed = await Task.WhenAny(receiveTask, delayTask).ConfigureAwait(false);
             if (completed != receiveTask)
                 return null;
 
             return receiveTask.Result;
+        }
+
+        private static void ObserveFaultedReceiveTask(Task<UdpReceiveResult> receiveTask)
+        {
+            _ = receiveTask.ContinueWith(
+                task =>
+                {
+                    var ignored = task.Exception;
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
         }
 
         private static string ResolveHostDisplayName(LobbyRoom room)

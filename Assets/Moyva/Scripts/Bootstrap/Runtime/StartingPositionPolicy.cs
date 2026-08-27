@@ -56,7 +56,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             return GameplayLaunchTopology.ResolveLocalPlayerId(
                 GameLaunchContext.Mode,
-                _sessionManager?.LocalPlayerId);
+                ResolveSessionOrLaunchLocalPlayerId());
         }
 
         public bool CanRunStartLogic()
@@ -65,8 +65,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return true;
             int participantCount = _sessionManager?.Participants?.Count ?? 0;
             bool hasSession = _sessionManager != null;
-            bool isHost = _sessionManager != null && _sessionManager.IsLocalPlayerHost;
-            string localPlayerId = _sessionManager?.LocalPlayerId ?? string.Empty;
+            bool isHost = IsMultiplayerHost();
+            string localPlayerId = ResolveSessionOrLaunchLocalPlayerId();
             bool isMultiplayerContext = IsMultiplayerLaunchContext();
             bool result;
 
@@ -96,32 +96,64 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return result;
         }
 
-        public bool IsMultiplayerHost()
-        {
-            return _sessionManager != null && _sessionManager.IsLocalPlayerHost;
-        }
-
         public bool ShouldComputeHostStartPositions()
         {
             if (GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest)
                 return true;
             int participantCount = _sessionManager?.Participants?.Count ?? 0;
             bool hasSession = _sessionManager != null;
-            bool isHost = _sessionManager != null && _sessionManager.IsLocalPlayerHost;
-            string localPlayerId = _sessionManager?.LocalPlayerId ?? string.Empty;
+            bool isHost = IsMultiplayerHost();
+            string localPlayerId = ResolveSessionOrLaunchLocalPlayerId();
             bool isMultiplayerContext = IsMultiplayerLaunchContext();
             bool result;
 
             if (_sessionManager == null || _sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
             {
-                result = !isMultiplayerContext;
+                result = !isMultiplayerContext || isHost;
                 LogPolicyDecision(nameof(ShouldComputeHostStartPositions), participantCount, hasSession, isHost, localPlayerId, isMultiplayerContext, result, "no-session-or-participants");
                 return result;
             }
 
-            result = _sessionManager.IsLocalPlayerHost;
+            result = isHost;
             LogPolicyDecision(nameof(ShouldComputeHostStartPositions), participantCount, hasSession, isHost, localPlayerId, isMultiplayerContext, result, "participants-present");
             return result;
+        }
+
+        private bool IsMultiplayerHost()
+        {
+            if (_sessionManager != null && _sessionManager.IsLocalPlayerHost)
+                return true;
+
+            if (IsMultiplayerLaunchContextStatic() &&
+                GameLaunchContext.HasLocalPlayerRole)
+            {
+                bool hasSessionLocalPlayer = !string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId);
+                if (hasSessionLocalPlayer)
+                    return string.Equals(
+                        _sessionManager.LocalPlayerId.Trim(),
+                        GameLaunchContext.LocalPlayerId?.Trim(),
+                        System.StringComparison.Ordinal) &&
+                        GameLaunchContext.IsLocalPlayerHost;
+
+                return GameLaunchContext.IsLocalPlayerHost;
+            }
+
+            return false;
+        }
+
+        private string ResolveSessionOrLaunchLocalPlayerId()
+        {
+            if (!string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
+                return _sessionManager.LocalPlayerId;
+
+            if (IsMultiplayerLaunchContextStatic() &&
+                GameLaunchContext.HasLocalPlayerRole &&
+                !string.IsNullOrWhiteSpace(GameLaunchContext.LocalPlayerId))
+            {
+                return GameLaunchContext.LocalPlayerId;
+            }
+
+            return string.Empty;
         }
 
     }

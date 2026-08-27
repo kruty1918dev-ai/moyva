@@ -1,5 +1,6 @@
 using System;
 using Kruty1918.Moyva.Signals;
+using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
@@ -38,6 +39,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             System.Diagnostics.Debug.Assert(_workflowService != null);
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
+            Debug.Log($"{DebugTag} Initializer subscribed. cachedState={_worldGenerationSignalState != null}.");
             ReplayCachedWorldSignalsIfAvailable();
         }
 
@@ -50,7 +52,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private void OnWorldSpawnPositions(WorldSpawnPositionsSignal signal)
         {
             if (ShouldSkipSpawnSignal(signal))
+            {
+                Debug.Log($"{DebugTag} WorldSpawnPositions skipped as duplicate revision={signal.SnapshotRevision}.");
                 return;
+            }
 
             _workflowService.HandleWorldSpawnPositions(signal);
         }
@@ -58,7 +63,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
             if (ShouldSkipWorldSignal(signal))
+            {
+                Debug.Log($"{DebugTag} WorldGenerated skipped as duplicate revision={signal.SnapshotRevision}.");
                 return;
+            }
 
             _workflowService.HandleWorldGenerated(signal);
         }
@@ -70,11 +78,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (_worldGenerationSignalState.TryGetWorldGeneratedData(out var worldSignal))
             {
+                Debug.Log($"{DebugTag} Replaying cached WorldGenerated revision={worldSignal.SnapshotRevision}.");
                 OnWorldGenerated(worldSignal);
             }
 
             if (_worldGenerationSignalState.TryGetWorldSpawnPositions(out var spawnSignal))
             {
+                Debug.Log($"{DebugTag} Replaying cached WorldSpawnPositions revision={spawnSignal.SnapshotRevision}, assignments={spawnSignal.Assignments?.Length ?? 0}.");
                 OnWorldSpawnPositions(spawnSignal);
             }
         }

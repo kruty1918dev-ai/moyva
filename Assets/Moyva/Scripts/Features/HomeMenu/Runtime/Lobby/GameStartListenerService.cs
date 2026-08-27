@@ -73,7 +73,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     dto.MaxPlayers,
                     dto.IsPrivate,
                     dto.Width,
-                    dto.Height);
+                    dto.Height,
+                    isLocalPlayerHost: _sessionManager?.IsLocalPlayerHost ?? false,
+                    localPlayerId: localId);
 
                 MainThreadDispatcher.Enqueue(() =>
                 {
@@ -89,7 +91,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             catch (Exception e)
             {
                 Debug.LogError($"{Prefix} OnStartGameCommand error: {e}");
-                _infoPanel?.Show(new InfoMessage("Помилка старту", e.Message));
+                _infoPanel?.Show(new InfoMessage("Start Failed", e.Message));
             }
         }
 

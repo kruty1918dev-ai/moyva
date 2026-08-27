@@ -23,7 +23,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
                     return;
 
                 var message = BuildMessage(reason);
-                _infoPanelService?.Show(new InfoMessage("Хост покинув гру", message));
+                _infoPanelService?.Show(new InfoMessage("Host Left the Game", message));
             }
             catch (Exception)
             {
@@ -33,9 +33,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
         private static string BuildMessage(string reason)
         {
             if (string.IsNullOrWhiteSpace(reason))
-                return "З'єднання з хостом втрачено. Гру повернуто до головного меню.";
+                return "Connection to the host was lost. The game returned to the main menu.";
 
-            return $"З'єднання з хостом втрачено ({reason}). Гру повернуто до головного меню.";
+            return $"Connection to the host was lost ({reason}). The game returned to the main menu.";
         }
     }
 }

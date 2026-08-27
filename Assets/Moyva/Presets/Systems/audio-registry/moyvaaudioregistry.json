@@ -116,7 +116,6 @@
   ],
   "defaultPoolSize": 12,
   "dontDestroyOnLoad": true,
-  "verboseLogs": true,
   "migration": {
     "sourceAssetGuid": "904efd62d2795ab879e2d2ce5c770413",
     "sourceAssetPath": "Assets/Moyva/Resources/MoyvaAudioRegistry.asset",

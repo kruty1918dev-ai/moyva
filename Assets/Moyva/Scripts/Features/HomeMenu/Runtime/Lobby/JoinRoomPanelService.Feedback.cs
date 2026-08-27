@@ -45,23 +45,23 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _uiGateway?.OpenJoinPanelForce(joinPanelName);
             });
 
-            _infoPanelService?.Show(new InfoMessage(title, string.IsNullOrWhiteSpace(message) ? "Дія: Оновіть список кімнат." : message));
+            _infoPanelService?.Show(new InfoMessage(title, string.IsNullOrWhiteSpace(message) ? "Action: Refresh the room list." : message));
         }
 
         private static string BuildJoinFailureMessage(Exception exception)
         {
             if (exception == null)
-                return "Не вдалося приєднатися до лобі. Спробуйте ще раз.";
+                return "Could not join the lobby. Try again.";
 
             var message = exception.Message;
             if (string.IsNullOrWhiteSpace(message))
-                return "Не вдалося приєднатися до лобі. Спробуйте ще раз.";
+                return "Could not join the lobby. Try again.";
 
             if (message.IndexOf("relay", StringComparison.OrdinalIgnoreCase) >= 0)
-                return "Не вдалося отримати або використати Relay-код кімнати. Оновіть список лобі й спробуйте ще раз.";
+                return "Could not get or use the room Relay code. Refresh the lobby list and try again.";
 
             if (message.IndexOf("lan", StringComparison.OrdinalIgnoreCase) >= 0)
-                return "Не вдалося підключитися до LAN-сесії. Переконайтеся, що хост ще в кімнаті, і спробуйте ще раз.";
+                return "Could not connect to the LAN session. Make sure the host is still in the room and try again.";
 
             return message;
         }
@@ -69,21 +69,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private static string BuildJoinFailureMessage(DomainError error)
         {
             if (error.IsNone)
-                return "Не вдалося приєднатися до лобі. Спробуйте ще раз.";
+                return "Could not join the lobby. Try again.";
 
             if (error.Code == DomainErrorCode.WrongPassword)
-                return "Невірний пароль кімнати. Спробуйте ще раз.";
+                return "Wrong room password. Try again.";
 
             if (error.Code == DomainErrorCode.NotFound)
-                return "Кімнату не знайдено або вона вже недоступна. Оновіть список і спробуйте ще раз.";
+                return "Room was not found or is no longer available. Refresh the list and try again.";
 
             if (error.Code == DomainErrorCode.Validation)
                 return string.IsNullOrWhiteSpace(error.Message)
-                    ? "Невалідні дані для приєднання. Перевірте параметри й повторіть спробу."
+                    ? "Invalid join data. Check the parameters and try again."
                     : error.Message;
 
             return string.IsNullOrWhiteSpace(error.Message)
-                ? "Не вдалося приєднатися до лобі. Спробуйте ще раз."
+                ? "Could not join the lobby. Try again."
                 : error.Message;
         }
 

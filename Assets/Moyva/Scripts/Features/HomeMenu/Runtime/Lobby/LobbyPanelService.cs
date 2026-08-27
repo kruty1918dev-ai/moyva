@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.HomeMenu.API;
@@ -40,6 +41,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private IHomeMenuGameStarter _gameStarter;
         [InjectOptional] private IOverlayLoader _overlayLoader;
         [InjectOptional] private IConfirmationService _confirmationService;
+        [InjectOptional] private ILobbyFlowContext _lobbyFlowContext;
 
         // --- Внутрішній стан
         private string _localPlayerId = string.Empty;
@@ -153,7 +155,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
-            _lobbyPanelViewController.SetLobbyInvateCode(lobby.LobbyCode);
+            _lobbyPanelViewController.SetInviteCode(LobbyInviteCodeResolver.Resolve(lobby, ResolveProvider()));
 
             int idx = 0;
             foreach (var p in lobby.Players)
@@ -177,7 +179,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (lobby == null) return false;
             if (lobby.State != LobbyState.Open) return false;
-            return (lobby.Players?.Count ?? 0) >= 2;
+            return (lobby.Players?.Count ?? 0) >= 1;
         }
 
         /// <summary>
@@ -229,7 +231,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (!_rateLimiter.Allow("start-game", TimeSpan.FromSeconds(1)))
             {
-                _infoPanelService?.Show(new InfoMessage("Зачекайте", "Команда Start викликається надто часто."));
+                _infoPanelService?.Show(new InfoMessage("Please Wait", "Start is being requested too often."));
                 return;
             }
 
@@ -251,7 +253,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (!IsHost(_currentLobby)) return;
             if (!CanStartGame(_currentLobby))
             {
-                _infoPanelService?.Show(new InfoMessage("Старт недоступний", "Для запуску гри потрібно щонайменше 2 гравці в кімнаті."));
+                _infoPanelService?.Show(new InfoMessage("Start Unavailable", "At least one player must be in the room to start the game."));
                 UpdateViewFromLobby(_currentLobby);
                 return;
             }
@@ -292,7 +294,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             // Локальний старт гри
             try
             {
-                ApplyGameplaySession(worldSettings);
+                var localPlayerId = ApplyGameplaySession(worldSettings);
                 GameLaunchContext.ConfigureMenuMultiplayerGame(
                     worldSettings.WorldName,
                     worldSettings.Seed,
@@ -302,7 +304,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     worldSettings.MaxPlayers,
                     worldSettings.IsPrivate,
                     worldSettings.Width,
-                    worldSettings.Height);
+                    worldSettings.Height,
+                    isLocalPlayerHost: _gameplaySession?.IsHost ?? IsHost(_currentLobby),
+                    localPlayerId: localPlayerId);
                 _gameStateService?.StartGame();
                 if (_gameStarter != null)
                     await _gameStarter.StartGameAsync(ct);
@@ -313,7 +317,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             catch (Exception e)
             {
                 UnityEngine.Debug.LogError($"[LobbyPanelService] Local StartGame failed: {e}");
-                _infoPanelService?.Show(new InfoMessage("Помилка старту", e.Message));
+                _infoPanelService?.Show(new InfoMessage("Start Failed", e.Message));
             }
             finally
             {
@@ -329,7 +333,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return draft;
 
             var seed = _worldSetupViewController != null ? _worldSetupViewController.Seed : 0;
-            var worldName = _worldSetupViewController != null ? _worldSetupViewController.WorldName : "Новий світ";
+            var worldName = _worldSetupViewController != null ? _worldSetupViewController.WorldName : "New World";
             var size = _worldSetupViewController != null ? (int)_worldSetupViewController.Size : (int)WorldSize.Medium;
             var mapType = _worldSetupViewController != null ? _worldSetupViewController.MapType : MapType.Continents;
             var difficulty = _worldSetupViewController != null ? _worldSetupViewController.Difficulty : Difficulty.Normal;
@@ -366,16 +370,92 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             return true;
         }
 
-        private void ApplyGameplaySession(WorldSettingsDto worldSettings)
+        private string ApplyGameplaySession(WorldSettingsDto worldSettings)
         {
             if (_gameplaySession == null)
-                return;
+                return ResolveGameplayLocalPlayerId(_currentLobby);
 
-            var localId = _sessionManager != null && !string.IsNullOrEmpty(_sessionManager.LocalPlayerId)
-                ? _sessionManager.LocalPlayerId
-                : _localPlayerId;
-            var mode = _modeSelector?.CurrentMode ?? NetworkProviderType.Offline;
+            var localId = ResolveGameplayLocalPlayerId(_currentLobby);
+            var mode = ResolveProvider();
             _gameplaySession.Apply(mode, worldSettings, MultiplayerRoomLifecycle.ProjectGameplayPlayers(_currentLobby, localId), localId);
+            return localId;
+        }
+
+        private string ResolveGameplayLocalPlayerId(LobbyRoom lobby)
+        {
+            foreach (var candidate in GetLocalPlayerIdCandidates(lobby))
+            {
+                if (LobbyHasPlayer(lobby, candidate))
+                    return candidate.Trim();
+            }
+
+            if (IsHost(lobby))
+            {
+                if (!string.IsNullOrWhiteSpace(lobby?.HostPlayerId))
+                    return lobby.HostPlayerId.Trim();
+
+                if (lobby?.Players != null)
+                {
+                    foreach (var player in lobby.Players)
+                    {
+                        if (player != null && player.IsHost && !string.IsNullOrWhiteSpace(player.PlayerId))
+                            return player.PlayerId.Trim();
+                    }
+                }
+            }
+
+            foreach (var candidate in GetLocalPlayerIdCandidates(lobby))
+            {
+                if (!string.IsNullOrWhiteSpace(candidate))
+                    return candidate.Trim();
+            }
+
+            return "local-player";
+        }
+
+        private IEnumerable<string> GetLocalPlayerIdCandidates(LobbyRoom lobby)
+        {
+            if (!string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
+                yield return _sessionManager.LocalPlayerId;
+
+            if (!string.IsNullOrWhiteSpace(_localPlayerId))
+                yield return _localPlayerId;
+
+            var localName = GetPlayerName();
+            if (!string.IsNullOrWhiteSpace(localName) && lobby?.Players != null)
+            {
+                foreach (var player in lobby.Players)
+                {
+                    if (player != null &&
+                        string.Equals(player.DisplayName, localName, StringComparison.Ordinal) &&
+                        !string.IsNullOrWhiteSpace(player.PlayerId))
+                    {
+                        yield return player.PlayerId;
+                    }
+                }
+            }
+        }
+
+        private static bool LobbyHasPlayer(LobbyRoom lobby, string playerId)
+        {
+            if (string.IsNullOrWhiteSpace(playerId) || lobby?.Players == null)
+                return false;
+
+            foreach (var player in lobby.Players)
+            {
+                if (player != null && string.Equals(player.PlayerId, playerId, StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private NetworkProviderType ResolveProvider()
+        {
+            if (_lobbyFlowContext != null && _lobbyFlowContext.FlowKind != LobbyFlowKind.None)
+                return _lobbyFlowContext.Provider;
+
+            return _modeSelector?.CurrentMode ?? NetworkProviderType.Offline;
         }
         #endregion
 
@@ -429,7 +509,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             try
             {
-                _infoPanelService?.Show(new InfoMessage("Видалено з лобі", BuildLobbyExitMessage(reason)));
+                _infoPanelService?.Show(new InfoMessage("Removed from Lobby", BuildLobbyExitMessage(reason)));
             }
             catch (Exception)
             {
@@ -454,15 +534,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private static string BuildLobbyExitMessage(string reason)
         {
             if (string.IsNullOrWhiteSpace(reason))
-                return "Підключення до лобі втрачено. Оберіть іншу кімнату або спробуйте ще раз.";
+                return "Connection to the lobby was lost. Choose another room or try again.";
 
             if (string.Equals(reason, "removed", StringComparison.OrdinalIgnoreCase))
-                return "Лобі було видалено. Оберіть іншу кімнату або спробуйте ще раз.";
+                return "The lobby was removed. Choose another room or try again.";
 
             if (string.Equals(reason, "lobby_closed", StringComparison.OrdinalIgnoreCase))
-                return "Лобі закрито або гру вже розпочато. Оберіть іншу кімнату.";
+                return "The lobby is closed or the game has already started. Choose another room.";
 
-            return $"Підключення до лобі втрачено: {reason}";
+            return $"Connection to the lobby was lost: {reason}";
         }
 
         /// <summary>
@@ -479,8 +559,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             var request = new ConfirmationRequest
             {
-                LabelText = "Покинути лобі?",
-                MessageText = "Ви дійсно хочете покинути лобі?",
+                LabelText = "Leave Lobby?",
+                MessageText = "Are you sure you want to leave the lobby?",
                 OnConfirm = () => { _ = LeaveLobbyAndNavigateBackAsync(); },
                 OnCancel = null
             };

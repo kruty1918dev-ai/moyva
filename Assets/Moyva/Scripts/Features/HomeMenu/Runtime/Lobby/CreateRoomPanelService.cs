@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [Inject] private ICreateRoomViewController _viewController;
         [Inject(Optional = true)] private ILobbyService _lobbyService;
         [InjectOptional] private IMultiplayerModeSelector _modeSelector;
+        [InjectOptional] private ILobbyFlowContext _lobbyFlowContext;
         [Inject(Optional = true)] private ILobbyPanelViewController _lobbyPanelViewController;
         [InjectOptional] private ILocalGameSettingsService _localGameSettings;
         [InjectOptional] private INetworkProvider _networkProvider;
@@ -101,20 +102,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
                     MainThreadDispatcher.Enqueue(() =>
                     {
-                        var inviteCode = !string.IsNullOrWhiteSpace(room.LobbyCode) ? room.LobbyCode : room.LobbyId;
-                        try { _lobbyPanelViewController?.SetLobbyInvateCode(inviteCode); } catch { }
+                        try { _lobbyPanelViewController?.SetInviteCode(LobbyInviteCodeResolver.Resolve(room, GetCurrentProviderType())); } catch { }
                         try { _navigation.Open(_worldSetupPanelName); } catch { }
                     });
                 }
                 else
                 {
-                    await FailRoomCreationAsync("Не вдалося створити lobby: сервіс повернув порожній результат.", leaveLobby: false, stopTransport: true);
+                    await FailRoomCreationAsync("Could not create lobby: service returned an empty result.", leaveLobby: false, stopTransport: true);
                 }
             }
             catch (Exception ex)
             {
                 if (transportHostStarted)
-                    await FailRoomCreationAsync($"Не вдалося створити lobby: {ex.Message}", leaveLobby: false, stopTransport: true);
+                    await FailRoomCreationAsync($"Could not create lobby: {ex.Message}", leaveLobby: false, stopTransport: true);
                 UnityEngine.Debug.LogError($"CreateRoomPanelService: failed to create room: {ex.Message}");
                 UnityEngine.Debug.LogException(ex);
             }
@@ -133,7 +133,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_modeSelector == null)
                 return Task.CompletedTask;
 
-            return _modeSelector.SetModeAsync(_modeSelector.CurrentMode);
+            return _modeSelector.SetModeAsync(GetCurrentProviderType());
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var effectiveNetworkType = GetEffectiveNetworkProviderType();
             if (providerType == NetworkProviderType.Relay && effectiveNetworkType != NetworkProviderType.Relay)
             {
-                var error = $"Глобальний Relay транспорт недоступний: активний мережевий провайдер зараз {effectiveNetworkType}.";
+                var error = $"Global Relay transport is unavailable: the active network provider is {effectiveNetworkType}.";
                 await FailRoomCreationAsync(error, leaveLobby: false, stopTransport: false);
                 return null;
             }
@@ -165,7 +165,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var result = await _networkProvider.HostSessionAsync(transportSessionId);
             if (result == null || !result.Success)
             {
-                var error = result?.ErrorMessage ?? "Не вдалося запустити мережеву сесію.";
+                var error = result?.ErrorMessage ?? "Could not start the network session.";
                 await FailRoomCreationAsync(error, leaveLobby: false, stopTransport: false);
                 return null;
             }
@@ -173,12 +173,33 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var transportJoinCode = result.SessionId?.Trim() ?? string.Empty;
             if (providerType == NetworkProviderType.Relay && !RelayJoinCodeUtility.IsValid(transportJoinCode))
             {
-                var error = $"Relay повернув невалідний код підключення '{transportJoinCode}'. Очікувався короткий Relay join code; LobbyId не передається у transport host-flow.";
+                var error = $"Relay returned an invalid join code '{transportJoinCode}'. Expected a short Relay join code; LobbyId is not passed through the transport host flow.";
+                await FailRoomCreationAsync(error, leaveLobby: false, stopTransport: true);
+                return null;
+            }
+
+            if (providerType == NetworkProviderType.Lan && !IsLanJoinCode(transportJoinCode))
+            {
+                var error = $"LAN transport returned an invalid join code '{transportJoinCode}'. Expected lan:<ip>:<port>.";
                 await FailRoomCreationAsync(error, leaveLobby: false, stopTransport: true);
                 return null;
             }
 
             return transportJoinCode;
+        }
+
+        private static bool IsLanJoinCode(string joinCode)
+        {
+            if (string.IsNullOrWhiteSpace(joinCode))
+                return false;
+
+            var parts = joinCode.Trim().Split(':');
+            return parts.Length >= 3 &&
+                   string.Equals(parts[0], "lan", StringComparison.OrdinalIgnoreCase) &&
+                   !string.IsNullOrWhiteSpace(parts[1]) &&
+                   int.TryParse(parts[2], out var port) &&
+                   port > 0 &&
+                   port <= 65535;
         }
 
         private async Task<bool> PublishTransportJoinCodeAsync(string transportJoinCode)
@@ -191,7 +212,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 }
                 catch (Exception e)
                 {
-                    await FailRoomCreationAsync($"Не вдалося опублікувати мережевий код кімнати: {e.Message}", leaveLobby: true, stopTransport: true);
+                    await FailRoomCreationAsync($"Could not publish the room network code: {e.Message}", leaveLobby: true, stopTransport: true);
                     return false;
                 }
             }
@@ -201,6 +222,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private NetworkProviderType GetCurrentProviderType()
         {
+            if (_lobbyFlowContext != null && _lobbyFlowContext.FlowKind == LobbyFlowKind.Create)
+                return _lobbyFlowContext.Provider;
+
             return _modeSelector?.CurrentMode ?? NetworkProviderType.Relay;
         }
 
@@ -240,7 +264,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 catch (Exception) { }
             }
 
-            _infoPanelService?.Show(new InfoMessage("Помилка кімнати", error));
+            _infoPanelService?.Show(new InfoMessage("Room Error", error));
         }
 
         private string GetPlayerName()

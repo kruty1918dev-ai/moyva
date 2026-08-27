@@ -19,9 +19,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public bool IsMultiplayerClient()
         {
             if (_sessionManager == null)
-                return false;
+                return GameLaunchContext.HasLocalPlayerRole && !GameLaunchContext.IsLocalPlayerHost;
             if (_sessionManager.Participants == null || _sessionManager.Participants.Count <= 1)
-                return false;
+                return GameLaunchContext.HasLocalPlayerRole && !GameLaunchContext.IsLocalPlayerHost;
             return !_sessionManager.IsLocalPlayerHost;
         }
 

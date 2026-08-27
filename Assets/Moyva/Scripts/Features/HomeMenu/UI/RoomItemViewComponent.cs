@@ -38,7 +38,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             // 2: Рендеримо основний текст: назва, слотність і мережевий провайдер.
             if (_labelText != null)
             {
-                var roomName = string.IsNullOrWhiteSpace(roomInfo.RoomName) ? "Без назви" : roomInfo.RoomName.Trim();
+                var roomName = string.IsNullOrWhiteSpace(roomInfo.RoomName) ? "Untitled" : roomInfo.RoomName.Trim();
                 _labelText.text = $"{roomName}\n{roomInfo.CurrentPlayers}/{roomInfo.MaxPlayers} - {roomInfo.ProviderLabel}";
             }
 

@@ -24,7 +24,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_isJoining) return;
             if (!_actionRateLimiter.Allow("join-click", TimeSpan.FromMilliseconds(400)))
             {
-                _infoPanelService?.Show(new InfoMessage("Зачекайте", "Натискання виконується надто часто. Спробуйте ще раз за мить."));
+                _infoPanelService?.Show(new InfoMessage("Please Wait", "You are clicking too quickly. Try again in a moment."));
                 return;
             }
             if (_lobbyService == null)
@@ -41,7 +41,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (!_idempotencyGuard.TryEnter($"join:{target.Kind}:{target.Value}"))
             {
-                _infoPanelService?.Show(new InfoMessage("Запит вже виконується", "Повторний Join із тим самим кодом ігноровано."));
+                _infoPanelService?.Show(new InfoMessage("Request In Progress", "Another Join request with the same code is already running."));
                 return;
             }
 
@@ -75,8 +75,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             _confirmationService.Show(new ConfirmationRequest
             {
-                LabelText = "Підтвердження",
-                MessageText = $"Увійти в кімнату {room.HostOrRoomDisplayName}?",
+                LabelText = "Confirmation",
+                MessageText = $"Join room {room.HostOrRoomDisplayName}?",
                 OnConfirm = () => _ = JoinSelectedRoomAsync(room),
                 OnCancel = () => { }
             });
@@ -157,7 +157,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     shouldRefreshRoomListAfterFailure = true;
                     await ReturnToLobbyChooserWithMessageAsync(
                         joinPanelName,
-                        "Помилка приєднання",
+                        "Join Failed",
                         MultiplayerUserFacingError.FromDomainError(joinResult.Error, traceId).BuildDisplayMessage(),
                         ct);
                     return;
@@ -171,7 +171,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     if (!string.IsNullOrEmpty(blockReason))
                     {
                         shouldRefreshRoomListAfterFailure = true;
-                        await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Кімната недоступна", blockReason + "\n\nДія: Оновіть список кімнат.", ct);
+                        await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Room Unavailable", blockReason + "\n\nAction: Refresh the room list.", ct);
                         return;
                     }
 
@@ -181,7 +181,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         if (!_roomAccessPolicy.CanJoin(room, localPlayerId, out var policyReason))
                         {
                             shouldRefreshRoomListAfterFailure = true;
-                            await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Доступ заборонено", policyReason + "\n\nДія: Оберіть іншу кімнату.", ct);
+                            await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Access Denied", policyReason + "\n\nAction: Choose another room.", ct);
                         return;
                         }
                     }
@@ -205,7 +205,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         shouldRefreshRoomListAfterFailure = true;
                         await ReturnToLobbyChooserWithMessageAsync(
                             joinPanelName,
-                            "Помилка приєднання",
+                            "Join Failed",
                             MultiplayerUserFacingError.FromDomainError(transportResult.Error, traceId).BuildDisplayMessage(),
                             ct);
                         return;
@@ -221,8 +221,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                             shouldRefreshRoomListAfterFailure = true;
                             await ReturnToLobbyChooserWithMessageAsync(
                                 joinPanelName,
-                                "Не вдалося перепідключитися",
-                                "Кімната вже у грі, але не містить валідних налаштувань світу для перепідключення.",
+                                "Reconnect Failed",
+                                "The room is already in game, but it does not contain valid world settings for reconnect.",
                                 ct);
                         }
                         return;
@@ -243,30 +243,30 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             catch (RoomFullException ex)
             {
                 shouldRefreshRoomListAfterFailure = true;
-                await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Кімната переповнена",
-                    new MultiplayerUserFacingError(ex.ErrorCode, ex.Message, "Оберіть іншу кімнату.", traceId).BuildDisplayMessage(), ct);
+                await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Room Full",
+                    new MultiplayerUserFacingError(ex.ErrorCode, ex.Message, "Choose another room.", traceId).BuildDisplayMessage(), ct);
                 _joinState = JoinPipelineState.Failed;
             }
             catch (RoomAccessDeniedException ex)
             {
                 shouldRefreshRoomListAfterFailure = true;
-                await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Доступ заборонено",
-                    new MultiplayerUserFacingError(ex.ErrorCode, ex.Message, "Зверніться до організатора кімнати.", traceId).BuildDisplayMessage(), ct);
+                await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Access Denied",
+                    new MultiplayerUserFacingError(ex.ErrorCode, ex.Message, "Contact the room host.", traceId).BuildDisplayMessage(), ct);
                 _joinState = JoinPipelineState.Failed;
             }
             catch (SessionExpiredException ex)
             {
                 shouldRefreshRoomListAfterFailure = true;
-                await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Сесія застаріла",
-                    new MultiplayerUserFacingError(ex.ErrorCode, ex.Message, "Оновіть список кімнат.", traceId).BuildDisplayMessage(), ct);
+                await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Session Expired",
+                    new MultiplayerUserFacingError(ex.ErrorCode, ex.Message, "Refresh the room list.", traceId).BuildDisplayMessage(), ct);
                 _joinState = JoinPipelineState.Failed;
             }
             catch (MultiplayerDomainException ex)
             {
                 Debug.LogError($"[JoinRoomPanelService] [{traceId}] Domain error [{ex.ErrorCode}]: {ex.Message}");
                 shouldRefreshRoomListAfterFailure = true;
-                await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Помилка приєднання",
-                    new MultiplayerUserFacingError(ex.ErrorCode, ex.Message, "Перевірте мережу і повторіть спробу.", traceId).BuildDisplayMessage(), ct);
+                await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Join Failed",
+                    new MultiplayerUserFacingError(ex.ErrorCode, ex.Message, "Check your network and try again.", traceId).BuildDisplayMessage(), ct);
                 _joinState = JoinPipelineState.Failed;
             }
             catch (Exception e)
@@ -275,8 +275,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 shouldRefreshRoomListAfterFailure = true;
                 await ReturnToLobbyChooserWithMessageAsync(
                     joinPanelName,
-                    "Помилка приєднання",
-                    new MultiplayerUserFacingError("MP-JOIN-500", BuildJoinFailureMessage(e), "Перевірте мережу і повторіть спробу.", traceId).BuildDisplayMessage(),
+                    "Join Failed",
+                    new MultiplayerUserFacingError("MP-JOIN-500", BuildJoinFailureMessage(e), "Check your network and try again.", traceId).BuildDisplayMessage(),
                     ct);
                 _joinState = JoinPipelineState.Failed;
             }
@@ -346,7 +346,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 worldSettings.MaxPlayers,
                 worldSettings.IsPrivate,
                 worldSettings.Width,
-                worldSettings.Height);
+                worldSettings.Height,
+                isLocalPlayerHost: false,
+                localPlayerId: localId);
 
             if (_gameStarter != null)
                 await _gameStarter.StartGameAsync(ct);

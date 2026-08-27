@@ -60,6 +60,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void Initialize()
         {
+            Debug.Log($"{StarterPackLogTag} Initialize. {DescribeLaunchContext()}");
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
             _signalBus.Subscribe<SettlementCreatedSignal>(OnSettlementCreated);
@@ -80,6 +81,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (ShouldSkipWorldSignal(signal))
                 return;
 
+            Debug.Log($"{StarterPackLogTag} WorldGenerated received. startupSequence={signal.StartupSequence}, " +
+                      $"session='{signal.StartupSessionId}', source='{signal.Source}', revision={signal.SnapshotRevision}.");
             ResetForNewStartupWorldIfNeeded(signal.StartupSequence, signal.StartupSessionId, $"world:{signal.Source}");
             _hasPendingWorldGeneratedSignal = true;
 
@@ -91,6 +94,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (ShouldSkipSpawnSignal(signal))
                 return;
 
+            Debug.Log($"{StarterPackLogTag} SpawnPositions received. startupSequence={signal.StartupSequence}, " +
+                      $"session='{signal.StartupSessionId}', source='{signal.Source}', revision={signal.SnapshotRevision}, " +
+                      $"assignments={signal.Assignments?.Length ?? 0}.");
             ResetForNewStartupWorldIfNeeded(signal.StartupSequence, signal.StartupSessionId, $"spawns:{signal.Source}");
             if (signal.Assignments == null || signal.Assignments.Length == 0)
                 return;
@@ -209,6 +215,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void LogStarterPackBootstrapEvaluation(string ownerId, int slot, bool autoLoadEnabled, bool hasSave)
         {
+            Debug.Log($"{StarterPackLogTag} Evaluation. owner='{ownerId}', slot={slot}, " +
+                      $"autoLoad={autoLoadEnabled}, hasSave={hasSave}, {DescribeLaunchContext()}");
         }
 
         private static string NormalizeOwnerId(string ownerId)
@@ -240,6 +248,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _bootstrapApplied = false;
             _starterPackGrantEnabled = false;
             _latestSpawnAssignments = Array.Empty<SpawnPositionAssignment>();
+            Debug.Log($"{StarterPackLogTag} Reset for startup world. sequence={startupSequence}, session='{startupSessionId}', reason='{reason}'.");
         }
 
         private bool ShouldSkipWorldSignal(WorldGeneratedDataSignal signal)
@@ -260,6 +269,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return false;
             }
             return true;
+        }
+
+        private static string DescribeLaunchContext()
+        {
+            return $"LaunchContext Mode={GameLaunchContext.Mode}, Source={GameLaunchContext.Source}, " +
+                   $"HasWorldSettings={GameLaunchContext.HasWorldSettings}, World='{GameLaunchContext.WorldName}', " +
+                   $"Seed={GameLaunchContext.Seed}, Size={GameLaunchContext.Size}, MaxPlayers={GameLaunchContext.MaxPlayers}, " +
+                   $"Dimensions={GameLaunchContext.Width}x{GameLaunchContext.Height}";
         }
 
         // BootstrapGameInitializer intentionally stays as a signal coordinator.

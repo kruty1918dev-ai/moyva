@@ -111,7 +111,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             int slotIndex = Mathf.Clamp(slot.SlotIndex, 0, 99);
             if (!_saveService.HasSave(slotIndex))
             {
-                _infoPanelService?.Show(new InfoMessage("Збереження не знайдено", $"Слот {slotIndex:D2} більше не існує."));
+                _infoPanelService?.Show(new InfoMessage("Save Not Found", $"Slot {slotIndex:D2} no longer exists."));
                 RefreshSlotsList();
                 return;
             }
@@ -133,7 +133,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             catch (Exception e)
             {
                 Debug.LogError($"[ContinuePanelService] Failed to load slot {slotIndex:D2}: {e}");
-                _infoPanelService?.Show(new InfoMessage("Помилка завантаження", e.Message));
+                _infoPanelService?.Show(new InfoMessage("Load Failed", e.Message));
             }
             finally
             {
@@ -153,7 +153,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 new GameplayPlayer(localId, playerName, isHost: true, isLocal: true)
             };
 
-            var displayName = string.IsNullOrWhiteSpace(worldName) ? "Збережений світ" : worldName.Trim();
+            var displayName = string.IsNullOrWhiteSpace(worldName) ? "Saved World" : worldName.Trim();
             var worldSettings = new WorldSettingsDto(displayName, 0, (int)WorldSize.Medium, MapType.Continents, Difficulty.Normal, 1, true);
             _gameplaySession.Apply(NetworkProviderType.Offline, worldSettings, players, localId);
         }

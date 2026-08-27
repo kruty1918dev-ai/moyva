@@ -12,6 +12,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
         [Inject] private ILobbyPanelViewController _lobbyPanelViewController;
         [Inject(Id = "LobbyPanelName")] private string _lobbyPanelName;
         [Inject(Id = "JoinRoomPanelName")] private string _joinRoomPanelName;
+        [InjectOptional] private ILobbyFlowContext _lobbyFlowContext;
 
         public string CurrentMenu => _navigation?.CurrentMenu;
 
@@ -31,7 +32,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
         {
             try
             {
-                _lobbyPanelViewController?.SetLobbyInvateCode(inviteCode);
+                var label = _lobbyFlowContext?.Provider == Kruty1918.Moyva.Multiplayer.Networking.NetworkProviderType.Lan
+                    ? "LAN Join Code"
+                    : "Invite Code";
+                _lobbyPanelViewController?.SetInviteCode(new LobbyInviteCodePresentation(label, inviteCode));
             }
             catch
             {

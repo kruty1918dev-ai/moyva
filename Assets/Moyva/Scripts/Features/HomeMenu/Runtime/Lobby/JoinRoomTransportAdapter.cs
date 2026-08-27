@@ -44,13 +44,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var providerType = _providerTypeAccessor();
             if (!await EnsureNetworkProviderMatchesLobbyAsync(providerType, ct))
             {
-                return Result.Fail(DomainErrorCode.Network, $"Не вдалося перемкнути transport provider на {providerType}.");
+                return Result.Fail(DomainErrorCode.Network, $"Could not switch transport provider to {providerType}.");
             }
 
             var joinCode = await ResolveNetworkJoinCodeAsync(room, traceId, providerType, ct);
             if (string.IsNullOrWhiteSpace(joinCode))
             {
-                const string error = "Хост ще не опублікував мережевий код підключення для цієї кімнати.";
+                const string error = "The host has not published the network join code for this room yet.";
                 Debug.LogError($"[JoinRoomPanelService] [{traceId}] {error} LobbyId='{room?.LobbyId}' LobbyCode='{room?.LobbyCode}' Provider='{providerType}'.");
                 await LeaveLobbyAfterFailedTransportJoinAsync(traceId, ct);
                 return Result.Fail(DomainErrorCode.NotFound, error);
@@ -61,7 +61,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 Debug.LogError($"[JoinRoomPanelService] [{traceId}] Resolved transport code '{normalizedJoinCode}' is not a valid Relay join code. LobbyId='{room?.LobbyId}', LobbyCode='{room?.LobbyCode}', RelayJoinCode='{room?.RelayJoinCode}'.");
                 await LeaveLobbyAfterFailedTransportJoinAsync(traceId, ct);
-                return Result.Fail(DomainErrorCode.Validation, "Отримано невалідний Relay join code.");
+                return Result.Fail(DomainErrorCode.Validation, "Received an invalid Relay join code.");
             }
             var result = await MultiplayerReliabilityPolicy.RetryWithBackoffAndJitterAsync(
                 async token => await _networkProvider.JoinSessionAsync(normalizedJoinCode, token),
@@ -72,7 +72,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 ct: ct);
             if (result == null || !result.Success)
             {
-                var error = result?.ErrorMessage ?? "Не вдалося підключитися до мережевої сесії.";
+                var error = result?.ErrorMessage ?? "Could not connect to the network session.";
                 Debug.LogError($"[JoinRoomPanelService] [{traceId}] JoinSessionAsync failed: {error}");
                 await LeaveLobbyAfterFailedTransportJoinAsync(traceId, ct);
                 return Result.Fail(DomainErrorCode.Network, error);

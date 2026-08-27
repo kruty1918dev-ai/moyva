@@ -20,6 +20,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private ISaveService _saveService;
         [InjectOptional] private ILocalGameSettingsService _localSettings;
         [InjectOptional] private IMultiplayerModeSelector _modeSelector;
+        [InjectOptional] private ILobbyFlowContext _lobbyFlowContext;
         [InjectOptional] private WorldCreationDefaultsSO _worldCreationDefaults;
         [Inject(Id = "LobbyPanelName")] private string _lobbyPanelName;
 
@@ -88,7 +89,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 new GameplayPlayer(localId, playerName, isHost: true, isLocal: true)
             };
 
-            _gameplaySession.Apply(_modeSelector?.CurrentMode ?? NetworkProviderType.Relay, worldSettings, players, localId);
+            _gameplaySession.Apply(ResolveProvider(), worldSettings, players, localId);
             GameLaunchContext.ConfigureMenuMultiplayerGame(
                 worldSettings.WorldName,
                 worldSettings.Seed,
@@ -98,7 +99,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 worldSettings.MaxPlayers,
                 worldSettings.IsPrivate,
                 worldSettings.Width,
-                worldSettings.Height);
+                worldSettings.Height,
+                isLocalPlayerHost: true,
+                localPlayerId: localId);
         }
 
         private string ResolveLocalPlayerId()
@@ -128,6 +131,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             return "local-player";
+        }
+
+        private NetworkProviderType ResolveProvider()
+        {
+            if (_lobbyFlowContext != null && _lobbyFlowContext.FlowKind != LobbyFlowKind.None)
+                return _lobbyFlowContext.Provider;
+
+            return _modeSelector?.CurrentMode ?? NetworkProviderType.Relay;
         }
 
         private void ApplyDefaultsToView()

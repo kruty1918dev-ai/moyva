@@ -69,8 +69,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 }
 
                 _infoPanel?.Show(new InfoMessage(
-                    "З'єднання втрачено",
-                    "Інтернет-з'єднання було перерване. Перевірте мережу та спробуйте знову."));
+                    "Connection Lost",
+                    "The internet connection was interrupted. Check your network and try again."));
             }
             catch (Exception e)
             {

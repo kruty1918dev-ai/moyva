@@ -60,21 +60,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
         public static string GetJoinBlockReason(LobbyRoom lobby, string playerName, float reconnectToleranceSeconds)
         {
             if (lobby == null)
-                return "Кімната недоступна.";
+                return "Room is unavailable.";
 
             if (lobby.State == LobbyState.Closed)
-                return "Кімната вже закрита.";
+                return "Room is already closed.";
 
             bool reconnectAllowed = IsReconnectAllowed(lobby, playerName, reconnectToleranceSeconds);
             if (lobby.State == LobbyState.Started && !reconnectAllowed)
-                return "Гра вже запущена. Приєднання доступне лише для перепідключення.";
+                return "Game has already started. Joining is only available for reconnect.";
 
             int playerCount = lobby.Players?.Count ?? 0;
             if (lobby.State == LobbyState.Open && lobby.MaxPlayers > 0 && playerCount >= lobby.MaxPlayers)
-                return "Кімната вже заповнена.";
+                return "Room is full.";
 
             if (string.IsNullOrWhiteSpace(lobby.RelayJoinCode) && string.IsNullOrWhiteSpace(lobby.LobbyId) && string.IsNullOrWhiteSpace(lobby.LobbyCode))
-                return "Кімната не має коду для підключення.";
+                return "Room has no join code.";
 
             return null;
         }

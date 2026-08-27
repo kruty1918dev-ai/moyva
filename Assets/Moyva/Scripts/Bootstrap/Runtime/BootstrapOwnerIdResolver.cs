@@ -45,6 +45,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
                 return NormalizeOwnerId(_sessionManager.LocalPlayerId);
 
+            if (GameLaunchContext.HasLocalPlayerRole &&
+                !string.IsNullOrWhiteSpace(GameLaunchContext.LocalPlayerId))
+            {
+                return NormalizeOwnerId(GameLaunchContext.LocalPlayerId);
+            }
+
             return NormalizeOwnerId(_constructionService.Value.GetActiveOwner());
         }
 
@@ -98,7 +104,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private string ResolveLocalActiveOwnerId(IReadOnlyList<SpawnPositionAssignment> targets)
         {
-            string localPlayerId = _sessionManager?.LocalPlayerId;
+            string localPlayerId = !string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId)
+                ? _sessionManager.LocalPlayerId
+                : (GameLaunchContext.HasLocalPlayerRole ? GameLaunchContext.LocalPlayerId : string.Empty);
 
             if (targets != null)
             {

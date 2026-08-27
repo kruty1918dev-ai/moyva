@@ -1,4 +1,5 @@
 using System;
+using Kruty1918.Moyva.HomeMenu.API;
 using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
@@ -26,5 +27,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         /// <summary>Кнопка продовження, доступ до interactable/state.</summary>
         Button NextButton { get; }
+
+        void ApplyPresentation(CreateRoomPanelPresentation presentation);
     }
 }
