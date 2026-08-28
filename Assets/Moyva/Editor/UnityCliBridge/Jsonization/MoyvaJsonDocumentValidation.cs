@@ -566,7 +566,6 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             MoyvaJsonDocumentIndex documentIndex,
             List<MoyvaJsonValidationIssue> issues)
         {
-            string key = document.Value<string>("model") + "|" + document.Value<string>("id");
             if (documentIndex.TryGetPaths(
                     document.Value<string>("model"),
                     document.Value<string>("id"),

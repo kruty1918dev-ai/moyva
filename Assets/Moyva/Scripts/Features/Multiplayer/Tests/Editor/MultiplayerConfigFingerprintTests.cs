@@ -1,9 +1,12 @@
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using Kruty1918.Moyva.Jsonization;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Kruty1918.Moyva.Tests.Multiplayer
 {
@@ -25,6 +28,9 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
         public void JoinWithoutFingerprintIsRejectedAndCleanedUp()
         {
             using var service = new SwitchableLobbyService(CreateConfig(enforce: true));
+            LogAssert.Expect(
+                LogType.Error,
+                new Regex(@"\[MultiplayerConfig\] Refusing lobby join because gameplay JSON fingerprints do not match\."));
 
             RoomConfigMismatchException exception = Assert.ThrowsAsync<RoomConfigMismatchException>(
                 async () => await service.JoinByCodeAsync("LEGACY", "Client"));

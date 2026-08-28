@@ -74,6 +74,9 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 string model = root.Value<string>("model") ?? string.Empty;
                 string schema = root.Value<string>("schema") ?? string.Empty;
                 string id = root.Value<string>("id") ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(model) || string.IsNullOrWhiteSpace(id))
+                    continue;
+
                 bool runtime = IsRuntimeGameplayDocument(model, schema);
                 var record = new MoyvaJsonDocumentRecord(path, root, model, schema, id, runtime);
 

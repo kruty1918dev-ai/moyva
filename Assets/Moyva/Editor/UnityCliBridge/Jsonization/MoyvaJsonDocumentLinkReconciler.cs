@@ -111,15 +111,9 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             foreach (MoyvaJsonDocumentRecord record in MoyvaJsonDocumentIndex.Build().Documents)
             {
                 string jsonPath = record.Path;
-                JObject document;
-                try
-                {
-                    document = record.Document;
-                }
-                catch
-                {
+                JObject document = record.Document;
+                if (document == null)
                     continue;
-                }
 
                 bool changed = false;
                 foreach (JObject assetReference in document
@@ -297,7 +291,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
         }
 
         private static string NormalizeAssetPath(string path)
-            => (path ?? string.Empty).Replace('\\', '/');
+            => (path ?? string.Empty).Replace('\\', '/').Trim();
 
         private static bool IsCanonicalJson(string path)
         {

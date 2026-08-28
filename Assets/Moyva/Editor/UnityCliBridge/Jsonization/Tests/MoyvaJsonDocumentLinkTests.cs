@@ -57,5 +57,51 @@ namespace Kruty1918.Moyva.Tests.Jsonization.Editor
                 MoyvaJsonDocumentMetadata.CloneConfigPayload(withEditor)["editor"],
                 Is.Null);
         }
+
+        [Test]
+        public void LinkPolicyDefaultsToMirroredJsonDocumentsPath()
+        {
+            JObject document = JObject.Parse("{'id':'grass'}");
+
+            MoyvaJsonDocumentLinkTarget target = MoyvaJsonDocumentLinkPolicy.Read(
+                document,
+                "Assets/Moyva/Presets/Tiles/grass.json");
+
+            Assert.That(target.Enabled, Is.True);
+            Assert.That(target.Path, Is.EqualTo("Assets/Moyva/Editor/JsonDocuments/Tiles/grass.asset"));
+        }
+
+        [Test]
+        public void LinkPolicyCanDisableGeneration()
+        {
+            JObject document = JObject.Parse(
+                "{'id':'grass','editor':{'documentLink':{'enabled':false}}}");
+
+            MoyvaJsonDocumentLinkTarget target = MoyvaJsonDocumentLinkPolicy.Read(
+                document,
+                "Assets/Moyva/Presets/Tiles/grass.json");
+
+            Assert.That(target.Enabled, Is.False);
+            Assert.That(target.Path, Is.Empty);
+        }
+
+        [TestCase(
+            "Assets/Moyva/Editor/CustomJsonLinks",
+            "Assets/Moyva/Editor/CustomJsonLinks/grass.asset")]
+        [TestCase(
+            "Assets/Moyva/Editor/CustomJsonLinks/grass-link.asset",
+            "Assets/Moyva/Editor/CustomJsonLinks/grass-link.asset")]
+        public void LinkPolicyAcceptsFolderOrAssetPath(string configuredPath, string expectedPath)
+        {
+            JObject document = JObject.Parse(
+                "{'id':'grass','editor':{'documentLink':{'path':'" + configuredPath + "'}}}");
+
+            MoyvaJsonDocumentLinkTarget target = MoyvaJsonDocumentLinkPolicy.Read(
+                document,
+                "Assets/Moyva/Presets/Tiles/grass.json");
+
+            Assert.That(target.Enabled, Is.True);
+            Assert.That(target.Path, Is.EqualTo(expectedPath));
+        }
     }
 }

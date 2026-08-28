@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 
 namespace Kruty1918.Moyva.Jsonization.Editor
@@ -124,9 +125,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             if (IsValidLinkPath(target.Path))
                 return true;
 
-            pointer = string.IsNullOrWhiteSpace(target.RawPath)
-                ? "/editor/documentLink/path"
-                : "/editor/documentLink/path";
+            pointer = "/editor/documentLink/path";
             message = "path must resolve to an .asset file under Assets, outside Presets and Resources";
             return false;
         }
@@ -214,7 +213,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 return;
 
             editor.Remove(MoyvaJsonDocumentMetadata.DocumentLink);
-            if (!editor.Properties().GetEnumerator().MoveNext())
+            if (!editor.Properties().Any())
                 document.Remove(MoyvaJsonDocumentMetadata.Editor);
         }
 

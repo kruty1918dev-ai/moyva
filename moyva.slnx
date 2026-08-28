@@ -56,10 +56,12 @@
   <Project Path="Kruty1918.Moyva.Bootstrap.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Notifications.csproj" />
   <Project Path="Kruty1918.Moyva.WorldCreation.UI.csproj" />
+  <Project Path="UnityHTML.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.UI.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Grid.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Multiplayer.csproj" />
   <Project Path="Kruty1918.Moyva.EditorShared.csproj" />
   <Project Path="FlatKit.Utils.Editor.csproj" />
+  <Project Path="UnityHTML.CompatibilityTests.csproj" />
   <Project Path="Kruty1918.Moyva.Multiplayer.UI.csproj" />
 </Solution>

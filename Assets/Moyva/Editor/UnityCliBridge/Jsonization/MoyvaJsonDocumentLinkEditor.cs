@@ -53,7 +53,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             }
 
             DetectExternalChange();
-            DrawHeader();
+            DrawDocumentHeader();
             if (_externalConflict)
             {
                 DrawConflictControls();
@@ -86,7 +86,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             DrawApplyControls();
         }
 
-        private void DrawHeader()
+        private void DrawDocumentHeader()
         {
             using (new EditorGUI.DisabledScope(true))
             {
