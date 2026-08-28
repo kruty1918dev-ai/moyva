@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Kruty1918.Moyva.Jsonization;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
@@ -15,6 +16,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
     public sealed class SwitchableLobbyService : ILobbyService, IDisposable
     {
         private readonly MultiplayerConfig _config;
+        private readonly string _configFingerprint;
 
         private ILobbyService _inner;
         private NetworkProviderType _requestedProviderType;
@@ -31,6 +33,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public SwitchableLobbyService(MultiplayerConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _configFingerprint = MoyvaJsonRuntime.ConfigFingerprint;
 
             _requestedProviderType = _config.ProviderType;
             _inner = CreateByType(_requestedProviderType, out _effectiveProviderType);
@@ -135,16 +138,24 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
         // Delegates
         public Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, CancellationToken ct = default)
-            => _inner.CreateRoomAsync(options, ct);
+            => _inner.CreateRoomAsync(
+                options?.WithConfigFingerprint(_configFingerprint),
+                ct);
 
         public Task<LobbyRoom> JoinByCodeAsync(string lobbyCode, string displayName, CancellationToken ct = default)
-            => _inner.JoinByCodeAsync(lobbyCode, displayName, ct);
+            => JoinCompatibleAsync(
+                _inner.JoinByCodeAsync(lobbyCode, displayName, ct),
+                ct);
 
         public Task<LobbyRoom> JoinByIdAsync(string lobbyId, string displayName, CancellationToken ct = default)
-            => _inner.JoinByIdAsync(lobbyId, displayName, ct);
+            => JoinCompatibleAsync(
+                _inner.JoinByIdAsync(lobbyId, displayName, ct),
+                ct);
 
         public Task<LobbyRoom> JoinByCodeWithPasswordAsync(string lobbyCode, string displayName, string password, CancellationToken ct = default)
-            => _inner.JoinByCodeWithPasswordAsync(lobbyCode, displayName, password, ct);
+            => JoinCompatibleAsync(
+                _inner.JoinByCodeWithPasswordAsync(lobbyCode, displayName, password, ct),
+                ct);
 
         public Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(CancellationToken ct = default)
             => _inner.QueryRoomsAsync(ct);
@@ -156,6 +167,41 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public Task SetRelayJoinCodeAsync(string relayJoinCode, CancellationToken ct = default) => _inner.SetRelayJoinCodeAsync(relayJoinCode, ct);
 
         public Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, CancellationToken ct = default) => _inner.LockAsync(locked, startedWorldSettingsBytes, ct);
+
+        private async Task<LobbyRoom> JoinCompatibleAsync(
+            Task<LobbyRoom> joinOperation,
+            CancellationToken ct)
+        {
+            LobbyRoom room = await joinOperation.ConfigureAwait(false);
+            if (room == null)
+                return null;
+
+            if (!_config.EnforceConfigConsistency
+                || string.Equals(
+                    room.ConfigFingerprint,
+                    _configFingerprint,
+                    StringComparison.Ordinal))
+            {
+                return room;
+            }
+
+            UnityEngine.Debug.LogError(
+                "[MultiplayerConfig] Refusing lobby join because gameplay JSON fingerprints " +
+                $"do not match. Lobby={room.ConfigFingerprint}, Local={_configFingerprint}.");
+            try
+            {
+                await _inner.LeaveAsync(ct).ConfigureAwait(false);
+            }
+            catch (Exception leaveException)
+            {
+                UnityEngine.Debug.LogWarning(
+                    $"[MultiplayerConfig] Cleanup after rejected join failed: {leaveException.Message}");
+            }
+
+            throw new RoomConfigMismatchException(
+                _configFingerprint,
+                room.ConfigFingerprint);
+        }
 
         public void Dispose()
         {

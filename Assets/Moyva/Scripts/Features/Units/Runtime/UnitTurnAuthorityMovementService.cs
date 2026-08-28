@@ -44,83 +44,96 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly ITurnService _turns;
         private readonly IUnitOwnershipQuery _ownership;
         private readonly IUnitService _units;
+        private readonly IUnitMovementQuery _movementQuery;
 
         public UnitTurnAuthorityMovementService(
             IUnitMovementService decorated,
             [InjectOptional] ITurnService turns = null,
             [InjectOptional] IUnitOwnershipQuery ownership = null,
-            [InjectOptional] IUnitService units = null)
+            [InjectOptional] IUnitService units = null,
+            [InjectOptional] IUnitMovementQuery movementQuery = null)
         {
             _decorated = decorated ?? throw new ArgumentNullException(nameof(decorated));
             _turns = turns;
             _ownership = ownership;
             _units = units;
+            _movementQuery = movementQuery;
         }
 
         public IReadOnlyList<UnitMovementTileSnapshot> GetMovementTiles(string unitId)
         {
-            return _decorated is IUnitMovementQuery query
+            IUnitMovementQuery query =
+                _movementQuery != null
+                && !ReferenceEquals(_movementQuery, this)
+                    ? _movementQuery
+                    : _decorated as IUnitMovementQuery;
+
+            return query != null
                 ? query.GetMovementTiles(unitId)
                 : Array.Empty<UnitMovementTileSnapshot>();
         }
 
-public async Task MoveUnitAsync(
-    string unitId,
-    Vector2Int targetPosition,
-    CancellationToken token = default)
-{
-    if (!TryAcquireLease(
-            unitId,
-            out UnitTurnCommandLease lease,
-            out string reason))
-    {
-        return;
-    }
-
-    using var authorityCancellation = new CancellationTokenSource();
-    using var linkedCancellation =
-        CancellationTokenSource.CreateLinkedTokenSource(
-            token,
-            authorityCancellation.Token);
-
-    void OnTurnStateChanged()
-    {
-        if (!IsLeaseValid(lease, out string leaseReason)
-            && !authorityCancellation.IsCancellationRequested)
+        public async Task MoveUnitAsync(
+            string unitId,
+            Vector2Int targetPosition,
+            CancellationToken token = default)
         {
-            authorityCancellation.Cancel();
+            if (!TryAcquireLease(
+                    unitId,
+                    out UnitTurnCommandLease lease,
+                    out string reason))
+            {
+                Debug.LogWarning(
+                    $"[MOYVA_MOVE][AUTHORITY] Move rejected. unit='{unitId}' target={targetPosition}. reason={reason ?? "Unknown"}.");
+                return;
+            }
+
+            using var authorityCancellation = new CancellationTokenSource();
+            using var linkedCancellation =
+                CancellationTokenSource.CreateLinkedTokenSource(
+                    token,
+                    authorityCancellation.Token);
+
+            void OnTurnStateChanged()
+            {
+                if (!IsLeaseValid(lease, out string leaseReason)
+                    && !authorityCancellation.IsCancellationRequested)
+                {
+                    authorityCancellation.Cancel();
+                }
+            }
+
+            _turns.StateChanged += OnTurnStateChanged;
+
+            try
+            {
+                if (!IsLeaseValid(lease, out reason))
+                {
+                    Debug.LogWarning(
+                        $"[MOYVA_MOVE][AUTHORITY] Move lease expired before execution. unit='{unitId}' target={targetPosition}. reason={reason ?? "Unknown"}.");
+                    return;
+                }
+
+                await _decorated.MoveUnitAsync(
+                    unitId,
+                    targetPosition,
+                    linkedCancellation.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError(
+                    $"[UnitMovement] Move delegate failed for unit '{unitId}' at {targetPosition}: {exception.Message}");
+                throw;
+            }
+            finally
+            {
+                _turns.StateChanged -= OnTurnStateChanged;
+            }
         }
-    }
-
-    _turns.StateChanged += OnTurnStateChanged;
-
-    try
-    {
-        if (!IsLeaseValid(lease, out reason))
-        {
-            return;
-        }
-
-        await _decorated.MoveUnitAsync(
-            unitId,
-            targetPosition,
-            linkedCancellation.Token);
-    }
-    catch (OperationCanceledException)
-    {
-        throw;
-    }
-    catch (Exception exception)
-    {
-        Debug.LogError(
-            $"[UnitMovement] Move delegate failed for unit '{unitId}' at {targetPosition}: {exception.Message}");
-        throw;
-    }
-    finally
-    {
-        _turns.StateChanged -= OnTurnStateChanged;
-    }
-}
         internal bool TryAcquireLease(
             string unitId,
             out UnitTurnCommandLease lease,

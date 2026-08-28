@@ -377,12 +377,32 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             var localId = ResolveGameplayLocalPlayerId(_currentLobby);
             var mode = ResolveProvider();
-            _gameplaySession.Apply(mode, worldSettings, MultiplayerRoomLifecycle.ProjectGameplayPlayers(_currentLobby, localId), localId);
+            bool isLocalHost = IsHost(_currentLobby);
+            _gameplaySession.Apply(
+                mode,
+                worldSettings,
+                MultiplayerRoomLifecycle.ProjectGameplayPlayers(
+                    _currentLobby,
+                    localId,
+                    isLocalHost),
+                localId);
             return localId;
         }
 
         private string ResolveGameplayLocalPlayerId(LobbyRoom lobby)
         {
+            if (IsHost(lobby)
+                && !string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
+            {
+                return _sessionManager.LocalPlayerId.Trim();
+            }
+
+            if (IsHost(lobby)
+                && !string.IsNullOrWhiteSpace(_localPlayerId))
+            {
+                return _localPlayerId.Trim();
+            }
+
             foreach (var candidate in GetLocalPlayerIdCandidates(lobby))
             {
                 if (LobbyHasPlayer(lobby, candidate))

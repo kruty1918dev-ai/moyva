@@ -1,0 +1,33 @@
+{
+  "$schema": "../Schemas/tile-type.schema.json",
+  "schema": "moyva.tile-type",
+  "version": 1,
+  "id": "snow",
+  "model": "tile-type",
+  "displayName": "Snow",
+  "aliases": ["snow-tile-001"],
+  "tags": ["land", "cold"],
+  "traversalClassId": "snow",
+  "visual": {
+    "gridMode": "Dual",
+    "variants": [
+      {
+        "preset": {
+          "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
+          "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+          "required": true
+        },
+        "slot": "Top",
+        "weight": 1.0,
+        "tileHeight": 0.0
+      }
+    ],
+    "representativePrefab": {
+      "$asset": "asset.game-object.fill-tile.4b3b1230",
+      "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/GrassToBeach/Fill_Tile.prefab",
+      "required": true
+    },
+    "scaleToCellSize": true,
+    "layerYOffset": 0.0
+  }
+}

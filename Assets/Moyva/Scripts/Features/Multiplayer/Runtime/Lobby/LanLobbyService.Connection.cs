@@ -34,7 +34,9 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             _currentPasswordHash = LobbyPasswordHasher.Hash(options.Password);
             _current = new LobbyRoom(roomId, lobbyCode, options.Name, options.MaxPlayers, options.IsPrivate,
-                hostPlayerId: hostPlayerId, relayJoinCode: joinCode, players: players, passwordHash: _currentPasswordHash, state: LobbyState.Open);
+                hostPlayerId: hostPlayerId, relayJoinCode: joinCode, players: players,
+                passwordHash: _currentPasswordHash, state: LobbyState.Open,
+                configFingerprint: options.ConfigFingerprint);
 
             StartBroadcastLoop();
             LobbyUpdated?.Invoke(_current);
@@ -209,7 +211,9 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 _current = new LobbyRoom(_current.LobbyId, _current.LobbyCode, _current.Name, _current.MaxPlayers,
                     _current.IsPrivate, _current.HostPlayerId, _current.RelayJoinCode, _current.Players,
-                    _current.PasswordHash, state, _current.ReconnectRecords, locked ? startedWorldSettingsBytes : null);
+                    _current.PasswordHash, state, _current.ReconnectRecords,
+                    locked ? startedWorldSettingsBytes : null,
+                    _current.BannedPlayerIds, _current.CapabilityFlags, _current.ConfigFingerprint);
                 LobbyUpdated?.Invoke(_current);
             }
             PublishState(state);

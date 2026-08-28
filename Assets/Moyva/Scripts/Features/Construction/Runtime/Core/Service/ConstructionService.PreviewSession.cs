@@ -16,16 +16,21 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     out string turnReason))
             {
                 _lastActionMessage = turnReason;
+                LogPreviewRejected(position, turnReason);
                 return false;
             }
 
             if (State != BuildingPlacementState.Placing)
             {
+                LogPreviewRejected(
+                    position,
+                    $"Construction state is {State}, expected {BuildingPlacementState.Placing}.");
                 return false;
             }
 
             if (string.IsNullOrWhiteSpace(_selectedBuildingId))
             {
+                LogPreviewRejected(position, "Selected building id is empty.");
                 return false;
             }
 
@@ -33,6 +38,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     "pointer-click",
                     position))
             {
+                LogPreviewRejected(position, _lastActionMessage);
                 return false;
             }
 
@@ -53,6 +59,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 _lastActionMessage =
                     $"На клітинці {position} вже є непідтверджене розміщення.";
+                LogPreviewRejected(position, _lastActionMessage);
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
                     Position = position,
@@ -76,6 +83,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!placementResult.CanPreview)
             {
                 _lastActionMessage = placementResult.Reason;
+                LogPreviewRejected(position, placementResult.Reason);
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
                     Position = position,
@@ -88,6 +96,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!placementResult.ResourcesValid)
             {
                 _lastActionMessage = placementResult.Reason;
+                LogPreviewRejected(position, placementResult.Reason);
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
                     Position = position,
@@ -103,6 +112,18 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _selectedBuildingId,
                 clearRedoHistory: true,
                 isAffordable: true);
+        }
+
+        private void LogPreviewRejected(Vector2Int position, string reason)
+        {
+            if (!Application.isEditor && !Debug.isDebugBuild)
+                return;
+
+            string message = string.IsNullOrWhiteSpace(reason)
+                ? "Preview was rejected without a reason."
+                : reason;
+            Debug.LogWarning(
+                $"[Construction] Preview rejected for '{_selectedBuildingId}' at {position}, owner='{_activeOwnerId}': {message}");
         }
 
         public bool HasPendingPlacementAt(Vector2Int position)

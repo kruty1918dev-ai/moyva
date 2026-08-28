@@ -73,6 +73,16 @@ namespace Kruty1918.Moyva.Grid.Runtime
 			MapChunkFeatureBindings.Install(Container);
 			Container.BindInterfacesTo<Project3DLightingInitializer>().AsSingle().NonLazy();
 
+			Container.BindInterfacesAndSelfTo<TileTypeRepository>()
+				.AsSingle()
+				.NonLazy();
+			Container.Bind<MovementProfileRepository>()
+				.AsSingle()
+				.NonLazy();
+			Container.Bind<ITraversalCostResolver>()
+				.To<TraversalCostResolver>()
+				.AsSingle();
+
 			Container.BindInterfacesTo<ChunkedGridService>().AsSingle()
 				.WithArguments(resolvedWidth, resolvedHeight);
 

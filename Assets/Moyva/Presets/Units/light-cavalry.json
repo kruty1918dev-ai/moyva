@@ -50,5 +50,11 @@
     "sourceHash": "cfa0cbf56301b0668d749c38162bd998e648877dc3540aa6edcad6ad1e3c3a37"
   },
   "attackRange": 1,
-  "movementPointsPerTurn": 7.0
+  "movementPointsPerTurn": 7.0,
+  "movementProfile": {
+    "$config": {
+      "model": "movement-profile",
+      "id": "cavalry"
+    }
+  }
 }

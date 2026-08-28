@@ -77,7 +77,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 placementAuthorityPolicy = null,
             [InjectOptional] List<IBuildingPlacementRuleEvaluator>
                 placementRuleEvaluators = null,
-            [InjectOptional] ITurnService turns = null)
+            [InjectOptional] ITurnService turns = null,
+            [InjectOptional] FogOfWarSettings fogSettings = null)
         {
             _objectsMapService = objectsMapService;
             _buildingRegistry = buildingRegistry;
@@ -126,7 +127,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _buildingFogEffects =
                 new ConstructionBuildingFogEffects(
                     fogOfWarService,
-                    buildingRegistry);
+                    buildingRegistry,
+                    fogSettings);
         }
 
         private bool CanActiveOwnerAct(out string reason)
@@ -149,6 +151,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
                 _signalBus.Subscribe<SettlementResourceChangedSignal>(OnSettlementResourceChanged);
+                _signalBus.Subscribe<BuildingOperationalSignal>(OnBuildingOperational);
                 BuildingDefinitionAsset.RuntimeRevisionChanged +=
                     OnBuildingDefinitionRuntimeRevisionChanged;
                 _initialized = true;
@@ -175,6 +178,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
                 _signalBus.TryUnsubscribe<SettlementResourceChangedSignal>(OnSettlementResourceChanged);
+                _signalBus.TryUnsubscribe<BuildingOperationalSignal>(OnBuildingOperational);
                 BuildingDefinitionAsset.RuntimeRevisionChanged -=
                     OnBuildingDefinitionRuntimeRevisionChanged;
             }
@@ -204,7 +208,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             foreach (var pair in _playerPlacedBuildings)
             {
                 _buildingFogEffects.Remove(pair.Key);
-                _buildingFogEffects.Apply(
+                _buildingFogEffects.ApplyOnPlaced(
                     pair.Value,
                     pair.Key);
             }
@@ -215,12 +219,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     continue;
 
                 _buildingFogEffects.Remove(pair.Key);
-                _buildingFogEffects.Apply(
+                _buildingFogEffects.ApplyOnPlaced(
                     pair.Value.BuildingId,
                     pair.Key);
             }
 
             InvalidatePlacementResourceValidationCache();
+        }
+
+        private void OnBuildingOperational(
+            BuildingOperationalSignal signal)
+        {
+            try
+            {
+                _buildingFogEffects.ApplyOnOperational(
+                    signal.BuildingId,
+                    signal.Position);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError(
+                    $"[Construction] ПОМИЛКА застосування радіуса зору для завершеної будівлі '{signal.BuildingId}' at {signal.Position}: {ex.GetType().Name} - {ex.Message}");
+            }
         }
 
         private void OnSettlementResourceChanged(

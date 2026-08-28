@@ -4,6 +4,7 @@ using System.Linq;
 using GiantGrey.TileWorldCreator;
 using GiantGrey.TileWorldCreator.Attributes;
 using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -72,6 +73,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         PreviewOutput = "out.mask")]
     public sealed class TileSettingsNode : NodeBase
     {
+        [SerializeField]
+        [Tooltip("Canonical moyva.tile-type JSON referenced by this layer.")]
+        private TileTypeConfig _tileType;
+
         [Header("Tile Preset Variants")]
         [SerializeField]
         [Tooltip("Список tileset/preset варіантів для цього шару. TWC вибирає варіант випадково за Weight у межах одного Slot.")]
@@ -157,22 +162,28 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [SerializeField]
         private bool _invertCollisionWalls;
 
+        public TileTypeConfig TileType => _tileType;
         public IReadOnlyList<TilePresetVariant> TileVariants => GetConfiguredPresetVariants();
         public TilePreset TilePreset => ResolvePrimaryVariant()?.Preset ?? _tilePreset;
         public TilePresetSlot Slot => ResolvePrimaryVariant()?.Slot ?? _slot;
         public float Weight => ResolvePrimaryVariant()?.NormalizedWeight ?? Mathf.Clamp01(_weight);
         public float PrimaryTileHeight => Mathf.Max(0f, ResolvePrimaryVariant()?.TileHeight ?? _tileHeight);
-        public float LayerYOffset => _layerYOffset;
-        public float TileLayerHeightOffset => _tileLayerHeightOffset;
+        public float LayerYOffset => _tileType?.Visual?.LayerYOffset ?? _layerYOffset;
+        public float TileLayerHeightOffset => _tileType?.Visual?.TileLayerHeightOffset ?? _tileLayerHeightOffset;
         public bool UseDualGrid => ResolveUseDualGrid();
-        public bool ScaleTileToCellSize => _scaleTileToCellSize || UseDualGrid;
-        public bool GenerateFlatSurface => _generateFlatSurface;
-        public bool HasRenderableTileOutput => _generateFlatSurface || GetConfiguredPresetVariants().Any(variant => variant.Preset != null);
+        public bool ScaleTileToCellSize => _tileType?.Visual?.ScaleToCellSize ?? (_scaleTileToCellSize || UseDualGrid);
+        public bool GenerateFlatSurface => _tileType?.Visual != null
+            ? _tileType.Visual.GridMode == TileGridMode.Flat
+            : _generateFlatSurface;
+        public bool HasRenderableTileOutput => GenerateFlatSurface || GetConfiguredPresetVariants().Any(variant => variant.Preset != null);
         public int ConfiguredVariantCount => GetConfiguredPresetVariants().Count;
         public string TileId
         {
             get
             {
+                if (!string.IsNullOrWhiteSpace(_tileType?.JsonId))
+                    return _tileType.JsonId;
+
                 var preset = ResolvePrimaryVariant()?.Preset ?? _tilePreset;
                 return !string.IsNullOrWhiteSpace(preset?.tileId) ? preset.tileId.Trim() : null;
             }
@@ -182,8 +193,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         {
             get
             {
-                if (_generateFlatSurface)
+                if (GenerateFlatSurface)
                     return "Tile Settings (Flat Surface)";
+
+                if (_tileType != null)
+                {
+                    string label = string.IsNullOrWhiteSpace(_tileType.DisplayName)
+                        ? _tileType.JsonId
+                        : _tileType.DisplayName;
+                    return $"Tile Settings ({label})";
+                }
 
                 var variants = GetConfiguredPresetVariants();
                 if (variants.Count > 1)
@@ -214,7 +233,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             var mask = inputs != null && inputs.Length > 0 ? inputs[0] as bool[,] : null;
             if (mask == null)
             {
-                if (!_generateFlatSurface)
+                if (!GenerateFlatSurface)
                     return NodeOutput.Error(
                         "Mask input is required unless Generate Flat Surface is enabled.");
 
@@ -241,7 +260,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                 TileHeight = PrimaryTileHeight,
                 UseDualGrid = UseDualGrid,
                 ScaleTileToCellSize = ScaleTileToCellSize,
-                GenerateFlatSurface = _generateFlatSurface
+                GenerateFlatSurface = GenerateFlatSurface
             };
         }
 
@@ -312,21 +331,22 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         private void ApplyGeneralSettings(TilesBuildLayer buildLayer)
         {
+            TileVisualConfig visual = _tileType?.Visual;
             buildLayer.useDualGrid = UseDualGrid;
             buildLayer.scaleTileToCellSize = ScaleTileToCellSize;
-            buildLayer.layerYOffset = _layerYOffset;
-            buildLayer.scaleOffset = _scaleOffset;
-            buildLayer.generateFlatSurface = _generateFlatSurface;
-            buildLayer.flatSurfaceMaterial = _flatSurfaceMaterial;
-            buildLayer.meshGenerationOverride = _meshGenerationOverride;
-            buildLayer.mergeTiles = _mergeTiles;
-            buildLayer.shadowCastingMode = _shadowCastingMode;
-            buildLayer.objectLayer = _objectLayer;
-            buildLayer.renderingLayer = _renderingLayer;
-            buildLayer.colliderType = _colliderType;
-            buildLayer.tileColliderHeight = Mathf.Max(0f, _tileColliderHeight);
-            buildLayer.tileColliderExtrusionHeight = Mathf.Max(0f, _tileColliderExtrusionHeight);
-            buildLayer.invertCollisionWalls = _invertCollisionWalls;
+            buildLayer.layerYOffset = visual?.LayerYOffset ?? _layerYOffset;
+            buildLayer.scaleOffset = visual?.ScaleOffset ?? _scaleOffset;
+            buildLayer.generateFlatSurface = GenerateFlatSurface;
+            buildLayer.flatSurfaceMaterial = visual?.FlatSurfaceMaterial ?? _flatSurfaceMaterial;
+            buildLayer.meshGenerationOverride = visual?.MeshGenerationOverride ?? _meshGenerationOverride;
+            buildLayer.mergeTiles = visual?.MergeTiles ?? _mergeTiles;
+            buildLayer.shadowCastingMode = visual?.ShadowCastingMode ?? _shadowCastingMode;
+            buildLayer.objectLayer = visual?.ObjectLayer ?? _objectLayer;
+            buildLayer.renderingLayer = visual?.RenderingLayer ?? _renderingLayer;
+            buildLayer.colliderType = visual?.ColliderType ?? _colliderType;
+            buildLayer.tileColliderHeight = Mathf.Max(0f, visual?.TileColliderHeight ?? _tileColliderHeight);
+            buildLayer.tileColliderExtrusionHeight = Mathf.Max(0f, visual?.TileColliderExtrusionHeight ?? _tileColliderExtrusionHeight);
+            buildLayer.invertCollisionWalls = visual?.InvertCollisionWalls ?? _invertCollisionWalls;
         }
 
         private static void ApplyLegacyLayerSettings(TilesBuildLayer buildLayer, GeneratorLayerDefinition layerDefinition)
@@ -354,7 +374,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             for (int i = 0; i < nodes.Count; i++)
             {
                 var node = nodes[i];
-                if (node == null || node._generateFlatSurface)
+                if (node == null || node.GenerateFlatSurface)
                     continue;
 
                 var variants = node.GetConfiguredPresetVariants();
@@ -397,8 +417,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             first.name = string.IsNullOrWhiteSpace(first.name) ? "Main" : first.name;
             if (primary != null)
             {
-                first.heightOffset = primary._tileLayerHeightOffset;
-                first.ignoreFillTiles = primary._ignoreFillTiles;
+                first.heightOffset = primary.TileLayerHeightOffset;
+                first.ignoreFillTiles = primary._tileType?.Visual?.IgnoreFillTiles
+                    ?? primary._ignoreFillTiles;
             }
 
             first.layerOverrides ??= new List<TilesBuildLayer.TilePresetOverride>();
@@ -413,6 +434,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         private bool ResolveUseDualGrid()
         {
+            if (_tileType?.Visual != null)
+                return _tileType.Visual.GridMode == TileGridMode.Dual;
+
             var variants = GetConfiguredPresetVariants();
             if (variants.Any(variant => variant.Preset != null && variant.Preset.gridtype == TilePreset.GridType.dual))
                 return true;
@@ -428,6 +452,26 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         private List<TilePresetVariant> GetConfiguredPresetVariants()
         {
             var variants = new List<TilePresetVariant>();
+            if (_tileType?.Visual?.Variants != null)
+            {
+                for (int i = 0; i < _tileType.Visual.Variants.Count; i++)
+                {
+                    TileVisualVariantConfig source = _tileType.Visual.Variants[i];
+                    if (source?.Preset == null)
+                        continue;
+
+                    variants.Add(new TilePresetVariant
+                    {
+                        Preset = source.Preset,
+                        Slot = ConvertSlot(source.Slot),
+                        Weight = source.Weight,
+                        TileHeight = source.TileHeight,
+                    });
+                }
+
+                return variants;
+            }
+
             if (_tileVariants != null)
             {
                 for (int i = 0; i < _tileVariants.Count; i++)
@@ -451,6 +495,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             }
 
             return variants;
+        }
+
+        private static TilePresetSlot ConvertSlot(TileVisualSlot slot)
+        {
+            return slot switch
+            {
+                TileVisualSlot.Middle => TilePresetSlot.Middle,
+                TileVisualSlot.Bottom => TilePresetSlot.Bottom,
+                _ => TilePresetSlot.Top,
+            };
         }
 
         private static bool HasAnyDualGridPrefab(TilePreset preset)

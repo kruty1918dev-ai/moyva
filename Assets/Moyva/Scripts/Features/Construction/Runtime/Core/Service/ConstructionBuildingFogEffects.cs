@@ -12,18 +12,23 @@ namespace Kruty1918.Moyva.Construction.Runtime
     /// </summary>
     internal sealed class ConstructionBuildingFogEffects
     {
+        private const int FallbackBuildingVisionRange = 3;
+
         private readonly IFogOfWarService _fogOfWarService;
         private readonly IBuildingRegistry _buildingRegistry;
+        private readonly FogOfWarSettings _fogSettings;
 
         public ConstructionBuildingFogEffects(
             IFogOfWarService fogOfWarService,
-            IBuildingRegistry buildingRegistry)
+            IBuildingRegistry buildingRegistry,
+            FogOfWarSettings fogSettings = null)
         {
             _fogOfWarService = fogOfWarService;
             _buildingRegistry = buildingRegistry;
+            _fogSettings = fogSettings;
         }
 
-        public void Apply(
+        public void ApplyOnPlaced(
             string buildingId,
             Vector2Int position)
         {
@@ -36,6 +41,32 @@ namespace Kruty1918.Moyva.Construction.Runtime
             BuildingDefinition definition =
                 _buildingRegistry.GetById(buildingId);
 
+            if (ShouldDeferUntilOperational(definition))
+                return;
+
+            ApplyVision(definition, position);
+        }
+
+        public void ApplyOnOperational(
+            string buildingId,
+            Vector2Int position)
+        {
+            if (_fogOfWarService == null
+                || _buildingRegistry == null)
+            {
+                return;
+            }
+
+            BuildingDefinition definition =
+                _buildingRegistry.GetById(buildingId);
+
+            ApplyVision(definition, position);
+        }
+
+        private void ApplyVision(
+            BuildingDefinition definition,
+            Vector2Int position)
+        {
             bool hasFogModule =
                 BuildingDefinitionCapabilities.TryGetFogReveal(
                     definition,
@@ -45,12 +76,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 BuildingDefinitionCapabilities
                     .GetDefenseVisionRevealBonus(definition);
 
-            if (!hasFogModule && defenseBonus <= 0)
-                return;
-
             int baseRadius = hasFogModule
                 ? Mathf.Max(0, fogReveal.RevealRadius)
-                : 0;
+                : ResolveDefaultBuildingVisionRange();
 
             int radius =
                 Mathf.Max(0, baseRadius + defenseBonus);
@@ -102,6 +130,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _fogOfWarService?.UnregisterUnit(
                 GetBuildingFogVisionAreaId(position));
         }
+
+        private bool ShouldDeferUntilOperational(
+            BuildingDefinition definition)
+        {
+            if (definition == null || definition.BuildTurns <= 0)
+                return false;
+
+            return BuildingDefinitionCapabilities.TryGetFogReveal(
+                       definition,
+                       out FogRevealBuildingModule fogReveal)
+                   && fogReveal.OnlyAfterConstructionComplete;
+        }
+
+        private int ResolveDefaultBuildingVisionRange()
+            => Mathf.Max(
+                1,
+                _fogSettings != null
+                    ? _fogSettings.DefaultVisionRange
+                    : FallbackBuildingVisionRange);
 
         private static string GetBuildingFogVisionAreaId(
             Vector2Int position)

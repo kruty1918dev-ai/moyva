@@ -219,6 +219,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             Hide();
             _chunkSurfaceService?.Dispose();
+            _renderer.Dispose();
         }
 
         private void TickChunkSurfaceMode()
@@ -369,7 +370,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 RebuildActionOverlay();
 
             if (_actionEntries.Count > 0)
-                _renderer.Draw(_actionEntries);
+                _renderer.Draw(
+                    _actionEntries,
+                    afterCameraRendering:
+                        _actionOwner == GridActionOverlayOwner.Movement);
         }
 
         private void RebuildActionOverlay()

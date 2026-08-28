@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (!_isActive)
             {
+                LogSelectionRejected(buildingId, "Construction mode is not active.");
                 return;
             }
 
@@ -22,11 +23,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     out string turnReason))
             {
                 _lastActionMessage = turnReason;
+                LogSelectionRejected(buildingId, turnReason);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(buildingId))
             {
+                LogSelectionRejected(buildingId, "Building id is empty.");
                 return;
             }
 
@@ -34,6 +37,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _placementBuildingRegistry.GetById(buildingId);
             if (selectedDefinition == null)
             {
+                LogSelectionRejected(
+                    buildingId,
+                    $"Building definition '{buildingId}' is missing.");
                 return;
             }
 
@@ -47,6 +53,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 _lastActionMessage =
                     "Спочатку потрібно побудувати замок.";
+                LogSelectionRejected(buildingId, _lastActionMessage);
                 return;
             }
 
@@ -56,6 +63,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 _lastActionMessage =
                     "Замок цього гравця вже побудований.";
+                LogSelectionRejected(buildingId, _lastActionMessage);
                 return;
             }
 
@@ -71,6 +79,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     selectionAvailability.Reason)
                     ? "Будівля зараз недоступна."
                     : selectionAvailability.Reason;
+                LogSelectionRejected(buildingId, _lastActionMessage);
                 return;
             }
 
@@ -84,6 +93,18 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 Debug.LogError($"[Construction] ПОМИЛКА в SelectBuilding('{buildingId}'): {ex.GetType().Name} - {ex.Message}");
             }
+        }
+
+        private void LogSelectionRejected(string buildingId, string reason)
+        {
+            if (!Application.isEditor && !Debug.isDebugBuild)
+                return;
+
+            string message = string.IsNullOrWhiteSpace(reason)
+                ? "Selection was rejected without a reason."
+                : reason;
+            Debug.LogWarning(
+                $"[Construction] Selection rejected for '{buildingId}', owner='{_activeOwnerId}': {message}");
         }
 
         public string GetSelectedBuildingId()

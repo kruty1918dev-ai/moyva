@@ -75,6 +75,42 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
         }
 
         [Test]
+        public void BuildSpawnAssignments_PrefersLaunchLocalHost_WhenSessionParticipantHasAlias()
+        {
+            GameLaunchContext.ConfigureMenuMultiplayerGame(
+                "New World",
+                12345,
+                0,
+                0,
+                0,
+                4,
+                false,
+                64,
+                64,
+                isLocalPlayerHost: true,
+                localPlayerId: "session-host");
+            var factory = new StartingPositionAssignmentFactory();
+            var positions = new[] { new Vector2Int(4, 5) };
+            var participants = new[]
+            {
+                new Participant(
+                    new ParticipantIdentity("lobby-host-alias", "Host"),
+                    isHost: true),
+            };
+
+            SpawnPositionAssignment[] assignments =
+                factory.BuildSpawnAssignments(
+                    positions,
+                    participants,
+                    "session-host",
+                    hasWorldSettings: true,
+                    maxPlayers: 4);
+
+            Assert.That(assignments, Has.Length.EqualTo(1));
+            Assert.That(assignments[0].ParticipantId, Is.EqualTo("session-host"));
+        }
+
+        [Test]
         public void CanRunStartLogic_DoesNotUseLaunchHost_WhenSessionLocalPlayerDiffers()
         {
             GameLaunchContext.ConfigureMenuMultiplayerGame(

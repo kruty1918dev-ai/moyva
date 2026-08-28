@@ -13,6 +13,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!CanActiveOwnerAct(out string turnReason))
             {
                 _lastActionMessage = turnReason;
+                LogPlacementCommitRejected(
+                    null,
+                    null,
+                    turnReason);
                 return;
             }
 
@@ -23,7 +27,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             if (_pendingPlacements.Count == 0)
+            {
+                LogPlacementCommitRejected(
+                    null,
+                    null,
+                    "No pending construction placements to confirm.");
                 return;
+            }
 
             _confirmPendingSnapshot.Clear();
             _confirmPendingSnapshot.AddRange(_pendingPlacements);
@@ -71,12 +81,23 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         out var fogBlocked,
                         out var influenceZoneBlocked,
                         out var terrainBlocked,
+                        out string placementReason,
                         relocationSource,
                         placement.ReplacedPendingBuildingId,
                         placement.Rotation);
 
                     if (!canPlace)
                     {
+                        LogPlacementCommitRejected(
+                            id,
+                            pos,
+                            ResolveConfirmPlacementReason(
+                                placementReason,
+                                tileOccupied,
+                                spacingBlocked,
+                                fogBlocked,
+                                influenceZoneBlocked,
+                                terrainBlocked));
                         continue;
                     }
 
@@ -135,6 +156,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     if (!resourcesAccepted)
                     {
                         _lastActionMessage = resourceReason;
+                        LogPlacementCommitRejected(
+                            id,
+                            pos,
+                            resourceReason);
                         _signalBus.Fire(
                             new BuildingPreviewChangedSignal
                             {
@@ -211,7 +236,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         if (isRelocation && relocationSource.HasValue)
                             _buildingFogEffects.Remove(
                                 relocationSource.Value);
-                        _buildingFogEffects.Apply(id, pos);
+                        _buildingFogEffects.ApplyOnPlaced(id, pos);
                     }
                     catch (Exception fogEx)
                     {
@@ -258,6 +283,92 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     _pendingPlacements[_pendingPlacements.Count - 1].BuildingId,
                     BuildingPlacementState.Placing);
 
+        }
+
+        private string DescribePlacementQueryRejection(
+            ConstructionPlacementQueryResult result)
+        {
+            if (!string.IsNullOrWhiteSpace(result.Reason))
+                return result.Reason;
+
+            IReadOnlyList<BuildingPlacementBlocker> blockers =
+                result.EvaluationResult?.Blockers;
+            if (blockers != null && blockers.Count > 0)
+            {
+                BuildingPlacementBlocker blocker = blockers[0];
+                string blockerPosition = blocker.Position.HasValue
+                    ? $" at {blocker.Position.Value}"
+                    : string.Empty;
+                string blockerBuilding = string.IsNullOrWhiteSpace(
+                    blocker.BuildingId)
+                    ? string.Empty
+                    : $" building='{blocker.BuildingId}'";
+                string blockerMessage =
+                    string.IsNullOrWhiteSpace(blocker.Message)
+                        ? "Placement blocker."
+                        : blocker.Message;
+
+                return
+                    $"{blocker.Kind}{blockerPosition}{blockerBuilding}: {blockerMessage}";
+            }
+
+            if (!result.AvailabilityValid)
+                return "Placement availability is invalid.";
+            if (!result.SpatialValid)
+                return "Spatial placement rules rejected this tile.";
+            if (!result.ResourcesValid)
+                return "Construction resources are invalid.";
+            if (!result.AuthorityValid)
+                return "Construction authority rejected this commit.";
+
+            return "Placement query was rejected without a reason.";
+        }
+
+        private string ResolveConfirmPlacementReason(
+            string reason,
+            bool tileOccupied,
+            bool spacingBlocked,
+            bool fogBlocked,
+            bool influenceZoneBlocked,
+            bool terrainBlocked)
+        {
+            if (!string.IsNullOrWhiteSpace(reason))
+                return reason;
+
+            if (tileOccupied)
+                return "Tile or footprint is occupied.";
+            if (spacingBlocked)
+                return "Minimum spacing rule blocked placement.";
+            if (fogBlocked)
+                return "Fog of war blocked placement.";
+            if (influenceZoneBlocked)
+                return "Influence-zone rules blocked placement.";
+            if (terrainBlocked)
+                return "Terrain rules blocked placement.";
+
+            return "Placement commit was rejected without a detailed reason.";
+        }
+
+        private void LogPlacementCommitRejected(
+            string buildingId,
+            Vector2Int? position,
+            string reason)
+        {
+            if (!Application.isEditor && !Debug.isDebugBuild)
+                return;
+
+            string message = string.IsNullOrWhiteSpace(reason)
+                ? "Commit was rejected without a reason."
+                : reason;
+            string id = string.IsNullOrWhiteSpace(buildingId)
+                ? _selectedBuildingId
+                : buildingId;
+            string at = position.HasValue
+                ? $" at {position.Value}"
+                : string.Empty;
+
+            Debug.LogWarning(
+                $"[Construction] Commit rejected for '{id}'{at}, owner='{_activeOwnerId}', state={State}, pending={_pendingPlacements.Count}: {message}");
         }
     }
 }

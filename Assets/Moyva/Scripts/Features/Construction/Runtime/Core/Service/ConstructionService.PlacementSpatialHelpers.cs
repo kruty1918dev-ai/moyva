@@ -63,6 +63,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             out bool fogBlocked,
             out bool influenceZoneBlocked,
             out bool terrainBlocked,
+            out string rejectionReason,
             Vector2Int? ignoredOccupiedPosition = null,
             string satisfiedReplacementBuildingId = null,
             ConstructionRotation rotation =
@@ -98,6 +99,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 fogBlocked = false;
                 influenceZoneBlocked = false;
                 terrainBlocked = false;
+                rejectionReason = null;
 
                 return true;
             }
@@ -136,6 +138,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ?? (!result.IsSpatiallyValid
                     && _placementEnvironmentRules.IsBlockedByTerrain(position, out _));
 
+            rejectionReason = DescribePlacementQueryRejection(result);
 
             return result.AvailabilityValid
                 && result.SpatialValid

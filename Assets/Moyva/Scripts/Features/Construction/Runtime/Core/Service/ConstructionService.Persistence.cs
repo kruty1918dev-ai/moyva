@@ -106,7 +106,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     SourceFactionId = normalizedOwner,
                     RotationQuarterTurns = (int)rotation,
                 });
-            _buildingFogEffects.Apply(
+            _buildingFogEffects.ApplyOnPlaced(
                 buildingId,
                 position);
 

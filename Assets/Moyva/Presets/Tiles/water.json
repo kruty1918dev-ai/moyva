@@ -1,0 +1,28 @@
+{
+  "$schema": "../Schemas/tile-type.schema.json",
+  "schema": "moyva.tile-type",
+  "version": 1,
+  "id": "water",
+  "model": "tile-type",
+  "displayName": "Water",
+  "aliases": ["water-tile", "ocean-deep", "ocean-shallow"],
+  "tags": ["water"],
+  "traversalClassId": "water",
+  "visual": {
+    "gridMode": "Dual",
+    "variants": [
+      {
+        "preset": {
+          "$asset": "asset.tile-preset.tilewater.dfeb07ab",
+          "editorPath": "Assets/Moyva/TileWater.asset",
+          "required": true
+        },
+        "slot": "Top",
+        "weight": 1.0,
+        "tileHeight": 0.0
+      }
+    ],
+    "scaleToCellSize": true,
+    "layerYOffset": 0.0
+  }
+}

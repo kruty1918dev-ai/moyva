@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.HomeMenu.UI;
+using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.WorldCreation.API;
@@ -18,6 +19,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [Inject] private IGameplaySession _gameplaySession;
         [InjectOptional] private ILobbyService _lobbyService;
         [InjectOptional] private ISaveService _saveService;
+        [InjectOptional] private ISessionManager _sessionManager;
         [InjectOptional] private ILocalGameSettingsService _localSettings;
         [InjectOptional] private IMultiplayerModeSelector _modeSelector;
         [InjectOptional] private ILobbyFlowContext _lobbyFlowContext;
@@ -106,6 +108,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private string ResolveLocalPlayerId()
         {
+            if (!string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
+                return _sessionManager.LocalPlayerId.Trim();
+
+            if (GameLaunchContext.HasLocalPlayerRole
+                && !string.IsNullOrWhiteSpace(GameLaunchContext.LocalPlayerId))
+            {
+                return GameLaunchContext.LocalPlayerId.Trim();
+            }
+
             var currentLobby = _lobbyService?.Current;
             if (currentLobby?.Players != null)
             {

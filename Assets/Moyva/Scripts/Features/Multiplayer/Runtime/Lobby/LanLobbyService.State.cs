@@ -52,7 +52,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             return new LobbyRoom(room.LobbyId, room.LobbyCode, room.Name, room.MaxPlayers, room.IsPrivate,
                 room.HostPlayerId, room.RelayJoinCode, players, room.PasswordHash, room.State,
-                room.ReconnectRecords, room.StartedWorldSettingsBytes);
+                room.ReconnectRecords, room.StartedWorldSettingsBytes, room.BannedPlayerIds,
+                room.CapabilityFlags, room.ConfigFingerprint);
         }
 
         private static bool MatchesJoinInput(LobbyRoom room, string value)
@@ -130,10 +131,15 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var state = first?.State ?? second?.State ?? LobbyState.Open;
             var reconnectRecords = (first?.ReconnectRecords?.Count ?? 0) > 0 ? first.ReconnectRecords : second?.ReconnectRecords;
             var worldSettings = (first?.StartedWorldSettingsBytes?.Length ?? 0) > 0 ? first.StartedWorldSettingsBytes : second?.StartedWorldSettingsBytes;
+            var bannedPlayerIds = (first?.BannedPlayerIds?.Count ?? 0) > 0 ? first.BannedPlayerIds : second?.BannedPlayerIds;
+            var capabilityFlags = first?.CapabilityFlags ?? second?.CapabilityFlags ?? RoomCapabilityFlags.None;
+            var configFingerprint = !string.IsNullOrWhiteSpace(first?.ConfigFingerprint)
+                ? first.ConfigFingerprint
+                : second?.ConfigFingerprint;
 
             return new LobbyRoom(lobbyId, lobbyCode, name, maxPlayers, first?.IsPrivate ?? second?.IsPrivate ?? false,
                 hostPlayerId, relayJoinCode, new List<LobbyPlayer>(playersById.Values), passwordHash, state,
-                reconnectRecords, worldSettings);
+                reconnectRecords, worldSettings, bannedPlayerIds, capabilityFlags, configFingerprint);
         }
 
         private static void AddPlayers(Dictionary<string, LobbyPlayer> playersById, IReadOnlyList<LobbyPlayer> players)

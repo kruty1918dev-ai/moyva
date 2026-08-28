@@ -46,15 +46,9 @@ namespace Kruty1918.Moyva.Grid.API
     /// Explicit tile identity contract.
     /// Separates "the cell exists" from "the cell has an assigned TileTypeId".
     /// </summary>
-    public interface IGridTileIdentityQuery
+    public interface IGridTileIdentityQuery : ITileMapQuery
     {
-        bool ContainsCell(Vector2Int position);
-
         string GetTileTypeId(Vector2Int position);
-
-        bool TryGetTileTypeId(
-            Vector2Int position,
-            out string tileTypeId);
     }
 
     public static class GridTileIdentityExtensions

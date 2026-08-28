@@ -25,6 +25,8 @@ namespace Kruty1918.Moyva.Grid.Runtime
         /// Нове джерело параметрів за id шару. Має пріоритет, якщо задане.
         /// </summary>
         private readonly TerrainLayerProfileSO _layerProfiles;
+        private readonly ITileTypeRepository _tileTypes;
+        private readonly ITraversalCostResolver _traversalCosts;
 
         /// <summary>
         /// Будує кеш із реєстру тайлів під час створення сервісу.
@@ -32,15 +34,20 @@ namespace Kruty1918.Moyva.Grid.Runtime
         /// <param name="registry">Реєстр визначень тайлів (legacy, може бути null).</param>
         /// <param name="layerProfiles">Профілі шарів terrain (нова ідентичність, опційно).</param>
         public TileSettingsService(TileRegistrySO registry)
-            : this(registry, null)
+            : this(registry, null, null, null)
         {
         }
 
+        [Zenject.Inject]
         public TileSettingsService(
             [Zenject.InjectOptional] TileRegistrySO registry = null,
-            [Zenject.InjectOptional] TerrainLayerProfileSO layerProfiles = null)
+            [Zenject.InjectOptional] TerrainLayerProfileSO layerProfiles = null,
+            [Zenject.InjectOptional] ITileTypeRepository tileTypes = null,
+            [Zenject.InjectOptional] ITraversalCostResolver traversalCosts = null)
         {
             _layerProfiles = layerProfiles;
+            _tileTypes = tileTypes;
+            _traversalCosts = traversalCosts;
 
             // Кеш legacy-реєстру лишаємо для зворотної сумісності (відкат).
             if (registry?.Definitions != null)
@@ -68,7 +75,17 @@ namespace Kruty1918.Moyva.Grid.Runtime
                 return 0f;
             }
 
-            // 2) Новий шлях: параметри з профілю шару (0 = непрохідний).
+            if (_traversalCosts != null
+                && _traversalCosts.TryResolve(
+                    MovementProfileIds.GroundDefault,
+                    tileTypeId,
+                    out float canonicalCost,
+                    out _))
+            {
+                return canonicalCost;
+            }
+
+            // Compatibility for old aggregate terrain profiles during migration.
             if (_layerProfiles != null)
                 return _layerProfiles.GetMovementCost(tileTypeId);
 
@@ -98,22 +115,36 @@ namespace Kruty1918.Moyva.Grid.Runtime
         /// </summary>
         public float GetSurfaceOffset(string tileTypeId)
         {
-            if (String.IsNullOrEmpty(tileTypeId) || _layerProfiles == null)
+            if (String.IsNullOrEmpty(tileTypeId))
                 return 0f;
 
-            return _layerProfiles.GetSurfaceOffset(tileTypeId);
+            if (_tileTypes != null
+                && _tileTypes.TryGet(tileTypeId, out TileTypeSnapshot tileType))
+            {
+                return tileType.Visual.SurfaceOffset;
+            }
+
+            return _layerProfiles != null
+                ? _layerProfiles.GetSurfaceOffset(tileTypeId)
+                : 0f;
         }
 
         public bool HasTerrainTag(string tileTypeId, string tag)
         {
             if (String.IsNullOrEmpty(tileTypeId)
-                || string.IsNullOrWhiteSpace(tag)
-                || _layerProfiles == null)
+                || string.IsNullOrWhiteSpace(tag))
             {
                 return false;
             }
 
-            return _layerProfiles.HasTag(tileTypeId, tag);
+            if (_tileTypes != null
+                && _tileTypes.TryGet(tileTypeId, out TileTypeSnapshot tileType))
+            {
+                return tileType.HasTag(tag);
+            }
+
+            return _layerProfiles != null
+                && _layerProfiles.HasTag(tileTypeId, tag);
         }
     }
 }

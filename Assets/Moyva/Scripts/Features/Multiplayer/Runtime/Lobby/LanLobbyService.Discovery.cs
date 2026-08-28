@@ -91,7 +91,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var passwordHash = _current?.PasswordHash ?? string.Empty;
             var state = ((int)(_current?.State ?? LobbyState.Open)).ToString();
             var worldSettings = EncodeBytes(_current?.StartedWorldSettingsBytes);
-            return string.Join('|', PayloadProtocol, roomId, name, max.ToString(), ip, port, hostId, hostName, players, isPrivate, passwordHash, state, worldSettings);
+            var configFingerprint = _current?.ConfigFingerprint ?? string.Empty;
+            return string.Join('|', PayloadProtocol, roomId, name, max.ToString(), ip, port, hostId, hostName, players, isPrivate, passwordHash, state, worldSettings, configFingerprint);
         }
 
         private static int ResolveAdvertisedTransportPort(LobbyRoom room)

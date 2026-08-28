@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
+using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
@@ -77,6 +78,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     return;
             }
 
+            if (Application.isEditor || Debug.isDebugBuild)
+            {
+                Debug.LogWarning(
+                    $"[Construction] Confirm request was not handled by any executor. executors={_executors.Count}");
+            }
         }
     }
 }

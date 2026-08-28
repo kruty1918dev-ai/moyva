@@ -61,7 +61,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
                 var mode = _modeSelector?.CurrentMode ?? NetworkProviderType.Offline;
                 var localId = _sessionManager?.LocalPlayerId ?? string.Empty;
-                var players = MultiplayerRoomLifecycle.ProjectGameplayPlayers(_lobbyService?.Current, localId);
+                var players = MultiplayerRoomLifecycle.ProjectGameplayPlayers(
+                    _lobbyService?.Current,
+                    localId,
+                    _sessionManager?.IsLocalPlayerHost ?? false);
 
                 _session.Apply(mode, dto, players, localId);
                 GameLaunchContext.ConfigureMenuMultiplayerGame(

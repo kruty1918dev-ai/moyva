@@ -37,7 +37,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ConstructionPlacementCommitIntent intent)
         {
             if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                LogPlacementCommitRejected(
+                    buildingId,
+                    position,
+                    "Authoritative placement owner is empty.");
                 return false;
+            }
 
             string normalizedOwnerId = ownerId.Trim();
             if (IsConfirmedPlacementAlreadyApplied(
@@ -56,6 +62,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     out string turnReason))
             {
                 _lastActionMessage = turnReason;
+                LogPlacementCommitRejected(
+                    buildingId,
+                    position,
+                    turnReason);
                 return false;
             }
 
@@ -78,6 +88,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (string.IsNullOrWhiteSpace(buildingId))
             {
+                LogPlacementCommitRejected(
+                    buildingId,
+                    position,
+                    "Building id is empty.");
                 return false;
             }
 
@@ -87,12 +101,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (relocationSource.HasValue
                 && IsCastleBuilding(buildingId))
             {
+                LogPlacementCommitRejected(
+                    buildingId,
+                    position,
+                    "Castle cannot be relocated.");
                 return false;
             }
 
             if (relocationSource.HasValue
                 && relocationSource.Value == position)
             {
+                LogPlacementCommitRejected(
+                    buildingId,
+                    position,
+                    "Relocation source is the same as target position.");
                 return false;
             }
 
@@ -100,6 +122,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (isRelocation
                 && IsCastleBuilding(buildingId))
             {
+                LogPlacementCommitRejected(
+                    buildingId,
+                    position,
+                    "Castle cannot be relocated.");
                 return false;
             }
 
@@ -109,6 +135,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     relocationSource.Value,
                     ownerId))
             {
+                LogPlacementCommitRejected(
+                    buildingId,
+                    position,
+                    $"Relocation source {relocationSource.Value} is not an owned movable '{buildingId}'.");
                 return false;
             }
 
@@ -134,6 +164,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     rotation: intent.Rotation));
             if (!placement.CanCommit)
             {
+                LogPlacementCommitRejected(
+                    buildingId,
+                    position,
+                    DescribePlacementQueryRejection(placement));
                 return false;
             }
 
@@ -153,6 +187,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                             out replacedOrigin,
                             out replacedBuildingId))
                     {
+                        LogPlacementCommitRejected(
+                            buildingId,
+                            position,
+                            "Gate replacement marker was valid during query but could not be resolved during commit.");
                         return false;
                     }
 
@@ -174,7 +212,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         position,
                         buildingId,
                         intent.Rotation))
+                {
+                    LogPlacementCommitRejected(
+                        buildingId,
+                        position,
+                        "Footprint registration failed.");
                     return false;
+                }
                 targetRegistered = true;
 
                 if (!isRelocation
@@ -184,6 +228,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         ownerId,
                         out var resourceReason))
                 {
+                    _lastActionMessage = resourceReason;
+                    LogPlacementCommitRejected(
+                        buildingId,
+                        position,
+                        resourceReason);
                     return false;
                 }
 
@@ -240,7 +289,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _buildingFogEffects.Remove(
                     relocationSource.Value);
             }
-            _buildingFogEffects.Apply(buildingId, position);
+            _buildingFogEffects.ApplyOnPlaced(buildingId, position);
             RecordConstructionAction(
                 ownerId,
                 isRelocation ? "building-relocate" : "building-place");

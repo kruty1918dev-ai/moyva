@@ -49,6 +49,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         { StateDataKey, new DataObject(DataObject.VisibilityOptions.Public, LobbyState.Open.ToString()) },
                         { WorldSettingsDataKey, new DataObject(DataObject.VisibilityOptions.Member, string.Empty) },
                         { ReconnectRecordsDataKey, new DataObject(DataObject.VisibilityOptions.Member, string.Empty) },
+                        { ConfigFingerprintDataKey, new DataObject(DataObject.VisibilityOptions.Public, options.ConfigFingerprint) },
                     }
                 };
 

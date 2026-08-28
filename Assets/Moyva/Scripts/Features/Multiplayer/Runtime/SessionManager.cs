@@ -6,6 +6,7 @@ using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
+using Kruty1918.Moyva.SaveSystem;
 using UnityEngine.SceneManagement;
 
 namespace Kruty1918.Moyva.Multiplayer.Core
@@ -49,10 +50,10 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         public IReadOnlyList<Participant> Participants => _participants;
 
             /// <summary>PlayerId of the local participant (or empty when unknown).</summary>
-            public string LocalPlayerId => _localPlayerId;
+            public string LocalPlayerId => ResolveLocalPlayerId();
 
             /// <summary>True when the local participant is the host of the current session.</summary>
-            public bool IsLocalPlayerHost => _isHost;
+            public bool IsLocalPlayerHost => ResolveIsLocalPlayerHost();
 
         /// <summary>Current lobby join code (visible to UI / shareable).</summary>
         public string CurrentLobbyCode => _currentLobbyCode;
@@ -91,6 +92,50 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _lobby.LobbyUpdated       -= OnLobbyUpdated;
             _lobby.KickedFromLobby    -= OnKickedFromLobby;
             CancelAllPendingDisconnects();
+        }
+
+        private string ResolveLocalPlayerId()
+        {
+            string sessionLocalPlayerId = _localPlayerId?.Trim();
+            if (!string.IsNullOrWhiteSpace(sessionLocalPlayerId))
+                return sessionLocalPlayerId;
+
+            return TryResolveLaunchLocalPlayerId(out string launchLocalPlayerId)
+                ? launchLocalPlayerId
+                : string.Empty;
+        }
+
+        private bool ResolveIsLocalPlayerHost()
+        {
+            if (_isHost)
+                return true;
+
+            return IsLaunchLocalPlayerHost();
+        }
+
+        private static bool IsLaunchLocalPlayerHost()
+        {
+            GameLaunchContext.EnsureNotExpired();
+            return GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame
+                   && GameLaunchContext.HasLocalPlayerRole
+                   && GameLaunchContext.IsLocalPlayerHost;
+        }
+
+        private static bool TryResolveLaunchLocalPlayerId(
+            out string localPlayerId)
+        {
+            GameLaunchContext.EnsureNotExpired();
+            if (GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame
+                && GameLaunchContext.HasLocalPlayerRole
+                && !string.IsNullOrWhiteSpace(
+                    GameLaunchContext.LocalPlayerId))
+            {
+                localPlayerId = GameLaunchContext.LocalPlayerId.Trim();
+                return true;
+            }
+
+            localPlayerId = string.Empty;
+            return false;
         }
 
     }

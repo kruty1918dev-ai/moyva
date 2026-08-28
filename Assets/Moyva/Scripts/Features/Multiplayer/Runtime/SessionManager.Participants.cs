@@ -54,9 +54,29 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 }
                 if (!stillInLobby)
                 {
+                    if (ShouldKeepLocalParticipantMissingFromLobby(p))
+                        continue;
+
                     _participants.RemoveAt(i);
                 }
             }
+        }
+
+        private bool ShouldKeepLocalParticipantMissingFromLobby(
+            Participant participant)
+        {
+            if (participant == null
+                || string.IsNullOrWhiteSpace(_localPlayerId)
+                || string.IsNullOrWhiteSpace(participant.Identity?.PlayerId))
+            {
+                return false;
+            }
+
+            return _isHost
+                   && string.Equals(
+                       participant.Identity.PlayerId,
+                       _localPlayerId,
+                       StringComparison.Ordinal);
         }
 
         private void OnKickedFromLobby(string reason)

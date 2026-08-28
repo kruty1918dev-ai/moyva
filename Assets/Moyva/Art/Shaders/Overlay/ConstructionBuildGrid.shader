@@ -19,6 +19,7 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
         _SurfaceLift ("Surface Lift", Range(0, 0.5)) = 0
         _MinUpNormalY ("Min Up Normal Y", Range(0, 1)) = 0.2
         _UseCellMask ("Use Cell Mask", Float) = 0
+        [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
         [NoScaleOffset] _CellMaskTex ("Cell Mask", 2D) = "white" {}
     }
 
@@ -38,7 +39,7 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
 
             Blend SrcAlpha OneMinusSrcAlpha
             ZWrite Off
-            ZTest LEqual
+            ZTest [_ZTest]
             Cull Off
             Offset -2, -2
 

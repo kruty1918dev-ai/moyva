@@ -41,6 +41,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             if (l.Data != null && l.Data.TryGetValue(ReconnectRecordsDataKey, out var reconnectObj) && reconnectObj != null)
                 reconnectRecords = DecodeReconnectRecords(reconnectObj.Value);
 
+            string configFingerprint = string.Empty;
+            if (l.Data != null && l.Data.TryGetValue(ConfigFingerprintDataKey, out var fingerprintObj) && fingerprintObj != null)
+                configFingerprint = fingerprintObj.Value ?? string.Empty;
+
             var players = new List<LobbyPlayer>(l.Players?.Count ?? 0);
             if (l.Players != null)
             {
@@ -58,7 +62,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             var state = ResolveLobbyState(l);
             return new LobbyRoom(l.Id, l.LobbyCode, l.Name, l.MaxPlayers, l.IsPrivate,
-                l.HostId, relayCode, players, passwordHash, state, reconnectRecords, worldSettingsBytes);
+                l.HostId, relayCode, players, passwordHash, state, reconnectRecords,
+                worldSettingsBytes, configFingerprint: configFingerprint);
         }
 
         private static LobbyState ResolveLobbyState(Lobby lobby)

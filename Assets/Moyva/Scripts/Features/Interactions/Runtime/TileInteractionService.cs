@@ -32,6 +32,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly IMapObjectRegistryService _mapObjectRegistryService;
         private readonly IMapObjectEconomyService _mapObjectEconomyService;
         private readonly IUnitMovementService _unitMovementService;
+        private readonly IUnitMovementQuery _unitMovementQuery;
         private readonly IUnitOwnershipQuery _unitOwnershipQuery;
         private readonly IUnitCombatService _unitCombatService;
         private readonly IConstructionSessionCommands _constructionService;
@@ -58,6 +59,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             [InjectOptional] IMapObjectRegistryService mapObjectRegistryService,
             [InjectOptional] IMapObjectEconomyService mapObjectEconomyService,
             [InjectOptional] IUnitMovementService unitMovementService,
+            [InjectOptional] IUnitMovementQuery unitMovementQuery,
             [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery,
             [InjectOptional] IUnitCombatService unitCombatService,
             [InjectOptional] IConstructionSessionCommands constructionService,
@@ -72,6 +74,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _mapObjectRegistryService = mapObjectRegistryService;
             _mapObjectEconomyService = mapObjectEconomyService;
             _unitMovementService = unitMovementService;
+            _unitMovementQuery = unitMovementQuery;
             _unitOwnershipQuery = unitOwnershipQuery;
             _unitCombatService = unitCombatService;
             _constructionService = constructionService;
@@ -320,7 +323,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             }
 
             IUnitMovementQuery movementQuery =
-                _unitMovementService as IUnitMovementQuery;
+                _unitMovementQuery
+                ?? _unitMovementService as IUnitMovementQuery;
 
             if (movementQuery != null)
             {
@@ -340,6 +344,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
                 if (!reachable)
                 {
+                    Debug.LogWarning(
+                        $"[MOYVA_MOVE][INPUT] Move target is not reachable. unit='{_selectedUnitId}' target={position} reachableTiles={tiles.Count}.");
                     _notifications?.Show(
                         "Ця клітинка недоступна для руху",
                         GameplayNotificationKind.Warning,
@@ -352,30 +358,30 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             return true;
         }
 
-private void StartMove(string unitId, Vector2Int target)
-{
-    bool canCommand = CanCommandUnit(unitId);
+        private void StartMove(string unitId, Vector2Int target)
+        {
+            bool canCommand = CanCommandUnit(unitId);
 
-    if (string.IsNullOrEmpty(unitId) || !canCommand)
-    {
-        return;
-    }
+            if (string.IsNullOrEmpty(unitId) || !canCommand)
+            {
+                return;
+            }
 
-    CancelMovement(MovementCancelReason.NewCommand);
-    _moveCts = new CancellationTokenSource();
-    _activeMoveUnitId = unitId;
-    _activeMoveTarget = target;
-    _cancelReason = MovementCancelReason.None;
+            CancelMovement(MovementCancelReason.NewCommand);
+            _moveCts = new CancellationTokenSource();
+            _activeMoveUnitId = unitId;
+            _activeMoveTarget = target;
+            _cancelReason = MovementCancelReason.None;
 
-    var request = new MoveUnitRequestSignal
-    {
-        UnitId = unitId,
-        TargetPosition = target,
-        RequesterOwnerId = GetLocalOwnerId(),
-    };
+            var request = new MoveUnitRequestSignal
+            {
+                UnitId = unitId,
+                TargetPosition = target,
+                RequesterOwnerId = GetLocalOwnerId(),
+            };
 
-    _signalBus.Fire(request);
-}
+            _signalBus.Fire(request);
+        }
         private bool CanCommandUnit(string unitId)
         {
             if (_currentMode != GameModeType.Normal)
@@ -484,6 +490,12 @@ private void StartMove(string unitId, Vector2Int target)
         {
             _cancelReason = reason;
 
+            string interruptedUnitId = _activeMoveUnitId;
+            _activeMoveUnitId = null;
+            _activeMoveTarget = default;
+            if (reason == MovementCancelReason.Dispose)
+                _queuedResumeMove = null;
+
             if (_moveCts != null)
             {
                 _moveCts.Cancel();
@@ -491,8 +503,13 @@ private void StartMove(string unitId, Vector2Int target)
                 _moveCts = null;
             }
 
-            if (!string.IsNullOrEmpty(_activeMoveUnitId))
-                _signalBus.Fire(new InterruptMovementSignal { UnitId = _activeMoveUnitId });
+            if (reason == MovementCancelReason.Dispose
+                || string.IsNullOrEmpty(interruptedUnitId))
+            {
+                return;
+            }
+
+            _signalBus.Fire(new InterruptMovementSignal { UnitId = interruptedUnitId });
         }
     }
 }

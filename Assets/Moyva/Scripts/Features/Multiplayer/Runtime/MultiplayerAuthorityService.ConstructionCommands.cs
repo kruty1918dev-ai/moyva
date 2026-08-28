@@ -19,6 +19,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             if (_constructionService == null)
             {
+                LogConstructionAuthorityWarning(
+                    "Confirm request ignored because construction service is not attached.");
                 return false;
             }
 
@@ -33,6 +35,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var pending = _constructionService.GetPendingPlacements();
             if (pending == null || pending.Count == 0)
             {
+                LogConstructionAuthorityWarning(
+                    "Confirm request had no pending construction placements; cancelling local preview session.");
                 _constructionService.Cancel();
                 return true;
             }
@@ -43,6 +47,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var intentSource =
                 _constructionService
                     as IConstructionPendingPlacementIntentSource;
+            int sentCount = 0;
             foreach (var kv in pending)
             {
                 ConstructionPlacementCommitIntent intent =
@@ -65,6 +70,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     if (!placement.CanPreview
                         || !placement.ResourcesValid)
                     {
+                        LogConstructionAuthorityWarning(
+                            $"Client placement request for '{kv.Value}' at {kv.Key} was not sent: {DescribePlacementPreflightRejection(placement)}");
                         continue;
                     }
                 }
@@ -82,6 +89,13 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     intent.Rotation);
 
                 _syncService.SendCommand(GameCommandType.BuildingPlace, payload.ToBytes());
+                sentCount++;
+            }
+
+            if (sentCount == 0)
+            {
+                LogConstructionAuthorityWarning(
+                    $"Confirm request did not send any construction placement requests. owner='{ownerId}', pending={pending.Count}.");
             }
 
             // Pending previews remain until a host confirmation is received.
@@ -149,13 +163,20 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             if (_constructionService == null)
             {
+                LogConstructionAuthorityWarning(
+                    "Incoming construction placement command ignored because construction service is not attached.");
                 return;
             }
 
             if (data.Kind == GameActionMessageKind.Request)
             {
                 // Лише хост обробляє запити.
-                if (!IsOfflineOrHost()) return;
+                if (!IsOfflineOrHost())
+                {
+                    LogConstructionAuthorityWarning(
+                        $"Ignoring construction placement request from '{senderId}' because this peer is not authoritative.");
+                    return;
+                }
                 if (!TryResolveAuthorizedRequestOwner(
                         senderId,
                         data.OwnerId,
@@ -163,6 +184,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         out string authorizedOwnerId,
                         out string authorizationReason))
                 {
+                    LogConstructionAuthorityWarning(
+                        $"Rejected construction placement request from '{senderId}' for '{data.BuildingId}' at {data.Position}: {authorizationReason}");
                     return;
                 }
 
@@ -219,6 +242,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     }
                     else
                     {
+                        LogConstructionAuthorityWarning(
+                            $"Authoritative construction placement rejected for '{data.BuildingId}' at {data.Position}, owner='{authorizedOwnerId}'.");
                     }
                 }
                 finally
@@ -232,6 +257,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 if (IsOfflineOrHost()) return;
                 if (!IsAuthorizedHostSender(senderId))
                 {
+                    LogConstructionAuthorityWarning(
+                        $"Ignored confirmed construction placement from unauthorized sender '{senderId}' for '{data.BuildingId}' at {data.Position}.");
                     return;
                 }
 
@@ -290,6 +317,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         _constructionService.RemovePendingAt(
                             data.Position);
                     }
+                    else if (!applied)
+                    {
+                        LogConstructionAuthorityWarning(
+                            $"Failed to apply confirmed construction placement for '{data.BuildingId}' at {data.Position}, owner='{confirmedOwnerId}'.");
+                    }
                 }
                 finally
                 {
@@ -304,12 +336,19 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             if (_constructionService == null)
             {
+                LogConstructionAuthorityWarning(
+                    "Incoming construction demolition command ignored because construction service is not attached.");
                 return;
             }
 
             if (data.Kind == GameActionMessageKind.Request)
             {
-                if (!IsOfflineOrHost()) return;
+                if (!IsOfflineOrHost())
+                {
+                    LogConstructionAuthorityWarning(
+                        $"Ignoring construction demolition request from '{senderId}' because this peer is not authoritative.");
+                    return;
+                }
                 if (!TryResolveAuthorizedRequestOwner(
                         senderId,
                         data.OwnerId,
@@ -317,6 +356,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         out string authorizedOwnerId,
                         out string authorizationReason))
                 {
+                    LogConstructionAuthorityWarning(
+                        $"Rejected construction demolition request from '{senderId}' at {data.Position}: {authorizationReason}");
                     return;
                 }
 
@@ -335,6 +376,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                             authorizedOwnerId);
                         _syncService.SendCommand(GameCommandType.BuildingDemolish, confirmed.ToBytes());
                     }
+                    else
+                    {
+                        LogConstructionAuthorityWarning(
+                            $"Authoritative construction demolition rejected at {data.Position}, owner='{authorizedOwnerId}'.");
+                    }
                 }
                 finally
                 {
@@ -346,6 +392,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 if (IsOfflineOrHost()) return;
                 if (!IsAuthorizedHostSender(senderId))
                 {
+                    LogConstructionAuthorityWarning(
+                        $"Ignored confirmed construction demolition from unauthorized sender '{senderId}' at {data.Position}.");
                     return;
                 }
 
@@ -364,10 +412,37 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                             data.Position,
                             data.OwnerId))
                     {
+                        LogConstructionAuthorityWarning(
+                            $"Failed to apply confirmed construction demolition at {data.Position}, owner='{data.OwnerId}'.");
                     }
                 }
                 finally { _applyingNetworkEvent = false; }
             }
+        }
+
+        private static string DescribePlacementPreflightRejection(
+            ConstructionPlacementQueryResult placement)
+        {
+            if (!string.IsNullOrWhiteSpace(placement.Reason))
+                return placement.Reason;
+            if (!placement.AvailabilityValid)
+                return "placement availability is invalid";
+            if (!placement.SpatialValid)
+                return "spatial placement rules rejected this tile";
+            if (!placement.ResourcesValid)
+                return "construction resources are invalid";
+            if (!placement.AuthorityValid)
+                return "placement is waiting for host authority";
+
+            return "preflight rejected the request without a reason";
+        }
+
+        private static void LogConstructionAuthorityWarning(string message)
+        {
+            if (!Application.isEditor && !Debug.isDebugBuild)
+                return;
+
+            Debug.LogWarning($"[MultiplayerAuthority] {message}");
         }
 
     }

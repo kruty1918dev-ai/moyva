@@ -1,0 +1,33 @@
+{
+  "$schema": "../Schemas/tile-type.schema.json",
+  "schema": "moyva.tile-type",
+  "version": 1,
+  "id": "hill",
+  "model": "tile-type",
+  "displayName": "Hill",
+  "aliases": [],
+  "tags": ["land", "hill"],
+  "traversalClassId": "hill",
+  "visual": {
+    "gridMode": "Dual",
+    "variants": [
+      {
+        "preset": {
+          "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+          "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+          "required": true
+        },
+        "slot": "Top",
+        "weight": 1.0,
+        "tileHeight": 0.0
+      }
+    ],
+    "representativePrefab": {
+      "$asset": "asset.game-object.cliff-fill.6242e01f",
+      "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Fill.prefab",
+      "required": true
+    },
+    "scaleToCellSize": true,
+    "layerYOffset": 0.0
+  }
+}

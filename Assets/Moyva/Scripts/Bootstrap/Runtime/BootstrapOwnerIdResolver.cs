@@ -76,30 +76,70 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool hasAuthoritativeSession =
                 participants != null &&
                 participants.Count > 0;
+            string sessionLocalPlayerId =
+                _sessionManager?.LocalPlayerId?.Trim();
+            string launchLocalPlayerId =
+                GameLaunchContext.HasLocalPlayerRole
+                    ? GameLaunchContext.LocalPlayerId?.Trim()
+                    : string.Empty;
 
             if (hasAuthoritativeSession)
             {
                 string localPlayerId =
-                    _sessionManager.LocalPlayerId?.Trim();
+                    !string.IsNullOrWhiteSpace(sessionLocalPlayerId)
+                        ? sessionLocalPlayerId
+                        : launchLocalPlayerId;
 
                 if (string.IsNullOrWhiteSpace(localPlayerId))
                     return string.Empty;
 
-                for (int index = 0; index < factions.Count; index++)
+                if (TryFindFactionOwner(
+                        factions,
+                        localPlayerId,
+                        out string factionOwnerId))
+                    return factionOwnerId;
+
+                if (GameLaunchContext.HasLocalPlayerRole
+                    && GameLaunchContext.IsLocalPlayerHost
+                    && factions.Count == 1)
                 {
-                    if (string.Equals(
-                            factions[index].OwnerId,
-                            localPlayerId,
-                            StringComparison.Ordinal))
-                    {
-                        return factions[index].OwnerId;
-                    }
+                    return factions[0].OwnerId ?? string.Empty;
                 }
 
                 return string.Empty;
             }
 
+            if (TryFindFactionOwner(
+                    factions,
+                    launchLocalPlayerId,
+                    out string launchFactionOwnerId))
+                return launchFactionOwnerId;
+
             return factions[0].OwnerId ?? string.Empty;
+        }
+
+        private static bool TryFindFactionOwner(
+            IReadOnlyList<TurnFaction> factions,
+            string ownerId,
+            out string factionOwnerId)
+        {
+            factionOwnerId = string.Empty;
+            if (factions == null || string.IsNullOrWhiteSpace(ownerId))
+                return false;
+
+            for (int index = 0; index < factions.Count; index++)
+            {
+                if (string.Equals(
+                        factions[index].OwnerId,
+                        ownerId.Trim(),
+                        StringComparison.Ordinal))
+                {
+                    factionOwnerId = factions[index].OwnerId;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private string ResolveLocalActiveOwnerId(IReadOnlyList<SpawnPositionAssignment> targets)

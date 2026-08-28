@@ -88,6 +88,24 @@
       "minimum": 0.0,
       "x-moyva-editorMinimum": 0.0
     },
+    "movementProfile": {
+      "type": ["object", "null"],
+      "title": "Movement Profile",
+      "x-moyva-configModel": "movement-profile",
+      "properties": {
+        "$config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["model", "id"],
+          "properties": {
+            "model": { "const": "movement-profile" },
+            "id": { "type": "string", "minLength": 1 }
+          }
+        }
+      },
+      "required": ["$config"],
+      "additionalProperties": false
+    },
     "visionRange": {
       "type": "integer",
       "title": "Vision Range",

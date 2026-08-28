@@ -60,7 +60,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private float _nextDiscoveryAt;
 
         /// <summary>
-        /// Створює runtime culling service для приховування renderer-ів під unexplored fog.
+        /// Створює runtime culling service для приховування renderer-ів поза поточною видимістю.
         /// </summary>
         /// <param name="fogService">Gameplay fog service, який дає актуальний fog state.</param>
         /// <param name="gridService">Grid service для розрахунку покритих клітин.</param>

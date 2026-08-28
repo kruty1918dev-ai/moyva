@@ -25,7 +25,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ConstructionPlacementCommitIntent intent)
         {
             if (string.IsNullOrWhiteSpace(buildingId))
+            {
+                LogPlacementCommitRejected(
+                    buildingId,
+                    position,
+                    "Confirmed placement building id is empty.");
                 return false;
+            }
 
             string normalizedOwnerId = NormalizeOwnerId(ownerId);
             if (IsConfirmedPlacementAlreadyApplied(
@@ -41,6 +47,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (relocationSource.HasValue
                 && relocationSource.Value == position)
             {
+                LogPlacementCommitRejected(
+                    buildingId,
+                    position,
+                    "Confirmed relocation source is the same as target position.");
                 return false;
             }
 
@@ -62,6 +72,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                             buildingId,
                             StringComparison.Ordinal))
                     {
+                        LogPlacementCommitRejected(
+                            buildingId,
+                            position,
+                            $"Confirmed relocation source {relocationSource.Value} contains '{sourceOccupantId}', not '{buildingId}'.");
                         return false;
                     }
 
@@ -106,7 +120,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         position,
                         buildingId,
                         intent.Rotation))
+                {
+                    LogPlacementCommitRejected(
+                        buildingId,
+                        position,
+                        "Confirmed placement footprint registration failed.");
                     return false;
+                }
 
                 targetRegistered = true;
                 if (replacementRemoved)
@@ -164,7 +184,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _buildingFogEffects.Remove(
                     relocationSource.Value);
             }
-            _buildingFogEffects.Apply(buildingId, position);
+            _buildingFogEffects.ApplyOnPlaced(buildingId, position);
             return true;
         }
 

@@ -7,6 +7,7 @@ using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Shared.Connectivity;
 using UnityEngine;
 using Unity.Services.Core;
@@ -37,12 +38,23 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 if (_sessionManager == null)
                     return true;
 
+                if (IsLaunchMultiplayerClient())
+                    return false;
+
                 IReadOnlyList<Participant> participants =
                     _sessionManager.Participants;
                 return participants == null
                     || participants.Count <= 1
                     || _sessionManager.IsLocalPlayerHost;
             }
+        }
+
+        private static bool IsLaunchMultiplayerClient()
+        {
+            GameLaunchContext.EnsureNotExpired();
+            return GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame
+                   && GameLaunchContext.HasLocalPlayerRole
+                   && !GameLaunchContext.IsLocalPlayerHost;
         }
     }
 

@@ -49,6 +49,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ProjectionMode = _projection.ProjectionMode,
                 RenderMode = _projection.ProjectionMode == GridProjectionMode.Isometric3DPreview ? GridRenderMode.Mesh3DPreview : GridRenderMode.Mesh3D,
                 NeighborhoodMode = ResolveNeighborhoodMode(_projection),
+                GameplayTileMap = MapArrayUtils.CloneStringMap(biomeMap),
+                VisualTileMap = MapArrayUtils.CloneStringMap(biomeMap),
                 BiomeMap = biomeMap,
                 ObjectMap = objectMap,
                 HeightMap = heightMap,

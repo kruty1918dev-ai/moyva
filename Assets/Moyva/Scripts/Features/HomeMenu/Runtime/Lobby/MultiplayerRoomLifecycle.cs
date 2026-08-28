@@ -7,9 +7,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
 {
     internal static class MultiplayerRoomLifecycle
     {
-        public static IReadOnlyList<GameplayPlayer> ProjectGameplayPlayers(LobbyRoom lobby, string localPlayerId)
+        public static IReadOnlyList<GameplayPlayer> ProjectGameplayPlayers(
+            LobbyRoom lobby,
+            string localPlayerId,
+            bool localPlayerIsHost = false)
         {
             var players = new List<GameplayPlayer>();
+            bool hasLocalPlayer = false;
 
             if (lobby?.Players != null)
             {
@@ -19,12 +23,30 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
                         ? $"player-{players.Count:00}"
                         : player.PlayerId;
 
+                    bool isLocal =
+                        string.Equals(
+                            playerId,
+                            localPlayerId,
+                            StringComparison.Ordinal);
+                    hasLocalPlayer |= isLocal;
+
                     players.Add(new GameplayPlayer(
                         playerId,
                         string.IsNullOrWhiteSpace(player.DisplayName) ? playerId : player.DisplayName,
                         player.IsHost,
-                        string.Equals(playerId, localPlayerId, StringComparison.Ordinal)));
+                        isLocal));
                 }
+            }
+
+            if (!hasLocalPlayer
+                && !string.IsNullOrWhiteSpace(localPlayerId))
+            {
+                string normalizedLocalPlayerId = localPlayerId.Trim();
+                players.Add(new GameplayPlayer(
+                    normalizedLocalPlayerId,
+                    normalizedLocalPlayerId,
+                    localPlayerIsHost,
+                    isLocal: true));
             }
 
             return players;

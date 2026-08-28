@@ -37,6 +37,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private const string StateDataKey = "moyvaState";
         private const string WorldSettingsDataKey = "moyvaWorldSettings";
         private const string ReconnectRecordsDataKey = "moyvaReconnectRecords";
+        private const string ConfigFingerprintDataKey = "moyvaConfigFingerprint";
         private const string LocalTimeTicksDataKey = "localTimeTicks";
         private const float HeartbeatSeconds = 15f;
         private const float PollSeconds = 5f;

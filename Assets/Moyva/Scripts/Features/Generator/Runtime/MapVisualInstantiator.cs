@@ -34,7 +34,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             [InjectOptional] ITileWorldCreatorWorldBuildBridge tileWorldCreatorBridge = null,
             [InjectOptional] IWorldGenerationSignalState worldGenerationSignalState = null,
             [InjectOptional] IMapVisualWorldState state = null,
-            [InjectOptional] IMapVisualWorldBuildOrchestrator orchestrator = null)
+            [InjectOptional] IMapVisualWorldBuildOrchestrator orchestrator = null,
+            [InjectOptional] ITileTypeRepository tileTypes = null)
         {
             _signalBus = signalBus;
             _state = state ?? new MapVisualWorldState();
@@ -47,7 +48,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 gridProjection,
                 graphTwcDiagnostics,
                 worldGenerationSignalState,
-                tileWorldCreatorBridge);
+                tileWorldCreatorBridge,
+                tileTypes);
         }
 
         public void Initialize()

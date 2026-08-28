@@ -37,7 +37,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             };
 
             _current = new LobbyRoom(lobbyId, code, options.Name, options.MaxPlayers,
-                options.IsPrivate, hostId, relayJoinCode: options.RelayJoinCode, players: players);
+                options.IsPrivate, hostId, relayJoinCode: options.RelayJoinCode, players: players,
+                configFingerprint: options.ConfigFingerprint);
             LobbyUpdated?.Invoke(_current);
             PublishState(LobbyState.Open);
             return Task.FromResult(_current);
@@ -107,7 +108,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             _current = new LobbyRoom(
                 _current.LobbyId, _current.LobbyCode, _current.Name, _current.MaxPlayers,
-                _current.IsPrivate, _current.HostPlayerId, relayJoinCode, _current.Players, _current.PasswordHash, _current.State);
+                _current.IsPrivate, _current.HostPlayerId, relayJoinCode, _current.Players,
+                _current.PasswordHash, _current.State, _current.ReconnectRecords,
+                _current.StartedWorldSettingsBytes, _current.BannedPlayerIds,
+                _current.CapabilityFlags, _current.ConfigFingerprint);
             LobbyUpdated?.Invoke(_current);
             return Task.CompletedTask;
         }
@@ -120,7 +124,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     _current.LobbyId, _current.LobbyCode, _current.Name, _current.MaxPlayers,
                     _current.IsPrivate, _current.HostPlayerId, _current.RelayJoinCode, _current.Players,
                     _current.PasswordHash, locked ? LobbyState.Started : LobbyState.Open,
-                    _current.ReconnectRecords, locked ? startedWorldSettingsBytes : null);
+                    _current.ReconnectRecords, locked ? startedWorldSettingsBytes : null,
+                    _current.BannedPlayerIds, _current.CapabilityFlags, _current.ConfigFingerprint);
                 LobbyUpdated?.Invoke(_current);
             }
 

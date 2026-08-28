@@ -1,0 +1,26 @@
+{
+  "name": "Kruty1918.Moyva.Tests.Grid",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Grid",
+  "references": [
+    "Kruty1918.Moyva.Grid",
+    "Kruty1918.Moyva.Jsonization",
+    "GiantGrey.TileWorldCreator",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

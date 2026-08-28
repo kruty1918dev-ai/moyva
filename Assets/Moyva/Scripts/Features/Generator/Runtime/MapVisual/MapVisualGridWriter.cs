@@ -12,11 +12,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private const int MaxMissingTileSamples = 8;
         private readonly IGridService _gridService;
         private readonly IMapVisualTileIdResolver _tileIds;
+        private readonly ITileTypeRepository _tileTypes;
 
-        public MapVisualGridWriter(IGridService gridService, IMapVisualTileIdResolver tileIds)
+        public MapVisualGridWriter(
+            IGridService gridService,
+            IMapVisualTileIdResolver tileIds,
+            ITileTypeRepository tileTypes = null)
         {
             _gridService = gridService;
             _tileIds = tileIds;
+            _tileTypes = tileTypes;
         }
 
         public int Write(GeneratedWorldData worldData)
@@ -30,12 +35,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ValidateBiomeIdentitySource(worldData);
             EnsureGridMatchesWorld(worldData);
 
-            int count = WriteMap(
-                worldData.BiomeMap,
-                false);
-            WriteMap(
-                worldData.ObjectMap,
-                true);
+            string[,] gameplayMap = worldData.GameplayTileMap ?? worldData.BiomeMap;
+            int count = WriteGameplayMap(gameplayMap);
+            worldData.GameplayTileMap = gameplayMap;
 
             ValidateWrittenTileIdentityInvariant(
                 worldData.Width,
@@ -44,7 +46,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return count;
         }
 
-        private int WriteMap(string[,] map, bool resolveTileIds)
+        private int WriteGameplayMap(string[,] map)
         {
             if (map == null)
                 return 0;
@@ -56,8 +58,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 string id = map[x, y];
                 if (string.IsNullOrWhiteSpace(id))
                     continue;
-                if (resolveTileIds && !_tileIds.TryResolve(id, out _, out id))
-                    continue;
+
+                id = ResolveCanonicalTileId(id);
 
                 map[x, y] = id;
                 _gridService.SetTileData(new Vector2Int(x, y), id);
@@ -67,12 +69,31 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return filled;
         }
 
+        private string ResolveCanonicalTileId(string sourceId)
+        {
+            if (_tileTypes == null)
+                return sourceId;
+
+            if (_tileTypes.TryResolveId(sourceId, out string canonicalId))
+                return canonicalId;
+
+            if (_tileIds != null
+                && _tileIds.TryResolve(sourceId, out _, out string legacyTileId)
+                && _tileTypes.TryResolveId(legacyTileId, out canonicalId))
+            {
+                return canonicalId;
+            }
+
+            throw new InvalidOperationException(
+                $"Generated tile id '{sourceId}' has no moyva.tile-type definition or alias.");
+        }
+
         private static void ValidateBiomeIdentitySource(
             GeneratedWorldData worldData)
         {
             int width = Mathf.Max(1, worldData.Width);
             int height = Mathf.Max(1, worldData.Height);
-            string[,] biomeMap = worldData.BiomeMap;
+            string[,] biomeMap = worldData.GameplayTileMap ?? worldData.BiomeMap;
 
             if (biomeMap == null)
             {

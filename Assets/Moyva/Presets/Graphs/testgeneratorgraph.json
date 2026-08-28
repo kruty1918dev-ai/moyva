@@ -17,47 +17,12 @@
     },
     {
       "$type": "tile-settings",
-      "tileVariants": [
-        {
-          "preset": {
-            "$asset": "asset.tile-preset.tilewater.dfeb07ab",
-            "editorPath": "Assets/Moyva/TileWater.asset",
-            "required": true
-          },
-          "slot": "Top",
-          "weight": 1.0,
-          "tileHeight": 0.0
+      "tileType": {
+        "$config": {
+          "model": "tile-type",
+          "id": "water"
         }
-      ],
-      "tilePreset": null,
-      "slot": "Top",
-      "weight": 1.0,
-      "tileHeight": 0.0,
-      "useDualGrid": true,
-      "scaleTileToCellSize": true,
-      "layerYOffset": 0.0,
-      "scaleOffset": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
       },
-      "generateFlatSurface": false,
-      "flatSurfaceMaterial": {
-        "$asset": "",
-        "editorPath": "",
-        "required": false
-      },
-      "tileLayerHeightOffset": 0.0,
-      "ignoreFillTiles": false,
-      "meshGenerationOverride": false,
-      "mergeTiles": false,
-      "shadowCastingMode": "On",
-      "objectLayer": 0,
-      "renderingLayer": {},
-      "colliderType": "none",
-      "tileColliderHeight": 0.0,
-      "tileColliderExtrusionHeight": 0.0,
-      "invertCollisionWalls": false,
       "nodeId": "8e548288-2314-477d-908b-beb1a4df333b",
       "editorPosition": {
         "x": 542.0,
@@ -123,47 +88,12 @@
     },
     {
       "$type": "tile-settings",
-      "tileVariants": [
-        {
-          "preset": {
-            "$asset": "asset.tile-preset.01-dual-grid-sand-kaykit-style.70f407af",
-            "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/01_dual_grid_sand_kaykit_style.asset",
-            "required": true
-          },
-          "slot": "Top",
-          "weight": 1.0,
-          "tileHeight": 0.0
+      "tileType": {
+        "$config": {
+          "model": "tile-type",
+          "id": "sand"
         }
-      ],
-      "tilePreset": null,
-      "slot": "Top",
-      "weight": 1.0,
-      "tileHeight": 0.0,
-      "useDualGrid": false,
-      "scaleTileToCellSize": true,
-      "layerYOffset": 0.0,
-      "scaleOffset": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
       },
-      "generateFlatSurface": false,
-      "flatSurfaceMaterial": {
-        "$asset": "",
-        "editorPath": "",
-        "required": false
-      },
-      "tileLayerHeightOffset": 0.0,
-      "ignoreFillTiles": false,
-      "meshGenerationOverride": false,
-      "mergeTiles": false,
-      "shadowCastingMode": "On",
-      "objectLayer": 0,
-      "renderingLayer": {},
-      "colliderType": "none",
-      "tileColliderHeight": 0.0,
-      "tileColliderExtrusionHeight": 0.0,
-      "invertCollisionWalls": false,
       "nodeId": "0445ecb4-6dd2-486a-863e-967914603e56",
       "editorPosition": {
         "x": 597.0,
@@ -193,47 +123,12 @@
     },
     {
       "$type": "tile-settings",
-      "tileVariants": [
-        {
-          "preset": {
-            "$asset": "asset.tile-preset.02-dual-grid-grass-kaykit-style.05593a2d",
-            "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/02_dual_grid_grass_kaykit_style.asset",
-            "required": true
-          },
-          "slot": "Top",
-          "weight": 1.0,
-          "tileHeight": 0.0
+      "tileType": {
+        "$config": {
+          "model": "tile-type",
+          "id": "grass"
         }
-      ],
-      "tilePreset": null,
-      "slot": "Top",
-      "weight": 1.0,
-      "tileHeight": 0.0,
-      "useDualGrid": false,
-      "scaleTileToCellSize": true,
-      "layerYOffset": 0.0,
-      "scaleOffset": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
       },
-      "generateFlatSurface": false,
-      "flatSurfaceMaterial": {
-        "$asset": "",
-        "editorPath": "",
-        "required": false
-      },
-      "tileLayerHeightOffset": 0.0,
-      "ignoreFillTiles": false,
-      "meshGenerationOverride": false,
-      "mergeTiles": false,
-      "shadowCastingMode": "On",
-      "objectLayer": 0,
-      "renderingLayer": {},
-      "colliderType": "none",
-      "tileColliderHeight": 0.0,
-      "tileColliderExtrusionHeight": 0.0,
-      "invertCollisionWalls": false,
       "nodeId": "034dc077-548f-4574-9724-37b068410663",
       "editorPosition": {
         "x": 2022.0,

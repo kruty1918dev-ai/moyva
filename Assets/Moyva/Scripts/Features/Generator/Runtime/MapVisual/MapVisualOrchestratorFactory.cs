@@ -18,14 +18,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IGridProjection projection,
             IGraphTwcMapDataDiagnostics graphDiagnostics,
             IWorldGenerationSignalState signalState,
-            ITileWorldCreatorWorldBuildBridge tileWorldCreatorBridge)
+            ITileWorldCreatorWorldBuildBridge tileWorldCreatorBridge,
+            ITileTypeRepository tileTypes)
            {
             projection ??= new OrthogonalGridProjection();
             var tileResolver = new MapVisualTileIdResolver(tileRegistry);
             return new MapVisualWorldBuildOrchestrator(
                 state: state,
                 dataFactory: new MapVisualWorldDataFactory(gridService, projection, mapDataGenerator, graphDiagnostics),
-                gridWriter: new MapVisualGridWriter(gridService, tileResolver),
+                gridWriter: new MapVisualGridWriter(gridService, tileResolver, tileTypes),
                 signals: new MapVisualWorldSignalPublisher(signalBus, projection, graphDiagnostics, signalState),
                 tileWorldCreatorBridge: tileWorldCreatorBridge);
         }

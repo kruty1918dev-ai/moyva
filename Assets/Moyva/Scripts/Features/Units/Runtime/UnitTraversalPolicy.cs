@@ -16,12 +16,11 @@ namespace Kruty1918.Moyva.Units.Runtime
         IDisposable
     {
         private const float DiagonalFactor = 1.41421356237f;
-        private const float MinCost = 0.0001f;
-
         private readonly IGridService _grid;
-        private readonly ITileSettingsService _tileSettings;
+        private readonly ITraversalCostResolver _traversalCosts;
         private readonly IObjectsMapService _objectsMap;
         private readonly IUnitService _units;
+        private readonly IUnitClassConfig _unitConfigs;
         private readonly IUnitPlacementValidator _placementValidator;
         private readonly SignalBus _signals;
         private readonly IGeneratedTerrainSurfaceVersionQuery _terrainVersionQuery;
@@ -31,31 +30,33 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private readonly struct StaticTraversalCell
         {
-            public StaticTraversalCell(bool allowed, float baseCost, string reason)
+            public StaticTraversalCell(bool allowed, string tileTypeId, string reason)
             {
                 Allowed = allowed;
-                BaseCost = baseCost;
+                TileTypeId = tileTypeId;
                 Reason = reason;
             }
 
             public bool Allowed { get; }
-            public float BaseCost { get; }
+            public string TileTypeId { get; }
             public string Reason { get; }
         }
 
         public UnitTraversalPolicy(
             IGridService grid,
-            ITileSettingsService tileSettings,
+            ITraversalCostResolver traversalCosts,
             IObjectsMapService objectsMap,
             IUnitService units,
+            IUnitClassConfig unitConfigs,
             IUnitPlacementValidator placementValidator,
             SignalBus signals,
             [InjectOptional] IGeneratedTerrainSurfaceVersionQuery terrainVersionQuery = null)
         {
             _grid = grid;
-            _tileSettings = tileSettings;
+            _traversalCosts = traversalCosts;
             _objectsMap = objectsMap;
             _units = units;
+            _unitConfigs = unitConfigs;
             _placementValidator = placementValidator;
             _signals = signals;
             _terrainVersionQuery = terrainVersionQuery;
@@ -104,6 +105,16 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
             }
 
+            string movementProfileId = ResolveMovementProfileId(unitId);
+            if (!_traversalCosts.TryResolve(
+                    movementProfileId,
+                    targetCell.TileTypeId,
+                    out float baseCost,
+                    out reason))
+            {
+                return false;
+            }
+
             if (!CanEnterDynamicCell(unitId, to, mode, out reason))
                 return false;
 
@@ -115,8 +126,8 @@ namespace Kruty1918.Moyva.Units.Runtime
                 string sideAReason = null;
                 string sideBReason = null;
 
-                if (!CanUseDiagonalSide(unitId, sideA, mode, out sideAReason)
-                    || !CanUseDiagonalSide(unitId, sideB, mode, out sideBReason))
+                if (!CanUseDiagonalSide(unitId, movementProfileId, sideA, mode, out sideAReason)
+                    || !CanUseDiagonalSide(unitId, movementProfileId, sideB, mode, out sideBReason))
                 {
                     reason =
                         "Діагональний прохід заблокований: "
@@ -125,7 +136,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 }
             }
 
-            cost = targetCell.BaseCost * (diagonal ? DiagonalFactor : 1f);
+            cost = baseCost * (diagonal ? DiagonalFactor : 1f);
 
             if (!float.IsPositiveInfinity(availableMovement)
                 && availableMovement + 0.0001f < cost)
@@ -163,7 +174,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             {
                 if (!_placementValidator.IsTerrainAllowed(position, out reason))
                 {
-                    cell = new StaticTraversalCell(false, 0f, reason);
+                    cell = new StaticTraversalCell(false, null, reason);
                     _staticCache[position] = cell;
                     return false;
                 }
@@ -172,7 +183,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             {
                 cell = new StaticTraversalCell(
                     false,
-                    0f,
+                    null,
                     "Тайл знаходиться за межами карти.");
                 _staticCache[position] = cell;
                 return false;
@@ -183,17 +194,13 @@ namespace Kruty1918.Moyva.Units.Runtime
             {
                 cell = new StaticTraversalCell(
                     false,
-                    0f,
+                    null,
                     "На клітинці немає валідного типу тайла.");
                 _staticCache[position] = cell;
                 return false;
             }
 
-            float baseCost = Mathf.Max(
-                MinCost,
-                _tileSettings.GetTileWeight(tileTypeId));
-
-            cell = new StaticTraversalCell(true, baseCost, null);
+            cell = new StaticTraversalCell(true, tileTypeId, null);
             _staticCache[position] = cell;
             return true;
         }
@@ -235,6 +242,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private bool CanUseDiagonalSide(
             string unitId,
+            string movementProfileId,
             Vector2Int position,
             UnitTraversalMode mode,
             out string reason)
@@ -245,7 +253,28 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
             }
 
+            if (!_traversalCosts.TryResolve(
+                    movementProfileId,
+                    cell.TileTypeId,
+                    out _,
+                    out reason))
+            {
+                return false;
+            }
+
             return CanEnterDynamicCell(unitId, position, mode, out reason);
+        }
+
+        private string ResolveMovementProfileId(string unitId)
+        {
+            string unitTypeId = _units.GetUnitTypeId(unitId);
+            UnitClassConfig config = string.IsNullOrWhiteSpace(unitTypeId)
+                ? null
+                : _unitConfigs.GetConfig(unitTypeId);
+            string profileId = config?.MovementProfile?.JsonId;
+            return string.IsNullOrWhiteSpace(profileId)
+                ? MovementProfileIds.GroundDefault
+                : profileId;
         }
 
         private void EnsureTerrainVersion()

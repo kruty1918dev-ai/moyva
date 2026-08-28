@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Animations.API;
 using Kruty1918.Moyva.Presentation.API;
+using Kruty1918.Moyva.Grid.API;
 
 using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Units.API
@@ -85,6 +86,8 @@ namespace Kruty1918.Moyva.Units.API
         public float BaseStamina;
         [Tooltip("Очки руху, що відновлюються на початку ходу юніта.")]
         [Min(0f)] public float MovementPointsPerTurn = 5f;
+        [Tooltip("JSON-профіль вартості та доступності terrain для цього типу юніта.")]
+        public MovementProfileConfig MovementProfile;
         [Min(1)] public int VisionRange = 1;
         [Tooltip("Індивідуальний бустер огляду за кожен рівень висоти в preview (Map + Fog).")]
         [Min(0f)] public float VisionHeightBoostPerLevel = 0f;

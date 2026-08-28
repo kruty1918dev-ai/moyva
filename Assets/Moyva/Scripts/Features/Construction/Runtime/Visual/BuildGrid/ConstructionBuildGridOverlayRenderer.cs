@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class ConstructionBuildGridOverlayRenderer {
         private const int BuildGridRenderQueue = 3990;
+        private const string LateOverlayCommandName = "Moyva Grid Action Overlay";
         private static readonly int EdgeMaskPropertyId = Shader.PropertyToID("_EdgeMask");
         private static readonly int LineColorPropertyId = Shader.PropertyToID("_LineColor");
         private static readonly int FillColorPropertyId = Shader.PropertyToID("_FillColor");
@@ -19,6 +21,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private static readonly int UseCellMaskPropertyId = Shader.PropertyToID("_UseCellMask");
         private static readonly int SurfaceLiftPropertyId = Shader.PropertyToID("_SurfaceLift");
         private static readonly int MinUpNormalYPropertyId = Shader.PropertyToID("_MinUpNormalY");
+        private static readonly int ZTestPropertyId = Shader.PropertyToID("_ZTest");
 
         private readonly IConstructionGridGeometryService _gridGeometry;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
@@ -26,6 +29,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private GameObject _overlayGo;
         private Material _material;
         private MaterialPropertyBlock _propertyBlock;
+        private readonly List<ConstructionBuildGridOverlayEntry> _lateEntries = new();
+        private CommandBuffer _lateCommandBuffer;
+        private bool _lateRenderingHooked;
         private Color _generalLineColor;
         private Color _generalFillColor;
         private Color _validLineColor;
@@ -118,33 +124,164 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (_overlayGo != null)
                 _overlayGo.SetActive(visible);
+
+            if (!visible)
+                DisableLateRendering();
         }
 
-        public void Draw(List<ConstructionBuildGridOverlayEntry> entries)
+        public void Draw(
+            List<ConstructionBuildGridOverlayEntry> entries,
+            bool afterCameraRendering = false)
         {
-            if (_material == null || entries.Count == 0)
+            if (afterCameraRendering)
+            {
+                CaptureLateEntries(entries);
+                return;
+            }
+
+            DisableLateRendering();
+
+            if (_material == null || entries == null || entries.Count == 0)
                 return;
 
-            for (int i = entries.Count - 1; i >= 0; i--)
+            ApplyZTest(CompareFunction.LessEqual);
+            PruneInvalidEntries(entries);
+            if (entries.Count == 0)
+                return;
+
+            for (int i = 0; i < entries.Count; i++)
             {
                 ConstructionBuildGridOverlayEntry entry = entries[i];
-                if (entry.Mesh == null)
-                {
-                    entries.RemoveAt(i);
-                    continue;
-                }
-
-                if (entry.SourceRenderer != null && !entry.SourceRenderer.enabled)
-                {
-                    entries.RemoveAt(i);
-                    continue;
-                }
-
-                DrawEntry(entry);
+                DrawImmediateEntry(entry);
             }
         }
 
-        private void DrawEntry(ConstructionBuildGridOverlayEntry entry)
+        public void Dispose()
+        {
+            DisableLateRendering();
+            _lateCommandBuffer?.Release();
+            _lateCommandBuffer = null;
+        }
+
+        private void CaptureLateEntries(
+            List<ConstructionBuildGridOverlayEntry> entries)
+        {
+            if (_material == null || entries == null || entries.Count == 0)
+            {
+                DisableLateRendering();
+                return;
+            }
+
+            PruneInvalidEntries(entries);
+            if (entries.Count == 0)
+            {
+                DisableLateRendering();
+                return;
+            }
+
+            _lateEntries.Clear();
+            _lateEntries.AddRange(entries);
+            ApplyZTest(CompareFunction.Always);
+            EnsureLateRenderingHook();
+        }
+
+        private void EnsureLateRenderingHook()
+        {
+            if (_lateRenderingHooked)
+                return;
+
+            RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
+            _lateRenderingHooked = true;
+        }
+
+        private void DisableLateRendering()
+        {
+            if (_lateRenderingHooked)
+            {
+                RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
+                _lateRenderingHooked = false;
+            }
+
+            _lateEntries.Clear();
+            _lateCommandBuffer?.Clear();
+            ApplyZTest(CompareFunction.LessEqual);
+        }
+
+        private void OnEndCameraRendering(
+            ScriptableRenderContext context,
+            Camera camera)
+        {
+            if (_material == null
+                || camera == null
+                || camera.cameraType == CameraType.Preview
+                || _lateEntries.Count == 0)
+            {
+                return;
+            }
+
+            _lateCommandBuffer ??= new CommandBuffer
+            {
+                name = LateOverlayCommandName
+            };
+            _lateCommandBuffer.Clear();
+            _lateCommandBuffer.SetViewProjectionMatrices(
+                camera.worldToCameraMatrix,
+                camera.projectionMatrix);
+
+            bool hasDraw = false;
+            for (int i = 0; i < _lateEntries.Count; i++)
+            {
+                ConstructionBuildGridOverlayEntry entry = _lateEntries[i];
+                if (!IsDrawable(entry)
+                    || !CameraCanRenderLayer(camera, entry.Layer))
+                {
+                    continue;
+                }
+
+                DrawCommandBufferEntry(_lateCommandBuffer, entry);
+                hasDraw = true;
+            }
+
+            if (!hasDraw)
+                return;
+
+            context.ExecuteCommandBuffer(_lateCommandBuffer);
+            _lateCommandBuffer.Clear();
+        }
+
+        private void DrawImmediateEntry(ConstructionBuildGridOverlayEntry entry)
+        {
+            MaterialPropertyBlock propertyBlock =
+                PrepareEntryPropertyBlock(entry);
+
+            Graphics.DrawMesh(
+                entry.Mesh,
+                entry.Matrix,
+                _material,
+                entry.Layer,
+                null,
+                0,
+                propertyBlock);
+        }
+
+        private void DrawCommandBufferEntry(
+            CommandBuffer commandBuffer,
+            ConstructionBuildGridOverlayEntry entry)
+        {
+            MaterialPropertyBlock propertyBlock =
+                PrepareEntryPropertyBlock(entry);
+
+            commandBuffer.DrawMesh(
+                entry.Mesh,
+                entry.Matrix,
+                _material,
+                0,
+                -1,
+                propertyBlock);
+        }
+
+        private MaterialPropertyBlock PrepareEntryPropertyBlock(
+            ConstructionBuildGridOverlayEntry entry)
         {
             _propertyBlock ??= new MaterialPropertyBlock();
             _propertyBlock.Clear();
@@ -152,7 +289,35 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ResolveEntryColors(entry.VisualState, out Color lineColor, out Color fillColor);
             _propertyBlock.SetColor(LineColorPropertyId, lineColor);
             _propertyBlock.SetColor(FillColorPropertyId, fillColor);
-            Graphics.DrawMesh(entry.Mesh, entry.Matrix, _material, entry.Layer, null, 0, _propertyBlock);
+            return _propertyBlock;
+        }
+
+        private static void PruneInvalidEntries(
+            List<ConstructionBuildGridOverlayEntry> entries)
+        {
+            for (int i = entries.Count - 1; i >= 0; i--)
+            {
+                if (!IsDrawable(entries[i]))
+                    entries.RemoveAt(i);
+            }
+        }
+
+        private static bool IsDrawable(
+            ConstructionBuildGridOverlayEntry entry)
+        {
+            return entry.Mesh != null
+                   && (entry.SourceRenderer == null
+                       || entry.SourceRenderer.enabled);
+        }
+
+        private static bool CameraCanRenderLayer(
+            Camera camera,
+            int layer)
+        {
+            if (layer < 0 || layer > 31)
+                return true;
+
+            return (camera.cullingMask & (1 << layer)) != 0;
         }
 
         private void ResolveEntryColors(
@@ -215,6 +380,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _material.SetFloat(UseCellMaskPropertyId, 0f);
             _material.SetFloat(SurfaceLiftPropertyId, 0f);
             _material.SetFloat(MinUpNormalYPropertyId, 0.2f);
+            ApplyZTest(CompareFunction.LessEqual);
+        }
+
+        private void ApplyZTest(CompareFunction function)
+        {
+            if (_material == null)
+                return;
+
+            _material.SetFloat(ZTestPropertyId, (float)function);
         }
     }
 }

@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/tile-type.schema.json",
+  "title": "Moyva Tile Type",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "id", "model", "displayName", "aliases", "tags", "traversalClassId", "visual"],
+  "$defs": {
+    "assetRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["$asset"],
+      "properties": {
+        "$asset": { "type": "string", "minLength": 1 },
+        "editorPath": { "type": "string" },
+        "required": { "type": "boolean", "default": true }
+      }
+    },
+    "vector3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      }
+    },
+    "editorMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "documentLink": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "path": {
+              "type": "string",
+              "description": "Optional .asset path or folder for MoyvaJsonDocumentLink."
+            }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema": { "const": "moyva.tile-type" },
+    "version": { "type": "integer", "minimum": 1 },
+    "id": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "model": { "const": "tile-type" },
+    "displayName": { "type": "string", "minLength": 1 },
+    "aliases": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "traversalClassId": { "type": "string", "minLength": 1 },
+    "visual": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gridMode"],
+      "properties": {
+        "gridMode": { "type": "string", "enum": ["Normal", "Dual", "Flat"] },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["preset", "slot", "weight", "tileHeight"],
+            "properties": {
+              "preset": { "$ref": "#/$defs/assetRef", "x-moyva-assetType": "GiantGrey.TileWorldCreator.TilePreset" },
+              "slot": { "type": "string", "enum": ["Top", "Middle", "Bottom"] },
+              "weight": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+              "tileHeight": { "type": "number", "minimum": 0.0 }
+            }
+          }
+        },
+        "representativePrefab": { "$ref": "#/$defs/assetRef", "x-moyva-assetType": "UnityEngine.GameObject" },
+        "scaleToCellSize": { "type": "boolean" },
+        "layerYOffset": { "type": "number" },
+        "scaleOffset": { "$ref": "#/$defs/vector3" },
+        "surfaceOffset": { "type": "number" },
+        "flatSurfaceMaterial": { "$ref": "#/$defs/assetRef", "x-moyva-assetType": "UnityEngine.Material" },
+        "tileLayerHeightOffset": { "type": "number" },
+        "ignoreFillTiles": { "type": "boolean" },
+        "meshGenerationOverride": { "type": "boolean" },
+        "mergeTiles": { "type": "boolean" },
+        "shadowCastingMode": { "type": "string", "enum": ["Off", "On", "TwoSided", "ShadowsOnly"] },
+        "objectLayer": { "type": ["integer", "object"] },
+        "renderingLayer": { "type": ["integer", "object"] },
+        "colliderType": { "type": "string", "enum": ["none", "meshCollider", "tileCollider"] },
+        "tileColliderHeight": { "type": "number", "minimum": 0.0 },
+        "tileColliderExtrusionHeight": { "type": "number", "minimum": 0.0 },
+        "invertCollisionWalls": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "gridMode": { "const": "Flat" } } },
+          "then": { "required": ["flatSurfaceMaterial"] },
+          "else": { "required": ["variants"] }
+        }
+      ]
+    },
+    "migration": { "type": "object", "additionalProperties": true },
+    "editor": { "$ref": "#/$defs/editorMetadata" }
+  }
+}

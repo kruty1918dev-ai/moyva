@@ -65,16 +65,39 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         participant,
                         localPlayerId,
                         launchParticipantCount);
+                string participantId = ResolveAssignmentParticipantId(
+                    index,
+                    isDirectGameplay,
+                    spec.ParticipantId,
+                    localPlayerId);
 
                 assignments[index] = new SpawnPositionAssignment
                 {
                     SlotIndex = index,
-                    ParticipantId = spec.ParticipantId,
+                    ParticipantId = participantId,
                     Position = positions[index],
                 };
             }
 
             return assignments;
+        }
+
+        private static string ResolveAssignmentParticipantId(
+            int slotIndex,
+            bool isDirectGameplay,
+            string resolvedParticipantId,
+            string localPlayerId)
+        {
+            if (!isDirectGameplay
+                && slotIndex == 0
+                && Kruty1918.Moyva.SaveSystem.GameLaunchContext.HasLocalPlayerRole
+                && Kruty1918.Moyva.SaveSystem.GameLaunchContext.IsLocalPlayerHost
+                && !string.IsNullOrWhiteSpace(localPlayerId))
+            {
+                return localPlayerId.Trim();
+            }
+
+            return resolvedParticipantId;
         }
 
         public SpawnPositionAssignment[] CopySpawnAssignments(IReadOnlyList<SpawnPositionAssignment> assignments)

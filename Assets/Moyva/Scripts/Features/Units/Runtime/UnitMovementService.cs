@@ -36,6 +36,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 		private readonly IUnitPlacementValidator _placementValidator;
 		private readonly IUnitWorldPositionResolver _worldPositionResolver;
 		private readonly IUnitTraversalPolicy _traversalPolicy;
+		private readonly ITraversalCostResolver _traversalCosts;
 
 		private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
 
@@ -55,7 +56,8 @@ namespace Kruty1918.Moyva.Units.Runtime
 			[InjectOptional] IUnitOwnershipQuery ownership = null,
 			[InjectOptional] IUnitPlacementValidator placementValidator = null,
 			[InjectOptional] IUnitWorldPositionResolver worldPositionResolver = null,
-			[InjectOptional] IUnitTraversalPolicy traversalPolicy = null)
+			[InjectOptional] IUnitTraversalPolicy traversalPolicy = null,
+			[InjectOptional] ITraversalCostResolver traversalCosts = null)
 		{
 			_unitService = unitService;
 			_pathfinder = pathfinder;
@@ -73,6 +75,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_placementValidator = placementValidator;
 			_worldPositionResolver = worldPositionResolver;
 			_traversalPolicy = traversalPolicy;
+			_traversalCosts = traversalCosts;
 		}
 
 		public void Initialize()
@@ -132,12 +135,14 @@ namespace Kruty1918.Moyva.Units.Runtime
 		{
 			if (string.IsNullOrEmpty(unitId))
 			{
+				LogMoveRejected(unitId, targetPosition, "Unit id is empty.");
 				return;
 			}
 
 			string ownerId = _ownership?.GetUnitOwnerId(unitId);
 			if (_turns != null && !_turns.CanOwnerAct(ownerId, out string turnReason))
 			{
+				LogMoveRejected(unitId, targetPosition, turnReason ?? "Owner cannot act.");
 				return;
 			}
 
@@ -149,6 +154,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 			if (!_unitService.TryGetUnitPosition(unitId, out var startPosition))
 			{
+				LogMoveRejected(unitId, targetPosition, "Unit position is not registered.");
 				return;
 			}
 
@@ -164,79 +170,94 @@ namespace Kruty1918.Moyva.Units.Runtime
 					unitId,
 					targetPosition))
 			{
+				LogMoveRejected(
+					unitId,
+					targetPosition,
+					$"Target cell is occupied by '{targetOccupantId}'.");
 				return;
 			}
 
 			List<Vector2Int> path;
-if (_traversalPolicy != null
-	&& _pathfinder is ICostAwarePathfinder costAwarePathfinder)
-{
-	path = costAwarePathfinder.FindPathWithCosts(
-		startPosition,
-		targetPosition,
-		(Vector2Int from, Vector2Int to, out float stepCost) =>
-			_traversalPolicy.TryEvaluateStep(
-				unitId,
-				from,
-				to,
-				float.PositiveInfinity,
-				UnitTraversalMode.Pathfinding,
-				out stepCost,
-				out _));
-}
-else if (_pathfinder is IOccupiedCellPathfinder occupiedPathfinder)
-{
-	path = occupiedPathfinder.FindPath(
-		startPosition,
-		targetPosition,
-		position =>
-			CanPathTraverseOccupiedConstructionCell(
-				unitId,
-				position));
-}
-else
-{
-	path = _pathfinder.FindPath(
-		startPosition,
-		targetPosition);
-}
-if (path == null || path.Count <= 1)
+			if (_traversalPolicy != null
+				&& _pathfinder is ICostAwarePathfinder costAwarePathfinder)
 			{
+				path = costAwarePathfinder.FindPathWithCosts(
+					startPosition,
+					targetPosition,
+					(Vector2Int from, Vector2Int to, out float stepCost) =>
+						_traversalPolicy.TryEvaluateStep(
+							unitId,
+							from,
+							to,
+							float.PositiveInfinity,
+							UnitTraversalMode.Pathfinding,
+							out stepCost,
+							out _));
+			}
+			else if (_pathfinder is IOccupiedCellPathfinder occupiedPathfinder)
+			{
+				path = occupiedPathfinder.FindPath(
+					startPosition,
+					targetPosition,
+					position =>
+						CanPathTraverseOccupiedConstructionCell(
+							unitId,
+							position));
+			}
+			else
+			{
+				path = _pathfinder.FindPath(
+					startPosition,
+					targetPosition);
+			}
+
+			if (path == null || path.Count <= 1)
+			{
+				LogMoveRejected(unitId, targetPosition, "Pathfinder returned no path.");
 				return;
 			}
 
-if (_traversalPolicy != null)
-{
-	float requiredMovement = 0f;
-	for (int pathIndex = 1;
-		 pathIndex < path.Count;
-		 pathIndex++)
-	{
-		if (!_traversalPolicy.TryEvaluateStep(
-				unitId,
-				path[pathIndex - 1],
-				path[pathIndex],
-				float.PositiveInfinity,
-				UnitTraversalMode.Pathfinding,
-				out float pathStepCost,
-				out string pathStepReason))
-		{
-			return;
-		}
+			if (_traversalPolicy != null)
+			{
+				float requiredMovement = 0f;
+				for (int pathIndex = 1;
+					 pathIndex < path.Count;
+					 pathIndex++)
+				{
+					if (!_traversalPolicy.TryEvaluateStep(
+							unitId,
+							path[pathIndex - 1],
+							path[pathIndex],
+							float.PositiveInfinity,
+							UnitTraversalMode.Pathfinding,
+							out float pathStepCost,
+							out string pathStepReason))
+					{
+						LogMoveRejected(
+							unitId,
+							targetPosition,
+							$"Traversal rejected path step {path[pathIndex - 1]} -> {path[pathIndex]}: {pathStepReason ?? "Unknown"}.");
+						return;
+					}
 
-		requiredMovement += pathStepCost;
-	}
+					requiredMovement += pathStepCost;
+				}
 
-	float availableMovement = _unitService.GetStamina(unitId);
-	if (requiredMovement > availableMovement + 0.0001f)
-	{
-		return;
-	}
-}
+				float availableMovement = _unitService.GetStamina(unitId);
+				if (requiredMovement > availableMovement + 0.0001f)
+				{
+					LogMoveRejected(
+						unitId,
+						targetPosition,
+						$"Required movement {requiredMovement:0.###} exceeds stamina {availableMovement:0.###}.");
+					return;
+				}
+			}
 
 			var unitObj = _unitService.GetUnitObject(unitId);
 			if (unitObj == null)
 			{
+				LogMoveRejected(unitId, targetPosition, "Unit GameObject is missing.");
 				return;
 			}
 
@@ -387,7 +408,8 @@ private bool CanMakeStep(string unitId, Vector2Int stepPos)
 				return false;
 			}
 
-			cost = Mathf.Max(0.0001f, _tileSettings.GetTileWeight(tileTypeId));
+			if (!TryResolveUnitTileCost(unitId, tileTypeId, out cost, out reason))
+				return false;
 			if (availableStamina + 0.0001f < cost)
 			{
 				reason = "Недостатньо витривалості.";
@@ -435,7 +457,13 @@ private bool CanMakeStep(string unitId, Vector2Int stepPos)
 			if (string.IsNullOrEmpty(tileTypeId))
 				return;
 
-			float stepCost = _tileSettings.GetTileWeight(tileTypeId);
+			float stepCost = TryResolveUnitTileCost(
+				unitId,
+				tileTypeId,
+				out float resolvedCost,
+				out _)
+				? resolvedCost
+				: _tileSettings.GetTileWeight(tileTypeId);
 			if (_traversalPolicy != null
 				&& _unitService.TryGetUnitPosition(unitId, out Vector2Int previousPosition)
 				&& _traversalPolicy.TryEvaluateStep(
@@ -468,6 +496,40 @@ private bool CanMakeStep(string unitId, Vector2Int stepPos)
 				Cost = stepCost,
 				AllowSharedOccupancy = sharedOccupancy,
 			});
+		}
+
+		private bool TryResolveUnitTileCost(
+			string unitId,
+			string tileTypeId,
+			out float cost,
+			out string reason)
+		{
+			if (_traversalCosts != null)
+			{
+				string unitTypeId = _unitService.GetUnitTypeId(unitId);
+				UnitClassConfig config = string.IsNullOrWhiteSpace(unitTypeId)
+					? null
+					: _unitClassConfig.GetConfig(unitTypeId);
+				string movementProfileId = config?.MovementProfile?.JsonId;
+				if (string.IsNullOrWhiteSpace(movementProfileId))
+					movementProfileId = MovementProfileIds.GroundDefault;
+
+				return _traversalCosts.TryResolve(
+					movementProfileId,
+					tileTypeId,
+					out cost,
+					out reason);
+			}
+
+			cost = _tileSettings.GetTileWeight(tileTypeId);
+			if (cost <= 0f)
+			{
+				reason = "Тайл непрохідний.";
+				return false;
+			}
+
+			reason = null;
+			return true;
 		}
 
 		private Vector3 ResolveMovementWorldPosition(
@@ -599,6 +661,15 @@ private bool CanMakeStep(string unitId, Vector2Int stepPos)
 			}
 
 			return false;
+		}
+
+		private static void LogMoveRejected(
+			string unitId,
+			Vector2Int targetPosition,
+			string reason)
+		{
+			Debug.LogWarning(
+				$"[MOYVA_MOVE][EXECUTE] Move rejected. unit='{unitId}' target={targetPosition}. reason={reason ?? "Unknown"}.");
 		}
 
 		private static Vector2Int PopLowestCost(

@@ -129,6 +129,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 return Result<LobbyRoom>.Fail(DomainErrorCode.SessionExpired, ex.Message);
             }
+            catch (RoomConfigMismatchException ex)
+            {
+                return Result<LobbyRoom>.Fail(DomainErrorCode.Validation, ex.Message);
+            }
         }
 
         private async Task<Result<LobbyRoom>> JoinByIdWithOptionalPasswordAsync(string lobbyId, string password, CancellationToken ct)

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/movement-profile.schema.json",
+  "title": "Moyva Movement Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "id", "model", "fallback", "classRules", "tileOverrides"],
+  "$defs": {
+    "fallbackRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passable", "staminaCost"],
+      "properties": {
+        "passable": { "type": "boolean" },
+        "staminaCost": { "type": "number", "minimum": 0.0 }
+      }
+    },
+    "editorMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "documentLink": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "path": {
+              "type": "string",
+              "description": "Optional .asset path or folder for MoyvaJsonDocumentLink."
+            }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema": { "const": "moyva.movement-profile" },
+    "version": { "type": "integer", "minimum": 1 },
+    "id": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "model": { "const": "movement-profile" },
+    "fallback": { "$ref": "#/$defs/fallbackRule" },
+    "classRules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["classId", "passable", "staminaCost"],
+        "properties": {
+          "classId": { "type": "string", "minLength": 1 },
+          "passable": { "type": "boolean" },
+          "staminaCost": { "type": "number", "minimum": 0.0 }
+        }
+      }
+    },
+    "tileOverrides": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tileTypeId", "passable", "staminaCost"],
+        "properties": {
+          "tileTypeId": { "type": "string", "minLength": 1, "x-moyva-configModel": "tile-type" },
+          "passable": { "type": "boolean" },
+          "staminaCost": { "type": "number", "minimum": 0.0 }
+        }
+      }
+    },
+    "editor": { "$ref": "#/$defs/editorMetadata" }
+  }
+}

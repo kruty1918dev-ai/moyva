@@ -52,11 +52,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             if (parts.Length >= 12 && int.TryParse(parts[11], out var rawState) && Enum.IsDefined(typeof(LobbyState), rawState))
                 state = (LobbyState)rawState;
             var worldSettings = parts.Length >= 13 ? DecodeBytes(parts[12]) : Array.Empty<byte>();
+            var configFingerprint = parts.Length >= 14 ? parts[13] : string.Empty;
 
             joinCode = $"lan:{ip}:{port}";
             var lobbyCode = roomId.Length >= 8 ? roomId.Substring(0, 8) : roomId;
             room = new LobbyRoom(roomId, lobbyCode, name, max, isPrivate, hostId, joinCode, players, passwordHash, state,
-                startedWorldSettingsBytes: worldSettings);
+                startedWorldSettingsBytes: worldSettings,
+                configFingerprint: configFingerprint);
             return true;
         }
 

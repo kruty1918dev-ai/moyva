@@ -79,4 +79,21 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             Data["innerMessage"] = inner?.Message;
         }
     }
+
+    public sealed class RoomConfigMismatchException : MultiplayerDomainException
+    {
+        public string LocalFingerprint { get; }
+        public string RemoteFingerprint { get; }
+
+        public RoomConfigMismatchException(string localFingerprint, string remoteFingerprint)
+            : base(
+                "MP-CONFIG-MISMATCH",
+                string.IsNullOrWhiteSpace(remoteFingerprint)
+                    ? "Кімната не містить fingerprint ігрових JSON-конфігів. Приєднання скасовано."
+                    : "JSON-конфігурація кімнати відрізняється від локальної. Приєднання скасовано.")
+        {
+            LocalFingerprint = localFingerprint ?? string.Empty;
+            RemoteFingerprint = remoteFingerprint ?? string.Empty;
+        }
+    }
 }

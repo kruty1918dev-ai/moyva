@@ -4,6 +4,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
@@ -156,6 +157,13 @@ public void Initialize()
             ConstructionPlacementAttemptSource attemptSource,
             out string reason)
         {
+            if (IsLaunchMultiplayerClient())
+            {
+                reason =
+                    "Placement is awaiting authoritative host confirmation.";
+                return false;
+            }
+
             var participants = _sessionManager?.Participants;
             if (participants == null
                 || participants.Count == 0
@@ -168,6 +176,14 @@ public void Initialize()
             reason =
                 "Placement is awaiting authoritative host confirmation.";
             return false;
+        }
+
+        private static bool IsLaunchMultiplayerClient()
+        {
+            GameLaunchContext.EnsureNotExpired();
+            return GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame
+                   && GameLaunchContext.HasLocalPlayerRole
+                   && !GameLaunchContext.IsLocalPlayerHost;
         }
     }
 

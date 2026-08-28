@@ -50,5 +50,11 @@
     "sourceHash": "9c6ef132a1f4206b5fa0ed9fc1effc9cc34d3b0ddd3cc32e1755a0c9d93e2fef"
   },
   "attackRange": 3,
-  "movementPointsPerTurn": 5.0
+  "movementPointsPerTurn": 5.0,
+  "movementProfile": {
+    "$config": {
+      "model": "movement-profile",
+      "id": "infantry"
+    }
+  }
 }
