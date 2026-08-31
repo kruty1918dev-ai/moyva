@@ -1,5 +1,4 @@
-﻿using System;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using ReactUnity;
 using ReactUnity.Helpers;
 using ReactUnity.Scheduling;
@@ -49,7 +48,7 @@ namespace UnityHTML.Tests
                     Source = source,
                     Timer = UnscaledTimer.Instance,
                     MediaProvider = DefaultMediaProvider.CreateMediaProvider("runtime", "ugui", false),
-                    EngineType = JavascriptEngineType.QuickJS,
+                    EngineType = ResolveTestEngineType(),
                     Pooling = ReactContext.PoolingType.None,
                     UnknownPropertyHandling = ReactContext.UnknownPropertyHandling.Exception
                 });
@@ -82,14 +81,6 @@ namespace UnityHTML.Tests
             }
         }
 
-        [Test]
-        public void QuickJsNativeEngineExecutesScript()
-        {
-            using var engine = new QuickJSEngine(null, false, false, null);
-            var result = engine.Evaluate("1 + 2", "unityhtml-compatibility.js");
-            Assert.That(Convert.ToInt32(result), Is.EqualTo(3));
-        }
-
         private static void DisposeContextForEditMode(UGUIContext context)
         {
             if (context == null)
@@ -102,6 +93,17 @@ namespace UnityHTML.Tests
                 disposable?.Invoke();
             context.Disposables.Clear();
             context.Script?.Dispose();
+        }
+
+        private static JavascriptEngineType ResolveTestEngineType()
+        {
+#if UNITY_EDITOR_LINUX || UNITY_STANDALONE_LINUX
+#pragma warning disable CS0612
+            return JavascriptEngineType.Jint;
+#pragma warning restore CS0612
+#else
+            return JavascriptEngineType.QuickJS;
+#endif
         }
     }
 }

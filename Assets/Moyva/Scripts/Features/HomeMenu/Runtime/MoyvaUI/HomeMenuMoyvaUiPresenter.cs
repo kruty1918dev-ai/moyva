@@ -47,17 +47,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             _initialized = true;
             var anchor = FindAnchor();
+            anchor?.SetLegacyUiVisible(false);
             if (_config == null || !_config.useUnityHtmlShell)
-            {
-                EnsureLegacyVisible(anchor);
                 return;
-            }
 
             if (!CanMount(anchor))
-            {
-                EnsureLegacyVisible(anchor);
                 return;
-            }
 
             _mountedAnchor = anchor;
             _mountedAnchor.StopEditorPreview();
@@ -74,7 +69,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (!_initialized || _mountedAnchor == null || _state.IsFallback)
                 return;
 
-            var viewportClass = ResolveViewportClass(_mountedAnchor.MountRoot);
+            _mountedAnchor.ApplyViewportLayoutNow();
+            var viewportClass = _mountedAnchor.CurrentViewportClass;
             if (!string.Equals(_lastViewportClass, viewportClass, StringComparison.Ordinal))
             {
                 _lastViewportClass = viewportClass;
@@ -94,7 +90,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_navigation != null)
                 _navigation.OnMenuChanged -= HandleMenuChanged;
 
-            EnsureLegacyVisible(_mountedAnchor);
+            _mountedAnchor?.SetMoyvaUiVisible(false);
+            _mountedAnchor?.SetLegacyUiVisible(false);
             _mountedAnchor = null;
             _host?.Dispose();
         }
@@ -113,7 +110,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (force)
                 _state.ConsumeDirty();
 
-            var viewportClass = ResolveViewportClass(_mountedAnchor.MountRoot);
+            var viewportClass = _mountedAnchor.CurrentViewportClass;
             _lastViewportClass = viewportClass;
             var html = HomeMenuMoyvaUiMarkup.Build(_state, _view, viewportClass);
             var css = _mountedAnchor.CssAsset != null ? _mountedAnchor.CssAsset.text : string.Empty;
@@ -160,11 +157,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             _state.IsFallback = true;
             _host?.Unmount();
-            EnsureLegacyVisible(_mountedAnchor ?? FindAnchor());
+            var anchor = _mountedAnchor ?? FindAnchor();
+            anchor?.SetMoyvaUiVisible(false);
+            anchor?.SetLegacyUiVisible(false);
             if (!_loggedFallback)
             {
                 _loggedFallback = true;
-                Debug.LogError($"{Prefix} Falling back to legacy UGUI. {reason}");
+                Debug.LogError($"{Prefix} UnityHTML mount failed and legacy UGUI is disabled. {reason}");
             }
 
             return false;
@@ -181,24 +180,5 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             return null;
         }
 
-        private static void EnsureLegacyVisible(HomeMenuMoyvaUiAnchor anchor)
-        {
-            if (anchor == null)
-                return;
-
-            anchor.SetMoyvaUiVisible(false);
-            anchor.SetLegacyUiVisible(true);
-        }
-
-        private static string ResolveViewportClass(RectTransform root)
-        {
-            var size = root != null ? root.rect.size : new Vector2(Screen.width, Screen.height);
-            var width = size.x > 1f ? size.x : Screen.width;
-            if (width <= 900f)
-                return "vp-compact";
-            if (width >= 1600f)
-                return "vp-1080";
-            return "vp-720";
-        }
     }
 }

@@ -2,6 +2,7 @@
   "dependencies": {
     "com.kruty1918.moyva.unityhtml": "file:com.kruty1918.moyva.unityhtml",
     "com.reactunity.core": "https://github.com/ReactUnity/core.git#8c4caa95f49b45e8fb7bb1f833eaa08adaa31496",
+    "com.reactunity.jint": "https://github.com/ReactUnity/core.git#5788df06c9525ffbd24b7f2ef55b9c638386e808",
     "com.reactunity.quickjs": "https://github.com/ReactUnity/core.git#6b28051d738504283bff89bd7584eaf1287debec",
     "com.unity.ai.inference": "2.6.1",
     "com.unity.collab-proxy": "2.11.3",

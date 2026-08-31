@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     public sealed class HomeMenuInstaller : MonoInstaller
     {
-        private const bool UseDynamicMoyvaUi = false;
+        private const bool UseDynamicMoyvaUi = true;
 
         [SerializeField] private string _lobbyPanelName = "LobbyPanel";
         [SerializeField] private string _worldSetupPanelName = "WorldSetupPanel";
@@ -44,8 +44,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var config = _config != null ? _config : MoyvaJsonObjectFactory.Create<HomeMenuConfigSO>();
             var useMoyvaUi = UseDynamicMoyvaUi;
 
-            HomeMenuRuntimeUiFactory.EnsureRequiredPanels(_infoPanelName);
-
             MenuWorldPreviewKingdomPlacementFeatureBindings.Install(Container);
             MenuWorldPreviewTextureBuilderFeatureBindings.Install(Container);
 
@@ -56,7 +54,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Container.Bind<INavigation>().To<HomeMenuNavigation>().AsSingle();
             Container.BindInterfacesAndSelfTo<HomeMenuInitializer>().AsSingle();
 
-            BindSharedSceneUi();
+            if (!useMoyvaUi)
+                BindSharedSceneUi();
             BindCoreServices();
             BindUiLayer(useMoyvaUi);
             BindPanelServices();
@@ -123,6 +122,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
+            HomeMenuRuntimeUiFactory.EnsureRequiredPanels(_infoPanelName);
             Container.Bind<IOverlayLoader>().To<HomeMenuOverlayLoader>().AsSingle();
             Container.Bind<OverlayPanelLoader>().FromComponentInHierarchy(includeInactive: true).AsSingle();
             Container.Bind<IConfiremationPanel>().To<ConfirmationPanel>().FromComponentInHierarchy(includeInactive: true).AsSingle();

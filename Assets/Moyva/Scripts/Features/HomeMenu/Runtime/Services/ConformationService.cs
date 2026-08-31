@@ -17,7 +17,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [Inject] private IConfiremationPanel _panel;
 
         /// <summary>Кнопки, які можуть ініціювати показ модалки підтвердження.</summary>
-        [Inject] private IConfirmationButton[] _buttons;
+        [InjectOptional] private IConfirmationButton[] _buttons = System.Array.Empty<IConfirmationButton>();
 
         /// <summary>Підписати сервіс на події панелі та кнопок підтвердження.</summary>
         public void Initialize()
@@ -31,7 +31,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             // 3: Кожну кнопку-конектор прив'язуємо до методу Show сервісу.
             for (int i = 0; i < _buttons.Length; i++)
             {
-                _buttons[i].OnClicked += Show;
+                if (_buttons[i] != null)
+                    _buttons[i].OnClicked += Show;
             }
         }
 

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "com.reactunity.core": "0.23.2",
+    "com.reactunity.jint": "0.23.2",
     "com.reactunity.quickjs": "0.23.2",
     "com.unity.ugui": "2.0.0"
   }

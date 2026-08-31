@@ -56,7 +56,7 @@ namespace Kruty1918.Moyva.Shared.Graphics
             Profile = profile;
             TargetFrameRate = NormalizeFrameRate(targetFrameRate);
             RenderScale = Mathf.Clamp(renderScale, 0.42f, 1f);
-            DynamicRenderScale = false;
+            DynamicRenderScale = dynamicRenderScale;
             CloseZoomOptimization = closeZoomOptimization;
             TextureMipmapLimit = Mathf.Clamp(textureMipmapLimit, 0, 3);
             AntiAliasing = NormalizeAntiAliasing(antiAliasing);
@@ -110,7 +110,7 @@ namespace Kruty1918.Moyva.Shared.Graphics
         }
         public GraphicsSettingsData WithTargetFrameRate(int value) => AsCustom(TargetFrameRate: NormalizeFrameRate(value));
         public GraphicsSettingsData WithRenderScale(float value) => AsCustom(RenderScale: Mathf.Clamp(value, 0.42f, 1f));
-        public GraphicsSettingsData WithDynamicRenderScale(bool value) => AsCustom(DynamicRenderScale: false);
+        public GraphicsSettingsData WithDynamicRenderScale(bool value) => AsCustom(DynamicRenderScale: value);
         public GraphicsSettingsData WithCloseZoomOptimization(bool value) => AsCustom(CloseZoomOptimization: value);
         public GraphicsSettingsData WithTextureMipmapLimit(int value) => AsCustom(TextureMipmapLimit: Mathf.Clamp(value, 0, 3));
         public GraphicsSettingsData WithAntiAliasing(int value) => AsCustom(AntiAliasing: NormalizeAntiAliasing(value));
@@ -278,7 +278,7 @@ namespace Kruty1918.Moyva.Shared.Graphics
                     reader.ReadBoolean(),
                     reader.ReadSingle());
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return _startupDefaults;
             }

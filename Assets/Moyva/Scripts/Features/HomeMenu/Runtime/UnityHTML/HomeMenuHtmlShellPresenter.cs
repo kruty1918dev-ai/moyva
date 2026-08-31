@@ -69,7 +69,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
-            var document = UnityHtmlDocument.FromTextAssets(anchor.HtmlAsset, anchor.CssAsset, "HomeMenuShell");
+            var document = BuildViewportDocument(anchor);
             var bridge = new HomeMenuHtmlMenuBridge(_navigation, _confirmationService);
             var globals = new Dictionary<string, object>
             {
@@ -108,6 +108,23 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         }
 
         private void HandleMenuChanged(NavigationChangeEventArgs _) => UpdateShellVisibility();
+
+        private static UnityHtmlDocument BuildViewportDocument(HomeMenuHtmlShellAnchor anchor)
+        {
+            var html = anchor.HtmlAsset != null ? anchor.HtmlAsset.text : string.Empty;
+            var css = anchor.CssAsset != null ? anchor.CssAsset.text : string.Empty;
+            var viewportClass = anchor.CurrentViewportClass;
+
+            if (!string.IsNullOrWhiteSpace(viewportClass))
+            {
+                html = html.Replace(
+                    "className=\"home-menu-shell\"",
+                    $"className=\"home-menu-shell {viewportClass}\"",
+                    StringComparison.Ordinal);
+            }
+
+            return new UnityHtmlDocument(html, css, "HomeMenuShell");
+        }
 
         private void UpdateShellVisibility()
         {

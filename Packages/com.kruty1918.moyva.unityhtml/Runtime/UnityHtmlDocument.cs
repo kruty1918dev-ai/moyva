@@ -6,8 +6,8 @@ namespace UnityHTML.Runtime
     {
         public UnityHtmlDocument(string html, string css = null, string sourceName = null)
         {
-            Html = html;
-            Css = css;
+            Html = StripUtf8Bom(html);
+            Css = StripUtf8Bom(css);
             SourceName = string.IsNullOrWhiteSpace(sourceName) ? "UnityHTML Document" : sourceName.Trim();
         }
 
@@ -25,6 +25,13 @@ namespace UnityHTML.Runtime
                     : "Missing UnityHTML Document";
 
             return new UnityHtmlDocument(htmlAsset != null ? htmlAsset.text : null, cssAsset != null ? cssAsset.text : null, resolvedName);
+        }
+
+        private static string StripUtf8Bom(string value)
+        {
+            return !string.IsNullOrEmpty(value) && value[0] == '\uFEFF'
+                ? value.Substring(1)
+                : value;
         }
     }
 }

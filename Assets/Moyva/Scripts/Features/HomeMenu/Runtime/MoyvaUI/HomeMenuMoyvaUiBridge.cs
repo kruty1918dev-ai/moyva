@@ -1,3 +1,5 @@
+using System;
+using System.Globalization;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Shared.Graphics;
@@ -60,11 +62,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetModeGlobal() => _view?.SetMode(NetworkProviderType.Relay);
 
         public void CreateRoom() => _view?.ClickCreateRoom();
+        public void SetRoomName(string value) => _view?.SetRoomName(value);
+        public void SetRoomPassword(string value) => _view?.SetRoomPassword(value);
         public void TogglePublic() => _view?.ToggleRoomVisibility();
         public void MaxPlayersMinus() => _view?.DecreaseMaxPlayers();
         public void MaxPlayersPlus() => _view?.IncreaseMaxPlayers();
 
         public void CreateWorld() => _view?.ClickCreateWorld();
+        public void SetWorldName(string value) => _view?.SetWorldName(value);
+        public void SetSeed(string value) => _view?.SetSeed(value);
         public void RandomSeed() => _view?.RandomizeSeed();
         public void WorldSmall() => _view?.SetWorldSize(WorldSize.Small);
         public void WorldMedium() => _view?.SetWorldSize(WorldSize.Medium);
@@ -82,6 +88,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void LeaveLobby() => _view?.ClickLobbyBack();
         public void RefreshRooms() => _view?.RequestRoomRefresh();
         public void JoinTypedRoom() => _view?.RequestJoin();
+        public void SetJoinCode(string value) => _view?.SetJoinCode(value);
         public void SelectSlot(int index) => _view?.SelectSlot(index);
         public void SelectRoom(int index) => _view?.SelectRoom(index);
         public void RefreshKickPlayers() => _view?.RequestKickRefresh();
@@ -89,6 +96,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void KickPlayer(int index) => _view?.RequestKick(index);
 
         public void ChangePlayerName() => _view?.ChangePlayerName();
+        public void SetPlayerName(string value) => _view?.SetPlayerName(value);
+        public void SetMasterValue(object value) => _view?.SetMaster(ToFloat(value, _view.MasterVolume));
+        public void SetMusicValue(object value) => _view?.SetMusic(ToFloat(value, _view.MusicVolume));
+        public void SetSfxValue(object value) => _view?.SetSfx(ToFloat(value, _view.SfxVolume));
+        public void SetUiValue(object value) => _view?.SetUi(ToFloat(value, _view.UiVolume));
         public void MasterLow() => _view?.SetMaster(0.35f);
         public void MasterMid() => _view?.SetMaster(0.7f);
         public void MasterHigh() => _view?.SetMaster(1f);
@@ -103,13 +115,27 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void GraphicsPerformance() => _view?.SetGraphicsProfile(GraphicsQualityProfile.Performance);
         public void GraphicsBalanced() => _view?.SetGraphicsProfile(GraphicsQualityProfile.Balanced);
         public void GraphicsQuality() => _view?.SetGraphicsProfile(GraphicsQualityProfile.Quality);
+        public void SetRenderScaleValue(object value) => _view?.SetRenderScale(ToFloat(value, _view.RenderScale));
+        public void SetFrameRateValue(object value) => _view?.SetFrameRate(ToInt(value, _view.TargetFrameRate));
+        public void SetMipmapValue(object value) => _view?.SetTextureMipmapLimit(ToInt(value, _view.TextureMipmapLimit));
+        public void SetAntiAliasingSliderValue(object value) => _view?.SetAntiAliasing(SliderToAntiAliasing(ToInt(value, 0)));
+        public void SetLodBiasValue(object value) => _view?.SetLodBias(ToFloat(value, _view.LodBias));
         public void RenderScaleDown() => _view?.AdjustRenderScale(-0.1f);
         public void RenderScaleUp() => _view?.AdjustRenderScale(0.1f);
         public void FrameRateDown() => _view?.AdjustFrameRate(-30);
         public void FrameRateUp() => _view?.AdjustFrameRate(30);
+        public void ToggleDynamicRenderScale() => _view?.ToggleDynamicRenderScale();
+        public void ToggleCloseZoomOptimization() => _view?.ToggleCloseZoomOptimization();
+        public void MipmapDown() => _view?.AdjustTextureMipmapLimit(-1);
+        public void MipmapUp() => _view?.AdjustTextureMipmapLimit(1);
+        public void AntiAliasingOff() => _view?.SetAntiAliasing(0);
+        public void AntiAliasing2x() => _view?.SetAntiAliasing(2);
+        public void AntiAliasing4x() => _view?.SetAntiAliasing(4);
         public void ToggleVSync() => _view?.ToggleVSync();
         public void ToggleShadows() => _view?.ToggleShadows();
         public void ToggleAnisotropic() => _view?.ToggleAnisotropic();
+        public void LodBiasDown() => _view?.AdjustLodBias(-0.1f);
+        public void LodBiasUp() => _view?.AdjustLodBias(0.1f);
         public void ResetGraphics() => _view?.ResetGraphics();
         public void DeleteSaves() => _view?.DeleteSaves();
 
@@ -118,6 +144,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void AcknowledgeInfo() => _view?.AcknowledgeInfo();
         public void PasswordEmpty() => _view?.SetPasswordPreset(string.Empty);
         public void PasswordDemo() => _view?.SetPasswordPreset("moyva");
+        public void SetPasswordValue(string value) => _view?.SetPasswordValue(value);
         public void ConfirmPassword() => _view?.ConfirmPassword();
         public void CancelPassword() => _view?.CancelPassword();
 
@@ -130,6 +157,56 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             _navigation.Open(panelName);
+        }
+
+        private static float ToFloat(object value, float fallback)
+        {
+            switch (value)
+            {
+                case null:
+                    return fallback;
+                case float floatValue:
+                    return floatValue;
+                case double doubleValue:
+                    return (float)doubleValue;
+                case int intValue:
+                    return intValue;
+                case long longValue:
+                    return longValue;
+                case string stringValue:
+                    if (float.TryParse(stringValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var invariantValue))
+                        return invariantValue;
+                    if (float.TryParse(stringValue, NumberStyles.Float, CultureInfo.CurrentCulture, out var currentValue))
+                        return currentValue;
+                    return fallback;
+                case IConvertible convertible:
+                    try
+                    {
+                        return convertible.ToSingle(CultureInfo.InvariantCulture);
+                    }
+                    catch
+                    {
+                        return fallback;
+                    }
+                default:
+                    return fallback;
+            }
+        }
+
+        private static int ToInt(object value, int fallback)
+        {
+            return Mathf.RoundToInt(ToFloat(value, fallback));
+        }
+
+        private static int SliderToAntiAliasing(int value)
+        {
+            if (value >= 2)
+                return 4;
+
+            if (value >= 1)
+                return 2;
+
+            return 0;
         }
     }
 }

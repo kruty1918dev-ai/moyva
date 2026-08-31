@@ -61,6 +61,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (_viewController == null) return;
             if (_isCreating) return;
+            Refresh();
+            if (_viewController.NextButton != null && !_viewController.NextButton.interactable)
+                return;
 
             if (_lobbyService == null)
             {

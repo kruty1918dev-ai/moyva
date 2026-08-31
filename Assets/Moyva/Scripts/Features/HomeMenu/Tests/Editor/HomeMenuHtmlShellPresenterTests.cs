@@ -190,6 +190,20 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             }
         }
 
+        [Test]
+        public void ViewportUtility_ConvertsScreenSafeAreaToCanvasSpace()
+        {
+            var safe = HomeMenuViewportUtility.CalculateSafeRect(
+                new Vector2(1280f, 720f),
+                new Rect(60f, 30f, 1800f, 1020f),
+                new Vector2(1920f, 1080f));
+
+            Assert.That(safe.xMin, Is.EqualTo(40f).Within(0.01f));
+            Assert.That(safe.yMin, Is.EqualTo(20f).Within(0.01f));
+            Assert.That(safe.xMax, Is.EqualTo(1240f).Within(0.01f));
+            Assert.That(safe.yMax, Is.EqualTo(700f).Within(0.01f));
+        }
+
         private static Fixture CreateFixture(bool useUnityHtmlShell, bool mountSucceeds, bool hasCss = true)
         {
             var rootObject = new GameObject("HomeMenuHtmlShellRoot", typeof(RectTransform));

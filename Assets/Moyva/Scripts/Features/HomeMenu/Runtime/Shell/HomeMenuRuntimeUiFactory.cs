@@ -130,6 +130,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             root.transform.SetParent(canvasTransform, false);
             var rect = root.GetComponent<RectTransform>();
             Stretch(rect);
+            HomeMenuScreenBoundsGuard.EnsureStretch(rect);
             rect.SetAsLastSibling();
             return root.transform;
         }
@@ -140,6 +141,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             root.transform.SetParent(parent, false);
             var rect = root.GetComponent<RectTransform>();
             Stretch(rect);
+            HomeMenuScreenBoundsGuard.EnsureStretch(rect);
             var image = root.GetComponent<Image>();
             image.color = new Color(0f, 0f, 0f, 0.58f);
             image.raycastTarget = true;
@@ -157,6 +159,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = Vector2.zero;
             rect.sizeDelta = size;
+            HomeMenuScreenBoundsGuard.EnsureClamp(rect, ModalPadding);
             card.GetComponent<Image>().color = new Color(0.08f, 0.09f, 0.12f, 0.98f);
             return card;
         }

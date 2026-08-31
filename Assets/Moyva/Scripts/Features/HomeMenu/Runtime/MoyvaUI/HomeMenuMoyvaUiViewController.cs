@@ -456,8 +456,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public void UnlockOverlay() => _overlayLockCount = Math.Max(0, _overlayLockCount - 1);
 
-        public void ClickCreateRoom() => InvokeButton(_createRoomNextButton, null);
-        public void ClickCreateWorld() => InvokeButton(_worldCreateButton, null);
+        public void ClickCreateRoom() => InvokeButton(_createRoomNextButton, () => OnButtonNextClicked?.Invoke());
+        public void ClickCreateWorld() => InvokeButton(_worldCreateButton, () => OnButtonNextClicked?.Invoke());
         public void ClickLobbyStart() => InvokeButton(_lobbyStartButton, null);
         public void ClickLobbyBack() => InvokeButton(_lobbyBackButton, null);
         public void SelectSlot(int index)
@@ -575,18 +575,66 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void ToggleRoomVisibility()
         {
             IsPublic = !IsPublic;
+            RefreshCreateRoomInteractable();
             _state.MarkDirty();
         }
 
         public void IncreaseMaxPlayers()
         {
             MaxPlayers = Mathf.Clamp(MaxPlayers + 1, 1, 8);
+            RefreshCreateRoomInteractable();
             _state.MarkDirty();
         }
 
         public void DecreaseMaxPlayers()
         {
             MaxPlayers = Mathf.Clamp(MaxPlayers - 1, 1, 8);
+            RefreshCreateRoomInteractable();
+            _state.MarkDirty();
+        }
+
+        public void SetRoomName(string value)
+        {
+            RoomName = NormalizeText(value, "Moyva Lobby");
+            RefreshCreateRoomInteractable();
+            _state.MarkDirty();
+        }
+
+        public void SetRoomPassword(string value)
+        {
+            Password = value ?? string.Empty;
+            RefreshCreateRoomInteractable();
+            _state.MarkDirty();
+        }
+
+        public void SetWorldName(string value)
+        {
+            WorldName = NormalizeText(value, "New World");
+            OnSettingsChanged?.Invoke();
+            _state.MarkDirty();
+        }
+
+        public void SetSeed(string value)
+        {
+            if (int.TryParse((value ?? string.Empty).Trim(), out var seed) && seed != 0)
+            {
+                Seed = seed;
+                OnSettingsChanged?.Invoke();
+                _state.MarkDirty();
+            }
+        }
+
+        public void SetJoinCode(string value)
+        {
+            JoinCode = (value ?? string.Empty).Trim();
+            OnJoinCodeChanged?.Invoke();
+            _state.MarkDirty();
+        }
+
+        public void SetPlayerName(string value)
+        {
+            PlayerName = NormalizeText(value, "Player");
+            OnPlayerNameChanged?.Invoke(PlayerName);
             _state.MarkDirty();
         }
 
@@ -605,11 +653,20 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetUi(float value) { UiVolume = Mathf.Clamp01(value); OnUiVolumeChanged?.Invoke(UiVolume); _state.MarkDirty(); }
         public void ToggleMuted() { IsMuted = !IsMuted; OnMutedChanged?.Invoke(IsMuted); _state.MarkDirty(); }
         public void SetGraphicsProfile(GraphicsQualityProfile profile) { GraphicsProfile = profile; OnGraphicsProfileChanged?.Invoke(profile); _state.MarkDirty(); }
+        public void SetRenderScale(float value) { RenderScale = Mathf.Clamp(value, 0.42f, 1f); OnRenderScaleChanged?.Invoke(RenderScale); _state.MarkDirty(); }
+        public void SetFrameRate(int value) { TargetFrameRate = Mathf.Clamp(value, 30, 360); OnTargetFrameRateChanged?.Invoke(TargetFrameRate); _state.MarkDirty(); }
+        public void SetTextureMipmapLimit(int value) { TextureMipmapLimit = Mathf.Clamp(value, 0, 3); OnTextureMipmapLimitChanged?.Invoke(TextureMipmapLimit); _state.MarkDirty(); }
+        public void SetLodBias(float value) { LodBias = Mathf.Clamp(Mathf.Round(value * 10f) / 10f, 0.4f, 2f); OnLodBiasChanged?.Invoke(LodBias); _state.MarkDirty(); }
+        public void ToggleDynamicRenderScale() { DynamicRenderScale = !DynamicRenderScale; OnDynamicRenderScaleChanged?.Invoke(DynamicRenderScale); _state.MarkDirty(); }
+        public void ToggleCloseZoomOptimization() { CloseZoomOptimization = !CloseZoomOptimization; OnCloseZoomOptimizationChanged?.Invoke(CloseZoomOptimization); _state.MarkDirty(); }
         public void ToggleVSync() { VSync = !VSync; OnVSyncChanged?.Invoke(VSync); _state.MarkDirty(); }
         public void ToggleShadows() { Shadows = !Shadows; OnShadowsChanged?.Invoke(Shadows); _state.MarkDirty(); }
         public void ToggleAnisotropic() { AnisotropicFiltering = !AnisotropicFiltering; OnAnisotropicFilteringChanged?.Invoke(AnisotropicFiltering); _state.MarkDirty(); }
         public void AdjustRenderScale(float delta) { RenderScale = Mathf.Clamp(RenderScale + delta, 0.42f, 1f); OnRenderScaleChanged?.Invoke(RenderScale); _state.MarkDirty(); }
         public void AdjustFrameRate(int delta) { TargetFrameRate = Mathf.Clamp(TargetFrameRate + delta, 30, 360); OnTargetFrameRateChanged?.Invoke(TargetFrameRate); _state.MarkDirty(); }
+        public void AdjustTextureMipmapLimit(int delta) { TextureMipmapLimit = Mathf.Clamp(TextureMipmapLimit + delta, 0, 3); OnTextureMipmapLimitChanged?.Invoke(TextureMipmapLimit); _state.MarkDirty(); }
+        public void SetAntiAliasing(int value) { AntiAliasing = NormalizeAntiAliasing(value); OnAntiAliasingChanged?.Invoke(AntiAliasing); _state.MarkDirty(); }
+        public void AdjustLodBias(float delta) { LodBias = Mathf.Clamp(Mathf.Round((LodBias + delta) * 10f) / 10f, 0.4f, 2f); OnLodBiasChanged?.Invoke(LodBias); _state.MarkDirty(); }
         public void ResetGraphics() { OnResetGraphicsClicked?.Invoke(); _state.MarkDirty(); }
         public void DeleteSaves() { OnDeleteSavesClicked?.Invoke(); _state.MarkDirty(); }
 
@@ -656,12 +713,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        public void SetPasswordValue(string value)
+        {
+            PasswordValue = value ?? string.Empty;
+            _state.MarkDirty();
+        }
+
         private void InvokeButton(Button button, Action fallback)
         {
             if (button != null && button.interactable)
+            {
                 button.onClick.Invoke();
-            else
                 fallback?.Invoke();
+            }
 
             _state.MarkDirty();
         }
@@ -690,9 +754,38 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             GraphicsProfile = GraphicsQualityProfile.Auto;
             TargetFrameRate = 60;
             RenderScale = 1f;
+            DynamicRenderScale = false;
+            CloseZoomOptimization = false;
+            TextureMipmapLimit = 0;
+            AntiAliasing = 0;
+            VSync = false;
             AnisotropicFiltering = true;
             Shadows = true;
             LodBias = 1f;
+        }
+
+        private void RefreshCreateRoomInteractable()
+        {
+            if (_createRoomNextButton != null)
+                _createRoomNextButton.interactable = !string.IsNullOrWhiteSpace(RoomName) &&
+                    (IsPublic || !string.IsNullOrEmpty(Password));
+        }
+
+        private static string NormalizeText(string value, string fallback)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
+        }
+
+        private static int NormalizeAntiAliasing(int value)
+        {
+            if (value >= 4)
+                return 4;
+
+            if (value >= 2)
+                return 2;
+
+            return 0;
         }
 
         private static string BuildRoomKey(RoomInfo room)

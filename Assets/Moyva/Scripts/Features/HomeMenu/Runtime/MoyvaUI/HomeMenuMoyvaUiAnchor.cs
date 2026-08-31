@@ -30,7 +30,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [SerializeField] private TextAsset _htmlAsset;
         [SerializeField] private TextAsset _cssAsset;
         [SerializeField] private TMP_FontAsset _fontAsset;
-        [SerializeField] private bool _editorLivePreview = false;
+        [SerializeField] private bool _editorLivePreview = true;
         [SerializeField] private EditorPreviewRoute _editorPreviewRoute = EditorPreviewRoute.Main;
 
         private IUnityHtmlHost _editorPreviewHost;
@@ -158,10 +158,54 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _cssAsset = cssAsset;
         }
 
+#if UNITY_EDITOR
+        public void EditorSetLivePreview(bool enabled)
+        {
+            if (Application.isPlaying)
+                return;
+
+            _editorLivePreview = enabled;
+            if (_editorLivePreview)
+            {
+                _editorPreviewSignature = 0;
+                TryUpdateEditorPreview(force: true);
+            }
+            else
+            {
+                DisposeEditorPreview();
+            }
+
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
+
+        public void EditorRefreshPreview()
+        {
+            if (Application.isPlaying)
+                return;
+
+            _editorLivePreview = true;
+            _editorPreviewSignature = 0;
+            TryUpdateEditorPreview(force: true);
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
+
+        public bool TryGetEditorAuthoringTargets(
+            out RectTransform mountRoot,
+            out TextAsset htmlAsset,
+            out TextAsset cssAsset)
+        {
+            mountRoot = _mountRoot;
+            htmlAsset = _htmlAsset;
+            cssAsset = _cssAsset;
+            return mountRoot != null && htmlAsset != null;
+        }
+#endif
+
         private void TryUpdateEditorPreview(bool force)
         {
             if (!_editorLivePreview || _mountRoot == null || _htmlAsset == null || _cssAsset == null)
             {
+                SetLegacyUiVisible(false);
                 DisposeEditorPreview();
                 return;
             }
@@ -185,6 +229,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             _editorPreviewSignature = signature;
             PrepareForMount();
+            SetLegacyUiVisible(false);
             _editorPreviewHost ??= new UnityHtmlHost();
             var globals = new System.Collections.Generic.Dictionary<string, object>
             {
@@ -200,7 +245,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 globals);
         }
 
-        private string BuildEditorPreviewHtml()
+        protected virtual string BuildEditorPreviewHtml()
         {
             var previewState = new HomeMenuMoyvaUiState();
             var previewView = new HomeMenuMoyvaUiViewController(previewState);
@@ -289,10 +334,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void SetModeLan() { }
             public void SetModeGlobal() { }
             public void CreateRoom() { }
+            public void SetRoomName(string value) { }
+            public void SetRoomPassword(string value) { }
             public void TogglePublic() { }
             public void MaxPlayersMinus() { }
             public void MaxPlayersPlus() { }
             public void CreateWorld() { }
+            public void SetWorldName(string value) { }
+            public void SetSeed(string value) { }
             public void RandomSeed() { }
             public void WorldSmall() { }
             public void WorldMedium() { }
@@ -309,12 +358,18 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void LeaveLobby() { }
             public void RefreshRooms() { }
             public void JoinTypedRoom() { }
+            public void SetJoinCode(string value) { }
             public void SelectSlot(int index) { }
             public void SelectRoom(int index) { }
             public void RefreshKickPlayers() { }
             public void CloseKickPlayers() { }
             public void KickPlayer(int index) { }
             public void ChangePlayerName() { }
+            public void SetPlayerName(string value) { }
+            public void SetMasterValue(object value) { }
+            public void SetMusicValue(object value) { }
+            public void SetSfxValue(object value) { }
+            public void SetUiValue(object value) { }
             public void MasterLow() { }
             public void MasterMid() { }
             public void MasterHigh() { }
@@ -329,13 +384,27 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void GraphicsPerformance() { }
             public void GraphicsBalanced() { }
             public void GraphicsQuality() { }
+            public void SetRenderScaleValue(object value) { }
+            public void SetFrameRateValue(object value) { }
+            public void SetMipmapValue(object value) { }
+            public void SetAntiAliasingSliderValue(object value) { }
+            public void SetLodBiasValue(object value) { }
             public void RenderScaleDown() { }
             public void RenderScaleUp() { }
             public void FrameRateDown() { }
             public void FrameRateUp() { }
+            public void ToggleDynamicRenderScale() { }
+            public void ToggleCloseZoomOptimization() { }
+            public void MipmapDown() { }
+            public void MipmapUp() { }
+            public void AntiAliasingOff() { }
+            public void AntiAliasing2x() { }
+            public void AntiAliasing4x() { }
             public void ToggleVSync() { }
             public void ToggleShadows() { }
             public void ToggleAnisotropic() { }
+            public void LodBiasDown() { }
+            public void LodBiasUp() { }
             public void ResetGraphics() { }
             public void DeleteSaves() { }
             public void Confirm() { }
@@ -343,6 +412,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void AcknowledgeInfo() { }
             public void PasswordEmpty() { }
             public void PasswordDemo() { }
+            public void SetPasswordValue(string value) { }
             public void ConfirmPassword() { }
             public void CancelPassword() { }
         }
