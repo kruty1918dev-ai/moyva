@@ -1,26 +1,27 @@
 {
-  "name": "Kruty1918.Moyva.Tests.HomeMenu",
-  "rootNamespace": "Kruty1918.Moyva.Tests.HomeMenu",
-  "references": [
-    "Kruty1918.Moyva.HomeMenu",
-    "Kruty1918.Moyva.Multiplayer",
-    "UnityHTML.Runtime",
-    "UnityEngine.TestRunner",
-    "UnityEditor.TestRunner"
-  ],
-  "includePlatforms": [
-    "Editor"
-  ],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": true,
-  "precompiledReferences": [
-    "nunit.framework.dll"
-  ],
-  "autoReferenced": false,
-  "defineConstraints": [
-    "UNITY_INCLUDE_TESTS"
-  ],
-  "versionDefines": [],
-  "noEngineReferences": false
+    "name": "Kruty1918.Moyva.Tests.HomeMenu",
+    "rootNamespace": "Kruty1918.Moyva.Tests.HomeMenu",
+    "references": [
+        "Kruty1918.Moyva.HomeMenu",
+        "Kruty1918.Moyva.Multiplayer",
+        "UnityHTML.Runtime",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

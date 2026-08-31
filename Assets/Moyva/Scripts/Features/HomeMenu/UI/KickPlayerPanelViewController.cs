@@ -22,6 +22,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         [SerializeField] private KickPlayerItemView _playerItemPrefab;
 
         private readonly List<KickPlayerItemView> _spawnedItems = new List<KickPlayerItemView>();
+        private readonly Stack<KickPlayerItemView> _pool = new Stack<KickPlayerItemView>();
         private UnityAction _closeAction;
         private UnityAction _refreshAction;
         private bool _bound;
@@ -63,12 +64,13 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_playersContainer == null || _playerItemPrefab == null || players == null)
                 return;
 
-            // 3: Створюємо item для кожного гравця й прив'язуємо дії.
+            // 3: Повторно використовуємо item-и для кожного гравця й прив'язуємо дії.
             _playerItemPrefab.gameObject.SetActive(false);
             foreach (var player in players)
             {
-                var item = Instantiate(_playerItemPrefab, _playersContainer);
+                var item = GetOrCreatePlayerItem();
                 item.name = $"kick-player-{ToSafeGameObjectName(player.PlayerId)}";
+                item.transform.SetParent(_playersContainer, false);
                 item.gameObject.SetActive(true);
                 item.Initialize(player, HandleKickRequested);
                 item.SetInteractable(_interactable);
@@ -81,27 +83,10 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             for (int index = _spawnedItems.Count - 1; index >= 0; index--)
             {
                 var item = _spawnedItems[index];
-                if (item != null)
-                {
-                    item.gameObject.SetActive(false);
-                    Destroy(item.gameObject);
-                }
+                ReleasePlayerItem(item);
             }
 
             _spawnedItems.Clear();
-
-            if (_playersContainer == null)
-                return;
-
-            for (int index = _playersContainer.childCount - 1; index >= 0; index--)
-            {
-                var child = _playersContainer.GetChild(index);
-                if (_playerItemPrefab != null && child == _playerItemPrefab.transform)
-                    continue;
-
-                child.gameObject.SetActive(false);
-                Destroy(child.gameObject);
-            }
         }
 
         public void SetStatus(string status)
@@ -147,6 +132,27 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private void HandleKickRequested(KickPlayerInfo playerInfo)
         {
             OnKickRequested?.Invoke(playerInfo);
+        }
+
+        private KickPlayerItemView GetOrCreatePlayerItem()
+        {
+            while (_pool.Count > 0)
+            {
+                var pooled = _pool.Pop();
+                if (pooled != null)
+                    return pooled;
+            }
+
+            return Instantiate(_playerItemPrefab, _playersContainer);
+        }
+
+        private void ReleasePlayerItem(KickPlayerItemView item)
+        {
+            if (item == null || item == _playerItemPrefab)
+                return;
+
+            item.gameObject.SetActive(false);
+            _pool.Push(item);
         }
 
         private static string ToSafeGameObjectName(string value)

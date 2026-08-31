@@ -1,6 +1,8 @@
 using System;
+using Kruty1918.Moyva.Shared.UI;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityHTML.Runtime;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
@@ -33,6 +35,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private IUnityHtmlHost _editorPreviewHost;
         private int _editorPreviewSignature;
+        private int _lastLayoutScreenWidth = -1;
+        private int _lastLayoutScreenHeight = -1;
+        private Rect _lastLayoutSafeArea;
+        private Vector2 _lastLayoutRootSize;
 
         public RectTransform MountRoot => _mountRoot;
         public GameObject LegacyShell => _legacyShell;
@@ -40,6 +46,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public TextAsset CssAsset => _cssAsset;
         public TMP_FontAsset FontAsset => _fontAsset;
         public bool EditorLivePreview => _editorLivePreview;
+        public string CurrentViewportClass => ResolveViewportClass(_mountRoot);
 
         public void PrepareForMount()
         {
@@ -50,13 +57,32 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_legacyShell != null && _legacyShell.transform.parent == rootTransform.parent)
                 rootTransform.SetSiblingIndex(_legacyShell.transform.GetSiblingIndex());
 
-            _mountRoot.anchorMin = Vector2.zero;
-            _mountRoot.anchorMax = Vector2.one;
-            _mountRoot.pivot = new Vector2(0.5f, 0.5f);
-            _mountRoot.anchoredPosition = Vector2.zero;
-            _mountRoot.sizeDelta = Vector2.zero;
             _mountRoot.localScale = Vector3.one;
             _mountRoot.gameObject.SetActive(true);
+            ApplyViewportLayoutNow();
+        }
+
+        public bool ApplyViewportLayoutNow()
+        {
+            if (_mountRoot == null)
+                return false;
+
+            var parent = _mountRoot.parent as RectTransform;
+            if (parent == null)
+                return false;
+
+            var canvas = _mountRoot.GetComponentInParent<Canvas>();
+            if (canvas != null)
+            {
+                var scaler = canvas.GetComponent<CanvasScaler>();
+                if (scaler != null)
+                    UiCanvasScalePolicy.Apply(canvas, scaler);
+            }
+
+            var safeRect = HomeMenuViewportUtility.CalculateSafeRectInParent(parent, canvas);
+            HomeMenuViewportUtility.StretchToRect(_mountRoot, safeRect);
+            RecordLayoutSignature();
+            return true;
         }
 
         public void SetMoyvaUiVisible(bool visible)
@@ -113,6 +139,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private void Update()
         {
+            if (Application.isPlaying && LayoutSignatureChanged())
+                ApplyViewportLayoutNow();
+
             if (!Application.isPlaying && _editorLivePreview)
                 TryUpdateEditorPreview(force: false);
         }
@@ -181,7 +210,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return HomeMenuMoyvaUiMarkup.Build(
                     previewState,
                     previewView,
-                    ResolveViewportClass(_mountRoot));
+                    CurrentViewportClass);
             }
             finally
             {
@@ -335,15 +364,30 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             };
         }
 
-        private static string ResolveViewportClass(RectTransform root)
+        private bool LayoutSignatureChanged()
+        {
+            if (_mountRoot == null)
+                return false;
+
+            var size = _mountRoot.rect.size;
+            return _lastLayoutScreenWidth != Screen.width ||
+                   _lastLayoutScreenHeight != Screen.height ||
+                   _lastLayoutSafeArea != Screen.safeArea ||
+                   Vector2.SqrMagnitude(size - _lastLayoutRootSize) > 0.25f;
+        }
+
+        private void RecordLayoutSignature()
+        {
+            _lastLayoutScreenWidth = Screen.width;
+            _lastLayoutScreenHeight = Screen.height;
+            _lastLayoutSafeArea = Screen.safeArea;
+            _lastLayoutRootSize = _mountRoot != null ? _mountRoot.rect.size : Vector2.zero;
+        }
+
+        internal static string ResolveViewportClass(RectTransform root)
         {
             var size = root != null ? root.rect.size : new Vector2(Screen.width, Screen.height);
-            var width = size.x > 1f ? size.x : Screen.width;
-            if (width <= 900f)
-                return "vp-compact";
-            if (width >= 1600f)
-                return "vp-1080";
-            return "vp-720";
+            return HomeMenuViewportUtility.ResolveViewportClass(size);
         }
     }
 }

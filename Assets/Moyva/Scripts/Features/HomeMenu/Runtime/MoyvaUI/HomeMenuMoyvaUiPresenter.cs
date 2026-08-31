@@ -126,8 +126,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_mountedAnchor.FontAsset != null)
                 globals["moyvaFont"] = _mountedAnchor.FontAsset;
 
-            _mountedAnchor.PrepareForMount();
-            var result = _host.Mount(_mountedAnchor.MountRoot, document, globals);
+            UnityHtmlMountResult result;
+            using (HomeMenuUiPerformanceMetrics.HtmlMountMarker.Auto())
+            {
+                _mountedAnchor.PrepareForMount();
+                HomeMenuUiPerformanceMetrics.RecordHtmlMount();
+                result = _host.Mount(_mountedAnchor.MountRoot, document, globals);
+            }
+
             if (!result.Succeeded)
             {
                 Fallback(result.ErrorMessage);

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.API;
 using TMPro;
 using UnityEngine;
@@ -20,6 +21,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         [SerializeField] private Button _refreshUserListButton;
 
         private string _currentInviteCode = string.Empty;
+        private readonly Dictionary<int, LobbyPlayerInfoView> _usersById = new Dictionary<int, LobbyPlayerInfoView>();
+        private readonly Stack<LobbyPlayerInfoView> _pool = new Stack<LobbyPlayerInfoView>();
         private bool _bound;
 
         public Button StartGameButton => _startGameButton;
@@ -43,13 +46,20 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (_userListContainer == null || _userListItemPrefab == null) return;
 
-            // Інстанціюємо запис гравця та позначимо його GameObject іменем, щоб
-            // можна було знаходити і видаляти по UserId.
-            var item = Instantiate(_userListItemPrefab, _userListContainer);
+            if (_usersById.TryGetValue(userInfo.UserId, out var existing) && existing != null)
+            {
+                existing.SetPlayerInfo(userInfo);
+                return;
+            }
+
+            var item = GetOrCreateUserItem();
             if (item != null)
             {
                 item.gameObject.name = $"LobbyUser_{userInfo.UserId}";
+                item.transform.SetParent(_userListContainer, false);
+                item.gameObject.SetActive(true);
                 item.SetPlayerInfo(userInfo);
+                _usersById[userInfo.UserId] = item;
             }
         }
 
@@ -60,7 +70,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             var items = new System.Collections.Generic.List<Transform>();
             for (int i = 0; i < _userListContainer.childCount; i++)
             {
-                items.Add(_userListContainer.GetChild(i));
+                var child = _userListContainer.GetChild(i);
+                if (child != null && child.gameObject.activeSelf && child != _userListItemPrefab.transform)
+                    items.Add(child);
             }
 
             if (items.Count <= 1) return;
@@ -90,28 +102,19 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (_userListContainer == null) return;
 
-            string targetName = $"LobbyUser_{userId}";
-            for (int i = 0; i < _userListContainer.childCount; i++)
+            if (_usersById.TryGetValue(userId, out var item))
             {
-                var child = _userListContainer.GetChild(i);
-                if (child == null) continue;
-                if (child.gameObject.name == targetName)
-                {
-                    Destroy(child.gameObject);
-                    return;
-                }
+                ReleaseUserItem(item);
+                _usersById.Remove(userId);
             }
         }
 
         public void ClearUsers()
         {
-            if (_userListContainer == null) return;
+            foreach (var pair in _usersById)
+                ReleaseUserItem(pair.Value);
 
-            foreach (Transform child in _userListContainer)
-            {
-                child.gameObject.SetActive(false);
-                Destroy(child.gameObject);
-            }
+            _usersById.Clear();
         }
 
         public void Initialize()
@@ -162,6 +165,27 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_refreshUserListButton != null)
                 _refreshUserListButton.onClick.RemoveListener(RefreshUserList);
             _bound = false;
+        }
+
+        private LobbyPlayerInfoView GetOrCreateUserItem()
+        {
+            while (_pool.Count > 0)
+            {
+                var pooled = _pool.Pop();
+                if (pooled != null)
+                    return pooled;
+            }
+
+            return Instantiate(_userListItemPrefab, _userListContainer);
+        }
+
+        private void ReleaseUserItem(LobbyPlayerInfoView item)
+        {
+            if (item == null || item == _userListItemPrefab)
+                return;
+
+            item.gameObject.SetActive(false);
+            _pool.Push(item);
         }
     }
 }

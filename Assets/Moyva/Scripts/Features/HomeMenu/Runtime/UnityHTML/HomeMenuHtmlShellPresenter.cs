@@ -69,7 +69,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
-            anchor.PrepareForMount();
             var document = UnityHtmlDocument.FromTextAssets(anchor.HtmlAsset, anchor.CssAsset, "HomeMenuShell");
             var bridge = new HomeMenuHtmlMenuBridge(_navigation, _confirmationService);
             var globals = new Dictionary<string, object>
@@ -80,7 +79,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (anchor.FontAsset != null)
                 globals["moyvaFont"] = anchor.FontAsset;
 
-            var result = _host.Mount(anchor.MountRoot, document, globals);
+            UnityHtmlMountResult result;
+            using (HomeMenuUiPerformanceMetrics.HtmlMountMarker.Auto())
+            {
+                anchor.PrepareForMount();
+                HomeMenuUiPerformanceMetrics.RecordHtmlMount();
+                result = _host.Mount(anchor.MountRoot, document, globals);
+            }
 
             if (!result.Succeeded)
             {

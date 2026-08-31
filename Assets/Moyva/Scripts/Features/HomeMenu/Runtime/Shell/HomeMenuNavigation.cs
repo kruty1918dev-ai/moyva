@@ -57,41 +57,44 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public void Open(string menuName)
         {
-            if (string.IsNullOrWhiteSpace(menuName))
-                return;
-
-            menuName = menuName.Trim();
-
-            if (!_panelsByName.TryGetValue(menuName, out var panel))
+            using (HomeMenuUiPerformanceMetrics.NavigationOpenMarker.Auto())
             {
-                LogWarning($"Panel '{menuName}' not found.");
-                return;
+                if (string.IsNullOrWhiteSpace(menuName))
+                    return;
+
+                menuName = menuName.Trim();
+
+                if (!_panelsByName.TryGetValue(menuName, out var panel))
+                {
+                    LogWarning($"Panel '{menuName}' not found.");
+                    return;
+                }
+                // Повторне відкриття вже активної панелі працює як toggle-all:
+                // просто закриваємо весь стек відкритих панелей без confirm flow.
+                if (_menuStack.Count > 0 && _menuStack.Peek() == menuName)
+                {
+                    LogInfo($"Menu '{menuName}' already open. Ignoring duplicate open.");
+                    return;
+                }
+                var previous = CurrentMenu;
+
+                // Close currently opened panel (if any) and push it to closed history.
+                // When this Open call triggers a close, suppress confirmation for that close
+                if (_menuStack.Count > 0)
+                {
+                    _suppressConfirmationNextClose = true;
+                    CloseLast();
+                }
+
+                // When explicitly opening a named menu, remove it from closed history to avoid duplicates
+                RemoveFromClosedHistory(menuName);
+
+                _menuStack.Push(menuName);
+                panel.Open();
+                LogInfo($"Opened menu '{menuName}'.");
+
+                RaiseMenuChanged(previous, CurrentMenu, true);
             }
-            // Повторне відкриття вже активної панелі працює як toggle-all:
-            // просто закриваємо весь стек відкритих панелей без confirm flow.
-            if (_menuStack.Count > 0 && _menuStack.Peek() == menuName)
-            {
-                LogInfo($"Menu '{menuName}' already open. Ignoring duplicate open.");
-                return;
-            }
-            var previous = CurrentMenu;
-
-            // Close currently opened panel (if any) and push it to closed history.
-            // When this Open call triggers a close, suppress confirmation for that close
-            if (_menuStack.Count > 0)
-            {
-                _suppressConfirmationNextClose = true;
-                CloseLast();
-            }
-
-            // When explicitly opening a named menu, remove it from closed history to avoid duplicates
-            RemoveFromClosedHistory(menuName);
-
-            _menuStack.Push(menuName);
-            panel.Open();
-            LogInfo($"Opened menu '{menuName}'.");
-
-            RaiseMenuChanged(previous, CurrentMenu, true);
         }
 
         public void Close(string menuName)
@@ -230,24 +233,27 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private void DoClose(string menuName)
         {
-            var previous = CurrentMenu;
+            using (HomeMenuUiPerformanceMetrics.NavigationCloseMarker.Auto())
+            {
+                var previous = CurrentMenu;
 
-            // actual pop/close
-            if (_menuStack.Count > 0 && _menuStack.Peek() == menuName)
-                _menuStack.Pop();
-            else
-                LogWarning($"Attempted to close '{menuName}' but it was not on top of the stack.");
+                // actual pop/close
+                if (_menuStack.Count > 0 && _menuStack.Peek() == menuName)
+                    _menuStack.Pop();
+                else
+                    LogWarning($"Attempted to close '{menuName}' but it was not on top of the stack.");
 
-            if (_panelsByName.TryGetValue(menuName, out var panel))
-                panel.Close();
-            else
-                LogWarning($"Panel '{menuName}' not found when closing.");
+                if (_panelsByName.TryGetValue(menuName, out var panel))
+                    panel.Close();
+                else
+                    LogWarning($"Panel '{menuName}' not found when closing.");
 
-            _closedStack.Push(menuName);
+                _closedStack.Push(menuName);
 
-            LogInfo($"Closed menu '{menuName}'.");
+                LogInfo($"Closed menu '{menuName}'.");
 
-            RaiseMenuChanged(previous, CurrentMenu, _menuStack.Count > 0 && _menuStack.Peek() == CurrentMenu);
+                RaiseMenuChanged(previous, CurrentMenu, _menuStack.Count > 0 && _menuStack.Peek() == CurrentMenu);
+            }
         }
 
         private void RaiseMenuChanged(string previous, string current, bool currentIsOpen)

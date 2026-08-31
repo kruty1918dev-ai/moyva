@@ -26,6 +26,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private readonly Dictionary<string, GameSlotInfo> _slotInfos
             = new Dictionary<string, GameSlotInfo>(StringComparer.Ordinal);
 
+        private readonly Stack<WorldItemViewComponent> _pool = new Stack<WorldItemViewComponent>();
+
         public void Initialize()
         {
             Awake();
@@ -55,13 +57,15 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 return;
             }
 
-            // 3: Інакше створюємо новий елемент списку і перебудовуємо layout.
-            var instance = Instantiate(_slotPrefab, _slotsContainer);
+            // 3: Інакше беремо елемент з пулу або створюємо новий без синхронного canvas rebuild.
+            var instance = GetOrCreateSlotItem();
             instance.name = key;
+            instance.transform.SetParent(_slotsContainer, false);
+            instance.gameObject.SetActive(true);
             instance.Initialize(slot, s => OnSlotSelected?.Invoke(s));
             _spawned[key] = instance;
             _slotInfos[key] = slot;
-            RebuildSlotsLayout();
+            MarkSlotsLayoutDirty();
         }
 
         public void RemoveSlot(string slotName)
@@ -71,22 +75,25 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_spawned.TryGetValue(slotName, out var instance))
             {
                 if (instance != null)
-                    DestroySlotObject(instance.gameObject);
+                    ReleaseSlotItem(instance);
                 _spawned.Remove(slotName);
                 _slotInfos.Remove(slotName);
-                RebuildSlotsLayout();
+                MarkSlotsLayoutDirty();
                 return;
             }
 
             // Fallback: search children by name
+            if (_slotsContainer == null)
+                return;
+
             for (int i = 0; i < _slotsContainer.childCount; i++)
             {
                 var child = _slotsContainer.GetChild(i);
                 if (child.name == slotName)
                 {
-                    DestroySlotObject(child.gameObject);
+                    ReleaseSlotItem(child.GetComponent<WorldItemViewComponent>());
                     _slotInfos.Remove(slotName);
-                    RebuildSlotsLayout();
+                    MarkSlotsLayoutDirty();
                     break;
                 }
             }
@@ -94,14 +101,13 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         public void ClearSlots()
         {
+            foreach (var pair in _spawned)
+                ReleaseSlotItem(pair.Value);
+
             _spawned.Clear();
             _slotInfos.Clear();
-            for (int i = _slotsContainer.childCount - 1; i >= 0; i--)
-            {
-                DestroySlotObject(_slotsContainer.GetChild(i).gameObject);
-            }
 
-            RebuildSlotsLayout();
+            MarkSlotsLayoutDirty();
         }
 
         public void RefreshSlots()
@@ -120,28 +126,39 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 }
             }
 
-            RebuildSlotsLayout();
+            MarkSlotsLayoutDirty();
         }
 
         private static string BuildSlotKey(GameSlotInfo slot)
             => $"slot{Mathf.Clamp(slot.SlotIndex, 0, 99):D2}";
 
-        private static void DestroySlotObject(GameObject slotObject)
+        private WorldItemViewComponent GetOrCreateSlotItem()
         {
-            if (slotObject == null)
-                return;
+            while (_pool.Count > 0)
+            {
+                var pooled = _pool.Pop();
+                if (pooled != null)
+                    return pooled;
+            }
 
-            slotObject.SetActive(false);
-            Destroy(slotObject);
+            return Instantiate(_slotPrefab, _slotsContainer);
         }
 
-        private void RebuildSlotsLayout()
+        private void ReleaseSlotItem(WorldItemViewComponent item)
+        {
+            if (item == null)
+                return;
+
+            item.gameObject.SetActive(false);
+            _pool.Push(item);
+        }
+
+        private void MarkSlotsLayoutDirty()
         {
             if (_slotsContainer is not RectTransform rectTransform)
                 return;
 
-            Canvas.ForceUpdateCanvases();
-            LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
+            LayoutRebuilder.MarkLayoutForRebuild(rectTransform);
         }
 
         // This class would be implemented by the actual MonoBehaviour that has the UI elements.

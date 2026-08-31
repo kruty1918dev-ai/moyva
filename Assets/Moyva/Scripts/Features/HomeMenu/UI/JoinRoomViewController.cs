@@ -29,6 +29,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         // Track spawned room items by provider-aware display key
         private readonly Dictionary<string, RoomItemViewComponent> _spawned = new Dictionary<string, RoomItemViewComponent>(StringComparer.Ordinal);
         private readonly Dictionary<string, RoomInfo> _roomInfos = new Dictionary<string, RoomInfo>(StringComparer.Ordinal);
+        private readonly Stack<RoomItemViewComponent> _pool = new Stack<RoomItemViewComponent>();
         private UnityEngine.Events.UnityAction _joinButtonAction;
         private UnityEngine.Events.UnityAction _refreshButtonAction;
         private bool _bound;
@@ -106,9 +107,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 return;
             }
 
-            // 3: Інакше інстанціюємо новий view-елемент і реєструємо його.
-            var instance = Instantiate(_roomPrefab, _roomsContainer);
+            // 3: Інакше повторно використовуємо view-елемент або створюємо його один раз.
+            var instance = GetOrCreateRoomItem();
             instance.name = $"room-{ToSafeGameObjectName(key)}";
+            instance.transform.SetParent(_roomsContainer, false);
+            instance.gameObject.SetActive(true);
             instance.Initialize(room, r => HandleRoomSelected(r));
             _spawned[key] = instance;
             _roomInfos[key] = room;
@@ -149,15 +152,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         public void ClearRoomList()
         {
+            foreach (var pair in _spawned)
+                ReleaseRoomItem(pair.Value);
+
             _spawned.Clear();
             _roomInfos.Clear();
-            if (_roomsContainer == null) return;
-            for (int i = _roomsContainer.childCount - 1; i >= 0; i--)
-            {
-                var child = _roomsContainer.GetChild(i).gameObject;
-                child.SetActive(false);
-                Destroy(child);
-            }
         }
 
         public void RefreshRoomList()
@@ -169,6 +168,27 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (_joinRoomButton != null)
                 _joinRoomButton.interactable = interactable;
+        }
+
+        private RoomItemViewComponent GetOrCreateRoomItem()
+        {
+            while (_pool.Count > 0)
+            {
+                var pooled = _pool.Pop();
+                if (pooled != null)
+                    return pooled;
+            }
+
+            return Instantiate(_roomPrefab, _roomsContainer);
+        }
+
+        private void ReleaseRoomItem(RoomItemViewComponent item)
+        {
+            if (item == null)
+                return;
+
+            item.gameObject.SetActive(false);
+            _pool.Push(item);
         }
 
         // This class would be implemented by the actual MonoBehaviour that has the UI elements.

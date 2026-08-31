@@ -3,8 +3,10 @@ using System.Threading.Tasks;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.Runtime;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 using UnityHTML.Runtime;
 
 namespace Kruty1918.Moyva.Tests.HomeMenu
@@ -96,14 +98,17 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             try
             {
                 fixture.Presenter.Initialize();
+                Assert.That(fixture.Host.MountCount, Is.EqualTo(1));
                 Assert.That(fixture.ShellRoot.activeSelf, Is.True);
                 Assert.That(fixture.Legacy.activeSelf, Is.False);
 
                 fixture.Navigation.Open("SettingsPanel");
+                Assert.That(fixture.Host.MountCount, Is.EqualTo(1));
                 Assert.That(fixture.ShellRoot.activeSelf, Is.False);
                 Assert.That(fixture.Legacy.activeSelf, Is.True);
 
                 fixture.Navigation.CloseLast();
+                Assert.That(fixture.Host.MountCount, Is.EqualTo(1));
                 Assert.That(fixture.ShellRoot.activeSelf, Is.True);
                 Assert.That(fixture.Legacy.activeSelf, Is.False);
             }
@@ -136,6 +141,53 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             Assert.That(confirmation.ShowCount, Is.EqualTo(1));
             Assert.That(confirmation.LastRequest.LabelText, Is.EqualTo("Вийти з гри"));
             Assert.That(confirmation.LastRequest.OnConfirm, Is.Not.Null);
+        }
+
+        [Test]
+        public void PerformanceGuard_DisablesOnlyNonInteractiveRaycastTargets()
+        {
+            var root = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas));
+            var textObject = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            var buttonObject = new GameObject("Button", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            var blockerObject = new GameObject("InfoPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var decorativeObject = new GameObject("Background", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+
+            try
+            {
+                textObject.transform.SetParent(root.transform, false);
+                buttonObject.transform.SetParent(root.transform, false);
+                blockerObject.transform.SetParent(root.transform, false);
+                decorativeObject.transform.SetParent(root.transform, false);
+
+                var text = textObject.GetComponent<TextMeshProUGUI>();
+                var buttonImage = buttonObject.GetComponent<Image>();
+                var blockerImage = blockerObject.GetComponent<Image>();
+                var decorativeImage = decorativeObject.GetComponent<Image>();
+
+                var blockerRect = blockerObject.GetComponent<RectTransform>();
+                blockerRect.anchorMin = Vector2.zero;
+                blockerRect.anchorMax = Vector2.one;
+                blockerRect.offsetMin = Vector2.zero;
+                blockerRect.offsetMax = Vector2.zero;
+
+                text.raycastTarget = true;
+                buttonImage.raycastTarget = true;
+                blockerImage.raycastTarget = true;
+                decorativeImage.raycastTarget = true;
+
+                HomeMenuUiPerformanceMetrics.Reset();
+                new HomeMenuUiPerformanceGuard(root.transform).Initialize();
+
+                Assert.That(text.raycastTarget, Is.False);
+                Assert.That(buttonImage.raycastTarget, Is.True);
+                Assert.That(blockerImage.raycastTarget, Is.True);
+                Assert.That(decorativeImage.raycastTarget, Is.False);
+                Assert.That(HomeMenuUiPerformanceMetrics.RaycastTargetsDisabled, Is.EqualTo(2));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
         }
 
         private static Fixture CreateFixture(bool useUnityHtmlShell, bool mountSucceeds, bool hasCss = true)
