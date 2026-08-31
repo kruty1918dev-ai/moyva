@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             container.Bind<IMapVisualWorldState>().To<MapVisualWorldState>().AsSingle();
             container.Bind<IMapVisualTileIdResolver>().To<MapVisualTileIdResolver>().AsSingle();
             container.Bind<IMapVisualGridWriter>().To<MapVisualGridWriter>().AsSingle();
+            container.BindInterfacesAndSelfTo<MapVisualFallbackPresenter>().AsSingle();
             container.Bind<IMapVisualWorldDataFactory>().To<MapVisualWorldDataFactory>().AsSingle();
             container.Bind<IMapVisualWorldSignalPublisher>().To<MapVisualWorldSignalPublisher>().AsSingle();
             container.Bind<IMapVisualWorldBuildOrchestrator>().To<MapVisualWorldBuildOrchestrator>().AsSingle();

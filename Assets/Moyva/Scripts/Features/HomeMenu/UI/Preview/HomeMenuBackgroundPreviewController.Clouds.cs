@@ -236,7 +236,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 _targetImage.texture = null;
 
             if (_generatedTexture != null)
-                Destroy(_generatedTexture);
+                DestroyPreviewObject(_generatedTexture);
 
             _generatedTexture = null;
         }
@@ -314,10 +314,10 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private void DestroyMenuCloud(MenuCloudVisual cloud)
         {
             if (cloud?.MaterialInstance != null)
-                Destroy(cloud.MaterialInstance);
+                DestroyPreviewObject(cloud.MaterialInstance);
 
             if (cloud?.RootRectTransform != null)
-                Destroy(cloud.RootRectTransform.gameObject);
+                DestroyPreviewObject(cloud.RootRectTransform.gameObject);
         }
 
         private int ResolveEffectiveMaxClouds()
@@ -421,7 +421,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_runtimeCloudMaterial == null)
                 return;
 
-            Destroy(_runtimeCloudMaterial);
+            DestroyPreviewObject(_runtimeCloudMaterial);
             _runtimeCloudMaterial = null;
         }
 

@@ -7,6 +7,7 @@
     "Kruty1918.Moyva.InputRouting",
     "Kruty1918.Moyva.UIActions",
     "Kruty1918.Moyva.Turns",
+    "Kruty1918.Moyva.Shared",
     "Unity.InputSystem",
     "Unity.TextMeshPro",
     "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"

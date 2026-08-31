@@ -20,10 +20,12 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         public void RegeneratePreview()
         {
             var projectSettings = ResolveProjectSettings();
-            bool useLiveMeshPreview = ShouldUseLiveMeshPreview(projectSettings);
+            bool useLiveMeshPreview = ShouldUseLiveMeshPreview(projectSettings) && !_livePreviewUnavailable;
 
-            if (_targetImage == null && !useLiveMeshPreview)
+            if (_targetImage == null)
             {
+                if (useLiveMeshPreview)
+                    LogLivePreviewFallbackOnce("The target RawImage is missing.");
                 return;
             }
 
@@ -56,10 +58,17 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (useLiveMeshPreview && TryBuildLiveMeshPreview(previewData, tileRegistry, projectSettings))
             {
                 DisposeGeneratedTexture();
-                SetTexturePreviewVisible(false);
+                SetTexturePreviewVisible(true);
+                ApplyCoverUv();
                 _currentSeed = seed;
                 ResetClouds();
                 return;
+            }
+
+            if (useLiveMeshPreview)
+            {
+                _livePreviewUnavailable = true;
+                LogLivePreviewFallbackOnce("The live mesh, material, camera, or RenderTexture setup is invalid.");
             }
 
             DestroyLiveMeshPreview();

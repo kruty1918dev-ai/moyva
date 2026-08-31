@@ -12,6 +12,7 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
     {
         private const string ScenePath = "Assets/Moyva/Scenes/Gamplay_Scene.unity";
         private const string LogTag = "[MOYVA_ADAPTIVE_UI]";
+        private static readonly Vector2 ReferenceResolution = new(1280f, 720f);
 
         [MenuItem("Moyva/Gameplay/Apply Full Adaptive UI", false, 123)]
         public static void ApplyFromMenu()
@@ -49,10 +50,11 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
 
             Undo.RecordObject(scaler, "Configure adaptive gameplay CanvasScaler");
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.referenceResolution = ReferenceResolution;
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0f;
+            scaler.matchWidthOrHeight = 0.5f;
             scaler.referencePixelsPerUnit = 100f;
+            canvas.pixelPerfect = true;
             EditorUtility.SetDirty(scaler);
 
             StretchIfFound(canvas.transform, "GameModeUI");
@@ -106,6 +108,15 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
             if (scaler == null || scaler.uiScaleMode != CanvasScaler.ScaleMode.ScaleWithScreenSize)
                 throw new InvalidOperationException("CanvasScaler is not ScaleWithScreenSize.");
+            if (scaler.referenceResolution != ReferenceResolution ||
+                scaler.screenMatchMode != CanvasScaler.ScreenMatchMode.MatchWidthOrHeight ||
+                !Mathf.Approximately(scaler.matchWidthOrHeight, 0.5f) ||
+                !Mathf.Approximately(scaler.referencePixelsPerUnit, 100f) ||
+                !canvas.pixelPerfect)
+            {
+                throw new InvalidOperationException(
+                    "Gameplay Canvas does not use the canonical 1280x720 UI scale policy.");
+            }
 
             return "P18_2_VALIDATE_OK match=" + scaler.matchWidthOrHeight.ToString("0.00") + " " + adaptive.DescribeCurrentLayout();
         }

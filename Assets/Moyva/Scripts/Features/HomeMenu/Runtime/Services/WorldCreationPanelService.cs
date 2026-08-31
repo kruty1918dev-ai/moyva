@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.HomeMenu.UI;
@@ -24,7 +27,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private IMultiplayerModeSelector _modeSelector;
         [InjectOptional] private ILobbyFlowContext _lobbyFlowContext;
         [InjectOptional] private WorldCreationDefaultsSO _worldCreationDefaults;
+        [InjectOptional] private IHomeMenuGameStarter _gameStarter;
+        [InjectOptional] private IOverlayLoader _overlayLoader;
+        [InjectOptional] private IGameStateService _gameStateService;
         [Inject(Id = "LobbyPanelName")] private string _lobbyPanelName;
+        private bool _isStartingLocalGame;
+        private CancellationTokenSource _startCts;
 
         /// <summary>Підписує multiplayer world setup на UI та застосовує JSON defaults.</summary>
         public void Initialize()
@@ -42,9 +50,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             _viewController.OnButtonNextClicked -= OnCreteWorldClicked;
             _viewController.OnSettingsChanged -= Refresh;
+            _startCts?.Cancel();
+            _startCts?.Dispose();
+            _startCts = null;
         }
 
-        private void OnCreteWorldClicked()
+        private async void OnCreteWorldClicked()
         {
             if (!CanProceed())
             {
@@ -53,7 +64,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             ApplyMultiplayerSessionDraft();
-            _navigation.Open(_lobbyPanelName);
+            if (ShouldContinueToLobby())
+                _navigation.Open(_lobbyPanelName);
+            else
+                await StartLocalGameAsync();
         }
 
         private void Refresh()
@@ -149,7 +163,54 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_lobbyFlowContext != null && _lobbyFlowContext.FlowKind != LobbyFlowKind.None)
                 return _lobbyFlowContext.Provider;
 
-            return _modeSelector?.CurrentMode ?? NetworkProviderType.Relay;
+            if (_lobbyService?.Current != null)
+                return _modeSelector?.CurrentMode ?? NetworkProviderType.Relay;
+
+            return NetworkProviderType.Offline;
+        }
+
+        private bool ShouldContinueToLobby()
+        {
+            if (_lobbyService?.Current != null)
+                return true;
+
+            return _lobbyFlowContext != null && _lobbyFlowContext.FlowKind != LobbyFlowKind.None;
+        }
+
+        private async Task StartLocalGameAsync()
+        {
+            if (_isStartingLocalGame)
+                return;
+
+            if (_gameStarter == null)
+            {
+                Debug.LogError("[WorldCreationPanelService] Cannot start local game: IHomeMenuGameStarter is not available.");
+                return;
+            }
+
+            _isStartingLocalGame = true;
+            _startCts?.Cancel();
+            _startCts?.Dispose();
+            _startCts = new CancellationTokenSource();
+
+            try
+            {
+                _overlayLoader?.LoadOverlay(0f, 100f, "%");
+                _gameStateService?.StartGame();
+                await _gameStarter.StartGameAsync(_startCts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[WorldCreationPanelService] Local game start failed: {e}");
+            }
+            finally
+            {
+                _isStartingLocalGame = false;
+                try { _overlayLoader?.StopOverlay(true); } catch { }
+            }
         }
 
         private void ApplyDefaultsToView()

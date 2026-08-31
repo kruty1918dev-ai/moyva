@@ -87,6 +87,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private bool TryResolveBounds(GeneratedWorldData worldData, out Bounds bounds)
         {
+            if (worldData != null && worldData.HasBaseMapWorldBounds)
+            {
+                bounds = worldData.BaseMapWorldBounds;
+                return true;
+            }
+
             if (_graphDiagnostics != null && _graphDiagnostics.TryGetLastBaseMapWorldBounds(out bounds))
                 return true;
             bounds = _projection.GetWorldBounds(worldData.Width, worldData.Height);

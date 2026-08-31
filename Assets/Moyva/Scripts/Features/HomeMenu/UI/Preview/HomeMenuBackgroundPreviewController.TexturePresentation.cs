@@ -42,7 +42,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         private void ApplyCoverUv()
         {
-            if (_targetImage == null || _generatedTexture == null)
+            if (_targetImage == null || _targetImage.texture == null)
                 return;
 
             var rect = _targetImage.rectTransform.rect;
@@ -54,24 +54,34 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 return;
             }
 
-            float viewportAspect = viewportWidth / viewportHeight;
-            float textureAspect = _generatedTexture.width / (float)_generatedTexture.height;
+            _targetImage.uvRect = CalculateCoverUv(
+                new Vector2(viewportWidth, viewportHeight),
+                new Vector2(_targetImage.texture.width, _targetImage.texture.height));
+        }
 
+        internal static Rect CalculateCoverUv(Vector2 viewportSize, Vector2 textureSize)
+        {
+            if (viewportSize.x <= 1f || viewportSize.y <= 1f || textureSize.x <= 1f || textureSize.y <= 1f)
+                return new Rect(0f, 0f, 1f, 1f);
+
+            float viewportAspect = viewportSize.x / viewportSize.y;
+            float textureAspect = textureSize.x / textureSize.y;
             Rect uv = new Rect(0f, 0f, 1f, 1f);
+
             if (viewportAspect > textureAspect)
             {
                 float uvHeight = Mathf.Clamp01(textureAspect / viewportAspect);
                 uv.y = (1f - uvHeight) * 0.5f;
                 uv.height = uvHeight;
             }
-            else
+            else if (viewportAspect < textureAspect)
             {
                 float uvWidth = Mathf.Clamp01(viewportAspect / textureAspect);
                 uv.x = (1f - uvWidth) * 0.5f;
                 uv.width = uvWidth;
             }
 
-            _targetImage.uvRect = uv;
+            return uv;
         }
 
     }

@@ -83,6 +83,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         [SerializeField, Range(0.1f, 3f)] private float _cloudSpeedMultiplier = 1f;
 
         private readonly List<MenuCloudVisual> _clouds = new List<MenuCloudVisual>();
+        private readonly Vector3[] _targetWorldCorners = new Vector3[4];
 
         private Texture2D _generatedTexture;
         private Material _runtimeCloudMaterial;
@@ -94,6 +95,14 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private GameObject _livePreviewRoot;
         private Camera _livePreviewCamera;
         private Light _livePreviewLight;
+        private RenderTexture _livePreviewRenderTexture;
+        private Vector2Int _livePreviewRenderTextureSize;
+        private int _livePreviewRenderTextureMsaa = 1;
+        private Bounds _livePreviewWorldBounds;
+        private MoyvaProjectSettingsSO _livePreviewProjectSettings;
+        private bool _hasLivePreviewWorldBounds;
+        private bool _livePreviewUnavailable;
+        private bool _loggedLivePreviewFallback;
         private IMenuWorldPreviewKingdomPlacementService _kingdomPlacementService;
         private IMenuWorldPreviewTextureBuilderService _textureBuilderService;
         private readonly List<Mesh> _livePreviewMeshes = new List<Mesh>();
@@ -106,6 +115,26 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             _kingdomPlacementService = kingdomPlacementService;
             _textureBuilderService = textureBuilderService;
+        }
+
+        private static void DestroyPreviewObject(UnityEngine.Object target)
+        {
+            if (target == null)
+                return;
+
+            if (ShouldDestroyPreviewObjectDeferred())
+                Destroy(target);
+            else
+                DestroyImmediate(target);
+        }
+
+        private static bool ShouldDestroyPreviewObjectDeferred()
+        {
+#if UNITY_EDITOR
+            return Application.isPlaying && UnityEditor.EditorApplication.isPlaying;
+#else
+            return Application.isPlaying;
+#endif
         }
 
     }

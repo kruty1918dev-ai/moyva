@@ -1,5 +1,6 @@
 using System;
 using Kruty1918.Moyva.GameMode.API;
+using Kruty1918.Moyva.Shared.UI;
 using Kruty1918.Moyva.Signals;
 using TMPro;
 using UnityEngine;
@@ -91,9 +92,7 @@ namespace Kruty1918.Moyva.GameMode.Runtime
             canvas.sortingOrder = 30000;
 
             CanvasScaler scaler = _canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            UiCanvasScalePolicy.Apply(canvas, scaler);
 
             _panelRoot = CreateImage(
                 _canvasObject.transform,

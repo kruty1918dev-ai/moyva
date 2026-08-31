@@ -6,6 +6,7 @@
   "model": "home-menu-config",
   "gameplaySceneName": "Gamplay_Scene",
   "homeMenuSceneName": "HomeMenu",
+  "useUnityHtmlShell": true,
   "minPreloadSeconds": 0.8,
   "sceneActivationDelay": 0.2,
   "migration": {

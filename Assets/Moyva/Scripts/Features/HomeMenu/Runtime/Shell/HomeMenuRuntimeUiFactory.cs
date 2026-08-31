@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.UI;
+using Kruty1918.Moyva.Shared.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -101,7 +102,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             foreach (var canvas in canvases)
             {
                 if (canvas != null && canvas.renderMode != RenderMode.WorldSpace)
+                {
+                    CanvasScaler existingScaler = canvas.GetComponent<CanvasScaler>();
+                    if (existingScaler == null)
+                        existingScaler = canvas.gameObject.AddComponent<CanvasScaler>();
+                    UiCanvasScalePolicy.Apply(canvas, existingScaler);
                     return canvas;
+                }
             }
 
             var canvasObject = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -109,7 +116,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             canvasComponent.renderMode = RenderMode.ScreenSpaceOverlay;
 
             var scaler = canvasObject.GetComponent<CanvasScaler>();
-            ConfigureCanvasScaler(scaler);
+            UiCanvasScalePolicy.Apply(canvasComponent, scaler);
             return canvasComponent;
         }
 
@@ -302,14 +309,5 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             layout.flexibleHeight = flexibleHeight;
         }
 
-        private static void ConfigureCanvasScaler(CanvasScaler scaler)
-        {
-            if (scaler == null)
-                return;
-
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-            scaler.scaleFactor = 1f;
-            scaler.referencePixelsPerUnit = 100f;
-        }
     }
 }

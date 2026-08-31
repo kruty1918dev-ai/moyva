@@ -378,7 +378,7 @@ namespace Kruty1918.Moyva.Construction.UI
             else
             {
                 PopulateBuildingList();
-                SynchronizeCastleBootstrapUi();
+                RequestBuildingListRefresh();
 
                 if (!string.IsNullOrWhiteSpace(
                         _selectedBuildingId))

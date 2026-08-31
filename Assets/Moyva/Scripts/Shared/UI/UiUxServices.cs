@@ -329,9 +329,7 @@ namespace Kruty1918.Moyva.Shared.UI
             canvas.sortingOrder = short.MaxValue;
             canvasObject.GetComponent<GraphicRaycaster>().enabled = false;
             CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            UiCanvasScalePolicy.Apply(canvas, scaler);
 
             var panel = new GameObject("Tooltip", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(ContentSizeFitter), typeof(UiTooltipPresenter));
             panel.transform.SetParent(canvasObject.transform, false);

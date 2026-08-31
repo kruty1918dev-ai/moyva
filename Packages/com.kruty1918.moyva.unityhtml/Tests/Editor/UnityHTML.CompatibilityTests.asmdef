@@ -4,10 +4,9 @@
   "references": [
     "ReactUnity",
     "ReactUnity.UGUI",
+    "UnityHTML.Runtime",
     "UnityEngine.UI",
-    "Unity.TextMeshPro",
-    "UnityEngine.TestRunner",
-    "UnityEditor.TestRunner"
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [
     "Editor"

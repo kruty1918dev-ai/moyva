@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
         private const string ScenePath = "Assets/Moyva/Scenes/Gamplay_Scene.unity";
         private const string HudRootName = "GameplayTurnHud";
         private const string LogTag = "[MOYVA_RESPONSIVE_UI]";
-        private static readonly Vector2 ReferenceResolution = new(1920f, 1080f);
+        private static readonly Vector2 ReferenceResolution = new(1280f, 720f);
 
         [MenuItem("Moyva/Gameplay/Apply Responsive UI", false, 121)]
         public static void ApplyFromMenu()
@@ -48,6 +48,15 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
             if (scaler == null || scaler.uiScaleMode != CanvasScaler.ScaleMode.ScaleWithScreenSize)
                 throw new InvalidOperationException("Gameplay Canvas is not configured for Scale With Screen Size.");
+            if (scaler.referenceResolution != ReferenceResolution ||
+                scaler.screenMatchMode != CanvasScaler.ScreenMatchMode.MatchWidthOrHeight ||
+                !Mathf.Approximately(scaler.matchWidthOrHeight, 0.5f) ||
+                !Mathf.Approximately(scaler.referencePixelsPerUnit, 100f) ||
+                !canvas.pixelPerfect)
+            {
+                throw new InvalidOperationException(
+                    "Gameplay Canvas does not use the canonical 1280x720 UI scale policy.");
+            }
 
             Transform root = FindDirectChild(canvas.transform, HudRootName);
             if (root == null)
@@ -136,7 +145,9 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 0.5f;
             scaler.referencePixelsPerUnit = 100f;
+            canvas.pixelPerfect = true;
             EditorUtility.SetDirty(scaler);
+            EditorUtility.SetDirty(canvas);
         }
 
         private static void NormalizeResourceBar(Canvas canvas, Transform hudRoot)

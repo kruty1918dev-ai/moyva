@@ -59,6 +59,11 @@
     "sceneActivationDelay": {
       "type": "number",
       "title": "Scene Activation Delay"
+    },
+    "useUnityHtmlShell": {
+      "type": "boolean",
+      "title": "Use Unity HTML Shell",
+      "default": false
     }
   }
 }

@@ -67,7 +67,12 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                     return false;
                 }
 
-                ConfigureLivePreviewCamera(builder.WorldBounds, projectSettings, previewLayer);
+                if (!ConfigureLivePreviewCamera(builder.WorldBounds, projectSettings, previewLayer, out _))
+                {
+                    DestroyLiveMeshPreview();
+                    return false;
+                }
+
                 ConfigureLivePreviewLight(projectSettings, previewLayer);
                 return true;
             }

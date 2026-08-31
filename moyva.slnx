@@ -42,6 +42,7 @@
   <Project Path="GiantGrey.TileWorldCreator.Samples.csproj" />
   <Project Path="Kruty1918.Moyva.GameMode.csproj" />
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />
+  <Project Path="UnityHTML.Runtime.csproj" />
   <Project Path="sc.stylizedwater3.runtime.csproj" />
   <Project Path="ExternAttributes.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.GraphSystem.csproj" />
@@ -60,8 +61,8 @@
   <Project Path="Kruty1918.Moyva.Economy.UI.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Grid.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Multiplayer.csproj" />
+  <Project Path="UnityHTML.CompatibilityTests.csproj" />
   <Project Path="Kruty1918.Moyva.EditorShared.csproj" />
   <Project Path="FlatKit.Utils.Editor.csproj" />
-  <Project Path="UnityHTML.CompatibilityTests.csproj" />
   <Project Path="Kruty1918.Moyva.Multiplayer.UI.csproj" />
 </Solution>

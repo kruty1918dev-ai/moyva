@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.Shared.UI;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using UnityEngine.UI;
@@ -152,7 +153,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _canvas.sortingOrder = short.MaxValue;
 
             var scaler = go.AddComponent<CanvasScaler>();
-            ConfigureCanvasScaler(scaler);
+            UiCanvasScalePolicy.Apply(_canvas, scaler);
             go.AddComponent<GraphicRaycaster>();
 
             var imageGo = new GameObject("FadeImage");
@@ -173,15 +174,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             group.interactable = false;
         }
 
-        private static void ConfigureCanvasScaler(CanvasScaler scaler)
-        {
-            if (scaler == null)
-                return;
-
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-            scaler.scaleFactor = 1f;
-            scaler.referencePixelsPerUnit = 100f;
-        }
         private void SetOverlayAlpha(float alpha)
         {
             if (_image == null)

@@ -4,6 +4,7 @@
   "references": [
     "Kruty1918.Moyva.HomeMenu",
     "Kruty1918.Moyva.Multiplayer",
+    "UnityHTML.Runtime",
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner"
   ],

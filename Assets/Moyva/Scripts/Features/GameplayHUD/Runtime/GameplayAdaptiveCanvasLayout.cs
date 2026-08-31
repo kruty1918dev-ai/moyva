@@ -1,4 +1,5 @@
 using System;
+using Kruty1918.Moyva.Shared.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,8 +16,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     [DefaultExecutionOrder(1200)]
     public sealed class GameplayAdaptiveCanvasLayout : MonoBehaviour
     {
-        private static readonly Vector2 ReferenceResolution = new(1920f, 1080f);
-
         private Canvas _canvas;
         private CanvasScaler _scaler;
         private RectTransform _canvasRect;
@@ -193,23 +192,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_scaler == null)
                 return;
 
-            float aspect = Screen.height > 0
-                ? Screen.width / (float)Screen.height
-                : _canvasRect.rect.width / Mathf.Max(1f, _canvasRect.rect.height);
-
-            float match;
-            if (aspect >= 1.60f)
-                match = 0f;
-            else if (aspect >= 1.30f)
-                match = 0.25f;
-            else
-                match = 0.5f;
-
-            _scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            _scaler.referenceResolution = ReferenceResolution;
-            _scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            _scaler.matchWidthOrHeight = match;
-            _scaler.referencePixelsPerUnit = 100f;
+            UiCanvasScalePolicy.Apply(_canvas, _scaler);
         }
 
         private void ApplyEconomyBar(Rect safe)
@@ -217,19 +200,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_resourceBar == null)
                 return;
 
-            float width = Mathf.Clamp(safe.width * 0.29f, 520f, 620f);
-            float height = Mathf.Clamp(safe.height * 0.055f, 50f, 58f);
-            SetTopCenter(_resourceBar, safe.center.x, safe.yMax - 18f, width, height);
+            float width = Mathf.Clamp(safe.width * 0.32f, 360f, 440f);
+            float height = Mathf.Clamp(safe.height * 0.07f, 48f, 54f);
+            SetTopCenter(_resourceBar, safe.center.x, safe.yMax - 16f, width, height);
 
             HorizontalLayoutGroup group = _resourceBar.GetComponent<HorizontalLayoutGroup>();
             if (group != null)
             {
-                group.padding = new RectOffset(14, 14, 6, 6);
+                group.padding = new RectOffset(12, 12, 6, 6);
                 group.spacing = 8f;
             }
 
             foreach (TMP_Text text in _resourceBar.GetComponentsInChildren<TMP_Text>(true))
-                ConfigureAutosize(text, 12f, 16f);
+                ConfigureAutosize(text, 14f, 16f);
         }
 
         private void ApplyTurnHud(Rect safe)
@@ -237,18 +220,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_turnPanel == null)
                 return;
 
-            const float edge = 24f;
-            const float gap = 18f;
+            const float edge = 20f;
+            const float gap = 16f;
             float top = safe.yMax - edge;
             float left = safe.xMin + edge;
-            float width = Mathf.Clamp(safe.width * 0.30f, 520f, 600f);
-            float height = Mathf.Clamp(safe.height * 0.122f, 112f, 128f);
+            float width = Mathf.Clamp(safe.width * 0.34f, 380f, 450f);
+            float height = Mathf.Clamp(safe.height * 0.15f, 102f, 114f);
 
             if (_resourceBar != null)
             {
                 Rect resource = CanvasRect(_resourceBar);
                 float maxWidthBeforeResource = resource.xMin - gap - left;
-                if (maxWidthBeforeResource >= 430f)
+                if (maxWidthBeforeResource >= 340f)
                     width = Mathf.Min(width, maxWidthBeforeResource);
                 else if (resource.yMin - gap - height > safe.yMin)
                     top = resource.yMin - gap;
@@ -258,8 +241,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (_endTurnButton != null && _endTurnButton.transform is RectTransform endRect)
             {
-                float buttonWidth = Mathf.Clamp(width * 0.31f, 150f, 176f);
-                float buttonHeight = Mathf.Clamp(height * 0.47f, 50f, 58f);
+                float buttonWidth = Mathf.Clamp(width * 0.31f, 120f, 142f);
+                float buttonHeight = Mathf.Clamp(height * 0.47f, 48f, 52f);
                 endRect.anchorMin = new Vector2(1f, 1f);
                 endRect.anchorMax = new Vector2(1f, 1f);
                 endRect.pivot = new Vector2(1f, 1f);
@@ -267,12 +250,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 endRect.sizeDelta = new Vector2(buttonWidth, buttonHeight);
 
                 TMP_Text label = _endTurnButton.GetComponentInChildren<TMP_Text>(true);
-                ConfigureAutosize(label, 11f, 15f);
+                ConfigureAutosize(label, 14f, 16f);
             }
 
             float reservedForButton = _endTurnButton != null && _endTurnButton.transform is RectTransform button
                 ? button.sizeDelta.x + 32f
-                : 190f;
+                : 158f;
 
             if (_turnSummary != null)
             {
@@ -280,8 +263,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 rect.anchorMin = Vector2.zero;
                 rect.anchorMax = Vector2.one;
                 rect.pivot = new Vector2(0f, 0.5f);
-                rect.offsetMin = new Vector2(18f, 38f);
-                rect.offsetMax = new Vector2(-reservedForButton, -10f);
+                rect.offsetMin = new Vector2(16f, 36f);
+                rect.offsetMax = new Vector2(-reservedForButton, -8f);
+                _turnSummary.textWrappingMode = TextWrappingModes.NoWrap;
                 _turnSummary.overflowMode = TextOverflowModes.Ellipsis;
             }
 
@@ -291,14 +275,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 rect.anchorMin = new Vector2(0f, 0f);
                 rect.anchorMax = new Vector2(1f, 0f);
                 rect.pivot = new Vector2(0f, 0f);
-                rect.anchoredPosition = new Vector2(18f, 10f);
-                rect.sizeDelta = new Vector2(-36f, 25f);
+                rect.anchoredPosition = new Vector2(16f, 9f);
+                rect.sizeDelta = new Vector2(-32f, 24f);
             }
 
             if (_unitPanel != null)
             {
-                float unitWidth = Mathf.Clamp(safe.width * 0.22f, 330f, 420f);
-                float unitHeight = 50f;
+                float unitWidth = Mathf.Clamp(safe.width * 0.24f, 280f, 340f);
+                float unitHeight = 48f;
                 SetBottomLeft(_unitPanel, safe.xMin + edge, safe.yMin + edge, unitWidth, unitHeight);
             }
 
@@ -309,9 +293,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_buildButton == null)
                 return;
 
-            float width = Mathf.Clamp(safe.width * 0.108f, 190f, 220f);
-            float height = Mathf.Clamp(safe.height * 0.062f, 54f, 64f);
-            const float edge = 28f;
+            float width = Mathf.Clamp(safe.width * 0.12f, 148f, 176f);
+            float height = Mathf.Clamp(safe.height * 0.07f, 48f, 54f);
+            const float edge = 20f;
 
             _buildButton.anchorMin = new Vector2(1f, 0f);
             _buildButton.anchorMax = new Vector2(1f, 0f);
@@ -322,7 +306,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _buildButton.sizeDelta = new Vector2(width, height);
 
             TMP_Text label = _buildButton.GetComponentInChildren<TMP_Text>(true);
-            ConfigureAutosize(label, 11f, 15f);
+            ConfigureAutosize(label, 14f, 16f);
         }
 
         private void ApplyConstructionUi(Rect safe)
@@ -330,12 +314,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_constructionRoot == null)
                 return;
 
-            const float edge = 24f;
+            const float edge = 20f;
             const float gap = 12f;
 
             if (_constructionSelection != null)
             {
-                float selectionHeight = Mathf.Clamp(safe.height * 0.205f, 178f, 220f);
+                float selectionHeight = Mathf.Clamp(safe.height * 0.21f, 148f, 188f);
                 SetBottomStretch(
                     _constructionSelection,
                     safe.xMin + edge,
@@ -346,12 +330,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             float selectionTop = _constructionSelection != null
                 ? CanvasRect(_constructionSelection).yMax
-                : safe.yMin + 200f;
+                : safe.yMin + 168f;
 
             if (_constructionActionBar != null)
             {
-                float width = Mathf.Clamp(safe.width * 0.40f, 700f, 820f);
-                float height = Mathf.Clamp(safe.height * 0.06f, 54f, 64f);
+                float width = Mathf.Clamp(safe.width * 0.45f, 500f, 620f);
+                float height = Mathf.Clamp(safe.height * 0.07f, 48f, 54f);
                 SetBottomCenter(
                     _constructionActionBar,
                     safe.center.x,
@@ -378,15 +362,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     _constructionClose,
                     safe.xMax - edge,
                     y,
-                    46f,
-                    42f);
+                    42f,
+                    40f);
             }
 
             if (_constructionPreview != null)
             {
-                float width = Mathf.Clamp(safe.width * 0.19f, 320f, 380f);
-                float height = Mathf.Clamp(safe.height * 0.27f, 220f, 280f);
-                float minY = selectionTop + 86f;
+                float width = Mathf.Clamp(safe.width * 0.23f, 260f, 320f);
+                float height = Mathf.Clamp(safe.height * 0.30f, 190f, 240f);
+                float minY = selectionTop + 76f;
                 float y = Mathf.Max(minY, safe.center.y - height * 0.5f);
                 y = Mathf.Min(y, safe.yMax - edge - height);
                 SetBottomLeft(
@@ -397,14 +381,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     height);
 
                 foreach (TMP_Text text in _constructionPreview.GetComponentsInChildren<TMP_Text>(true))
-                    ConfigureAutosize(text, 11f, 16f);
+                    ConfigureAutosize(text, 14f, 16f);
             }
 
             if (_constructionStatus != null)
             {
-                float targetWidth = Mathf.Clamp(safe.width * 0.48f, 700f, 940f);
-                float height = Mathf.Clamp(safe.height * 0.055f, 48f, 58f);
-                float top = safe.yMax - 82f;
+                float targetWidth = Mathf.Clamp(safe.width * 0.50f, 480f, 620f);
+                float height = Mathf.Clamp(safe.height * 0.065f, 44f, 50f);
+                float top = safe.yMax - 72f;
                 if (_resourceBar != null)
                 {
                     Rect resource = CanvasRect(_resourceBar);
@@ -417,7 +401,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 float rightBoundary = safe.xMax - edge;
                 float available = Mathf.Max(1f, rightBoundary - leftBoundary);
 
-                if (available >= 620f)
+                if (available >= 440f)
                 {
                     float width = Mathf.Min(targetWidth, available);
                     float x = leftBoundary + (available - width) * 0.5f;
@@ -439,15 +423,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
 
                 foreach (TMP_Text text in _constructionStatus.GetComponentsInChildren<TMP_Text>(true))
-                    ConfigureAutosize(text, 11f, 15f);
+                    ConfigureAutosize(text, 14f, 16f);
             }
         }
 
         private void ConfigureTextAutosizing()
         {
-            ConfigureAutosize(_turnSummary, 11f, 16.5f);
-            ConfigureAutosize(_turnStatus, 10.5f, 13.5f);
-            ConfigureAutosize(_unitText, 11f, 14.5f);
+            ConfigureAutosize(_turnSummary, 14f, 18f);
+            ConfigureAutosize(_turnStatus, 14f, 16f);
+            ConfigureAutosize(_unitText, 14f, 16f);
         }
 
         private Insets CalculateSafeInsets(Vector2 canvasSize)

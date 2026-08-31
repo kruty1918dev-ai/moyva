@@ -45,7 +45,19 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         private void Update()
         {
-            if (_generatedTexture != null && _targetImage != null && _targetImage.enabled)
+            if (_livePreviewCamera != null)
+            {
+                if (!EnsureLivePreviewRenderTexture(out string failureReason, out bool recreated))
+                {
+                    FallBackFromLivePreview(failureReason);
+                }
+                else if (recreated && _hasLivePreviewWorldBounds && _livePreviewProjectSettings != null)
+                {
+                    ApplyLivePreviewCameraFraming(_livePreviewWorldBounds, _livePreviewProjectSettings);
+                }
+            }
+
+            if (_targetImage != null && _targetImage.enabled && _targetImage.texture != null)
                 ApplyCoverUv();
 
             TickClouds(Time.unscaledDeltaTime);
@@ -66,7 +78,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             DestroyRuntimeCloudMaterial();
 
             if (_ownsCloudLayer && _cloudsLayer != null)
-                Destroy(_cloudsLayer.gameObject);
+                DestroyPreviewObject(_cloudsLayer.gameObject);
         }
     }
 }
