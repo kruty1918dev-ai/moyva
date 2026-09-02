@@ -70,6 +70,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         }
 
         public IReadOnlyList<GameSlotInfo> Slots => _slots;
+        internal HomeMenuMoyvaUiState State => _state;
         public IReadOnlyList<RoomInfo> Rooms => _rooms;
         public IReadOnlyList<LobbyUserInfo> LobbyUsers => _lobbyUsers;
         public IReadOnlyList<KickPlayerInfo> KickPlayers => _kickPlayers;
@@ -533,6 +534,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        public void BeginControlInteraction() => _state.BeginInteraction();
+
+        public void EndControlInteraction() => _state.EndInteraction();
+
+        public void SetSettingsSection(HomeMenuSettingsSection section) => _state.SetSettingsSection(section);
+
+        public void SetPlayFlow(HomeMenuPlayFlow flow) => _state.SetPlayFlow(flow);
+
         public void SetMode(NetworkProviderType provider)
         {
             if (SelectedMode == provider)
@@ -579,6 +588,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        public void SetRoomPrivate(bool isPrivate)
+        {
+            var isPublic = !isPrivate;
+            if (IsPublic == isPublic)
+                return;
+
+            IsPublic = isPublic;
+            RefreshCreateRoomInteractable();
+            _state.MarkDirty();
+        }
+
         public void IncreaseMaxPlayers()
         {
             MaxPlayers = Mathf.Clamp(MaxPlayers + 1, 1, 8);
@@ -600,11 +620,23 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        public void PreviewRoomName(string value)
+        {
+            RoomName = value ?? string.Empty;
+            RefreshCreateRoomInteractable();
+        }
+
         public void SetRoomPassword(string value)
         {
             Password = value ?? string.Empty;
             RefreshCreateRoomInteractable();
             _state.MarkDirty();
+        }
+
+        public void PreviewRoomPassword(string value)
+        {
+            Password = value ?? string.Empty;
+            RefreshCreateRoomInteractable();
         }
 
         public void SetWorldName(string value)
@@ -613,6 +645,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             OnSettingsChanged?.Invoke();
             _state.MarkDirty();
         }
+
+        public void PreviewWorldName(string value) => WorldName = value ?? string.Empty;
 
         public void SetSeed(string value)
         {
@@ -631,12 +665,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        public void PreviewJoinCode(string value) => JoinCode = value ?? string.Empty;
+
         public void SetPlayerName(string value)
         {
             PlayerName = NormalizeText(value, "Player");
             OnPlayerNameChanged?.Invoke(PlayerName);
             _state.MarkDirty();
         }
+
+        public void PreviewPlayerName(string value) => PlayerName = value ?? string.Empty;
 
         public void ChangePlayerName()
         {
@@ -647,25 +685,150 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
-        public void SetMaster(float value) { MasterVolume = Mathf.Clamp01(value); OnMasterVolumeChanged?.Invoke(MasterVolume); _state.MarkDirty(); }
-        public void SetMusic(float value) { MusicVolume = Mathf.Clamp01(value); OnMusicVolumeChanged?.Invoke(MusicVolume); _state.MarkDirty(); }
-        public void SetSfx(float value) { SfxVolume = Mathf.Clamp01(value); OnSfxVolumeChanged?.Invoke(SfxVolume); _state.MarkDirty(); }
-        public void SetUi(float value) { UiVolume = Mathf.Clamp01(value); OnUiVolumeChanged?.Invoke(UiVolume); _state.MarkDirty(); }
-        public void ToggleMuted() { IsMuted = !IsMuted; OnMutedChanged?.Invoke(IsMuted); _state.MarkDirty(); }
-        public void SetGraphicsProfile(GraphicsQualityProfile profile) { GraphicsProfile = profile; OnGraphicsProfileChanged?.Invoke(profile); _state.MarkDirty(); }
-        public void SetRenderScale(float value) { RenderScale = Mathf.Clamp(value, 0.42f, 1f); OnRenderScaleChanged?.Invoke(RenderScale); _state.MarkDirty(); }
-        public void SetFrameRate(int value) { TargetFrameRate = Mathf.Clamp(value, 30, 360); OnTargetFrameRateChanged?.Invoke(TargetFrameRate); _state.MarkDirty(); }
-        public void SetTextureMipmapLimit(int value) { TextureMipmapLimit = Mathf.Clamp(value, 0, 3); OnTextureMipmapLimitChanged?.Invoke(TextureMipmapLimit); _state.MarkDirty(); }
-        public void SetLodBias(float value) { LodBias = Mathf.Clamp(Mathf.Round(value * 10f) / 10f, 0.4f, 2f); OnLodBiasChanged?.Invoke(LodBias); _state.MarkDirty(); }
-        public void ToggleDynamicRenderScale() { DynamicRenderScale = !DynamicRenderScale; OnDynamicRenderScaleChanged?.Invoke(DynamicRenderScale); _state.MarkDirty(); }
-        public void ToggleCloseZoomOptimization() { CloseZoomOptimization = !CloseZoomOptimization; OnCloseZoomOptimizationChanged?.Invoke(CloseZoomOptimization); _state.MarkDirty(); }
-        public void ToggleVSync() { VSync = !VSync; OnVSyncChanged?.Invoke(VSync); _state.MarkDirty(); }
-        public void ToggleShadows() { Shadows = !Shadows; OnShadowsChanged?.Invoke(Shadows); _state.MarkDirty(); }
-        public void ToggleAnisotropic() { AnisotropicFiltering = !AnisotropicFiltering; OnAnisotropicFilteringChanged?.Invoke(AnisotropicFiltering); _state.MarkDirty(); }
+        public void SetMaster(float value)
+        {
+            value = Mathf.Clamp01(value);
+            if (Mathf.Approximately(MasterVolume, value)) return;
+            MasterVolume = value;
+            OnMasterVolumeChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
+        public void SetMusic(float value)
+        {
+            value = Mathf.Clamp01(value);
+            if (Mathf.Approximately(MusicVolume, value)) return;
+            MusicVolume = value;
+            OnMusicVolumeChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
+        public void SetSfx(float value)
+        {
+            value = Mathf.Clamp01(value);
+            if (Mathf.Approximately(SfxVolume, value)) return;
+            SfxVolume = value;
+            OnSfxVolumeChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
+        public void SetUi(float value)
+        {
+            value = Mathf.Clamp01(value);
+            if (Mathf.Approximately(UiVolume, value)) return;
+            UiVolume = value;
+            OnUiVolumeChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
+        public void ToggleMuted() => SetMuted(!IsMuted);
+        public void SetMuted(bool value)
+        {
+            if (IsMuted == value) return;
+            IsMuted = value;
+            OnMutedChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+        public void SetGraphicsProfile(GraphicsQualityProfile profile)
+        {
+            if (GraphicsProfile == profile)
+                return;
+
+            GraphicsProfile = profile;
+            OnGraphicsProfileChanged?.Invoke(profile);
+            _state.MarkDirty();
+        }
+        public void SetRenderScale(float value)
+        {
+            value = Mathf.Clamp(value, 0.42f, 1f);
+            if (Mathf.Approximately(RenderScale, value)) return;
+            RenderScale = value;
+            OnRenderScaleChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
+        public void SetFrameRate(int value)
+        {
+            value = Mathf.Clamp(value, 30, 360);
+            if (TargetFrameRate == value) return;
+            TargetFrameRate = value;
+            OnTargetFrameRateChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
+        public void SetTextureMipmapLimit(int value)
+        {
+            value = Mathf.Clamp(value, 0, 3);
+            if (TextureMipmapLimit == value) return;
+            TextureMipmapLimit = value;
+            OnTextureMipmapLimitChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
+        public void SetLodBias(float value)
+        {
+            value = Mathf.Clamp(Mathf.Round(value * 10f) / 10f, 0.4f, 2f);
+            if (Mathf.Approximately(LodBias, value)) return;
+            LodBias = value;
+            OnLodBiasChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
+        public void ToggleDynamicRenderScale() => SetDynamicRenderScale(!DynamicRenderScale);
+        public void SetDynamicRenderScale(bool value)
+        {
+            if (DynamicRenderScale == value) return;
+            DynamicRenderScale = value;
+            OnDynamicRenderScaleChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
+        public void ToggleCloseZoomOptimization() => SetCloseZoomOptimization(!CloseZoomOptimization);
+        public void SetCloseZoomOptimization(bool value)
+        {
+            if (CloseZoomOptimization == value) return;
+            CloseZoomOptimization = value;
+            OnCloseZoomOptimizationChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
+        public void ToggleVSync() => SetVSync(!VSync);
+        public void SetVSync(bool value)
+        {
+            if (VSync == value) return;
+            VSync = value;
+            OnVSyncChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
+        public void ToggleShadows() => SetShadows(!Shadows);
+        public void SetShadows(bool value)
+        {
+            if (Shadows == value) return;
+            Shadows = value;
+            OnShadowsChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
+        public void ToggleAnisotropic() => SetAnisotropic(!AnisotropicFiltering);
+        public void SetAnisotropic(bool value)
+        {
+            if (AnisotropicFiltering == value) return;
+            AnisotropicFiltering = value;
+            OnAnisotropicFilteringChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
         public void AdjustRenderScale(float delta) { RenderScale = Mathf.Clamp(RenderScale + delta, 0.42f, 1f); OnRenderScaleChanged?.Invoke(RenderScale); _state.MarkDirty(); }
         public void AdjustFrameRate(int delta) { TargetFrameRate = Mathf.Clamp(TargetFrameRate + delta, 30, 360); OnTargetFrameRateChanged?.Invoke(TargetFrameRate); _state.MarkDirty(); }
         public void AdjustTextureMipmapLimit(int delta) { TextureMipmapLimit = Mathf.Clamp(TextureMipmapLimit + delta, 0, 3); OnTextureMipmapLimitChanged?.Invoke(TextureMipmapLimit); _state.MarkDirty(); }
-        public void SetAntiAliasing(int value) { AntiAliasing = NormalizeAntiAliasing(value); OnAntiAliasingChanged?.Invoke(AntiAliasing); _state.MarkDirty(); }
+        public void SetAntiAliasing(int value)
+        {
+            value = NormalizeAntiAliasing(value);
+            if (AntiAliasing == value) return;
+            AntiAliasing = value;
+            OnAntiAliasingChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
         public void AdjustLodBias(float delta) { LodBias = Mathf.Clamp(Mathf.Round((LodBias + delta) * 10f) / 10f, 0.4f, 2f); OnLodBiasChanged?.Invoke(LodBias); _state.MarkDirty(); }
         public void ResetGraphics() { OnResetGraphicsClicked?.Invoke(); _state.MarkDirty(); }
         public void DeleteSaves() { OnDeleteSavesClicked?.Invoke(); _state.MarkDirty(); }
@@ -718,6 +881,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             PasswordValue = value ?? string.Empty;
             _state.MarkDirty();
         }
+
+        public void PreviewPasswordValue(string value) => PasswordValue = value ?? string.Empty;
 
         private void InvokeButton(Button button, Action fallback)
         {

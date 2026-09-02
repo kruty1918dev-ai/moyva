@@ -19,20 +19,38 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly INavigation _navigation;
         private readonly IConfirmationService _confirmationService;
         private readonly HomeMenuMoyvaUiViewController _view;
+        private readonly ILobbyFlowContext _lobbyFlowContext;
+        private readonly HomeMenuMoyvaUiState _state;
+
+        private static readonly int[] FrameRateOptions = { 30, 45, 60, 90, 120, 144, 240 };
 
         internal HomeMenuMoyvaUiBridge(
             INavigation navigation,
             IConfirmationService confirmationService,
-            HomeMenuMoyvaUiViewController view)
+            HomeMenuMoyvaUiViewController view,
+            ILobbyFlowContext lobbyFlowContext = null,
+            HomeMenuMoyvaUiState state = null)
         {
             _navigation = navigation;
             _confirmationService = confirmationService;
             _view = view;
+            _lobbyFlowContext = lobbyFlowContext;
+            _state = state ?? view?.State;
         }
 
         public void Play() => Open(PlayModePanel);
         public void Continue() => Open(ContinuePanel);
-        public void Multiplayer() => Open(MultiplayerPanel);
+        public void Solo()
+        {
+            _lobbyFlowContext?.Set(NetworkProviderType.Offline, LobbyFlowKind.None);
+            _state?.SetPlayFlow(HomeMenuPlayFlow.Solo);
+            Open(WorldSetupPanel);
+        }
+        public void Multiplayer()
+        {
+            _state?.SetPlayFlow(HomeMenuPlayFlow.Multiplayer);
+            Open(MultiplayerPanel);
+        }
         public void Settings() => Open(SettingsPanel);
         public void WorldSetup() => Open(WorldSetupPanel);
         public void Back() => _navigation?.CloseLast();
@@ -60,17 +78,35 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void JoinGlobal() => _view?.ChooseMultiplayerJoin(NetworkProviderType.Relay);
         public void SetModeLan() => _view?.SetMode(NetworkProviderType.Lan);
         public void SetModeGlobal() => _view?.SetMode(NetworkProviderType.Relay);
+        public void SetNetworkMode(object value) => _view?.SetMode(ToInt(value, 0) == 1 ? NetworkProviderType.Lan : NetworkProviderType.Relay);
+        public void CreateSelected() => _view?.ChooseMultiplayerCreate(NormalizeMultiplayerMode(_view.SelectedMode));
+        public void JoinSelected() => _view?.ChooseMultiplayerJoin(NormalizeMultiplayerMode(_view.SelectedMode));
+
+        public void ShowGeneralSettings() => _state?.SetSettingsSection(HomeMenuSettingsSection.General);
+        public void ShowAudioSettings() => _state?.SetSettingsSection(HomeMenuSettingsSection.Audio);
+        public void ShowGraphicsSettings() => _state?.SetSettingsSection(HomeMenuSettingsSection.Graphics);
+
+        public void BeginControlInteraction() => _state?.BeginInteraction();
+        public void EndControlInteraction() => _state?.EndInteraction();
 
         public void CreateRoom() => _view?.ClickCreateRoom();
         public void SetRoomName(string value) => _view?.SetRoomName(value);
         public void SetRoomPassword(string value) => _view?.SetRoomPassword(value);
+        public void PreviewRoomName(string value) => _view?.PreviewRoomName(value);
+        public void PreviewRoomPassword(string value) => _view?.PreviewRoomPassword(value);
+        public void CommitRoomName(string value) => Commit(() => _view?.SetRoomName(value));
+        public void CommitRoomPassword(string value) => Commit(() => _view?.SetRoomPassword(value));
         public void TogglePublic() => _view?.ToggleRoomVisibility();
+        public void SetPrivate(object value) => _view?.SetRoomPrivate(ToBool(value));
         public void MaxPlayersMinus() => _view?.DecreaseMaxPlayers();
         public void MaxPlayersPlus() => _view?.IncreaseMaxPlayers();
 
         public void CreateWorld() => _view?.ClickCreateWorld();
         public void SetWorldName(string value) => _view?.SetWorldName(value);
         public void SetSeed(string value) => _view?.SetSeed(value);
+        public void PreviewWorldName(string value) => _view?.PreviewWorldName(value);
+        public void CommitWorldName(string value) => Commit(() => _view?.SetWorldName(value));
+        public void CommitSeed(string value) => Commit(() => _view?.SetSeed(value));
         public void RandomSeed() => _view?.RandomizeSeed();
         public void WorldSmall() => _view?.SetWorldSize(WorldSize.Small);
         public void WorldMedium() => _view?.SetWorldSize(WorldSize.Medium);
@@ -83,12 +119,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void DifficultyNormal() => _view?.SetDifficulty(Difficulty.Normal);
         public void DifficultyHard() => _view?.SetDifficulty(Difficulty.Hard);
         public void DifficultyInsane() => _view?.SetDifficulty(Difficulty.Insane);
+        public void SetWorldSizeValue(object value) => _view?.SetWorldSize((WorldSize)Mathf.Clamp(ToInt(value, 1), 0, 2));
+        public void SetMapTypeValue(object value) => _view?.SetMapType((MapType)Mathf.Clamp(ToInt(value, 0), 0, 5));
+        public void SetDifficultyValue(object value) => _view?.SetDifficulty((Difficulty)Mathf.Clamp(ToInt(value, 1), 0, 3));
 
         public void StartGame() => _view?.ClickLobbyStart();
         public void LeaveLobby() => _view?.ClickLobbyBack();
         public void RefreshRooms() => _view?.RequestRoomRefresh();
         public void JoinTypedRoom() => _view?.RequestJoin();
         public void SetJoinCode(string value) => _view?.SetJoinCode(value);
+        public void PreviewJoinCode(string value) => _view?.PreviewJoinCode(value);
+        public void CommitJoinCode(string value) => Commit(() => _view?.SetJoinCode(value));
         public void SelectSlot(int index) => _view?.SelectSlot(index);
         public void SelectRoom(int index) => _view?.SelectRoom(index);
         public void RefreshKickPlayers() => _view?.RequestKickRefresh();
@@ -97,10 +138,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public void ChangePlayerName() => _view?.ChangePlayerName();
         public void SetPlayerName(string value) => _view?.SetPlayerName(value);
+        public void PreviewPlayerName(string value) => _view?.PreviewPlayerName(value);
+        public void CommitPlayerName(string value) => Commit(() => _view?.SetPlayerName(value));
         public void SetMasterValue(object value) => _view?.SetMaster(ToFloat(value, _view.MasterVolume));
         public void SetMusicValue(object value) => _view?.SetMusic(ToFloat(value, _view.MusicVolume));
         public void SetSfxValue(object value) => _view?.SetSfx(ToFloat(value, _view.SfxVolume));
         public void SetUiValue(object value) => _view?.SetUi(ToFloat(value, _view.UiVolume));
+        public void CommitMasterValue(object value) => Commit(() => SetMasterValue(value));
+        public void CommitMusicValue(object value) => Commit(() => SetMusicValue(value));
+        public void CommitSfxValue(object value) => Commit(() => SetSfxValue(value));
+        public void CommitUiValue(object value) => Commit(() => SetUiValue(value));
         public void MasterLow() => _view?.SetMaster(0.35f);
         public void MasterMid() => _view?.SetMaster(0.7f);
         public void MasterHigh() => _view?.SetMaster(1f);
@@ -111,15 +158,27 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void UiLow() => _view?.SetUi(0.35f);
         public void UiHigh() => _view?.SetUi(0.9f);
         public void ToggleMuted() => _view?.ToggleMuted();
+        public void SetMuted(object value) => _view?.SetMuted(ToBool(value));
         public void GraphicsAuto() => _view?.SetGraphicsProfile(GraphicsQualityProfile.Auto);
         public void GraphicsPerformance() => _view?.SetGraphicsProfile(GraphicsQualityProfile.Performance);
         public void GraphicsBalanced() => _view?.SetGraphicsProfile(GraphicsQualityProfile.Balanced);
         public void GraphicsQuality() => _view?.SetGraphicsProfile(GraphicsQualityProfile.Quality);
+        public void SetGraphicsProfileValue(object value) => _view?.SetGraphicsProfile(
+            (GraphicsQualityProfile)Mathf.Clamp(ToInt(value, 0), 0, 4));
         public void SetRenderScaleValue(object value) => _view?.SetRenderScale(ToFloat(value, _view.RenderScale));
         public void SetFrameRateValue(object value) => _view?.SetFrameRate(ToInt(value, _view.TargetFrameRate));
         public void SetMipmapValue(object value) => _view?.SetTextureMipmapLimit(ToInt(value, _view.TextureMipmapLimit));
         public void SetAntiAliasingSliderValue(object value) => _view?.SetAntiAliasing(SliderToAntiAliasing(ToInt(value, 0)));
         public void SetLodBiasValue(object value) => _view?.SetLodBias(ToFloat(value, _view.LodBias));
+        public void CommitRenderScaleValue(object value) => Commit(() => SetRenderScaleValue(value));
+        public void CommitLodBiasValue(object value) => Commit(() => SetLodBiasValue(value));
+        public void SetFrameRateOption(object value)
+        {
+            var index = Mathf.Clamp(ToInt(value, 2), 0, FrameRateOptions.Length - 1);
+            _view?.SetFrameRate(FrameRateOptions[index]);
+        }
+        public void SetTextureQualityOption(object value) => _view?.SetTextureMipmapLimit(Mathf.Clamp(ToInt(value, 0), 0, 3));
+        public void SetAntiAliasingOption(object value) => _view?.SetAntiAliasing(SliderToAntiAliasing(ToInt(value, 0)));
         public void RenderScaleDown() => _view?.AdjustRenderScale(-0.1f);
         public void RenderScaleUp() => _view?.AdjustRenderScale(0.1f);
         public void FrameRateDown() => _view?.AdjustFrameRate(-30);
@@ -134,6 +193,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void ToggleVSync() => _view?.ToggleVSync();
         public void ToggleShadows() => _view?.ToggleShadows();
         public void ToggleAnisotropic() => _view?.ToggleAnisotropic();
+        public void SetVSync(object value) => _view?.SetVSync(ToBool(value));
+        public void SetShadows(object value) => _view?.SetShadows(ToBool(value));
+        public void SetAnisotropic(object value) => _view?.SetAnisotropic(ToBool(value));
         public void LodBiasDown() => _view?.AdjustLodBias(-0.1f);
         public void LodBiasUp() => _view?.AdjustLodBias(0.1f);
         public void ResetGraphics() => _view?.ResetGraphics();
@@ -145,6 +207,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void PasswordEmpty() => _view?.SetPasswordPreset(string.Empty);
         public void PasswordDemo() => _view?.SetPasswordPreset("moyva");
         public void SetPasswordValue(string value) => _view?.SetPasswordValue(value);
+        public void PreviewPasswordValue(string value) => _view?.PreviewPasswordValue(value);
+        public void CommitPasswordValue(string value) => Commit(() => _view?.SetPasswordValue(value));
         public void ConfirmPassword() => _view?.ConfirmPassword();
         public void CancelPassword() => _view?.CancelPassword();
 
@@ -157,6 +221,18 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             _navigation.Open(panelName);
+        }
+
+        private void Commit(Action action)
+        {
+            try
+            {
+                action?.Invoke();
+            }
+            finally
+            {
+                _state?.EndInteraction();
+            }
         }
 
         private static float ToFloat(object value, float fallback)
@@ -196,6 +272,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private static int ToInt(object value, int fallback)
         {
             return Mathf.RoundToInt(ToFloat(value, fallback));
+        }
+
+        private static bool ToBool(object value)
+        {
+            if (value is bool boolValue)
+                return boolValue;
+
+            return value != null && bool.TryParse(value.ToString(), out var parsed) && parsed;
+        }
+
+        private static NetworkProviderType NormalizeMultiplayerMode(NetworkProviderType mode)
+        {
+            return mode == NetworkProviderType.Lan ? NetworkProviderType.Lan : NetworkProviderType.Relay;
         }
 
         private static int SliderToAntiAliasing(int value)

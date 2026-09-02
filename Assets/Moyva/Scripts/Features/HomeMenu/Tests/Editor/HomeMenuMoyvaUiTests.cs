@@ -1,13 +1,49 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.Runtime;
-using Kruty1918.Moyva.Shared.Graphics;
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityHTML.Runtime;
 
 namespace Kruty1918.Moyva.Tests.HomeMenu
 {
     public sealed class HomeMenuMoyvaUiTests
     {
         [Test]
-        public void Build_CreateRoomRoute_RendersEditableFields()
+        public void Build_MainAndPlayRoutes_ExposeClearGameFlow()
+        {
+            var state = new HomeMenuMoyvaUiState();
+            var view = new HomeMenuMoyvaUiViewController(state);
+
+            try
+            {
+                var mainHtml = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-720 vp-landscape");
+
+                Assert.That(mainHtml, Does.Contain("Globals.moyvaMenu.Play()"));
+                Assert.That(mainHtml, Does.Contain("Globals.moyvaMenu.Settings()"));
+                Assert.That(mainHtml, Does.Contain("Globals.moyvaMenu.Exit()"));
+                Assert.That(mainHtml, Does.Not.Contain("Globals.moyvaMenu.Multiplayer()"));
+                Assert.That(mainHtml, Does.Not.Contain("Globals.moyvaMenu.Continue()"));
+
+                state.Open("PlayModePanel");
+                var playHtml = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-720 vp-landscape");
+
+                Assert.That(playHtml, Does.Contain("SOLO SANDBOX"));
+                Assert.That(playHtml, Does.Contain("Globals.moyvaMenu.Solo()"));
+                Assert.That(playHtml, Does.Contain("MULTIPLAYER"));
+                Assert.That(playHtml, Does.Contain("COMING SOON"));
+                Assert.That(playHtml, Does.Contain("disabled=\"true\""));
+            }
+            finally
+            {
+                view.Dispose();
+            }
+        }
+
+        [Test]
+        public void Build_CreateRoomRoute_RendersEditableFieldsToggleAndStepper()
         {
             var state = new HomeMenuMoyvaUiState();
             var view = new HomeMenuMoyvaUiViewController(state);
@@ -16,13 +52,17 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             {
                 state.Open("CreateRoomPanel");
                 view.SetRoomName("Test Room");
+                view.SetRoomPrivate(true);
                 view.SetRoomPassword("secret");
 
-                var html = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-wide");
+                var html = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-720 vp-landscape");
 
-                Assert.That(html, Does.Contain("<input"));
-                Assert.That(html, Does.Contain("Globals.moyvaMenu.SetRoomName(event)"));
-                Assert.That(html, Does.Contain("Globals.moyvaMenu.SetRoomPassword(event)"));
+                Assert.That(html, Does.Contain("Globals.moyvaMenu.PreviewRoomName(event)"));
+                Assert.That(html, Does.Contain("Globals.moyvaMenu.CommitRoomName(event)"));
+                Assert.That(html, Does.Contain("Globals.moyvaMenu.CommitRoomPassword(event)"));
+                Assert.That(html, Does.Contain("<toggle"));
+                Assert.That(html, Does.Contain("Globals.moyvaMenu.SetPrivate(event)"));
+                Assert.That(html, Does.Contain("stepper-value"));
                 Assert.That(html, Does.Contain("Test Room"));
             }
             finally
@@ -32,7 +72,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
         }
 
         [Test]
-        public void Build_WorldAndSettingsRoutes_RenderFullControlSet()
+        public void Build_WorldAndSettingsRoutes_UsePurposeBuiltControls()
         {
             var state = new HomeMenuMoyvaUiState();
             var view = new HomeMenuMoyvaUiViewController(state);
@@ -40,21 +80,34 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             try
             {
                 state.Open("WorldSetupPanel");
-                var worldHtml = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-wide");
+                var worldHtml = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-720 vp-landscape");
 
-                Assert.That(worldHtml, Does.Contain("Globals.moyvaMenu.MapPangaea()"));
-                Assert.That(worldHtml, Does.Contain("Globals.moyvaMenu.MapHighlands()"));
-                Assert.That(worldHtml, Does.Contain("Globals.moyvaMenu.DifficultyHard()"));
-                Assert.That(worldHtml, Does.Contain("Globals.moyvaMenu.DifficultyInsane()"));
+                Assert.That(Count(worldHtml, "<select"), Is.EqualTo(3));
+                Assert.That(worldHtml, Does.Contain("Small|Medium|Large"));
+                Assert.That(worldHtml, Does.Contain("Continents|Pangaea|Islands|Highlands|Desert|Random"));
+                Assert.That(worldHtml, Does.Not.Contain("Globals.moyvaMenu.WorldSmall()"));
+                Assert.That(worldHtml, Does.Not.Contain("Globals.moyvaMenu.MapPangaea()"));
 
                 state.Open("SettingsPanel");
-                var settingsHtml = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-wide");
+                state.SetSettingsSection(HomeMenuSettingsSection.Audio);
+                var audioHtml = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-1080 vp-landscape");
 
-                Assert.That(settingsHtml, Does.Contain("<scroll className=\"navigation-list\""));
-                Assert.That(settingsHtml, Does.Contain("Globals.moyvaMenu.ToggleDynamicRenderScale()"));
-                Assert.That(settingsHtml, Does.Contain("Globals.moyvaMenu.SetMipmapValue(event)"));
-                Assert.That(settingsHtml, Does.Contain("Globals.moyvaMenu.SetAntiAliasingSliderValue(event)"));
-                Assert.That(settingsHtml, Does.Contain("Globals.moyvaMenu.SetLodBiasValue(event)"));
+                Assert.That(audioHtml, Does.Contain("settings-tabs"));
+                Assert.That(Count(audioHtml, "<slider"), Is.EqualTo(4));
+                Assert.That(audioHtml, Does.Contain("onBeginChange=\"Globals.moyvaMenu.BeginControlInteraction()\""));
+                Assert.That(audioHtml, Does.Contain("Globals.moyvaMenu.CommitMasterValue(event)"));
+                Assert.That(audioHtml, Does.Contain("Globals.moyvaMenu.SetMuted(event)"));
+
+                state.SetSettingsSection(HomeMenuSettingsSection.Graphics);
+                var graphicsHtml = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-1080 vp-landscape");
+
+                Assert.That(Count(graphicsHtml, "<select"), Is.EqualTo(4));
+                Assert.That(Count(graphicsHtml, "<slider"), Is.EqualTo(2));
+                Assert.That(Count(graphicsHtml, "<toggle"), Is.EqualTo(3));
+                Assert.That(graphicsHtml, Does.Contain("Globals.moyvaMenu.SetTextureQualityOption(event)"));
+                Assert.That(graphicsHtml, Does.Contain("Globals.moyvaMenu.SetAntiAliasingOption(event)"));
+                Assert.That(graphicsHtml, Does.Not.Contain("Dynamic scale"));
+                Assert.That(graphicsHtml, Does.Not.Contain("Close zoom"));
             }
             finally
             {
@@ -70,9 +123,9 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
 
             try
             {
-                var mainHtml = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-wide");
+                var mainHtml = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-720 vp-landscape");
                 state.Open("SettingsPanel");
-                var settingsHtml = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-wide");
+                var settingsHtml = HomeMenuMoyvaUiMarkup.Build(state, view, "vp-720 vp-landscape");
 
                 Assert.That(mainHtml, Does.Not.Contain("top-back-button"));
                 Assert.That(settingsHtml, Does.Contain("top-back-button"));
@@ -85,57 +138,60 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
         }
 
         [Test]
-        public void Bridge_EditCommands_UpdateViewStateAndRaiseEvents()
+        public void State_DuringControlInteraction_DefersDirtyRenderUntilRelease()
+        {
+            var state = new HomeMenuMoyvaUiState();
+            var changed = 0;
+            state.Changed += () => changed++;
+
+            Assert.That(state.ConsumeDirty(), Is.True);
+            state.BeginInteraction();
+            state.MarkDirty();
+
+            Assert.That(state.IsInteractionActive, Is.True);
+            Assert.That(state.ConsumeDirty(), Is.False);
+            Assert.That(changed, Is.Zero);
+
+            state.EndInteraction();
+            state.EndInteraction();
+
+            Assert.That(state.IsInteractionActive, Is.False);
+            Assert.That(changed, Is.EqualTo(1));
+            Assert.That(state.ConsumeDirty(), Is.True);
+        }
+
+        [Test]
+        public void Bridge_ControlCommands_MapIndexesAndExactToggleValues()
         {
             var state = new HomeMenuMoyvaUiState();
             var view = new HomeMenuMoyvaUiViewController(state);
             var bridge = new HomeMenuMoyvaUiBridge(null, null, view);
-            var settingsChanged = 0;
-            var joinCodeChanged = 0;
-            var dynamicScaleChanged = false;
-            var antiAliasing = -1;
-            var renderScale = 0f;
-            var frameRate = 0;
-            string playerName = null;
 
             try
             {
-                view.OnSettingsChanged += () => settingsChanged++;
-                view.OnJoinCodeChanged += () => joinCodeChanged++;
-                view.OnPlayerNameChanged += value => playerName = value;
-                view.OnDynamicRenderScaleChanged += value => dynamicScaleChanged = value;
-                view.OnAntiAliasingChanged += value => antiAliasing = value;
-                view.OnRenderScaleChanged += value => renderScale = value;
-                view.OnTargetFrameRateChanged += value => frameRate = value;
+                bridge.SetWorldSizeValue(2);
+                bridge.SetMapTypeValue(5);
+                bridge.SetDifficultyValue(3);
+                bridge.SetPrivate(true);
+                bridge.SetFrameRateOption(5);
+                bridge.SetTextureQualityOption(2);
+                bridge.SetAntiAliasingOption(2);
+                bridge.SetMuted(true);
+                bridge.SetVSync(false);
+                bridge.SetShadows(false);
+                bridge.SetAnisotropic(true);
 
-                bridge.SetRoomName("Alpha");
-                bridge.SetRoomPassword("pw");
-                bridge.SetWorldName("Realm");
-                bridge.SetSeed("12345");
-                bridge.SetJoinCode("  ABCD  ");
-                bridge.SetPlayerName("Oleks");
-                bridge.ToggleDynamicRenderScale();
-                bridge.AntiAliasing4x();
-                bridge.SetRenderScaleValue(0.55f);
-                bridge.SetFrameRateValue(144f);
-
-                Assert.That(view.RoomName, Is.EqualTo("Alpha"));
-                Assert.That(view.Password, Is.EqualTo("pw"));
-                Assert.That(view.WorldName, Is.EqualTo("Realm"));
-                Assert.That(view.Seed, Is.EqualTo(12345));
-                Assert.That(view.JoinCode, Is.EqualTo("ABCD"));
-                Assert.That(view.PlayerName, Is.EqualTo("Oleks"));
-                Assert.That(view.DynamicRenderScale, Is.True);
-                Assert.That(dynamicScaleChanged, Is.True);
-                Assert.That(view.AntiAliasing, Is.EqualTo(4));
-                Assert.That(antiAliasing, Is.EqualTo(4));
-                Assert.That(view.RenderScale, Is.EqualTo(0.55f).Within(0.001f));
-                Assert.That(renderScale, Is.EqualTo(0.55f).Within(0.001f));
+                Assert.That(view.Size.ToString(), Is.EqualTo("Large"));
+                Assert.That(view.MapType.ToString(), Is.EqualTo("Random"));
+                Assert.That(view.Difficulty.ToString(), Is.EqualTo("Insane"));
+                Assert.That(view.IsPublic, Is.False);
                 Assert.That(view.TargetFrameRate, Is.EqualTo(144));
-                Assert.That(frameRate, Is.EqualTo(144));
-                Assert.That(playerName, Is.EqualTo("Oleks"));
-                Assert.That(settingsChanged, Is.EqualTo(2));
-                Assert.That(joinCodeChanged, Is.EqualTo(1));
+                Assert.That(view.TextureMipmapLimit, Is.EqualTo(2));
+                Assert.That(view.AntiAliasing, Is.EqualTo(4));
+                Assert.That(view.IsMuted, Is.True);
+                Assert.That(view.VSync, Is.False);
+                Assert.That(view.Shadows, Is.False);
+                Assert.That(view.AnisotropicFiltering, Is.True);
             }
             finally
             {
@@ -144,11 +200,11 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
         }
 
         [Test]
-        public void GraphicsSettingsData_WithDynamicRenderScale_PreservesRequestedValue()
+        public void ViewportClass_IncludesSizeAndOrientation()
         {
-            var settings = GraphicsSettingsData.CreateDefault().WithDynamicRenderScale(true);
-
-            Assert.That(settings.DynamicRenderScale, Is.True);
+            Assert.That(HomeMenuViewportUtility.ResolveViewportClass(new Vector2(1920f, 1080f)), Is.EqualTo("vp-1080 vp-landscape"));
+            Assert.That(HomeMenuViewportUtility.ResolveViewportClass(new Vector2(390f, 844f)), Is.EqualTo("vp-tiny vp-portrait"));
+            Assert.That(HomeMenuViewportUtility.ResolveViewportClass(new Vector2(960f, 540f)), Is.EqualTo("vp-tiny vp-landscape"));
         }
 
         [Test]
@@ -163,6 +219,161 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             Assert.That(scene, Does.Not.Contain("m_Name: Overlay"));
             Assert.That(scene, Does.Not.Contain("m_Name: Loading"));
             Assert.That(scene, Does.Contain("m_Name: UnityHTMLShellAnchor"));
+        }
+
+        [Test]
+        public void CompatibilityAnchor_UsesDynamicEditorMarkup()
+        {
+            var anchorObject = new GameObject("HomeMenuAnchor", typeof(RectTransform));
+
+            try
+            {
+                var anchor = anchorObject.AddComponent<HomeMenuHtmlShellAnchor>();
+                var buildPreview = anchor.GetType().GetMethod(
+                    "BuildEditorPreviewHtml",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+                Assert.That(buildPreview, Is.Not.Null);
+                var html = (string)buildPreview.Invoke(anchor, null);
+
+                Assert.That(html, Does.Contain("A realm awaits"));
+                Assert.That(html, Does.Contain("Globals.moyvaMenu.Play()"));
+                Assert.That(html, Does.Not.Contain("Choose your path"));
+                Assert.That(html, Does.Not.Contain("Globals.moyvaMenu.Multiplayer()"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(anchorObject);
+            }
+        }
+
+        [Test]
+        public void PresenterDispose_WhenMountedAnchorWasDestroyed_DoesNotThrow()
+        {
+            var mountObject = new GameObject("MountRoot", typeof(RectTransform));
+            var legacy = new GameObject("LegacyShell");
+            var anchorObject = new GameObject("UnityHTMLShellAnchor");
+            var anchor = anchorObject.AddComponent<HomeMenuMoyvaUiAnchor>();
+            var state = new HomeMenuMoyvaUiState();
+            var view = new HomeMenuMoyvaUiViewController(state);
+            var host = new FakeUnityHtmlHost();
+            var presenter = new HomeMenuMoyvaUiPresenter(
+                new HomeMenuConfigSO { useUnityHtmlShell = true },
+                new FakeNavigation(),
+                new FakeConfirmationService(),
+                host,
+                state,
+                view,
+                null,
+                new[] { anchor });
+
+            try
+            {
+                anchor.ConfigureForTests(
+                    mountObject.GetComponent<RectTransform>(),
+                    legacy,
+                    new TextAsset("<text>Home</text>"),
+                    new TextAsset(".home { width: 100%; }"));
+
+                presenter.Initialize();
+                Object.DestroyImmediate(anchorObject);
+
+                Assert.DoesNotThrow(() => presenter.Dispose());
+                Assert.That(host.DisposeCount, Is.EqualTo(1));
+            }
+            finally
+            {
+                presenter.Dispose();
+                view.Dispose();
+                Object.DestroyImmediate(mountObject);
+                Object.DestroyImmediate(legacy);
+                if (anchorObject != null)
+                    Object.DestroyImmediate(anchorObject);
+            }
+        }
+
+        private static int Count(string source, string value)
+        {
+            var count = 0;
+            var offset = 0;
+            while ((offset = source.IndexOf(value, offset, System.StringComparison.Ordinal)) >= 0)
+            {
+                count++;
+                offset += value.Length;
+            }
+            return count;
+        }
+
+        private sealed class FakeUnityHtmlHost : IUnityHtmlHost
+        {
+            public int DisposeCount { get; private set; }
+
+            public UnityHtmlMountResult Mount(
+                RectTransform root,
+                UnityHtmlDocument document,
+                IReadOnlyDictionary<string, object> globals = null)
+            {
+                return UnityHtmlMountResult.Success();
+            }
+
+            public void Unmount()
+            {
+            }
+
+            public void Dispose()
+            {
+                DisposeCount++;
+            }
+        }
+
+        private sealed class FakeNavigation : INavigation
+        {
+            public string CurrentMenu { get; private set; } = string.Empty;
+            public event System.Action<NavigationChangeEventArgs> OnMenuChanged;
+
+            public void Close(string menuName) => CloseLast();
+            public void CloseForce(string menuName) => CloseLast();
+            public Task CloseIf(string menuName, System.Func<Task<bool>> condition) => Task.CompletedTask;
+            public void Open(string menuName)
+            {
+                var previous = CurrentMenu;
+                CurrentMenu = menuName;
+                OnMenuChanged?.Invoke(new NavigationChangeEventArgs
+                {
+                    PreviousMenu = previous,
+                    CurrentMenu = CurrentMenu,
+                    CurrentIsOpen = true
+                });
+            }
+
+            public void OpenForce(string menuName) => Open(menuName);
+            public void OpenLast() { }
+            public void OpenLastForce() { }
+            public Task OpenIfAsync(string menuName, System.Func<Task<bool>> condition) => Task.CompletedTask;
+            public void CloseLast()
+            {
+                var previous = CurrentMenu;
+                CurrentMenu = string.Empty;
+                OnMenuChanged?.Invoke(new NavigationChangeEventArgs
+                {
+                    PreviousMenu = previous,
+                    CurrentMenu = CurrentMenu,
+                    CurrentIsOpen = false
+                });
+            }
+
+            public void CloseLastForce() => CloseLast();
+        }
+
+        private sealed class FakeConfirmationService : IConfirmationService
+        {
+            public void Show(ConfirmationRequest request) { }
+            public void ForeceHide() { }
+            public bool TryGetReqest(out ConfirmationRequest? request)
+            {
+                request = null;
+                return false;
+            }
         }
     }
 }

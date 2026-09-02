@@ -29,6 +29,43 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
             EditorApplication.hierarchyChanged += HandleHierarchyChanged;
             EditorApplication.update -= FlushQueuedHierarchySync;
             EditorApplication.update += FlushQueuedHierarchySync;
+            EditorApplication.delayCall -= RefreshAllLivePreviews;
+            EditorApplication.delayCall += RefreshAllLivePreviews;
+        }
+
+        private static void RefreshAllLivePreviews()
+        {
+            if (Application.isPlaying)
+                return;
+
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                EditorApplication.delayCall -= RefreshAllLivePreviews;
+                EditorApplication.delayCall += RefreshAllLivePreviews;
+                return;
+            }
+
+            var anchors = UnityEngine.Object.FindObjectsByType<HomeMenuMoyvaUiAnchor>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+
+            _syncInProgress = true;
+            try
+            {
+                for (var i = 0; i < anchors.Length; i++)
+                {
+                    var anchor = anchors[i];
+                    if (anchor != null && anchor.EditorLivePreview)
+                        anchor.EditorRefreshPreview();
+                }
+            }
+            finally
+            {
+                _syncInProgress = false;
+            }
+
+            SceneView.RepaintAll();
+            UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
         }
 
         public override void OnInspectorGUI()
@@ -73,7 +110,6 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
             try
             {
                 anchor.EditorRefreshPreview();
-                EditorSceneManager.MarkSceneDirty(anchor.gameObject.scene);
             }
             finally
             {

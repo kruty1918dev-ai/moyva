@@ -253,6 +253,7 @@
   <Project Path="Unity.InferenceEngine.MacBLAS.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Editor.Shared.csproj" />
   <Project Path="Unity.InferenceEngine.ONNX.Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.HomeMenu.Editor.csproj" />
   <Project Path="Unity.InferenceEngine.iOSBLAS.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Config.Runtime.csproj" />
   <Project Path="Kruty1918.Moyva.Multiplayer.UI.csproj" />

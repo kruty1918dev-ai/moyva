@@ -17,6 +17,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly IUnityHtmlHost _host;
         private readonly HomeMenuMoyvaUiState _state;
         private readonly HomeMenuMoyvaUiViewController _view;
+        private readonly HomeMenuMoyvaUiBridge _bridge;
         private readonly HomeMenuMoyvaUiAnchor[] _anchors;
 
         private HomeMenuMoyvaUiAnchor _mountedAnchor;
@@ -32,6 +33,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             IUnityHtmlHost host,
             HomeMenuMoyvaUiState state,
             HomeMenuMoyvaUiViewController view,
+            [InjectOptional] ILobbyFlowContext lobbyFlowContext = null,
             [InjectOptional] HomeMenuMoyvaUiAnchor[] anchors = null)
         {
             _config = config;
@@ -40,6 +42,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _host = host;
             _state = state;
             _view = view;
+            _bridge = new HomeMenuMoyvaUiBridge(_navigation, _confirmationService, _view, lobbyFlowContext, _state);
             _anchors = anchors ?? Array.Empty<HomeMenuMoyvaUiAnchor>();
         }
 
@@ -77,7 +80,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _state.MarkDirty();
             }
 
-            if (_lastStateChangeFrame == Time.frameCount)
+            if (_state.IsInteractionActive || _lastStateChangeFrame == Time.frameCount)
                 return;
 
             RenderIfNeeded(force: false);
@@ -90,8 +93,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_navigation != null)
                 _navigation.OnMenuChanged -= HandleMenuChanged;
 
-            _mountedAnchor?.SetMoyvaUiVisible(false);
-            _mountedAnchor?.SetLegacyUiVisible(false);
+            if (_mountedAnchor != null)
+            {
+                _mountedAnchor.SetMoyvaUiVisible(false);
+                _mountedAnchor.SetLegacyUiVisible(false);
+            }
+
             _mountedAnchor = null;
             _host?.Dispose();
         }
@@ -117,7 +124,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var document = new UnityHtmlDocument(html, css, "MoyvaUI HomeMenu");
             var globals = new Dictionary<string, object>
             {
-                ["moyvaMenu"] = new HomeMenuMoyvaUiBridge(_navigation, _confirmationService, _view)
+                ["moyvaMenu"] = _bridge
             };
 
             if (_mountedAnchor.FontAsset != null)

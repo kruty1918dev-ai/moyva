@@ -32,6 +32,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [SerializeField] private TMP_FontAsset _fontAsset;
         [SerializeField] private bool _editorLivePreview = true;
         [SerializeField] private EditorPreviewRoute _editorPreviewRoute = EditorPreviewRoute.Main;
+        [SerializeField] private HomeMenuSettingsSection _editorPreviewSettingsSection = HomeMenuSettingsSection.General;
+        [SerializeField] private HomeMenuPlayFlow _editorPreviewPlayFlow = HomeMenuPlayFlow.Solo;
 
         private IUnityHtmlHost _editorPreviewHost;
         private int _editorPreviewSignature;
@@ -87,6 +89,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public void SetMoyvaUiVisible(bool visible)
         {
+            if (this == null)
+                return;
+
             if (_mountRoot != null && _mountRoot.gameObject.activeSelf != visible)
                 _mountRoot.gameObject.SetActive(visible);
         }
@@ -95,6 +100,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public void SetLegacyUiVisible(bool visible)
         {
+            if (this == null)
+                return;
+
             if (_legacyUiRoots != null)
             {
                 for (var i = 0; i < _legacyUiRoots.Length; i++)
@@ -186,7 +194,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _editorLivePreview = true;
             _editorPreviewSignature = 0;
             TryUpdateEditorPreview(force: true);
-            UnityEditor.EditorUtility.SetDirty(this);
         }
 
         public bool TryGetEditorAuthoringTargets(
@@ -222,6 +229,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 signature = signature * 31 + Mathf.RoundToInt(_mountRoot.rect.width);
                 signature = signature * 31 + Mathf.RoundToInt(_mountRoot.rect.height);
                 signature = signature * 31 + (int)_editorPreviewRoute;
+                signature = signature * 31 + (int)_editorPreviewSettingsSection;
+                signature = signature * 31 + (int)_editorPreviewPlayFlow;
             }
 
             if (!force && signature == _editorPreviewSignature)
@@ -239,10 +248,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_fontAsset != null)
                 globals["moyvaFont"] = _fontAsset;
 
-            _editorPreviewHost.Mount(
+            var result = _editorPreviewHost.Mount(
                 _mountRoot,
                 new UnityHtmlDocument(BuildEditorPreviewHtml(), _cssAsset.text, "MoyvaUI Editor Preview"),
                 globals);
+
+            if (!result.Succeeded)
+                Debug.LogError($"[HomeMenuMoyvaUI] Editor preview mount failed. {result.ErrorMessage}", this);
         }
 
         protected virtual string BuildEditorPreviewHtml()
@@ -252,6 +264,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             try
             {
                 previewState.Open(ToPanelName(_editorPreviewRoute));
+                previewState.SetSettingsSection(_editorPreviewSettingsSection);
+                previewState.SetPlayFlow(_editorPreviewPlayFlow);
                 return HomeMenuMoyvaUiMarkup.Build(
                     previewState,
                     previewView,
@@ -281,6 +295,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private void SetAutoDetectedLegacyUiVisible(bool visible)
         {
+            if (this == null)
+                return;
+
             var parent = _mountRoot != null ? _mountRoot.parent : transform.parent;
             if (parent == null)
                 return;
@@ -321,6 +338,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             public void Play() { }
             public void Continue() { }
+            public void Solo() { }
             public void Multiplayer() { }
             public void Settings() { }
             public void Exit() { }
@@ -333,15 +351,31 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void JoinGlobal() { }
             public void SetModeLan() { }
             public void SetModeGlobal() { }
+            public void SetNetworkMode(object value) { }
+            public void CreateSelected() { }
+            public void JoinSelected() { }
+            public void ShowGeneralSettings() { }
+            public void ShowAudioSettings() { }
+            public void ShowGraphicsSettings() { }
+            public void BeginControlInteraction() { }
+            public void EndControlInteraction() { }
             public void CreateRoom() { }
             public void SetRoomName(string value) { }
             public void SetRoomPassword(string value) { }
+            public void PreviewRoomName(string value) { }
+            public void PreviewRoomPassword(string value) { }
+            public void CommitRoomName(string value) { }
+            public void CommitRoomPassword(string value) { }
             public void TogglePublic() { }
+            public void SetPrivate(object value) { }
             public void MaxPlayersMinus() { }
             public void MaxPlayersPlus() { }
             public void CreateWorld() { }
             public void SetWorldName(string value) { }
             public void SetSeed(string value) { }
+            public void PreviewWorldName(string value) { }
+            public void CommitWorldName(string value) { }
+            public void CommitSeed(string value) { }
             public void RandomSeed() { }
             public void WorldSmall() { }
             public void WorldMedium() { }
@@ -354,11 +388,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void DifficultyNormal() { }
             public void DifficultyHard() { }
             public void DifficultyInsane() { }
+            public void SetWorldSizeValue(object value) { }
+            public void SetMapTypeValue(object value) { }
+            public void SetDifficultyValue(object value) { }
             public void StartGame() { }
             public void LeaveLobby() { }
             public void RefreshRooms() { }
             public void JoinTypedRoom() { }
             public void SetJoinCode(string value) { }
+            public void PreviewJoinCode(string value) { }
+            public void CommitJoinCode(string value) { }
             public void SelectSlot(int index) { }
             public void SelectRoom(int index) { }
             public void RefreshKickPlayers() { }
@@ -366,10 +405,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void KickPlayer(int index) { }
             public void ChangePlayerName() { }
             public void SetPlayerName(string value) { }
+            public void PreviewPlayerName(string value) { }
+            public void CommitPlayerName(string value) { }
             public void SetMasterValue(object value) { }
             public void SetMusicValue(object value) { }
             public void SetSfxValue(object value) { }
             public void SetUiValue(object value) { }
+            public void CommitMasterValue(object value) { }
+            public void CommitMusicValue(object value) { }
+            public void CommitSfxValue(object value) { }
+            public void CommitUiValue(object value) { }
             public void MasterLow() { }
             public void MasterMid() { }
             public void MasterHigh() { }
@@ -380,15 +425,22 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void UiLow() { }
             public void UiHigh() { }
             public void ToggleMuted() { }
+            public void SetMuted(object value) { }
             public void GraphicsAuto() { }
             public void GraphicsPerformance() { }
             public void GraphicsBalanced() { }
             public void GraphicsQuality() { }
+            public void SetGraphicsProfileValue(object value) { }
             public void SetRenderScaleValue(object value) { }
             public void SetFrameRateValue(object value) { }
             public void SetMipmapValue(object value) { }
             public void SetAntiAliasingSliderValue(object value) { }
             public void SetLodBiasValue(object value) { }
+            public void CommitRenderScaleValue(object value) { }
+            public void CommitLodBiasValue(object value) { }
+            public void SetFrameRateOption(object value) { }
+            public void SetTextureQualityOption(object value) { }
+            public void SetAntiAliasingOption(object value) { }
             public void RenderScaleDown() { }
             public void RenderScaleUp() { }
             public void FrameRateDown() { }
@@ -403,6 +455,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void ToggleVSync() { }
             public void ToggleShadows() { }
             public void ToggleAnisotropic() { }
+            public void SetVSync(object value) { }
+            public void SetShadows(object value) { }
+            public void SetAnisotropic(object value) { }
             public void LodBiasDown() { }
             public void LodBiasUp() { }
             public void ResetGraphics() { }
@@ -413,6 +468,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void PasswordEmpty() { }
             public void PasswordDemo() { }
             public void SetPasswordValue(string value) { }
+            public void PreviewPasswordValue(string value) { }
+            public void CommitPasswordValue(string value) { }
             public void ConfirmPassword() { }
             public void CancelPassword() { }
         }

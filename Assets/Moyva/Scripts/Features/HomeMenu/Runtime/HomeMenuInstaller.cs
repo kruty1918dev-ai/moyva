@@ -572,14 +572,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var height = size.y > 1f ? size.y : Screen.height;
             var shortest = Mathf.Min(width, height);
             var aspect = height > 1f ? width / height : 1f;
+            var orientation = aspect < 0.9f ? " vp-portrait" : " vp-landscape";
 
             if (shortest <= 560f || aspect < 0.9f)
-                return "vp-tiny";
+                return "vp-tiny" + orientation;
             if (width <= 1000f || height <= 640f)
-                return "vp-compact";
+                return "vp-compact" + orientation;
             if (width >= 1600f)
-                return "vp-1080";
-            return "vp-720";
+                return "vp-1080" + orientation;
+            return "vp-720" + orientation;
         }
 
         public static Rect CalculateSafeRectInParent(RectTransform parent, Canvas canvas)
