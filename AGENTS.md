@@ -126,3 +126,19 @@ Prefer modifying existing canonical files over adding another wrapper, facade, p
 
 If two files explain the same architecture, consolidate them.
 If generated information can be derived from source, generate it on demand instead of tracking a snapshot.
+
+## Agent cost hygiene
+
+Do not read large generated or vendor-heavy areas unless the current task explicitly requires them:
+
+- `Assets/ThirdParty/**`
+- `Assets/FlatKit/**`
+- `Assets/KayKit/**`
+- `Assets/TextMesh Pro/**`
+- `Assets/Plugins/**`
+- `Library/**`, `Temp/**`, `Logs/**`, `Obj/**`, `Build/**`, `Builds/**`
+- generated audit, recovery, and test-output artifacts
+
+Prefer quiet verification scripts under `tools/ai/` when available. They keep full logs in ignored `Temp/ai/` files and print only failures plus a short summary.
+
+Before finishing work that creates logs, test reports, screenshots, audits, or temporary context files, run `tools/ai/check-context-hygiene.sh` and remove any reported generated artifacts from git-tracked paths.

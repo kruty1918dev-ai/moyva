@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Notifications.API;
+using Zenject;
 
 namespace Kruty1918.Moyva.Notifications.Runtime
 {
@@ -17,7 +18,7 @@ namespace Kruty1918.Moyva.Notifications.Runtime
 
         public GameplayNotificationService(
             GameplayNotificationSettings settings,
-            IGameplayNotificationPresenter presenter)
+            [InjectOptional] IGameplayNotificationPresenter presenter = null)
         {
             _settings = settings ?? new GameplayNotificationSettings();
             _settings.Normalize();
@@ -96,11 +97,19 @@ namespace Kruty1918.Moyva.Notifications.Runtime
             _activeRequest = request;
             _activeDedupKey = request.HasDedupKey ? request.DedupKey : null;
             _hasActive = true;
+            GameplayNotificationStream.Publish(request);
 
-            _presenter?.Present(
-                request,
-                _settings.ResolveHoldDuration(request.HoldDuration),
-                OnActiveCompleted);
+            if (_presenter != null)
+            {
+                _presenter.Present(
+                    request,
+                    _settings.ResolveHoldDuration(request.HoldDuration),
+                    OnActiveCompleted);
+            }
+            else
+            {
+                OnActiveCompleted();
+            }
         }
 
         private void OnActiveCompleted()

@@ -28,4 +28,9 @@ namespace Kruty1918.Moyva.Camera.API
         /// </summary>
         void TeleportCameraToFocusPoint(Vector3 focusPoint, float distance);
     }
+
+    public interface IGameplayCameraFocusService
+    {
+        void FocusGridPosition(Vector2Int gridPosition, string targetId = null);
+    }
 }

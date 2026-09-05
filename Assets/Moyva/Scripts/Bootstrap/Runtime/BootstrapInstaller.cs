@@ -99,7 +99,8 @@ namespace Kruty1918.Moyva.Bootstrap
                 .FromMethod(ctx => new StartingPositionPolicy(
                     ctx.Container.Resolve<StartingPositionInitializerSettings>(),
                     TryResolveOptional<ISessionManager>(ctx.Container),
-                    ctx.Container.Resolve<IStartingPositionState>()))
+                    ctx.Container.Resolve<IStartingPositionState>(),
+                    TryResolveOptional<ILocalGameplayRoleResolver>(ctx.Container)))
                 .AsSingle();
 
             Container.BindInterfacesAndSelfTo<StartingPositionLocalSpawnResolver>()

@@ -65,6 +65,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<UnitInfoPanelRequestedSignal>().OptionalSubscriber();
             Container.DeclareSignal<MapObjectInfoPanelRequestedSignal>().OptionalSubscriber();
             Container.DeclareSignal<WorldInfoSelectionChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<WorldFocusPingRequestedSignal>().OptionalSubscriber();
 
             // FogOfWar
             Container.DeclareSignal<FogStateChangedSignal>();

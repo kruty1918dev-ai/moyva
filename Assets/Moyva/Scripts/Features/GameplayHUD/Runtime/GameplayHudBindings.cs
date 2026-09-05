@@ -1,4 +1,5 @@
 using Zenject;
+using UnityHTML.Runtime;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
@@ -6,10 +7,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     {
         public static void Install(DiContainer container)
         {
-            container.Bind<GameplayTurnHudView>()
-                .FromComponentInHierarchy()
+            container.Bind<GameplayHtmlAnchor>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
+            container.Bind<IUnityHtmlHost>()
+                .To<UnityHtmlHost>()
                 .AsSingle();
-            container.BindInterfacesTo<GameplayTurnHudPresenter>()
+            container.Bind<GameplayHtmlState>()
+                .AsSingle()
+                .NonLazy();
+            container.Bind<GameplayHudReadModel>()
+                .AsSingle();
+            container.BindInterfacesAndSelfTo<GameplayCameraFocusService>()
+                .AsSingle();
+            container.BindInterfacesAndSelfTo<GameplayWorldFocusPingPresenter>()
+                .AsSingle()
+                .NonLazy();
+            container.BindInterfacesAndSelfTo<GameplayHtmlPresenter>()
                 .AsSingle()
                 .NonLazy();
             container.BindInterfacesAndSelfTo<UnitRecruitmentProgressIndicatorPresenter>()

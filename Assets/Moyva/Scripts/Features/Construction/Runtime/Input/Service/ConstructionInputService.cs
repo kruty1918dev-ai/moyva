@@ -262,6 +262,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void CancelPlacementOrExitMode()
         {
+            if (IsInitialCastleRequired())
+                return;
+
             bool hasActiveConstructionAction =
                 _constructionService.State == BuildingPlacementState.Placing
                 || _constructionService.IsDemolishMode
@@ -296,6 +299,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 if (!_isActive)
                     return UiActionResult.Rejected(UiActionReason.WrongContext);
+                if (IsInitialCastleRequired())
+                {
+                    return UiActionResult.Rejected(
+                        UiActionReason.ActionUnavailable,
+                        consumed: true,
+                        "Place your first castle before leaving construction mode.");
+                }
+
                 CancelPlacementOrExitMode();
                 return UiActionResult.Performed();
             }
@@ -360,6 +371,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 && (_constructionService.State == BuildingPlacementState.Placing
                     || _constructionService.IsDemolishMode
                     || _constructionService.GetPendingPlacements().Count > 0);
+
+        private bool IsInitialCastleRequired()
+        {
+            if (_constructionService is not IConstructionBootstrapQuery bootstrap)
+                return false;
+
+            string ownerId = _constructionService.GetActiveOwner();
+            return !string.IsNullOrWhiteSpace(ownerId)
+                   && bootstrap.RequiresInitialCastle(ownerId.Trim(), out _);
+        }
 
         private bool ValidateDependencies()
         {

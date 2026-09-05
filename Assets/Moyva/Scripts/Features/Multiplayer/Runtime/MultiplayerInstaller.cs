@@ -16,6 +16,57 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Multiplayer.Runtime
 {
+    internal sealed class LocalGameplayRoleResolver :
+        ILocalGameplayRoleResolver
+    {
+        private readonly ISessionManager _sessionManager;
+
+        public LocalGameplayRoleResolver(
+            ISessionManager sessionManager)
+        {
+            _sessionManager = sessionManager;
+        }
+
+        public LocalGameplayRoleSnapshot Resolve()
+        {
+            GameLaunchContext.EnsureNotExpired();
+            bool isMultiplayerLaunch =
+                GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame
+                || GameLaunchContext.Mode == GameLaunchMode.MenuJoinGame;
+            if (GameLaunchContext.Mode != GameLaunchMode.Unknown
+                && !isMultiplayerLaunch)
+            {
+                return new LocalGameplayRoleSnapshot(
+                    LocalGameplayRole.Offline,
+                    GameLaunchContext.LocalPlayerId);
+            }
+
+            if (GameLaunchContext.HasLocalPlayerRole)
+            {
+                return new LocalGameplayRoleSnapshot(
+                    GameLaunchContext.IsLocalPlayerHost
+                        ? LocalGameplayRole.Host
+                        : LocalGameplayRole.Client,
+                    GameLaunchContext.LocalPlayerId);
+            }
+
+            IReadOnlyList<Participant> participants =
+                _sessionManager?.Participants;
+            if (participants == null || participants.Count == 0)
+            {
+                return new LocalGameplayRoleSnapshot(
+                    LocalGameplayRole.Offline,
+                    _sessionManager?.LocalPlayerId);
+            }
+
+            return new LocalGameplayRoleSnapshot(
+                _sessionManager.IsLocalPlayerHost
+                    ? LocalGameplayRole.Host
+                    : LocalGameplayRole.Client,
+                _sessionManager.LocalPlayerId);
+        }
+    }
+
     /// <summary>
     /// Zenject MonoInstaller для мультиплеєрної підсистеми.
     /// Підключіть у сцені для реєстрації всіх мережевих сервісів.
@@ -23,38 +74,21 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     internal sealed class MultiplayerConstructionRuntimeAuthority :
         IConstructionRuntimeAuthorityQuery
     {
-        private readonly ISessionManager _sessionManager;
+        private readonly ILocalGameplayRoleResolver _roleResolver;
 
         public MultiplayerConstructionRuntimeAuthority(
-            ISessionManager sessionManager)
+            ILocalGameplayRoleResolver roleResolver)
         {
-            _sessionManager = sessionManager;
+            _roleResolver = roleResolver;
         }
 
         public bool IsAuthoritativeRuntime
         {
             get
             {
-                if (_sessionManager == null)
-                    return true;
-
-                if (IsLaunchMultiplayerClient())
-                    return false;
-
-                IReadOnlyList<Participant> participants =
-                    _sessionManager.Participants;
-                return participants == null
-                    || participants.Count <= 1
-                    || _sessionManager.IsLocalPlayerHost;
+                return _roleResolver == null
+                    || _roleResolver.Resolve().IsAuthoritative;
             }
-        }
-
-        private static bool IsLaunchMultiplayerClient()
-        {
-            GameLaunchContext.EnsureNotExpired();
-            return GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame
-                   && GameLaunchContext.HasLocalPlayerRole
-                   && !GameLaunchContext.IsLocalPlayerHost;
         }
     }
 
@@ -457,6 +491,13 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             {
                 container.Bind<ISessionManager>()
                     .To<SessionManager>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(typeof(ILocalGameplayRoleResolver)))
+            {
+                container.Bind<ILocalGameplayRoleResolver>()
+                    .To<LocalGameplayRoleResolver>()
                     .AsSingle();
             }
 

@@ -30,6 +30,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private IHomeMenuGameStarter _gameStarter;
         [InjectOptional] private IOverlayLoader _overlayLoader;
         [InjectOptional] private IGameStateService _gameStateService;
+        [InjectOptional] private HomeMenuMoyvaUiState _moyvaUiState;
         [Inject(Id = "LobbyPanelName")] private string _lobbyPanelName;
         private bool _isStartingLocalGame;
         private CancellationTokenSource _startCts;
@@ -63,7 +64,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
-            ApplyMultiplayerSessionDraft();
+            ApplyGameplaySessionDraft();
             if (ShouldContinueToLobby())
                 _navigation.Open(_lobbyPanelName);
             else
@@ -80,14 +81,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             => !string.IsNullOrWhiteSpace(_viewController.WorldName)
                 && _viewController.Seed != 0;
 
-        private void ApplyMultiplayerSessionDraft()
+        private void ApplyGameplaySessionDraft()
         {
             string localId = ResolveLocalPlayerId();
             string playerName = string.IsNullOrWhiteSpace(_localSettings?.PlayerName)
                 ? "Player"
                 : _localSettings.PlayerName;
+            bool soloFlow = IsSoloFlow();
             var currentLobby = _lobbyService?.Current;
-            int maxPlayers = currentLobby?.MaxPlayers > 0 ? currentLobby.MaxPlayers : 2;
+            int maxPlayers = soloFlow
+                ? 1
+                : currentLobby != null && currentLobby.MaxPlayers > 0
+                    ? currentLobby.MaxPlayers
+                    : 2;
 
             var worldSettings = new WorldSettingsDto(
                 _viewController.WorldName,
@@ -98,7 +104,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _viewController.MapType,
                 _viewController.Difficulty,
                 maxPlayers,
-                currentLobby?.IsPrivate ?? true);
+                soloFlow || (currentLobby?.IsPrivate ?? true));
 
             var players = new List<GameplayPlayer>
             {
@@ -106,18 +112,37 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             };
 
             _gameplaySession.Apply(ResolveProvider(), worldSettings, players, localId);
-            GameLaunchContext.ConfigureMenuMultiplayerGame(
-                worldSettings.WorldName,
-                worldSettings.Seed,
-                worldSettings.Size,
-                (int)worldSettings.MapType,
-                (int)worldSettings.Difficulty,
-                worldSettings.MaxPlayers,
-                worldSettings.IsPrivate,
-                worldSettings.Width,
-                worldSettings.Height,
-                isLocalPlayerHost: true,
-                localPlayerId: localId);
+            if (soloFlow)
+            {
+                GameLaunchContext.ConfigureMenuNewGame(
+                    0,
+                    worldSettings.WorldName,
+                    worldSettings.Seed,
+                    worldSettings.Size,
+                    (int)worldSettings.MapType,
+                    (int)worldSettings.Difficulty,
+                    worldSettings.MaxPlayers,
+                    worldSettings.IsPrivate,
+                    worldSettings.Width,
+                    worldSettings.Height,
+                    isLocalPlayerHost: true,
+                    localPlayerId: localId);
+            }
+            else
+            {
+                GameLaunchContext.ConfigureMenuMultiplayerGame(
+                    worldSettings.WorldName,
+                    worldSettings.Seed,
+                    worldSettings.Size,
+                    (int)worldSettings.MapType,
+                    (int)worldSettings.Difficulty,
+                    worldSettings.MaxPlayers,
+                    worldSettings.IsPrivate,
+                    worldSettings.Width,
+                    worldSettings.Height,
+                    isLocalPlayerHost: true,
+                    localPlayerId: localId);
+            }
         }
 
         private string ResolveLocalPlayerId()
@@ -160,6 +185,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private NetworkProviderType ResolveProvider()
         {
+            if (IsSoloFlow())
+                return NetworkProviderType.Offline;
+
             if (_lobbyFlowContext != null && _lobbyFlowContext.FlowKind != LobbyFlowKind.None)
                 return _lobbyFlowContext.Provider;
 
@@ -171,10 +199,24 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private bool ShouldContinueToLobby()
         {
+            if (IsSoloFlow())
+                return false;
+
             if (_lobbyService?.Current != null)
                 return true;
 
             return _lobbyFlowContext != null && _lobbyFlowContext.FlowKind != LobbyFlowKind.None;
+        }
+
+        private bool IsSoloFlow()
+        {
+            if (_moyvaUiState != null)
+                return _moyvaUiState.PlayFlow == HomeMenuPlayFlow.Solo;
+
+            if (_lobbyFlowContext != null && _lobbyFlowContext.FlowKind != LobbyFlowKind.None)
+                return false;
+
+            return _lobbyService?.Current == null;
         }
 
         private async Task StartLocalGameAsync()

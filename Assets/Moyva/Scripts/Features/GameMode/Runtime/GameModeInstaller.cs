@@ -1,7 +1,6 @@
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.UIActions.Runtime;
 using Kruty1918.Moyva.Turns.Runtime;
-using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.GameMode.Runtime
@@ -30,19 +29,6 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            var gameModeUiController = Object.FindFirstObjectByType<GameModeUIController>(FindObjectsInactive.Include);
-            if (gameModeUiController != null)
-            {
-                Container.QueueForInject(gameModeUiController);
-                Container.BindInterfacesAndSelfTo<GameModeUIController>()
-                    .FromInstance(gameModeUiController)
-                    .AsSingle()
-                    .NonLazy();
-            }
-            else
-            {
-            }
-
             // Явний порядок Initialize() — менше число = раніше.
             Container.Bind<IGameStateService>()
                 .To<GameStateService>()
@@ -60,14 +46,9 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            Container.BindInterfacesAndSelfTo<GameplayPauseMenuPresenter>()
-                .AsSingle()
-                .NonLazy();
-
             Container.BindExecutionOrder<GameModeChangeRequestRouter>(-10);
             Container.BindExecutionOrder<GameModeUiActionHandler>(-10);
             Container.BindExecutionOrder<GameModePanelController>(-10);
-            Container.BindExecutionOrder<GameModeUIController>(-5);
             // Observe Esc before construction input. In Construction mode this
             // controller yields, then the construction layer consumes it.
             Container.BindExecutionOrder<GameplayPauseInputController>(-100);

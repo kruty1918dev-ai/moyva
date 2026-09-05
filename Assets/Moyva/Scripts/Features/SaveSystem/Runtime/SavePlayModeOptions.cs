@@ -107,13 +107,15 @@ namespace Kruty1918.Moyva.SaveSystem
             int maxPlayers,
             bool isPrivate,
             int width = 0,
-            int height = 0)
+            int height = 0,
+            bool? isLocalPlayerHost = null,
+            string localPlayerId = null)
         {
             Mode = GameLaunchMode.MenuNewGame;
             Source = GameLaunchSource.HomeMenu;
             SaveSlot = ClampSlot(saveSlot);
             SetWorldSettings(worldName, seed, size, mapType, difficulty, maxPlayers, isPrivate, width, height);
-            ClearLocalPlayerRole();
+            SetLocalPlayerRole(isLocalPlayerHost, localPlayerId);
             _autoLoadOverride = false;
             _autoSaveOverride = true;
             MarkConfigured(DefaultContextTtl);

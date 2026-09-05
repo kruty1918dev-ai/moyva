@@ -38,6 +38,8 @@
   <assembly fullname="Kruty1918.Moyva.WorldCreation.UI" preserve="all"/>
 
   <!-- DOTween — uses reflection for tween targets -->
+  <assembly fullname="DOTween" preserve="all"/>
+  <assembly fullname="DOTweenPro" preserve="all"/>
   <assembly fullname="com.demigiant.dotween" preserve="all"/>
 
   <!-- UGS Relay — uses reflection for serialization -->

@@ -26,6 +26,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return new MapVisualWorldBuildOrchestrator(
                 state: state,
                 dataFactory: new MapVisualWorldDataFactory(gridService, projection, mapDataGenerator, graphDiagnostics),
+                integrity: new GeneratedWorldDataIntegrityService(tileResolver, tileTypes),
                 gridWriter: new MapVisualGridWriter(gridService, tileResolver, tileTypes),
                 signals: new MapVisualWorldSignalPublisher(signalBus, projection, graphDiagnostics, signalState),
                 tileWorldCreatorBridge: tileWorldCreatorBridge);

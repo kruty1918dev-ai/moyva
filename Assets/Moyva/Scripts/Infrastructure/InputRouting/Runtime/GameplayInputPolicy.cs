@@ -46,22 +46,14 @@ namespace Kruty1918.Moyva.InputRouting.Runtime
         public bool IsPointerOverUi(Vector2 screenPosition, int pointerId = -1, bool interactiveOnly = true)
         {
             List<RaycastResult> results = Raycast(screenPosition, pointerId);
-            if (!interactiveOnly)
-                return results.Count > 0;
-
             for (int index = 0; index < results.Count; index++)
             {
                 GameObject hitObject = results[index].gameObject;
                 if (hitObject == null)
                     continue;
 
-                if (hitObject.GetComponentInParent<GameplayInputBlocker>() != null
-                    || hitObject.GetComponentInParent<Selectable>() != null
-                    || hitObject.GetComponentInParent<ScrollRect>() != null
-                    || hitObject.GetComponentInParent<TMP_InputField>() != null)
-                {
+                if (IsBlockingUiHit(hitObject))
                     return true;
-                }
             }
 
             return false;
@@ -106,19 +98,36 @@ namespace Kruty1918.Moyva.InputRouting.Runtime
                 if (hitObject == null)
                     continue;
 
-                GameplayInputBlocker explicitBlocker = hitObject.GetComponentInParent<GameplayInputBlocker>();
-                if (explicitBlocker != null && (explicitBlocker.BlockedInput & inputKind) != 0)
+                if (IsBlockingUiHit(hitObject, inputKind))
                     return true;
-
-                if (hitObject.GetComponentInParent<Selectable>() != null
-                    || hitObject.GetComponentInParent<ScrollRect>() != null
-                    || hitObject.GetComponentInParent<TMP_InputField>() != null)
-                {
-                    return true;
-                }
             }
 
             return false;
+        }
+
+        private static bool IsBlockingUiHit(GameObject hitObject)
+        {
+            if (hitObject == null)
+                return false;
+
+            return hitObject.GetComponentInParent<GameplayInputBlocker>() != null
+                   || hitObject.GetComponentInParent<Selectable>() != null
+                   || hitObject.GetComponentInParent<ScrollRect>() != null
+                   || hitObject.GetComponentInParent<TMP_InputField>() != null;
+        }
+
+        private static bool IsBlockingUiHit(GameObject hitObject, GameplayInputKind inputKind)
+        {
+            if (hitObject == null)
+                return false;
+
+            GameplayInputBlocker explicitBlocker = hitObject.GetComponentInParent<GameplayInputBlocker>();
+            if (explicitBlocker != null && (explicitBlocker.BlockedInput & inputKind) != 0)
+                return true;
+
+            return hitObject.GetComponentInParent<Selectable>() != null
+                   || hitObject.GetComponentInParent<ScrollRect>() != null
+                   || hitObject.GetComponentInParent<TMP_InputField>() != null;
         }
 
         private List<RaycastResult> Raycast(Vector2 screenPosition, int pointerId)

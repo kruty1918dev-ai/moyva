@@ -64,6 +64,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return result;
         }
 
+        public IReadOnlyList<ConstructionSavedPlacement> GetOwnerPlacements(string ownerId)
+        {
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
+            IReadOnlyList<ConstructionSavedPlacement> all = GetSavedPlacements();
+            var result = new List<ConstructionSavedPlacement>();
+            for (int index = 0; index < all.Count; index++)
+            {
+                ConstructionSavedPlacement placement = all[index];
+                if (string.Equals(
+                        NormalizeOwnerId(placement.OwnerId),
+                        normalizedOwnerId,
+                        StringComparison.Ordinal))
+                {
+                    result.Add(placement);
+                }
+            }
+            return result;
+        }
+
         public void RestoreFromSave(
             Vector2Int position,
             string buildingId)

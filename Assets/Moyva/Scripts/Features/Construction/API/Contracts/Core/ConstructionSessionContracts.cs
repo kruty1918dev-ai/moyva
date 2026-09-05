@@ -3,6 +3,39 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
 {
+    public enum ConstructionConfirmStatus
+    {
+        Succeeded,
+        AwaitingAuthority,
+        Rejected,
+    }
+
+    public readonly struct ConstructionConfirmResult
+    {
+        public ConstructionConfirmResult(
+            ConstructionConfirmStatus status,
+            string reason,
+            int confirmedCount,
+            int rejectedCount)
+        {
+            Status = status;
+            Reason = reason ?? string.Empty;
+            ConfirmedCount = confirmedCount;
+            RejectedCount = rejectedCount;
+        }
+
+        public ConstructionConfirmStatus Status { get; }
+        public string Reason { get; }
+        public int ConfirmedCount { get; }
+        public int RejectedCount { get; }
+        public bool Succeeded => Status == ConstructionConfirmStatus.Succeeded;
+    }
+
+    public interface IConstructionConfirmationCommands
+    {
+        ConstructionConfirmResult ConfirmPending();
+    }
+
     /// <summary>
     /// Interactive construction session surface. All mutations are handled by
     /// the canonical ConstructionService singleton.

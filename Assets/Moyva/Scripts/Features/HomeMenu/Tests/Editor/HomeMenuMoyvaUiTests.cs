@@ -1,7 +1,12 @@
 using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.Runtime;
+using Kruty1918.Moyva.Multiplayer.Lobbies;
+using Kruty1918.Moyva.Multiplayer.Networking;
+using Kruty1918.Moyva.SaveSystem;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
@@ -292,6 +297,88 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             }
         }
 
+        [Test]
+        public async Task WorldCreate_WhenSoloFlowHasExistingLobby_StartsLocalGame()
+        {
+            GameLaunchContext.Reset();
+            var state = new HomeMenuMoyvaUiState();
+            var view = new HomeMenuMoyvaUiViewController(state);
+            var navigation = new FakeNavigation();
+            var starter = new FakeGameStarter();
+            var service = new WorldCreationPanelService();
+
+            try
+            {
+                state.SetPlayFlow(HomeMenuPlayFlow.Solo);
+                view.WorldName = "Solo Smoke";
+                view.Seed = 123456789;
+
+                SetField(service, "_viewController", view);
+                SetField(service, "_navigation", navigation);
+                SetField(service, "_gameplaySession", new GameplaySession());
+                SetField(service, "_lobbyService", new FakeLobbyService(CreateSingleHostLobby()));
+                SetField(service, "_gameStarter", starter);
+                SetField(service, "_moyvaUiState", state);
+                SetField(service, "_lobbyPanelName", "LobbyPanel");
+
+                service.Initialize();
+                view.ClickCreateWorld();
+                await Task.Yield();
+
+                Assert.That(starter.StartCount, Is.EqualTo(1));
+                Assert.That(navigation.OpenedMenus, Does.Not.Contain("LobbyPanel"));
+                Assert.That(GameLaunchContext.Mode, Is.EqualTo(GameLaunchMode.MenuNewGame));
+                Assert.That(GameLaunchContext.HasLocalPlayerRole, Is.True);
+                Assert.That(GameLaunchContext.IsLocalPlayerHost, Is.True);
+                Assert.That(GameLaunchContext.LocalPlayerId, Is.EqualTo("host"));
+            }
+            finally
+            {
+                service.Dispose();
+                view.Dispose();
+                GameLaunchContext.Reset();
+            }
+        }
+
+        [Test]
+        public async Task LobbyStart_WhenSingleHostAndCommandSyncMissing_StartsLocalGame()
+        {
+            var state = new HomeMenuMoyvaUiState();
+            var view = new HomeMenuMoyvaUiViewController(state);
+            var starter = new FakeGameStarter();
+            var lobby = CreateSingleHostLobby();
+            var service = new LobbyPanelService();
+
+            try
+            {
+                view.WorldName = "Lobby Smoke";
+                view.Seed = 987654321;
+
+                SetField(service, "_lobbyPanelViewController", view);
+                SetField(service, "_lobbyService", new FakeLobbyService(lobby));
+                SetField(service, "_navigation", new FakeNavigation());
+                SetField(service, "_joinRoomPanelName", "JoinRoomPanel");
+                SetField(service, "_lobbyPanelName", "LobbyPanel");
+                SetField(service, "_gameplaySession", new GameplaySession());
+                SetField(service, "_worldSetupViewController", view);
+                SetField(service, "_gameStarter", starter);
+                SetField(service, "_localPlayerId", "host");
+
+                service.Initialize();
+                Assert.That(view.StartGameButton.interactable, Is.True);
+
+                view.ClickLobbyStart();
+                await Task.Yield();
+
+                Assert.That(starter.StartCount, Is.EqualTo(1));
+            }
+            finally
+            {
+                service.Dispose();
+                view.Dispose();
+            }
+        }
+
         private static int Count(string source, string value)
         {
             var count = 0;
@@ -304,8 +391,34 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             return count;
         }
 
+        private static LobbyRoom CreateSingleHostLobby()
+        {
+            return new LobbyRoom(
+                "lobby",
+                "CODE",
+                "Smoke Lobby",
+                4,
+                false,
+                "host",
+                string.Empty,
+                new List<LobbyPlayer>
+                {
+                    new LobbyPlayer("host", "Player", isHost: true)
+                });
+        }
+
+        private static void SetField(object target, string fieldName, object value)
+        {
+            var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, fieldName);
+            field.SetValue(target, value);
+        }
+
         private sealed class FakeUnityHtmlHost : IUnityHtmlHost
         {
+            private readonly IUnityHtmlMotion _motion = new FakeUnityHtmlMotion();
+
+            public IUnityHtmlMotion Motion => _motion;
             public int DisposeCount { get; private set; }
 
             public UnityHtmlMountResult Mount(
@@ -326,8 +439,20 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             }
         }
 
+        private sealed class FakeUnityHtmlMotion : IUnityHtmlMotion
+        {
+            public void Play(string targetId, string preset, float duration, float delay)
+            {
+            }
+
+            public void Stop(string targetId)
+            {
+            }
+        }
+
         private sealed class FakeNavigation : INavigation
         {
+            public List<string> OpenedMenus { get; } = new List<string>();
             public string CurrentMenu { get; private set; } = string.Empty;
             public event System.Action<NavigationChangeEventArgs> OnMenuChanged;
 
@@ -337,6 +462,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             public void Open(string menuName)
             {
                 var previous = CurrentMenu;
+                OpenedMenus.Add(menuName);
                 CurrentMenu = menuName;
                 OnMenuChanged?.Invoke(new NavigationChangeEventArgs
                 {
@@ -374,6 +500,60 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
                 request = null;
                 return false;
             }
+        }
+
+        private sealed class FakeGameStarter : IHomeMenuGameStarter
+        {
+            public int StartCount { get; private set; }
+
+            public Task StartGameAsync(CancellationToken ct = default)
+            {
+                StartCount++;
+                return Task.CompletedTask;
+            }
+        }
+
+        private sealed class FakeLobbyService : ILobbyService
+        {
+            public FakeLobbyService(LobbyRoom current)
+            {
+                Current = current;
+            }
+
+            public LobbyRoom Current { get; private set; }
+            public LobbyState State => Current?.State ?? LobbyState.Closed;
+            public event System.Action<LobbyRoom> LobbyUpdated;
+            public event System.Action<string> KickedFromLobby;
+            public event System.Action<LobbyState> StateChanged;
+
+            public Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, CancellationToken ct = default) =>
+                Task.FromResult(Current);
+
+            public Task<LobbyRoom> JoinByCodeAsync(string lobbyCode, string displayName, CancellationToken ct = default) =>
+                Task.FromResult(Current);
+
+            public Task<LobbyRoom> JoinByIdAsync(string lobbyId, string displayName, CancellationToken ct = default) =>
+                Task.FromResult(Current);
+
+            public Task<LobbyRoom> JoinByCodeWithPasswordAsync(string lobbyCode, string displayName, string password, CancellationToken ct = default) =>
+                Task.FromResult(Current);
+
+            public Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(CancellationToken ct = default) =>
+                Task.FromResult<IReadOnlyList<LobbyRoom>>(new[] { Current });
+
+            public Task LeaveAsync(CancellationToken ct = default)
+            {
+                Current = null;
+                StateChanged?.Invoke(LobbyState.Closed);
+                LobbyUpdated?.Invoke(null);
+                return Task.CompletedTask;
+            }
+
+            public Task KickAsync(string playerId, CancellationToken ct = default) => Task.CompletedTask;
+            public Task SetRelayJoinCodeAsync(string relayJoinCode, CancellationToken ct = default) => Task.CompletedTask;
+            public Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, CancellationToken ct = default) => Task.CompletedTask;
+
+            public void RaiseKicked(string reason) => KickedFromLobby?.Invoke(reason);
         }
     }
 }

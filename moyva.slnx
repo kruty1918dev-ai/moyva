@@ -143,6 +143,7 @@
   <Project Path="Unity.Multiplayer.Tools.NetVis.Configuration.csproj" />
   <Project Path="Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.Core.csproj" />
   <Project Path="Kruty1918.Moyva.Calendar.csproj" />
+  <Project Path="Assembly-CSharp-firstpass.csproj" />
   <Project Path="Kruty1918.Moyva.Turns.csproj" />
   <Project Path="Kruty1918.Moyva.Clouds.csproj" />
   <Project Path="Unity.2D.IK.Runtime.csproj" />
@@ -182,6 +183,7 @@
   <Project Path="Kruty1918.Moyva.Jsonization.csproj" />
   <Project Path="Unity.Mathematics.Editor.csproj" />
   <Project Path="Unity.Services.Core.csproj" />
+  <Project Path="Assembly-CSharp-Editor-firstpass.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Common.csproj" />
   <Project Path="jsb.editor.hotfix.csproj" />

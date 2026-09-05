@@ -75,6 +75,33 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
         }
 
         [Test]
+        public void CanRunStartLogic_AllowsMenuNewGameLaunchHost_WhenSessionHasParticipantButNoLocalRole()
+        {
+            GameLaunchContext.ConfigureMenuNewGame(
+                0,
+                "Solo World",
+                12345,
+                1,
+                0,
+                0,
+                1,
+                true,
+                64,
+                64,
+                isLocalPlayerHost: true,
+                localPlayerId: "offline-host-1ac");
+            var session = new SessionManagerStub(
+                new[] { new Participant(new ParticipantIdentity("offline-host-1ac", "Host"), isHost: false) },
+                localPlayerId: string.Empty,
+                isLocalPlayerHost: false);
+            var policy = CreatePolicy(session);
+
+            Assert.That(policy.CanRunStartLogic(), Is.True);
+            Assert.That(policy.ShouldComputeHostStartPositions(), Is.True);
+            Assert.That(policy.ResolveLocalPlayerId(), Is.EqualTo("offline-host-1ac"));
+        }
+
+        [Test]
         public void BuildSpawnAssignments_PrefersLaunchLocalHost_WhenSessionParticipantHasAlias()
         {
             GameLaunchContext.ConfigureMenuMultiplayerGame(
@@ -151,6 +178,49 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             var signal = new WorldGeneratedDataSignal
             {
                 Source = WorldGeneratedDataSource.GeneratedHost,
+                Width = 8,
+                Height = 8,
+                HeightMap = CreateHeightMap(8, 8, 0.5f),
+                TileMap = CreateTileMap(8, 8, "water"),
+            };
+
+            var positions = selector.PickStartingPositions(signal, 1);
+
+            Assert.That(positions, Has.Count.EqualTo(1));
+            Assert.That(positions[0].x, Is.InRange(0, 7));
+            Assert.That(positions[0].y, Is.InRange(0, 7));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [Test]
+        public void PickStartingPositions_UsesBestEffortFallback_ForMenuNewGame()
+        {
+            GameLaunchContext.ConfigureMenuNewGame(
+                0,
+                "Solo World",
+                12345,
+                0,
+                0,
+                0,
+                1,
+                true,
+                8,
+                8,
+                isLocalPlayerHost: true,
+                localPlayerId: "local-player");
+            var settings = new StartingPositionInitializerSettings
+            {
+                minMarginFromBorder = 0,
+                relativeMarginFactor = 0f,
+                requireHeightMapForStart = true,
+                startCandidateAttempts = 1,
+                startTerrainSampleRadius = 1,
+                minimumLandRatioAroundStart = 1f,
+            };
+            var selector = new StartingPositionSelector(settings, pathfinder: null);
+            var signal = new WorldGeneratedDataSignal
+            {
+                Source = WorldGeneratedDataSource.Unknown,
                 Width = 8,
                 Height = 8,
                 HeightMap = CreateHeightMap(8, 8, 0.5f),

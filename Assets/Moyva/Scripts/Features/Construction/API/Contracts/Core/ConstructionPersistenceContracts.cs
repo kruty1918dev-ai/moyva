@@ -34,6 +34,11 @@ namespace Kruty1918.Moyva.Construction.API
         IReadOnlyList<ConstructionSavedPlacement> GetSavedPlacements();
     }
 
+    public interface IConstructionPortfolioQuery
+    {
+        IReadOnlyList<ConstructionSavedPlacement> GetOwnerPlacements(string ownerId);
+    }
+
     public interface IConstructionSaveRestorer
     {
         void RestoreFromSave(

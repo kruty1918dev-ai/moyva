@@ -25,15 +25,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly StartingPositionInitializerSettings _settings;
         private readonly ISessionManager _sessionManager;
         private readonly IStartingPositionState _startingPositionState;
+        private readonly ILocalGameplayRoleResolver _roleResolver;
 
         public StartingPositionPolicy(
             StartingPositionInitializerSettings settings,
             ISessionManager sessionManager,
-            IStartingPositionState startingPositionState)
+            IStartingPositionState startingPositionState,
+            ILocalGameplayRoleResolver roleResolver = null)
         {
             _settings = settings;
             _sessionManager = sessionManager;
             _startingPositionState = startingPositionState;
+            _roleResolver = roleResolver;
         }
 
         public bool HasSessionManager => _sessionManager != null;
@@ -121,11 +124,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private bool IsMultiplayerHost()
         {
+            if (_roleResolver != null)
+                return _roleResolver.Resolve().Role == LocalGameplayRole.Host;
+
             if (_sessionManager != null && _sessionManager.IsLocalPlayerHost)
                 return true;
 
-            if (IsMultiplayerLaunchContextStatic() &&
-                GameLaunchContext.HasLocalPlayerRole)
+            if (GameLaunchContext.HasLocalPlayerRole)
             {
                 bool hasSessionLocalPlayer = !string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId);
                 if (hasSessionLocalPlayer)
@@ -146,8 +151,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
                 return _sessionManager.LocalPlayerId;
 
-            if (IsMultiplayerLaunchContextStatic() &&
-                GameLaunchContext.HasLocalPlayerRole &&
+            if (GameLaunchContext.HasLocalPlayerRole &&
                 !string.IsNullOrWhiteSpace(GameLaunchContext.LocalPlayerId))
             {
                 return GameLaunchContext.LocalPlayerId;

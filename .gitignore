@@ -142,6 +142,11 @@ Assets/_Recovery/
 /SCRIPTS_MANAGEMENT_PLAN.md
 /SCRIPTS_QUICK_REFERENCE.md
 /MASTER_SCRIPTS_REFACTORING_PLAN.md
+/text.txt
+/tests/TestResults_*.xml
+/tests/*.tsv
+/Assets/__ChatGPT*/
+/Assets/__ChatGPT*.meta
 # END MOYVA AI CONTEXT HYGIENE
 
 # BEGIN MOYVA AI WORKSPACE HYGIENE

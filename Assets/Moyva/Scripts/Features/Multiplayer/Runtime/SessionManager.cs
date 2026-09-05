@@ -116,8 +116,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private static bool IsLaunchLocalPlayerHost()
         {
             GameLaunchContext.EnsureNotExpired();
-            return GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame
-                   && GameLaunchContext.HasLocalPlayerRole
+            return GameLaunchContext.HasLocalPlayerRole
                    && GameLaunchContext.IsLocalPlayerHost;
         }
 
@@ -125,8 +124,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             out string localPlayerId)
         {
             GameLaunchContext.EnsureNotExpired();
-            if (GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame
-                && GameLaunchContext.HasLocalPlayerRole
+            if (GameLaunchContext.HasLocalPlayerRole
                 && !string.IsNullOrWhiteSpace(
                     GameLaunchContext.LocalPlayerId))
             {

@@ -1,0 +1,1274 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+using UnityEngine;
+
+namespace Kruty1918.Moyva.Bootstrap.Runtime
+{
+    internal enum GameplayHtmlPanel
+    {
+        None,
+        Construction,
+        Kingdom,
+        Notifications,
+    }
+
+    internal enum KingdomDashboardTab
+    {
+        Overview,
+        Resources,
+        Storage,
+        Buildings,
+        Units,
+        Turns,
+    }
+
+    internal enum GameplaySelectionTab
+    {
+        Details,
+        Recruit,
+        Queue,
+    }
+
+    internal sealed class GameplayHtmlState
+    {
+        public event Action Changed;
+
+        public GameplayHtmlPanel OpenPanelId { get; private set; }
+        public KingdomDashboardTab DashboardTab { get; private set; }
+        public GameplaySelectionTab SelectionTab { get; private set; }
+        public bool IsPaused { get; private set; }
+        public string Feedback { get; private set; } = string.Empty;
+        public string ConstructionCategory { get; private set; } = string.Empty;
+        public string ConstructionSearch { get; private set; } = string.Empty;
+        public int ConstructionPageIndex { get; private set; }
+        public IReadOnlyList<GameplayNotificationViewSnapshot> Notifications => _notifications;
+        public bool Dirty { get; private set; } = true;
+        private float _feedbackExpiresAt = -1f;
+        private readonly List<GameplayNotificationViewSnapshot> _notifications = new();
+
+        public void OpenPanel(GameplayHtmlPanel panel)
+        {
+            if (OpenPanelId == panel)
+                OpenPanelId = GameplayHtmlPanel.None;
+            else
+                OpenPanelId = panel;
+            MarkDirty();
+        }
+
+        public void ClosePanel()
+        {
+            if (OpenPanelId == GameplayHtmlPanel.None)
+                return;
+            OpenPanelId = GameplayHtmlPanel.None;
+            MarkDirty();
+        }
+
+        public void SetDashboardTab(KingdomDashboardTab tab)
+        {
+            DashboardTab = tab;
+            MarkDirty();
+        }
+
+        public void SetSelectionTab(GameplaySelectionTab tab)
+        {
+            if (SelectionTab == tab)
+                return;
+            SelectionTab = tab;
+            MarkDirty();
+        }
+
+        public void ResetSelectionTab()
+        {
+            if (SelectionTab == GameplaySelectionTab.Details)
+                return;
+            SelectionTab = GameplaySelectionTab.Details;
+            MarkDirty();
+        }
+
+        public void SetConstructionCategory(string category)
+        {
+            string normalized = category?.Trim() ?? string.Empty;
+            if (string.Equals(ConstructionCategory, normalized, StringComparison.OrdinalIgnoreCase))
+                return;
+            ConstructionCategory = normalized;
+            ConstructionPageIndex = 0;
+            MarkDirty();
+        }
+
+        public void SetConstructionSearch(string search)
+        {
+            string normalized = search?.Trim() ?? string.Empty;
+            if (string.Equals(ConstructionSearch, normalized, StringComparison.OrdinalIgnoreCase))
+                return;
+            ConstructionSearch = normalized;
+            ConstructionPageIndex = 0;
+            MarkDirty();
+        }
+
+        public void MoveConstructionPage(int delta)
+        {
+            int next = Math.Max(0, ConstructionPageIndex + delta);
+            if (next == ConstructionPageIndex)
+                return;
+            ConstructionPageIndex = next;
+            MarkDirty();
+        }
+
+        public void AddNotification(string message, string kind)
+        {
+            string normalized = message?.Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+                return;
+            _notifications.Insert(0, new GameplayNotificationViewSnapshot(normalized, kind));
+            if (_notifications.Count > 20)
+                _notifications.RemoveAt(_notifications.Count - 1);
+            SetFeedback(normalized);
+        }
+
+        public void SetPaused(bool paused)
+        {
+            if (IsPaused == paused)
+                return;
+            IsPaused = paused;
+            MarkDirty();
+        }
+
+        public void SetFeedback(string feedback)
+        {
+            Feedback = feedback?.Trim() ?? string.Empty;
+            _feedbackExpiresAt = string.IsNullOrEmpty(Feedback)
+                ? -1f
+                : Time.unscaledTime + 4f;
+            MarkDirty();
+        }
+
+        public void ExpireFeedbackIfNeeded()
+        {
+            if (_feedbackExpiresAt < 0f || Time.unscaledTime < _feedbackExpiresAt)
+                return;
+            Feedback = string.Empty;
+            _feedbackExpiresAt = -1f;
+            MarkDirty();
+        }
+
+        public void MarkDirty()
+        {
+            Dirty = true;
+            Changed?.Invoke();
+        }
+
+        public bool ConsumeDirty()
+        {
+            bool dirty = Dirty;
+            Dirty = false;
+            return dirty;
+        }
+    }
+
+    internal readonly struct GameplayResourceSnapshot
+    {
+        public GameplayResourceSnapshot(string id, float amount)
+        {
+            Id = id ?? string.Empty;
+            Amount = amount;
+        }
+
+        public string Id { get; }
+        public float Amount { get; }
+    }
+
+    internal readonly struct GameplayNotificationViewSnapshot
+    {
+        public GameplayNotificationViewSnapshot(string message, string kind)
+        {
+            Message = message ?? string.Empty;
+            Kind = kind ?? "Info";
+        }
+
+        public string Message { get; }
+        public string Kind { get; }
+    }
+
+    internal readonly struct GameplayGroupSnapshot
+    {
+        public GameplayGroupSnapshot(string id, string label, int count, string context)
+        {
+            Id = id ?? string.Empty;
+            Label = label ?? Id;
+            Count = count;
+            Context = context ?? string.Empty;
+        }
+
+        public string Id { get; }
+        public string Label { get; }
+        public int Count { get; }
+        public string Context { get; }
+    }
+
+    internal readonly struct GameplayFactSnapshot
+    {
+        public GameplayFactSnapshot(string label, string value, string context)
+        {
+            Label = label ?? string.Empty;
+            Value = value ?? string.Empty;
+            Context = context ?? string.Empty;
+        }
+
+        public string Label { get; }
+        public string Value { get; }
+        public string Context { get; }
+    }
+
+    internal readonly struct GameplayBuildingOptionSnapshot
+    {
+        public GameplayBuildingOptionSnapshot(
+            string id,
+            string name,
+            string category,
+            string description,
+            string cost,
+            bool canSelect = true,
+            string unavailableReason = null)
+            : this(id, name, category, description, cost, null, canSelect, unavailableReason)
+        {
+        }
+
+        public GameplayBuildingOptionSnapshot(
+            string id,
+            string name,
+            string category,
+            string description,
+            string cost,
+            Sprite icon,
+            bool canSelect = true,
+            string unavailableReason = null)
+        {
+            Id = id ?? string.Empty;
+            Name = string.IsNullOrWhiteSpace(name) ? Id : name;
+            Category = category ?? string.Empty;
+            Description = description ?? string.Empty;
+            Cost = cost ?? string.Empty;
+            Icon = icon;
+            CanSelect = canSelect;
+            UnavailableReason = unavailableReason ?? string.Empty;
+        }
+
+        public string Id { get; }
+        public string Name { get; }
+        public string Category { get; }
+        public string Description { get; }
+        public string Cost { get; }
+        public Sprite Icon { get; }
+        public bool HasIcon => Icon != null;
+        public string IconGlobalKey => GameplayHtmlIconKeys.Building(Id);
+        public bool CanSelect { get; }
+        public string UnavailableReason { get; }
+    }
+
+    internal readonly struct GameplayWarehouseViewSnapshot
+    {
+        public GameplayWarehouseViewSnapshot(
+            string id,
+            string buildingId,
+            string settlement,
+            Vector2Int position,
+            float used,
+            int capacity,
+            GameplayResourceSnapshot[] resources)
+        {
+            Id = id ?? string.Empty;
+            BuildingId = buildingId ?? string.Empty;
+            Settlement = settlement ?? string.Empty;
+            Position = position;
+            Used = used;
+            Capacity = capacity;
+            Resources = resources ?? Array.Empty<GameplayResourceSnapshot>();
+        }
+
+        public string Id { get; }
+        public string BuildingId { get; }
+        public string Settlement { get; }
+        public Vector2Int Position { get; }
+        public float Used { get; }
+        public int Capacity { get; }
+        public GameplayResourceSnapshot[] Resources { get; }
+    }
+
+    internal readonly struct GameplaySettlementViewSnapshot
+    {
+        public GameplaySettlementViewSnapshot(
+            string id,
+            string name,
+            int population,
+            int buildingCount,
+            GameplayResourceSnapshot[] resources)
+        {
+            Id = id ?? string.Empty;
+            Name = string.IsNullOrWhiteSpace(name) ? Id : name;
+            Population = Math.Max(0, population);
+            BuildingCount = Math.Max(0, buildingCount);
+            Resources = resources ?? Array.Empty<GameplayResourceSnapshot>();
+        }
+
+        public string Id { get; }
+        public string Name { get; }
+        public int Population { get; }
+        public int BuildingCount { get; }
+        public GameplayResourceSnapshot[] Resources { get; }
+    }
+
+    internal readonly struct GameplayTurnHistoryViewSnapshot
+    {
+        public GameplayTurnHistoryViewSnapshot(string ownerId, long completed, bool active, bool local)
+        {
+            OwnerId = ownerId ?? string.Empty;
+            Completed = completed;
+            Active = active;
+            Local = local;
+        }
+
+        public string OwnerId { get; }
+        public long Completed { get; }
+        public bool Active { get; }
+        public bool Local { get; }
+    }
+
+    internal readonly struct GameplayRecruitmentRecipeSnapshot
+    {
+        public GameplayRecruitmentRecipeSnapshot(
+            string unitTypeId,
+            string name,
+            string role,
+            string combatType,
+            string cost,
+            int trainingTurns,
+            int hitPoints,
+            float movement,
+            bool canRecruit,
+            string unavailableReason)
+            : this(
+                unitTypeId,
+                name,
+                role,
+                combatType,
+                cost,
+                trainingTurns,
+                hitPoints,
+                movement,
+                null,
+                canRecruit,
+                unavailableReason)
+        {
+        }
+
+        public GameplayRecruitmentRecipeSnapshot(
+            string unitTypeId,
+            string name,
+            string role,
+            string combatType,
+            string cost,
+            int trainingTurns,
+            int hitPoints,
+            float movement,
+            Sprite icon,
+            bool canRecruit,
+            string unavailableReason)
+        {
+            UnitTypeId = unitTypeId ?? string.Empty;
+            Name = string.IsNullOrWhiteSpace(name) ? UnitTypeId : name;
+            Role = role ?? string.Empty;
+            CombatType = combatType ?? string.Empty;
+            Cost = cost ?? string.Empty;
+            TrainingTurns = Math.Max(1, trainingTurns);
+            HitPoints = Math.Max(0, hitPoints);
+            Movement = Math.Max(0f, movement);
+            Icon = icon;
+            CanRecruit = canRecruit;
+            UnavailableReason = unavailableReason ?? string.Empty;
+        }
+
+        public string UnitTypeId { get; }
+        public string Name { get; }
+        public string Role { get; }
+        public string CombatType { get; }
+        public string Cost { get; }
+        public int TrainingTurns { get; }
+        public int HitPoints { get; }
+        public float Movement { get; }
+        public Sprite Icon { get; }
+        public bool HasIcon => Icon != null;
+        public string IconGlobalKey => GameplayHtmlIconKeys.Unit(UnitTypeId);
+        public bool CanRecruit { get; }
+        public string UnavailableReason { get; }
+    }
+
+    internal static class GameplayHtmlIconKeys
+    {
+        public static string Building(string id) => $"gameplay_building_icon_{Sanitize(id)}";
+        public static string Unit(string id) => $"gameplay_unit_icon_{Sanitize(id)}";
+
+        private static string Sanitize(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return "unknown";
+
+            var builder = new StringBuilder(value.Length);
+            for (int index = 0; index < value.Length; index++)
+            {
+                char c = value[index];
+                builder.Append(char.IsLetterOrDigit(c) ? char.ToLowerInvariant(c) : '_');
+            }
+
+            return builder.Length == 0 ? "unknown" : builder.ToString();
+        }
+    }
+
+    internal readonly struct GameplayRecruitmentQueueSnapshot
+    {
+        public GameplayRecruitmentQueueSnapshot(
+            long queueId,
+            string unitTypeId,
+            string name,
+            int completedTurns,
+            int trainingTurns,
+            bool ready)
+        {
+            QueueId = queueId;
+            UnitTypeId = unitTypeId ?? string.Empty;
+            Name = string.IsNullOrWhiteSpace(name) ? UnitTypeId : name;
+            CompletedTurns = Math.Max(0, completedTurns);
+            TrainingTurns = Math.Max(1, trainingTurns);
+            Ready = ready;
+        }
+
+        public long QueueId { get; }
+        public string UnitTypeId { get; }
+        public string Name { get; }
+        public int CompletedTurns { get; }
+        public int TrainingTurns { get; }
+        public bool Ready { get; }
+    }
+
+    internal sealed class GameplayHtmlSnapshot
+    {
+        public string OwnerId = "player_0";
+        public string KingdomName = "Your Kingdom";
+        public int Round = 1;
+        public long GlobalTurn = 1;
+        public int ActionsThisTurn;
+        public string ActiveOwnerId = "player_0";
+        public bool IsLocalTurn = true;
+        public bool TurnUiEnabled = true;
+        public bool CanIssueLocalCommands => !TurnUiEnabled || IsLocalTurn;
+        public int SettlementCount;
+        public int Population;
+        public int BuildingCount;
+        public int UnitCount;
+        public bool RequiresFirstCastle;
+        public string CastleBuildingId = "castle";
+        public string SelectedBuildingId = string.Empty;
+        public int PendingPlacementCount;
+        public string PlacementStatus = "Choose a location on the map.";
+        public bool PlacementValid;
+        public string SelectionKind = string.Empty;
+        public string SelectionId = string.Empty;
+        public string SelectionTitle = string.Empty;
+        public string SelectionSubtitle = string.Empty;
+        public Vector2Int SelectionPosition;
+        public GameplayFactSnapshot[] SelectionFacts = Array.Empty<GameplayFactSnapshot>();
+        public bool SelectionOwnedByLocalPlayer;
+        public bool SelectionOperational;
+        public bool SupportsRecruitment;
+        public int RecruitmentQueueCapacity;
+        public GameplayRecruitmentRecipeSnapshot[] RecruitmentRecipes = Array.Empty<GameplayRecruitmentRecipeSnapshot>();
+        public GameplayRecruitmentQueueSnapshot[] RecruitmentQueue = Array.Empty<GameplayRecruitmentQueueSnapshot>();
+        public GameplayResourceSnapshot[] Resources = Array.Empty<GameplayResourceSnapshot>();
+        public GameplayBuildingOptionSnapshot[] BuildingOptions = Array.Empty<GameplayBuildingOptionSnapshot>();
+        public GameplayGroupSnapshot[] BuildingGroups = Array.Empty<GameplayGroupSnapshot>();
+        public GameplayGroupSnapshot[] UnitGroups = Array.Empty<GameplayGroupSnapshot>();
+        public GameplayWarehouseViewSnapshot[] Warehouses = Array.Empty<GameplayWarehouseViewSnapshot>();
+        public GameplaySettlementViewSnapshot[] Settlements = Array.Empty<GameplaySettlementViewSnapshot>();
+        public GameplayTurnHistoryViewSnapshot[] TurnHistory = Array.Empty<GameplayTurnHistoryViewSnapshot>();
+
+        internal static GameplayHtmlSnapshot CreatePreview(GameplayHtmlAnchor.PreviewScreen screen)
+        {
+            var snapshot = new GameplayHtmlSnapshot
+            {
+                KingdomName = "House Velym",
+                Round = 4,
+                GlobalTurn = 11,
+                ActionsThisTurn = 2,
+                TurnUiEnabled = screen != GameplayHtmlAnchor.PreviewScreen.Normal,
+                SettlementCount = 2,
+                Population = 38,
+                BuildingCount = 14,
+                UnitCount = 7,
+                RequiresFirstCastle = screen == GameplayHtmlAnchor.PreviewScreen.FirstCastle,
+                SelectedBuildingId = screen == GameplayHtmlAnchor.PreviewScreen.Construction ? "lumber-camp" : "castle",
+                PendingPlacementCount = screen == GameplayHtmlAnchor.PreviewScreen.FirstCastle ? 1 : 0,
+                PlacementStatus = "Valid location. The castle can be founded here.",
+                PlacementValid = true,
+                SelectionKind = screen == GameplayHtmlAnchor.PreviewScreen.Selection
+                    || screen == GameplayHtmlAnchor.PreviewScreen.Recruitment ? "Building" : string.Empty,
+                SelectionId = screen == GameplayHtmlAnchor.PreviewScreen.Recruitment ? "barracks" : "castle",
+                SelectionTitle = screen == GameplayHtmlAnchor.PreviewScreen.Recruitment ? "Barracks" : "Castle",
+                SelectionSubtitle = screen == GameplayHtmlAnchor.PreviewScreen.Recruitment
+                    ? "Trains military units." : "Settlement seat and administrative center.",
+                SelectionPosition = new Vector2Int(42, 27),
+                SelectionFacts = new[]
+                {
+                    new GameplayFactSnapshot("Ownership", "Your kingdom", "Command authority"),
+                    new GameplayFactSnapshot("Status", "Operational", "Current state"),
+                },
+                SelectionOwnedByLocalPlayer = true,
+                SelectionOperational = true,
+                SupportsRecruitment = screen == GameplayHtmlAnchor.PreviewScreen.Recruitment,
+                RecruitmentQueueCapacity = 3,
+                RecruitmentRecipes = screen == GameplayHtmlAnchor.PreviewScreen.Recruitment
+                    ? new[]
+                    {
+                        new GameplayRecruitmentRecipeSnapshot("guard", "Guard", "Military", "Infantry", "Food 20 / Gold 5", 2, 120, 4f, true, string.Empty),
+                        new GameplayRecruitmentRecipeSnapshot("archer", "Archer", "Military", "Infantry", "Food 16 / Wood 8", 2, 80, 5f, true, string.Empty),
+                    }
+                    : Array.Empty<GameplayRecruitmentRecipeSnapshot>(),
+                RecruitmentQueue = screen == GameplayHtmlAnchor.PreviewScreen.Recruitment
+                    ? new[]
+                    {
+                        new GameplayRecruitmentQueueSnapshot(1, "guard", "Guard", 1, 2, false),
+                    }
+                    : Array.Empty<GameplayRecruitmentQueueSnapshot>(),
+                Resources = new[]
+                {
+                    new GameplayResourceSnapshot("food", 426),
+                    new GameplayResourceSnapshot("wood", 318),
+                    new GameplayResourceSnapshot("gold", 92),
+                },
+                BuildingOptions = new[]
+                {
+                    new GameplayBuildingOptionSnapshot("castle", "Castle", "Settlement", "Founds and governs a settlement.", "Wood 120 / Gold 40"),
+                    new GameplayBuildingOptionSnapshot("lumber-camp", "Lumber Camp", "Industry", "Produces construction timber.", "Wood 35"),
+                    new GameplayBuildingOptionSnapshot("warehouse", "Warehouse", "Economy", "Stores settlement resources.", "Wood 55"),
+                    new GameplayBuildingOptionSnapshot("barracks", "Barracks", "Military", "Recruits military units.", "Wood 80 / Gold 25"),
+                },
+                BuildingGroups = new[]
+                {
+                    new GameplayGroupSnapshot("castle", "Castle", 2, "2 settlements"),
+                    new GameplayGroupSnapshot("warehouse", "Warehouse", 4, "Northhold, Rivergate"),
+                    new GameplayGroupSnapshot("lumber-camp", "Lumber Camp", 3, "Northhold"),
+                },
+                UnitGroups = new[]
+                {
+                    new GameplayGroupSnapshot("worker", "Workers", 4, "Available 2"),
+                    new GameplayGroupSnapshot("guard", "Guards", 3, "Ready"),
+                },
+                Warehouses = new[]
+                {
+                    new GameplayWarehouseViewSnapshot("42:27", "warehouse", "Northhold", new Vector2Int(42, 27), 186, 250,
+                        new[] { new GameplayResourceSnapshot("food", 110), new GameplayResourceSnapshot("wood", 76) }),
+                    new GameplayWarehouseViewSnapshot("67:31", "warehouse", "Rivergate", new Vector2Int(67, 31), 98, 200,
+                        new[] { new GameplayResourceSnapshot("food", 44), new GameplayResourceSnapshot("gold", 54) }),
+                },
+                Settlements = new[]
+                {
+                    new GameplaySettlementViewSnapshot("northhold", "Northhold", 24, 8,
+                        new[] { new GameplayResourceSnapshot("food", 110), new GameplayResourceSnapshot("wood", 76) }),
+                    new GameplaySettlementViewSnapshot("rivergate", "Rivergate", 14, 6,
+                        new[] { new GameplayResourceSnapshot("food", 44), new GameplayResourceSnapshot("gold", 54) }),
+                },
+                TurnHistory = new[]
+                {
+                    new GameplayTurnHistoryViewSnapshot("player_0", 5, true, true),
+                    new GameplayTurnHistoryViewSnapshot("player_1", 5, false, false),
+                },
+            };
+            return snapshot;
+        }
+    }
+
+    internal static class GameplayHtmlMarkup
+    {
+        private const int ConstructionPageSize = 6;
+
+        public static string Build(
+            GameplayHtmlSnapshot snapshot,
+            GameplayHtmlState state,
+            string viewportClass)
+        {
+            var html = new StringBuilder(24000);
+            html.Append("<view className=\"gameplay-ui ").Append(E(viewportClass)).Append("\">");
+            AppendTopBar(html, snapshot);
+            html.Append("<view className=\"workspace\">");
+            AppendContextPanel(html, snapshot, state);
+            html.Append("</view>");
+            AppendCommandBar(html, snapshot);
+            if (!string.IsNullOrWhiteSpace(state.Feedback)
+                && !snapshot.RequiresFirstCastle)
+            {
+                html.Append("<text id=\"gameplay-toast\" className=\"toast\" data-motion=\"slide-up\" data-motion-duration=\"0.14\">")
+                    .Append(E(state.Feedback)).Append("</text>");
+            }
+            if (state.OpenPanelId == GameplayHtmlPanel.Kingdom)
+                AppendDashboard(html, snapshot, state);
+            if (state.IsPaused)
+                AppendPause(html);
+            html.Append("</view>");
+            return html.ToString();
+        }
+
+        private static void AppendTopBar(StringBuilder html, GameplayHtmlSnapshot snapshot)
+        {
+            html.Append("<view id=\"gameplay-topbar\" className=\"topbar\" data-motion=\"slide-down\" data-motion-duration=\"0.18\"><view className=\"top-section kingdom-summary\"><view className=\"brand-mark\"></view><view className=\"stack\"><text className=\"eyebrow\">KINGDOM</text><text className=\"title\">")
+                .Append(E(snapshot.KingdomName)).Append("</text></view><view className=\"resources\">");
+            int resourceCount = Math.Min(4, snapshot.Resources.Length);
+            for (int index = 0; index < resourceCount; index++)
+            {
+                GameplayResourceSnapshot resource = snapshot.Resources[index];
+                html.Append("<view className=\"resource\"><text className=\"resource-name\">")
+                    .Append(E(DisplayResource(resource.Id))).Append("</text><text className=\"resource-value\">")
+                    .Append(Amount(resource.Amount)).Append("</text></view>");
+            }
+            html.Append("</view></view><view className=\"top-section turn-summary\">");
+            if (snapshot.TurnUiEnabled)
+            {
+                TurnPill(html, snapshot.Round.ToString(CultureInfo.InvariantCulture), "ROUND", string.Empty);
+                TurnPill(html, snapshot.GlobalTurn.ToString(CultureInfo.InvariantCulture), "GLOBAL TURN", string.Empty);
+                TurnPill(html, Display(snapshot.ActiveOwnerId), "ACTIVE PLAYER", string.Empty);
+                TurnPill(html, snapshot.IsLocalTurn ? "YOUR TURN" : "WAITING", "STATUS", snapshot.IsLocalTurn ? "local-turn" : "waiting-turn");
+            }
+            else
+            {
+                TurnPill(html, "SANDBOX", "MODE", "local-turn");
+                TurnPill(html, "FREE PLAY", "FLOW", string.Empty);
+            }
+            html.Append("</view><view className=\"top-section top-actions\">")
+                .Append(Button("KINGDOM", "Globals.gameplay.Kingdom()", "button", "Open kingdom dashboard"))
+                .Append(Button("!", "Globals.gameplay.Notifications()", "button", "Notifications"))
+                .Append(Button("II", "Globals.gameplay.Pause()", "button", "Pause"))
+                .Append("</view></view>");
+        }
+
+        private static void AppendContextPanel(
+            StringBuilder html,
+            GameplayHtmlSnapshot snapshot,
+            GameplayHtmlState state)
+        {
+            if (snapshot.RequiresFirstCastle)
+            {
+                PanelHeader(html, "ONBOARDING", "Place your first castle", false);
+                html.Append("<view className=\"panel-body\"><view className=\"task ")
+                    .Append(snapshot.PlacementValid ? "valid" : "invalid")
+                    .Append("\"><text className=\"task-title\">Found your first settlement</text><text className=\"muted\">Select the castle, choose a valid tile, then confirm the placement.</text><text className=\"")
+                    .Append(snapshot.PlacementValid ? "status-good" : "status-bad").Append("\">")
+                    .Append(E(snapshot.PlacementStatus)).Append("</text></view>");
+                if (!string.IsNullOrWhiteSpace(state.Feedback))
+                    html.Append("<text className=\"feedback\">").Append(E(state.Feedback)).Append("</text>");
+                html.Append("</view></view>");
+                return;
+            }
+
+            if (state.OpenPanelId == GameplayHtmlPanel.Construction)
+            {
+                PanelHeader(html, "CONSTRUCTION", "Build in your kingdom", true);
+                html.Append("<view className=\"panel-body\"><input className=\"browser-search\" value=\"")
+                    .Append(E(state.ConstructionSearch))
+                    .Append("\" placeholder=\"Search buildings\" characterLimit=\"48\" onEndEdit=\"Globals.gameplay.SetConstructionSearch(event)\"></input><scroll className=\"category-strip\"><view className=\"filter-row\">")
+                    .Append(FilterButton("ALL", string.Empty, state.ConstructionCategory));
+                var categories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (int index = 0; index < snapshot.BuildingOptions.Length; index++)
+                {
+                    string category = snapshot.BuildingOptions[index].Category;
+                    if (!string.IsNullOrWhiteSpace(category) && categories.Add(category))
+                        html.Append(FilterButton(category.ToUpperInvariant(), category, state.ConstructionCategory));
+                }
+                html.Append("</view></scroll><scroll className=\"panel-scroll construction-scroll\"><view className=\"building-list\">");
+                var filteredOptions = new List<GameplayBuildingOptionSnapshot>(snapshot.BuildingOptions.Length);
+                for (int index = 0; index < snapshot.BuildingOptions.Length; index++)
+                {
+                    GameplayBuildingOptionSnapshot option = snapshot.BuildingOptions[index];
+                    if (!MatchesConstructionFilter(option, state))
+                        continue;
+                    filteredOptions.Add(option);
+                }
+
+                int visibleCount = filteredOptions.Count;
+                int pageCount = Math.Max(1, (visibleCount + ConstructionPageSize - 1) / ConstructionPageSize);
+                int pageIndex = Math.Min(Math.Max(0, state.ConstructionPageIndex), pageCount - 1);
+                int firstIndex = pageIndex * ConstructionPageSize;
+                int lastExclusive = Math.Min(firstIndex + ConstructionPageSize, visibleCount);
+                for (int index = firstIndex; index < lastExclusive; index++)
+                {
+                    GameplayBuildingOptionSnapshot option = filteredOptions[index];
+                    string cost = string.IsNullOrWhiteSpace(option.Cost) ? "Free" : option.Cost;
+                    html.Append("<button className=\"building-row ")
+                        .Append(string.Equals(option.Id, snapshot.SelectedBuildingId, StringComparison.Ordinal) ? "selected" : string.Empty)
+                        .Append("\" ").Append(option.CanSelect ? string.Empty : "disabled=\"true\"")
+                        .Append(" onClick=\"Globals.gameplay.SelectBuilding('").Append(J(option.Id)).Append("')\">");
+                    RowIcon(html, option.HasIcon, option.IconGlobalKey, IconForBuilding(option), false);
+                    html.Append("<view className=\"item-copy\"><text className=\"item-title\">")
+                        .Append(E(option.Name)).Append("</text><text className=\"item-meta\">")
+                        .Append(E(option.CanSelect ? option.Description : option.UnavailableReason)).Append("</text><text className=\"item-cost\">")
+                        .Append(E(cost)).Append("</text></view><text className=\"row-chevron\">")
+                        .Append(option.CanSelect ? ">" : "!").Append("</text></button>");
+                }
+                if (visibleCount == 0)
+                    html.Append("<text className=\"empty\">No buildings match this filter.</text>");
+                html.Append("</view></scroll>");
+                AppendConstructionPager(html, pageIndex, pageCount, visibleCount, firstIndex, lastExclusive);
+                html.Append("</view></view>");
+                return;
+            }
+
+            if (state.OpenPanelId == GameplayHtmlPanel.Notifications)
+            {
+                PanelHeader(html, "ACTIVITY", "Notifications", true);
+                html.Append("<view className=\"panel-body\"><scroll className=\"panel-scroll\"><view className=\"building-list\">");
+                for (int index = 0; index < state.Notifications.Count; index++)
+                {
+                    GameplayNotificationViewSnapshot item = state.Notifications[index];
+                    DataRow(html, item.Message, item.Kind.ToUpperInvariant(), "Gameplay event");
+                }
+                if (state.Notifications.Count == 0)
+                    html.Append("<text className=\"empty\">No notifications yet.</text>");
+                html.Append("</view></scroll></view></view>");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(snapshot.SelectionKind))
+            {
+                PanelHeader(
+                    html,
+                    snapshot.SelectionKind.ToUpperInvariant(),
+                    string.IsNullOrWhiteSpace(snapshot.SelectionTitle) ? Display(snapshot.SelectionId) : snapshot.SelectionTitle,
+                    true);
+                html.Append("<view className=\"panel-body\"><view className=\"data-row\"><text className=\"row-icon small\">XY</text><view className=\"item-copy\"><text className=\"item-title\">Map position</text><text className=\"item-meta\">")
+                    .Append(snapshot.SelectionPosition.x).Append(", ").Append(snapshot.SelectionPosition.y)
+                    .Append("</text></view></view>");
+                if (!string.IsNullOrWhiteSpace(snapshot.SelectionSubtitle))
+                    html.Append("<text className=\"selection-summary\">").Append(E(snapshot.SelectionSubtitle)).Append("</text>");
+                if (snapshot.SupportsRecruitment)
+                {
+                    html.Append("<view className=\"tabs\">");
+                    SelectionTab(html, state, GameplaySelectionTab.Details, "DETAILS", "ShowSelectionDetails");
+                    SelectionTab(html, state, GameplaySelectionTab.Recruit, "RECRUIT", "ShowRecruitment");
+                    SelectionTab(html, state, GameplaySelectionTab.Queue, "QUEUE", "ShowRecruitmentQueue");
+                    html.Append("</view>");
+                }
+
+                html.Append("<scroll className=\"panel-scroll context-scroll\">");
+                if (!snapshot.SupportsRecruitment || state.SelectionTab == GameplaySelectionTab.Details)
+                    AppendSelectionDetails(html, snapshot);
+                else if (state.SelectionTab == GameplaySelectionTab.Recruit)
+                    AppendRecruitment(html, snapshot);
+                else
+                    AppendRecruitmentQueue(html, snapshot);
+                html.Append("</scroll></view></view>");
+            }
+        }
+
+        private static void AppendSelectionDetails(StringBuilder html, GameplayHtmlSnapshot snapshot)
+        {
+            for (int index = 0; index < snapshot.SelectionFacts.Length; index++)
+            {
+                GameplayFactSnapshot fact = snapshot.SelectionFacts[index];
+                DataRow(html, fact.Label, fact.Value, fact.Context);
+            }
+            if (snapshot.SupportsRecruitment)
+                DataRow(html, "Recruitment queue", $"{snapshot.RecruitmentQueue.Length}/{snapshot.RecruitmentQueueCapacity}", "Training capacity");
+        }
+
+        private static void AppendRecruitment(StringBuilder html, GameplayHtmlSnapshot snapshot)
+        {
+            html.Append("<view className=\"building-list recruitment-list\">");
+            for (int index = 0; index < snapshot.RecruitmentRecipes.Length; index++)
+            {
+                GameplayRecruitmentRecipeSnapshot recipe = snapshot.RecruitmentRecipes[index];
+                string meta = $"{recipe.Role} / {recipe.CombatType} / {recipe.TrainingTurns} turns / HP {recipe.HitPoints} / Move {Amount(recipe.Movement)}";
+                html.Append("<view className=\"recruit-row\">");
+                RowIcon(html, recipe.HasIcon, recipe.IconGlobalKey, IconForUnit(recipe.UnitTypeId), false);
+                html.Append("<view className=\"item-copy\"><text className=\"item-title\">")
+                    .Append(E(recipe.Name)).Append("</text><text className=\"item-meta\">")
+                    .Append(E(meta)).Append("</text><text className=\"")
+                    .Append(recipe.CanRecruit ? "muted" : "status-bad").Append("\">")
+                    .Append(E(recipe.CanRecruit ? (string.IsNullOrWhiteSpace(recipe.Cost) ? "No resource cost" : recipe.Cost) : recipe.UnavailableReason))
+                    .Append("</text></view>")
+                    .Append(Button("RECRUIT", $"Globals.gameplay.Recruit('{J(recipe.UnitTypeId)}')", "button primary", $"Recruit {recipe.Name}", !recipe.CanRecruit))
+                    .Append("</view>");
+            }
+            if (snapshot.RecruitmentRecipes.Length == 0)
+                html.Append("<text className=\"empty\">This building has no recruitment recipes.</text>");
+            html.Append("</view>");
+        }
+
+        private static void AppendRecruitmentQueue(StringBuilder html, GameplayHtmlSnapshot snapshot)
+        {
+            html.Append("<text className=\"section-title\">TRAINING QUEUE ")
+                .Append(snapshot.RecruitmentQueue.Length).Append('/').Append(snapshot.RecruitmentQueueCapacity)
+                .Append("</text><view className=\"building-list\">");
+            for (int index = 0; index < snapshot.RecruitmentQueue.Length; index++)
+            {
+                GameplayRecruitmentQueueSnapshot item = snapshot.RecruitmentQueue[index];
+                string status = item.Ready
+                    ? "READY TO DEPLOY"
+                    : index == 0
+                        ? $"TRAINING {item.CompletedTurns}/{item.TrainingTurns}"
+                        : "WAITING";
+                string context = item.Ready
+                    ? "Use the world indicator beside this building to deploy."
+                    : $"{Math.Max(0, item.TrainingTurns - item.CompletedTurns)} turns remaining";
+                DataRow(html, item.Name, status, context);
+            }
+            if (snapshot.RecruitmentQueue.Length == 0)
+                html.Append("<text className=\"empty\">The recruitment queue is empty.</text>");
+            html.Append("</view>");
+        }
+
+        private static void AppendCommandBar(StringBuilder html, GameplayHtmlSnapshot snapshot)
+        {
+            html.Append("<view id=\"gameplay-command-bar\" className=\"command-bar\" data-motion=\"slide-up\" data-motion-duration=\"0.18\"><view className=\"command-title\"><text className=\"eyebrow\">AVAILABLE ACTIONS</text><text className=\"subtitle\">")
+                .Append(snapshot.CanIssueLocalCommands ? "Issue a command" : "Waiting for active player")
+                .Append("</text></view>");
+            if (snapshot.RequiresFirstCastle || snapshot.PendingPlacementCount > 0)
+            {
+                html.Append(Button("ROTATE", "Globals.gameplay.RotatePlacement()", "button", "Rotate placement"))
+                    .Append(Button("UNDO", "Globals.gameplay.UndoPlacement()", "button", "Undo placement"))
+                    .Append(Button("CONFIRM", "Globals.gameplay.ConfirmPlacement()", "button positive", "Confirm placement"));
+                if (!snapshot.RequiresFirstCastle)
+                    html.Append(Button("CANCEL", "Globals.gameplay.CancelPlacement()", "button danger", "Cancel placement"));
+            }
+            else
+            {
+                html.Append(Button("BUILD", "Globals.gameplay.Construction()", "button primary", "Open construction"));
+                if (!string.IsNullOrWhiteSpace(snapshot.SelectionId))
+                    html.Append(Button("CLEAR", "Globals.gameplay.ClearSelection()", "button", "Clear selection"));
+                if (snapshot.TurnUiEnabled)
+                    html.Append(Button("END TURN", "Globals.gameplay.EndTurn()", "button positive", "End current turn", !snapshot.IsLocalTurn));
+            }
+            html.Append("</view>");
+        }
+
+        private static void AppendDashboard(
+            StringBuilder html,
+            GameplayHtmlSnapshot snapshot,
+            GameplayHtmlState state)
+        {
+            html.Append("<view id=\"kingdom-scrim\" className=\"scrim\" data-motion=\"fade\" data-motion-duration=\"0.12\"><view id=\"kingdom-dashboard\" className=\"dashboard\" data-motion=\"scale\" data-motion-duration=\"0.18\" data-motion-ease=\"out-back\">");
+            PanelHeaderContent(html, "KINGDOM", snapshot.KingdomName, true);
+            html.Append("<view className=\"tabs\">");
+            Tab(html, state, KingdomDashboardTab.Overview, "OVERVIEW", "ShowOverview");
+            Tab(html, state, KingdomDashboardTab.Resources, "RESOURCES", "ShowResources");
+            Tab(html, state, KingdomDashboardTab.Storage, "STORAGE", "ShowStorage");
+            Tab(html, state, KingdomDashboardTab.Buildings, "BUILDINGS", "ShowBuildings");
+            Tab(html, state, KingdomDashboardTab.Units, "UNITS", "ShowUnits");
+            if (snapshot.TurnUiEnabled)
+                Tab(html, state, KingdomDashboardTab.Turns, "TURNS", "ShowTurns");
+            html.Append("</view><view className=\"dashboard-body\"><scroll className=\"dashboard-scroll\">");
+            switch (state.DashboardTab)
+            {
+                case KingdomDashboardTab.Resources:
+                    AppendResources(html, snapshot);
+                    break;
+                case KingdomDashboardTab.Storage:
+                    AppendStorage(html, snapshot);
+                    break;
+                case KingdomDashboardTab.Buildings:
+                    AppendGroups(html, "BUILDING PORTFOLIO", snapshot.BuildingGroups);
+                    break;
+                case KingdomDashboardTab.Units:
+                    AppendGroups(html, "UNIT ROSTER", snapshot.UnitGroups);
+                    break;
+                case KingdomDashboardTab.Turns:
+                    if (snapshot.TurnUiEnabled)
+                        AppendTurns(html, snapshot);
+                    else
+                        AppendOverview(html, snapshot);
+                    break;
+                default:
+                    AppendOverview(html, snapshot);
+                    break;
+            }
+            html.Append("</scroll></view></view></view>");
+        }
+
+        private static void AppendOverview(StringBuilder html, GameplayHtmlSnapshot snapshot)
+        {
+            html.Append("<view className=\"stats-grid\">");
+            Stat(html, snapshot.SettlementCount, "SETTLEMENTS");
+            Stat(html, snapshot.Population, "POPULATION");
+            Stat(html, snapshot.BuildingCount, "BUILDINGS");
+            Stat(html, snapshot.UnitCount, "UNITS");
+            if (snapshot.TurnUiEnabled)
+            {
+                Stat(html, snapshot.Round, "CURRENT ROUND");
+                long localTurns = 0;
+                for (int index = 0; index < snapshot.TurnHistory.Length; index++)
+                {
+                    if (snapshot.TurnHistory[index].Local)
+                        localTurns = snapshot.TurnHistory[index].Completed;
+                }
+                Stat(html, localTurns, "COMPLETED TURNS");
+            }
+            html.Append("</view>");
+            AppendResources(html, snapshot);
+        }
+
+        private static void AppendResources(StringBuilder html, GameplayHtmlSnapshot snapshot)
+        {
+            html.Append("<text className=\"section-title\">KINGDOM TOTALS</text><view className=\"building-list\">");
+            for (int index = 0; index < snapshot.Resources.Length; index++)
+            {
+                GameplayResourceSnapshot resource = snapshot.Resources[index];
+                DataRow(html, DisplayResource(resource.Id), Amount(resource.Amount), "Available across your settlements and owner reserve");
+            }
+            if (snapshot.Resources.Length == 0)
+                html.Append("<text className=\"empty\">No resource records are available.</text>");
+            html.Append("</view>");
+            if (snapshot.Settlements.Length > 0)
+            {
+                html.Append("<text className=\"section-title\">BY SETTLEMENT</text><view className=\"building-list\">");
+                for (int settlementIndex = 0; settlementIndex < snapshot.Settlements.Length; settlementIndex++)
+                {
+                    GameplaySettlementViewSnapshot settlement = snapshot.Settlements[settlementIndex];
+                    string totals = ResourceSummary(settlement.Resources);
+                    DataRow(
+                        html,
+                        settlement.Name,
+                        string.IsNullOrWhiteSpace(totals) ? "No stored resources" : totals,
+                        $"Population {settlement.Population} / Buildings {settlement.BuildingCount}");
+                }
+                html.Append("</view>");
+            }
+        }
+
+        private static void AppendStorage(StringBuilder html, GameplayHtmlSnapshot snapshot)
+        {
+            html.Append("<text className=\"section-title\">WAREHOUSES</text><view className=\"building-list\">");
+            for (int index = 0; index < snapshot.Warehouses.Length; index++)
+            {
+                GameplayWarehouseViewSnapshot warehouse = snapshot.Warehouses[index];
+                string capacity = warehouse.Capacity < 0
+                    ? $"{Amount(warehouse.Used)} / unlimited"
+                    : $"{Amount(warehouse.Used)} / {warehouse.Capacity}";
+                html.Append("<button className=\"storage-row\" onClick=\"Globals.gameplay.FocusWarehouse(")
+                    .Append(warehouse.Position.x).Append(',').Append(warehouse.Position.y).Append(",'")
+                    .Append(J(warehouse.BuildingId)).Append("')\"><text className=\"row-icon\">ST</text><view className=\"item-copy\"><text className=\"item-title\">")
+                    .Append(E(string.IsNullOrWhiteSpace(warehouse.BuildingId) ? "Warehouse" : Display(warehouse.BuildingId)))
+                    .Append("</text><text className=\"item-meta\">").Append(E(warehouse.Settlement))
+                    .Append(" - grid ").Append(warehouse.Position.x).Append(", ").Append(warehouse.Position.y)
+                    .Append(" - ").Append(E(ResourceSummary(warehouse.Resources)))
+                    .Append("</text></view><text className=\"item-tag\">").Append(E(capacity)).Append("</text></button>");
+            }
+            if (snapshot.Warehouses.Length == 0)
+                html.Append("<text className=\"empty\">No warehouses belong to this kingdom yet.</text>");
+            html.Append("</view>");
+        }
+
+        private static void AppendGroups(StringBuilder html, string title, GameplayGroupSnapshot[] groups)
+        {
+            html.Append("<text className=\"section-title\">").Append(E(title)).Append("</text><view className=\"building-list\">");
+            for (int index = 0; index < groups.Length; index++)
+                DataRow(html, groups[index].Label, groups[index].Count.ToString(CultureInfo.InvariantCulture), groups[index].Context);
+            if (groups.Length == 0)
+                html.Append("<text className=\"empty\">Nothing to display yet.</text>");
+            html.Append("</view>");
+        }
+
+        private static void AppendTurns(StringBuilder html, GameplayHtmlSnapshot snapshot)
+        {
+            html.Append("<text className=\"section-title\">PARTICIPANTS</text><view className=\"building-list\">");
+            for (int index = 0; index < snapshot.TurnHistory.Length; index++)
+            {
+                GameplayTurnHistoryViewSnapshot turn = snapshot.TurnHistory[index];
+                string status = turn.Active ? "ACTIVE" : "WAITING";
+                string context = turn.Local ? "Local kingdom" : "Opponent";
+                DataRow(html, Display(turn.OwnerId), $"{turn.Completed} turns - {status}", context);
+            }
+            html.Append("</view>");
+        }
+
+        private static void AppendPause(StringBuilder html)
+        {
+            html.Append("<view id=\"pause-scrim\" className=\"scrim\" data-motion=\"fade\" data-motion-duration=\"0.12\"><view id=\"pause-modal\" className=\"modal\" data-motion=\"scale\" data-motion-duration=\"0.16\" data-motion-ease=\"out-back\"><text className=\"eyebrow\">GAME PAUSED</text><text className=\"modal-title\">Moyva</text><text className=\"modal-copy\">Return to the realm or leave this session.</text><view className=\"row gap\">")
+                .Append(Button("RESUME", "Globals.gameplay.Resume()", "button positive", "Resume game"))
+                .Append(Button("EXIT TO MENU", "Globals.gameplay.ExitToMenu()", "button danger", "Exit to main menu"))
+                .Append("</view></view></view>");
+        }
+
+        private static void PanelHeader(StringBuilder html, string eyebrow, string title, bool close)
+        {
+            html.Append("<view id=\"gameplay-side-panel\" className=\"side-panel\" data-motion=\"slide-left\" data-motion-duration=\"0.16\">");
+            PanelHeaderContent(html, eyebrow, title, close);
+        }
+
+        private static void PanelHeaderContent(StringBuilder html, string eyebrow, string title, bool close)
+        {
+            html.Append("<view className=\"panel-header\"><view className=\"panel-copy\"><text className=\"eyebrow\">")
+                .Append(E(eyebrow)).Append("</text><text className=\"panel-title\">").Append(E(title)).Append("</text></view>");
+            if (close)
+                html.Append(Button("X", "Globals.gameplay.ClosePanel()", "button", "Close panel"));
+            html.Append("</view>");
+        }
+
+        private static void Tab(StringBuilder html, GameplayHtmlState state, KingdomDashboardTab tab, string label, string method)
+        {
+            html.Append("<button className=\"tab ").Append(state.DashboardTab == tab ? "active" : string.Empty)
+                .Append("\" onClick=\"Globals.gameplay.").Append(method).Append("()\"><text className=\"tab-label\">")
+                .Append(label).Append("</text></button>");
+        }
+
+        private static void SelectionTab(StringBuilder html, GameplayHtmlState state, GameplaySelectionTab tab, string label, string method)
+        {
+            html.Append("<button className=\"tab ").Append(state.SelectionTab == tab ? "active" : string.Empty)
+                .Append("\" onClick=\"Globals.gameplay.").Append(method).Append("()\"><text className=\"tab-label\">")
+                .Append(label).Append("</text></button>");
+        }
+
+        private static bool MatchesConstructionFilter(
+            GameplayBuildingOptionSnapshot option,
+            GameplayHtmlState state)
+        {
+            if (!string.IsNullOrWhiteSpace(state.ConstructionCategory)
+                && !string.Equals(option.Category, state.ConstructionCategory, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(state.ConstructionSearch))
+                return true;
+            string search = state.ConstructionSearch;
+            return option.Name.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0
+                || option.Description.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0
+                || option.Category.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string FilterButton(string label, string value, string selected)
+        {
+            string active = string.Equals(value, selected, StringComparison.OrdinalIgnoreCase) ? " active" : string.Empty;
+            return $"<button className=\"filter-button{active}\" onClick=\"Globals.gameplay.SetConstructionCategory('{J(value)}')\"><text className=\"tab-label\">{E(label)}</text></button>";
+        }
+
+        private static void TurnPill(StringBuilder html, string value, string label, string cssClass)
+        {
+            html.Append("<view className=\"turn-pill\"><text className=\"turn-value ").Append(cssClass).Append("\">")
+                .Append(E(value)).Append("</text><text className=\"turn-label\">").Append(E(label)).Append("</text></view>");
+        }
+
+        private static void Stat(StringBuilder html, long value, string label)
+        {
+            html.Append("<view className=\"stat-card\"><text className=\"stat-value\">").Append(value)
+                .Append("</text><text className=\"stat-label\">").Append(E(label)).Append("</text></view>");
+        }
+
+        private static void DataRow(StringBuilder html, string title, string value, string context)
+        {
+            html.Append("<view className=\"data-row\"><text className=\"row-icon small\">")
+                .Append(E(IconForData(title, value))).Append("</text><view className=\"item-copy\"><text className=\"item-title\">")
+                .Append(E(title)).Append("</text><text className=\"item-meta\">").Append(E(context))
+                .Append("</text></view><text className=\"item-tag\">").Append(E(value)).Append("</text></view>");
+        }
+
+        private static void RowIcon(
+            StringBuilder html,
+            bool hasIcon,
+            string globalKey,
+            string fallback,
+            bool small)
+        {
+            if (hasIcon && !string.IsNullOrWhiteSpace(globalKey))
+            {
+                html.Append("<image className=\"row-icon sprite-icon")
+                    .Append(small ? " small" : string.Empty)
+                    .Append("\" src=\"global:")
+                    .Append(E(globalKey))
+                    .Append("\" preserveAspect=\"true\"></image>");
+                return;
+            }
+
+            html.Append("<text className=\"row-icon")
+                .Append(small ? " small" : string.Empty)
+                .Append("\">")
+                .Append(E(fallback))
+                .Append("</text>");
+        }
+
+        private static void AppendConstructionPager(
+            StringBuilder html,
+            int pageIndex,
+            int pageCount,
+            int total,
+            int firstIndex,
+            int lastExclusive)
+        {
+            string range = total == 0
+                ? "No results"
+                : $"Showing {firstIndex + 1}-{lastExclusive} of {total}";
+            html.Append("<view className=\"list-footer\"><text className=\"list-count\">")
+                .Append(E(range)).Append("</text><view className=\"row gap\">")
+                .Append(Button("PREV", "Globals.gameplay.PreviousConstructionPage()", "button compact", "Previous page", pageIndex <= 0))
+                .Append("<text className=\"page-indicator\">")
+                .Append(pageIndex + 1).Append('/').Append(pageCount)
+                .Append("</text>")
+                .Append(Button("NEXT", "Globals.gameplay.NextConstructionPage()", "button compact", "Next page", pageIndex >= pageCount - 1))
+                .Append("</view></view>");
+        }
+
+        private static string Button(string label, string action, string classes, string tooltip, bool disabled = false)
+        {
+            return $"<button className=\"{classes}\" {(disabled ? "disabled=\"true\"" : string.Empty)} onClick=\"{action}\"><text className=\"button-label\">{E(label)}</text><text className=\"tooltip\">{E(tooltip)}</text></button>";
+        }
+
+        private static string Amount(float value) => value.ToString("0.#", CultureInfo.InvariantCulture);
+
+        private static string ResourceSummary(GameplayResourceSnapshot[] resources)
+        {
+            if (resources == null || resources.Length == 0)
+                return string.Empty;
+            var summary = new StringBuilder();
+            for (int index = 0; index < resources.Length; index++)
+            {
+                if (index > 0)
+                    summary.Append(" / ");
+                summary.Append(DisplayResource(resources[index].Id)).Append(' ').Append(Amount(resources[index].Amount));
+            }
+            return summary.ToString();
+        }
+
+        private static string IconForButton(string label)
+        {
+            string normalized = label?.Trim().ToUpperInvariant() ?? string.Empty;
+            return normalized switch
+            {
+                "BUILD" => "+",
+                "END TURN" => ">",
+                "CONFIRM" => "OK",
+                "CANCEL" => "X",
+                "ROTATE" => "R",
+                "UNDO" => "U",
+                "CLEAR" => "CL",
+                "KINGDOM" => "K",
+                "RECRUIT" => "+",
+                "EXIT TO MENU" => "X",
+                "RESUME" => ">",
+                "PREV" => "<",
+                "NEXT" => ">",
+                _ => string.Empty,
+            };
+        }
+
+        private static string IconForBuilding(GameplayBuildingOptionSnapshot option)
+        {
+            string id = option.Id?.Trim().ToLowerInvariant() ?? string.Empty;
+            if (id.Contains("castle") || id.Contains("town"))
+                return "KT";
+            if (id.Contains("warehouse") || id.Contains("storage"))
+                return "ST";
+            if (id.Contains("wall") || id.Contains("gate"))
+                return "WL";
+            if (id.Contains("farm") || id.Contains("food"))
+                return "FD";
+            if (id.Contains("wood") || id.Contains("lumber"))
+                return "WD";
+            if (id.Contains("barrack") || id.Contains("guard"))
+                return "ML";
+
+            string category = option.Category?.Trim().ToLowerInvariant() ?? string.Empty;
+            if (category.StartsWith("mil", StringComparison.Ordinal))
+                return "ML";
+            if (category.StartsWith("ind", StringComparison.Ordinal))
+                return "IN";
+            if (category.StartsWith("wall", StringComparison.Ordinal))
+                return "WL";
+            if (category.StartsWith("civ", StringComparison.Ordinal))
+                return "CV";
+            if (category.StartsWith("set", StringComparison.Ordinal))
+                return "KT";
+            return "BL";
+        }
+
+        private static string IconForCategory(string value, string label)
+        {
+            string category = string.IsNullOrWhiteSpace(value)
+                ? label?.Trim().ToLowerInvariant() ?? string.Empty
+                : value.Trim().ToLowerInvariant();
+            if (category.StartsWith("all", StringComparison.Ordinal))
+                return "*";
+            if (category.StartsWith("mil", StringComparison.Ordinal))
+                return "ML";
+            if (category.StartsWith("ind", StringComparison.Ordinal))
+                return "IN";
+            if (category.StartsWith("wall", StringComparison.Ordinal))
+                return "WL";
+            if (category.StartsWith("civ", StringComparison.Ordinal))
+                return "CV";
+            if (category.StartsWith("set", StringComparison.Ordinal))
+                return "KT";
+            return "BL";
+        }
+
+        private static string IconForUnit(string unitTypeId)
+        {
+            string id = unitTypeId?.Trim().ToLowerInvariant() ?? string.Empty;
+            if (id.Contains("arch"))
+                return "AR";
+            if (id.Contains("guard") || id.Contains("soldier"))
+                return "GD";
+            if (id.Contains("worker"))
+                return "WK";
+            return "UN";
+        }
+
+        private static string IconForData(string title, string value)
+        {
+            string source = $"{title} {value}".ToLowerInvariant();
+            if (source.Contains("resource") || source.Contains("food") || source.Contains("wood") || source.Contains("gold"))
+                return "$";
+            if (source.Contains("turn") || source.Contains("round"))
+                return "T";
+            if (source.Contains("unit"))
+                return "UN";
+            if (source.Contains("building") || source.Contains("castle") || source.Contains("warehouse"))
+                return "BL";
+            if (source.Contains("population") || source.Contains("settlement"))
+                return "P";
+            if (source.Contains("status"))
+                return "!";
+            return "#";
+        }
+
+        private static string Display(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return "Unknown";
+            string normalized = value.Replace('-', ' ').Replace('_', ' ').Trim();
+            return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(normalized.ToLowerInvariant());
+        }
+
+        private static string DisplayResource(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return "Unknown";
+            string normalized = value.Trim();
+            normalized = TrimSuffix(normalized, "-materials-resources");
+            normalized = TrimSuffix(normalized, "_materials_resources");
+            normalized = TrimSuffix(normalized, "-resources");
+            normalized = TrimSuffix(normalized, "_resources");
+            normalized = TrimSuffix(normalized, "-resource");
+            normalized = TrimSuffix(normalized, "_resource");
+            return Display(normalized);
+        }
+
+        private static string TrimSuffix(string value, string suffix)
+        {
+            return value.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)
+                ? value.Substring(0, value.Length - suffix.Length)
+                : value;
+        }
+
+        private static string E(string value)
+            => (value ?? string.Empty).Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
+
+        private static string J(string value)
+            => (value ?? string.Empty).Replace("\\", "\\\\").Replace("'", "\\'");
+    }
+}

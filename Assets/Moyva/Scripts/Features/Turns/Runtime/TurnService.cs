@@ -8,7 +8,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Turns.Runtime
 {
-    internal sealed class TurnService : ITurnService, ITurnStateRestorer, IInitializable, IDisposable
+    internal sealed class TurnService : ITurnService, ITurnHistoryQuery, ITurnStateRestorer, IInitializable, IDisposable
     {
         private readonly SignalBus _signalBus;
         private readonly IWorldGenerationSignalState _worldState;
@@ -87,6 +87,28 @@ namespace Kruty1918.Moyva.Turns.Runtime
         public string ActiveOwnerId => _factions.Count == 0 ? string.Empty : _factions[_activeFactionIndex].OwnerId;
         public string LocalOwnerId { get; private set; } = string.Empty;
         public IReadOnlyList<TurnFaction> Factions => _factions;
+
+        public IReadOnlyList<TurnParticipantHistorySnapshot> GetParticipantHistory()
+        {
+            var result = new List<TurnParticipantHistorySnapshot>(_factions.Count);
+            for (int index = 0; index < _factions.Count; index++)
+            {
+                TurnFaction faction = _factions[index];
+                long completedGlobalTurns = Math.Max(0L, GlobalTurn - 1);
+                long completedTurns = completedGlobalTurns <= index
+                    ? 0L
+                    : (completedGlobalTurns + _factions.Count - 1 - index)
+                      / _factions.Count;
+
+                result.Add(new TurnParticipantHistorySnapshot(
+                    faction.OwnerId,
+                    completedTurns,
+                    index == _activeFactionIndex,
+                    string.Equals(faction.OwnerId, LocalOwnerId, StringComparison.Ordinal)));
+            }
+
+            return result;
+        }
 
         public void Initialize()
         {

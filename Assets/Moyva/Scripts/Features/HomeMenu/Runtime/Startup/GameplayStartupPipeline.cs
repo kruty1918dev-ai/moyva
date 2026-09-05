@@ -348,7 +348,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
                 settings.MaxPlayers,
                 settings.IsPrivate,
                 settings.Width,
-                settings.Height);
+                settings.Height,
+                isLocalPlayerHost: _session.IsHost,
+                localPlayerId: _session.LocalPlayer.PlayerId);
             Debug.Log($"{Prefix} Configured offline fallback. {DescribeLaunchContext()}");
         }
 

@@ -53,6 +53,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 signal.Source == WorldGeneratedDataSource.GeneratedHost ||
                 GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest ||
                 GameLaunchContext.Source == GameLaunchSource.DirectGameplayTest ||
+                GameLaunchContext.Mode == GameLaunchMode.MenuNewGame ||
                 GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame;
 
             for (int positionIndex = 0;

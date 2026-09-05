@@ -34,6 +34,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     {
         private readonly IGameCommandSyncService _syncService;
         private readonly ISessionManager         _sessionManager;
+        private readonly ILocalGameplayRoleResolver _roleResolver;
         private readonly SignalBus               _signalBus;
         private IConstructionService             _constructionService;
         private IUnitMovementService _unitMovementService;
@@ -47,6 +48,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             IGameCommandSyncService syncService,
             ISessionManager         sessionManager,
             SignalBus               signalBus,
+            ILocalGameplayRoleResolver roleResolver,
             [InjectOptional] IUnitMovementService unitMovementService = null,
             [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery = null,
             [InjectOptional] IUnitFactory unitFactory = null,
@@ -54,6 +56,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             _syncService         = syncService;
             _sessionManager      = sessionManager;
+            _roleResolver        = roleResolver;
             _signalBus           = signalBus;
             _unitMovementService = unitMovementService;
             _unitOwnershipQuery = unitOwnershipQuery;
@@ -144,12 +147,12 @@ public void Initialize()
     internal sealed class MultiplayerConstructionPlacementAuthorityPolicy :
         IConstructionPlacementAuthorityPolicy
     {
-        private readonly ISessionManager _sessionManager;
+        private readonly ILocalGameplayRoleResolver _roleResolver;
 
         public MultiplayerConstructionPlacementAuthorityPolicy(
-            ISessionManager sessionManager)
+            ILocalGameplayRoleResolver roleResolver)
         {
-            _sessionManager = sessionManager;
+            _roleResolver = roleResolver;
         }
 
         public bool CanCommit(
@@ -157,17 +160,8 @@ public void Initialize()
             ConstructionPlacementAttemptSource attemptSource,
             out string reason)
         {
-            if (IsLaunchMultiplayerClient())
-            {
-                reason =
-                    "Placement is awaiting authoritative host confirmation.";
-                return false;
-            }
-
-            var participants = _sessionManager?.Participants;
-            if (participants == null
-                || participants.Count == 0
-                || _sessionManager.IsLocalPlayerHost)
+            if (_roleResolver == null
+                || _roleResolver.Resolve().IsAuthoritative)
             {
                 reason = null;
                 return true;
@@ -178,13 +172,6 @@ public void Initialize()
             return false;
         }
 
-        private static bool IsLaunchMultiplayerClient()
-        {
-            GameLaunchContext.EnsureNotExpired();
-            return GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame
-                   && GameLaunchContext.HasLocalPlayerRole
-                   && !GameLaunchContext.IsLocalPlayerHost;
-        }
     }
 
     internal sealed class MultiplayerGamePauseModePolicy :

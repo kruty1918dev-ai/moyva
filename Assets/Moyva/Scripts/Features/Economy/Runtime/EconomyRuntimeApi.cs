@@ -118,6 +118,121 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return totals;
         }
 
+        public IReadOnlyList<EconomyWarehouseSnapshot> GetOwnerWarehouseSnapshots(string ownerId)
+        {
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
+            var result = new List<EconomyWarehouseSnapshot>();
+
+            foreach (EconomySettlementState settlement in _economyManager.Settlements.Values)
+            {
+                if (settlement == null
+                    || !string.Equals(
+                        NormalizeOwnerId(settlement.OwnerId),
+                        normalizedOwnerId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                foreach (var warehouse in settlement.WarehouseResourcePools)
+                {
+                    if (!TryParseWarehousePosition(warehouse.Key, out var position))
+                        continue;
+
+                    var resources = warehouse.Value != null
+                        ? new Dictionary<string, float>(warehouse.Value, StringComparer.Ordinal)
+                        : new Dictionary<string, float>(StringComparer.Ordinal);
+                    float used = 0f;
+                    foreach (float amount in resources.Values)
+                        used += Math.Max(0f, amount);
+
+                    settlement.WarehousePolicies.TryGetValue(
+                        warehouse.Key,
+                        out EconomyBuildingWarehousePolicy policy);
+                    string buildingId = string.Empty;
+                    for (int index = 0; index < settlement.Buildings.Count; index++)
+                    {
+                        EconomyBuildingState building = settlement.Buildings[index];
+                        if (building != null && building.GridPosition == position)
+                        {
+                            buildingId = building.BuildingId;
+                            break;
+                        }
+                    }
+
+                    result.Add(new EconomyWarehouseSnapshot(
+                        warehouse.Key,
+                        buildingId,
+                        settlement.SettlementId,
+                        settlement.SettlementName,
+                        position,
+                        used,
+                        policy?.Capacity ?? -1,
+                        resources));
+                }
+            }
+
+            result.Sort((left, right) =>
+            {
+                int settlementOrder = string.CompareOrdinal(left.SettlementId, right.SettlementId);
+                return settlementOrder != 0
+                    ? settlementOrder
+                    : string.CompareOrdinal(left.WarehouseKey, right.WarehouseKey);
+            });
+            return result;
+        }
+
+        public IReadOnlyList<EconomySettlementSnapshot> GetOwnerSettlementSnapshots(string ownerId)
+        {
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
+            var result = new List<EconomySettlementSnapshot>();
+            foreach (EconomySettlementState settlement in _economyManager.Settlements.Values)
+            {
+                if (settlement == null
+                    || !settlement.IsActive
+                    || !string.Equals(
+                        NormalizeOwnerId(settlement.OwnerId),
+                        normalizedOwnerId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                result.Add(new EconomySettlementSnapshot(
+                    settlement.SettlementId,
+                    string.IsNullOrWhiteSpace(settlement.SettlementName)
+                        ? settlement.SettlementId
+                        : settlement.SettlementName,
+                    settlement.Residents?.Count ?? 0,
+                    settlement.Buildings?.Count ?? 0,
+                    new Dictionary<string, float>(
+                        settlement.ResourcePool,
+                        StringComparer.Ordinal)));
+            }
+
+            result.Sort((left, right) =>
+                string.CompareOrdinal(left.SettlementId, right.SettlementId));
+            return result;
+        }
+
+        private static bool TryParseWarehousePosition(string key, out UnityEngine.Vector2Int position)
+        {
+            position = default;
+            if (string.IsNullOrWhiteSpace(key))
+                return false;
+
+            string[] parts = key.Split(':');
+            if (parts.Length != 2
+                || !int.TryParse(parts[0], out int x)
+                || !int.TryParse(parts[1], out int y))
+            {
+                return false;
+            }
+
+            position = new UnityEngine.Vector2Int(x, y);
+            return true;
+        }
+
         private static void AccumulatePerResource(
             Dictionary<string, float> source,
             Dictionary<string, float> destination)

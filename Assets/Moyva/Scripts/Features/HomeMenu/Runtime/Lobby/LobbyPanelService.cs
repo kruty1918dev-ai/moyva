@@ -182,6 +182,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             return (lobby.Players?.Count ?? 0) >= 1;
         }
 
+        private static bool CanStartLocallyWithoutCommandSync(LobbyRoom lobby)
+        {
+            if (lobby == null)
+                return false;
+
+            return (lobby.Players?.Count ?? 0) == 1;
+        }
+
         /// <summary>
         /// Визначає, чи локальний гравець є хостом.
         /// Перевіряємо:
@@ -238,7 +246,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var readiness = MultiplayerPreflightChecks.ValidateSessionReadiness(
                 hasLobbyService: _lobbyService != null,
                 hasGameStarter: _gameStarter != null,
-                hasCommandSync: _gameCommandSync != null);
+                hasCommandSync: _gameCommandSync != null || CanStartLocallyWithoutCommandSync(_currentLobby));
             if (readiness.IsFailure)
             {
                 var readinessError = MultiplayerUserFacingError.FromDomainError(readiness.Error, MoyvaId.NewTraceId());

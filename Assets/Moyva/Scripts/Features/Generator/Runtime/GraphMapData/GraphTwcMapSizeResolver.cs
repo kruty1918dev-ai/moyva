@@ -16,10 +16,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             Vector2Int requested;
             var shared = graph?.SharedSettings;
-            if (shared != null && shared.HasMapSize)
-                requested = Clamp(shared.MapWidth, shared.MapHeight);
-            else if (GameLaunchContext.TryGetWorldDimensions(out int launchWidth, out int launchHeight))
+            if (GameLaunchContext.TryGetWorldDimensions(out int launchWidth, out int launchHeight))
                 requested = Clamp(launchWidth, launchHeight);
+            else if (shared != null && shared.HasMapSize)
+                requested = Clamp(shared.MapWidth, shared.MapHeight);
             else
                 requested = Clamp(requestedWidth, requestedHeight);
 

@@ -17,10 +17,10 @@ public sealed class HomeMenuConfigSO : MoyvaJsonConfigObject
         public string homeMenuSceneName = "HomeMenu";
 
         /// <summary>Мінімальний час перед переходом до сцени для стабілізації UX.</summary>
-        public float minPreloadSeconds = 0.8f;
+        public float minPreloadSeconds = 0.2f;
 
         /// <summary>Додаткова затримка перед активацією сцени.</summary>
-        public float sceneActivationDelay = 0.2f;
+        public float sceneActivationDelay = 0f;
 
         /// <summary>Enable the pilot UnityHTML shell for the main Home Menu. Missing JSON keeps the default false.</summary>
         public bool useUnityHtmlShell = false;

@@ -18,23 +18,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         private bool IsOfflineOrHost()
         {
-            if (_sessionManager == null)
-                return true;
-
-            if (IsLaunchMultiplayerClient())
-                return false;
-
-            if (_sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
-                return true;
-            return _sessionManager.IsLocalPlayerHost;
-        }
-
-        private static bool IsLaunchMultiplayerClient()
-        {
-            GameLaunchContext.EnsureNotExpired();
-            return GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame
-                   && GameLaunchContext.HasLocalPlayerRole
-                   && !GameLaunchContext.IsLocalPlayerHost;
+            return _roleResolver == null
+                || _roleResolver.Resolve().IsAuthoritative;
         }
 
         private bool TryResolveAuthorizedRequestOwner(

@@ -268,12 +268,14 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
         private sealed class FakeUnityHtmlHost : IUnityHtmlHost
         {
             private readonly bool _mountSucceeds;
+            private readonly IUnityHtmlMotion _motion = new FakeUnityHtmlMotion();
 
             public FakeUnityHtmlHost(bool mountSucceeds)
             {
                 _mountSucceeds = mountSucceeds;
             }
 
+            public IUnityHtmlMotion Motion => _motion;
             public int MountCount { get; private set; }
 
             public UnityHtmlMountResult Mount(RectTransform root, UnityHtmlDocument document, IReadOnlyDictionary<string, object> globals = null)
@@ -287,6 +289,17 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             }
 
             public void Dispose()
+            {
+            }
+        }
+
+        private sealed class FakeUnityHtmlMotion : IUnityHtmlMotion
+        {
+            public void Play(string targetId, string preset, float duration, float delay)
+            {
+            }
+
+            public void Stop(string targetId)
             {
             }
         }

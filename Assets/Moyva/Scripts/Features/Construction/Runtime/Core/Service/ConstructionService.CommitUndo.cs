@@ -8,6 +8,37 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed partial class ConstructionService
     {
+        public ConstructionConfirmResult ConfirmPending()
+        {
+            int pendingBefore = _pendingPlacements.Count;
+            Confirm();
+
+            int pendingAfter = _pendingPlacements.Count;
+            int confirmed = Math.Max(0, pendingBefore - pendingAfter);
+            int rejected = Math.Max(0, pendingBefore - confirmed);
+            if (confirmed > 0)
+            {
+                return new ConstructionConfirmResult(
+                    ConstructionConfirmStatus.Succeeded,
+                    rejected > 0
+                        ? $"Placed {confirmed}; {rejected} placement(s) still need attention."
+                        : $"Placed {confirmed} building(s).",
+                    confirmed,
+                    rejected);
+            }
+
+            string reason = string.IsNullOrWhiteSpace(_lastActionMessage)
+                ? pendingBefore == 0
+                    ? "Place a building preview before confirming."
+                    : "The placement was rejected."
+                : _lastActionMessage;
+            return new ConstructionConfirmResult(
+                ConstructionConfirmStatus.Rejected,
+                reason,
+                0,
+                rejected);
+        }
+
         public void Confirm()
         {
             if (!CanActiveOwnerAct(out string turnReason))
@@ -28,6 +59,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_pendingPlacements.Count == 0)
             {
+                _lastActionMessage =
+                    "No pending construction placements to confirm.";
                 LogPlacementCommitRejected(
                     null,
                     null,

@@ -35,4 +35,12 @@ namespace Kruty1918.Moyva.Notifications.API
                 DedupKey?.Trim());
         }
     }
+
+    public static class GameplayNotificationStream
+    {
+        public static event Action<GameplayNotificationRequest> Published;
+
+        internal static void Publish(GameplayNotificationRequest request)
+            => Published?.Invoke(request);
+    }
 }

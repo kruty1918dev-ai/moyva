@@ -308,8 +308,8 @@ MonoBehaviour:
   _config:
     gameplaySceneName: Gamplay_Scene
     homeMenuSceneName: HomeMenu
-    minPreloadSeconds: 0.8
-    sceneActivationDelay: 0.2
+    minPreloadSeconds: 0.2
+    sceneActivationDelay: 0
   _worldCreationDefaults:
     DefaultWorldName: "\u041C\u0456\u0439 \u0441\u0432\u0456\u0442"
     AppendIndexWhenSaveExists: 1

@@ -10,15 +10,6 @@ namespace Kruty1918.Moyva.Notifications.Runtime
             if (!container.HasBinding(typeof(GameplayNotificationSettings)))
                 container.Bind<GameplayNotificationSettings>().AsSingle();
 
-            if (!container.HasBinding(typeof(IGameplayNotificationPresenter)))
-            {
-                container.BindInterfacesAndSelfTo<GameplayNotificationPresenter>()
-                    .FromNewComponentOnNewGameObject()
-                    .WithGameObjectName("GameplayNotificationPresenter")
-                    .AsSingle()
-                    .NonLazy();
-            }
-
             if (!container.HasBinding(typeof(IGameplayNotificationService)))
             {
                 container.BindInterfacesAndSelfTo<GameplayNotificationService>()

@@ -83,6 +83,31 @@ namespace Kruty1918.Moyva.Turns.API
         bool TryEndTurn(string requesterOwnerId, out string reason);
     }
 
+    public readonly struct TurnParticipantHistorySnapshot
+    {
+        public TurnParticipantHistorySnapshot(
+            string ownerId,
+            long completedTurns,
+            bool isActive,
+            bool isLocal)
+        {
+            OwnerId = ownerId ?? string.Empty;
+            CompletedTurns = completedTurns;
+            IsActive = isActive;
+            IsLocal = isLocal;
+        }
+
+        public string OwnerId { get; }
+        public long CompletedTurns { get; }
+        public bool IsActive { get; }
+        public bool IsLocal { get; }
+    }
+
+    public interface ITurnHistoryQuery
+    {
+        IReadOnlyList<TurnParticipantHistorySnapshot> GetParticipantHistory();
+    }
+
     public interface ITurnStateRestorer
     {
         void Restore(int round, long globalTurn, string activeOwnerId, int actions);

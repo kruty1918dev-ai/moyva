@@ -21,6 +21,9 @@ namespace UnityHTML.Runtime
         private UGUIContext _context;
         private RectTransform _root;
         private string _mountedCss = string.Empty;
+        private readonly UnityHtmlMotionBridge _motion = new UnityHtmlMotionBridge();
+
+        public IUnityHtmlMotion Motion => _motion;
 
         public UnityHtmlMountResult Mount(
             RectTransform root,
@@ -34,7 +37,7 @@ namespace UnityHTML.Runtime
                 return UnityHtmlMountResult.Failure($"HTML document '{document.SourceName}' is empty or missing.");
 
             if (CanUpdateMountedDocument(root, document))
-                return UpdateMountedDocument(document);
+                return UpdateMountedDocument(document, globals);
 
             Unmount();
             ClearDetachedEditorElements();
@@ -59,6 +62,7 @@ namespace UnityHTML.Runtime
                     Pooling = ReactContext.PoolingType.Basic,
                     UnknownPropertyHandling = ReactContext.UnknownPropertyHandling.Exception
                 });
+                _motion.Attach(_root);
                 DetachUnsafeEditorAssemblyReloadDispose(_context);
 
                 if (!string.IsNullOrWhiteSpace(document.Css))
@@ -67,6 +71,7 @@ namespace UnityHTML.Runtime
                 _context.Start();
                 DetachUnsafeEditorAssemblyReloadDispose(_context);
                 CompleteLayoutPass();
+                _motion.ApplyDeclaredMotions();
                 return UnityHtmlMountResult.Success();
             }
             catch (Exception exception)
@@ -84,6 +89,7 @@ namespace UnityHTML.Runtime
             _context = null;
             _root = null;
             _mountedCss = string.Empty;
+            _motion.Detach();
 
             try
             {
@@ -106,12 +112,17 @@ namespace UnityHTML.Runtime
                    string.Equals(_mountedCss, document.Css ?? string.Empty, StringComparison.Ordinal);
         }
 
-        private UnityHtmlMountResult UpdateMountedDocument(UnityHtmlDocument document)
+        private UnityHtmlMountResult UpdateMountedDocument(
+            UnityHtmlDocument document,
+            IReadOnlyDictionary<string, object> globals)
         {
             try
             {
+                UpdateGlobals(globals);
+                _motion.PrepareForDocumentUpdate();
                 _context.Html.InsertHtml(document.Html, _context.Host, clearContent: true);
                 CompleteLayoutPass();
+                _motion.ApplyDeclaredMotions();
                 return UnityHtmlMountResult.Success();
             }
             catch (Exception exception)
@@ -120,6 +131,25 @@ namespace UnityHTML.Runtime
                 ClearDetachedEditorElements();
                 return UnityHtmlMountResult.Failure($"{document.SourceName}: {exception.GetBaseException().Message}");
             }
+        }
+
+        private void UpdateGlobals(IReadOnlyDictionary<string, object> globals)
+        {
+            if (_context?.Globals == null)
+                return;
+
+            if (globals != null)
+            {
+                foreach (var pair in globals)
+                {
+                    if (string.IsNullOrWhiteSpace(pair.Key))
+                        continue;
+
+                    _context.Globals[pair.Key] = pair.Value;
+                }
+            }
+
+            _context.Globals["motion"] = _motion;
         }
 
         private void CompleteLayoutPass()
@@ -133,20 +163,21 @@ namespace UnityHTML.Runtime
             Canvas.ForceUpdateCanvases();
         }
 
-        private static GlobalRecord CreateGlobals(IReadOnlyDictionary<string, object> globals)
+        private GlobalRecord CreateGlobals(IReadOnlyDictionary<string, object> globals)
         {
             var record = new GlobalRecord();
-            if (globals == null)
-                return record;
-
-            foreach (var pair in globals)
+            if (globals != null)
             {
-                if (string.IsNullOrWhiteSpace(pair.Key))
-                    continue;
+                foreach (var pair in globals)
+                {
+                    if (string.IsNullOrWhiteSpace(pair.Key))
+                        continue;
 
-                record[pair.Key] = pair.Value;
+                    record[pair.Key] = pair.Value;
+                }
             }
 
+            record["motion"] = _motion;
             return record;
         }
 
@@ -270,20 +301,22 @@ namespace UnityHTML.Runtime
                 if (input.textComponent != null)
                 {
                     input.textComponent.color = new Color(0.98f, 0.96f, 0.89f, 1f);
-                    input.textComponent.alignment = TextAlignmentOptions.MidlineLeft;
+                    input.textComponent.alignment = TextAlignmentOptions.Midline;
                     input.textComponent.textWrappingMode = TextWrappingModes.NoWrap;
                     input.textComponent.overflowMode = TextOverflowModes.Masking;
                     input.textComponent.margin = Vector4.zero;
                     input.textComponent.raycastTarget = false;
+                    input.textComponent.ForceMeshUpdate(true);
                 }
 
                 if (input.placeholder is TMP_Text placeholder)
                 {
                     placeholder.color = new Color(0.72f, 0.70f, 0.64f, 0.78f);
-                    placeholder.alignment = TextAlignmentOptions.MidlineLeft;
+                    placeholder.alignment = TextAlignmentOptions.Midline;
                     placeholder.textWrappingMode = TextWrappingModes.NoWrap;
                     placeholder.margin = Vector4.zero;
                     placeholder.raycastTarget = false;
+                    placeholder.ForceMeshUpdate(true);
                 }
 
                 var graphic = input.targetGraphic != null ? input.targetGraphic : input.GetComponent<Graphic>();
@@ -307,8 +340,8 @@ namespace UnityHTML.Runtime
                 viewport.anchorMin = Vector2.zero;
                 viewport.anchorMax = Vector2.one;
                 viewport.pivot = new Vector2(0.5f, 0.5f);
-                viewport.offsetMin = new Vector2(12f, 4f);
-                viewport.offsetMax = new Vector2(-12f, -4f);
+                viewport.offsetMin = new Vector2(10f, 0f);
+                viewport.offsetMax = new Vector2(-10f, 0f);
                 viewport.localScale = Vector3.one;
             }
 
