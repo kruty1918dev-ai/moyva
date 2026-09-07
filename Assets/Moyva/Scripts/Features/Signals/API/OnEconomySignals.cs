@@ -39,6 +39,15 @@ namespace Kruty1918.Moyva.Signals
         public string Reason;
     }
 
+    public struct SettlementCapturedSignal
+    {
+        public string SettlementId;
+        public string PreviousOwnerId;
+        public string NewOwnerId;
+        public Vector2Int CenterPosition;
+        public string Reason;
+    }
+
     /// <summary>
     /// Надсилається EconomyManager коли ресурс поселення змінюється суттєво (виробництво або споживання).
     /// Отримується: UI ресурсної панелі.

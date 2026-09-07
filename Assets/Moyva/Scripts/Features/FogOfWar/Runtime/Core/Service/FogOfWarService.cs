@@ -13,6 +13,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// Implementation details are split by responsibility into partial files.
     /// </summary>
     internal sealed partial class FogOfWarService : IFogOfWarService, IInitializable, IDisposable
+        , IFogOwnerStateReader
+        , IFogOwnerVisionSourceRegistry
+        , IFogOwnerExplorationSnapshotStore
     {
         private const string BuildingVisionAreaPrefix = "building:";
         private const string StartupFallbackRevealAreaId = "fog-service-startup-fallback-reveal";
@@ -32,6 +35,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private readonly FogStateGrid _stateGrid = new FogStateGrid();
         private bool[,] _pendingExploredSnapshot;
+        private readonly Dictionary<string, OwnerFogState> _ownerStates =
+            new Dictionary<string, OwnerFogState>(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> _ownerByVisionSourceId =
+            new Dictionary<string, string>(StringComparer.Ordinal);
 
         private readonly Dictionary<string, IReadOnlyList<Vector2Int>> _unitVisibleTiles
             = new Dictionary<string, IReadOnlyList<Vector2Int>>();

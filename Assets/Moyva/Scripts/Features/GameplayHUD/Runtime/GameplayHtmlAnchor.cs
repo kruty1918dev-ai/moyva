@@ -20,11 +20,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Recruitment,
             Dashboard,
             Pause,
+            Cargo,
+            Route,
         }
 
         [SerializeField] private RectTransform _mountRoot;
         [SerializeField] private TextAsset _cssAsset;
         [SerializeField] private TMP_FontAsset _fontAsset;
+        [SerializeField] private Sprite _notificationsIcon;
+        [SerializeField] private Sprite _menuIcon;
         [SerializeField] private GameObject[] _legacyScreenRoots = Array.Empty<GameObject>();
         [SerializeField] private bool _editorLivePreview = true;
         [SerializeField] private PreviewScreen _editorPreviewScreen = PreviewScreen.FirstCastle;
@@ -42,6 +46,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             : transform as RectTransform;
         public TextAsset CssAsset => _cssAsset;
         public TMP_FontAsset FontAsset => _fontAsset;
+        public Sprite NotificationsIcon => _notificationsIcon;
+        public Sprite MenuIcon => _menuIcon;
 
         public string ViewportClass
         {
@@ -236,6 +242,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 state.OpenPanel(GameplayHtmlPanel.Construction);
             if (_editorPreviewScreen == PreviewScreen.Recruitment)
                 state.SetSelectionTab(GameplaySelectionTab.Recruit);
+            if (_editorPreviewScreen == PreviewScreen.Cargo)
+                state.SetSelectionTab(GameplaySelectionTab.Cargo);
+            if (_editorPreviewScreen == PreviewScreen.Route)
+                state.SetSelectionTab(GameplaySelectionTab.Route);
             if (_editorPreviewScreen == PreviewScreen.Pause)
                 state.SetPaused(true);
 
@@ -245,6 +255,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             };
             if (_fontAsset != null)
                 globals["moyvaFont"] = _fontAsset;
+            globals["gameplay_notifications_icon"] = _notificationsIcon;
+            globals["gameplay_menu_icon"] = _menuIcon;
 
             UnityHtmlMountResult result = _previewHost.Mount(
                 root,
@@ -415,6 +427,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             public void ShowSelectionDetails() { }
             public void ShowRecruitment() { }
             public void ShowRecruitmentQueue() { }
+            public void ShowCargo() { }
+            public void ShowCargoRoute() { }
+            public void SetCargoOperation(object value) { }
+            public void SetCargoWarehouse(object value) { }
+            public void SetCargoTarget(object value) { }
+            public void SetCargoResource(object value) { }
+            public void SetCargoRepeat(object value) { }
+            public void SetCargoAmount(object value) { }
+            public void TransferCargo() { }
+            public void StartCargoRoute() { }
+            public void StopCargoRoute() { }
+            public void FoundSettlement() { }
+            public void AttackSelection() { }
+            public void CaptureSelection() { }
             public void Recruit(object value) { }
             public void ClosePanel() { }
             public void Construction() { }

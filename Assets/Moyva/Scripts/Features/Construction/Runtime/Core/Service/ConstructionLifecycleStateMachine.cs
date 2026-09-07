@@ -224,6 +224,31 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public bool Remove(Vector2Int position)
             => _states.Remove(position);
 
+        public bool TryTransferOwner(
+            Vector2Int position,
+            string previousOwnerId,
+            string newOwnerId,
+            out string reason)
+        {
+            reason = string.Empty;
+            if (!_states.TryGetValue(position, out State state))
+            {
+                reason = "Construction lifecycle state not found.";
+                return false;
+            }
+
+            string previous = NormalizeOwner(previousOwnerId);
+            string next = NormalizeOwner(newOwnerId);
+            if (!string.Equals(state.OwnerId, previous, StringComparison.Ordinal))
+            {
+                reason = $"Construction lifecycle belongs to '{state.OwnerId}', not '{previous}'.";
+                return false;
+            }
+
+            state.OwnerId = next;
+            return true;
+        }
+
         public IReadOnlyList<OperationalTransition> AdvanceOwnerTurn(
             string ownerId,
             long globalTurn)

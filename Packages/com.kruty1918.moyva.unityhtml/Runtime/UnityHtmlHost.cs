@@ -22,6 +22,8 @@ namespace UnityHTML.Runtime
         private RectTransform _root;
         private string _mountedCss = string.Empty;
         private readonly UnityHtmlMotionBridge _motion = new UnityHtmlMotionBridge();
+        private UnityHtmlDocumentTree _tree;
+        private UnityHtmlTooltipLayer _tooltips;
 
         public IUnityHtmlMotion Motion => _motion;
 
@@ -49,7 +51,7 @@ namespace UnityHTML.Runtime
                 _mountedCss = document.Css ?? string.Empty;
                 ClearRootChildren(_root);
                 var globalRecord = CreateGlobals(globals);
-                var source = ScriptSource.Text(document.Html, ScriptSourceLanguage.Html);
+                var source = ScriptSource.Text(string.Empty, ScriptSourceLanguage.Html);
 
                 _context = new UGUIContext(new UGUIContext.Options
                 {
@@ -69,6 +71,8 @@ namespace UnityHTML.Runtime
                     _context.InsertStyle(document.Css);
 
                 _context.Start();
+                _tree = new UnityHtmlDocumentTree(_context);
+                _tree.Update(document.Html);
                 DetachUnsafeEditorAssemblyReloadDispose(_context);
                 CompleteLayoutPass();
                 _motion.ApplyDeclaredMotions();
@@ -89,6 +93,14 @@ namespace UnityHTML.Runtime
             _context = null;
             _root = null;
             _mountedCss = string.Empty;
+            _tree = null;
+            if (_tooltips != null)
+            {
+                _tooltips.enabled = false;
+                if (ShouldDestroyDeferred()) UnityEngine.Object.Destroy(_tooltips);
+                else UnityEngine.Object.DestroyImmediate(_tooltips);
+                _tooltips = null;
+            }
             _motion.Detach();
 
             try
@@ -102,11 +114,18 @@ namespace UnityHTML.Runtime
         }
 
         public void Dispose() => Unmount();
+        public bool UpdateRegion(string elementId, string html)
+        {
+            if (_tree == null || !_tree.UpdateRegion(elementId, html)) return false;
+            CompleteLayoutPass();
+            _motion.ApplyDeclaredMotions();
+            return true;
+        }
+        public bool SetValue(string elementId, string value) => _tree?.SetValue(elementId, value) == true;
 
         private bool CanUpdateMountedDocument(RectTransform root, UnityHtmlDocument document)
         {
-            return Application.isPlaying &&
-                   _context != null &&
+            return _context != null &&
                    !_context.IsDisposed &&
                    _root == root &&
                    string.Equals(_mountedCss, document.Css ?? string.Empty, StringComparison.Ordinal);
@@ -119,10 +138,11 @@ namespace UnityHTML.Runtime
             try
             {
                 UpdateGlobals(globals);
-                _motion.PrepareForDocumentUpdate();
-                _context.Html.InsertHtml(document.Html, _context.Host, clearContent: true);
-                CompleteLayoutPass();
-                _motion.ApplyDeclaredMotions();
+                if (_tree.Update(document.Html))
+                {
+                    CompleteLayoutPass();
+                    _motion.ApplyDeclaredMotions();
+                }
                 return UnityHtmlMountResult.Success();
             }
             catch (Exception exception)
@@ -145,22 +165,30 @@ namespace UnityHTML.Runtime
                     if (string.IsNullOrWhiteSpace(pair.Key))
                         continue;
 
-                    _context.Globals[pair.Key] = pair.Value;
+                    if (!_context.Globals.TryGetValue(pair.Key, out object previous)
+                        || !Equals(previous, pair.Value))
+                        _context.Globals[pair.Key] = pair.Value;
                 }
             }
 
-            _context.Globals["motion"] = _motion;
+            if (!_context.Globals.TryGetValue("motion", out object motion) || !ReferenceEquals(motion, _motion))
+                _context.Globals["motion"] = _motion;
         }
 
         private void CompleteLayoutPass()
         {
-            _context.Host?.ResolveStyle(true);
+            if (Application.isPlaying && _tooltips == null)
+            {
+                _tooltips = _root.gameObject.AddComponent<UnityHtmlTooltipLayer>();
+                _tooltips.Bind(_context, _root);
+            }
             _context.UpdateElementsRecursively();
             _context.CalculateLayoutRecursively();
             _context.LateUpdateElementsRecursively();
             FlushReactElementLayout(_root);
             ConfigureRenderedInputs(_root);
             Canvas.ForceUpdateCanvases();
+            _tooltips?.RefreshTargets();
         }
 
         private GlobalRecord CreateGlobals(IReadOnlyDictionary<string, object> globals)
@@ -251,7 +279,7 @@ namespace UnityHTML.Runtime
                 var element = elements[i];
                 var layout = element != null ? element.Layout : null;
                 var transform = element != null ? element.transform as RectTransform : null;
-                if (layout == null || transform == null || float.IsNaN(layout.LayoutWidth))
+                if (layout == null || !layout.HasNewLayout || !element.enabled || transform == null || float.IsNaN(layout.LayoutWidth))
                     continue;
 
                 var pivotDiff = transform.pivot - Vector2.up;
@@ -266,6 +294,7 @@ namespace UnityHTML.Runtime
 
         private static void RegisterMoyvaComponents()
         {
+            UGUIContext.ComponentCreators["input"] = (_, text, context) => new UnityHtmlInputComponent(text, context);
             if (!UGUIContext.ComponentCreators.ContainsKey("slider"))
                 UGUIContext.ComponentCreators["slider"] = (_, _, context) => new UnityHtmlSliderComponent(context);
 
@@ -284,6 +313,9 @@ namespace UnityHTML.Runtime
                 var input = inputs[i];
                 if (input == null)
                     continue;
+                var component = input.GetComponent<ReactElement>()?.Component as UnityHtmlInputComponent;
+                if (component != null && component.NativeLayoutConfigured) continue;
+                if (component != null) component.NativeLayoutConfigured = true;
 
                 input.customCaretColor = true;
                 input.caretColor = new Color(0.98f, 0.91f, 0.56f, 1f);
@@ -301,7 +333,7 @@ namespace UnityHTML.Runtime
                 if (input.textComponent != null)
                 {
                     input.textComponent.color = new Color(0.98f, 0.96f, 0.89f, 1f);
-                    input.textComponent.alignment = TextAlignmentOptions.Midline;
+                    input.textComponent.alignment = TextAlignmentOptions.Center;
                     input.textComponent.textWrappingMode = TextWrappingModes.NoWrap;
                     input.textComponent.overflowMode = TextOverflowModes.Masking;
                     input.textComponent.margin = Vector4.zero;
@@ -312,7 +344,7 @@ namespace UnityHTML.Runtime
                 if (input.placeholder is TMP_Text placeholder)
                 {
                     placeholder.color = new Color(0.72f, 0.70f, 0.64f, 0.78f);
-                    placeholder.alignment = TextAlignmentOptions.Midline;
+                    placeholder.alignment = TextAlignmentOptions.Center;
                     placeholder.textWrappingMode = TextWrappingModes.NoWrap;
                     placeholder.margin = Vector4.zero;
                     placeholder.raycastTarget = false;

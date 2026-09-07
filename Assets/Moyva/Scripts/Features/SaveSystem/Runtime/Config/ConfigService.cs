@@ -41,7 +41,13 @@ namespace Kruty1918.Moyva.SaveSystem
                 return;
             }
 
-            var blocks = SavePipelineHelper.CollectBlocks(modules);
+            List<(uint blockId, byte[] payload)> blocks;
+            try { blocks = SavePipelineHelper.CollectBlocks(modules); }
+            catch (System.Exception exception)
+            {
+                Debug.LogError($"[SaveSystem] Config save aborted: {exception.Message}");
+                return;
+            }
             byte[] data = SaveFileCodec.Encode(blocks);
 
             if (!SavePipelineHelper.VerifyAssembledBuffer(data))

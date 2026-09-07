@@ -65,11 +65,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
             {
+                bool existed = _previewVisuals.TryGet(signal.Position, out GameObject existing);
+                Quaternion previous = existed && existing != null ? existing.transform.rotation : Quaternion.identity;
                 GameObject preview = _previewVisuals.Show(signal, def);
                 ApplyRotation(
                     preview,
                     signal.RotationQuarterTurns,
                     def.Presentation);
+                if (existed && preview != null)
+                {
+                    var rotation = preview.GetComponent<ConstructionPreviewRotation>()
+                        ?? preview.AddComponent<ConstructionPreviewRotation>();
+                    rotation.Apply(previous, preview.transform.rotation);
+                }
                 ShowOrHidePreviewRadius(def, signal.Position);
                 RefreshWallPreviewIfNeeded(signal);
             }

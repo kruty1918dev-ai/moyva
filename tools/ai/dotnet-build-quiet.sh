@@ -29,9 +29,9 @@ if run_build "$@"; then
   echo "warnings: $warnings"
   echo "log: $log"
   exit 0
+else
+  code=$?
 fi
-
-code=$?
 
 if [[ "${AI_BUILD_RESTORE:-0}" != "1" ]] && rg -q "error NETSDK1004:" "$log"; then
   echo "restore assets missing; retrying once with restore: $project"
@@ -44,9 +44,9 @@ if [[ "${AI_BUILD_RESTORE:-0}" != "1" ]] && rg -q "error NETSDK1004:" "$log"; th
     echo "warnings: $warnings"
     echo "log: $log"
     exit 0
+  else
+    code=$?
   fi
-
-  code=$?
 fi
 
 echo "build failed: $project"

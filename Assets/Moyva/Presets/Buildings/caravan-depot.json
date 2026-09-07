@@ -1,0 +1,182 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "caravan-depot",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 1,
+  "identity": {
+    "id": "caravan-depot",
+    "displayName": "Caravan Depot",
+    "category": "Civilian",
+    "role": "Support",
+    "description": "Prepares overland logistics and stores shipment resources for caravan routes.",
+    "tags": [
+      "logistics",
+      "caravan"
+    ]
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.building-stables-blue.49c0cff0",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_stables_blue.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.stable.2cd37eb0",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stable.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.stable.2cd37eb0",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stable.png",
+      "required": true
+    },
+    "variants": {
+      "constructionPrefab": {
+        "$asset": "asset.game-object.building-scaffolding.07c8416d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
+        "required": true
+      }
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 40
+      },
+      {
+        "resourceId": "hardwood-materials-resources",
+        "amount": 20
+      },
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 10
+      }
+    ],
+    "buildTurns": 3,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "workerless",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "storage",
+      "storageKind": "Any",
+      "capacity": -1,
+      "acceptedResourceIds": [],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "unit-recruitment",
+      "queueCapacity": 2,
+      "spawnRadius": 2,
+      "recipes": [
+        {
+          "unitTypeId": "caravan-wagon",
+          "trainingTurns": 2,
+          "costs": [
+            {
+              "resourceId": "walnut-wood-materials-resources",
+              "amount": 30
+            },
+            {
+              "resourceId": "hardwood-materials-resources",
+              "amount": 10
+            },
+            {
+              "resourceId": "iron-ingot-materials-resources",
+              "amount": 2
+            }
+          ]
+        }
+      ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "settlement-influence-requirement",
+      "mergeMode": "Override",
+      "requiresInfluence": true,
+      "blockOverlappingCenters": false,
+      "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "",
+    "sourceAssetPath": "",
+    "sourceHash": "runtime-json-added-caravan-depot-2026-09-06"
+  }
+}

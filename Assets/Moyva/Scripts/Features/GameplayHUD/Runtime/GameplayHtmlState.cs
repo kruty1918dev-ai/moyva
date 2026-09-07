@@ -29,6 +29,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         Details,
         Recruit,
         Queue,
+        Cargo,
+        Route,
     }
 
     internal sealed class GameplayHtmlState
@@ -39,11 +41,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public KingdomDashboardTab DashboardTab { get; private set; }
         public GameplaySelectionTab SelectionTab { get; private set; }
         public bool IsPaused { get; private set; }
+        public bool IsGameOver { get; private set; }
+        public string WinnerId { get; private set; } = string.Empty;
         public string Feedback { get; private set; } = string.Empty;
         public string ConstructionCategory { get; private set; } = string.Empty;
         public string ConstructionSearch { get; private set; } = string.Empty;
         public int ConstructionPageIndex { get; private set; }
         public IReadOnlyList<GameplayNotificationViewSnapshot> Notifications => _notifications;
+        public int UnreadNotifications { get; private set; }
         public bool Dirty { get; private set; } = true;
         private float _feedbackExpiresAt = -1f;
         private readonly List<GameplayNotificationViewSnapshot> _notifications = new();
@@ -54,6 +59,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 OpenPanelId = GameplayHtmlPanel.None;
             else
                 OpenPanelId = panel;
+            if (OpenPanelId == GameplayHtmlPanel.Notifications) UnreadNotifications = 0;
             MarkDirty();
         }
 
@@ -122,6 +128,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (string.IsNullOrWhiteSpace(normalized))
                 return;
             _notifications.Insert(0, new GameplayNotificationViewSnapshot(normalized, kind));
+            if (OpenPanelId != GameplayHtmlPanel.Notifications) UnreadNotifications++;
             if (_notifications.Count > 20)
                 _notifications.RemoveAt(_notifications.Count - 1);
             SetFeedback(normalized);
@@ -132,6 +139,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (IsPaused == paused)
                 return;
             IsPaused = paused;
+            MarkDirty();
+        }
+
+        public void SetGameResult(bool isGameOver, string winnerId)
+        {
+            IsGameOver = isGameOver;
+            IsPaused = false;
+            WinnerId = winnerId?.Trim() ?? string.Empty;
+            OpenPanelId = GameplayHtmlPanel.None;
             MarkDirty();
         }
 
@@ -321,18 +337,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
     internal readonly struct GameplayTurnHistoryViewSnapshot
     {
-        public GameplayTurnHistoryViewSnapshot(string ownerId, long completed, bool active, bool local)
+        public GameplayTurnHistoryViewSnapshot(string ownerId, long completed, bool active, bool local,
+            bool eliminated = false)
         {
             OwnerId = ownerId ?? string.Empty;
             Completed = completed;
             Active = active;
             Local = local;
+            Eliminated = eliminated;
         }
 
         public string OwnerId { get; }
         public long Completed { get; }
         public bool Active { get; }
         public bool Local { get; }
+        public bool Eliminated { get; }
     }
 
     internal readonly struct GameplayRecruitmentRecipeSnapshot
@@ -408,6 +427,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     {
         public static string Building(string id) => $"gameplay_building_icon_{Sanitize(id)}";
         public static string Unit(string id) => $"gameplay_unit_icon_{Sanitize(id)}";
+        public static string Resource(string id) => $"gameplay_resource_icon_{Sanitize(id)}";
 
         private static string Sanitize(string value)
         {
@@ -453,6 +473,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
     internal sealed class GameplayHtmlSnapshot
     {
+        public IReadOnlyDictionary<string, Sprite> Icons = new Dictionary<string, Sprite>();
         public string OwnerId = "player_0";
         public string KingdomName = "Your Kingdom";
         public int Round = 1;
@@ -461,7 +482,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public string ActiveOwnerId = "player_0";
         public bool IsLocalTurn = true;
         public bool TurnUiEnabled = true;
+        public bool SandboxRealtime;
+        public float SandboxSpeed = 1f;
         public bool CanIssueLocalCommands => !TurnUiEnabled || IsLocalTurn;
+        public bool EndTurnPending;
         public int SettlementCount;
         public int Population;
         public int BuildingCount;
@@ -480,7 +504,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public GameplayFactSnapshot[] SelectionFacts = Array.Empty<GameplayFactSnapshot>();
         public bool SelectionOwnedByLocalPlayer;
         public bool SelectionOperational;
+        public string AttackSourceId = string.Empty;
+        public bool CanAttackSelection;
+        public string AttackPreview = string.Empty;
+        public string AttackUnavailableReason = string.Empty;
+        public bool CanCaptureSelection;
+        public string CapturePreview = string.Empty;
+        public string CaptureUnavailableReason = string.Empty;
         public bool SupportsRecruitment;
+        public GameplayCargoSnapshot Cargo;
         public int RecruitmentQueueCapacity;
         public GameplayRecruitmentRecipeSnapshot[] RecruitmentRecipes = Array.Empty<GameplayRecruitmentRecipeSnapshot>();
         public GameplayRecruitmentQueueSnapshot[] RecruitmentQueue = Array.Empty<GameplayRecruitmentQueueSnapshot>();
@@ -583,11 +615,25 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     new GameplayTurnHistoryViewSnapshot("player_1", 5, false, false),
                 },
             };
+            if (screen == GameplayHtmlAnchor.PreviewScreen.Cargo
+                || screen == GameplayHtmlAnchor.PreviewScreen.Route)
+            {
+                snapshot.SelectionKind = "Unit";
+                snapshot.SelectionId = "caravan-wagon-preview";
+                snapshot.SelectionTitle = "Caravan Wagon";
+                snapshot.SelectionSubtitle = "Transport";
+                snapshot.SelectionPosition = new Vector2Int(41, 27);
+                snapshot.SelectedBuildingId = string.Empty;
+                snapshot.SupportsRecruitment = false;
+                snapshot.Cargo = GameplayCargoSnapshot.CreatePreview();
+                if (screen == GameplayHtmlAnchor.PreviewScreen.Route)
+                    snapshot.Cargo.RouteAvailability = Kruty1918.Moyva.Economy.API.CaravanTransferResult.Success();
+            }
             return snapshot;
         }
     }
 
-    internal static class GameplayHtmlMarkup
+    internal static partial class GameplayHtmlMarkup
     {
         private const int ConstructionPageSize = 6;
 
@@ -598,7 +644,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             var html = new StringBuilder(24000);
             html.Append("<view className=\"gameplay-ui ").Append(E(viewportClass)).Append("\">");
-            AppendTopBar(html, snapshot);
+            AppendTopBar(html, snapshot, state);
             html.Append("<view className=\"workspace\">");
             AppendContextPanel(html, snapshot, state);
             html.Append("</view>");
@@ -611,13 +657,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
             if (state.OpenPanelId == GameplayHtmlPanel.Kingdom)
                 AppendDashboard(html, snapshot, state);
-            if (state.IsPaused)
+            if (state.IsGameOver)
+                AppendGameOver(html, snapshot, state);
+            else if (state.IsPaused)
                 AppendPause(html);
             html.Append("</view>");
             return html.ToString();
         }
 
-        private static void AppendTopBar(StringBuilder html, GameplayHtmlSnapshot snapshot)
+        private static void AppendTopBar(StringBuilder html, GameplayHtmlSnapshot snapshot, GameplayHtmlState state)
         {
             html.Append("<view id=\"gameplay-topbar\" className=\"topbar\" data-motion=\"slide-down\" data-motion-duration=\"0.18\"><view className=\"top-section kingdom-summary\"><view className=\"brand-mark\"></view><view className=\"stack\"><text className=\"eyebrow\">KINGDOM</text><text className=\"title\">")
                 .Append(E(snapshot.KingdomName)).Append("</text></view><view className=\"resources\">");
@@ -640,13 +688,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             else
             {
                 TurnPill(html, "SANDBOX", "MODE", "local-turn");
-                TurnPill(html, "FREE PLAY", "FLOW", string.Empty);
+                TurnPill(html, snapshot.SandboxRealtime ? $"{Amount(snapshot.SandboxSpeed)}X" : "FREE PLAY", "SPEED", string.Empty);
             }
             html.Append("</view><view className=\"top-section top-actions\">")
+                .Append(snapshot.SandboxRealtime ? SandboxSpeedButton(1f, snapshot.SandboxSpeed) : string.Empty)
+                .Append(snapshot.SandboxRealtime ? SandboxSpeedButton(2f, snapshot.SandboxSpeed) : string.Empty)
                 .Append(Button("KINGDOM", "Globals.gameplay.Kingdom()", "button", "Open kingdom dashboard"))
-                .Append(Button("!", "Globals.gameplay.Notifications()", "button", "Notifications"))
-                .Append(Button("II", "Globals.gameplay.Pause()", "button", "Pause"))
+                .Append("<button className=\"button\" data-tooltip=\"Notifications\" onClick=\"Globals.gameplay.Notifications()\"><image className=\"action-icon\" src=\"global:gameplay_notifications_icon\" preserveAspect=\"true\"></image><text className=\"button-label\">")
+                .Append(state.UnreadNotifications > 0 ? state.UnreadNotifications.ToString(CultureInfo.InvariantCulture) : string.Empty)
+                .Append("</text></button><button className=\"button\" data-tooltip=\"Game menu\" onClick=\"Globals.gameplay.Pause()\"><image className=\"action-icon\" src=\"global:gameplay_menu_icon\" preserveAspect=\"true\"></image><text className=\"button-label\">MENU</text></button>")
                 .Append("</view></view>");
+        }
+
+        private static string SandboxSpeedButton(float speed, float current)
+        {
+            string text = $"{Amount(speed)}X";
+            string selected = Math.Abs(current - speed) < 0.05f ? " selected" : string.Empty;
+            return Button(text, $"Globals.gameplay.SandboxSpeed({speed.ToString(CultureInfo.InvariantCulture)})", $"button compact{selected}", $"{text} sandbox speed");
         }
 
         private static void AppendContextPanel(
@@ -671,7 +729,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (state.OpenPanelId == GameplayHtmlPanel.Construction)
             {
                 PanelHeader(html, "CONSTRUCTION", "Build in your kingdom", true);
-                html.Append("<view className=\"panel-body\"><input className=\"browser-search\" value=\"")
+                html.Append("<view className=\"panel-body\"><input id=\"construction-search\" className=\"browser-search\" value=\"")
                     .Append(E(state.ConstructionSearch))
                     .Append("\" placeholder=\"Search buildings\" characterLimit=\"48\" onEndEdit=\"Globals.gameplay.SetConstructionSearch(event)\"></input><scroll className=\"category-strip\"><view className=\"filter-row\">")
                     .Append(FilterButton("ALL", string.Empty, state.ConstructionCategory));
@@ -701,7 +759,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 {
                     GameplayBuildingOptionSnapshot option = filteredOptions[index];
                     string cost = string.IsNullOrWhiteSpace(option.Cost) ? "Free" : option.Cost;
-                    html.Append("<button className=\"building-row ")
+                    html.Append("<button data-key=\"").Append(E(option.Id)).Append("\" className=\"building-row ")
                         .Append(string.Equals(option.Id, snapshot.SelectedBuildingId, StringComparison.Ordinal) ? "selected" : string.Empty)
                         .Append("\" ").Append(option.CanSelect ? string.Empty : "disabled=\"true\"")
                         .Append(" onClick=\"Globals.gameplay.SelectBuilding('").Append(J(option.Id)).Append("')\">");
@@ -747,15 +805,35 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     .Append("</text></view></view>");
                 if (!string.IsNullOrWhiteSpace(snapshot.SelectionSubtitle))
                     html.Append("<text className=\"selection-summary\">").Append(E(snapshot.SelectionSubtitle)).Append("</text>");
-                if (snapshot.SupportsRecruitment)
+                if (snapshot.SupportsRecruitment || snapshot.Cargo != null)
                 {
                     html.Append("<view className=\"tabs\">");
                     SelectionTab(html, state, GameplaySelectionTab.Details, "DETAILS", "ShowSelectionDetails");
-                    SelectionTab(html, state, GameplaySelectionTab.Recruit, "RECRUIT", "ShowRecruitment");
-                    SelectionTab(html, state, GameplaySelectionTab.Queue, "QUEUE", "ShowRecruitmentQueue");
+                    if (snapshot.SupportsRecruitment)
+                    {
+                        SelectionTab(html, state, GameplaySelectionTab.Recruit, "RECRUIT", "ShowRecruitment");
+                        SelectionTab(html, state, GameplaySelectionTab.Queue, "QUEUE", "ShowRecruitmentQueue");
+                    }
+                    if (snapshot.Cargo != null)
+                    {
+                        SelectionTab(html, state, GameplaySelectionTab.Cargo, "CARGO", "ShowCargo");
+                        SelectionTab(html, state, GameplaySelectionTab.Route, "ROUTE", "ShowCargoRoute");
+                    }
                     html.Append("</view>");
                 }
 
+                if (snapshot.Cargo != null && state.SelectionTab == GameplaySelectionTab.Cargo)
+                {
+                    AppendCargo(html, snapshot);
+                    html.Append("</view></view>");
+                    return;
+                }
+                if (snapshot.Cargo != null && state.SelectionTab == GameplaySelectionTab.Route)
+                {
+                    AppendCargoRoute(html, snapshot);
+                    html.Append("</view></view>");
+                    return;
+                }
                 html.Append("<scroll className=\"panel-scroll context-scroll\">");
                 if (!snapshot.SupportsRecruitment || state.SelectionTab == GameplaySelectionTab.Details)
                     AppendSelectionDetails(html, snapshot);
@@ -769,6 +847,43 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private static void AppendSelectionDetails(StringBuilder html, GameplayHtmlSnapshot snapshot)
         {
+            if (!string.IsNullOrWhiteSpace(snapshot.AttackSourceId)
+                && !snapshot.SelectionOwnedByLocalPlayer)
+            {
+                DataRow(
+                    html,
+                    "Attack",
+                    snapshot.CanAttackSelection ? snapshot.AttackPreview : "Unavailable",
+                    snapshot.CanAttackSelection
+                        ? $"Attacker: {snapshot.AttackSourceId}"
+                        : snapshot.AttackUnavailableReason);
+                html.Append(Button(
+                    "ATTACK",
+                    "Globals.gameplay.AttackSelection()",
+                    "button danger wide",
+                    snapshot.CanAttackSelection ? "Attack selected target" : snapshot.AttackUnavailableReason,
+                    !snapshot.CanAttackSelection));
+            }
+
+            if (!string.IsNullOrWhiteSpace(snapshot.AttackSourceId)
+                && string.Equals(snapshot.SelectionKind, "Building", StringComparison.Ordinal)
+                && !snapshot.SelectionOwnedByLocalPlayer)
+            {
+                DataRow(
+                    html,
+                    "Capture",
+                    snapshot.CanCaptureSelection ? snapshot.CapturePreview : "Unavailable",
+                    snapshot.CanCaptureSelection
+                        ? $"Unit: {snapshot.AttackSourceId}"
+                        : snapshot.CaptureUnavailableReason);
+                html.Append(Button(
+                    "CAPTURE",
+                    "Globals.gameplay.CaptureSelection()",
+                    "button success wide",
+                    snapshot.CanCaptureSelection ? "Capture selected settlement" : snapshot.CaptureUnavailableReason,
+                    !snapshot.CanCaptureSelection));
+            }
+
             for (int index = 0; index < snapshot.SelectionFacts.Length; index++)
             {
                 GameplayFactSnapshot fact = snapshot.SelectionFacts[index];
@@ -843,7 +958,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (!string.IsNullOrWhiteSpace(snapshot.SelectionId))
                     html.Append(Button("CLEAR", "Globals.gameplay.ClearSelection()", "button", "Clear selection"));
                 if (snapshot.TurnUiEnabled)
-                    html.Append(Button("END TURN", "Globals.gameplay.EndTurn()", "button positive", "End current turn", !snapshot.IsLocalTurn));
+                    html.Append(Button(snapshot.EndTurnPending ? "WAITING..." : "END TURN",
+                        "Globals.gameplay.EndTurn()", "button positive",
+                        snapshot.EndTurnPending ? "Waiting for host confirmation" : "End current turn",
+                        snapshot.EndTurnPending || !snapshot.IsLocalTurn));
             }
             html.Append("</view>");
         }
@@ -873,10 +991,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     AppendStorage(html, snapshot);
                     break;
                 case KingdomDashboardTab.Buildings:
-                    AppendGroups(html, "BUILDING PORTFOLIO", snapshot.BuildingGroups);
+                    AppendGroups(html, "BUILDING PORTFOLIO", snapshot.BuildingGroups, snapshot, false);
                     break;
                 case KingdomDashboardTab.Units:
-                    AppendGroups(html, "UNIT ROSTER", snapshot.UnitGroups);
+                    AppendGroups(html, "UNIT ROSTER", snapshot.UnitGroups, snapshot, true);
                     break;
                 case KingdomDashboardTab.Turns:
                     if (snapshot.TurnUiEnabled)
@@ -919,7 +1037,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             for (int index = 0; index < snapshot.Resources.Length; index++)
             {
                 GameplayResourceSnapshot resource = snapshot.Resources[index];
-                DataRow(html, DisplayResource(resource.Id), Amount(resource.Amount), "Available across your settlements and owner reserve");
+                string key = GameplayHtmlIconKeys.Resource(resource.Id);
+                DataRow(html, DisplayResource(resource.Id), Amount(resource.Amount), "Total across your settlements", snapshot.Icons.ContainsKey(key) ? key : null);
             }
             if (snapshot.Resources.Length == 0)
                 html.Append("<text className=\"empty\">No resource records are available.</text>");
@@ -952,7 +1071,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     : $"{Amount(warehouse.Used)} / {warehouse.Capacity}";
                 html.Append("<button className=\"storage-row\" onClick=\"Globals.gameplay.FocusWarehouse(")
                     .Append(warehouse.Position.x).Append(',').Append(warehouse.Position.y).Append(",'")
-                    .Append(J(warehouse.BuildingId)).Append("')\"><text className=\"row-icon\">ST</text><view className=\"item-copy\"><text className=\"item-title\">")
+                    .Append(J(warehouse.BuildingId)).Append("')\">");
+                string iconKey = GameplayHtmlIconKeys.Building(warehouse.BuildingId);
+                if (snapshot.Icons.ContainsKey(iconKey)) RowIcon(html, true, iconKey, string.Empty, false);
+                html.Append("<view className=\"item-copy\"><text className=\"item-title\">")
                     .Append(E(string.IsNullOrWhiteSpace(warehouse.BuildingId) ? "Warehouse" : Display(warehouse.BuildingId)))
                     .Append("</text><text className=\"item-meta\">").Append(E(warehouse.Settlement))
                     .Append(" - grid ").Append(warehouse.Position.x).Append(", ").Append(warehouse.Position.y)
@@ -964,11 +1086,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             html.Append("</view>");
         }
 
-        private static void AppendGroups(StringBuilder html, string title, GameplayGroupSnapshot[] groups)
+        private static void AppendGroups(StringBuilder html, string title, GameplayGroupSnapshot[] groups, GameplayHtmlSnapshot snapshot, bool units)
         {
             html.Append("<text className=\"section-title\">").Append(E(title)).Append("</text><view className=\"building-list\">");
             for (int index = 0; index < groups.Length; index++)
-                DataRow(html, groups[index].Label, groups[index].Count.ToString(CultureInfo.InvariantCulture), groups[index].Context);
+            {
+                string key = units ? GameplayHtmlIconKeys.Unit(groups[index].Id) : GameplayHtmlIconKeys.Building(groups[index].Id);
+                DataRow(html, groups[index].Label, groups[index].Count.ToString(CultureInfo.InvariantCulture), groups[index].Context,
+                    snapshot.Icons.ContainsKey(key) ? key : null);
+            }
             if (groups.Length == 0)
                 html.Append("<text className=\"empty\">Nothing to display yet.</text>");
             html.Append("</view>");
@@ -980,7 +1106,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             for (int index = 0; index < snapshot.TurnHistory.Length; index++)
             {
                 GameplayTurnHistoryViewSnapshot turn = snapshot.TurnHistory[index];
-                string status = turn.Active ? "ACTIVE" : "WAITING";
+                string status = turn.Eliminated ? "ELIMINATED" : turn.Active ? "ACTIVE" : "WAITING";
                 string context = turn.Local ? "Local kingdom" : "Opponent";
                 DataRow(html, Display(turn.OwnerId), $"{turn.Completed} turns - {status}", context);
             }
@@ -992,6 +1118,39 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             html.Append("<view id=\"pause-scrim\" className=\"scrim\" data-motion=\"fade\" data-motion-duration=\"0.12\"><view id=\"pause-modal\" className=\"modal\" data-motion=\"scale\" data-motion-duration=\"0.16\" data-motion-ease=\"out-back\"><text className=\"eyebrow\">GAME PAUSED</text><text className=\"modal-title\">Moyva</text><text className=\"modal-copy\">Return to the realm or leave this session.</text><view className=\"row gap\">")
                 .Append(Button("RESUME", "Globals.gameplay.Resume()", "button positive", "Resume game"))
                 .Append(Button("EXIT TO MENU", "Globals.gameplay.ExitToMenu()", "button danger", "Exit to main menu"))
+                .Append("</view></view></view>");
+        }
+
+        private static void AppendGameOver(
+            StringBuilder html,
+            GameplayHtmlSnapshot snapshot,
+            GameplayHtmlState state)
+        {
+            bool victory = !string.IsNullOrWhiteSpace(state.WinnerId)
+                && string.Equals(
+                    state.WinnerId,
+                    snapshot.OwnerId,
+                    StringComparison.Ordinal);
+            string title = string.IsNullOrWhiteSpace(state.WinnerId)
+                ? "The realm is silent"
+                : victory
+                    ? "Victory"
+                    : "Defeat";
+            string copy = string.IsNullOrWhiteSpace(state.WinnerId)
+                ? "No kingdom remains able to rule."
+                : victory
+                    ? "Your kingdom is the last realm with a standing center."
+                    : $"{Display(state.WinnerId)} controls the last standing center.";
+            html.Append("<view id=\"gameover-scrim\" className=\"scrim\" data-motion=\"fade\" data-motion-duration=\"0.14\"><view id=\"gameover-modal\" className=\"modal result-modal\" data-motion=\"scale\" data-motion-duration=\"0.18\" data-motion-ease=\"out-back\"><text className=\"eyebrow\">MATCH ENDED</text><text className=\"modal-title ")
+                .Append(victory ? "status-good" : "status-bad")
+                .Append("\">").Append(E(title)).Append("</text><text className=\"modal-copy\">")
+                .Append(E(copy)).Append("</text><view className=\"result-summary\">");
+            DataRow(html, "Winner", string.IsNullOrWhiteSpace(state.WinnerId) ? "None" : Display(state.WinnerId), "Final kingdom");
+            DataRow(html, "Rounds", snapshot.Round.ToString(CultureInfo.InvariantCulture), "Campaign length");
+            DataRow(html, "Buildings", snapshot.BuildingCount.ToString(CultureInfo.InvariantCulture), "Your kingdom total");
+            DataRow(html, "Units", snapshot.UnitCount.ToString(CultureInfo.InvariantCulture), "Your active roster");
+            html.Append("</view><view className=\"row gap\">")
+                .Append(Button("EXIT TO MENU", "Globals.gameplay.ExitToMenu()", "button positive", "Exit to main menu"))
                 .Append("</view></view></view>");
         }
 
@@ -1060,10 +1219,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 .Append("</text><text className=\"stat-label\">").Append(E(label)).Append("</text></view>");
         }
 
-        private static void DataRow(StringBuilder html, string title, string value, string context)
+        private static void DataRow(StringBuilder html, string title, string value, string context, string iconKey = null)
         {
-            html.Append("<view className=\"data-row\"><text className=\"row-icon small\">")
-                .Append(E(IconForData(title, value))).Append("</text><view className=\"item-copy\"><text className=\"item-title\">")
+            html.Append("<view className=\"data-row\">");
+            if (!string.IsNullOrEmpty(iconKey)) RowIcon(html, true, iconKey, string.Empty, true);
+            html.Append("<view className=\"item-copy\"><text className=\"item-title\">")
                 .Append(E(title)).Append("</text><text className=\"item-meta\">").Append(E(context))
                 .Append("</text></view><text className=\"item-tag\">").Append(E(value)).Append("</text></view>");
         }
@@ -1115,7 +1275,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private static string Button(string label, string action, string classes, string tooltip, bool disabled = false)
         {
-            return $"<button className=\"{classes}\" {(disabled ? "disabled=\"true\"" : string.Empty)} onClick=\"{action}\"><text className=\"button-label\">{E(label)}</text><text className=\"tooltip\">{E(tooltip)}</text></button>";
+            return $"<button className=\"{classes}\" data-tooltip=\"{E(tooltip)}\" {(disabled ? "disabled=\"true\"" : string.Empty)} onClick=\"{action}\"><text className=\"button-label\">{E(label)}</text></button>";
         }
 
         private static string Amount(float value) => value.ToString("0.#", CultureInfo.InvariantCulture);

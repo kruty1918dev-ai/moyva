@@ -139,6 +139,14 @@
       "singletonScope": "PerBuilding"
     },
     {
+      "$type": "storage",
+      "storageKind": "Any",
+      "capacity": -1,
+      "acceptedResourceIds": [],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
       "$type": "building-per-player-limit-module",
       "maxBuildingsPerPlayer": 1,
       "limitScope": "PerOwner",

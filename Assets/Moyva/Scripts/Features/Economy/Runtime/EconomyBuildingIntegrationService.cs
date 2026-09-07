@@ -107,7 +107,15 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (BuildingDefinitionCapabilities.IsTownHall(definition) ||
                 BuildingDefinitionCapabilities.IsCastle(definition))
             {
-                return CreateSettlement(signal.BuildingId, signal.Position, definition, ownerId, registry, signalBus, database);
+                return CreateSettlement(
+                    signal.BuildingId,
+                    signal.Position,
+                    definition,
+                    ownerId,
+                    registry,
+                    signalBus,
+                    database,
+                    buildingRegistry);
             }
 
             // Otherwise, assign building to nearest settlement of the same owner
@@ -123,20 +131,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 definition);
             registry.RegisterBuildingPosition(signal.Position, state.SettlementId, signal.BuildingId, ownerId);
 
-            if (BuildingDefinitionCapabilities.IsWarehouse(definition))
-            {
-                string warehouseKey =
-                    ToWarehouseKey(signal.Position);
-                state.EnsureWarehousePool(warehouseKey);
-                state.ConfigureWarehousePolicy(
-                    warehouseKey,
-                    BuildingDefinitionCapabilities
-                        .GetStorageCapacity(definition),
-                    ResolveAcceptedStorageResources(
-                        definition,
-                        database));
-                state.EnsureWarehouseConsistency();
-            }
+            EnsureWarehouseForBuilding(
+                state,
+                signal.Position,
+                definition,
+                database);
 
             // Update housing capacity
             if (BuildingDefinitionCapabilities.IsHousing(definition))
@@ -187,23 +186,33 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 state.EnsureWarehouseConsistency();
             }
 
-            // TownHall destroyed → deactivate settlement
-            if (BuildingDefinitionCapabilities.IsTownHall(definition))
+            if (BuildingDefinitionCapabilities.IsTownHall(definition)
+                || BuildingDefinitionCapabilities.IsCastle(definition))
             {
                 state.IsActive = false;
+                string ownerId = NormalizeOwnerId(state.OwnerId);
                 signalBus.Fire(new SettlementDeactivatedSignal
                 {
                     SettlementId = state.SettlementId,
-                    OwnerId = NormalizeOwnerId(state.OwnerId),
-                    Reason = "Ратушу знищено",
+                    OwnerId = ownerId,
+                    Reason = BuildingDefinitionCapabilities.IsCastle(definition)
+                        ? "Castle destroyed"
+                        : "Town Hall destroyed",
                 });
+                if (!OwnerHasActiveSettlementCenter(ownerId, registry))
+                {
+                    signalBus.Fire(new FactionEliminatedSignal
+                    {
+                        FactionId = ownerId,
+                    });
+                }
             }
 
             if (BuildingDefinitionCapabilities.IsHousing(definition))
                 RecalculateHousing(state, buildingRegistry);
         }
 
-        private EconomySettlementState CreateSettlement(string townHallBuildingId, Vector2Int position, BuildingDefinition definition, string ownerId, ISettlementRegistry registry, SignalBus signalBus, EconomyDatabaseSO database)
+        private EconomySettlementState CreateSettlement(string townHallBuildingId, Vector2Int position, BuildingDefinition definition, string ownerId, ISettlementRegistry registry, SignalBus signalBus, EconomyDatabaseSO database, IBuildingRegistry buildingRegistry)
         {
             var rules = database?.RulesConfig;
             if (rules == null)
@@ -235,11 +244,17 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 position,
                 definition);
 
+            EnsureWarehouseForBuilding(
+                state,
+                position,
+                definition,
+                database);
+
             // Start with initial population (2 residents)
             state.Residents.Add(new EconomyResidentState(age: 25, hp: 100f, comfort: 50f, houseCollapsed: false));
             state.Residents.Add(new EconomyResidentState(age: 22, hp: 100f, comfort: 50f, houseCollapsed: false));
 
-            RecalculateHousing(state, null);
+            RecalculateHousing(state, buildingRegistry);
 
             registry.RegisterSettlement(state, position);
             registry.RegisterBuildingPosition(position, id, townHallBuildingId, ownerId);
@@ -385,6 +400,27 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return result;
         }
 
+        private static void EnsureWarehouseForBuilding(
+            EconomySettlementState state,
+            Vector2Int position,
+            BuildingDefinition definition,
+            EconomyDatabaseSO database)
+        {
+            if (state == null
+                || !BuildingDefinitionCapabilities.IsWarehouse(definition))
+            {
+                return;
+            }
+
+            string warehouseKey = ToWarehouseKey(position);
+            state.EnsureWarehousePool(warehouseKey);
+            state.ConfigureWarehousePolicy(
+                warehouseKey,
+                BuildingDefinitionCapabilities.GetStorageCapacity(definition),
+                ResolveAcceptedStorageResources(definition, database));
+            state.EnsureWarehouseConsistency();
+        }
+
         private static string ToBuildingInstanceKey(
             string buildingId,
             Vector2Int position)
@@ -405,6 +441,30 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     total += BuildingDefinitionCapabilities.GetHousingCapacity(def);
             }
             state.TotalHousingCapacity = total;
+        }
+
+        private static bool OwnerHasActiveSettlementCenter(
+            string ownerId,
+            ISettlementRegistry registry)
+        {
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
+            foreach (var pair in registry.AllSettlements)
+            {
+                EconomySettlementState settlement = pair.Value;
+                if (settlement == null
+                    || !settlement.IsActive
+                    || !string.Equals(
+                        NormalizeOwnerId(settlement.OwnerId),
+                        normalizedOwnerId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         private bool HasModuleValidationErrors(

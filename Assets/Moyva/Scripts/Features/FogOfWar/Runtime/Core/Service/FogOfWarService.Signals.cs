@@ -13,13 +13,20 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 ? new FogVisionModifiers(signal.CanSeeCrest, signal.CrestVisibilityFactor, signal.DownSlopeVisionBonus, signal.SilhouettePenalty)
                 : default;
             RegisterVisionArea(signal.UnitId, signal.Position, ClampVisionRange(requestedRange), null, modifiers);
+            RegisterOwnerVisionArea(signal.OwnerId, signal.UnitId, signal.Position, ClampVisionRange(requestedRange), null, modifiers);
         }
 
         private void OnUnitMoved(UnitMovedSignal signal)
-            => UpdateUnitPosition(signal.UnitId, signal.NewPosition);
+        {
+            UpdateUnitPosition(signal.UnitId, signal.NewPosition);
+            UpdateUnitPosition(signal.SourceFactionId, signal.UnitId, signal.NewPosition);
+        }
 
         private void OnUnitDestroyed(UnitDestroyedSignal signal)
-            => UnregisterUnit(signal.UnitId);
+        {
+            UnregisterUnit(signal.UnitId);
+            UnregisterUnit(null, signal.UnitId);
+        }
 
         private void OnUnitGarrisonStateChanged(
             UnitGarrisonStateChangedSignal signal)
@@ -38,6 +45,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 signal.UnitPosition,
                 ClampVisionRange(requestedRange),
                 null);
+            RegisterUnit(
+                signal.OwnerId,
+                signal.UnitId,
+                signal.UnitPosition,
+                ClampVisionRange(requestedRange));
         }
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
@@ -53,7 +65,20 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         }
 
         private void OnBuildingDemolished(BuildingDemolishedSignal signal)
-            => UnregisterUnit(GetBuildingVisionAreaId(signal.Position));
+        {
+            string areaId = GetBuildingVisionAreaId(signal.Position);
+            UnregisterUnit(areaId);
+            UnregisterUnit(signal.OwnerId, areaId);
+        }
+
+        private void OnBuildingOwnershipTransferred(
+            BuildingOwnershipTransferredSignal signal)
+        {
+            TransferFixedVisionAreaOwner(
+                GetBuildingVisionAreaId(signal.Position),
+                signal.PreviousOwnerId,
+                signal.NewOwnerId);
+        }
 
         private void OnWorldGeneratedData(WorldGeneratedDataSignal signal)
         {

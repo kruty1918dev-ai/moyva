@@ -1,6 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
+using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Economy.API;
+using Kruty1918.Moyva.Economy.Runtime;
+using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
@@ -30,7 +35,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         IDisposable,
         IConstructionConfirmRequestExecutor,
         IConstructionAuthorityEndpointRegistry,
-        IUnitCommandAuthorityEndpointRegistry
+        IUnitCommandAuthorityEndpointRegistry,
+        ICaravanRemoteCommandRequester,
+        ICombatRemoteCommandRequester,
+        ISettlementCaptureRemoteCommandRequester
     {
         private readonly IGameCommandSyncService _syncService;
         private readonly ISessionManager         _sessionManager;
@@ -38,11 +46,25 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private readonly SignalBus               _signalBus;
         private IConstructionService             _constructionService;
         private IUnitMovementService _unitMovementService;
+        private readonly IUnitService _unitService;
         private IUnitOwnershipQuery _unitOwnershipQuery;
         private readonly IUnitFactory            _unitFactory;
+        private readonly ICaravanService _caravanService;
+        private readonly ICombatCommandService _combatCommandService;
+        private readonly IHealthRegistry _healthRegistry;
+        private readonly ISettlementCaptureService _settlementCaptureService;
+        private readonly IConstructionBuildingCombatTargetQuery _buildingTargetQuery;
+        private readonly IBuildingRegistry _buildingRegistry;
+        private readonly IFogOwnerStateReader _ownerFog;
+        private readonly Dictionary<string, HashSet<string>> _knownUnitsByPeer =
+            new(StringComparer.Ordinal);
+        private readonly Dictionary<string, Vector2Int> _replicatedUnitPositions =
+            new(StringComparer.Ordinal);
 
         // Guard: не ретранслюємо події, що прийшли з мережі (уникаємо нескінченного циклу).
         private bool _applyingNetworkEvent;
+        private bool _disposed;
+        private readonly CancellationTokenSource _lifetime = new();
 
         public MultiplayerAuthorityService(
             IGameCommandSyncService syncService,
@@ -50,8 +72,16 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             SignalBus               signalBus,
             ILocalGameplayRoleResolver roleResolver,
             [InjectOptional] IUnitMovementService unitMovementService = null,
+            [InjectOptional] IUnitService unitService = null,
             [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery = null,
             [InjectOptional] IUnitFactory unitFactory = null,
+            [InjectOptional] ICaravanService caravanService = null,
+            [InjectOptional] ICombatCommandService combatCommandService = null,
+            [InjectOptional] IHealthRegistry healthRegistry = null,
+            [InjectOptional] ISettlementCaptureService settlementCaptureService = null,
+            [InjectOptional] IConstructionBuildingCombatTargetQuery buildingTargetQuery = null,
+            [InjectOptional] IBuildingRegistry buildingRegistry = null,
+            [InjectOptional] IFogOwnerStateReader ownerFog = null,
             [InjectOptional] IConstructionService constructionService = null)
         {
             _syncService         = syncService;
@@ -59,8 +89,16 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _roleResolver        = roleResolver;
             _signalBus           = signalBus;
             _unitMovementService = unitMovementService;
+            _unitService = unitService;
             _unitOwnershipQuery = unitOwnershipQuery;
             _unitFactory         = unitFactory;
+            _caravanService = caravanService;
+            _combatCommandService = combatCommandService;
+            _healthRegistry = healthRegistry;
+            _settlementCaptureService = settlementCaptureService;
+            _buildingTargetQuery = buildingTargetQuery;
+            _buildingRegistry = buildingRegistry;
+            _ownerFog = ownerFog;
             _constructionService = constructionService;
         }
 
@@ -116,8 +154,13 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 _unitOwnershipQuery = null;
         }
 
-public void Initialize()
+        public void Initialize()
         {
+            if (_unitService == null || _unitFactory == null || _caravanService == null
+                || _combatCommandService == null || _healthRegistry == null
+                || _settlementCaptureService == null || _buildingTargetQuery == null
+                || _ownerFog == null || _constructionService == null)
+                throw new InvalidOperationException("Multiplayer gameplay authority must be installed in the Gameplay scene with its gameplay services.");
             // Локальні дії гравця: перехоплення перед виконанням
             _signalBus.Subscribe<MoveUnitRequestSignal>(OnLocalMoveUnitRequest);
 
@@ -126,21 +169,225 @@ public void Initialize()
             _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolishedLocally);
             _signalBus.Subscribe<UnitMovedSignal>(OnUnitMovedLocally);
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreatedLocally);
+            _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyedLocally);
+            if (_caravanService != null)
+                _caravanService.RouteTransferCommitted += OnRouteTransferCommittedLocally;
 
             // Мережеві обробники (вхідні повідомлення)
             _syncService.RegisterHandler(GameCommandType.BuildingPlace,    OnNetworkBuildingPlace);
             _syncService.RegisterHandler(GameCommandType.BuildingDemolish, OnNetworkBuildingDemolish);
             _syncService.RegisterHandler(GameCommandType.UnitMove,         OnNetworkUnitMove);
             _syncService.RegisterHandler(GameCommandType.UnitSpawn,        OnNetworkUnitSpawn);
+            _syncService.RegisterHandler(GameCommandType.CaravanCommand,   OnNetworkCaravanCommand);
+            _syncService.RegisterHandler(GameCommandType.CombatCommand,    OnNetworkCombatCommand);
+            _syncService.RegisterHandler(GameCommandType.SettlementCaptureCommand, OnNetworkSettlementCaptureCommand);
         }
 
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
+            _applyingNetworkEvent = true;
+            _lifetime.Cancel();
+            _syncService.RegisterHandler(GameCommandType.BuildingPlace, null);
+            _syncService.RegisterHandler(GameCommandType.BuildingDemolish, null);
+            _syncService.RegisterHandler(GameCommandType.UnitMove, null);
+            _syncService.RegisterHandler(GameCommandType.UnitSpawn, null);
+            _syncService.RegisterHandler(GameCommandType.CaravanCommand, null);
+            _syncService.RegisterHandler(GameCommandType.CombatCommand, null);
+            _syncService.RegisterHandler(GameCommandType.SettlementCaptureCommand, null);
             _signalBus.TryUnsubscribe<MoveUnitRequestSignal>(OnLocalMoveUnitRequest);
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlacedLocally);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolishedLocally);
             _signalBus.TryUnsubscribe<UnitMovedSignal>(OnUnitMovedLocally);
             _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreatedLocally);
+            _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyedLocally);
+            if (_caravanService != null)
+                _caravanService.RouteTransferCommitted -= OnRouteTransferCommittedLocally;
+            _lifetime.Dispose();
+        }
+
+        private void SendConfirmedCommandToVisiblePeers(
+            GameCommandType type,
+            byte[] payload,
+            string ownerId,
+            Vector2Int position)
+        {
+            IReadOnlyList<Participant> participants =
+                _sessionManager?.Participants;
+            if (participants == null || participants.Count == 0)
+            {
+                _syncService.SendCommand(type, payload);
+                return;
+            }
+
+            string normalizedOwnerId =
+                NormalizeOwnerId(ownerId);
+            string localPlayerId =
+                NormalizeOwnerId(_sessionManager.LocalPlayerId);
+            bool sent = false;
+
+            for (int index = 0;
+                 index < participants.Count;
+                 index++)
+            {
+                string participantId =
+                    NormalizeOwnerId(
+                        participants[index]?.Identity?.PlayerId);
+                if (string.IsNullOrWhiteSpace(participantId)
+                    || string.Equals(
+                        participantId,
+                        localPlayerId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (!CanPeerObserveWorldEvent(
+                        participantId,
+                        normalizedOwnerId,
+                        position))
+                {
+                    continue;
+                }
+
+                _syncService.SendCommandToPeer(
+                    participantId,
+                    type,
+                    payload);
+                sent = true;
+            }
+
+            if (!sent && participants.Count == 1)
+                _syncService.SendCommand(type, payload);
+        }
+
+        private void SendRequestToHost(
+            GameCommandType type,
+            byte[] payload)
+        {
+            string hostPeerId = ResolveHostPeerId();
+            if (!string.IsNullOrWhiteSpace(hostPeerId)
+                && !string.Equals(
+                    hostPeerId,
+                    NormalizeOwnerId(_sessionManager.LocalPlayerId),
+                    StringComparison.Ordinal))
+            {
+                _syncService.SendCommandToPeer(
+                    hostPeerId,
+                    type,
+                    payload);
+                return;
+            }
+
+            _syncService.SendCommand(type, payload);
+        }
+
+        private void SendConfirmedCommandToOwnerPeers(
+            GameCommandType type,
+            byte[] payload,
+            string ownerId)
+        {
+            string normalizedOwnerId =
+                NormalizeOwnerId(ownerId);
+            if (string.IsNullOrWhiteSpace(normalizedOwnerId))
+            {
+                _syncService.SendCommand(type, payload);
+                return;
+            }
+
+            IReadOnlyList<Participant> participants =
+                _sessionManager?.Participants;
+            if (participants == null || participants.Count == 0)
+            {
+                _syncService.SendCommand(type, payload);
+                return;
+            }
+
+            string localPlayerId =
+                NormalizeOwnerId(_sessionManager.LocalPlayerId);
+            bool sent = false;
+            for (int index = 0;
+                 index < participants.Count;
+                 index++)
+            {
+                string participantId =
+                    NormalizeOwnerId(
+                        participants[index]?.Identity?.PlayerId);
+                if (!string.Equals(
+                        participantId,
+                        normalizedOwnerId,
+                        StringComparison.Ordinal)
+                    || string.Equals(
+                        participantId,
+                        localPlayerId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                _syncService.SendCommandToPeer(
+                    participantId,
+                    type,
+                    payload);
+                sent = true;
+            }
+
+            if (!sent && participants.Count == 1)
+                _syncService.SendCommand(type, payload);
+        }
+
+        private string ResolveHostPeerId()
+        {
+            IReadOnlyList<Participant> participants =
+                _sessionManager?.Participants;
+            if (participants == null || participants.Count == 0)
+                return string.Empty;
+
+            for (int index = 0;
+                 index < participants.Count;
+                 index++)
+            {
+                Participant participant = participants[index];
+                if (participant?.IsHost == true)
+                    return NormalizeOwnerId(
+                        participant.Identity?.PlayerId);
+            }
+
+            return string.Empty;
+        }
+
+        private bool CanPeerObserveWorldEvent(
+            string peerOwnerId,
+            string eventOwnerId,
+            Vector2Int position)
+        {
+            string normalizedPeerOwnerId =
+                NormalizeOwnerId(peerOwnerId);
+            if (string.IsNullOrWhiteSpace(normalizedPeerOwnerId))
+                return false;
+
+            if (!string.IsNullOrWhiteSpace(eventOwnerId)
+                && string.Equals(
+                    normalizedPeerOwnerId,
+                    eventOwnerId,
+                    StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return _ownerFog == null
+                   || _ownerFog.IsVisible(
+                       normalizedPeerOwnerId,
+                       position);
+        }
+
+        private static string NormalizeOwnerId(
+            string ownerId)
+        {
+            return string.IsNullOrWhiteSpace(ownerId)
+                ? string.Empty
+                : ownerId.Trim();
         }
 
     }

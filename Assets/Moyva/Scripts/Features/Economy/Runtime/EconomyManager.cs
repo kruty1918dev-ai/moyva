@@ -548,8 +548,14 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     {
                         SettlementId =
                             state.SettlementId,
+                        OwnerId =
+                            state.OwnerId,
+                        SettlementName =
+                            state.SettlementName,
                         CurrentTurn =
                             state.CurrentTurn,
+                        IsActive =
+                            state.IsActive,
                     };
 
                 foreach (var resource
@@ -671,6 +677,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     continue;
                 }
 
+                RestoreRuntimeSettlementOwner(
+                    state,
+                    saved);
+
                 ApplyRuntimeSnapshot(
                     state,
                     saved);
@@ -682,6 +692,37 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             if (_pendingRuntimeSaveSnapshot.Settlements.Count == 0)
                 _pendingRuntimeSaveSnapshot = null;
+        }
+
+        private void RestoreRuntimeSettlementOwner(
+            EconomySettlementState state,
+            EconomySettlementRuntimeSnapshot saved)
+        {
+            if (state == null
+                || saved == null
+                || string.IsNullOrWhiteSpace(saved.OwnerId))
+            {
+                return;
+            }
+
+            string previousOwnerId =
+                NormalizeOwnerId(state.OwnerId);
+            string savedOwnerId =
+                NormalizeOwnerId(saved.OwnerId);
+            if (string.Equals(previousOwnerId, savedOwnerId, StringComparison.Ordinal))
+                return;
+
+            if (!_settlementRegistry.TryTransferSettlementOwner(
+                    state.SettlementId,
+                    previousOwnerId,
+                    savedOwnerId,
+                    out _,
+                    out string reason)
+                && Debug.isDebugBuild)
+            {
+                Debug.LogWarning(
+                    $"[EconomySave] Could not restore owner for settlement '{state.SettlementId}': {reason}");
+            }
         }
 
         private static bool HasAllSavedBuildingInstances(
@@ -720,6 +761,9 @@ namespace Kruty1918.Moyva.Economy.Runtime
             EconomySettlementState state,
             EconomySettlementRuntimeSnapshot saved)
         {
+            if (!string.IsNullOrWhiteSpace(saved.SettlementName))
+                state.SettlementName = saved.SettlementName;
+            state.IsActive = saved.IsActive;
             state.CurrentTurn = saved.CurrentTurn;
 
             state.ResourcePool.Clear();

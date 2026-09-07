@@ -21,6 +21,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly UnitRecruitmentQueueStateMachine _queue = new();
         private readonly IEconomyInfoMediator _economy;
         private readonly ITurnService _turns;
+        private readonly IGameplayProgressClock _progressClock;
         private readonly SignalBus _signalBus;
         private readonly UnitRecruitmentBuildingContextResolver _buildingContext;
         private readonly UnitRecruitmentDeploymentService _deployment;
@@ -33,6 +34,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             [InjectOptional] IConstructionLifecycle constructionLifecycle = null,
             [InjectOptional] IEconomyInfoMediator economy = null,
             [InjectOptional] ITurnService turns = null,
+            [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] SignalBus signalBus = null,
             [InjectOptional] IUnitFactory unitFactory = null,
             [InjectOptional] IUnitService unitService = null,
@@ -43,6 +45,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         {
             _economy = economy;
             _turns = turns;
+            _progressClock = progressClock;
             _signalBus = signalBus;
 
             _buildingContext =
@@ -67,10 +70,18 @@ namespace Kruty1918.Moyva.Units.Runtime
         public int TurnOrder => 30;
 
         public void Initialize()
-            => _signalBus?.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+        {
+            _signalBus?.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            if (_progressClock != null)
+                _progressClock.Progressed += OnProgressed;
+        }
 
         public void Dispose()
-            => _signalBus?.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+        {
+            _signalBus?.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            if (_progressClock != null)
+                _progressClock.Progressed -= OnProgressed;
+        }
 
         public bool TryEnqueue(string ownerId, Vector2Int recruitingBuildingPosition, string unitTypeId, out string reason)
         {
@@ -120,7 +131,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 recruitingBuildingId,
                 unitType,
                 Math.Max(1, recipe.TrainingTurns),
-                Math.Max(1L, _turns.GlobalTurn));
+                ResolveProgressSequence());
 
             if (!_turns.TryRecordAction(owner, "unit-recruit-enqueue"))
             {
@@ -205,6 +216,23 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (owner == null)
                 return;
 
+            AdvanceOwnerProgress(owner, context.GlobalTurn);
+        }
+
+        private void OnProgressed(GameplayProgressTick tick)
+        {
+            if (!tick.IsRealtime)
+                return;
+
+            string owner = NormalizeRequiredId(tick.OwnerId);
+            if (owner == null)
+                return;
+
+            AdvanceOwnerProgress(owner, tick.Sequence);
+        }
+
+        private void AdvanceOwnerProgress(string owner, long sequence)
+        {
             IReadOnlyList<UnitRecruitmentQueueItemSnapshot> readyBefore =
                 _queue.GetReadyHeads(owner);
             var readyIdsBefore = new HashSet<long>();
@@ -213,7 +241,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             bool progressed = _queue.AdvanceOwnerTurn(
                 owner,
-                context.GlobalTurn);
+                sequence);
 
             if (!progressed)
                 return;
@@ -258,6 +286,14 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         public void OnTurnEnding(TurnContext context) { }
         public void OnRoundCompleted(int completedRound) { }
+
+        private long ResolveProgressSequence()
+        {
+            if (_progressClock != null && _progressClock.IsRealtime)
+                return Math.Max(1L, _progressClock.CurrentSequence);
+
+            return Math.Max(1L, _turns?.GlobalTurn ?? 1L);
+        }
 
         private void FireQueueChanged(
             UnitRecruitmentQueueItemSnapshot item)

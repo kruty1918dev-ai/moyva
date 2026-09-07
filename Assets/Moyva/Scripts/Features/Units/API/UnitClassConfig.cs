@@ -84,6 +84,7 @@ namespace Kruty1918.Moyva.Units.API
         public UnitCombatType CombatType = UnitCombatType.Infantry;
 
         public float BaseStamina;
+        [Min(0f)] public float CargoCapacity;
         [Tooltip("Очки руху, що відновлюються на початку ходу юніта.")]
         [Min(0f)] public float MovementPointsPerTurn = 5f;
         [Tooltip("JSON-профіль вартості та доступності terrain для цього типу юніта.")]

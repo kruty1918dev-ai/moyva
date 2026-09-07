@@ -419,6 +419,8 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             private readonly IUnityHtmlMotion _motion = new FakeUnityHtmlMotion();
 
             public IUnityHtmlMotion Motion => _motion;
+            public bool UpdateRegion(string elementId, string html) => false;
+            public bool SetValue(string elementId, string value) => false;
             public int DisposeCount { get; private set; }
 
             public UnityHtmlMountResult Mount(

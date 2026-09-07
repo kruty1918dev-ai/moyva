@@ -14,6 +14,8 @@ namespace UnityHTML.Runtime
             IReadOnlyDictionary<string, object> globals = null);
 
         void Unmount();
+        bool UpdateRegion(string elementId, string html);
+        bool SetValue(string elementId, string value);
     }
 
     public interface IUnityHtmlMotion

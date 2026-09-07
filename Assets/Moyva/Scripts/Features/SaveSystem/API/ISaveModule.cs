@@ -13,4 +13,11 @@ namespace Kruty1918.Moyva.SaveSystem
         /// <summary>Десеріалізує стан із контексту читання.</summary>
         void OnLoad(ISaveContext context);
     }
+
+    /// <summary>Parses saved data without mutation; returned actions commit in dependency order.</summary>
+    public interface IStagedSaveModule : ISaveModule
+    {
+        System.Action PrepareLoad(ISaveContext context);
+        System.Action PrepareMissingData();
+    }
 }

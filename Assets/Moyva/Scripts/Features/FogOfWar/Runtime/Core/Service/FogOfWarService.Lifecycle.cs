@@ -21,6 +21,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             // subscriber here caused the same building area to be registered
             // and visually flushed twice during one Confirm().
             _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            _signalBus.Subscribe<BuildingOwnershipTransferredSignal>(
+                OnBuildingOwnershipTransferred);
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGeneratedData);
             ReplayCachedWorldGeneratedSignalIfAvailable();
         }
@@ -36,6 +38,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _signalBus.TryUnsubscribe<UnitGarrisonStateChangedSignal>(
                 OnUnitGarrisonStateChanged);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            _signalBus.TryUnsubscribe<BuildingOwnershipTransferredSignal>(
+                OnBuildingOwnershipTransferred);
             _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGeneratedData);
         }
 
@@ -86,6 +90,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 RecalculateAllVisibility();
             }
 
+            InitializeOwnerStates();
+
             _visualUpdater?.RebuildFullVisual(this);
             LogStartupRevealFinalState("InitializeAfterFullVisualRebuild");
             BumpVersion();
@@ -98,12 +104,19 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private void ResizeToWorldDimensions(int width, int height)
         {
             var exploredSnapshot = GetExploredSnapshot();
+            var ownerExploredSnapshots = CaptureOwnerExploredSnapshots();
 
             _width = Mathf.Max(1, width);
             _height = Mathf.Max(1, height);
             _stateGrid.Initialize(_width, _height);
             _unitVisibleTiles.Clear();
             _visualDirtyBuffer.Clear();
+            foreach (var pair in _ownerStates)
+            {
+                pair.Value.Grid.Initialize(_width, _height);
+                pair.Value.VisibleTiles.Clear();
+            }
+            RestoreOwnerExploredSnapshots(ownerExploredSnapshots);
             _visualContext = _visualContext.IsValid
                 ? _visualContext.WithSize(_width, _height)
                 : FogWorldVisualContextFactory.CreateFallback(_width, _height);
@@ -112,6 +125,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (exploredSnapshot != null)
                 LoadFromSnapshot(exploredSnapshot);
+
+            InitializeOwnerStates();
         }
 
         /// <summary>

@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         IWallTopologyService,
         IConstructionGateStateService,
         IConstructionModuleStatePersistence,
+        IConstructionObserverStateSource,
         IInitializable,
         IDisposable
     {
@@ -90,6 +91,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         public byte[] CaptureState()
+            => CaptureState(null);
+
+        public byte[] CaptureObserverState(string ownerId, ISet<Vector2Int> visibleBuildings)
+            => CaptureState(visibleBuildings ?? throw new ArgumentNullException(nameof(visibleBuildings)));
+
+        private byte[] CaptureState(ISet<Vector2Int> visibleBuildings)
         {
             using var stream = new MemoryStream();
             using var writer = new BinaryWriter(stream);
@@ -99,7 +106,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var openGates = new List<Vector2Int>();
             foreach (var pair in _gateOpenState)
             {
-                if (pair.Value
+                if (pair.Value && (visibleBuildings == null || visibleBuildings.Contains(pair.Key))
                     && TryGetPlacedGate(
                         pair.Key,
                         out _,

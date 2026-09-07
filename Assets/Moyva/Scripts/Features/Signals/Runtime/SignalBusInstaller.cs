@@ -46,6 +46,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<BuildingPreviewDragVisualSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildGridHoverChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildingDemolishedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<BuildingOwnershipTransferredSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildingOperationalSignal>().OptionalSubscriber();
             Container.DeclareSignal<ShowWallHandlesSignal>();
             Container.DeclareSignal<PlaceBuildingConfirmRequestSignal>().OptionalSubscriber();
@@ -74,6 +75,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<EconomyTickCompletedSignal>().OptionalSubscriber();
             Container.DeclareSignal<SettlementCreatedSignal>().OptionalSubscriber();
             Container.DeclareSignal<SettlementDeactivatedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<SettlementCapturedSignal>().OptionalSubscriber();
             Container.DeclareSignal<SettlementResourceChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<ResourceDeficitSignal>().OptionalSubscriber();
             Container.DeclareSignal<GrantStarterPackResourcesSignal>().OptionalSubscriber();

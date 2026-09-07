@@ -54,4 +54,9 @@ namespace Kruty1918.Moyva.Construction.API
         byte[] CaptureState();
         void RestoreState(byte[] payload);
     }
+
+    public interface IConstructionObserverStateSource
+    {
+        byte[] CaptureObserverState(string ownerId, ISet<Vector2Int> visibleBuildings);
+    }
 }

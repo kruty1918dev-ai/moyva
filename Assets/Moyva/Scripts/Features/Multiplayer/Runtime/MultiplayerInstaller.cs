@@ -393,11 +393,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            // Late-join catch-up: host надсилає snapshot будівель + economy кожному новому peer.
-            container.BindInterfacesAndSelfTo<WorldStateReplicationService>()
-                .AsSingle()
-                .NonLazy();
-
             // Міграція хоста та клонування світу
             container.Bind<IWorldCloneService>()
                 .To<WorldCloneService>()
@@ -441,6 +436,17 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         /// UGS/network probing. Scene installers must be able to resolve these
         /// bindings deterministically during their own InstallBindings pass.
         /// </summary>
+        public static void InstallGameplayBindings(DiContainer container)
+        {
+            if (container.HasBinding<MultiplayerTurnSyncService>())
+                return;
+            container.Bind<Kruty1918.Moyva.Turns.API.ITurnAuthorityPolicy>()
+                .To<MultiplayerTurnAuthorityPolicy>().AsSingle();
+            container.BindInterfacesAndSelfTo<MultiplayerTurnSyncService>().AsSingle().NonLazy();
+            container.BindInterfacesAndSelfTo<MultiplayerAuthorityService>().AsSingle().NonLazy();
+            container.BindInterfacesAndSelfTo<WorldStateReplicationService>().AsSingle().NonLazy();
+        }
+
         internal static void EnsureAuthorityCoreBindings(
             DiContainer container)
         {
@@ -527,15 +533,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .AsSingle();
             }
 
-            if (!container.HasBinding(
-                    typeof(MultiplayerAuthorityService)))
-            {
-                container
-                    .BindInterfacesAndSelfTo<
-                        MultiplayerAuthorityService>()
-                    .AsSingle()
-                    .NonLazy();
-            }
         }
 
         private static MultiplayerConfig ApplyRiskFeatureToggles(MultiplayerConfig config)

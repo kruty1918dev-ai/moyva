@@ -44,6 +44,12 @@ namespace Kruty1918.Moyva.UIActions.API
                 new("ui.recruitment.enqueue");
         }
 
+        public static class Combat
+        {
+            public static readonly UiActionId CaptureSelection =
+                new("ui.combat.capture-selection");
+        }
+
         public static class Deployment
         {
             public static readonly UiActionId Confirm =
@@ -51,6 +57,14 @@ namespace Kruty1918.Moyva.UIActions.API
 
             public static readonly UiActionId Cancel =
                 new("ui.deployment.cancel");
+        }
+
+        public static class Logistics
+        {
+            public static readonly UiActionId Transfer = new("ui.logistics.transfer");
+            public static readonly UiActionId StartRoute = new("ui.logistics.route.start");
+            public static readonly UiActionId StopRoute = new("ui.logistics.route.stop");
+            public static readonly UiActionId FoundSettlement = new("ui.logistics.found-settlement");
         }
 
         public static class Pause

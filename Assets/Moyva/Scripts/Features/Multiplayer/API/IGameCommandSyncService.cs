@@ -16,6 +16,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         /// </summary>
         void SendCommandToPeer(string peerId, GameCommandType type, byte[] payload);
 
+        /// <summary>Replaces the handler; null removes it when its scene is disposed.</summary>
         void RegisterHandler(GameCommandType type, Action<string, byte[]> handler);
     }
 }

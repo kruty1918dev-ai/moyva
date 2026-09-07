@@ -8,7 +8,8 @@ using UnityEngine;
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed partial class ConstructionService :
-        IConfirmedConstructionDemolitionApplier
+        IConfirmedConstructionDemolitionApplier,
+        IConstructionOwnershipTransfer
     {
         private bool TryAuthorizeConstructionMutation(
             string ownerId,
@@ -177,7 +178,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _footprints.Unregister(origin, buildingId);
             RemovePlacedRecordAt(origin);
             InvalidatePlacementAvailabilityCache();
-            _buildingFogEffects.Remove(origin);
+            _buildingFogEffects.Remove(origin, normalizedOwner);
 
             _signalBus.Fire(new BuildingDemolishedSignal
             {
@@ -209,6 +210,59 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 recordTurnAction: false,
                 idempotentWhenMissing: true,
                 out _);
+        }
+
+        public bool TryTransferPlacedBuildingOwner(
+            Vector2Int position,
+            string previousOwnerId,
+            string nextOwnerId,
+            out string reason)
+        {
+            reason = null;
+            string normalizedPrevious = NormalizeOwnerId(previousOwnerId);
+            string normalizedNext = NormalizeOwnerId(nextOwnerId);
+            if (string.IsNullOrWhiteSpace(normalizedNext))
+            {
+                reason = "New owner is empty.";
+                return false;
+            }
+
+            Vector2Int origin = _footprints.ResolveOrigin(position);
+            string buildingId;
+            string currentOwner;
+            if (_factionPlacedBuildings.TryGetValue(origin, out var factionEntry))
+            {
+                buildingId = factionEntry.BuildingId;
+                currentOwner = NormalizeOwnerId(factionEntry.FactionId);
+            }
+            else if (_playerPlacedBuildings.TryGetValue(origin, out string legacyBuildingId))
+            {
+                buildingId = legacyBuildingId;
+                currentOwner = NormalizeOwnerId(_activeOwnerId);
+            }
+            else
+            {
+                reason = $"No committed building exists at {origin}.";
+                return false;
+            }
+
+            if (!string.Equals(currentOwner, normalizedPrevious, StringComparison.Ordinal))
+            {
+                reason = $"Building at {origin} belongs to '{currentOwner}', not '{normalizedPrevious}'.";
+                return false;
+            }
+
+            _playerPlacedBuildings.Remove(origin);
+            _factionPlacedBuildings[origin] = (buildingId, normalizedNext);
+            InvalidatePlacementAvailabilityCache();
+            _signalBus.Fire(new BuildingOwnershipTransferredSignal
+            {
+                BuildingId = buildingId,
+                Position = origin,
+                PreviousOwnerId = normalizedPrevious,
+                NewOwnerId = normalizedNext,
+            });
+            return true;
         }
     }
 }

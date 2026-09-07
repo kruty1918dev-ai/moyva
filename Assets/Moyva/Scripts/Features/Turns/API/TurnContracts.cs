@@ -11,6 +11,7 @@ namespace Kruty1918.Moyva.Turns.API
         AwaitingInput,
         Resolving,
         Ending,
+        Completed,
     }
 
     public readonly struct TurnFaction
@@ -89,18 +90,21 @@ namespace Kruty1918.Moyva.Turns.API
             string ownerId,
             long completedTurns,
             bool isActive,
-            bool isLocal)
+            bool isLocal,
+            bool isEliminated = false)
         {
             OwnerId = ownerId ?? string.Empty;
             CompletedTurns = completedTurns;
             IsActive = isActive;
             IsLocal = isLocal;
+            IsEliminated = isEliminated;
         }
 
         public string OwnerId { get; }
         public long CompletedTurns { get; }
         public bool IsActive { get; }
         public bool IsLocal { get; }
+        public bool IsEliminated { get; }
     }
 
     public interface ITurnHistoryQuery
@@ -111,5 +115,69 @@ namespace Kruty1918.Moyva.Turns.API
     public interface ITurnStateRestorer
     {
         void Restore(int round, long globalTurn, string activeOwnerId, int actions);
+    }
+
+    public interface ITurnHistoryRestorer
+    {
+        // Null restores legacy counters from the saved global turn and faction order.
+        void RestoreHistory(IReadOnlyList<TurnParticipantHistorySnapshot> history);
+    }
+
+    public interface ITurnAuthorityPolicy
+    {
+        bool IsAuthoritative { get; }
+    }
+
+    public interface ITurnRemoteCommandRequester
+    {
+        event Action<bool, string> EndTurnResolved;
+        bool IsEndTurnPending { get; }
+        bool TryRequestEndTurn(out string reason);
+    }
+
+    public enum GameplayProgressMode
+    {
+        TurnBased = 0,
+        SandboxRealtime = 1,
+    }
+
+    public readonly struct GameplayProgressTick
+    {
+        public GameplayProgressTick(
+            GameplayProgressMode mode,
+            string ownerId,
+            long sequence,
+            float gameplaySeconds)
+        {
+            Mode = mode;
+            OwnerId = ownerId ?? string.Empty;
+            Sequence = sequence < 1 ? 1 : sequence;
+            GameplaySeconds = gameplaySeconds < 0f ? 0f : gameplaySeconds;
+        }
+
+        public GameplayProgressMode Mode { get; }
+        public string OwnerId { get; }
+        public long Sequence { get; }
+        public float GameplaySeconds { get; }
+        public bool IsRealtime => Mode == GameplayProgressMode.SandboxRealtime;
+    }
+
+    /// <summary>
+    /// Shared progress boundary for systems whose work advances by gameplay time.
+    /// TurnService remains the authority for turn order; this clock only publishes
+    /// sandbox realtime ticks and exposes their deterministic progress sequence.
+    /// </summary>
+    public interface IGameplayProgressClock
+    {
+        event Action<GameplayProgressTick> Progressed;
+
+        GameplayProgressMode Mode { get; }
+        bool IsRealtime { get; }
+        float SandboxRoundSeconds { get; }
+        float Speed { get; }
+        long CurrentSequence { get; }
+
+        void Configure(GameplayProgressMode mode, float sandboxRoundSeconds, float speed);
+        void SetSpeed(float speed);
     }
 }

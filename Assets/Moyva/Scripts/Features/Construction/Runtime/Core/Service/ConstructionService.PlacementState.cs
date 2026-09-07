@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         public void SelectBuilding(string buildingId)
         {
-
+            _lastActionMessage = string.Empty;
             if (!_isActive)
             {
                 LogSelectionRejected(buildingId, "Construction mode is not active.");
@@ -91,12 +91,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
             catch (Exception ex)
             {
+                _lastActionMessage = ex.Message;
                 Debug.LogError($"[Construction] ПОМИЛКА в SelectBuilding('{buildingId}'): {ex.GetType().Name} - {ex.Message}");
             }
         }
 
         private void LogSelectionRejected(string buildingId, string reason)
         {
+            _lastActionMessage = reason;
             if (!Application.isEditor && !Debug.isDebugBuild)
                 return;
 
@@ -117,11 +119,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public bool RotateSelectedClockwise()
         {
+            _lastActionMessage = string.Empty;
+            int targetIndex = -1;
+            for (int index = _pendingPlacements.Count - 1; index >= 0; index--)
+                if (string.IsNullOrWhiteSpace(_selectedBuildingId)
+                    || string.Equals(_pendingPlacements[index].BuildingId, _selectedBuildingId, StringComparison.Ordinal))
+                { targetIndex = index; break; }
+            string targetBuildingId = targetIndex >= 0
+                ? _pendingPlacements[targetIndex].BuildingId : _selectedBuildingId;
             if (!_isActive
-                || State != BuildingPlacementState.Placing
-                || string.IsNullOrWhiteSpace(_selectedBuildingId)
+                || (targetIndex < 0 && State != BuildingPlacementState.Placing)
+                || string.IsNullOrWhiteSpace(targetBuildingId)
                 || IsDemolishMode)
             {
+                _lastActionMessage = "Select a building or pending placement to rotate.";
                 return false;
             }
 
@@ -134,16 +145,39 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             if (_wallTopologyService?.IsWallOrGate(
-                    _selectedBuildingId) == true)
+                    targetBuildingId) == true)
             {
                 _lastActionMessage =
                     "Напрямок стін і воріт визначається сусідніми сегментами.";
                 return false;
             }
 
-            _selectedRotation =
-                ConstructionRotationUtility.NextClockwise(
-                    _selectedRotation);
+            ConstructionRotation next = ConstructionRotationUtility.NextClockwise(_selectedRotation);
+            if (targetIndex >= 0)
+            {
+                PendingPlacement placement = _pendingPlacements[targetIndex];
+                next = ConstructionRotationUtility.NextClockwise(placement.Rotation);
+                var result = EvaluatePlacement(new ConstructionPlacementQueryRequest(
+                    placement.BuildingId, placement.Position, placement.Position, placement.OriginalPosition,
+                    includeResources: true, includeDetails: true, ownerId: _activeOwnerId,
+                    allowUniquePreviewRelocation: false,
+                    satisfiedReplacementBuildingId: placement.ReplacedPendingBuildingId, rotation: next));
+                if (!result.CanPreview || !result.ResourcesValid)
+                { _lastActionMessage = result.Reason; return false; }
+                SaveSnapshotForUndo(clearRedoHistory: true);
+                var rotated = new PendingPlacement(placement.Position, placement.BuildingId,
+                    placement.OriginalPosition, placement.ReplacedPendingBuildingId, next);
+                _pendingPlacements[targetIndex] = rotated;
+                _pendingPlacementByPosition[placement.Position] = rotated;
+                MarkPendingPlacementsChanged();
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = placement.Position, BuildingId = placement.BuildingId,
+                    RotationQuarterTurns = (int)next, PreviewState = BuildingPreviewState.Valid,
+                });
+            }
+            _selectedRotation = next;
+            _lastActionMessage = string.Empty;
             PublishSelectionChanged();
             return true;
         }

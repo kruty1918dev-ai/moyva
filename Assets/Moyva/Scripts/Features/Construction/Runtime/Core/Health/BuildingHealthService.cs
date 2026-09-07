@@ -22,7 +22,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
     /// </summary>
     internal sealed class BuildingHealthService :
         IBuildingGarrisonService,
+        IConstructionBuildingCombatTargetQuery,
         IConstructionModuleStatePersistence,
+        IConstructionObserverStateSource,
         IInitializable,
         IDisposable
     {
@@ -114,6 +116,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            _signalBus.Subscribe<BuildingOwnershipTransferredSignal>(
+                OnBuildingOwnershipTransferred);
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreated);
             _signalBus.Subscribe<UnitMovedSignal>(OnUnitMoved);
             _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
@@ -129,6 +133,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            _signalBus.TryUnsubscribe<BuildingOwnershipTransferredSignal>(
+                OnBuildingOwnershipTransferred);
             _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreated);
             _signalBus.TryUnsubscribe<UnitMovedSignal>(OnUnitMoved);
             _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
@@ -257,6 +263,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _buildingIds.Remove(signal.Position);
         }
 
+        private void OnBuildingOwnershipTransferred(
+            BuildingOwnershipTransferredSignal signal)
+        {
+            if (string.IsNullOrWhiteSpace(signal.NewOwnerId))
+                return;
+            Vector2Int position = signal.Position;
+            _buildingOwners[position] = NormalizeOwner(
+                signal.NewOwnerId,
+                null);
+        }
+
         private void OnUnitCreated(UnitCreatedSignal signal)
         {
             if (string.IsNullOrWhiteSpace(signal.UnitId))
@@ -316,6 +333,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         public byte[] CaptureState()
+            => CaptureState(null, null);
+
+        public byte[] CaptureObserverState(string ownerId, ISet<Vector2Int> visibleBuildings)
+            => CaptureState(ownerId, visibleBuildings ?? throw new ArgumentNullException(nameof(visibleBuildings)));
+
+        private byte[] CaptureState(string observerOwnerId, ISet<Vector2Int> visibleBuildings)
         {
             using var stream = new MemoryStream();
             using var writer = new BinaryWriter(stream);
@@ -342,6 +365,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                  index++)
             {
                 Vector2Int position = positions[index];
+                if (visibleBuildings != null && !visibleBuildings.Contains(position))
+                    continue;
                 string buildingId = _buildingIds[position];
                 string entityId =
                     BuildingEntityId(
@@ -375,6 +400,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var unitIds =
                 new List<string>(
                     _garrisonBuildingByUnit.Keys);
+            if (visibleBuildings != null)
+                unitIds.RemoveAll(id => !visibleBuildings.Contains(_garrisonBuildingByUnit[id])
+                    || !_units.TryGetValue(id, out var unit)
+                    || !string.Equals(unit.OwnerId, observerOwnerId, StringComparison.Ordinal));
             unitIds.Sort(StringComparer.Ordinal);
 
             writer.Write(unitIds.Count);
@@ -733,6 +762,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return capacity > 0;
         }
 
+        public bool TryGetCombatTarget(
+            string entityId,
+            out ConstructionBuildingCombatTarget target)
+        {
+            target = default;
+            if (!TryParseBuildingEntityId(entityId, out string buildingId, out Vector2Int position)
+                || !_buildingIds.TryGetValue(position, out string placedBuildingId)
+                || !string.Equals(placedBuildingId, buildingId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            string owner = _buildingOwners.TryGetValue(position, out string storedOwner)
+                ? storedOwner
+                : "player_0";
+            target = new ConstructionBuildingCombatTarget(entityId, buildingId, position, owner);
+            return true;
+        }
+
         private List<string> GetOrCreateGarrisonList(
             Vector2Int buildingPosition)
         {
@@ -1027,5 +1075,33 @@ namespace Kruty1918.Moyva.Construction.Runtime
         /// </summary>
         public static string BuildingEntityId(string buildingId, Vector2Int position)
             => $"{buildingId}@{position.x},{position.y}";
+
+        private static bool TryParseBuildingEntityId(
+            string entityId,
+            out string buildingId,
+            out Vector2Int position)
+        {
+            buildingId = null;
+            position = default;
+            if (string.IsNullOrWhiteSpace(entityId))
+                return false;
+
+            int at = entityId.LastIndexOf('@');
+            if (at <= 0 || at >= entityId.Length - 1)
+                return false;
+
+            string rawPosition = entityId.Substring(at + 1);
+            int comma = rawPosition.IndexOf(',');
+            if (comma <= 0
+                || !int.TryParse(rawPosition.Substring(0, comma), out int x)
+                || !int.TryParse(rawPosition.Substring(comma + 1), out int y))
+            {
+                return false;
+            }
+
+            buildingId = entityId.Substring(0, at);
+            position = new Vector2Int(x, y);
+            return true;
+        }
     }
 }

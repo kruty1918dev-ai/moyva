@@ -29,6 +29,7 @@ namespace Kruty1918.Moyva.SaveSystem
         {
             List<ISaveModule> orderedModules = SaveModuleExecutionPlan.Build(modules);
             var blocks = new List<(uint, byte[])>(orderedModules.Count);
+            var blockIds = new HashSet<uint>();
 
             for (int i = 0; i < orderedModules.Count; i++)
             {
@@ -40,6 +41,8 @@ namespace Kruty1918.Moyva.SaveSystem
                 }
 
                 uint blockId = SaveFileCodec.ComputeBlockId(module.GetType());
+                if (!blockIds.Add(blockId))
+                    throw new InvalidDataException($"Duplicate save block identity: {module.GetType().FullName}.");
 
                 using var ms = new MemoryStream();
                 using var bw = new BinaryWriter(ms);
@@ -48,9 +51,11 @@ namespace Kruty1918.Moyva.SaveSystem
                 {
                     module.OnSave(new SaveContext(bw, null));
                 }
-                catch (Exception)
+                catch (Exception exception)
                 {
-                    continue;
+                    throw new InvalidOperationException(
+                        $"Cannot save module '{SaveModuleIdentity.GetStableId(module.GetType())}': {exception.Message}",
+                        exception);
                 }
 
                 bw.Flush();
@@ -63,10 +68,9 @@ namespace Kruty1918.Moyva.SaveSystem
 
                 if (payload.Length > MaxBlockBytes)
                 {
-                    Debug.LogError(
+                    throw new InvalidDataException(
                         $"[SaveSystem] '{module.GetType().FullName}' payload {payload.Length}b " +
-                        $"> {MaxBlockBytes}b limit. Block skipped.");
-                    continue;
+                        $"> {MaxBlockBytes}b limit. Save aborted.");
                 }
 
                 blocks.Add((blockId, payload));
@@ -104,59 +108,34 @@ namespace Kruty1918.Moyva.SaveSystem
         /// </summary>
         internal static bool AtomicWrite(string finalPath, byte[] data)
         {
-            string tmp    = finalPath + ".tmp";
+            string tmp = finalPath + ".tmp";
             string backup = finalPath + ".bak";
-
-            // Запис у .tmp
-            try { File.WriteAllBytes(tmp, data); }
-            catch (Exception e)
-            {
-                Debug.LogError($"[SaveSystem] Write to .tmp failed: {e.Message}");
-                return false;
-            }
-
-            // Верифікація .tmp
             try
             {
-                using var fs = File.OpenRead(tmp);
-                if (fs.Length != data.Length)
-                    throw new IOException($"Size mismatch: expected {data.Length}, got {fs.Length}");
-
-                var magicBuf = new byte[4];
-                _ = fs.Read(magicBuf, 0, 4);
-                var magic = SaveFileCodec.FileLayout.Magic;
-                if (magicBuf[0] != magic[0] || magicBuf[1] != magic[1] ||
-                    magicBuf[2] != magic[2] || magicBuf[3] != magic[3])
-                    throw new IOException("Magic bytes invalid in .tmp");
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[SaveSystem] .tmp verification failed: {e.Message}");
-                TryDelete(tmp);
-                return false;
-            }
-
-            // Бекап існуючого файлу
-            if (File.Exists(finalPath))
-            {
-                try { File.Copy(finalPath, backup, overwrite: true); }
-                catch (Exception)
+                using (var stream = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
                 {
+                    stream.Write(data, 0, data.Length);
+                    stream.Flush(flushToDisk: true);
                 }
-            }
+                byte[] written = File.ReadAllBytes(tmp);
+                if (written.Length != data.Length
+                    || SaveFileCodec.TryDecode(written, out _, out _, out _) != SaveFileCodec.DecodeError.None)
+                    throw new IOException("The temporary save failed integrity validation.");
 
-            // Атомарне переміщення: .tmp → final
-            try
-            {
                 if (File.Exists(finalPath))
-                    File.Delete(finalPath);
-                File.Move(tmp, finalPath);
+                {
+                    // A load from backup may leave a corrupt primary. Preserve the last valid backup.
+                    bool primaryValid = SaveFileCodec.TryDecode(
+                        File.ReadAllBytes(finalPath), out _, out _, out _) == SaveFileCodec.DecodeError.None;
+                    File.Replace(tmp, finalPath, primaryValid ? backup : null);
+                }
+                else File.Move(tmp, finalPath);
                 return true;
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                Debug.LogError($"[SaveSystem] Atomic rename failed: {e.Message}");
-                TryRestoreBackup(backup, finalPath);
+                Debug.LogError($"[SaveSystem] Save replacement failed: {exception.Message}");
+                TryDelete(tmp);
                 return false;
             }
         }
@@ -166,82 +145,99 @@ namespace Kruty1918.Moyva.SaveSystem
         /// модулів, а не у фізичному порядку блоків у .mvs. Це робить legacy saves
         /// незалежними від історичного порядку Zenject/registrar реєстрації.
         /// </summary>
-        internal static bool ExecuteLoad(byte[] bytes, IReadOnlyList<ISaveModule> modules,
-            string contextLabel)
+        internal static bool ExecuteLoad(byte[] bytes, IReadOnlyList<ISaveModule> modules, string contextLabel)
         {
-            var result = SaveFileCodec.TryDecode(
-                bytes, out _, out var decodedBlocks, out string error);
+            bool loaded = ExecuteLoad(bytes, modules, contextLabel, out string error, out _);
+            if (!loaded) Debug.LogError($"[SaveSystem] {error}");
+            return loaded;
+        }
 
+        internal static bool ExecuteLoad(byte[] bytes, IReadOnlyList<ISaveModule> modules,
+            string contextLabel, out string errorMessage, out bool restoreStarted,
+            string requiredBlockModuleFullName = null)
+        {
+            restoreStarted = false;
+            errorMessage = null;
+            var result = SaveFileCodec.TryDecode(bytes, out _, out var decodedBlocks, out string error);
             if (result != SaveFileCodec.DecodeError.None)
             {
+                errorMessage = $"{contextLabel}: {error ?? result.ToString()}";
                 return false;
             }
 
             var payloadByBlockId = new Dictionary<uint, byte[]>();
-            for (int index = 0; index < decodedBlocks.Count; index++)
+            foreach (var block in decodedBlocks)
             {
-                var block = decodedBlocks[index];
                 if (payloadByBlockId.ContainsKey(block.blockId))
                 {
+                    errorMessage = $"{contextLabel}: duplicate block {block.blockId:X8}.";
                     return false;
                 }
-
                 payloadByBlockId.Add(block.blockId, block.payload);
             }
 
-            List<ISaveModule> orderedModules = SaveModuleExecutionPlan.Build(modules);
-            var moduleNamesByBlockId = new Dictionary<uint, string>();
-
-            for (int index = 0; index < orderedModules.Count; index++)
+            var prepared = new List<(string Name, Action Commit)>();
+            var blockNames = new Dictionary<uint, string>();
+            foreach (var module in SaveModuleExecutionPlan.Build(modules))
             {
-                ISaveModule module = orderedModules[index];
-                if (module == null)
-                    continue;
-
-                Type moduleType = module.GetType();
-                string moduleName = SaveModuleIdentity.GetStableId(moduleType);
-                uint blockId = SaveFileCodec.ComputeBlockId(moduleType);
-
-                if (moduleNamesByBlockId.TryGetValue(blockId, out string existingModuleName)
-                    && !string.Equals(existingModuleName, moduleName, StringComparison.Ordinal))
+                string name = SaveModuleIdentity.GetStableId(module.GetType());
+                uint id = SaveFileCodec.ComputeBlockId(module.GetType());
+                if (blockNames.TryGetValue(id, out string existingName) && existingName != name)
                 {
-                    Debug.LogError(
-                        $"[SaveSystem] Save block-id collision {blockId:X8}: " +
-                        $"'{existingModuleName}' vs '{moduleName}'. Load rejected.");
+                    errorMessage = $"{contextLabel}: block identity collision between '{existingName}' and '{name}'.";
                     return false;
                 }
-
-                moduleNamesByBlockId[blockId] = moduleName;
-
-                if (!payloadByBlockId.TryGetValue(blockId, out byte[] payload))
-                    continue;
-
+                blockNames[id] = name;
+                bool hasPayload = payloadByBlockId.TryGetValue(id, out byte[] payload);
+                if (!hasPayload && string.Equals(name, requiredBlockModuleFullName, StringComparison.Ordinal))
+                {
+                    errorMessage = $"{contextLabel}: required save block '{name}' is missing.";
+                    return false;
+                }
                 try
                 {
-                    using var ms = new MemoryStream(payload);
-                    using var br = new BinaryReader(ms);
-                    module.OnLoad(new SaveContext(null, br));
-
-                    long unread = ms.Length - ms.Position;
+                    Action commit;
+                    if (module is IStagedSaveModule staged)
+                    {
+                        if (hasPayload)
+                        {
+                            using var stream = new MemoryStream(payload, false);
+                            using var reader = new BinaryReader(stream);
+                            commit = staged.PrepareLoad(new SaveContext(null, reader));
+                        }
+                        else commit = staged.PrepareMissingData();
+                    }
+                    else
+                    {
+                        if (!hasPayload) continue;
+                        commit = () =>
+                        {
+                            using var stream = new MemoryStream(payload, false);
+                            using var reader = new BinaryReader(stream);
+                            module.OnLoad(new SaveContext(null, reader));
+                        };
+                    }
+                    if (commit == null) throw new InvalidDataException("The module returned no restore action.");
+                    prepared.Add((name, commit));
                 }
-                catch (Exception)
+                catch (Exception exception)
                 {
+                    errorMessage = $"{contextLabel}: validation of '{name}' failed: {exception.Message}";
+                    return false;
                 }
-
-                payloadByBlockId.Remove(blockId);
             }
 
-            if (payloadByBlockId.Count > 0)
+            // Every staged module has validated its data before the first gameplay mutation.
+            foreach (var operation in prepared)
             {
-                var unknownIds = new List<uint>(payloadByBlockId.Keys);
-                unknownIds.Sort();
-                for (int index = 0; index < unknownIds.Count; index++)
+                restoreStarted = true;
+                try { operation.Commit(); }
+                catch (Exception exception)
                 {
-                    uint blockId = unknownIds[index];
-                    byte[] payload = payloadByBlockId[blockId];
+                    errorMessage = $"{contextLabel}: restoring '{operation.Name}' failed: {exception.Message}";
+                    return false;
                 }
             }
-
             return true;
         }
 
@@ -282,7 +278,7 @@ namespace Kruty1918.Moyva.SaveSystem
         internal static void TryDelete(string path)
         {
             try { if (File.Exists(path)) File.Delete(path); }
-            catch (Exception e)
+            catch (Exception)
             {
             }
         }

@@ -41,13 +41,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 buildingId);
             RemovePlacedRecordAt(origin);
 
-            _buildingFogEffects.Remove(origin);
+            _buildingFogEffects.Remove(origin, ownerId);
 
             _signalBus.Fire(
                 new BuildingDemolishedSignal
                 {
                     BuildingId = buildingId,
                     Position = origin,
+                    OwnerId = ownerId,
                     SourceFactionId = ownerId,
                 });
 

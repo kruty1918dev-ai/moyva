@@ -88,7 +88,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     intent.SatisfiedReplacementBuildingId,
                     intent.Rotation);
 
-                _syncService.SendCommand(GameCommandType.BuildingPlace, payload.ToBytes());
+                SendRequestToHost(
+                    GameCommandType.BuildingPlace,
+                    payload.ToBytes());
                 sentCount++;
             }
 
@@ -142,7 +144,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 signal.RelocationSourcePosition,
                 rotation: ConstructionRotationUtility.Normalize(
                     signal.RotationQuarterTurns));
-            _syncService.SendCommand(GameCommandType.BuildingPlace, payload.ToBytes());
+            SendConfirmedCommandToVisiblePeers(
+                GameCommandType.BuildingPlace,
+                payload.ToBytes(),
+                signal.OwnerId,
+                signal.Position);
         }
 
         private void OnBuildingDemolishedLocally(BuildingDemolishedSignal signal)
@@ -153,7 +159,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 GameActionMessageKind.Confirmed,
                 signal.Position,
                 signal.OwnerId);
-            _syncService.SendCommand(GameCommandType.BuildingDemolish, payload.ToBytes());
+            SendConfirmedCommandToVisiblePeers(
+                GameCommandType.BuildingDemolish,
+                payload.ToBytes(),
+                signal.OwnerId,
+                signal.Position);
         }
         // ─── Мережеві обробники (вхідні повідомлення) ────────────────────────────
 
@@ -238,7 +248,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                                 .GetValueOrDefault(),
                             intent.SatisfiedReplacementBuildingId,
                             intent.Rotation);
-                        _syncService.SendCommand(GameCommandType.BuildingPlace, confirmed.ToBytes());
+                        SendConfirmedCommandToVisiblePeers(
+                            GameCommandType.BuildingPlace,
+                            confirmed.ToBytes(),
+                            authorizedOwnerId,
+                            data.Position);
                     }
                     else
                     {
@@ -374,7 +388,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                             GameActionMessageKind.Confirmed,
                             data.Position,
                             authorizedOwnerId);
-                        _syncService.SendCommand(GameCommandType.BuildingDemolish, confirmed.ToBytes());
+                        SendConfirmedCommandToVisiblePeers(
+                            GameCommandType.BuildingDemolish,
+                            confirmed.ToBytes(),
+                            authorizedOwnerId,
+                            data.Position);
                     }
                     else
                     {

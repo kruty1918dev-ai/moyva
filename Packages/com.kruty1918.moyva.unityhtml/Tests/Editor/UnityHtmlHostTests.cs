@@ -129,10 +129,10 @@ namespace UnityHTML.Tests
                 Assert.That(input.targetGraphic, Is.Not.Null);
                 Assert.That(input.targetGraphic.raycastTarget, Is.True);
                 Assert.That(input.textComponent.color.a, Is.GreaterThan(0.95f));
-                Assert.That(input.textComponent.alignment, Is.EqualTo(TextAlignmentOptions.MidlineLeft));
+                Assert.That(input.textComponent.alignment, Is.EqualTo(TextAlignmentOptions.Center));
                 Assert.That(input.customCaretColor, Is.True);
-                Assert.That(input.textViewport.offsetMin.x, Is.EqualTo(12f).Within(0.01f));
-                Assert.That(input.textViewport.offsetMax.x, Is.EqualTo(-12f).Within(0.01f));
+                Assert.That(input.textViewport.offsetMin.x, Is.EqualTo(10f).Within(0.01f));
+                Assert.That(input.textViewport.offsetMax.x, Is.EqualTo(-10f).Within(0.01f));
                 Assert.That(input.textComponent.rectTransform.anchorMin, Is.EqualTo(Vector2.zero));
                 Assert.That(input.textComponent.rectTransform.anchorMax, Is.EqualTo(Vector2.one));
                 Assert.That(input.GetComponent<ScrollEventBubbling>().Bubble, Is.False);

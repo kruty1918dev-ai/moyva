@@ -81,6 +81,12 @@
       "type": "number",
       "title": "Base Stamina"
     },
+    "cargoCapacity": {
+      "type": "number",
+      "minimum": 0,
+      "default": 0,
+      "title": "Cargo Capacity"
+    },
     "movementPointsPerTurn": {
       "type": "number",
       "title": "Movement Points Per Turn",

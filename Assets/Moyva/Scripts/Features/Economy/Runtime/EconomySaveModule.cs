@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
     [SaveModuleId("Kruty1918.Moyva.Economy.Runtime.EconomySaveModule")]
     internal sealed class EconomySaveModule : ISaveModule
     {
-        private const int SchemaVersion = 2;
+        private const int SchemaVersion = 3;
         private const string ModuleLogTag =
             "[MoyvaConstructionModules]";
         private const string PerfLogTag =
@@ -26,7 +26,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         {
             long startedAt = Stopwatch.GetTimestamp();
 
-            // Schema v2 stores owner-only resources here. Settlement and
+            // Schema v3 stores owner-only resources here. Settlement and
             // warehouse resources are persisted separately in the exact runtime
             // snapshot below; using owner totals here would duplicate resources
             // after load.
@@ -91,6 +91,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             int version =
                 context.Reader.ReadInt32();
             if (version != 1
+                && version != 2
                 && version != SchemaVersion)
             {
                 return;
@@ -154,7 +155,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (version >= 2)
             {
                 runtime =
-                    ReadRuntimeSnapshot(context);
+                    ReadRuntimeSnapshot(context, version);
                 _economyManager
                     ?.RestoreRuntimeSaveSnapshot(runtime);
             }
@@ -188,6 +189,13 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     settlement.SettlementId
                     ?? string.Empty);
                 context.Writer.Write(settlement.CurrentTurn);
+                context.Writer.Write(
+                    settlement.OwnerId
+                    ?? string.Empty);
+                context.Writer.Write(
+                    settlement.SettlementName
+                    ?? string.Empty);
+                context.Writer.Write(settlement.IsActive);
 
                 WriteFloatMap(
                     context,
@@ -258,7 +266,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         }
 
         private static EconomyRuntimeSaveSnapshot
-            ReadRuntimeSnapshot(ISaveContext context)
+            ReadRuntimeSnapshot(ISaveContext context, int version)
         {
             var result =
                 new EconomyRuntimeSaveSnapshot();
@@ -280,6 +288,15 @@ namespace Kruty1918.Moyva.Economy.Runtime
                         CurrentTurn =
                             context.Reader.ReadInt32(),
                     };
+                if (version >= 3)
+                {
+                    settlement.OwnerId =
+                        context.Reader.ReadString();
+                    settlement.SettlementName =
+                        context.Reader.ReadString();
+                    settlement.IsActive =
+                        context.Reader.ReadBoolean();
+                }
 
                 ReadFloatMap(
                     context,
@@ -428,7 +445,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
     internal sealed class EconomySettlementRuntimeSnapshot
     {
         public string SettlementId;
+        public string OwnerId;
+        public string SettlementName;
         public int CurrentTurn;
+        public bool IsActive = true;
 
         public readonly Dictionary<string, float>
             ResourcePool =

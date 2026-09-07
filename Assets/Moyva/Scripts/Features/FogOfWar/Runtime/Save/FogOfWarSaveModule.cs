@@ -13,8 +13,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     internal sealed class FogOfWarSaveModule : ISaveModule
     {
         private const int FormatVersionWithFixedVisionAreas = -2;
+        private const int FormatVersionWithOwnerSnapshots = -3;
 
         private readonly IFogExplorationSnapshotStore _fogSnapshotStore;
+        private readonly IFogOwnerExplorationSnapshotStore _ownerSnapshotStore;
         private readonly FogOfWarService _runtimeFogOfWarService;
         /// <summary>
         /// Створює save module для поточного gameplay fog service.
@@ -23,6 +25,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         public FogOfWarSaveModule(IFogExplorationSnapshotStore fogSnapshotStore)
         {
             _fogSnapshotStore = fogSnapshotStore;
+            _ownerSnapshotStore = fogSnapshotStore as IFogOwnerExplorationSnapshotStore;
             _runtimeFogOfWarService = fogSnapshotStore as FogOfWarService;
         }
 
@@ -32,7 +35,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// <param name="context">Поточний save context з writer-ом.</param>
         public void OnSave(ISaveContext context)
         {
-            context.Writer.Write(FormatVersionWithFixedVisionAreas);
+            context.Writer.Write(FormatVersionWithOwnerSnapshots);
 
             bool[,] snapshot = _fogSnapshotStore.GetExploredSnapshot();
             if (snapshot == null)
@@ -40,6 +43,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 context.Writer.Write(0);
                 context.Writer.Write(0);
                 WriteFixedVisionAreas(context);
+                WriteOwnerSnapshots(context);
                 return;
             }
 
@@ -54,6 +58,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     context.Writer.Write(snapshot[x, y]);
 
             WriteFixedVisionAreas(context);
+            WriteOwnerSnapshots(context);
         }
 
         /// <summary>
@@ -94,7 +99,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void ReadVersioned(ISaveContext context, int version)
         {
-            if (version != FormatVersionWithFixedVisionAreas)
+            if (version != FormatVersionWithFixedVisionAreas
+                && version != FormatVersionWithOwnerSnapshots)
             {
                 return;
             }
@@ -107,7 +113,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             int fixedAreaCount = context.Reader.ReadInt32();
             if (fixedAreaCount <= 0)
+            {
+                if (version == FormatVersionWithOwnerSnapshots)
+                    ReadOwnerSnapshots(context);
                 return;
+            }
 
             var areas = new FogFixedVisionAreaSnapshot[fixedAreaCount];
             int validCount = 0;
@@ -126,7 +136,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             if (_runtimeFogOfWarService == null || validCount == 0)
+            {
+                if (version == FormatVersionWithOwnerSnapshots)
+                    ReadOwnerSnapshots(context);
                 return;
+            }
 
             if (validCount != areas.Length)
             {
@@ -138,6 +152,79 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             _runtimeFogOfWarService.LoadFixedVisionAreasSnapshot(areas);
+            if (version == FormatVersionWithOwnerSnapshots)
+                ReadOwnerSnapshots(context);
+        }
+
+        private void WriteOwnerSnapshots(ISaveContext context)
+        {
+            if (_ownerSnapshotStore == null)
+            {
+                context.Writer.Write(0);
+                return;
+            }
+
+            var owners = _ownerSnapshotStore.GetKnownFogOwnerIds();
+            var payloads = new System.Collections.Generic.List<(string OwnerId, bool[,] Snapshot)>();
+            if (owners != null)
+            {
+                foreach (string ownerId in owners)
+                {
+                    if (string.IsNullOrWhiteSpace(ownerId))
+                        continue;
+                    bool[,] snapshot = _ownerSnapshotStore.GetExploredSnapshot(ownerId);
+                    if (snapshot == null)
+                        continue;
+                    payloads.Add((ownerId.Trim(), snapshot));
+                }
+            }
+
+            context.Writer.Write(payloads.Count);
+            for (int index = 0; index < payloads.Count; index++)
+            {
+                var payload = payloads[index];
+                context.Writer.Write(payload.OwnerId);
+                WriteExploredSnapshot(context, payload.Snapshot);
+            }
+        }
+
+        private void ReadOwnerSnapshots(ISaveContext context)
+        {
+            int count = context.Reader.ReadInt32();
+            if (count <= 0 || _ownerSnapshotStore == null)
+            {
+                for (int index = 0; index < count; index++)
+                    SkipOwnerSnapshot(context);
+                return;
+            }
+
+            for (int index = 0; index < count; index++)
+            {
+                string ownerId = context.Reader.ReadString();
+                int width = context.Reader.ReadInt32();
+                int height = context.Reader.ReadInt32();
+                if (width <= 0 || height <= 0)
+                    continue;
+
+                var snapshot = new bool[width, height];
+                for (int x = 0; x < width; x++)
+                    for (int y = 0; y < height; y++)
+                        snapshot[x, y] = context.Reader.ReadBoolean();
+
+                _ownerSnapshotStore.LoadFromSnapshot(ownerId, snapshot);
+            }
+        }
+
+        private static void SkipOwnerSnapshot(ISaveContext context)
+        {
+            context.Reader.ReadString();
+            int width = context.Reader.ReadInt32();
+            int height = context.Reader.ReadInt32();
+            if (width <= 0 || height <= 0)
+                return;
+            for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
+                    context.Reader.ReadBoolean();
         }
 
         private void ReadLegacyExploredSnapshot(ISaveContext context, int width)
@@ -157,6 +244,24 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     snapshot[x, y] = context.Reader.ReadBoolean();
 
             _fogSnapshotStore.LoadFromSnapshot(snapshot);
+        }
+
+        private static void WriteExploredSnapshot(ISaveContext context, bool[,] snapshot)
+        {
+            if (snapshot == null)
+            {
+                context.Writer.Write(0);
+                context.Writer.Write(0);
+                return;
+            }
+
+            int width = snapshot.GetLength(0);
+            int height = snapshot.GetLength(1);
+            context.Writer.Write(width);
+            context.Writer.Write(height);
+            for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
+                    context.Writer.Write(snapshot[x, y]);
         }
     }
 }

@@ -17,6 +17,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         IConfirmedConstructionPlacementIntentApplier,
         IConstructionPendingPlacementIntentSource,
         IAuthoritativeConstructionPlacementExecutor,
+        IConstructionPrepaidPlacementExecutor,
         IConstructionPlacementQuery,
         IConstructionSelectionAvailabilityQuery,
         IConstructionPendingUndoBatch,
@@ -223,7 +224,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _buildingFogEffects.Remove(pair.Key);
                 _buildingFogEffects.ApplyOnPlaced(
                     pair.Value.BuildingId,
-                    pair.Key);
+                    pair.Key,
+                    pair.Value.FactionId);
             }
 
             InvalidatePlacementResourceValidationCache();
@@ -236,7 +238,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 _buildingFogEffects.ApplyOnOperational(
                     signal.BuildingId,
-                    signal.Position);
+                    signal.Position,
+                    signal.OwnerId);
             }
             catch (Exception ex)
             {

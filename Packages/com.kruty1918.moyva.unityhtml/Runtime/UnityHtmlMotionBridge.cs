@@ -69,7 +69,7 @@ namespace UnityHTML.Runtime
                 string delayText = Data(component, "motion-delay");
                 string distanceText = Data(component, "motion-distance");
                 string easeText = Data(component, "motion-ease");
-                string signature = $"{preset}|{durationText}|{delayText}|{distanceText}|{easeText}";
+                string signature = $"{component.RectTransform.GetInstanceID()}|{preset}|{durationText}|{delayText}|{distanceText}|{easeText}";
                 _seen.Add(id);
 
                 if (_declared.TryGetValue(id, out string previous) && previous == signature)
@@ -133,6 +133,7 @@ namespace UnityHTML.Runtime
             Sequence sequence = DOTween.Sequence()
                 .SetUpdate(true)
                 .SetRecyclable(true)
+                .SetLink(target.gameObject, LinkBehaviour.KillOnDestroy)
                 .SetTarget(target);
 
             switch (normalizedPreset)
@@ -186,7 +187,7 @@ namespace UnityHTML.Runtime
 
             motion.Tween = sequence;
             _active[id] = motion;
-            sequence.OnComplete(() =>
+            sequence.OnKill(() =>
             {
                 if (_active.TryGetValue(id, out ActiveMotion current) && ReferenceEquals(current, motion))
                     _active.Remove(id);

@@ -4,8 +4,11 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Camera.API;
+using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Economy.Runtime;
+using Kruty1918.Moyva.Economy.API;
+using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Multiplayer.Core;
@@ -35,12 +38,25 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IUnitOwnershipQuery _unitOwnership;
         private readonly IUnitRecruitmentService _recruitment;
         private readonly IUnitClassConfig _unitConfigs;
+        private readonly ICombatCommandService _combat;
+        private readonly ICombatRemoteCommandRequester _remoteCombat;
+        private readonly ISettlementCaptureRemoteCommandRequester _remoteSettlementCapture;
+        private readonly IConstructionBuildingCombatTargetQuery _buildingTargets;
+        private readonly IHealthRegistry _health;
+        private readonly ISettlementCaptureService _settlementCapture;
+        private readonly IFogOwnerStateReader _ownerFog;
         private readonly ILocalGameplayRoleResolver _roleResolver;
+        private readonly IGameplayProgressClock _progressClock;
+        private readonly GameplayCargoPanel _cargoPanel;
         private readonly Dictionary<int, Sprite> _prefabSpriteCache = new();
+        private readonly Dictionary<string, Sprite> _icons = new(StringComparer.Ordinal);
+        private readonly HashSet<string> _reportedMissingIcons = new(StringComparer.Ordinal);
+        private IReadOnlyDictionary<string, Sprite> _publishedIcons;
 
         private WorldInfoSelectionKind _selectionKind;
         private string _selectionId = string.Empty;
         private Vector2Int _selectionPosition;
+        private string _commandUnitId = string.Empty;
         private BuildingPreviewState _lastPreviewState;
         private string _lastPreviewMessage = string.Empty;
 
@@ -58,7 +74,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IUnitOwnershipQuery unitOwnership = null,
             [InjectOptional] IUnitRecruitmentService recruitment = null,
             [InjectOptional] IUnitClassConfig unitConfigs = null,
-            [InjectOptional] ILocalGameplayRoleResolver roleResolver = null)
+            [InjectOptional] ICombatCommandService combat = null,
+            [InjectOptional] ICombatRemoteCommandRequester remoteCombat = null,
+            [InjectOptional] ISettlementCaptureRemoteCommandRequester remoteSettlementCapture = null,
+            [InjectOptional] IConstructionBuildingCombatTargetQuery buildingTargets = null,
+            [InjectOptional] IHealthRegistry health = null,
+            [InjectOptional] ISettlementCaptureService settlementCapture = null,
+            [InjectOptional] IFogOwnerStateReader ownerFog = null,
+            [InjectOptional] ILocalGameplayRoleResolver roleResolver = null,
+            [InjectOptional] IGameplayProgressClock progressClock = null,
+            [InjectOptional] EconomyDatabaseSO economyDatabase = null,
+            [InjectOptional] GameplayCargoPanel cargoPanel = null)
         {
             _turns = turns;
             _economy = economy;
@@ -72,7 +98,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _unitOwnership = unitOwnership;
             _recruitment = recruitment;
             _unitConfigs = unitConfigs;
+            _combat = combat;
+            _remoteCombat = remoteCombat;
+            _remoteSettlementCapture = remoteSettlementCapture;
+            _buildingTargets = buildingTargets;
+            _health = health;
+            _settlementCapture = settlementCapture;
+            _ownerFog = ownerFog;
             _roleResolver = roleResolver;
+            _progressClock = progressClock;
+            _cargoPanel = cargoPanel;
+            if (economyDatabase != null)
+                foreach (var resource in economyDatabase.Resources)
+                    if (resource != null && resource.Icon != null)
+                        _icons[GameplayHtmlIconKeys.Resource(resource.Id)] = resource.Icon;
+            if (buildings != null)
+                foreach (var building in buildings.GetAll())
+                {
+                    Sprite icon = ResolveBuildingIcon(building);
+                    if (icon != null) _icons[GameplayHtmlIconKeys.Building(building.Id)] = icon;
+                }
         }
 
         public void SetSelection(WorldInfoSelectionChangedSignal signal)
@@ -112,6 +157,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 IsLocalTurn = _turns == null
                     || string.Equals(_turns.ActiveOwnerId, ownerId, StringComparison.Ordinal),
                 TurnUiEnabled = IsTurnUiEnabled(),
+                SandboxRealtime = _progressClock?.IsRealtime ?? false,
+                SandboxSpeed = _progressClock?.Speed ?? 1f,
                 SelectedBuildingId = _construction?.GetSelectedBuildingId() ?? string.Empty,
                 SelectionKind = _selectionKind == WorldInfoSelectionKind.None
                     ? string.Empty
@@ -148,7 +195,40 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
             CaptureRecruitment(snapshot, ownerId);
             CaptureSelectionDetails(snapshot, ownerId);
+            CaptureAttackPreview(snapshot);
+            CaptureCapturePreview(snapshot, ownerId);
+            if (_selectionKind == WorldInfoSelectionKind.Unit)
+                snapshot.Cargo = _cargoPanel?.Capture(_selectionId);
+            foreach (var group in snapshot.UnitGroups)
+            {
+                var config = _unitConfigs?.GetConfig(group.Id);
+                var icon = config?.ResolveCustomSprite();
+                if (icon != null) _icons[GameplayHtmlIconKeys.Unit(group.Id)] = icon;
+            }
+            if (_publishedIcons == null || _publishedIcons.Count != _icons.Count)
+                _publishedIcons = new System.Collections.ObjectModel.ReadOnlyDictionary<string, Sprite>(
+                    new Dictionary<string, Sprite>(_icons, StringComparer.Ordinal));
+            snapshot.Icons = _publishedIcons;
+            ValidateVisibleIcons(snapshot);
             return snapshot;
+        }
+
+        private void ValidateVisibleIcons(GameplayHtmlSnapshot snapshot)
+        {
+            foreach (var resource in snapshot.Resources)
+                CheckIcon(GameplayHtmlIconKeys.Resource(resource.Id), _icons.ContainsKey(GameplayHtmlIconKeys.Resource(resource.Id)));
+            foreach (var building in snapshot.BuildingOptions)
+                CheckIcon(building.IconGlobalKey, building.HasIcon);
+            foreach (var group in snapshot.UnitGroups)
+                CheckIcon(GameplayHtmlIconKeys.Unit(group.Id), _icons.ContainsKey(GameplayHtmlIconKeys.Unit(group.Id)));
+            foreach (var recipe in snapshot.RecruitmentRecipes)
+                CheckIcon(recipe.IconGlobalKey, recipe.HasIcon);
+        }
+
+        private void CheckIcon(string key, bool available)
+        {
+            if (!available && _reportedMissingIcons.Add(key))
+                Debug.LogWarning($"[GameplayHTML] Missing catalog sprite '{key}'. Check its JSON asset reference.");
         }
 
         public bool IsTurnUiEnabled()
@@ -165,6 +245,196 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             IReadOnlyList<TurnFaction> factions = _turns?.Factions;
             return factions == null || factions.Count > 1;
+        }
+
+        public Task<CombatCommandResult> AttackSelectionAsync()
+        {
+            if (string.IsNullOrWhiteSpace(_commandUnitId))
+                return Task.FromResult(CombatCommandResult.Rejected(string.Empty, _selectionId, "Select one of your units first."));
+            if (_selectionKind == WorldInfoSelectionKind.None || string.IsNullOrWhiteSpace(_selectionId))
+                return Task.FromResult(CombatCommandResult.Rejected(_commandUnitId, string.Empty, "Select a target first."));
+
+            string ownerId = ResolveOwnerId();
+            string targetId = ResolveCombatTargetId(
+                _selectionKind,
+                _selectionId,
+                _selectionPosition);
+            if (!CanInteractWithSelectionThroughFog(ownerId, out string fogReason))
+            {
+                return Task.FromResult(CombatCommandResult.Rejected(
+                    _commandUnitId,
+                    targetId,
+                    fogReason));
+            }
+            if (_roleResolver?.Resolve().Role == LocalGameplayRole.Client)
+            {
+                string remoteReason = null;
+                if (_remoteCombat != null
+                    && _remoteCombat.TryRequestAttack(
+                        ownerId,
+                        _commandUnitId,
+                        targetId,
+                        out remoteReason))
+                {
+                    return Task.FromResult(new CombatCommandResult(
+                        true,
+                        _commandUnitId,
+                        targetId,
+                        0,
+                        false,
+                        "Attack request sent. Waiting for host."));
+                }
+
+                return Task.FromResult(CombatCommandResult.Rejected(
+                    _commandUnitId,
+                    targetId,
+                    string.IsNullOrWhiteSpace(remoteReason)
+                        ? "Combat authority is unavailable."
+                        : remoteReason));
+            }
+
+            if (_combat == null)
+                return Task.FromResult(CombatCommandResult.Rejected(_commandUnitId, targetId, "Combat command service is unavailable."));
+
+            return _combat.ExecuteAsync(ownerId, _commandUnitId, targetId);
+        }
+
+        public SettlementCaptureResult CaptureSelection()
+        {
+            string ownerId = ResolveOwnerId();
+            if (!TryEvaluateCaptureSelection(ownerId, out ConstructionBuildingCombatTarget target, out string reason))
+                return SettlementCaptureResult.Rejected(string.Empty, reason);
+
+            if (_roleResolver?.Resolve().Role == LocalGameplayRole.Client)
+            {
+                string remoteReason = null;
+                if (_remoteSettlementCapture != null
+                    && _remoteSettlementCapture.TryRequestCapture(
+                        ownerId,
+                        _commandUnitId,
+                        target.EntityId,
+                        target.Position,
+                        out remoteReason))
+                {
+                    return new SettlementCaptureResult(
+                        true,
+                        string.Empty,
+                        target.OwnerId,
+                        ownerId,
+                        "Capture request sent. Waiting for host.");
+                }
+
+                return SettlementCaptureResult.Rejected(
+                    string.Empty,
+                    string.IsNullOrWhiteSpace(remoteReason)
+                        ? "Settlement capture authority is unavailable."
+                        : remoteReason);
+            }
+
+            if (_settlementCapture == null)
+                return SettlementCaptureResult.Rejected(string.Empty, "Settlement capture service is unavailable.");
+
+            return _settlementCapture.CaptureSettlementAtPosition(
+                target.Position,
+                target.OwnerId,
+                ownerId,
+                "captured-by-unit");
+        }
+
+        private static string ResolveCombatTargetId(
+            WorldInfoSelectionKind kind,
+            string selectionId,
+            Vector2Int position)
+            => kind == WorldInfoSelectionKind.Building
+                ? $"{selectionId}@{position.x},{position.y}"
+                : selectionId;
+
+        private bool TryEvaluateCaptureSelection(
+            string ownerId,
+            out ConstructionBuildingCombatTarget target,
+            out string reason)
+        {
+            target = default;
+            reason = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(_commandUnitId))
+            {
+                reason = "Select one of your units first.";
+                return false;
+            }
+
+            if (_selectionKind != WorldInfoSelectionKind.Building
+                || string.IsNullOrWhiteSpace(_selectionId))
+            {
+                reason = "Select a settlement center to capture.";
+                return false;
+            }
+
+            if (!string.Equals(_unitOwnership?.GetUnitOwnerId(_commandUnitId), ownerId, StringComparison.Ordinal))
+            {
+                reason = "Only your own unit can capture a settlement.";
+                return false;
+            }
+
+            if (_units == null || !_units.TryGetUnitPosition(_commandUnitId, out Vector2Int unitPosition))
+            {
+                reason = "Selected unit position is unavailable.";
+                return false;
+            }
+
+            string targetId = ResolveCombatTargetId(
+                _selectionKind,
+                _selectionId,
+                _selectionPosition);
+            if (_buildingTargets == null || !_buildingTargets.TryGetCombatTarget(targetId, out target))
+            {
+                reason = "Selected building cannot be captured.";
+                return false;
+            }
+
+            if (string.Equals(target.OwnerId, ownerId, StringComparison.Ordinal))
+            {
+                reason = "You already control this settlement.";
+                return false;
+            }
+
+            if (!CanInteractWithSelectionThroughFog(ownerId, out string fogReason))
+            {
+                reason = fogReason;
+                return false;
+            }
+
+            BuildingDefinition definition = _buildings?.GetById(target.BuildingId);
+            if (!BuildingDefinitionCapabilities.IsCastle(definition)
+                && !BuildingDefinitionCapabilities.IsTownHall(definition))
+            {
+                reason = "Only castles and town halls can be captured.";
+                return false;
+            }
+
+            int dx = Math.Abs(unitPosition.x - target.Position.x);
+            int dy = Math.Abs(unitPosition.y - target.Position.y);
+            if (Math.Max(dx, dy) > 1)
+            {
+                reason = "Move a unit next to the settlement center first.";
+                return false;
+            }
+
+            if (_health == null || !_health.TryGet(target.EntityId, out IHealth health))
+            {
+                reason = "Settlement defenses are unavailable.";
+                return false;
+            }
+
+            int captureThreshold = Math.Max(1, Mathf.CeilToInt(health.MaxHp * 0.25f));
+            if (health.CurrentHp > captureThreshold)
+            {
+                reason = $"Reduce defenses to {captureThreshold} HP or less before capture.";
+                return false;
+            }
+
+            reason = "Settlement center can be captured.";
+            return true;
         }
 
         private string ResolveOwnerId()
@@ -224,6 +494,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             return definitions
                 .Where(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id))
+                .Where(definition => !BuildingDefinitionCapabilities.IsCastle(definition)
+                    || (_bootstrap != null && _bootstrap.RequiresInitialCastle(ownerId, out _)))
                 .OrderBy(definition => definition.Category)
                 .ThenBy(definition => definition.DisplayName, StringComparer.Ordinal)
                 .Select(definition =>
@@ -363,6 +635,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
 
             var facts = new List<GameplayFactSnapshot>();
+            bool ownedByLocal = IsSelectionOwnedByOwner(ownerId);
+            if (!IsSelectionKnownThroughFog(ownerId, ownedByLocal))
+            {
+                snapshot.SelectionOwnedByLocalPlayer = false;
+                snapshot.SelectionTitle = "Unknown contact";
+                snapshot.SelectionSubtitle = "This tile is outside your kingdom's known view.";
+                facts.Add(new GameplayFactSnapshot(
+                    "Visibility",
+                    "Unexplored",
+                    "Scout this area to identify the target"));
+                snapshot.SelectionFacts = facts.ToArray();
+                return;
+            }
+
             switch (_selectionKind)
             {
                 case WorldInfoSelectionKind.Building:
@@ -397,6 +683,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 case WorldInfoSelectionKind.Unit:
                 {
                     string typeId = _units?.GetUnitTypeId(_selectionId);
+                    if (_units != null && _units.TryGetUnitPosition(_selectionId, out var currentPosition))
+                        snapshot.SelectionPosition = currentPosition;
                     UnitClassConfig config = string.IsNullOrWhiteSpace(typeId)
                         ? null
                         : _unitConfigs?.GetConfig(typeId);
@@ -408,6 +696,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         unitOwner?.Trim(),
                         ownerId,
                         StringComparison.Ordinal);
+                    if (snapshot.SelectionOwnedByLocalPlayer)
+                        _commandUnitId = _selectionId;
                     snapshot.SelectionSubtitle = config == null
                         ? "Selected unit"
                         : $"{config.Role} / {config.CombatType}";
@@ -452,6 +742,157 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (queueFull)
                 return $"Recruitment queue is full ({snapshot.RecruitmentQueueCapacity}/{snapshot.RecruitmentQueueCapacity}).";
             return string.Empty;
+        }
+
+        private void CaptureAttackPreview(GameplayHtmlSnapshot snapshot)
+        {
+            snapshot.AttackSourceId = _commandUnitId ?? string.Empty;
+            snapshot.CanAttackSelection = false;
+            snapshot.AttackPreview = string.Empty;
+            snapshot.AttackUnavailableReason = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(snapshot.AttackSourceId)
+                || string.IsNullOrWhiteSpace(snapshot.SelectionId)
+                || snapshot.SelectionOwnedByLocalPlayer
+                || !snapshot.CanIssueLocalCommands)
+            {
+                return;
+            }
+
+            if (_combat == null)
+            {
+                snapshot.AttackUnavailableReason = "Combat command service is unavailable.";
+                return;
+            }
+
+            if (!CanInteractWithSelectionThroughFog(snapshot.OwnerId, out string fogReason))
+            {
+                snapshot.AttackUnavailableReason = fogReason;
+                return;
+            }
+
+            if (_combat.TryPreview(
+                    snapshot.AttackSourceId,
+                    ResolveCombatTargetId(snapshot),
+                    out CombatCommandPreview preview,
+                    out string reason))
+            {
+                snapshot.CanAttackSelection = true;
+                snapshot.AttackPreview = preview.TargetWouldDie
+                    ? $"{preview.ExpectedDamage} damage, target will fall"
+                    : $"{preview.ExpectedDamage} damage";
+                return;
+            }
+
+            snapshot.AttackUnavailableReason = string.IsNullOrWhiteSpace(reason)
+                ? "Selected target cannot be attacked."
+                : reason;
+        }
+
+        private void CaptureCapturePreview(GameplayHtmlSnapshot snapshot, string ownerId)
+        {
+            snapshot.CanCaptureSelection = false;
+            snapshot.CapturePreview = string.Empty;
+            snapshot.CaptureUnavailableReason = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(snapshot.AttackSourceId)
+                || !string.Equals(snapshot.SelectionKind, WorldInfoSelectionKind.Building.ToString(), StringComparison.Ordinal)
+                || snapshot.SelectionOwnedByLocalPlayer
+                || !snapshot.CanIssueLocalCommands)
+            {
+                return;
+            }
+
+            if (_roleResolver?.Resolve().Role == LocalGameplayRole.Client)
+            {
+                if (_remoteSettlementCapture == null)
+                {
+                    snapshot.CaptureUnavailableReason = "Settlement capture authority is unavailable.";
+                    return;
+                }
+            }
+            else if (_settlementCapture == null)
+            {
+                snapshot.CaptureUnavailableReason = "Settlement capture service is unavailable.";
+                return;
+            }
+
+            if (TryEvaluateCaptureSelection(ownerId, out _, out string reason))
+            {
+                snapshot.CanCaptureSelection = true;
+                snapshot.CapturePreview = "Settlement center can be captured";
+                return;
+            }
+
+            snapshot.CaptureUnavailableReason = string.IsNullOrWhiteSpace(reason)
+                ? "Selected building cannot be captured."
+                : reason;
+        }
+
+        private static string ResolveCombatTargetId(GameplayHtmlSnapshot snapshot)
+            => ResolveCombatTargetId(
+                string.Equals(snapshot.SelectionKind, WorldInfoSelectionKind.Building.ToString(), StringComparison.Ordinal)
+                    ? WorldInfoSelectionKind.Building
+                    : WorldInfoSelectionKind.Unit,
+                snapshot.SelectionId,
+                snapshot.SelectionPosition);
+
+        private bool CanInteractWithSelectionThroughFog(string ownerId, out string reason)
+        {
+            reason = string.Empty;
+            if (_ownerFog == null || IsSelectionOwnedByOwner(ownerId))
+                return true;
+
+            if (_ownerFog.IsVisible(ownerId, _selectionPosition))
+                return true;
+
+            reason = "Target is outside your current vision.";
+            return false;
+        }
+
+        private bool IsSelectionKnownThroughFog(string ownerId, bool ownedByLocal)
+        {
+            if (_ownerFog == null || ownedByLocal)
+                return true;
+
+            return _selectionKind switch
+            {
+                WorldInfoSelectionKind.Unit => _ownerFog.IsVisible(ownerId, _selectionPosition),
+                WorldInfoSelectionKind.Building => _ownerFog.IsExplored(ownerId, _selectionPosition),
+                WorldInfoSelectionKind.MapObject => _ownerFog.IsExplored(ownerId, _selectionPosition),
+                _ => true,
+            };
+        }
+
+        private bool IsSelectionOwnedByOwner(string ownerId)
+        {
+            if (string.IsNullOrWhiteSpace(ownerId)
+                || _selectionKind == WorldInfoSelectionKind.None
+                || string.IsNullOrWhiteSpace(_selectionId))
+            {
+                return false;
+            }
+
+            string normalizedOwner = ownerId.Trim();
+            if (_selectionKind == WorldInfoSelectionKind.Unit)
+            {
+                return string.Equals(
+                    _unitOwnership?.GetUnitOwnerId(_selectionId)?.Trim(),
+                    normalizedOwner,
+                    StringComparison.Ordinal);
+            }
+
+            if (_selectionKind == WorldInfoSelectionKind.Building
+                && _construction is IConstructionBuildingOwnershipQuery ownership
+                && ownership.TryGetPlacedBuildingOwner(_selectionPosition, out string buildingOwner))
+            {
+                return string.Equals(
+                    buildingOwner?.Trim(),
+                    normalizedOwner,
+                    StringComparison.Ordinal);
+            }
+
+            return false;
         }
 
         private Sprite ResolveBuildingIcon(BuildingDefinition building)
@@ -639,7 +1080,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     item.OwnerId,
                     item.CompletedTurns,
                     item.IsActive,
-                    item.IsLocal);
+                    item.IsLocal,
+                    item.IsEliminated);
             }
             return result;
         }
@@ -701,26 +1143,35 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     internal sealed class GameplayHtmlBridge
     {
         private readonly GameplayHtmlState _state;
+        private readonly GameplayHudReadModel _readModel;
         private readonly LazyInject<IUiActionRouter> _actions;
         private readonly IConstructionSessionCommands _construction;
         private readonly ILocalGameplayRoleResolver _roles;
         private readonly IGameplayCameraFocusService _cameraFocus;
         private readonly IExitMatchCoordinator _exit;
+        private readonly IGameplayProgressClock _progressClock;
+        private readonly GameplayCargoPanel _cargo;
 
         public GameplayHtmlBridge(
             GameplayHtmlState state,
+            GameplayHudReadModel readModel,
             LazyInject<IUiActionRouter> actions,
             IConstructionSessionCommands construction,
             ILocalGameplayRoleResolver roles,
             IGameplayCameraFocusService cameraFocus,
-            IExitMatchCoordinator exit)
+            IExitMatchCoordinator exit,
+            IGameplayProgressClock progressClock = null,
+            GameplayCargoPanel cargo = null)
         {
             _state = state;
+            _readModel = readModel;
             _actions = actions;
             _construction = construction;
             _roles = roles;
             _cameraFocus = cameraFocus;
             _exit = exit;
+            _progressClock = progressClock;
+            _cargo = cargo;
         }
 
         public void Kingdom() => OpenOverlayPanel(GameplayHtmlPanel.Kingdom);
@@ -817,6 +1268,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public void EndTurn() => SetResult(
             Execute(UiActionIds.EndTurn, "GameplayHTML"),
             "Turn ended.");
+        public void SandboxSpeed(object value)
+        {
+            if (_progressClock == null || !_progressClock.IsRealtime)
+                return;
+
+            float speed = ToFloat(value);
+            _progressClock.SetSpeed(speed);
+            _state.MarkDirty();
+        }
         public void Pause() => Execute(UiActionIds.Pause.Open, "GameplayHTML");
         public void Resume() => Execute(UiActionIds.Pause.Close, "GameplayHTML");
         public void Notifications() => OpenOverlayPanel(GameplayHtmlPanel.Notifications);
@@ -836,6 +1296,62 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public void ShowSelectionDetails() => _state.SetSelectionTab(GameplaySelectionTab.Details);
         public void ShowRecruitment() => _state.SetSelectionTab(GameplaySelectionTab.Recruit);
         public void ShowRecruitmentQueue() => _state.SetSelectionTab(GameplaySelectionTab.Queue);
+        public void ShowCargo() => _state.SetSelectionTab(GameplaySelectionTab.Cargo);
+        public void ShowCargoRoute() => _state.SetSelectionTab(GameplaySelectionTab.Route);
+        public void SetCargoOperation(object value) => _cargo?.SetOperation(ToInt(value));
+        public void SetCargoWarehouse(object value) => _cargo?.SetWarehouse(ToInt(value) - 1);
+        public void SetCargoTarget(object value) => _cargo?.SetTargetWarehouse(ToInt(value) - 1);
+        public void SetCargoResource(object value) => _cargo?.SetResource(ToInt(value) - 1);
+        public void SetCargoRepeat(object value) => _cargo?.SetRepeat(ToBool(value));
+        public void SetCargoAmount(object value) => _cargo?.SetAmount(value);
+        public void TransferCargo()
+        {
+            var result = Execute(UiActionIds.Logistics.Transfer, "GameplayHTML/Cargo");
+            if (result.Status != UiActionStatus.Performed) SetResult(result, string.Empty);
+        }
+        public void StartCargoRoute()
+        {
+            var result = Execute(UiActionIds.Logistics.StartRoute, "GameplayHTML/Route");
+            if (result.Status != UiActionStatus.Performed) SetResult(result, string.Empty);
+        }
+        public void StopCargoRoute()
+        {
+            var result = Execute(UiActionIds.Logistics.StopRoute, "GameplayHTML/Route");
+            if (result.Status != UiActionStatus.Performed) SetResult(result, string.Empty);
+        }
+        public void FoundSettlement()
+        {
+            var result = Execute(UiActionIds.Logistics.FoundSettlement, "GameplayHTML/Cargo");
+            if (result.Status != UiActionStatus.Performed) SetResult(result, string.Empty);
+        }
+
+        public async void AttackSelection()
+        {
+            try
+            {
+                CombatCommandResult result = await _readModel.AttackSelectionAsync();
+                _state.SetFeedback(result.Succeeded
+                    ? result.DamageApplied > 0
+                        ? $"Attack dealt {result.DamageApplied} damage."
+                        : string.IsNullOrWhiteSpace(result.Reason)
+                            ? "Attack request sent."
+                            : result.Reason
+                    : string.IsNullOrWhiteSpace(result.Reason)
+                        ? "Attack was rejected."
+                        : result.Reason);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"[GameplayHTML] Attack failed: {exception.Message}");
+                _state.SetFeedback(exception.Message);
+            }
+        }
+
+        public void CaptureSelection()
+        {
+            UiActionResult result = Execute(UiActionIds.Combat.CaptureSelection, "GameplayHTML/Combat");
+            SetResult(result, "Settlement captured.");
+        }
 
         public void Recruit(object value)
         {
@@ -909,7 +1425,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private void SetResult(UiActionResult result, string success)
         {
             _state.SetFeedback(result.Status == UiActionStatus.Performed
-                ? success
+                ? string.IsNullOrWhiteSpace(result.Details)
+                    ? success
+                    : result.Details
                 : string.IsNullOrWhiteSpace(result.Details)
                     ? result.Reason.ToString()
                     : result.Details);
@@ -927,6 +1445,33 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 ? parsed
                 : 0;
         }
+
+        private static float ToFloat(object value)
+        {
+            if (value == null)
+                return 1f;
+            if (value is float single)
+                return single;
+            if (value is double number)
+                return (float)number;
+            return float.TryParse(value.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed)
+                ? parsed
+                : 1f;
+        }
+
+        private static bool ToBool(object value)
+        {
+            if (value == null)
+                return false;
+            if (value is bool boolean)
+                return boolean;
+            if (value is int integer)
+                return integer != 0;
+            string text = value.ToString();
+            return string.Equals(text, "true", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(text, "on", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(text, "1", StringComparison.Ordinal);
+        }
     }
 
     internal sealed class GameplayHtmlPresenter :
@@ -939,6 +1484,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             UiActionIds.Diagnostics.PanelClose,
             UiActionIds.Recruitment.Enqueue,
+            UiActionIds.Combat.CaptureSelection,
             UiActionIds.EndTurn,
             UiActionIds.ClearSelection,
         };
@@ -954,11 +1500,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly LazyInject<IUiActionRouter> _actions;
         private readonly IConstructionSessionCommands _construction;
         private readonly IConstructionBootstrapQuery _bootstrap;
+        private readonly ILocalGameplayRoleResolver _roles;
+        private readonly IGameplayProgressClock _progressClock;
+        private readonly ICombatRemoteCommandRequester _remoteCombat;
+        private readonly ISettlementCaptureRemoteCommandRequester _remoteSettlementCapture;
+        private readonly IGameResultStateStore _gameResult;
+        private readonly ITurnRemoteCommandRequester _remoteTurns;
 
         private GameplayHtmlAnchor _anchor;
         private IDisposable _panelContext;
         private IDisposable _initialCastleContext;
-        private int _dirtyFrame = -1;
+        private int _lastRenderFrame = -1;
         private string _viewportClass = string.Empty;
         private bool _initialCastleModeActive;
 
@@ -974,7 +1526,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] ILocalGameplayRoleResolver roles = null,
             [InjectOptional] IGameplayCameraFocusService cameraFocus = null,
             [InjectOptional] IExitMatchCoordinator exit = null,
-            [InjectOptional] GameplayHtmlAnchor[] anchors = null)
+            [InjectOptional] IGameplayProgressClock progressClock = null,
+            [InjectOptional] GameplayHtmlAnchor[] anchors = null,
+            [InjectOptional] GameplayCargoPanel cargo = null,
+            [InjectOptional] ICombatRemoteCommandRequester remoteCombat = null,
+            [InjectOptional] ISettlementCaptureRemoteCommandRequester remoteSettlementCapture = null,
+            [InjectOptional] IGameResultStateStore gameResult = null,
+            [InjectOptional] ITurnRemoteCommandRequester remoteTurns = null)
         {
             _signals = signals;
             _host = host;
@@ -986,7 +1544,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _actions = actions;
             _construction = construction;
             _bootstrap = construction as IConstructionBootstrapQuery;
-            _bridge = new GameplayHtmlBridge(state, actions, construction, roles, cameraFocus, exit);
+            _roles = roles;
+            _progressClock = progressClock;
+            _remoteCombat = remoteCombat;
+            _remoteSettlementCapture = remoteSettlementCapture;
+            _gameResult = gameResult;
+            _remoteTurns = remoteTurns;
+            _bridge = new GameplayHtmlBridge(state, readModel, actions, construction, roles, cameraFocus, exit, progressClock, cargo);
         }
 
         public IReadOnlyCollection<UiActionId> ActionIds => HandledActions;
@@ -1007,7 +1571,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             GameplayNotificationStream.Published += OnNotificationPublished;
             if (_turns != null)
                 _turns.StateChanged += MarkDirty;
+            if (_progressClock != null)
+                _progressClock.Progressed += OnProgressed;
+            if (_remoteCombat != null)
+                _remoteCombat.AttackRejected += OnRemoteAttackRejected;
+            if (_remoteSettlementCapture != null)
+                _remoteSettlementCapture.CaptureRejected += OnRemoteCaptureRejected;
+            if (_remoteTurns != null)
+                _remoteTurns.EndTurnResolved += OnRemoteEndTurnResolved;
             SubscribeSignals();
+            if (_gameResult != null)
+                _state.SetGameResult(_gameResult.IsGameOver, _gameResult.WinnerId);
             _panelContext = _contexts?.Push(new UiContextRegistration(
                 "GameplayHTML/Panel",
                 UiContextLayer.Panel,
@@ -1043,7 +1617,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!string.Equals(viewport, _viewportClass, StringComparison.Ordinal))
                 _state.MarkDirty();
 
-            if (_dirtyFrame == Time.frameCount)
+            if (_lastRenderFrame == Time.frameCount)
                 return;
             Render(false);
         }
@@ -1054,6 +1628,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             GameplayNotificationStream.Published -= OnNotificationPublished;
             if (_turns != null)
                 _turns.StateChanged -= MarkDirty;
+            if (_progressClock != null)
+                _progressClock.Progressed -= OnProgressed;
+            if (_remoteCombat != null)
+                _remoteCombat.AttackRejected -= OnRemoteAttackRejected;
+            if (_remoteSettlementCapture != null)
+                _remoteSettlementCapture.CaptureRejected -= OnRemoteCaptureRejected;
+            if (_remoteTurns != null)
+                _remoteTurns.EndTurnResolved -= OnRemoteEndTurnResolved;
             UnsubscribeSignals();
             _panelContext?.Dispose();
             _panelContext = null;
@@ -1062,10 +1644,29 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _host?.Dispose();
         }
 
+        private void OnProgressed(GameplayProgressTick _)
+            => MarkDirty();
+
         public UiActionResult Execute(in UiActionRequest request)
         {
             if (request.ActionId == UiActionIds.Recruitment.Enqueue)
                 return _readModel.TryRecruitSelected(request.TargetId);
+
+            if (request.ActionId == UiActionIds.Combat.CaptureSelection)
+            {
+                SettlementCaptureResult result = _readModel.CaptureSelection();
+                return result.Succeeded
+                    ? new UiActionResult(
+                        UiActionStatus.Performed,
+                        details: string.IsNullOrWhiteSpace(result.Reason)
+                            ? "Settlement captured."
+                            : result.Reason)
+                    : UiActionResult.Rejected(
+                        UiActionReason.ActionUnavailable,
+                        string.IsNullOrWhiteSpace(result.Reason)
+                            ? "Settlement capture was rejected."
+                            : result.Reason);
+            }
 
             if (request.ActionId == UiActionIds.EndTurn)
             {
@@ -1074,6 +1675,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                 if (_turns == null || string.IsNullOrWhiteSpace(_turns.LocalOwnerId))
                     return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "Local turn owner is unavailable.");
+                if (_roles?.Resolve().Role == LocalGameplayRole.Client)
+                {
+                    if (_remoteTurns == null)
+                        return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "Turn transport is unavailable.");
+                    return _remoteTurns.TryRequestEndTurn(out string remoteReason)
+                        ? new UiActionResult(UiActionStatus.Performed, details: "Waiting for the host to confirm the turn.")
+                        : UiActionResult.Rejected(UiActionReason.ActionUnavailable, remoteReason);
+                }
                 return _turns.TryEndTurn(_turns.LocalOwnerId, out string reason)
                     ? UiActionResult.Performed()
                     : UiActionResult.Rejected(
@@ -1107,9 +1716,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (force)
                 _state.ConsumeDirty();
 
-            _dirtyFrame = Time.frameCount;
+            _lastRenderFrame = Time.frameCount;
             _viewportClass = _anchor.ViewportClass;
             GameplayHtmlSnapshot snapshot = _readModel.Capture(_state);
+            snapshot.EndTurnPending = _remoteTurns?.IsEndTurnPending ?? false;
             var globals = new Dictionary<string, object>
             {
                 ["gameplay"] = _bridge,
@@ -1117,6 +1727,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_anchor.FontAsset != null)
                 globals["moyvaFont"] = _anchor.FontAsset;
             AddIconGlobals(globals, snapshot);
+            if (_anchor.NotificationsIcon != null) globals["gameplay_notifications_icon"] = _anchor.NotificationsIcon;
+            if (_anchor.MenuIcon != null) globals["gameplay_menu_icon"] = _anchor.MenuIcon;
 
             UnityHtmlMountResult result = _host.Mount(
                 _anchor.MountRoot,
@@ -1136,6 +1748,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             if (globals == null || snapshot == null)
                 return;
+            foreach (var icon in snapshot.Icons)
+                globals[icon.Key] = icon.Value;
 
             for (int index = 0; index < snapshot.BuildingOptions.Length; index++)
             {
@@ -1206,6 +1820,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     castleBuildingId,
                     StringComparison.Ordinal))
             {
+                foreach (string pendingId in _construction.GetPendingPlacements().Values)
+                    if (string.Equals(pendingId, castleBuildingId, StringComparison.Ordinal)) return;
                 _actions.Value.Execute(
                     UiActionIds.Construction.SelectBuilding,
                     UiActionSource.Programmatic,
@@ -1216,7 +1832,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void MarkDirty()
         {
-            _dirtyFrame = Time.frameCount;
             if (!_state.Dirty)
                 _state.MarkDirty();
         }
@@ -1231,6 +1846,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.Subscribe<EconomyTickCompletedSignal>(OnGameplayChanged);
             _signals.Subscribe<SettlementCreatedSignal>(OnGameplayChanged);
             _signals.Subscribe<SettlementDeactivatedSignal>(OnGameplayChanged);
+            _signals.Subscribe<SettlementCapturedSignal>(OnGameplayChanged);
             _signals.Subscribe<SettlementResourceChangedSignal>(OnGameplayChanged);
             _signals.Subscribe<UnitCreatedSignal>(OnGameplayChanged);
             _signals.Subscribe<UnitDestroyedSignal>(OnGameplayChanged);
@@ -1239,6 +1855,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.Subscribe<UnitRecruitmentDeployedSignal>(OnGameplayChanged);
             _signals.Subscribe<WorldInfoSelectionChangedSignal>(OnSelectionChanged);
             _signals.Subscribe<GamePausedSignal>(OnPauseChanged);
+            _signals.Subscribe<GameEndedSignal>(OnGameEnded);
+            _signals.Subscribe<GameStartedSignal>(OnGameStarted);
         }
 
         private void UnsubscribeSignals()
@@ -1251,6 +1869,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.TryUnsubscribe<EconomyTickCompletedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<SettlementCreatedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<SettlementDeactivatedSignal>(OnGameplayChanged);
+            _signals.TryUnsubscribe<SettlementCapturedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<SettlementResourceChangedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<UnitCreatedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<UnitDestroyedSignal>(OnGameplayChanged);
@@ -1259,6 +1878,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.TryUnsubscribe<UnitRecruitmentDeployedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<WorldInfoSelectionChangedSignal>(OnSelectionChanged);
             _signals.TryUnsubscribe<GamePausedSignal>(OnPauseChanged);
+            _signals.TryUnsubscribe<GameEndedSignal>(OnGameEnded);
+            _signals.TryUnsubscribe<GameStartedSignal>(OnGameStarted);
         }
 
         private void OnPreviewChanged(BuildingPreviewChangedSignal signal)
@@ -1275,8 +1896,24 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         }
 
         private void OnPauseChanged(GamePausedSignal signal) => _state.SetPaused(signal.IsPaused);
+        private void OnGameEnded(GameEndedSignal signal) => _state.SetGameResult(true, signal.WinnerId);
+        private void OnGameStarted(GameStartedSignal _) => _state.SetGameResult(false, string.Empty);
+        private void OnRemoteEndTurnResolved(bool accepted, string reason)
+            => _state.SetFeedback(reason);
         private void OnNotificationPublished(GameplayNotificationRequest request)
             => _state.AddNotification(request.Message, request.Kind.ToString());
+        private void OnRemoteAttackRejected(CombatRemoteCommandResult result)
+            => _state.AddNotification(
+                string.IsNullOrWhiteSpace(result.Reason)
+                    ? "Attack was rejected by host."
+                    : result.Reason,
+                GameplayNotificationKind.Error.ToString());
+        private void OnRemoteCaptureRejected(SettlementCaptureRemoteResult result)
+            => _state.AddNotification(
+                string.IsNullOrWhiteSpace(result.Reason)
+                    ? "Settlement capture was rejected by host."
+                    : result.Reason,
+                GameplayNotificationKind.Error.ToString());
         private void OnGameplayChanged(BuildingPlacedSignal _) => _state.MarkDirty();
         private void OnGameplayChanged(BuildingCancelledSignal _) => _state.MarkDirty();
         private void OnGameplayChanged(BuildingSelectionChangedSignal _) => _state.MarkDirty();
@@ -1284,12 +1921,39 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private void OnGameplayChanged(EconomyTickCompletedSignal _) => _state.MarkDirty();
         private void OnGameplayChanged(SettlementCreatedSignal _) => _state.MarkDirty();
         private void OnGameplayChanged(SettlementDeactivatedSignal _) => _state.MarkDirty();
+        private void OnGameplayChanged(SettlementCapturedSignal signal)
+        {
+            string ownerId = ResolveLocalOwnerId();
+            if (string.Equals(signal.NewOwnerId, ownerId, StringComparison.Ordinal))
+            {
+                _state.AddNotification("Settlement captured.", GameplayNotificationKind.Success.ToString());
+                return;
+            }
+
+            if (string.Equals(signal.PreviousOwnerId, ownerId, StringComparison.Ordinal))
+            {
+                _state.AddNotification("A settlement was captured by another kingdom.", GameplayNotificationKind.Warning.ToString());
+                return;
+            }
+
+            _state.AddNotification("A settlement changed hands.", GameplayNotificationKind.Info.ToString());
+        }
         private void OnGameplayChanged(SettlementResourceChangedSignal _) => _state.MarkDirty();
         private void OnGameplayChanged(UnitCreatedSignal _) => _state.MarkDirty();
         private void OnGameplayChanged(UnitDestroyedSignal _) => _state.MarkDirty();
         private void OnGameplayChanged(UnitRecruitmentQueueChangedSignal _) => _state.MarkDirty();
         private void OnGameplayChanged(UnitRecruitmentReadySignal _) => _state.MarkDirty();
         private void OnGameplayChanged(UnitRecruitmentDeployedSignal _) => _state.MarkDirty();
+
+        private string ResolveLocalOwnerId()
+        {
+            string ownerId = _turns?.LocalOwnerId;
+            if (string.IsNullOrWhiteSpace(ownerId))
+                ownerId = _roles?.Resolve().PlayerId;
+            if (string.IsNullOrWhiteSpace(ownerId))
+                ownerId = _construction?.GetActiveOwner();
+            return string.IsNullOrWhiteSpace(ownerId) ? "player_0" : ownerId.Trim();
+        }
     }
 
     internal sealed class GameplayCameraFocusService : IGameplayCameraFocusService

@@ -9,6 +9,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed partial class ConstructionService
     {
+        private int _pendingViewVersion = -1;
+        private IReadOnlyDictionary<Vector2Int, string> _pendingView;
         public bool TryPreviewAt(Vector2Int position)
         {
             if (!CanActiveOwnerMutate(
@@ -147,6 +149,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public IReadOnlyDictionary<Vector2Int, string> GetPendingPlacements()
         {
+            if (_pendingView != null && _pendingViewVersion == _pendingPlacementsVersion)
+                return _pendingView;
             var snapshot = new Dictionary<Vector2Int, string>(_pendingPlacements.Count);
             for (int index = 0; index < _pendingPlacements.Count; index++)
             {
@@ -157,7 +161,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 snapshot[placement.Position] = placement.BuildingId;
             }
 
-            return new ReadOnlyDictionary<Vector2Int, string>(snapshot);
+            _pendingViewVersion = _pendingPlacementsVersion;
+            _pendingView = new ReadOnlyDictionary<Vector2Int, string>(snapshot);
+            return _pendingView;
         }
 
         public bool TryGetPendingPlacementIntent(

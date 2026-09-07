@@ -182,9 +182,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (relocationSource.HasValue)
             {
                 _buildingFogEffects.Remove(
-                    relocationSource.Value);
+                    relocationSource.Value,
+                    normalizedOwnerId);
             }
-            _buildingFogEffects.ApplyOnPlaced(buildingId, position);
+            _buildingFogEffects.ApplyOnPlaced(
+                buildingId,
+                position,
+                normalizedOwnerId);
             return true;
         }
 

@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly SignalBus _signals;
         private readonly IBuildingRegistry _registry;
         private readonly ITurnService _turns;
+        private readonly IGameplayProgressClock _progressClock;
         private readonly IConstructionSaveSnapshotSource _placementSnapshots;
         private readonly ConstructionLifecycleStateMachine _state = new();
 
@@ -32,11 +33,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             SignalBus signals,
             IBuildingRegistry registry,
             ITurnService turns,
+            [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] IConstructionSaveSnapshotSource placementSnapshots = null)
         {
             _signals = signals;
             _registry = registry;
             _turns = turns;
+            _progressClock = progressClock;
             _placementSnapshots = placementSnapshots;
         }
 
@@ -46,12 +49,18 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             _signals.Subscribe<BuildingPlacedSignal>(OnPlaced);
             _signals.Subscribe<BuildingDemolishedSignal>(OnDemolished);
+            _signals.Subscribe<BuildingOwnershipTransferredSignal>(OnBuildingOwnershipTransferred);
+            if (_progressClock != null)
+                _progressClock.Progressed += OnProgressed;
         }
 
         public void Dispose()
         {
             _signals.TryUnsubscribe<BuildingPlacedSignal>(OnPlaced);
             _signals.TryUnsubscribe<BuildingDemolishedSignal>(OnDemolished);
+            _signals.TryUnsubscribe<BuildingOwnershipTransferredSignal>(OnBuildingOwnershipTransferred);
+            if (_progressClock != null)
+                _progressClock.Progressed -= OnProgressed;
         }
 
         public bool IsOperational(Vector2Int position)
@@ -68,11 +77,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void OnTurnStarted(TurnContext context)
         {
-            IReadOnlyList<ConstructionLifecycleStateMachine.OperationalTransition>
-                transitions = _state.AdvanceOwnerTurn(
-                    context.Faction.OwnerId,
-                    context.GlobalTurn);
-            PublishOperational(transitions);
+            AdvanceOwnerProgress(context.Faction.OwnerId, context.GlobalTurn);
         }
 
         public void OnTurnEnding(TurnContext context) { }
@@ -83,7 +88,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             BuildingDefinition definition =
                 _registry?.GetById(signal.BuildingId);
             int required = Math.Max(0, definition?.BuildTurns ?? 0);
-            long globalTurn = Math.Max(0L, _turns?.GlobalTurn ?? 0L);
+            long globalTurn = ResolvePlacementSequence();
             Vector2Int? relocationSource =
                 signal.HasRelocationSource
                 && signal.RelocationSourcePosition != signal.Position
@@ -103,9 +108,49 @@ namespace Kruty1918.Moyva.Construction.Runtime
             PublishOperational(operational);
         }
 
+        private void OnProgressed(GameplayProgressTick tick)
+        {
+            if (!tick.IsRealtime)
+                return;
+
+            AdvanceOwnerProgress(tick.OwnerId, tick.Sequence);
+        }
+
+        private void AdvanceOwnerProgress(string ownerId, long sequence)
+        {
+            IReadOnlyList<ConstructionLifecycleStateMachine.OperationalTransition>
+                transitions = _state.AdvanceOwnerTurn(
+                    ownerId,
+                    sequence);
+            PublishOperational(transitions);
+        }
+
+        private long ResolvePlacementSequence()
+        {
+            if (_progressClock != null && _progressClock.IsRealtime)
+                return Math.Max(1L, _progressClock.CurrentSequence);
+
+            return Math.Max(0L, _turns?.GlobalTurn ?? 0L);
+        }
+
         private void OnDemolished(BuildingDemolishedSignal signal)
         {
             _state.Remove(signal.Position);
+        }
+
+        private void OnBuildingOwnershipTransferred(
+            BuildingOwnershipTransferredSignal signal)
+        {
+            if (!_state.TryTransferOwner(
+                    signal.Position,
+                    signal.PreviousOwnerId,
+                    signal.NewOwnerId,
+                    out string reason)
+                && Debug.isDebugBuild)
+            {
+                Debug.LogWarning(
+                    $"[ConstructionLifecycle] Could not transfer owner for '{signal.BuildingId}' at {signal.Position}: {reason}");
+            }
         }
 
         public void OnSave(ISaveContext context)

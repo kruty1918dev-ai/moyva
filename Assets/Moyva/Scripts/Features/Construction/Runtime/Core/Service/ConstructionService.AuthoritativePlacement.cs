@@ -75,7 +75,46 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 authorizedOwnerId,
                 intent,
                 ConstructionPlacementAttemptSource.NetworkRequest,
-                includePendingPlacements: false);
+                includePendingPlacements: false,
+                consumeResources: true);
+        }
+
+        public bool TryPlacePrepaidAuthoritatively(
+            string buildingId,
+            Vector2Int position,
+            string ownerId,
+            ConstructionPlacementCommitIntent intent)
+        {
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                LogPlacementCommitRejected(
+                    buildingId,
+                    position,
+                    "Prepaid placement owner is empty.");
+                return false;
+            }
+
+            string normalizedOwnerId = ownerId.Trim();
+            if (!TryAuthorizeConstructionMutation(
+                    normalizedOwnerId,
+                    "prepaid construction placement",
+                    requireLocalOwner: false,
+                    out string authorizedOwnerId,
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                LogPlacementCommitRejected(buildingId, position, turnReason);
+                return false;
+            }
+
+            return TryCommitAuthoritativePlacement(
+                buildingId,
+                position,
+                authorizedOwnerId,
+                intent,
+                ConstructionPlacementAttemptSource.DirectPlace,
+                includePendingPlacements: false,
+                consumeResources: false);
         }
 
         private bool TryCommitAuthoritativePlacement(
@@ -84,7 +123,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string placedByFactionId,
             ConstructionPlacementCommitIntent intent,
             ConstructionPlacementAttemptSource attemptSource,
-            bool includePendingPlacements)
+            bool includePendingPlacements,
+            bool consumeResources = true)
         {
             if (string.IsNullOrWhiteSpace(buildingId))
             {
@@ -147,7 +187,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     buildingId,
                     position,
                     ignoredOccupiedPosition: relocationSource,
-                    includeResources: !isRelocation,
+                    includeResources: consumeResources && !isRelocation,
                     includeDetails: true,
                     ownerId: ownerId,
                     includePendingPlacements:
@@ -221,7 +261,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
                 targetRegistered = true;
 
-                if (!isRelocation
+                if (consumeResources
+                    && !isRelocation
                     && !TryConsumeConstructionResources(
                         position,
                         buildingId,
@@ -287,9 +328,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (isRelocation)
             {
                 _buildingFogEffects.Remove(
-                    relocationSource.Value);
+                    relocationSource.Value,
+                    ownerId);
             }
-            _buildingFogEffects.ApplyOnPlaced(buildingId, position);
+            _buildingFogEffects.ApplyOnPlaced(
+                buildingId,
+                position,
+                ownerId);
             RecordConstructionAction(
                 ownerId,
                 isRelocation ? "building-relocate" : "building-place");

@@ -30,8 +30,7 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 .NonLazy();
 
             // Явний порядок Initialize() — менше число = раніше.
-            Container.Bind<IGameStateService>()
-                .To<GameStateService>()
+            Container.BindInterfacesAndSelfTo<GameStateService>()
                 .AsSingle();
 
             Container.Bind<IExitMatchSceneLoader>()
@@ -41,6 +40,10 @@ namespace Kruty1918.Moyva.GameMode.Runtime
             Container.Bind<IExitMatchCoordinator>()
                 .To<ExitMatchCoordinator>()
                 .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<MatchEndConditionService>()
+                .AsSingle()
+                .NonLazy();
 
             Container.BindInterfacesAndSelfTo<GameplayPauseInputController>()
                 .AsSingle()

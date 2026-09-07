@@ -9,7 +9,6 @@ namespace Kruty1918.Moyva.SaveSystem
         public bool TryLoad(int slot, IReadOnlyList<ISaveModule> modules, string requiredBlockModuleFullName, out string errorMessage)
         {
             errorMessage = null;
-
             if (!SavePipelineHelper.ValidateSlot(slot))
             {
                 errorMessage = $"Invalid slot {slot}";
@@ -17,110 +16,42 @@ namespace Kruty1918.Moyva.SaveSystem
             }
 
             string path = SaveService.GetPath(slot);
+            if (TryLoadFile(path, modules, requiredBlockModuleFullName, $"slot {slot}",
+                    out errorMessage, out bool restoreStarted)) return true;
+            // A failed legacy restore may already have changed the scene. Do not apply a second save over it.
+            if (restoreStarted) return false;
+
+            string primaryError = errorMessage;
+            if (TryLoadFile(path + ".bak", modules, requiredBlockModuleFullName, $"slot {slot} backup",
+                    out string backupError, out _))
+            {
+                errorMessage = null;
+                return true;
+            }
+            errorMessage = $"{primaryError} Backup: {backupError}";
+            return false;
+        }
+
+        private static bool TryLoadFile(string path, IReadOnlyList<ISaveModule> modules,
+            string requiredBlockModuleFullName, string label, out string errorMessage, out bool restoreStarted)
+        {
+            errorMessage = null;
+            restoreStarted = false;
             if (!File.Exists(path))
             {
-                errorMessage = $"Save file not found: '{path}'";
-                return TryLoadBackup(slot, modules, requiredBlockModuleFullName, out _);
-            }
-
-            byte[] bytes;
-            try
-            {
-                bytes = File.ReadAllBytes(path);
-            }
-            catch (Exception e)
-            {
-                errorMessage = $"Cannot read file: {e.Message}";
-                return TryLoadBackup(slot, modules, requiredBlockModuleFullName, out _);
-            }
-
-            if (HasRegisteredModule(modules, requiredBlockModuleFullName) && !ContainsBlock(bytes, requiredBlockModuleFullName))
-            {
-                errorMessage = $"Slot {slot} has no generated-world block.";
-                return TryLoadBackup(slot, modules, requiredBlockModuleFullName, out _);
-            }
-
-            if (SavePipelineHelper.ExecuteLoad(bytes, modules, $"slot {slot}"))
-                return true;
-
-            errorMessage = $"Decode/execute failed for slot {slot}";
-            return TryLoadBackup(slot, modules, requiredBlockModuleFullName, out _);
-        }
-
-        private bool TryLoadBackup(int slot, IReadOnlyList<ISaveModule> modules, string requiredBlockModuleFullName, out string errorMessage)
-        {
-            string backup = SaveService.GetPath(slot) + ".bak";
-            if (!File.Exists(backup))
-            {
-                errorMessage = $"No .bak available for slot {slot}.";
+                errorMessage = $"{label}: save file not found.";
                 return false;
             }
 
             byte[] bytes;
-            try
+            try { bytes = File.ReadAllBytes(path); }
+            catch (Exception exception)
             {
-                bytes = File.ReadAllBytes(backup);
-            }
-            catch (Exception e)
-            {
-                errorMessage = $"Backup unreadable: {e.Message}";
+                errorMessage = $"{label}: cannot read file: {exception.Message}";
                 return false;
             }
-
-            if (HasRegisteredModule(modules, requiredBlockModuleFullName) && !ContainsBlock(bytes, requiredBlockModuleFullName))
-            {
-                errorMessage = $"Backup for slot {slot} has no generated-world block.";
-                return false;
-            }
-
-            if (!SavePipelineHelper.ExecuteLoad(bytes, modules, $"slot {slot} backup"))
-            {
-                errorMessage = $"Decode/execute failed for backup of slot {slot}";
-                return false;
-            }
-
-            errorMessage = null;
-            return true;
-        }
-
-        private static bool HasRegisteredModule(IReadOnlyList<ISaveModule> modules, string moduleTypeFullName)
-        {
-            if (modules == null || string.IsNullOrWhiteSpace(moduleTypeFullName))
-                return false;
-
-            for (int i = 0; i < modules.Count; i++)
-            {
-                var module = modules[i];
-                if (module == null)
-                    continue;
-
-                if (string.Equals(
-                        SaveModuleIdentity.GetStableId(module.GetType()),
-                        moduleTypeFullName,
-                        StringComparison.Ordinal))
-                    return true;
-            }
-
-            return false;
-        }
-
-        private static bool ContainsBlock(byte[] bytes, string moduleTypeFullName)
-        {
-            if (bytes == null || string.IsNullOrWhiteSpace(moduleTypeFullName))
-                return false;
-
-            var result = SaveFileCodec.TryDecode(bytes, out _, out var blocks, out _);
-            if (result != SaveFileCodec.DecodeError.None || blocks == null)
-                return false;
-
-            uint blockId = SaveFileCodec.ComputeBlockId(moduleTypeFullName);
-            for (int i = 0; i < blocks.Count; i++)
-            {
-                if (blocks[i].blockId == blockId)
-                    return true;
-            }
-
-            return false;
+            return SavePipelineHelper.ExecuteLoad(bytes, modules, label, out errorMessage, out restoreStarted,
+                requiredBlockModuleFullName);
         }
     }
 }

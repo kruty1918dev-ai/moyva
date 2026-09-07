@@ -8,7 +8,8 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Turns.Runtime
 {
-    internal sealed class TurnService : ITurnService, ITurnHistoryQuery, ITurnStateRestorer, IInitializable, IDisposable
+    internal sealed partial class TurnService : ITurnService, ITurnHistoryQuery, ITurnStateRestorer,
+        ITurnHistoryRestorer, IInitializable, IDisposable
     {
         private readonly SignalBus _signalBus;
         private readonly IWorldGenerationSignalState _worldState;
@@ -36,6 +37,8 @@ namespace Kruty1918.Moyva.Turns.Runtime
         private PendingTurnRestore _pendingRestore;
         private bool _hasPendingRestore;
         private bool _endTurnEvaluationInProgress;
+        private bool _matchEnded;
+        private readonly ITurnAuthorityPolicy _authority;
 
         private const string EndTurnEvaluationInProgressReason = "Turn end is already being evaluated.";
         private const string DefaultBlockedReason = "Turn is blocked.";
@@ -49,7 +52,8 @@ namespace Kruty1918.Moyva.Turns.Runtime
             ICalendarService calendar,
             LazyInject<List<ITurnParticipant>> participants,
             LazyInject<List<ITurnBlocker>> blockers,
-            [InjectOptional] LazyInject<ITurnLocalOwnerResolver> localOwnerResolver = null)
+            [InjectOptional] LazyInject<ITurnLocalOwnerResolver> localOwnerResolver = null,
+            [InjectOptional] ITurnAuthorityPolicy authority = null)
         {
             _signalBus = signalBus;
             _worldState = worldState;
@@ -58,6 +62,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
             _lazyParticipants = participants;
             _lazyBlockers = blockers;
             _lazyLocalOwnerResolver = localOwnerResolver;
+            _authority = authority;
         }
 
         // Keep direct-construction tests deterministic without making Zenject resolve
@@ -88,33 +93,13 @@ namespace Kruty1918.Moyva.Turns.Runtime
         public string LocalOwnerId { get; private set; } = string.Empty;
         public IReadOnlyList<TurnFaction> Factions => _factions;
 
-        public IReadOnlyList<TurnParticipantHistorySnapshot> GetParticipantHistory()
-        {
-            var result = new List<TurnParticipantHistorySnapshot>(_factions.Count);
-            for (int index = 0; index < _factions.Count; index++)
-            {
-                TurnFaction faction = _factions[index];
-                long completedGlobalTurns = Math.Max(0L, GlobalTurn - 1);
-                long completedTurns = completedGlobalTurns <= index
-                    ? 0L
-                    : (completedGlobalTurns + _factions.Count - 1 - index)
-                      / _factions.Count;
-
-                result.Add(new TurnParticipantHistorySnapshot(
-                    faction.OwnerId,
-                    completedTurns,
-                    index == _activeFactionIndex,
-                    string.Equals(faction.OwnerId, LocalOwnerId, StringComparison.Ordinal)));
-            }
-
-            return result;
-        }
-
         public void Initialize()
         {
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnSpawnPositions);
             _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
             _signalBus.Subscribe<FactionEliminatedSignal>(OnFactionEliminated);
+            _signalBus.Subscribe<GameEndedSignal>(OnGameEnded);
+            _signalBus.Subscribe<GameStartedSignal>(OnGameStarted);
             if (_worldState.TryGetWorldSpawnPositions(out WorldSpawnPositionsSignal cached))
                 ConfigureFactions(cached.Assignments, cached.Source);
         }
@@ -124,6 +109,8 @@ namespace Kruty1918.Moyva.Turns.Runtime
             _signalBus.TryUnsubscribe<WorldSpawnPositionsSignal>(OnSpawnPositions);
             _signalBus.TryUnsubscribe<WorldBuiltSignal>(OnWorldBuilt);
             _signalBus.TryUnsubscribe<FactionEliminatedSignal>(OnFactionEliminated);
+            _signalBus.TryUnsubscribe<GameEndedSignal>(OnGameEnded);
+            _signalBus.TryUnsubscribe<GameStartedSignal>(OnGameStarted);
         }
 
         private List<ITurnParticipant> ResolveParticipants()
@@ -172,6 +159,12 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
         public bool CanOwnerAct(string ownerId, out string reason)
         {
+            if (_matchEnded)
+            {
+                reason = "The match has ended.";
+                return false;
+            }
+
             if (!_worldReady || Phase != TurnPhase.AwaitingInput)
             {
                 reason = $"Хід недоступний у фазі {Phase}.";
@@ -196,6 +189,8 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
         public bool TryRecordAction(string ownerId, string actionId)
         {
+            if (_authority != null && !_authority.IsAuthoritative)
+                return false;
             if (!CanOwnerAct(ownerId, out _))
                 return false;
 
@@ -206,6 +201,11 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
         public bool TryEndTurn(string requesterOwnerId, out string reason)
         {
+            if (_authority != null && !_authority.IsAuthoritative)
+            {
+                reason = "Only the host can advance the turn.";
+                return false;
+            }
             if (!CanOwnerAct(requesterOwnerId, out reason))
                 return false;
 
@@ -269,6 +269,9 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
         public void Restore(int round, long globalTurn, string activeOwnerId, int actions)
         {
+            if (!_historyPrepared)
+                _deriveLegacyHistory = true;
+            _historyPrepared = false;
             _pendingRestore = new PendingTurnRestore(
                 round,
                 globalTurn,
@@ -279,12 +282,13 @@ namespace Kruty1918.Moyva.Turns.Runtime
             // Loading may happen before spawn assignments/world readiness, or while an existing
             // session is already AwaitingInput. In both cases stop the live turn and let TryStart
             // resume the persisted snapshot only after its owner can be resolved.
-            if (Phase != TurnPhase.Initializing)
-            {
-                Phase = TurnPhase.Initializing;
-                StateChanged?.Invoke();
-            }
+            bool notifyInitializing = Phase != TurnPhase.Initializing;
+            Phase = TurnPhase.Initializing;
             TryStart();
+            // Notify once with the resolved state. A transient Initializing event would
+            // cancel movement leases even when only the host's action counter changed.
+            if (notifyInitializing && Phase == TurnPhase.Initializing)
+                StateChanged?.Invoke();
         }
 
         private void OnSpawnPositions(WorldSpawnPositionsSignal signal)
@@ -315,12 +319,28 @@ namespace Kruty1918.Moyva.Turns.Runtime
             {
                 return;
             }
+            _historyCache = null;
             StateChanged?.Invoke();
 
-            if (_worldReady && Phase == TurnPhase.AwaitingInput && IsOwnerActive(ownerId))
+            if ((_authority?.IsAuthoritative ?? true)
+                && _worldReady && Phase == TurnPhase.AwaitingInput && IsOwnerActive(ownerId))
             {
                 EndCurrentTurn();
             }
+        }
+
+        private void OnGameEnded(GameEndedSignal _)
+        {
+            _matchEnded = true;
+            Phase = TurnPhase.Completed;
+            StateChanged?.Invoke();
+        }
+
+        private void OnGameStarted(GameStartedSignal _)
+        {
+            _matchEnded = false;
+            if (Phase == TurnPhase.Completed)
+                Phase = TurnPhase.Initializing;
         }
 
         private void ConfigureFactions(SpawnPositionAssignment[] assignments, WorldSpawnPositionsSource source)
@@ -348,6 +368,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
             }
 
             _eliminatedOwners.RemoveWhere(ownerId => !seen.Contains(ownerId));
+            _historyCache = null;
             LocalOwnerId = ResolveLocalOwnerId();
 
             int preservedIndex = string.IsNullOrWhiteSpace(previousActiveOwner)
@@ -401,6 +422,15 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 return;
             }
 
+            if (_matchEnded)
+            {
+                Phase = TurnPhase.Completed;
+                return;
+            }
+
+            if (_authority != null && !_authority.IsAuthoritative)
+                return;
+
             if (_eliminatedOwners.Contains(ActiveOwnerId) && !TrySelectFirstEligibleFaction())
             {
                 return;
@@ -443,7 +473,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 return false;
             }
 
-            if (_eliminatedOwners.Contains(ownerId))
+            if (!_matchEnded && _eliminatedOwners.Contains(ownerId))
             {
                 Debug.LogError(
                     $"[Turns] Cannot resume saved turn: owner '{ownerId}' is already eliminated.");
@@ -454,6 +484,8 @@ namespace Kruty1918.Moyva.Turns.Runtime
             GlobalTurn = _pendingRestore.GlobalTurn;
             ActionsThisTurn = _pendingRestore.Actions;
             _activeFactionIndex = restoredIndex;
+            if (_deriveLegacyHistory)
+                RestoreLegacyHistory();
             _hasPendingRestore = false;
             return true;
         }
@@ -463,7 +495,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
             // Deliberately do not call ITurnParticipant.OnTurnStarted here. Unit stamina,
             // construction/recruitment counters and other participant state are restored by
             // their own save modules and must not receive a second turn-start side effect.
-            Phase = TurnPhase.AwaitingInput;
+            Phase = _matchEnded ? TurnPhase.Completed : TurnPhase.AwaitingInput;
             StateChanged?.Invoke();
         }
 
@@ -546,6 +578,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
             }
 
             _activeFactionIndex = nextIndex;
+            RecordCompletedTurn(context.Faction.OwnerId);
             GlobalTurn++;
             return StartCurrentTurn();
         }

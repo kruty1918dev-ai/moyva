@@ -286,6 +286,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public IReadOnlyCollection<UiActionId> ActionIds { get; } =
             new[]
             {
+                UiActionIds.Construction.SelectBuilding,
                 UiActionIds.Construction.CancelPlacement,
                 UiActionIds.Construction.ConfirmPlacement,
                 UiActionIds.Construction.RotatePlacement,
@@ -295,6 +296,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public UiActionResult Execute(in UiActionRequest request)
         {
+            if (request.ActionId == UiActionIds.Construction.SelectBuilding)
+            {
+                if (!_isActive)
+                    return UiActionResult.Rejected(UiActionReason.WrongContext, "Open construction before selecting a building.");
+                _constructionService.SelectBuilding(request.TargetId);
+                string reason = _constructionService.GetLastActionMessage();
+                if (!string.IsNullOrEmpty(reason)
+                    || _constructionService.State != BuildingPlacementState.Placing
+                    || !string.Equals(_constructionService.GetSelectedBuildingId(), request.TargetId, StringComparison.Ordinal))
+                    return UiActionResult.Rejected(UiActionReason.ActionUnavailable, reason ?? "Building selection was rejected.");
+                InvalidatePlacementInteractionCaches();
+                return UiActionResult.Performed();
+            }
             if (request.ActionId == UiActionIds.Construction.CancelPlacement)
             {
                 if (!_isActive)
@@ -324,7 +338,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (!_isActive || _constructionService is not IConstructionRotationService rotationService)
                     return UiActionResult.Rejected(UiActionReason.WrongContext);
                 if (!rotationService.RotateSelectedClockwise())
-                    return UiActionResult.Rejected(UiActionReason.NoSelection);
+                    return UiActionResult.Rejected(UiActionReason.ActionUnavailable,
+                        _constructionService.GetLastActionMessage() ?? "Select a placement to rotate.");
                 InvalidatePlacementInteractionCaches();
                 return UiActionResult.Performed();
             }

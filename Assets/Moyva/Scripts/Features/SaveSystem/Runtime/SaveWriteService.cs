@@ -21,7 +21,13 @@ namespace Kruty1918.Moyva.SaveSystem
                 return false;
             }
 
-            var blocks = SavePipelineHelper.CollectBlocks(modules);
+            List<(uint blockId, byte[] payload)> blocks;
+            try { blocks = SavePipelineHelper.CollectBlocks(modules); }
+            catch (Exception exception)
+            {
+                errorMessage = exception.Message;
+                return false;
+            }
             if (HasRegisteredModule(modules, requiredBlockModuleFullName) && !ContainsBlock(blocks, requiredBlockModuleFullName))
             {
                 errorMessage = "Generated world block is missing; save aborted to avoid corrupting the world slot.";

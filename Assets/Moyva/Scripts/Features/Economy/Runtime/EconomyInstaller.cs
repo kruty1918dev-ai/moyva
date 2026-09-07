@@ -72,6 +72,13 @@ namespace Kruty1918.Moyva.Economy
                     .AsSingle();
             }
 
+            if (!Container.HasBinding<ISettlementCaptureService>())
+            {
+                Container.Bind<ISettlementCaptureService>()
+                    .To<SettlementCaptureService>()
+                    .AsSingle();
+            }
+
             if (!Container.HasBinding<IEconomyInfoMediator>())
             {
                 Container.Bind<IEconomyInfoMediator>()
@@ -112,6 +119,14 @@ namespace Kruty1918.Moyva.Economy
                 Container.Bind<IMapObjectEconomyService>()
                     .To<MapObjectEconomyService>()
                     .AsSingle();
+            }
+
+            if (!Container.HasBinding<ICaravanService>())
+            {
+                Container.BindInterfacesAndSelfTo<CaravanService>()
+                    .AsSingle().NonLazy();
+                Container.BindInterfacesTo<SaveModuleRegistrar<CaravanService>>()
+                    .AsSingle().NonLazy();
             }
 
             if (!Container.HasBinding<EconomySaveModule>())

@@ -39631,6 +39631,8 @@ MonoBehaviour:
   _mountRoot: {fileID: 2147000001}
   _cssAsset: {fileID: 4900000, guid: 5d1230b2ee59486c95d8b44ead7c5b20, type: 3}
   _fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  _notificationsIcon: {fileID: 4171222922481396494, guid: 56222fc8d2f8cc8a6b7593bd13f563ed, type: 3}
+  _menuIcon: {fileID: -1562683298794129838, guid: 31070b65e51cf0d3689bab229b21b172, type: 3}
   _legacyScreenRoots:
   - {fileID: 139891103}
   - {fileID: 1800989654}

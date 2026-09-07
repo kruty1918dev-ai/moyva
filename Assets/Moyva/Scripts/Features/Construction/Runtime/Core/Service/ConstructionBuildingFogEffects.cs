@@ -15,6 +15,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private const int FallbackBuildingVisionRange = 3;
 
         private readonly IFogOfWarService _fogOfWarService;
+        private readonly IFogOwnerVisionSourceRegistry _ownerVision;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly FogOfWarSettings _fogSettings;
 
@@ -24,13 +25,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             FogOfWarSettings fogSettings = null)
         {
             _fogOfWarService = fogOfWarService;
+            _ownerVision = fogOfWarService as IFogOwnerVisionSourceRegistry;
             _buildingRegistry = buildingRegistry;
             _fogSettings = fogSettings;
         }
 
         public void ApplyOnPlaced(
             string buildingId,
-            Vector2Int position)
+            Vector2Int position,
+            string ownerId = null)
         {
             if (_fogOfWarService == null
                 || _buildingRegistry == null)
@@ -44,12 +47,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (ShouldDeferUntilOperational(definition))
                 return;
 
-            ApplyVision(definition, position);
+            ApplyVision(definition, position, ownerId);
         }
 
         public void ApplyOnOperational(
             string buildingId,
-            Vector2Int position)
+            Vector2Int position,
+            string ownerId = null)
         {
             if (_fogOfWarService == null
                 || _buildingRegistry == null)
@@ -60,12 +64,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             BuildingDefinition definition =
                 _buildingRegistry.GetById(buildingId);
 
-            ApplyVision(definition, position);
+            ApplyVision(definition, position, ownerId);
         }
 
         private void ApplyVision(
             BuildingDefinition definition,
-            Vector2Int position)
+            Vector2Int position,
+            string ownerId)
         {
             bool hasFogModule =
                 BuildingDefinitionCapabilities.TryGetFogReveal(
@@ -89,12 +94,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (radius <= 0)
             {
                 _fogOfWarService.UnregisterUnit(areaId);
+                _ownerVision?.UnregisterUnit(ownerId, areaId);
                 return;
             }
 
             if (!hasFogModule)
             {
                 _fogOfWarService.RegisterFixedVisionArea(
+                    areaId,
+                    position,
+                    radius,
+                    FogRevealShape.PixelCircle);
+                _ownerVision?.RegisterFixedVisionArea(
+                    ownerId,
                     areaId,
                     position,
                     radius,
@@ -109,10 +121,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     position,
                     radius,
                     fogReveal.Shape);
+                _ownerVision?.RegisterFixedVisionArea(
+                    ownerId,
+                    areaId,
+                    position,
+                    radius,
+                    fogReveal.Shape);
                 return;
             }
 
             _fogOfWarService.UnregisterUnit(areaId);
+            _ownerVision?.UnregisterUnit(ownerId, areaId);
 
             if (fogReveal.RevealOnBuilt)
             {
@@ -122,13 +141,21 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     fogReveal.Shape,
                     keepVisible: false,
                     areaId);
+                _ownerVision?.RevealArea(
+                    ownerId,
+                    position,
+                    radius,
+                    fogReveal.Shape,
+                    keepVisible: false,
+                    areaId);
             }
         }
 
-        public void Remove(Vector2Int position)
+        public void Remove(Vector2Int position, string ownerId = null)
         {
-            _fogOfWarService?.UnregisterUnit(
-                GetBuildingFogVisionAreaId(position));
+            string areaId = GetBuildingFogVisionAreaId(position);
+            _fogOfWarService?.UnregisterUnit(areaId);
+            _ownerVision?.UnregisterUnit(ownerId, areaId);
         }
 
         private bool ShouldDeferUntilOperational(

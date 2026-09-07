@@ -62,7 +62,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         public void RegisterHandler(GameCommandType type, Action<string, byte[]> handler)
         {
-            _handlers[type] = handler;
+            if (handler == null)
+                _handlers.Remove(type);
+            else
+                _handlers[type] = handler;
         }
 
         public void Dispose()

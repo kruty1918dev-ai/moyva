@@ -23,6 +23,7 @@ namespace Kruty1918.Moyva.Bootstrap
         public override void InstallBindings()
         {
             UiActionsInstaller.Install(Container);
+            Kruty1918.Moyva.Multiplayer.Runtime.MultiplayerInstaller.InstallGameplayBindings(Container);
             var gameSettings = _config != null ? _config.GameSettings : _legacyGameSettings;
             var startingPositionSettings = _config != null ? _config.StartingPositionSettings : _legacyStartingPositionSettings;
 
@@ -52,6 +53,11 @@ namespace Kruty1918.Moyva.Bootstrap
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInterfacesAndSelfTo<GameModeSaveModule>().AsSingle();
+            Container.BindInterfacesTo<SaveModuleRegistrar<GameModeSaveModule>>()
+                .AsSingle()
+                .NonLazy();
+
             // Автозбереження при виході з програми.
             Container.BindInterfacesTo<GameExitSaver>()
                 .AsSingle()
@@ -64,10 +70,16 @@ namespace Kruty1918.Moyva.Bootstrap
                 .NonLazy();
             Container.BindExecutionOrder<DirectGameplayLaunchModeInitializer>(90);
 
+            Container.BindInterfacesTo<GameplayProgressClockConfigurator>()
+                .AsSingle()
+                .NonLazy();
+            Container.BindExecutionOrder<GameplayProgressClockConfigurator>(91);
+
             Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
             Container.BindExecutionOrder<TestUnitSpawner>(100);
 
             GameplayHudBindings.Install(Container);
+            CaravanGameplayAccess.Install(Container);
 
             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
             // Виконується після TestUnitSpawner, щоб знати чи є збереження.

@@ -16,5 +16,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         WorldSeedHandshake = 11,
         MatchStartSync   = 12,
         WorldStateSnapshot = 13,
+        CaravanCommand = 14,
+        CombatCommand = 15,
+        SettlementCaptureCommand = 16,
     }
 }

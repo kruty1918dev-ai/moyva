@@ -268,8 +268,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     {
                         if (isRelocation && relocationSource.HasValue)
                             _buildingFogEffects.Remove(
-                                relocationSource.Value);
-                        _buildingFogEffects.ApplyOnPlaced(id, pos);
+                                relocationSource.Value,
+                                relocationOwnerId);
+                        _buildingFogEffects.ApplyOnPlaced(
+                            id,
+                            pos,
+                            relocationOwnerId);
                     }
                     catch (Exception fogEx)
                     {

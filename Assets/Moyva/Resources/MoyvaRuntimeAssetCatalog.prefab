@@ -327,6 +327,8 @@ MonoBehaviour:
     Asset: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
   - Key: asset.game-object.light-cavalry.32716c4f
     Asset: {fileID: 8475329214379649031, guid: 32716c4f2fd9817ffb4d8981530bd546, type: 3}
+  - Key: asset.game-object.cart-blue-full.c2a3c9da
+    Asset: {fileID: 919132149155446097, guid: c2a3c9da6be3d8043902197af00df62f, type: 3}
   - Key: asset.game-object.lowland.c9a436dd
     Asset: {fileID: 7203100000000004001, guid: c9a436dd242048f0ab05a8b97f3d6fb3, type: 3}
   - Key: asset.game-object.mountain.ddc2d68d

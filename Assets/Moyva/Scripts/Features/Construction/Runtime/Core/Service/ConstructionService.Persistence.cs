@@ -127,7 +127,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 });
             _buildingFogEffects.ApplyOnPlaced(
                 buildingId,
-                position);
+                position,
+                normalizedOwner);
 
         }
 

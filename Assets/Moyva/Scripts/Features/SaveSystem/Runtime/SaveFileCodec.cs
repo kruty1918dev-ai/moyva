@@ -87,11 +87,13 @@ namespace Kruty1918.Moyva.SaveSystem
             TooSmall,
             BadMagic,
             UnsupportedVersion,
-            CrcMismatch
+            CrcMismatch,
+            MalformedData,
+            DuplicateBlock,
         }
 
         /// <summary>
-        /// Декодує файл збереження. Блоки з невалідним CRC пропускаються з попередженням.
+        /// Декодує лише повністю валідний файл збереження, без пропуску пошкоджених блоків.
         /// Невідомі blockId не відкидаються тут — це відповідальність викликача.
         /// </summary>
         internal static DecodeError TryDecode(
@@ -142,22 +144,36 @@ namespace Kruty1918.Moyva.SaveSystem
             }
 
             uint blockCount = br.ReadUInt32();
-            blocks = new List<(uint, byte[])>((int)blockCount);
-
             long dataBodyEnd = data.Length - FileLayout.FooterSize;
+            if (blockCount > (dataBodyEnd - ms.Position) / FileLayout.BlockHeaderSize)
+            {
+                errorMessage = "The block count exceeds the file contents.";
+                return DecodeError.MalformedData;
+            }
+            var decoded = new List<(uint, byte[])>((int)blockCount);
+            var ids = new HashSet<uint>();
 
             for (uint i = 0; i < blockCount; i++)
             {
                 if (ms.Position + FileLayout.BlockHeaderSize > dataBodyEnd)
-                    break;
+                {
+                    errorMessage = $"Block {i} has a truncated header.";
+                    return DecodeError.MalformedData;
+                }
 
                 uint blockId   = br.ReadUInt32();
                 uint blockSize = br.ReadUInt32();
                 uint blockCrc  = br.ReadUInt32();
+                if (!ids.Add(blockId))
+                {
+                    errorMessage = $"Duplicate block {blockId:X8}.";
+                    return DecodeError.DuplicateBlock;
+                }
 
                 if (ms.Position + blockSize > dataBodyEnd)
                 {
-                    break;
+                    errorMessage = $"Block {blockId:X8} has a truncated payload.";
+                    return DecodeError.MalformedData;
                 }
 
                 byte[] payload   = br.ReadBytes((int)blockSize);
@@ -165,12 +181,19 @@ namespace Kruty1918.Moyva.SaveSystem
 
                 if (actualCrc != blockCrc)
                 {
-                    continue;
+                    errorMessage = $"Block {blockId:X8} checksum mismatch.";
+                    return DecodeError.CrcMismatch;
                 }
 
-                blocks.Add((blockId, payload));
+                decoded.Add((blockId, payload));
             }
 
+            if (ms.Position != dataBodyEnd)
+            {
+                errorMessage = "Unexpected trailing data after the declared blocks.";
+                return DecodeError.MalformedData;
+            }
+            blocks = decoded;
             return DecodeError.None;
         }
     }
