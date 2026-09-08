@@ -38,26 +38,30 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
         private static async Task<UdpReceiveResult?> ReceiveResultWithTimeoutAsync(UdpClient client, TimeSpan timeout, CancellationToken ct)
         {
-            var receiveTask = client.ReceiveAsync();
-            ObserveFaultedReceiveTask(receiveTask);
-            var delayTask = Task.Delay(timeout, ct);
-            var completed = await Task.WhenAny(receiveTask, delayTask).ConfigureAwait(false);
-            if (completed != receiveTask)
+            if (client == null)
                 return null;
 
-            return receiveTask.Result;
-        }
-
-        private static void ObserveFaultedReceiveTask(Task<UdpReceiveResult> receiveTask)
-        {
-            _ = receiveTask.ContinueWith(
-                task =>
+            return await Task.Run(
+                () =>
                 {
-                    var ignored = task.Exception;
+                    var deadline = DateTime.UtcNow.Add(timeout);
+                    while (DateTime.UtcNow < deadline)
+                    {
+                        ct.ThrowIfCancellationRequested();
+
+                        var remaining = deadline - DateTime.UtcNow;
+                        var sliceMs = Math.Min(100, Math.Max(1, (int)remaining.TotalMilliseconds));
+                        if (!client.Client.Poll(sliceMs * 1000, SelectMode.SelectRead))
+                            continue;
+
+                        var remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                        var buffer = client.Receive(ref remoteEndPoint);
+                        return (UdpReceiveResult?)new UdpReceiveResult(buffer, remoteEndPoint);
+                    }
+
+                    return null;
                 },
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
+                ct).ConfigureAwait(false);
         }
 
         private static string ResolveHostDisplayName(LobbyRoom room)
@@ -83,7 +87,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             return $"{machineName}-{System.Diagnostics.Process.GetCurrentProcess().Id}";
         }
 
-        private static string GetLocalIPAddress()
+        internal static string GetLocalIPAddress()
+            => GetPreferredLocalIPAddress();
+
+        internal static string GetPreferredLocalIPAddress()
         {
             try
             {
@@ -126,6 +133,74 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             catch { }
 
             return null;
+        }
+
+        private static IReadOnlyList<IPEndPoint> GetDirectedBroadcastEndPoints(int port)
+        {
+            var result = new List<IPEndPoint>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+
+            try
+            {
+                foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (ni.OperationalStatus != OperationalStatus.Up ||
+                        ni.NetworkInterfaceType == NetworkInterfaceType.Loopback ||
+                        ni.NetworkInterfaceType == NetworkInterfaceType.Tunnel)
+                    {
+                        continue;
+                    }
+
+                    foreach (var uni in ni.GetIPProperties().UnicastAddresses)
+                    {
+                        if (uni.Address.AddressFamily != AddressFamily.InterNetwork)
+                            continue;
+
+                        var ip = uni.Address.ToString();
+                        if (ip.StartsWith("169.254.", StringComparison.Ordinal))
+                            continue;
+
+                        if (!TryBuildDirectedBroadcastAddress(uni, out var broadcast))
+                            continue;
+
+                        var key = broadcast.ToString();
+                        if (!seen.Add(key))
+                            continue;
+
+                        result.Add(new IPEndPoint(broadcast, port));
+                    }
+                }
+            }
+            catch { }
+
+            return result;
+        }
+
+        private static bool TryBuildDirectedBroadcastAddress(UnicastIPAddressInformation address, out IPAddress broadcast)
+        {
+            broadcast = null;
+            try
+            {
+                var mask = address.IPv4Mask;
+                if (mask == null)
+                    return false;
+
+                var ipBytes = address.Address.GetAddressBytes();
+                var maskBytes = mask.GetAddressBytes();
+                if (ipBytes.Length != 4 || maskBytes.Length != 4)
+                    return false;
+
+                var broadcastBytes = new byte[4];
+                for (var i = 0; i < 4; i++)
+                    broadcastBytes[i] = (byte)(ipBytes[i] | ~maskBytes[i]);
+
+                broadcast = new IPAddress(broadcastBytes);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public void Dispose()

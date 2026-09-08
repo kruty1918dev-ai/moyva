@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return new LobbyInviteCodePresentation(GetLabel(provider), string.Empty);
 
             var code = provider == NetworkProviderType.Lan
-                ? FirstNonEmpty(lobby.RelayJoinCode, lobby.LobbyCode, lobby.LobbyId)
+                ? FirstNonEmpty(lobby.LobbyCode, lobby.RelayJoinCode, lobby.LobbyId)
                 : FirstNonEmpty(lobby.LobbyCode, lobby.LobbyId, lobby.RelayJoinCode);
 
             return new LobbyInviteCodePresentation(GetLabel(provider), code);

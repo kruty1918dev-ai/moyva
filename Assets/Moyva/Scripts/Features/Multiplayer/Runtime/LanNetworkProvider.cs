@@ -45,16 +45,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private static string GetLocalIPAddress()
         {
-            try
-            {
-                foreach (var ni in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
-                {
-                    if (ni.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                        return ni.ToString();
-                }
-            }
-            catch { }
-            return null;
+            return LanLobbyService.GetPreferredLocalIPAddress();
         }
 
         public Task<SessionResult> HostSessionAsync(string sessionId, CancellationToken ct = default)
@@ -210,7 +201,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 {
                     try
                     {
-                        if (string.IsNullOrWhiteSpace(joinCode) || !joinCode.StartsWith("lan:"))
+                        if (string.IsNullOrWhiteSpace(joinCode) || !joinCode.StartsWith("lan:", StringComparison.OrdinalIgnoreCase))
                             return SessionResult.Fail("Invalid LAN join code.");
 
                         var parts = joinCode.Split(':');
@@ -228,8 +219,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         var ep = default(NetworkEndpoint);
                         if (!NetworkEndpoint.TryParse(ip, port, out ep))
                         {
-                            // Fallback: try parse via DNS
-                            ep = NetworkEndpoint.AnyIpv4.WithPort(port);
+                            return SessionResult.Fail($"Invalid LAN host address '{ip}'.");
                         }
 
                         _serverConnection = _driver.Connect(ep);

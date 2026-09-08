@@ -14,7 +14,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 {
     public sealed partial class LanLobbyService
     {
-        private static bool TryParsePayload(string payload, out LobbyRoom room, out string joinCode)
+        internal static bool TryParsePayload(string payload, out LobbyRoom room, out string joinCode)
+            => TryParsePayload(payload, out room, out joinCode, null);
+
+        private static bool TryParsePayload(string payload, out LobbyRoom room, out string joinCode, IPEndPoint sourceEndPoint)
         {
             room = null;
             joinCode = string.Empty;
@@ -53,13 +56,28 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 state = (LobbyState)rawState;
             var worldSettings = parts.Length >= 13 ? DecodeBytes(parts[12]) : Array.Empty<byte>();
             var configFingerprint = parts.Length >= 14 ? parts[13] : string.Empty;
+            var lobbyCode = parts.Length >= 15 && IsShortLanLobbyCode(parts[14])
+                ? parts[14].Trim()
+                : (roomId.Length >= 8 ? roomId.Substring(0, 8) : roomId);
 
-            joinCode = $"lan:{ip}:{port}";
-            var lobbyCode = roomId.Length >= 8 ? roomId.Substring(0, 8) : roomId;
+            var advertisedIp = ResolvePayloadEndpointIp(parsedIp, sourceEndPoint);
+            joinCode = $"lan:{advertisedIp}:{port}";
             room = new LobbyRoom(roomId, lobbyCode, name, max, isPrivate, hostId, joinCode, players, passwordHash, state,
                 startedWorldSettingsBytes: worldSettings,
                 configFingerprint: configFingerprint);
             return true;
+        }
+
+        private static string ResolvePayloadEndpointIp(IPAddress advertisedIp, IPEndPoint sourceEndPoint)
+        {
+            if (sourceEndPoint?.Address != null &&
+                sourceEndPoint.Address.AddressFamily == AddressFamily.InterNetwork &&
+                !IPAddress.IsLoopback(sourceEndPoint.Address))
+            {
+                return sourceEndPoint.Address.ToString();
+            }
+
+            return advertisedIp.ToString();
         }
 
         private void PublishState(LobbyState state)

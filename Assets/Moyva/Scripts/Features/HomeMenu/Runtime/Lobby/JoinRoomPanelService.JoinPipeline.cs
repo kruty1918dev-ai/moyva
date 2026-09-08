@@ -239,6 +239,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (OperationCanceledException)
             {
+                shouldRefreshRoomListAfterFailure = true;
+                await ReturnToLobbyChooserWithMessageAsync(
+                    joinPanelName,
+                    "Join Timeout",
+                    new MultiplayerUserFacingError(
+                        "MP-NET-408",
+                        "Joining the room timed out.",
+                        "Make sure the host is still in the lobby and both devices are on the same network.",
+                        traceId).BuildDisplayMessage(),
+                    CancellationToken.None);
                 _joinState = JoinPipelineState.Failed;
             }
             catch (RoomFullException ex)
@@ -304,19 +314,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private async Task<bool> TryFallbackTransportAsync(string traceId, LobbyRoom room, CancellationToken ct)
         {
-            if (_modeSelector == null)
-                return false;
-
-            var current = GetCurrentProviderType();
-            var fallback = current == NetworkProviderType.Relay
-                ? NetworkProviderType.Lan
-                : (current == NetworkProviderType.Lan ? NetworkProviderType.Offline : NetworkProviderType.Offline);
-
-            if (fallback == current)
-                return false;
-            await _modeSelector.SetModeAsync(fallback, ct);
-            var retry = await TransportAdapter.JoinNetworkSessionAsync(room, traceId, ct);
-            return retry.IsSuccess;
+            await Task.CompletedTask;
+            return false;
         }
 
         private Task ApplySelectedProviderAsync(CancellationToken ct = default)

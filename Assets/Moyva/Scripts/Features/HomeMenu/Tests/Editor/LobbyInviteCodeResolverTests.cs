@@ -20,14 +20,14 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
         }
 
         [Test]
-        public void Resolve_ForLan_UsesTransportJoinCode()
+        public void Resolve_ForLan_UsesShortLobbyCode()
         {
             var lobby = CreateLobby(lobbyCode: "UGS123", relayJoinCode: "LAN456");
 
             var presentation = LobbyInviteCodeResolver.Resolve(lobby, NetworkProviderType.Lan);
 
             Assert.That(presentation.Label, Is.EqualTo("LAN Join Code"));
-            Assert.That(presentation.Code, Is.EqualTo("LAN456"));
+            Assert.That(presentation.Code, Is.EqualTo("UGS123"));
         }
 
         private static LobbyRoom CreateLobby(string lobbyCode, string relayJoinCode)

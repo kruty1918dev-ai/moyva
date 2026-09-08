@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             // For LAN we simply return a LobbyRoom and start broadcasting
             var roomId = Guid.NewGuid().ToString("N");
             var ip = GetLocalIPAddress() ?? "127.0.0.1";
-            var lobbyCode = roomId.Substring(0, 8);
+            var lobbyCode = BuildShortLanLobbyCode(roomId);
             var joinCode = string.IsNullOrWhiteSpace(options.RelayJoinCode)
                 ? $"lan:{ip}:{DefaultPort}"
                 : options.RelayJoinCode.Trim();
@@ -65,6 +65,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         _current = AddLocalPlayer(cachedRoom, displayName);
                         StartBroadcastLoop();
                         LobbyUpdated?.Invoke(_current);
+                        PublishState(_current.State);
                         return _current;
                     }
                     var rooms = await QueryRoomsAsync(ct).ConfigureAwait(false);
@@ -75,6 +76,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                             _current = AddLocalPlayer(r, displayName);
                             StartBroadcastLoop();
                             LobbyUpdated?.Invoke(_current);
+                            PublishState(_current.State);
                             return _current;
                         }
                     }
@@ -87,6 +89,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 {
                     _current = CreateDirectJoinRoom(value, displayName);
                     LobbyUpdated?.Invoke(_current);
+                    PublishState(_current.State);
                     return _current;
                 }
                 return null;
@@ -136,6 +139,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             _current = AddLocalPlayer(matched, displayName);
             StartBroadcastLoop();
             LobbyUpdated?.Invoke(_current);
+            PublishState(_current.State);
             return _current;
         }
 
@@ -163,7 +167,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                             if (IsDiscoveryQuery(json))
                                 continue;
 
-                            if (TryParsePayload(json, out var room, out var joinCode))
+                            if (TryParsePayload(json, out var room, out var joinCode, result.Value.RemoteEndPoint))
                             {
                                 var key = $"{room.LobbyId}:{joinCode}";
                                 roomsByKey[key] = roomsByKey.TryGetValue(key, out var existing)
@@ -180,6 +184,14 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     }
                 }
                 catch { }
+            }
+
+            foreach (var cachedRoom in SnapshotDiscoveredRooms())
+            {
+                var key = $"{cachedRoom.LobbyId}:{cachedRoom.RelayJoinCode}";
+                roomsByKey[key] = roomsByKey.TryGetValue(key, out var existing)
+                    ? MergeRooms(existing, cachedRoom)
+                    : cachedRoom;
             }
 
             return new List<LobbyRoom>(roomsByKey.Values);
@@ -200,7 +212,18 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
         public Task SetRelayJoinCodeAsync(string relayJoinCode, CancellationToken ct = default)
         {
-            // Not applicable for LAN; keep as no-op.
+            var normalizedJoinCode = relayJoinCode?.Trim() ?? string.Empty;
+            if (_current != null && !string.Equals(_current.RelayJoinCode, normalizedJoinCode, StringComparison.Ordinal))
+            {
+                _current = new LobbyRoom(_current.LobbyId, _current.LobbyCode, _current.Name, _current.MaxPlayers,
+                    _current.IsPrivate, _current.HostPlayerId, normalizedJoinCode, _current.Players,
+                    _current.PasswordHash, _current.State, _current.ReconnectRecords,
+                    _current.StartedWorldSettingsBytes, _current.BannedPlayerIds,
+                    _current.CapabilityFlags, _current.ConfigFingerprint);
+                RememberDiscoveredRoom(_current);
+                LobbyUpdated?.Invoke(_current);
+            }
+
             return Task.CompletedTask;
         }
 

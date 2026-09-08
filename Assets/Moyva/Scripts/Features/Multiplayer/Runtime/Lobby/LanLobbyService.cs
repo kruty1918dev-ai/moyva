@@ -24,12 +24,14 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private const string DiscoveryQuery = "QUERY";
         private const int BroadcastIntervalMs = 1000;
         private const int QueryTimeoutMs = 2500;
+        private const int DiscoveredRoomTtlMs = 8000;
+        private const int ShortLobbyCodeLength = 6;
 
         private readonly UdpClient _udp;
         private readonly IPEndPoint _broadcastEndPoint;
         private readonly IPEndPoint _loopbackEndPoint;
         private readonly object _stateLock = new object();
-        private readonly Dictionary<string, LobbyRoom> _discoveredRooms = new Dictionary<string, LobbyRoom>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, DiscoveredRoomEntry> _discoveredRooms = new Dictionary<string, DiscoveredRoomEntry>(StringComparer.OrdinalIgnoreCase);
 
         private CancellationTokenSource _cts;
         private UdpClient _listenUdp;
@@ -53,6 +55,18 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             _udp.EnableBroadcast = true;
             _broadcastEndPoint = new IPEndPoint(IPAddress.Broadcast, DiscoveryPort);
             _loopbackEndPoint = new IPEndPoint(IPAddress.Loopback, DiscoveryPort);
+        }
+
+        private sealed class DiscoveredRoomEntry
+        {
+            public LobbyRoom Room { get; }
+            public DateTime LastSeenUtc { get; }
+
+            public DiscoveredRoomEntry(LobbyRoom room, DateTime lastSeenUtc)
+            {
+                Room = room;
+                LastSeenUtc = lastSeenUtc;
+            }
         }
 
     }
