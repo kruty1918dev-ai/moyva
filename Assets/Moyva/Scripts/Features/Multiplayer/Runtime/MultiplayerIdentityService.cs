@@ -30,13 +30,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             try
             {
-                if (UnityServices.State != ServicesInitializationState.Initialized)
-                    await UnityServices.InitializeAsync();
-
-                MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded();
-
-                if (!AuthenticationService.Instance.IsSignedIn)
-                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                await MultiplayerAuthenticationGate.EnsureReadyAsync(ct);
 
                 var ugsId = AuthenticationService.Instance.PlayerId;
                 if (!string.IsNullOrWhiteSpace(ugsId))

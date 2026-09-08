@@ -28,7 +28,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_session == null)
                 return;
 
-            if (!_turns.CanOwnerAct(_session.OwnerId, out _))
+            if (_progressClock?.IsRealtime != true
+                && !_turns.CanOwnerAct(_session.OwnerId, out _))
                 CancelSession();
         }
 

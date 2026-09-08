@@ -80,6 +80,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return result;
             }
 
+            if (_roleResolver != null)
+            {
+                result = _roleResolver.Resolve().IsAuthoritative;
+                LogPolicyDecision(nameof(CanRunStartLogic), participantCount, hasSession, isHost, localPlayerId, isMultiplayerContext, result, "local-gameplay-role");
+                return result;
+            }
+
             if (isHost)
             {
                 result = true;
@@ -109,6 +116,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string localPlayerId = ResolveSessionOrLaunchLocalPlayerId();
             bool isMultiplayerContext = IsMultiplayerLaunchContext();
             bool result;
+
+            if (_roleResolver != null)
+            {
+                result = _roleResolver.Resolve().IsAuthoritative;
+                LogPolicyDecision(nameof(ShouldComputeHostStartPositions), participantCount, hasSession, isHost, localPlayerId, isMultiplayerContext, result, "local-gameplay-role");
+                return result;
+            }
 
             if (_sessionManager == null || _sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
             {

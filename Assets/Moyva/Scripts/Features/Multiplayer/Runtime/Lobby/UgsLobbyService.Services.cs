@@ -34,23 +34,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             if (AuthenticationService.Instance == null)
                 throw new InvalidOperationException("[UgsLobby] AuthenticationService instance is unavailable after Unity Services initialization.");
 
-            MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded();
-
-            if (AuthenticationService.Instance.IsSignedIn)
-                return;
-
-            if (_signInTask == null || !_signInTask.IsCompletedSuccessfully)
-            {
-                lock (ServicesReadyLock)
-                {
-                    if (_signInTask == null || !_signInTask.IsCompletedSuccessfully)
-                    {
-                        _signInTask = SignInAnonymouslyOnceAsync();
-                    }
-                }
-            }
-
-            await _signInTask;
+            await MultiplayerAuthenticationGate.EnsureReadyAsync();
 
             if (!AuthenticationService.Instance.IsSignedIn || string.IsNullOrEmpty(AuthenticationService.Instance.PlayerId))
             {
@@ -64,50 +48,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 return;
 
             await UnityServices.InitializeAsync();
-        }
-
-        private static async Task SignInAnonymouslyOnceAsync()
-        {
-            if (AuthenticationService.Instance == null)
-                throw new InvalidOperationException("[UgsLobby] AuthenticationService instance is unavailable during sign-in.");
-
-            try
-            {
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
-            }
-            catch (AuthenticationException e) when (e.ErrorCode == AuthenticationErrorCodes.ClientInvalidUserState)
-            {
-                if (AuthenticationService.Instance.IsSignedIn)
-                    return;
-
-                await WaitForSignInCompletionAsync();
-
-                if (AuthenticationService.Instance.IsSignedIn)
-                    return;
-
-                throw;
-            }
-        }
-
-        private static async Task WaitForSignInCompletionAsync()
-        {
-            const int pollingDelayMs = 100;
-            const int timeoutMs = 5000;
-            var waitedMs = 0;
-
-            while (waitedMs < timeoutMs)
-            {
-                if (AuthenticationService.Instance.IsSignedIn)
-                    return;
-
-                await Task.Delay(pollingDelayMs);
-                waitedMs += pollingDelayMs;
-            }
-
-            if (!AuthenticationService.Instance.IsSignedIn || string.IsNullOrEmpty(AuthenticationService.Instance.PlayerId))
-            {
-                throw new InvalidOperationException("[UgsLobby] Authentication failed: user is not signed in or PlayerId is unavailable.");
-            }
         }
 
         private static Player BuildLocalPlayer(string displayName)

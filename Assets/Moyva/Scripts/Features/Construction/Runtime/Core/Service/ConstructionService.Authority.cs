@@ -22,7 +22,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _turns != null,
                 _turns?.ActiveOwnerId,
                 _turns?.LocalOwnerId,
-                _turns?.Phase ?? TurnPhase.Initializing);
+                _turns?.Phase ?? TurnPhase.Initializing,
+                _progressClock?.IsRealtime ?? false);
 
             if (!ConstructionTurnAuthorityPolicy.TryAuthorize(
                     ownerId,
@@ -34,6 +35,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 reason = $"{action}: {reason}";
                 return false;
             }
+
+            if (_progressClock?.IsRealtime == true)
+                return true;
 
             if (!_turns.CanOwnerAct(normalizedOwnerId, out reason))
             {
@@ -69,7 +73,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string ownerId,
             string actionId)
         {
-            if (_turns == null)
+            if (_turns == null || _progressClock?.IsRealtime == true)
                 return;
 
             string normalizedOwner = ownerId?.Trim();

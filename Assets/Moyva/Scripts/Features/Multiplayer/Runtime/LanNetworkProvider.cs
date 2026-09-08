@@ -522,8 +522,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 private static string BuildLocalPeerId()
                 {
-                    var machineName = string.IsNullOrWhiteSpace(Environment.MachineName) ? "local" : Environment.MachineName;
-                    return MultiplayerClientScope.IsDefault ? machineName : $"{machineName}-{MultiplayerClientScope.ScopeId}";
+                    return Kruty1918.Moyva.Multiplayer.Lobbies.LanLobbyService.BuildLocalHostId();
                 }
 
                 private string ResolveLocalPeerId()

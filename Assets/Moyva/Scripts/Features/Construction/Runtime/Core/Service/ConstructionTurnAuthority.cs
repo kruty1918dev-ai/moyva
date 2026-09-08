@@ -13,18 +13,21 @@ namespace Kruty1918.Moyva.Construction.Runtime
             bool hasTurnAuthority,
             string activeOwnerId,
             string localOwnerId,
-            TurnPhase phase)
+            TurnPhase phase,
+            bool isRealtimeSandbox = false)
         {
             HasTurnAuthority = hasTurnAuthority;
             ActiveOwnerId = activeOwnerId ?? string.Empty;
             LocalOwnerId = localOwnerId ?? string.Empty;
             Phase = phase;
+            IsRealtimeSandbox = isRealtimeSandbox;
         }
 
         public bool HasTurnAuthority { get; }
         public string ActiveOwnerId { get; }
         public string LocalOwnerId { get; }
         public TurnPhase Phase { get; }
+        public bool IsRealtimeSandbox { get; }
     }
 
     internal static class ConstructionTurnAuthorityPolicy
@@ -41,6 +44,32 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 normalizedOwnerId = string.Empty;
                 reason = "Construction command owner is empty.";
+                return false;
+            }
+
+            if (snapshot.IsRealtimeSandbox)
+            {
+                if (!requireLocalOwner)
+                {
+                    reason = null;
+                    return true;
+                }
+
+                string localOwnerId = snapshot.LocalOwnerId?.Trim();
+                if (string.IsNullOrWhiteSpace(localOwnerId))
+                {
+                    reason = null;
+                    return true;
+                }
+
+                if (string.Equals(localOwnerId, normalizedOwnerId, StringComparison.Ordinal))
+                {
+                    reason = null;
+                    return true;
+                }
+
+                reason =
+                    $"Owner '{normalizedOwnerId}' is not the local sandbox owner '{localOwnerId}'.";
                 return false;
             }
 

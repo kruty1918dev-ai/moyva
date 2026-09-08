@@ -99,6 +99,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ConstructionRotation.Degrees0)
         {
             if (string.IsNullOrWhiteSpace(buildingId))
+                throw new ArgumentException("Cannot restore a building without an ID.", nameof(buildingId));
+
+            string normalizedOwner = NormalizeOwnerId(ownerId);
+            if (_factionPlacedBuildings.TryGetValue(position, out var existing)
+                && existing.BuildingId == buildingId && existing.FactionId == normalizedOwner
+                && ResolvePlacedRotation(position) == rotation)
                 return;
 
             if (!_footprints.TryRegister(
@@ -106,12 +112,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     buildingId,
                     rotation))
             {
-                return;
+                throw new InvalidOperationException(
+                    $"Cannot restore building '{buildingId}' for '{normalizedOwner}' at {position}: footprint is invalid, occupied, or the grid is not ready.");
             }
             _placedRotationByOrigin[position] = rotation;
 
-            string normalizedOwner =
-                NormalizeOwnerId(ownerId);
             _playerPlacedBuildings.Remove(position);
             _factionPlacedBuildings[position] =
                 (buildingId, normalizedOwner);

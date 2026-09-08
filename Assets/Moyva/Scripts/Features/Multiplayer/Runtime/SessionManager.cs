@@ -96,6 +96,10 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
         private string ResolveLocalPlayerId()
         {
+            if (_lobby.Current != null && _lobby is ILobbyLocalIdentity lobbyIdentity
+                && !string.IsNullOrWhiteSpace(lobbyIdentity.LocalPlayerId))
+                return lobbyIdentity.LocalPlayerId.Trim();
+
             string sessionLocalPlayerId = _localPlayerId?.Trim();
             if (!string.IsNullOrWhiteSpace(sessionLocalPlayerId))
                 return sessionLocalPlayerId;
@@ -107,6 +111,13 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
         private bool ResolveIsLocalPlayerHost()
         {
+            if (_lobby.Current != null)
+                return !string.IsNullOrWhiteSpace(LocalPlayerId)
+                    && string.Equals(_lobby.Current.HostPlayerId, LocalPlayerId, StringComparison.Ordinal);
+
+            if (!string.IsNullOrWhiteSpace(_currentSessionId))
+                return _isHost;
+
             if (_isHost)
                 return true;
 

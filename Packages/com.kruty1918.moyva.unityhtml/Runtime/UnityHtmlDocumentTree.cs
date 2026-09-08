@@ -24,12 +24,34 @@ namespace UnityHTML.Runtime
         }
 
         public bool UpdateRegion(string id, string html)
+            => UpdateRegions(new Dictionary<string, string> { [id] = html }, out _);
+
+        public bool UpdateRegions(IReadOnlyDictionary<string, string> regions, out bool changed)
         {
-            Node node = Find(_roots, id);
-            if (node?.Component is not IContainerComponent container) return false;
-            Reconcile(container, node.Children, Parse(html));
-            Invalidate(_roots);
-            _html = null;
+            changed = false;
+            var pending = new List<(Node Node, XmlElement Xml, string Html)>();
+            // Resolve and parse the whole batch before changing any native controls.
+            foreach (var region in regions)
+            {
+                Node node = Find(_roots, region.Key);
+                if (node?.Component is not IContainerComponent) return false;
+                string html = region.Value ?? string.Empty;
+                if (node.RegionHtml != html) pending.Add((node, Parse(html), html));
+            }
+            foreach (var entry in pending)
+                for (Node parent = entry.Node.Parent; parent != null; parent = parent.Parent)
+                    foreach (var other in pending)
+                        if (other.Node == parent) return false;
+
+            foreach (var entry in pending)
+            {
+                Node node = entry.Node;
+                Reconcile((IContainerComponent)node.Component, node.Children, entry.Xml, node);
+                Invalidate(node);
+                node.RegionHtml = entry.Html;
+            }
+            changed = pending.Count > 0;
+            if (changed) _html = null;
             return true;
         }
 
@@ -43,7 +65,7 @@ namespace UnityHTML.Runtime
                 node.Component.SetProperty("value", value ?? string.Empty);
                 node.Attributes["value"] = value ?? string.Empty;
             }
-            Invalidate(_roots);
+            Invalidate(node);
             _html = null;
             return true;
         }
@@ -55,7 +77,7 @@ namespace UnityHTML.Runtime
             return document.DocumentElement;
         }
 
-        private void Reconcile(IContainerComponent parent, List<Node> nodes, XmlNode xml)
+        private void Reconcile(IContainerComponent parent, List<Node> nodes, XmlNode xml, Node owner = null)
         {
             int index = 0;
             foreach (XmlNode child in xml.ChildNodes)
@@ -82,7 +104,7 @@ namespace UnityHTML.Runtime
                     IReactComponent component = tag == "_text"
                         ? _context.CreateText(tag, child.InnerText)
                         : _context.CreateComponent(tag, textNode ? child.InnerText : string.Empty);
-                    node = new Node(component, tag, key, textNode);
+                    node = new Node(component, tag, key, textNode, owner);
                     component.SetParent(parent, index < nodes.Count ? nodes[index].Component : null);
                     nodes.Insert(index, node);
                 }
@@ -98,10 +120,21 @@ namespace UnityHTML.Runtime
 #if UNITY_EDITOR
             if (!UnityEngine.Application.isPlaying && component is ReactUnity.UGUI.UGUIComponent ugui)
             {
-                // Detach the generated subtree, dispose native objects immediately,
-                // then let React release managed state without calling Unity.Destroy.
-                component.SetParent(null);
-                if (ugui.GameObject != null) UnityEngine.Object.DestroyImmediate(ugui.GameObject);
+                // React detaches scroll thumbs during Destroy. Keep native rects alive
+                // until that finishes; a temporary pool bypasses edit-mode DestroySelf.
+                var retired = new Stack<IPoolableComponent>();
+                foreach (var element in ugui.GameObject.GetComponentsInChildren<ReactUnity.UGUI.Behaviours.ReactElement>(true))
+                    if (element.Component is IPoolableComponent poolable)
+                        poolable.PoolStack = retired;
+                component.Destroy();
+                while (retired.Count > 0)
+                {
+                    IPoolableComponent pooled = retired.Pop();
+                    pooled.PoolStack = null;
+                    if (pooled is ReactUnity.UGUI.UGUIComponent native && native.GameObject != null)
+                        UnityEngine.Object.DestroyImmediate(native.GameObject);
+                }
+                return;
             }
 #endif
             component.Destroy();
@@ -127,7 +160,8 @@ namespace UnityHTML.Runtime
                 if (text.Content != xml.InnerText) text.SetText(xml.InnerText);
             }
             else if (!node.IsText && node.Component is IContainerComponent container)
-                Reconcile(container, node.Children, xml);
+                Reconcile(container, node.Children, xml, node);
+            node.RegionHtml = null;
             node.Markup = markup;
         }
 
@@ -149,20 +183,23 @@ namespace UnityHTML.Runtime
             }
             return null;
         }
-        private static void Invalidate(List<Node> nodes)
+        private static void Invalidate(Node node)
         {
-            foreach (Node node in nodes) { node.Markup = null; Invalidate(node.Children); }
+            for (; node != null; node = node.Parent)
+            { node.Markup = null; node.RegionHtml = null; }
         }
         private sealed class Node
         {
             public readonly IReactComponent Component;
             public readonly string Tag, Key;
             public readonly bool IsText;
+            public readonly Node Parent;
             public readonly List<Node> Children = new();
             public Dictionary<string, string> Attributes = new();
             public string Markup;
-            public Node(IReactComponent component, string tag, string key, bool isText)
-            { Component = component; Tag = tag; Key = key; IsText = isText; }
+            public string RegionHtml;
+            public Node(IReactComponent component, string tag, string key, bool isText, Node parent)
+            { Component = component; Tag = tag; Key = key; IsText = isText; Parent = parent; }
             public bool Matches(string tag, string key) => !Component.Destroyed && Tag == tag && Key == key;
         }
     }

@@ -51,6 +51,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             _signalBus.TryUnsubscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
             _networkProvider.PeerConnected -= OnPeerConnected;
+            _commandSyncService.RegisterHandler(GameCommandType.StartingPositions, null);
         }
 
         private void OnWorldSpawnPositions(WorldSpawnPositionsSignal signal)
@@ -81,6 +82,14 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         private void OnStartingPositionsCommand(string senderId, byte[] payload)
         {
+            if (_sessionManager == null
+                || _sessionManager.IsLocalPlayerHost
+                || !MultiplayerAuthorityService.IsAuthorizedHostSender(
+                    _sessionManager.Participants, senderId))
+            {
+                return;
+            }
+
             if (payload == null || payload.Length == 0)
                 return;
 
@@ -89,7 +98,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 return;
 
             CacheAssignments(assignments);
-            _suppressNextBroadcast = true;
             long startupSequence = 0;
             string startupSessionId = null;
             if (_worldGenerationSignalState != null)
@@ -103,7 +111,17 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 Assignments = assignments,
             };
             if (_worldGenerationSignalState == null || _worldGenerationSignalState.TryStoreWorldSpawnPositions(spawnPositionsSignal, out spawnPositionsSignal))
-                _signalBus.Fire(spawnPositionsSignal);
+            {
+                _suppressNextBroadcast = true;
+                try
+                {
+                    _signalBus.Fire(spawnPositionsSignal);
+                }
+                finally
+                {
+                    _suppressNextBroadcast = false;
+                }
+            }
         }
 
         private bool ShouldBroadcastFromThisPeer()

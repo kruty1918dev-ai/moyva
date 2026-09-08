@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             RoomName = _roomNameInput != null ? _roomNameInput.text : string.Empty;
             Password = _passwordInput != null ? _passwordInput.text : string.Empty;
             IsPublic = _isPublicToggle != null ? _isPublicToggle.isOn : true;
-            MaxPlayers = _maxPlayersInput != null ? Mathf.RoundToInt(_maxPlayersInput.value) : 4;
+            MaxPlayers = _maxPlayersInput != null ? Mathf.Clamp(Mathf.RoundToInt(_maxPlayersInput.value), 2, 8) : 4;
             UpdateMaxPlayersLabel();
             UpdateNextButtonState();
 
@@ -109,7 +109,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         private void OnMaxPlayersChanged(float value)
         {
-            MaxPlayers = Mathf.RoundToInt(value);
+            MaxPlayers = Mathf.Clamp(Mathf.RoundToInt(value), 2, 8);
             UpdateMaxPlayersLabel();
             UpdateNextButtonState();
         }
@@ -132,7 +132,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_roomNameInput != null) RoomName = _roomNameInput.text;
             if (_passwordInput != null) Password = _passwordInput.text;
             if (_isPublicToggle != null) IsPublic = _isPublicToggle.isOn;
-            if (_maxPlayersInput != null) MaxPlayers = Mathf.RoundToInt(_maxPlayersInput.value);
+            if (_maxPlayersInput != null) MaxPlayers = Mathf.Clamp(Mathf.RoundToInt(_maxPlayersInput.value), 2, 8);
             UpdateNextButtonState();
             OnButtonNextClicked?.Invoke();
         }

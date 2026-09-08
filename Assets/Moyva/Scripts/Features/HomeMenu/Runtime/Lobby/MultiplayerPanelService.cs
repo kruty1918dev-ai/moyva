@@ -118,8 +118,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private static CreateRoomPanelPresentation BuildCreateRoomPresentation(NetworkProviderType provider)
         {
             return provider == NetworkProviderType.Lan
-                ? new CreateRoomPanelPresentation("Create LAN Lobby", "LAN Room Settings", "Create LAN Lobby")
-                : new CreateRoomPanelPresentation("Create Global Lobby", "Global Room Settings", "Create Global Lobby");
+                ? new CreateRoomPanelPresentation("Create LAN Lobby", "LAN Room Settings", "NEXT")
+                : new CreateRoomPanelPresentation("Create Global Lobby", "Global Room Settings", "NEXT");
         }
     }
 }

@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.SaveSystem
         public Task SaveBeforeExitAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            _saveService.Save(0);
+            _saveService.Save(GameLaunchContext.SaveSlot);
             return Task.CompletedTask;
         }
     }

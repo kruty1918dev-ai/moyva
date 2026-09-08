@@ -76,7 +76,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public IReadOnlyList<KickPlayerInfo> KickPlayers => _kickPlayers;
         public string CreateRoomTitle { get; private set; } = "Create Lobby";
         public string CreateRoomSectionTitle { get; private set; } = "Room Settings";
-        public string CreateRoomNextText { get; private set; } = "Create Lobby";
+        public string CreateRoomNextText { get; private set; } = "NEXT";
         public string InviteCodeText { get; private set; } = "Invite Code: N/A";
         public string KickStatus { get; private set; } = string.Empty;
         public bool KickInteractable { get; private set; } = true;
@@ -136,7 +136,18 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         bool IInfoPanelViewController.IsVisible => InfoVisible;
 
         public event Action<GameSlotInfo> OnSlotSelected;
-        public event Action OnButtonNextClicked;
+        private event Action CreateRoomRequested;
+        private event Action CreateWorldRequested;
+        event Action ICreateRoomViewController.OnButtonNextClicked
+        {
+            add => CreateRoomRequested += value;
+            remove => CreateRoomRequested -= value;
+        }
+        event Action IWorldSetupViewController.OnButtonNextClicked
+        {
+            add => CreateWorldRequested += value;
+            remove => CreateWorldRequested -= value;
+        }
         public event Action OnRandomSeedClicked;
         public event Action OnSettingsChanged;
         public event Action<string> OnPlayerNameChanged;
@@ -457,8 +468,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public void UnlockOverlay() => _overlayLockCount = Math.Max(0, _overlayLockCount - 1);
 
-        public void ClickCreateRoom() => InvokeButton(_createRoomNextButton, () => OnButtonNextClicked?.Invoke());
-        public void ClickCreateWorld() => InvokeButton(_worldCreateButton, () => OnButtonNextClicked?.Invoke());
+        public void ClickCreateRoom() => InvokeButton(_createRoomNextButton, () => CreateRoomRequested?.Invoke());
+        public void ClickCreateWorld() => InvokeButton(_worldCreateButton, () => CreateWorldRequested?.Invoke());
         public void ClickLobbyStart() => InvokeButton(_lobbyStartButton, null);
         public void ClickLobbyBack() => InvokeButton(_lobbyBackButton, null);
         public void SelectSlot(int index)
@@ -601,14 +612,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public void IncreaseMaxPlayers()
         {
-            MaxPlayers = Mathf.Clamp(MaxPlayers + 1, 1, 8);
+            MaxPlayers = Mathf.Clamp(MaxPlayers + 1, 2, 8);
             RefreshCreateRoomInteractable();
             _state.MarkDirty();
         }
 
         public void DecreaseMaxPlayers()
         {
-            MaxPlayers = Mathf.Clamp(MaxPlayers - 1, 1, 8);
+            MaxPlayers = Mathf.Clamp(MaxPlayers - 1, 2, 8);
             RefreshCreateRoomInteractable();
             _state.MarkDirty();
         }

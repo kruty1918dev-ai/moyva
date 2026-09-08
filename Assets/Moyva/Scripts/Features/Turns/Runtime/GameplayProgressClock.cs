@@ -31,6 +31,9 @@ namespace Kruty1918.Moyva.Turns.Runtime
         public float SandboxRoundSeconds { get; private set; }
         public float Speed { get; private set; }
         public long CurrentSequence => ResolveSequence();
+        public double ElapsedGameplaySeconds =>
+            Math.Max(0L, CurrentSequence - 1L) * (double)SandboxRoundSeconds + _accumulator;
+        public float SecondsUntilNextProgress => Mathf.Max(0f, SandboxRoundSeconds - _accumulator);
 
         public void Configure(GameplayProgressMode mode, float sandboxRoundSeconds, float speed)
         {
@@ -49,20 +52,25 @@ namespace Kruty1918.Moyva.Turns.Runtime
                 || _turns?.Value?.Phase == TurnPhase.Completed)
                 return;
 
-            _accumulator += Time.deltaTime * Speed;
-            if (_accumulator < SandboxRoundSeconds)
+            AdvanceRealtime(Time.deltaTime);
+        }
+
+        internal void AdvanceRealtime(float deltaSeconds)
+        {
+            if (!IsRealtime || deltaSeconds <= 0f)
                 return;
 
-            float elapsed = SandboxRoundSeconds;
-            _accumulator -= SandboxRoundSeconds;
-
-            _calendar.AdvanceTurn();
-
-            Progressed?.Invoke(new GameplayProgressTick(
-                Mode,
-                ResolveOwnerId(),
-                CurrentSequence,
-                elapsed));
+            _accumulator += deltaSeconds * Speed;
+            while (_accumulator >= SandboxRoundSeconds)
+            {
+                _accumulator -= SandboxRoundSeconds;
+                _calendar.AdvanceTurn();
+                Progressed?.Invoke(new GameplayProgressTick(
+                    Mode,
+                    ResolveOwnerId(),
+                    CurrentSequence,
+                    SandboxRoundSeconds));
+            }
         }
 
         private long ResolveSequence()

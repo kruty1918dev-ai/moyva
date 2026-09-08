@@ -25,7 +25,12 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         {
             if (snapshot == null) return;
 
-            SaveMigrationCheckpoint();
+            if (_lobby is ILobbyLocalIdentity lobbyIdentity
+                && !string.IsNullOrWhiteSpace(lobbyIdentity.LocalPlayerId))
+            {
+                _localPlayerId = lobbyIdentity.LocalPlayerId;
+                _isHost = string.Equals(snapshot.HostPlayerId, _localPlayerId, StringComparison.Ordinal);
+            }
 
             // Add missing remote participants from the lobby's player list.
             foreach (var p in snapshot.Players)

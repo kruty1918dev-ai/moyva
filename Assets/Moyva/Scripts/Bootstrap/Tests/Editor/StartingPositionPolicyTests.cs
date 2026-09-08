@@ -138,6 +138,55 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
         }
 
         [Test]
+        public void BuildSpawnAssignments_PreservesEveryParticipant_WhenHostIsNotFirst()
+        {
+            GameLaunchContext.ConfigureMenuMultiplayerGame(
+                "New World", 12345, 0, 0, 0, 4, false, 64, 64,
+                isLocalPlayerHost: true, localPlayerId: "host");
+            var positions = new[] { new Vector2Int(4, 5), new Vector2Int(40, 45) };
+            var participants = new[]
+            {
+                new Participant(new ParticipantIdentity("client", "Player"), isHost: false),
+                new Participant(new ParticipantIdentity("host", "Player"), isHost: true),
+            };
+
+            SpawnPositionAssignment[] assignments = new StartingPositionAssignmentFactory()
+                .BuildSpawnAssignments(positions, participants, "host", true, 4);
+
+            Assert.That(assignments, Has.Length.EqualTo(2));
+            Assert.That(assignments[0].ParticipantId, Is.EqualTo("client"));
+            Assert.That(assignments[1].ParticipantId, Is.EqualTo("host"));
+            Assert.That(assignments[0].Position, Is.Not.EqualTo(assignments[1].Position));
+        }
+
+        [Test]
+        public void PickStartingPositions_KeepsDistinctPositions_WhenMinimumDistanceCannotFit()
+        {
+            var selector = new StartingPositionSelector(new StartingPositionInitializerSettings
+            {
+                minMarginFromBorder = 0,
+                relativeMarginFactor = 0f,
+                requireHeightMapForStart = true,
+                startCandidateAttempts = 1,
+                minAStarDistanceBetweenPlayers = 50,
+            }, pathfinder: null);
+            var signal = new WorldGeneratedDataSignal
+            {
+                Source = WorldGeneratedDataSource.GeneratedHost,
+                Width = 8,
+                Height = 8,
+                HeightMap = CreateHeightMap(8, 8, 0.5f),
+                TileMap = CreateTileMap(8, 8, "water"),
+            };
+
+            List<Vector2Int> positions = selector.PickStartingPositions(signal, 3);
+
+            Assert.That(positions, Has.Count.EqualTo(3));
+            Assert.That(new HashSet<Vector2Int>(positions), Has.Count.EqualTo(3));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [Test]
         public void CanRunStartLogic_DoesNotUseLaunchHost_WhenSessionLocalPlayerDiffers()
         {
             GameLaunchContext.ConfigureMenuMultiplayerGame(

@@ -34,6 +34,13 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             var ownerId = NormalizeOwnerId(signal.OwnerId);
 
+            // Instant buildings publish both placement and operational events.
+            // Repeated delivery must not create another settlement or production entry.
+            if (registry.TryGetBuildingAtPosition(signal.Position, out var existingId, out var existingOwner)
+                && string.Equals(existingId, signal.BuildingId, StringComparison.Ordinal)
+                && string.Equals(NormalizeOwnerId(existingOwner), ownerId, StringComparison.Ordinal))
+                return null;
+
             if (signal.HasRelocationSource
                 && signal.RelocationSourcePosition != signal.Position
                 && registry.TryGetSettlementByPosition(signal.RelocationSourcePosition, out var relocatedSettlement))

@@ -341,7 +341,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
         }
 
         [Test]
-        public async Task LobbyStart_WhenSingleHostAndCommandSyncMissing_StartsLocalGame()
+        public async Task LobbyStart_WhenSingleHost_CannotStartGame()
         {
             var state = new HomeMenuMoyvaUiState();
             var view = new HomeMenuMoyvaUiViewController(state);
@@ -365,12 +365,53 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
                 SetField(service, "_localPlayerId", "host");
 
                 service.Initialize();
-                Assert.That(view.StartGameButton.interactable, Is.True);
+                Assert.That(view.StartGameButton.interactable, Is.False);
 
                 view.ClickLobbyStart();
                 await Task.Yield();
 
-                Assert.That(starter.StartCount, Is.EqualTo(1));
+                Assert.That(starter.StartCount, Is.EqualTo(0));
+            }
+            finally
+            {
+                service.Dispose();
+                view.Dispose();
+            }
+        }
+
+        [Test]
+        public void CreateRoom_Click_SavesDraftAndOpensWorldSetupWithoutCreatingLobby()
+        {
+            var state = new HomeMenuMoyvaUiState();
+            var view = new HomeMenuMoyvaUiViewController(state);
+            var navigation = new FakeNavigation();
+            var lobby = new FakeLobbyService(null);
+            var flow = new FakeLobbyFlowContext();
+            var service = new CreateRoomPanelService();
+
+            try
+            {
+                view.SetRoomName("Deferred Room");
+                view.SetRoomPrivate(true);
+                view.SetRoomPassword("secret");
+                view.MaxPlayers = 1;
+
+                SetField(service, "_viewController", view);
+                SetField(service, "_lobbyService", lobby);
+                SetField(service, "_lobbyFlowContext", flow);
+                SetField(service, "_navigation", navigation);
+                SetField(service, "_worldSetupPanelName", "WorldSetupPanel");
+
+                service.Initialize();
+                view.ClickCreateRoom();
+
+                Assert.That(lobby.CreateCount, Is.EqualTo(0));
+                Assert.That(navigation.OpenedMenus, Does.Contain("WorldSetupPanel"));
+                Assert.That(flow.HasRoomDraft, Is.True);
+                Assert.That(flow.RoomName, Is.EqualTo("Deferred Room"));
+                Assert.That(flow.MaxPlayers, Is.EqualTo(2));
+                Assert.That(flow.IsPublic, Is.False);
+                Assert.That(flow.Password, Is.EqualTo("secret"));
             }
             finally
             {
@@ -420,6 +461,8 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
 
             public IUnityHtmlMotion Motion => _motion;
             public bool UpdateRegion(string elementId, string html) => false;
+            public bool UpdateRegions(IReadOnlyDictionary<string, string> regions,
+                IReadOnlyDictionary<string, object> globals = null) => false;
             public bool SetValue(string elementId, string value) => false;
             public int DisposeCount { get; private set; }
 
@@ -522,14 +565,31 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
                 Current = current;
             }
 
+            public int CreateCount { get; private set; }
             public LobbyRoom Current { get; private set; }
             public LobbyState State => Current?.State ?? LobbyState.Closed;
             public event System.Action<LobbyRoom> LobbyUpdated;
             public event System.Action<string> KickedFromLobby;
             public event System.Action<LobbyState> StateChanged;
 
-            public Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, CancellationToken ct = default) =>
-                Task.FromResult(Current);
+            public Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, CancellationToken ct = default)
+            {
+                CreateCount++;
+                Current = Current ?? new LobbyRoom(
+                    "created",
+                    "CODE",
+                    options?.Name ?? "Room",
+                    options?.MaxPlayers ?? 4,
+                    options?.IsPrivate ?? false,
+                    "host",
+                    options?.RelayJoinCode ?? string.Empty,
+                    new List<LobbyPlayer>
+                    {
+                        new LobbyPlayer("host", options?.DisplayName ?? "Player", isHost: true)
+                    });
+                LobbyUpdated?.Invoke(Current);
+                return Task.FromResult(Current);
+            }
 
             public Task<LobbyRoom> JoinByCodeAsync(string lobbyCode, string displayName, CancellationToken ct = default) =>
                 Task.FromResult(Current);
@@ -556,6 +616,37 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             public Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, CancellationToken ct = default) => Task.CompletedTask;
 
             public void RaiseKicked(string reason) => KickedFromLobby?.Invoke(reason);
+        }
+
+        private sealed class FakeLobbyFlowContext : ILobbyFlowContext
+        {
+            public NetworkProviderType Provider { get; private set; } = NetworkProviderType.Relay;
+            public LobbyFlowKind FlowKind { get; private set; } = LobbyFlowKind.Create;
+            public bool HasRoomDraft { get; private set; }
+            public string RoomName { get; private set; } = string.Empty;
+            public string Password { get; private set; } = string.Empty;
+            public bool IsPublic { get; private set; } = true;
+            public int MaxPlayers { get; private set; } = 4;
+
+            public void Set(NetworkProviderType provider, LobbyFlowKind flowKind)
+            {
+                Provider = provider;
+                FlowKind = flowKind;
+            }
+
+            public void SetRoomDraft(string roomName, int maxPlayers, bool isPublic, string password)
+            {
+                RoomName = roomName;
+                MaxPlayers = Mathf.Clamp(maxPlayers, 2, 8);
+                IsPublic = isPublic;
+                Password = password ?? string.Empty;
+                HasRoomDraft = true;
+            }
+
+            public void ClearRoomDraft()
+            {
+                HasRoomDraft = false;
+            }
         }
     }
 }

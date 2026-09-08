@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IConstructionBuildingCombatTargetQuery _buildingTargets;
         private readonly IUnitOwnershipQuery _ownership;
         private readonly ITurnService _turns;
+        private readonly IGameplayProgressClock _progressClock;
         private readonly IUnitTurnActionStateService _actionState;
 
         [Inject]
@@ -30,6 +31,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             [InjectOptional] IConstructionBuildingCombatTargetQuery buildingTargets = null,
             [InjectOptional] IUnitOwnershipQuery ownership = null,
             [InjectOptional] ITurnService turns = null,
+            [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] IUnitTurnActionStateService actionState = null)
         {
             _combat = combat;
@@ -39,6 +41,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _buildingTargets = buildingTargets;
             _ownership = ownership;
             _turns = turns;
+            _progressClock = progressClock;
             _actionState = actionState;
         }
 
@@ -275,7 +278,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
             }
 
-            if (_turns != null)
+            if (_turns != null && _progressClock?.IsRealtime != true)
             {
                 if (_turns.Phase != TurnPhase.AwaitingInput)
                 {

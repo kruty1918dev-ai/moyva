@@ -170,16 +170,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 if (!canInspectWorld)
                     return;
 
-                if (!IsBuildingOperationalForFunctionalUi(position))
-                {
-                    ClearSelectedUnit();
-                    _notifications?.Show(
-                        "Будівля ще будується",
-                        GameplayNotificationKind.Warning,
-                        dedupKey: "building-under-construction");
-                    return;
-                }
-
                 // Повторний клік на вже відкриту будівлю — закрити панель (toggle)
                 if (_inspectedKind == WorldInfoSelectionKind.Building
                     && string.Equals(_inspectedObjectId, occupantId, StringComparison.Ordinal))
@@ -305,10 +295,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             ClearSelectedUnit();
             _signalBus.Fire(new WorldInfoPanelClosedSignal());
         }
-
-        private bool IsBuildingOperationalForFunctionalUi(Vector2Int position)
-            => _constructionLifecycle == null
-                || _constructionLifecycle.IsOperational(position);
 
         private void HandleSecondaryTileClick(Vector2Int position)
         {

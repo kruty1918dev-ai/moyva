@@ -11,6 +11,7 @@ using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Jsonization;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Notifications.API;
 using Kruty1918.Moyva.SaveSystem;
@@ -32,6 +33,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IConstructionSessionCommands _construction;
         private readonly IConstructionBootstrapQuery _bootstrap;
         private readonly IConstructionPortfolioQuery _portfolio;
+        private readonly IConstructionLifecycle _lifecycle;
         private readonly IBuildingRegistry _buildings;
         private readonly IConstructionSelectionAvailabilityQuery _availability;
         private readonly IUnitService _units;
@@ -84,7 +86,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] ILocalGameplayRoleResolver roleResolver = null,
             [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] EconomyDatabaseSO economyDatabase = null,
-            [InjectOptional] GameplayCargoPanel cargoPanel = null)
+            [InjectOptional] GameplayCargoPanel cargoPanel = null,
+            [InjectOptional] IConstructionLifecycle lifecycle = null)
         {
             _turns = turns;
             _economy = economy;
@@ -94,6 +97,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _turnHistory = turnHistory;
             _bootstrap = bootstrap;
             _portfolio = portfolio;
+            _lifecycle = lifecycle;
             _units = units;
             _unitOwnership = unitOwnership;
             _recruitment = recruitment;
@@ -108,6 +112,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _roleResolver = roleResolver;
             _progressClock = progressClock;
             _cargoPanel = cargoPanel;
+
+            foreach (var resource in MoyvaJsonRuntime.GetAll<EconomyResourceDefinition>())
+                if (resource != null && resource.Icon != null)
+                    _icons[GameplayHtmlIconKeys.Resource(resource.Id)] = resource.Icon;
+
             if (economyDatabase != null)
                 foreach (var resource in economyDatabase.Resources)
                     if (resource != null && resource.Icon != null)
@@ -159,6 +168,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 TurnUiEnabled = IsTurnUiEnabled(),
                 SandboxRealtime = _progressClock?.IsRealtime ?? false,
                 SandboxSpeed = _progressClock?.Speed ?? 1f,
+                SandboxElapsedSeconds = _progressClock?.ElapsedGameplaySeconds ?? 0d,
+                SandboxSecondsUntilNextProgress = _progressClock?.SecondsUntilNextProgress ?? 0f,
+                SandboxRoundSeconds = _progressClock?.SandboxRoundSeconds ?? 10f,
                 SelectedBuildingId = _construction?.GetSelectedBuildingId() ?? string.Empty,
                 SelectionKind = _selectionKind == WorldInfoSelectionKind.None
                     ? string.Empty
@@ -245,6 +257,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             IReadOnlyList<TurnFaction> factions = _turns?.Factions;
             return factions == null || factions.Count > 1;
+        }
+
+        public string ResolveBuildingDisplayName(string buildingId)
+        {
+            if (string.IsNullOrWhiteSpace(buildingId))
+                return "building";
+
+            BuildingDefinition definition = _buildings?.GetById(buildingId.Trim());
+            return string.IsNullOrWhiteSpace(definition?.DisplayName)
+                ? Display(buildingId)
+                : definition.DisplayName.Trim();
         }
 
         public Task<CombatCommandResult> AttackSelectionAsync()
@@ -492,10 +515,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (definitions == null)
                 return Array.Empty<GameplayBuildingOptionSnapshot>();
 
+            string requiredCastleId = string.Empty;
+            bool requiresInitialCastle = _bootstrap != null
+                && _bootstrap.RequiresInitialCastle(ownerId, out requiredCastleId);
+
             return definitions
                 .Where(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id))
                 .Where(definition => !BuildingDefinitionCapabilities.IsCastle(definition)
-                    || (_bootstrap != null && _bootstrap.RequiresInitialCastle(ownerId, out _)))
+                    || (requiresInitialCastle
+                        && string.Equals(definition.Id, requiredCastleId, StringComparison.Ordinal)))
                 .OrderBy(definition => definition.Category)
                 .ThenBy(definition => definition.DisplayName, StringComparer.Ordinal)
                 .Select(definition =>
@@ -517,7 +545,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         availability.CanSelect,
                         string.IsNullOrWhiteSpace(availability.Reason)
                             ? "Unavailable under current construction rules."
-                            : availability.Reason);
+                            : availability.Reason,
+                        definition.BuildTurns);
                 })
                 .ToArray();
         }
@@ -532,12 +561,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "Recruitment service is unavailable.");
 
             string ownerId = ResolveOwnerId();
-            if (_turns != null
-                && !string.Equals(_turns.ActiveOwnerId, ownerId, StringComparison.Ordinal))
-            {
-                return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "Recruitment is available only during your turn.");
-            }
-
             if (!_recruitment.TryEnqueue(ownerId, _selectionPosition, unitTypeId.Trim(), out string reason))
             {
                 return UiActionResult.Rejected(
@@ -561,8 +584,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             snapshot.SelectionOwnedByLocalPlayer = ownership != null
                 && ownership.TryGetPlacedBuildingOwner(_selectionPosition, out string buildingOwner)
                 && string.Equals(buildingOwner?.Trim(), ownerId, StringComparison.Ordinal);
-            snapshot.SelectionOperational = _construction is not IConstructionLifecycle lifecycle
-                || lifecycle.IsOperational(_selectionPosition);
+            snapshot.SelectionOperational = _lifecycle?.IsOperational(_selectionPosition) ?? true;
 
             BuildingDefinition definition = _buildings?.GetById(_selectionId);
             if (definition == null
@@ -662,14 +684,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         "Ownership",
                         snapshot.SelectionOwnedByLocalPlayer ? "Your kingdom" : "Another kingdom",
                         "Command authority"));
-                    if (_construction is IConstructionLifecycle lifecycle
-                        && lifecycle.TryGetProgress(_selectionPosition, out int completed, out int required)
+                    facts.Add(new GameplayFactSnapshot(
+                        "Build time",
+                        GameplayProgressTimeText.BuildDuration(definition?.BuildTurns ?? 0, _progressClock),
+                        "Construction duration"));
+                    if (_lifecycle != null
+                        && _lifecycle.TryGetProgress(_selectionPosition, out int completed, out int required)
                         && completed < required)
                     {
                         facts.Add(new GameplayFactSnapshot(
                             "Status",
                             $"Under construction {completed}/{required}",
-                            $"{Math.Max(0, required - completed)} turns remaining"));
+                            GameplayProgressTimeText.Remaining(required - completed, _progressClock) + " remaining"));
                     }
                     else
                     {
@@ -1203,12 +1229,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string buildingId = value?.ToString()?.Trim();
             if (string.IsNullOrWhiteSpace(buildingId))
                 return;
+            UiActionResult openResult = Execute(UiActionIds.Construction.Open, "GameplayHTML");
+            if (openResult.Status == UiActionStatus.Rejected)
+            {
+                SetResult(openResult, "Construction is unavailable.");
+                return;
+            }
+
             UiActionResult result = _actions.Value.Execute(
                 UiActionIds.Construction.SelectBuilding,
                 UiActionSource.Button,
                 "GameplayHTML",
                 buildingId);
-            SetResult(result, $"Selected {buildingId}.");
+            if (result.Status == UiActionStatus.Performed)
+            {
+                string displayName = _readModel.ResolveBuildingDisplayName(buildingId);
+                _state.SetFeedback($"Selected {displayName}. Choose a tile on the map.");
+                return;
+            }
+
+            SetResult(result, "Building selection was rejected.");
         }
 
         public void ConfirmPlacement()
@@ -1513,6 +1553,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private int _lastRenderFrame = -1;
         private string _viewportClass = string.Empty;
         private bool _initialCastleModeActive;
+        private bool _mounted;
+        private string _css;
+        private long _lastSandboxSecond = -1;
+        private int _lastSandboxCountdown = -1;
 
         public GameplayHtmlPresenter(
             SignalBus signals,
@@ -1566,6 +1610,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             _anchor.StopEditorPreview();
             _anchor.PrepareForMount();
+            _css = _anchor.CssAsset.text;
             _anchor.SetLegacyUiVisible(false);
             _state.Changed += MarkDirty;
             GameplayNotificationStream.Published += OnNotificationPublished;
@@ -1612,6 +1657,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
 
             _state.ExpireFeedbackIfNeeded();
+            if (_progressClock?.IsRealtime == true)
+            {
+                long second = (long)Math.Floor(_progressClock.ElapsedGameplaySeconds);
+                int countdown = Mathf.CeilToInt(_progressClock.SecondsUntilNextProgress);
+                if (second != _lastSandboxSecond || countdown != _lastSandboxCountdown)
+                {
+                    _lastSandboxSecond = second;
+                    _lastSandboxCountdown = countdown;
+                    _state.MarkDirty();
+                }
+            }
             EnsureInitialCastlePlacement();
             string viewport = _anchor.ViewportClass;
             if (!string.Equals(viewport, _viewportClass, StringComparison.Ordinal))
@@ -1717,7 +1773,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _state.ConsumeDirty();
 
             _lastRenderFrame = Time.frameCount;
-            _viewportClass = _anchor.ViewportClass;
+            string viewportClass = _anchor.ViewportClass;
             GameplayHtmlSnapshot snapshot = _readModel.Capture(_state);
             snapshot.EndTurnPending = _remoteTurns?.IsEndTurnPending ?? false;
             var globals = new Dictionary<string, object>
@@ -1730,16 +1786,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_anchor.NotificationsIcon != null) globals["gameplay_notifications_icon"] = _anchor.NotificationsIcon;
             if (_anchor.MenuIcon != null) globals["gameplay_menu_icon"] = _anchor.MenuIcon;
 
-            UnityHtmlMountResult result = _host.Mount(
-                _anchor.MountRoot,
-                new UnityHtmlDocument(
-                    GameplayHtmlMarkup.Build(snapshot, _state, _viewportClass),
-                    _anchor.CssAsset.text,
-                    "Moyva Gameplay"),
-                globals);
+            var regions = GameplayHtmlMarkup.BuildRegions(snapshot, _state);
+            if (force || !_mounted || _viewportClass != viewportClass || !_host.UpdateRegions(regions, globals))
+            {
+                UnityHtmlMountResult result = _host.Mount(
+                    _anchor.MountRoot,
+                    new UnityHtmlDocument(
+                        GameplayHtmlMarkup.BuildDocument(regions, viewportClass), _css, "Moyva Gameplay"),
+                    globals);
+                _mounted = result.Succeeded;
+                if (!_mounted)
+                    Debug.LogError($"[GameplayHTML] Mount failed: {result.ErrorMessage}");
+            }
+            _viewportClass = viewportClass;
             _anchor.SyncInputShields(snapshot, _state);
-            if (!result.Succeeded)
-                Debug.LogError($"[GameplayHTML] Mount failed: {result.ErrorMessage}");
         }
 
         private static void AddIconGlobals(

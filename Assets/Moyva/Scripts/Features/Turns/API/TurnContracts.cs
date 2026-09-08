@@ -176,6 +176,8 @@ namespace Kruty1918.Moyva.Turns.API
         float SandboxRoundSeconds { get; }
         float Speed { get; }
         long CurrentSequence { get; }
+        double ElapsedGameplaySeconds { get; }
+        float SecondsUntilNextProgress { get; }
 
         void Configure(GameplayProgressMode mode, float sandboxRoundSeconds, float speed);
         void SetSpeed(float speed);

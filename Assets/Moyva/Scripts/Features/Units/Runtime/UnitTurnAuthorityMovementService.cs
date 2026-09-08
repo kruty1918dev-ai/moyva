@@ -42,6 +42,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private readonly IUnitMovementService _decorated;
         private readonly ITurnService _turns;
+        private readonly IGameplayProgressClock _progressClock;
         private readonly IUnitOwnershipQuery _ownership;
         private readonly IUnitService _units;
         private readonly IUnitMovementQuery _movementQuery;
@@ -49,12 +50,14 @@ namespace Kruty1918.Moyva.Units.Runtime
         public UnitTurnAuthorityMovementService(
             IUnitMovementService decorated,
             [InjectOptional] ITurnService turns = null,
+            [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] IUnitOwnershipQuery ownership = null,
             [InjectOptional] IUnitService units = null,
             [InjectOptional] IUnitMovementQuery movementQuery = null)
         {
             _decorated = decorated ?? throw new ArgumentNullException(nameof(decorated));
             _turns = turns;
+            _progressClock = progressClock;
             _ownership = ownership;
             _units = units;
             _movementQuery = movementQuery;
@@ -94,6 +97,9 @@ namespace Kruty1918.Moyva.Units.Runtime
                     token,
                     authorityCancellation.Token);
 
+            bool watchTurnState = _turns != null
+                && _progressClock?.IsRealtime != true;
+
             void OnTurnStateChanged()
             {
                 if (!IsLeaseValid(lease, out string leaseReason)
@@ -103,7 +109,8 @@ namespace Kruty1918.Moyva.Units.Runtime
                 }
             }
 
-            _turns.StateChanged += OnTurnStateChanged;
+            if (watchTurnState)
+                _turns.StateChanged += OnTurnStateChanged;
 
             try
             {
@@ -131,7 +138,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
             finally
             {
-                _turns.StateChanged -= OnTurnStateChanged;
+                if (watchTurnState)
+                    _turns.StateChanged -= OnTurnStateChanged;
             }
         }
         internal bool TryAcquireLease(
@@ -174,6 +182,12 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
             }
 
+            if (_progressClock?.IsRealtime == true)
+            {
+                lease = new UnitTurnCommandLease(normalizedUnitId, ownerId, 0, 0);
+                return IsLeaseValid(lease, out reason);
+            }
+
             if (_turns == null)
             {
                 reason = "Turn authority is unavailable.";
@@ -196,12 +210,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             UnitTurnCommandLease lease,
             out string reason)
         {
-            if (_turns == null)
-            {
-                reason = "Turn authority is unavailable.";
-                return false;
-            }
-
             if (_ownership == null)
             {
                 reason = "Unit ownership authority is unavailable.";
@@ -222,6 +230,18 @@ namespace Kruty1918.Moyva.Units.Runtime
                     StringComparison.Ordinal))
             {
                 reason = "Unit ownership changed while the command was active.";
+                return false;
+            }
+
+            if (_progressClock?.IsRealtime == true)
+            {
+                reason = null;
+                return true;
+            }
+
+            if (_turns == null)
+            {
+                reason = "Turn authority is unavailable.";
                 return false;
             }
 

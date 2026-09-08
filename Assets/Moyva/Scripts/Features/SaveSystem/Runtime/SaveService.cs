@@ -70,7 +70,7 @@ namespace Kruty1918.Moyva.SaveSystem
         {
             var modules = GetCurrentModulesSnapshot();
             if (!_loadService.TryLoad(slot, modules, GeneratedWorldSaveModuleFullName, out string errorMessage))
-                Debug.LogError($"Load failed: {errorMessage}");
+                throw new InvalidDataException($"Load failed: {errorMessage}");
         }
 
         public bool HasSave(int slot = 0)

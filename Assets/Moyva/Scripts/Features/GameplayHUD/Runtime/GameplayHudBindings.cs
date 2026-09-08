@@ -28,6 +28,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             container.BindInterfacesAndSelfTo<GameplayHtmlPresenter>()
                 .AsSingle()
                 .NonLazy();
+            container.BindInterfacesAndSelfTo<BuildingConstructionProgressPresenter>()
+                .AsSingle()
+                .NonLazy();
             container.BindInterfacesAndSelfTo<UnitRecruitmentProgressIndicatorPresenter>()
                 .AsSingle()
                 .NonLazy();

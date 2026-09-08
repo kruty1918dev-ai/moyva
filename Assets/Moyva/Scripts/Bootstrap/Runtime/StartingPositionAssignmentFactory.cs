@@ -68,6 +68,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 string participantId = ResolveAssignmentParticipantId(
                     index,
                     isDirectGameplay,
+                    participant,
                     spec.ParticipantId,
                     localPlayerId);
 
@@ -85,11 +86,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private static string ResolveAssignmentParticipantId(
             int slotIndex,
             bool isDirectGameplay,
+            Participant participant,
             string resolvedParticipantId,
             string localPlayerId)
         {
             if (!isDirectGameplay
-                && slotIndex == 0
+                && (participant?.IsHost == true || participant == null && slotIndex == 0)
                 && Kruty1918.Moyva.SaveSystem.GameLaunchContext.HasLocalPlayerRole
                 && Kruty1918.Moyva.SaveSystem.GameLaunchContext.IsLocalPlayerHost
                 && !string.IsNullOrWhiteSpace(localPlayerId))

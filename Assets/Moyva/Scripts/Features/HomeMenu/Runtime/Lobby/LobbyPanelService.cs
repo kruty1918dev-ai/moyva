@@ -151,7 +151,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (lobby == null)
             {
                 _lobbyPanelViewController.ClearLobbyInvateCode();
-                _lobbyPanelViewController.StartGameButton.interactable = false;
+                if (_lobbyPanelViewController.StartGameButton != null)
+                    _lobbyPanelViewController.StartGameButton.interactable = false;
                 return;
             }
 
@@ -179,15 +180,27 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (lobby == null) return false;
             if (lobby.State != LobbyState.Open) return false;
-            return (lobby.Players?.Count ?? 0) >= 1;
+            return CountConnectedPlayers(lobby) >= 2;
         }
 
         private static bool CanStartLocallyWithoutCommandSync(LobbyRoom lobby)
         {
-            if (lobby == null)
-                return false;
+            return false;
+        }
 
-            return (lobby.Players?.Count ?? 0) == 1;
+        private static int CountConnectedPlayers(LobbyRoom lobby)
+        {
+            if (lobby?.Players == null)
+                return 0;
+
+            var count = 0;
+            foreach (var player in lobby.Players)
+            {
+                if (player != null && !string.IsNullOrWhiteSpace(player.PlayerId))
+                    count++;
+            }
+
+            return count;
         }
 
         /// <summary>
@@ -201,35 +214,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (lobby == null) return false;
 
-            // Якщо SessionManager вже знає, що ми хост — довіряємо йому
-            if (_sessionManager != null && _sessionManager.IsLocalPlayerHost) return true;
+            var localId = (_lobbyService as ILobbyLocalIdentity)?.LocalPlayerId;
+            if (string.IsNullOrWhiteSpace(localId))
+                localId = _sessionManager?.LocalPlayerId;
+            if (string.IsNullOrWhiteSpace(localId))
+                localId = _localPlayerId;
 
-            if (!string.IsNullOrEmpty(_localPlayerId))
-                return lobby.HostPlayerId == _localPlayerId;
-
-            // LAN/offline lobby ids can be generated locally and not match UGS identity.
-            // In that case the host is the lobby player marked IsHost with our current display name.
-            var localName = GetPlayerName();
-            if (!string.IsNullOrWhiteSpace(localName) && lobby.Players != null)
-            {
-                foreach (var player in lobby.Players)
-                {
-                    if (player != null && player.IsHost && string.Equals(player.DisplayName, localName, StringComparison.Ordinal))
-                        return true;
-                }
-            }
-
-            // Фолбек: спробувати вивести з учасників сесії
-            if (_sessionManager?.Participants != null)
-            {
-                foreach (var p in _sessionManager.Participants)
-                {
-                    if (p.IsHost && !string.IsNullOrEmpty(p.Identity?.PlayerId) && p.Identity.PlayerId == lobby.HostPlayerId)
-                        return true;
-                }
-            }
-
-            return false;
+            return !string.IsNullOrWhiteSpace(localId)
+                && string.Equals(lobby.HostPlayerId, localId, StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -261,13 +253,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (!IsHost(_currentLobby)) return;
             if (!CanStartGame(_currentLobby))
             {
-                _infoPanelService?.Show(new InfoMessage("Start Unavailable", "At least one player must be in the room to start the game."));
+                _infoPanelService?.Show(new InfoMessage("Start Unavailable", "At least two players must be in the room to start the game."));
                 UpdateViewFromLobby(_currentLobby);
                 return;
             }
 
             _isStartingGame = true;
-            var traceId = MoyvaId.NewTraceId();
             _startGameCts?.Cancel();
             _startGameCts?.Dispose();
             _startGameCts = new CancellationTokenSource();
@@ -277,31 +268,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             try { _overlayLoader?.LoadOverlay(0f, 100f, "%"); } catch { }
 
-            var worldSettings = BuildWorldSettingsDto();
+            try
+            {
+                var worldSettings = BuildWorldSettingsDto();
                 var worldSettingsBytes = worldSettings.ToBytes();
-
-            try
-            {
-                if (_lobbyService != null)
-                    await _lobbyService.LockAsync(true, worldSettingsBytes);
-            }
-            catch
-            {
-                // Ігноруємо помилки блокування (best-effort)
-            }
-
-            // Розіслати команду старту іншим гравцям
-            try
-            {
+                await _lobbyService.LockAsync(true, worldSettingsBytes, ct);
                 _gameCommandSync?.SendCommand(GameCommandType.StartGame, worldSettingsBytes);
-            }
-            catch (Exception)
-            {
-            }
 
-            // Локальний старт гри
-            try
-            {
                 var localPlayerId = ApplyGameplaySession(worldSettings);
                 GameLaunchContext.ConfigureMenuMultiplayerGame(
                     worldSettings.WorldName,
@@ -399,83 +372,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private string ResolveGameplayLocalPlayerId(LobbyRoom lobby)
         {
-            if (IsHost(lobby)
-                && !string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
-            {
-                return _sessionManager.LocalPlayerId.Trim();
-            }
-
-            if (IsHost(lobby)
-                && !string.IsNullOrWhiteSpace(_localPlayerId))
-            {
-                return _localPlayerId.Trim();
-            }
-
-            foreach (var candidate in GetLocalPlayerIdCandidates(lobby))
-            {
-                if (LobbyHasPlayer(lobby, candidate))
-                    return candidate.Trim();
-            }
-
-            if (IsHost(lobby))
-            {
-                if (!string.IsNullOrWhiteSpace(lobby?.HostPlayerId))
-                    return lobby.HostPlayerId.Trim();
-
-                if (lobby?.Players != null)
-                {
-                    foreach (var player in lobby.Players)
-                    {
-                        if (player != null && player.IsHost && !string.IsNullOrWhiteSpace(player.PlayerId))
-                            return player.PlayerId.Trim();
-                    }
-                }
-            }
-
-            foreach (var candidate in GetLocalPlayerIdCandidates(lobby))
-            {
-                if (!string.IsNullOrWhiteSpace(candidate))
-                    return candidate.Trim();
-            }
-
-            return "local-player";
-        }
-
-        private IEnumerable<string> GetLocalPlayerIdCandidates(LobbyRoom lobby)
-        {
-            if (!string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
-                yield return _sessionManager.LocalPlayerId;
-
-            if (!string.IsNullOrWhiteSpace(_localPlayerId))
-                yield return _localPlayerId;
-
-            var localName = GetPlayerName();
-            if (!string.IsNullOrWhiteSpace(localName) && lobby?.Players != null)
-            {
-                foreach (var player in lobby.Players)
-                {
-                    if (player != null &&
-                        string.Equals(player.DisplayName, localName, StringComparison.Ordinal) &&
-                        !string.IsNullOrWhiteSpace(player.PlayerId))
-                    {
-                        yield return player.PlayerId;
-                    }
-                }
-            }
-        }
-
-        private static bool LobbyHasPlayer(LobbyRoom lobby, string playerId)
-        {
-            if (string.IsNullOrWhiteSpace(playerId) || lobby?.Players == null)
-                return false;
-
-            foreach (var player in lobby.Players)
-            {
-                if (player != null && string.Equals(player.PlayerId, playerId, StringComparison.Ordinal))
-                    return true;
-            }
-
-            return false;
+            var localId = (_lobbyService as ILobbyLocalIdentity)?.LocalPlayerId;
+            if (string.IsNullOrWhiteSpace(localId))
+                localId = _sessionManager?.LocalPlayerId;
+            if (string.IsNullOrWhiteSpace(localId))
+                localId = _localPlayerId;
+            return localId?.Trim() ?? string.Empty;
         }
 
         private NetworkProviderType ResolveProvider()

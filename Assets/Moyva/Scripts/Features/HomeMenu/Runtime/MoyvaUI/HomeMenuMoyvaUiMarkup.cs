@@ -111,8 +111,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     sb.Append("</view>");
                     ActionButton(
                         sb,
-                        state.PlayFlow == HomeMenuPlayFlow.Solo ? "START SANDBOX" : "CONTINUE TO LOBBY",
-                        state.PlayFlow == HomeMenuPlayFlow.Solo ? "Generate the world and enter the game." : "Use these settings for the multiplayer session.",
+                        state.PlayFlow == HomeMenuPlayFlow.Solo ? "START SANDBOX" : "CREATE LOBBY",
+                        state.PlayFlow == HomeMenuPlayFlow.Solo ? "Generate the world and enter the game." : "Create the room and wait for players.",
                         "Globals.moyvaMenu.CreateWorld()",
                         view.CreateWorldButton == null || view.CreateWorldButton.interactable);
                     break;

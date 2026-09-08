@@ -315,17 +315,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private async Task EnsureRelayReadyAsync()
         {
-            if (UnityServices.State != ServicesInitializationState.Initialized)
-            {
-                await UnityServices.InitializeAsync();
-            }
-
-            MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded();
-
-            if (!AuthenticationService.Instance.IsSignedIn)
-            {
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
-            }
+            await MultiplayerAuthenticationGate.EnsureReadyAsync();
         }
 
         private static object ResolveRelayServiceInstance()

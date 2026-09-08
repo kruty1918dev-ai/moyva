@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
     /// Switchable ILobbyService wrapper. Keeps a stable DI entry point while allowing runtime switches
     /// between UGS lobby and LAN discovery.
     /// </summary>
-    public sealed class SwitchableLobbyService : ILobbyService, IDisposable
+    public sealed class SwitchableLobbyService : ILobbyService, ILobbyLocalIdentity, IDisposable
     {
         private readonly MultiplayerConfig _config;
         private readonly string _configFingerprint;
@@ -28,6 +28,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public event Action<LobbyState> StateChanged;
 
         public LobbyRoom Current => _inner?.Current;
+        public string LocalPlayerId => (_inner as ILobbyLocalIdentity)?.LocalPlayerId ?? string.Empty;
         public LobbyState State => _inner?.State ?? LobbyState.Closed;
 
         public SwitchableLobbyService(MultiplayerConfig config)

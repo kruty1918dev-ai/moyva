@@ -39,7 +39,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
             }
 
-            if (!_turns.CanOwnerAct(owner, out string reason))
+            if (_progressClock?.IsRealtime != true
+                && !_turns.CanOwnerAct(owner, out _))
             {
                 return;
             }

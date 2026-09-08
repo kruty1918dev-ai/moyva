@@ -54,12 +54,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             if (string.IsNullOrWhiteSpace(signal.BuildingId))
                 return;
 
-            if (_constructionLifecycle != null
-                && !_constructionLifecycle.IsOperational(signal.Position))
-            {
-                return;
-            }
-
             UpdateSelection(WorldInfoSelectionKind.Building, signal.BuildingId, signal.Position, emitWhenPositionChanged: true);
         }
 

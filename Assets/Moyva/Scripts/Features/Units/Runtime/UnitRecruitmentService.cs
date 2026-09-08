@@ -60,6 +60,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                     _queue,
                     _buildingContext,
                     turns,
+                    progressClock,
                     signalBus,
                     unitFactory,
                     unitService,
@@ -98,12 +99,12 @@ namespace Kruty1918.Moyva.Units.Runtime
                 reason = "Unit type is empty.";
                 return false;
             }
-            if (_turns == null)
+            if (_progressClock?.IsRealtime != true && _turns == null)
             {
                 reason = "Turn authority is unavailable for recruitment.";
                 return false;
             }
-            if (!_turns.CanOwnerAct(owner, out reason))
+            if (_progressClock?.IsRealtime != true && !_turns.CanOwnerAct(owner, out reason))
                 return false;
             if (!_buildingContext.TryResolveEnqueue(
                     recruitingBuildingPosition,
@@ -133,7 +134,9 @@ namespace Kruty1918.Moyva.Units.Runtime
                 Math.Max(1, recipe.TrainingTurns),
                 ResolveProgressSequence());
 
-            if (!_turns.TryRecordAction(owner, "unit-recruit-enqueue"))
+            if (_progressClock?.IsRealtime != true
+                && _turns != null
+                && !_turns.TryRecordAction(owner, "unit-recruit-enqueue"))
             {
             }
 

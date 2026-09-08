@@ -32,6 +32,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 		private readonly IGeneratedTerrainLevelQuery _terrainLevelQuery;
 		private readonly WorldCreationDefaultsSO _worldDefaults;
 		private readonly ITurnService _turns;
+		private readonly IGameplayProgressClock _progressClock;
 		private readonly IUnitOwnershipQuery _ownership;
 		private readonly IUnitPlacementValidator _placementValidator;
 		private readonly IUnitWorldPositionResolver _worldPositionResolver;
@@ -53,6 +54,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 			[InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null,
 			[InjectOptional] WorldCreationDefaultsSO worldDefaults = null,
 			[InjectOptional] ITurnService turns = null,
+			[InjectOptional] IGameplayProgressClock progressClock = null,
 			[InjectOptional] IUnitOwnershipQuery ownership = null,
 			[InjectOptional] IUnitPlacementValidator placementValidator = null,
 			[InjectOptional] IUnitWorldPositionResolver worldPositionResolver = null,
@@ -71,6 +73,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_terrainLevelQuery = terrainLevelQuery;
 			_worldDefaults = worldDefaults;
 			_turns = turns;
+			_progressClock = progressClock;
 			_ownership = ownership;
 			_placementValidator = placementValidator;
 			_worldPositionResolver = worldPositionResolver;
@@ -140,7 +143,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 			}
 
 			string ownerId = _ownership?.GetUnitOwnerId(unitId);
-			if (_turns != null && !_turns.CanOwnerAct(ownerId, out string turnReason))
+			if (_turns != null
+			    && _progressClock?.IsRealtime != true
+			    && !_turns.CanOwnerAct(ownerId, out string turnReason))
 			{
 				LogMoveRejected(unitId, targetPosition, turnReason ?? "Owner cannot act.");
 				return;
@@ -304,7 +309,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 					internalCts.Dispose();
 				}
 
-			if (completedSteps > 0)
+			if (completedSteps > 0 && _progressClock?.IsRealtime != true)
 				_turns?.TryRecordAction(ownerId, "unit-move");
 		}
 

@@ -88,7 +88,9 @@ namespace UnityHTML.Runtime
             string text = _owner.Tooltip;
             if (string.IsNullOrWhiteSpace(text)) { Hide(_owner); return; }
             if (Time.unscaledTime < _showAt) return;
+            _label.Text.enabled = true;
             _panel.RectTransform.gameObject.SetActive(true);
+            _panel.RectTransform.SetAsLastSibling();
             Rect bounds = _root.rect;
             float maxWidth = Mathf.Max(40, Mathf.Min(300, bounds.width - 16));
             if (_text != text || _width != maxWidth || _font != _label.Text.font)

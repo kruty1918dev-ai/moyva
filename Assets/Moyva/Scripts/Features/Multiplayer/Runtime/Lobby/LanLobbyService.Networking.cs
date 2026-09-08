@@ -74,7 +74,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             return Environment.MachineName ?? "Player";
         }
 
-        private static string BuildLocalHostId()
+        internal static string BuildLocalHostId()
         {
             var machineName = string.IsNullOrWhiteSpace(Environment.MachineName) ? "local" : Environment.MachineName;
             if (!MultiplayerClientScope.IsDefault)

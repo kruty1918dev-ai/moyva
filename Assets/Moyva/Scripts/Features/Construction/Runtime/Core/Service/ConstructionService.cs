@@ -53,6 +53,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IReadOnlyList<IBuildingPlacementRuleEvaluator>
             _placementRuleEvaluators;
         private readonly ITurnService _turns;
+        private readonly IGameplayProgressClock _progressClock;
         private readonly ConstructionPlacementEnvironmentRules _placementEnvironmentRules;
         private readonly ConstructionFootprintStore _footprints;
         private readonly ConstructionReplacementPolicy _replacementPolicy;
@@ -81,6 +82,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] List<IBuildingPlacementRuleEvaluator>
                 placementRuleEvaluators = null,
             [InjectOptional] ITurnService turns = null,
+            [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] FogOfWarSettings fogSettings = null)
         {
             _objectsMapService = objectsMapService;
@@ -102,6 +104,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ?? (IReadOnlyList<IBuildingPlacementRuleEvaluator>)
                     Array.Empty<IBuildingPlacementRuleEvaluator>();
             _turns = turns;
+            _progressClock = progressClock;
             _placementEnvironmentRules =
                 new ConstructionPlacementEnvironmentRules(
                     fogOfWarService,

@@ -177,7 +177,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
                     if (_roomAccessPolicy != null)
                     {
-                        var localPlayerId = JoinRoomDomainLogic.ResolveLocalPlayerId(room, GetPlayerName());
+                        var localPlayerId = (_lobbyService as ILobbyLocalIdentity)?.LocalPlayerId
+                            ?? JoinRoomDomainLogic.ResolveLocalPlayerId(room, GetPlayerName());
                         if (!_roomAccessPolicy.CanJoin(room, localPlayerId, out var policyReason))
                         {
                             shouldRefreshRoomListAfterFailure = true;
@@ -334,7 +335,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (!WorldSettingsDto.TryFromBytes(room.StartedWorldSettingsBytes, out var worldSettings))
                 return false;
 
-            var localId = JoinRoomDomainLogic.ResolveLocalPlayerId(room, GetPlayerName());
+            var localId = (_lobbyService as ILobbyLocalIdentity)?.LocalPlayerId
+                            ?? JoinRoomDomainLogic.ResolveLocalPlayerId(room, GetPlayerName());
             var mode = GetCurrentProviderType();
             _gameplaySession?.Apply(mode, worldSettings, MultiplayerRoomLifecycle.ProjectGameplayPlayers(room, localId), localId);
             GameLaunchContext.ConfigureMenuMultiplayerGame(

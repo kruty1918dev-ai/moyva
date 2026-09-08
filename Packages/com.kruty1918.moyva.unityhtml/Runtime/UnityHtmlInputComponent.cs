@@ -7,6 +7,7 @@ namespace UnityHTML.Runtime
     internal sealed class UnityHtmlInputComponent : InputComponent
     {
         internal bool NativeLayoutConfigured;
+        internal Vector2 NativeLayoutSize;
         public UnityHtmlInputComponent(string text, UGUIContext context) : base(text, context) => ConfigureText();
         public override bool Revive()
         {

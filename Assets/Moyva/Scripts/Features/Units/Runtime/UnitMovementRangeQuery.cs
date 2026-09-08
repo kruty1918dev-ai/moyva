@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IPathfinder _pathfinder;
         private readonly SignalBus _signals;
         private readonly ITurnService _turns;
+        private readonly IGameplayProgressClock _progressClock;
         private readonly IUnitOwnershipQuery _ownership;
         private readonly IUnitTraversalPolicy _traversal;
         private readonly Dictionary<string, MovementRangeCacheEntry> _cache = new();
@@ -30,6 +31,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             IPathfinder pathfinder,
             SignalBus signals,
             [InjectOptional] ITurnService turns = null,
+            [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] IUnitOwnershipQuery ownership = null,
             [InjectOptional] IUnitTraversalPolicy traversal = null)
         {
@@ -37,6 +39,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _pathfinder = pathfinder;
             _signals = signals;
             _turns = turns;
+            _progressClock = progressClock;
             _ownership = ownership;
             _traversal = traversal;
         }
@@ -66,7 +69,9 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return Array.Empty<UnitMovementTileSnapshot>();
 
             string ownerId = _ownership?.GetUnitOwnerId(unitId);
-            if (_turns != null && !_turns.CanOwnerAct(ownerId, out _))
+            if (_turns != null
+                && _progressClock?.IsRealtime != true
+                && !_turns.CanOwnerAct(ownerId, out _))
                 return Array.Empty<UnitMovementTileSnapshot>();
 
             float movement = Mathf.Max(0f, _units.GetStamina(unitId));

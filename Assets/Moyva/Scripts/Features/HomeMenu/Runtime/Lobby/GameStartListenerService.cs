@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.Runtime.Services;
 using Kruty1918.Moyva.Multiplayer.Core;
@@ -16,7 +17,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     /// <summary>
     /// Слухає команду <see cref="GameCommandType.StartGame"/> і ініціює локальний старт гри:
     /// заповнює <see cref="IGameplaySession"/> зі значень DTO + поточного лобі та викликає <see cref="IHomeMenuGameStarter"/>.
-    /// Виконується на хості і клієнтах.
+    /// Приймає старт лише від хоста поточного лобі та запускає локальний клієнт.
     /// </summary>
     internal sealed class GameStartListenerService : IInitializable, IDisposable
     {
@@ -30,12 +31,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private IHomeMenuGameStarter _gameStarter = default;
         [InjectOptional] private IInfoPanelService _infoPanel = default;
         private CancellationTokenSource _lifecycleCts;
+        private bool _startRequested;
 
         public void Initialize()
         {
             _lifecycleCts?.Cancel();
             _lifecycleCts?.Dispose();
             _lifecycleCts = new CancellationTokenSource();
+            _startRequested = false;
 
             if (_commandSync == null) return;
             _commandSync.RegisterHandler(GameCommandType.StartGame, OnStartGameCommand);
@@ -43,7 +46,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public void Dispose()
         {
-            // IGameCommandSyncService не має Unregister — лишаємо в зареєстрованому стані до перезавантаження сесії.
+            _commandSync?.RegisterHandler(GameCommandType.StartGame, null);
             _lifecycleCts?.Cancel();
             _lifecycleCts?.Dispose();
             _lifecycleCts = null;
@@ -51,20 +54,22 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private void OnStartGameCommand(string senderId, byte[] payload)
         {
+            if (_lifecycleCts == null || _lifecycleCts.IsCancellationRequested
+                || _startRequested || _gameStarter == null
+                || !TryAuthorizeHostStart(senderId, out string localId)
+                || !WorldSettingsDto.TryFromBytes(payload, out var dto))
+            {
+                return;
+            }
+
             try
             {
-
-                if (!WorldSettingsDto.TryFromBytes(payload, out var dto))
-                {
-                    dto = new WorldSettingsDto(0, 1, MapType.Continents, Difficulty.Normal, 4, false);
-                }
-
+                _startRequested = true;
                 var mode = _modeSelector?.CurrentMode ?? NetworkProviderType.Offline;
-                var localId = _sessionManager?.LocalPlayerId ?? string.Empty;
                 var players = MultiplayerRoomLifecycle.ProjectGameplayPlayers(
                     _lobbyService?.Current,
                     localId,
-                    _sessionManager?.IsLocalPlayerHost ?? false);
+                    localPlayerIsHost: false);
 
                 _session.Apply(mode, dto, players, localId);
                 GameLaunchContext.ConfigureMenuMultiplayerGame(
@@ -77,23 +82,79 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     dto.IsPrivate,
                     dto.Width,
                     dto.Height,
-                    isLocalPlayerHost: _sessionManager?.IsLocalPlayerHost ?? false,
+                    isLocalPlayerHost: false,
                     localPlayerId: localId);
 
+                var ct = _lifecycleCts.Token;
                 MainThreadDispatcher.Enqueue(() =>
                 {
-                    if (_gameStarter == null)
-                    {
+                    if (ct.IsCancellationRequested)
                         return;
-                    }
-
-                    var ct = _lifecycleCts?.Token ?? CancellationToken.None;
-                    _ = _gameStarter.StartGameAsync(ct);
+                    _ = StartClientGameAsync(ct);
                 });
             }
             catch (Exception e)
             {
+                _startRequested = false;
                 Debug.LogError($"{Prefix} OnStartGameCommand error: {e}");
+                _infoPanel?.Show(new InfoMessage("Start Failed", e.Message));
+            }
+        }
+
+        private bool TryAuthorizeHostStart(string senderId, out string localId)
+        {
+            localId = (_lobbyService as ILobbyLocalIdentity)?.LocalPlayerId;
+            if (string.IsNullOrWhiteSpace(localId))
+                localId = _sessionManager?.LocalPlayerId;
+            if (string.IsNullOrWhiteSpace(localId))
+                localId = _session?.LocalPlayer.PlayerId;
+
+            if (string.IsNullOrWhiteSpace(senderId)
+                || string.IsNullOrWhiteSpace(localId)
+                || string.Equals(senderId, localId, StringComparison.Ordinal)
+                || _sessionManager?.IsLocalPlayerHost == true
+                || _session?.IsHost == true)
+            {
+                return false;
+            }
+
+            var lobby = _lobbyService?.Current;
+            if (lobby != null)
+            {
+                return lobby.State != LobbyState.Closed
+                    && string.Equals(senderId, lobby.HostPlayerId, StringComparison.Ordinal)
+                    && !string.Equals(localId, lobby.HostPlayerId, StringComparison.Ordinal);
+            }
+
+            var participants = _sessionManager?.Participants;
+            if (participants != null)
+            {
+                foreach (var participant in participants)
+                {
+                    if (participant?.IsHost == true
+                        && string.Equals(senderId, participant.Identity?.PlayerId, StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private async Task StartClientGameAsync(CancellationToken ct)
+        {
+            try
+            {
+                await _gameStarter.StartGameAsync(ct);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+            }
+            catch (Exception e)
+            {
+                _startRequested = false;
+                Debug.LogError($"{Prefix} Client start failed: {e}");
                 _infoPanel?.Show(new InfoMessage("Start Failed", e.Message));
             }
         }

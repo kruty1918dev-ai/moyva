@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
     /// Simple LAN lobby service using UDP broadcast for discovery.
     /// This is a lightweight implementation intended as a skeleton.
     /// </summary>
-    public sealed partial class LanLobbyService : ILobbyService, IDisposable
+    public sealed partial class LanLobbyService : ILobbyService, ILobbyLocalIdentity, IDisposable
     {
         public const int DefaultPort = 54545;
         private const int DiscoveryPort = 54544;
@@ -44,6 +44,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 #pragma warning restore CS0067
 
         public LobbyRoom Current => _current;
+        public string LocalPlayerId => BuildLocalHostId();
         public LobbyState State => _state;
 
         public LanLobbyService()

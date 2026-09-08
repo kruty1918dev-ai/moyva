@@ -58,8 +58,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         // Bootstrap читає саме цей список, щоб стартові ресурси з редактора потрапляли в новий світ.
         public List<InitialResourceEntry> InitialResources = new()
         {
-            new InitialResourceEntry("steak-food-resources", 50f),
-            new InitialResourceEntry("hardwood-materials-resources", 30f),
+            new InitialResourceEntry("steak-food-resources", 140f),
+            new InitialResourceEntry("walnut-wood-materials-resources", 180f),
+            new InitialResourceEntry("hardwood-materials-resources", 120f),
+            new InitialResourceEntry("stone-materials-resources", 100f),
+            new InitialResourceEntry("iron-ore-materials-resources", 20f),
+            new InitialResourceEntry("iron-ingot-materials-resources", 20f),
+            new InitialResourceEntry("gold-coins-materials-resources", 50f),
         };
 
         [Header("World Reveal")]

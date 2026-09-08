@@ -277,6 +277,8 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
 
             public IUnityHtmlMotion Motion => _motion;
             public bool UpdateRegion(string elementId, string html) => false;
+            public bool UpdateRegions(IReadOnlyDictionary<string, string> regions,
+                IReadOnlyDictionary<string, object> globals = null) => false;
             public bool SetValue(string elementId, string value) => false;
             public int MountCount { get; private set; }
 

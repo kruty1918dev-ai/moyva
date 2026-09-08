@@ -24,6 +24,7 @@ namespace UnityHTML.Runtime
         private readonly UnityHtmlMotionBridge _motion = new UnityHtmlMotionBridge();
         private UnityHtmlDocumentTree _tree;
         private UnityHtmlTooltipLayer _tooltips;
+        private Vector2 _layoutSize;
 
         public IUnityHtmlMotion Motion => _motion;
 
@@ -115,10 +116,20 @@ namespace UnityHTML.Runtime
 
         public void Dispose() => Unmount();
         public bool UpdateRegion(string elementId, string html)
+            => UpdateRegions(new Dictionary<string, string> { [elementId] = html });
+
+        public bool UpdateRegions(
+            IReadOnlyDictionary<string, string> regions,
+            IReadOnlyDictionary<string, object> globals = null)
         {
-            if (_tree == null || !_tree.UpdateRegion(elementId, html)) return false;
-            CompleteLayoutPass();
-            _motion.ApplyDeclaredMotions();
+            if (_tree == null || regions == null) return false;
+            UpdateGlobals(globals);
+            if (!_tree.UpdateRegions(regions, out bool changed)) return false;
+            if (changed || _layoutSize != _root.rect.size)
+            {
+                CompleteLayoutPass();
+                _motion.ApplyDeclaredMotions();
+            }
             return true;
         }
         public bool SetValue(string elementId, string value) => _tree?.SetValue(elementId, value) == true;
@@ -138,7 +149,7 @@ namespace UnityHTML.Runtime
             try
             {
                 UpdateGlobals(globals);
-                if (_tree.Update(document.Html))
+                if (_tree.Update(document.Html) || _layoutSize != _root.rect.size)
                 {
                     CompleteLayoutPass();
                     _motion.ApplyDeclaredMotions();
@@ -183,6 +194,9 @@ namespace UnityHTML.Runtime
                 _tooltips.Bind(_context, _root);
             }
             _context.UpdateElementsRecursively();
+            _layoutSize = _root.rect.size;
+            _context.Host.Layout.Width = _layoutSize.x;
+            _context.Host.Layout.Height = _layoutSize.y;
             _context.CalculateLayoutRecursively();
             _context.LateUpdateElementsRecursively();
             FlushReactElementLayout(_root);
@@ -314,8 +328,22 @@ namespace UnityHTML.Runtime
                 if (input == null)
                     continue;
                 var component = input.GetComponent<ReactElement>()?.Component as UnityHtmlInputComponent;
-                if (component != null && component.NativeLayoutConfigured) continue;
-                if (component != null) component.NativeLayoutConfigured = true;
+                bool configureStyle = component == null || !component.NativeLayoutConfigured;
+                Vector2 size = ((RectTransform)input.transform).rect.size;
+                if (configureStyle || component.NativeLayoutSize != size)
+                {
+                    ConfigureInputViewport(input);
+                    ConfigureInputText(input);
+                    input.ForceLabelUpdate();
+                    if (component != null)
+                    {
+                        component.NativeLayoutSize = size;
+                        component.NativeLayoutConfigured = true;
+                    }
+                }
+
+                if (!configureStyle)
+                    continue;
 
                 input.customCaretColor = true;
                 input.caretColor = new Color(0.98f, 0.91f, 0.56f, 1f);
@@ -328,29 +356,6 @@ namespace UnityHTML.Runtime
                 if (bubbling != null)
                     bubbling.Bubble = false;
 
-                ConfigureInputViewport(input);
-
-                if (input.textComponent != null)
-                {
-                    input.textComponent.color = new Color(0.98f, 0.96f, 0.89f, 1f);
-                    input.textComponent.alignment = TextAlignmentOptions.Center;
-                    input.textComponent.textWrappingMode = TextWrappingModes.NoWrap;
-                    input.textComponent.overflowMode = TextOverflowModes.Masking;
-                    input.textComponent.margin = Vector4.zero;
-                    input.textComponent.raycastTarget = false;
-                    input.textComponent.ForceMeshUpdate(true);
-                }
-
-                if (input.placeholder is TMP_Text placeholder)
-                {
-                    placeholder.color = new Color(0.72f, 0.70f, 0.64f, 0.78f);
-                    placeholder.alignment = TextAlignmentOptions.Center;
-                    placeholder.textWrappingMode = TextWrappingModes.NoWrap;
-                    placeholder.margin = Vector4.zero;
-                    placeholder.raycastTarget = false;
-                    placeholder.ForceMeshUpdate(true);
-                }
-
                 var graphic = input.targetGraphic != null ? input.targetGraphic : input.GetComponent<Graphic>();
                 if (graphic == null)
                 {
@@ -361,6 +366,33 @@ namespace UnityHTML.Runtime
 
                 graphic.raycastTarget = true;
                 input.targetGraphic = graphic;
+            }
+        }
+
+        private static void ConfigureInputText(TMP_InputField input)
+        {
+            if (input == null)
+                return;
+
+            if (input.textComponent != null)
+            {
+                input.textComponent.color = new Color(0.98f, 0.96f, 0.89f, 1f);
+                input.textComponent.alignment = TextAlignmentOptions.Center;
+                input.textComponent.textWrappingMode = TextWrappingModes.NoWrap;
+                input.textComponent.overflowMode = TextOverflowModes.Masking;
+                input.textComponent.margin = Vector4.zero;
+                input.textComponent.raycastTarget = false;
+                input.textComponent.ForceMeshUpdate(true);
+            }
+
+            if (input.placeholder is TMP_Text placeholder)
+            {
+                placeholder.color = new Color(0.72f, 0.70f, 0.64f, 0.78f);
+                placeholder.alignment = TextAlignmentOptions.Center;
+                placeholder.textWrappingMode = TextWrappingModes.NoWrap;
+                placeholder.margin = Vector4.zero;
+                placeholder.raycastTarget = false;
+                placeholder.ForceMeshUpdate(true);
             }
         }
 

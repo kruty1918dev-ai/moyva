@@ -155,7 +155,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             if (!Container.HasBinding(typeof(StartingPositionSyncService)))
             {
-                Container.BindInterfacesTo<StartingPositionSyncService>()
+                Container.BindInterfacesAndSelfTo<StartingPositionSyncService>()
                     .AsSingle()
                     .NonLazy();
             }
@@ -217,7 +217,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 }
 
                 if (!container.HasBinding(typeof(StartingPositionSyncService)))
-                    container.BindInterfacesTo<StartingPositionSyncService>().AsSingle().NonLazy();
+                    container.BindInterfacesAndSelfTo<StartingPositionSyncService>().AsSingle().NonLazy();
             }
             catch (Exception)
             {
@@ -237,8 +237,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         // Try quick anonymous sign-in if not already signed in/authorized
                         if (!AuthenticationService.Instance.IsSignedIn || !AuthenticationService.Instance.IsAuthorized)
                         {
-                            MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded();
-                            var signInTask = AuthenticationService.Instance.SignInAnonymouslyAsync();
+                            var signInTask = MultiplayerAuthenticationGate.EnsureReadyAsync();
                             var signInCompleted = await Task.WhenAny(signInTask, Task.Delay(TimeSpan.FromSeconds(6)));
                             if (signInCompleted == signInTask && AuthenticationService.Instance.IsSignedIn && AuthenticationService.Instance.IsAuthorized)
                             {

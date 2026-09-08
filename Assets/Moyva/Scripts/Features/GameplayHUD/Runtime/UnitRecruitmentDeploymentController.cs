@@ -48,6 +48,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private readonly SignalBus _signalBus;
         private readonly ITurnService _turns;
+        private readonly IGameplayProgressClock _progressClock;
         private readonly IUnitRecruitmentService _recruitment;
         private readonly IUnitClassConfig _unitConfigs;
         private readonly IGridProjection _gridProjection;
@@ -90,10 +91,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IGameplayInputPolicy inputPolicy = null,
             [InjectOptional] IUiContextStack uiContexts = null,
             [InjectOptional] IGameModeService gameModeService = null,
-            [InjectOptional] GameplayTurnHudView hudView = null)
+            [InjectOptional] GameplayTurnHudView hudView = null,
+            [InjectOptional] IGameplayProgressClock progressClock = null)
         {
             _signalBus = signalBus;
             _turns = turns;
+            _progressClock = progressClock;
             _recruitment = recruitment;
             _unitConfigs = unitConfigs;
             _gridProjection = gridProjection;
@@ -150,7 +153,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_session == null)
                 return;
 
-            if (!_turns.CanOwnerAct(_session.OwnerId, out _))
+            if (_progressClock?.IsRealtime != true
+                && !_turns.CanOwnerAct(_session.OwnerId, out _))
             {
                 ExecuteActionOrFallback(UiActionIds.Deployment.Cancel, UiActionSource.Programmatic);
                 return;

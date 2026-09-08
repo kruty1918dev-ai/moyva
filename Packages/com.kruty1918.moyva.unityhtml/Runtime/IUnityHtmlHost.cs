@@ -15,6 +15,9 @@ namespace UnityHTML.Runtime
 
         void Unmount();
         bool UpdateRegion(string elementId, string html);
+        bool UpdateRegions(
+            IReadOnlyDictionary<string, string> regions,
+            IReadOnlyDictionary<string, object> globals = null);
         bool SetValue(string elementId, string value);
     }
 

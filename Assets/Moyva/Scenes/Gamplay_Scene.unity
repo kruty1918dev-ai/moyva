@@ -38360,9 +38360,19 @@ MonoBehaviour:
     _gameSettings:
       InitialResources:
       - ResourceId: steak-food-resources
-        Amount: 50
+        Amount: 140
+      - ResourceId: walnut-wood-materials-resources
+        Amount: 180
       - ResourceId: hardwood-materials-resources
-        Amount: 30
+        Amount: 120
+      - ResourceId: stone-materials-resources
+        Amount: 100
+      - ResourceId: iron-ore-materials-resources
+        Amount: 20
+      - ResourceId: iron-ingot-materials-resources
+        Amount: 20
+      - ResourceId: gold-coins-materials-resources
+        Amount: 50
       WorldRevealFade:
         Enabled: 1
         DurationSeconds: 0.8
@@ -38406,10 +38416,20 @@ MonoBehaviour:
       manualStartupCameraRadius: 15
   _legacyGameSettings:
     InitialResources:
-    - ResourceId: food
+    - ResourceId: steak-food-resources
+      Amount: 140
+    - ResourceId: walnut-wood-materials-resources
+      Amount: 180
+    - ResourceId: hardwood-materials-resources
+      Amount: 120
+    - ResourceId: stone-materials-resources
+      Amount: 100
+    - ResourceId: iron-ore-materials-resources
+      Amount: 20
+    - ResourceId: iron-ingot-materials-resources
+      Amount: 20
+    - ResourceId: gold-coins-materials-resources
       Amount: 50
-    - ResourceId: wood
-      Amount: 30
     WorldRevealFade:
       Enabled: 1
       DurationSeconds: 0.8

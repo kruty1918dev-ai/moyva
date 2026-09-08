@@ -8,7 +8,17 @@
     "Kruty1918.Moyva.SaveSystem",
     "Kruty1918.Moyva.Signals",
     "UnityEngine.TestRunner",
-    "UnityEditor.TestRunner"
+    "UnityEditor.TestRunner",
+    "Kruty1918.Moyva.Units",
+    "Kruty1918.Moyva.Turns",
+    "Kruty1918.Moyva.Grid",
+    "Kruty1918.Moyva.GameMode",
+    "Kruty1918.Moyva.InputRouting",
+    "Kruty1918.Moyva.Presentation",
+    "Kruty1918.Moyva.UIActions",
+    "Kruty1918.Moyva.Construction",
+    "Kruty1918.Moyva.Economy",
+    "Zenject"
   ],
   "includePlatforms": [
     "Editor"

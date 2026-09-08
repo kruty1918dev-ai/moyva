@@ -246,8 +246,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string description,
             string cost,
             bool canSelect = true,
-            string unavailableReason = null)
-            : this(id, name, category, description, cost, null, canSelect, unavailableReason)
+            string unavailableReason = null,
+            int buildTurns = 0)
+            : this(id, name, category, description, cost, null, canSelect, unavailableReason, buildTurns)
         {
         }
 
@@ -259,7 +260,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string cost,
             Sprite icon,
             bool canSelect = true,
-            string unavailableReason = null)
+            string unavailableReason = null,
+            int buildTurns = 0)
         {
             Id = id ?? string.Empty;
             Name = string.IsNullOrWhiteSpace(name) ? Id : name;
@@ -269,8 +271,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Icon = icon;
             CanSelect = canSelect;
             UnavailableReason = unavailableReason ?? string.Empty;
+            BuildTurns = Math.Max(0, buildTurns);
         }
 
+        public int BuildTurns { get; }
         public string Id { get; }
         public string Name { get; }
         public string Category { get; }
@@ -484,6 +488,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public bool TurnUiEnabled = true;
         public bool SandboxRealtime;
         public float SandboxSpeed = 1f;
+        public double SandboxElapsedSeconds;
+        public float SandboxSecondsUntilNextProgress;
+        public float SandboxRoundSeconds = 10f;
         public bool CanIssueLocalCommands => !TurnUiEnabled || IsLocalTurn;
         public bool EndTurnPending;
         public int SettlementCount;
@@ -635,39 +642,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
     internal static partial class GameplayHtmlMarkup
     {
-        private const int ConstructionPageSize = 6;
+        private const int ConstructionPageSize = 4;
 
         public static string Build(
             GameplayHtmlSnapshot snapshot,
             GameplayHtmlState state,
             string viewportClass)
-        {
-            var html = new StringBuilder(24000);
-            html.Append("<view className=\"gameplay-ui ").Append(E(viewportClass)).Append("\">");
-            AppendTopBar(html, snapshot, state);
-            html.Append("<view className=\"workspace\">");
-            AppendContextPanel(html, snapshot, state);
-            html.Append("</view>");
-            AppendCommandBar(html, snapshot);
-            if (!string.IsNullOrWhiteSpace(state.Feedback)
-                && !snapshot.RequiresFirstCastle)
-            {
-                html.Append("<text id=\"gameplay-toast\" className=\"toast\" data-motion=\"slide-up\" data-motion-duration=\"0.14\">")
-                    .Append(E(state.Feedback)).Append("</text>");
-            }
-            if (state.OpenPanelId == GameplayHtmlPanel.Kingdom)
-                AppendDashboard(html, snapshot, state);
-            if (state.IsGameOver)
-                AppendGameOver(html, snapshot, state);
-            else if (state.IsPaused)
-                AppendPause(html);
-            html.Append("</view>");
-            return html.ToString();
-        }
+            => BuildDocument(BuildRegions(snapshot, state), viewportClass);
 
         private static void AppendTopBar(StringBuilder html, GameplayHtmlSnapshot snapshot, GameplayHtmlState state)
         {
-            html.Append("<view id=\"gameplay-topbar\" className=\"topbar\" data-motion=\"slide-down\" data-motion-duration=\"0.18\"><view className=\"top-section kingdom-summary\"><view className=\"brand-mark\"></view><view className=\"stack\"><text className=\"eyebrow\">KINGDOM</text><text className=\"title\">")
+            html.Append("<view className=\"top-section kingdom-summary\"><view className=\"brand-mark\"></view><view className=\"stack\"><text className=\"eyebrow\">KINGDOM</text><text className=\"title\">")
                 .Append(E(snapshot.KingdomName)).Append("</text></view><view className=\"resources\">");
             int resourceCount = Math.Min(4, snapshot.Resources.Length);
             for (int index = 0; index < resourceCount; index++)
@@ -688,16 +673,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             else
             {
                 TurnPill(html, "SANDBOX", "MODE", "local-turn");
-                TurnPill(html, snapshot.SandboxRealtime ? $"{Amount(snapshot.SandboxSpeed)}X" : "FREE PLAY", "SPEED", string.Empty);
+                if (snapshot.SandboxRealtime)
+                {
+                    TurnPill(html, GameplayProgressTimeText.Elapsed(snapshot.SandboxElapsedSeconds), "GAME TIME", string.Empty);
+                    TurnPill(html, GameplayProgressTimeText.Duration(snapshot.SandboxSecondsUntilNextProgress), "NEXT TICK", string.Empty);
+                }
+                else
+                    TurnPill(html, "FREE PLAY", "SPEED", string.Empty);
             }
             html.Append("</view><view className=\"top-section top-actions\">")
                 .Append(snapshot.SandboxRealtime ? SandboxSpeedButton(1f, snapshot.SandboxSpeed) : string.Empty)
                 .Append(snapshot.SandboxRealtime ? SandboxSpeedButton(2f, snapshot.SandboxSpeed) : string.Empty)
                 .Append(Button("KINGDOM", "Globals.gameplay.Kingdom()", "button", "Open kingdom dashboard"))
                 .Append("<button className=\"button\" data-tooltip=\"Notifications\" onClick=\"Globals.gameplay.Notifications()\"><image className=\"action-icon\" src=\"global:gameplay_notifications_icon\" preserveAspect=\"true\"></image><text className=\"button-label\">")
-                .Append(state.UnreadNotifications > 0 ? state.UnreadNotifications.ToString(CultureInfo.InvariantCulture) : string.Empty)
+                .Append(state.UnreadNotifications > 0 ? state.UnreadNotifications.ToString(CultureInfo.InvariantCulture) : "LOG")
                 .Append("</text></button><button className=\"button\" data-tooltip=\"Game menu\" onClick=\"Globals.gameplay.Pause()\"><image className=\"action-icon\" src=\"global:gameplay_menu_icon\" preserveAspect=\"true\"></image><text className=\"button-label\">MENU</text></button>")
-                .Append("</view></view>");
+                .Append("</view>");
         }
 
         private static string SandboxSpeedButton(float speed, float current)
@@ -767,7 +758,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     html.Append("<view className=\"item-copy\"><text className=\"item-title\">")
                         .Append(E(option.Name)).Append("</text><text className=\"item-meta\">")
                         .Append(E(option.CanSelect ? option.Description : option.UnavailableReason)).Append("</text><text className=\"item-cost\">")
-                        .Append(E(cost)).Append("</text></view><text className=\"row-chevron\">")
+                        .Append(E(cost)).Append("</text><text className=\"item-meta\">Build: ")
+                        .Append(E(GameplayProgressTimeText.BuildDuration(option.BuildTurns, snapshot.SandboxRealtime, snapshot.SandboxRoundSeconds)))
+                        .Append("</text></view><text className=\"row-chevron\">")
                         .Append(option.CanSelect ? ">" : "!").Append("</text></button>");
                 }
                 if (visibleCount == 0)
@@ -899,7 +892,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             for (int index = 0; index < snapshot.RecruitmentRecipes.Length; index++)
             {
                 GameplayRecruitmentRecipeSnapshot recipe = snapshot.RecruitmentRecipes[index];
-                string meta = $"{recipe.Role} / {recipe.CombatType} / {recipe.TrainingTurns} turns / HP {recipe.HitPoints} / Move {Amount(recipe.Movement)}";
+                string trainingLabel = snapshot.TurnUiEnabled
+                    ? $"{recipe.TrainingTurns} turns"
+                    : $"{recipe.TrainingTurns} cycles";
+                string meta = $"{recipe.Role} / {recipe.CombatType} / {trainingLabel} / HP {recipe.HitPoints} / Move {Amount(recipe.Movement)}";
                 html.Append("<view className=\"recruit-row\">");
                 RowIcon(html, recipe.HasIcon, recipe.IconGlobalKey, IconForUnit(recipe.UnitTypeId), false);
                 html.Append("<view className=\"item-copy\"><text className=\"item-title\">")
@@ -927,11 +923,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 string status = item.Ready
                     ? "READY TO DEPLOY"
                     : index == 0
-                        ? $"TRAINING {item.CompletedTurns}/{item.TrainingTurns}"
-                        : "WAITING";
+                        ? (snapshot.TurnUiEnabled
+                            ? $"TRAINING {item.CompletedTurns}/{item.TrainingTurns}"
+                            : $"PREPARING {item.CompletedTurns}/{item.TrainingTurns}")
+                        : (snapshot.TurnUiEnabled ? "WAITING" : "QUEUED");
                 string context = item.Ready
                     ? "Use the world indicator beside this building to deploy."
-                    : $"{Math.Max(0, item.TrainingTurns - item.CompletedTurns)} turns remaining";
+                    : snapshot.TurnUiEnabled
+                        ? $"{Math.Max(0, item.TrainingTurns - item.CompletedTurns)} turns remaining"
+                        : $"{Math.Max(0, item.TrainingTurns - item.CompletedTurns)} cycles remaining";
                 DataRow(html, item.Name, status, context);
             }
             if (snapshot.RecruitmentQueue.Length == 0)
@@ -941,7 +941,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private static void AppendCommandBar(StringBuilder html, GameplayHtmlSnapshot snapshot)
         {
-            html.Append("<view id=\"gameplay-command-bar\" className=\"command-bar\" data-motion=\"slide-up\" data-motion-duration=\"0.18\"><view className=\"command-title\"><text className=\"eyebrow\">AVAILABLE ACTIONS</text><text className=\"subtitle\">")
+            html.Append("<view className=\"command-title\"><text className=\"eyebrow\">AVAILABLE ACTIONS</text><text className=\"subtitle\">")
                 .Append(snapshot.CanIssueLocalCommands ? "Issue a command" : "Waiting for active player")
                 .Append("</text></view>");
             if (snapshot.RequiresFirstCastle || snapshot.PendingPlacementCount > 0)
@@ -963,7 +963,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         snapshot.EndTurnPending ? "Waiting for host confirmation" : "End current turn",
                         snapshot.EndTurnPending || !snapshot.IsLocalTurn));
             }
-            html.Append("</view>");
         }
 
         private static void AppendDashboard(

@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly UnitRecruitmentQueueStateMachine _queue;
         private readonly UnitRecruitmentBuildingContextResolver _buildingContext;
         private readonly ITurnService _turns;
+        private readonly IGameplayProgressClock _progressClock;
         private readonly SignalBus _signalBus;
         private readonly IUnitFactory _unitFactory;
         private readonly IUnitService _unitService;
@@ -29,6 +30,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             UnitRecruitmentQueueStateMachine queue,
             UnitRecruitmentBuildingContextResolver buildingContext,
             ITurnService turns,
+            IGameplayProgressClock progressClock,
             SignalBus signalBus,
             IUnitFactory unitFactory,
             IUnitService unitService,
@@ -40,6 +42,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _buildingContext = buildingContext
                 ?? throw new ArgumentNullException(nameof(buildingContext));
             _turns = turns;
+            _progressClock = progressClock;
             _signalBus = signalBus;
             _unitFactory = unitFactory;
             _unitService = unitService;
@@ -120,13 +123,13 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
             }
 
-            if (_turns == null)
+            if (_progressClock?.IsRealtime != true && _turns == null)
             {
                 reason = "Turn authority is unavailable for deployment.";
                 return false;
             }
 
-            if (!_turns.CanOwnerAct(owner, out reason))
+            if (_progressClock?.IsRealtime != true && !_turns.CanOwnerAct(owner, out reason))
                 return false;
 
             if (!_queue.TryPeekReady(
@@ -258,9 +261,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                     return false;
                 }
 
-                _turns.TryRecordAction(
-                    owner,
-                    "unit-recruit-deploy");
+                if (_progressClock?.IsRealtime != true)
+                    _turns?.TryRecordAction(
+                        owner,
+                        "unit-recruit-deploy");
 
                 FireDeployed(
                     completed,

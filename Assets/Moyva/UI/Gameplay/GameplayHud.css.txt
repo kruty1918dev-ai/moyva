@@ -26,6 +26,16 @@
   pointer-events: auto;
 }
 
+.presentation-region {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.presentation-region > .scrim {
+  isolation: isolate;
+}
+
 .topbar {
   display: flex;
   flex-direction: row;
@@ -182,6 +192,8 @@
   display: flex;
   flex-direction: row;
   flex-grow: 1;
+  flex-basis: 0;
+  flex-shrink: 1;
   min-height: 0;
   width: 100%;
   padding-top: 14px;
@@ -189,9 +201,9 @@
 }
 
 .side-panel {
-  position: absolute;
-  top: 14px;
-  right: 0;
+  position: relative;
+  align-self: flex-start;
+  margin-left: auto;
   display: flex;
   flex-direction: column;
   width: 460px;
@@ -234,7 +246,7 @@
   width: 100%; height: 44px; min-height: 44px; flex-shrink: 0;
   background-color: rgb(24, 26, 29); color: rgb(244, 245, 246);
   border-width: 1px; border-color: rgb(96, 100, 105); font-size: 14px;
-  text-align: center; padding: 0;
+  text-align: center; line-height: 44px; padding: 0; overflow: hidden;
 }
 .cargo-actions { flex-shrink: 0; flex-direction: column; padding-top: 8px; border-top-width: 1px; border-color: rgb(61, 63, 67); }
 .cargo-actions .button { min-height: 44px; width: 100%; }
@@ -252,13 +264,16 @@
   height: 42px;
   min-height: 42px;
   margin-bottom: 8px;
-  padding: 8px 12px;
+  padding: 0;
   color: rgb(246, 242, 231);
   font-size: 12px;
+  line-height: 42px;
+  text-align: center;
   background-color: rgb(17, 19, 25);
   border-width: 1px;
   border-color: rgb(78, 81, 87);
   border-radius: 2px;
+  overflow: hidden;
 }
 
 .browser-search:focus { border-color: rgb(229, 187, 85); }
@@ -334,7 +349,7 @@
   overflow: hidden;
 }
 
-.building-row { height: 92px; min-height: 92px; }
+.building-row { height: 110px; min-height: 110px; }
 .storage-row { min-height: 72px; }
 .data-row { min-height: 58px; }
 .recruit-row { min-height: 92px; }
@@ -547,7 +562,7 @@
 .vp-compact .stat-card { width: 48.8%; }
 .vp-compact .command-bar { max-width: 92%; }
 .vp-compact .title { font-size: 17px; }
-.vp-compact .building-row { height: 86px; min-height: 86px; }
+.vp-compact .building-row { height: 102px; min-height: 102px; }
 .vp-compact .item-tag { width: 96px; }
 .vp-compact .row-icon { width: 30px; height: 30px; min-height: 30px; }
 
@@ -557,7 +572,7 @@
 
 .vp-short { padding: 8px; }
 .vp-short .topbar { min-height: 50px; }
-.vp-short .side-panel { top: 8px; padding: 11px; }
+.vp-short .side-panel { padding: 11px; }
 .vp-short .workspace { padding-top: 8px; padding-bottom: 7px; }
 .vp-short .command-bar { min-height: 50px; padding: 5px 8px; }
 .vp-short .task { padding: 9px; }
