@@ -163,20 +163,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     continue;
                 }
 
-                if (!HasRequiredDistance(
-                        candidate,
-                        existingPositions))
-                {
-                    rejectedDistance++;
-                    continue;
-                }
-
                 StartingPositionTerrainQuality quality =
                     _terrain.Evaluate(signal, candidate);
 
                 if (!quality.HardValid)
                 {
                     rejectedTerrain++;
+                    continue;
+                }
+
+                if (!CanImproveScore(candidate, quality.Utility, found, best, bestScore))
+                    continue;
+
+                if (!HasRequiredDistance(candidate, existingPositions))
+                {
+                    rejectedDistance++;
                     continue;
                 }
 
@@ -212,10 +213,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                                 candidate,
                                 baseMapSize.x,
                                 baseMapSize.y) ||
-                            !IsValidStartHeight(signal, candidate) ||
-                            !HasRequiredDistance(
-                                candidate,
-                                existingPositions))
+                            !IsValidStartHeight(signal, candidate))
                         {
                             continue;
                         }
@@ -224,6 +222,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                             _terrain.Evaluate(signal, candidate);
 
                         if (!quality.HardValid)
+                            continue;
+
+                        if (!CanImproveScore(candidate, quality.Utility, found, best, bestScore) ||
+                            !HasRequiredDistance(candidate, existingPositions))
                             continue;
 
                         int score =
@@ -362,6 +364,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                  index < existingPositions.Count;
                  index++)
             {
+                // Square-grid routes (including diagonals) cannot use fewer
+                // steps than this bound. The no-route Euclidean fallback also
+                // satisfies it, so distant candidates need no path search.
+                if (MinimumGridSteps(candidate, existingPositions[index]) >= minDistance)
+                    continue;
+
                 int distance =
                     ResolveStartDistance(
                         candidate,
@@ -441,6 +449,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         continue;
                     }
 
+                    if (!CanImproveScore(candidate, quality.Utility, found, best, bestScore))
+                        continue;
+
                     int score =
                         quality.Utility +
                         ScoreInterPlayerSeparation(
@@ -477,8 +488,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             for (int i = 0; i < existingPositions.Count; i++)
             {
+                // Separation utility saturates at 50 steps. There is no need
+                // to construct a route whose length cannot change the score.
                 int distance =
-                    ResolveStartDistance(
+                    MinimumGridSteps(candidate, existingPositions[i]) >= 50
+                    ? 50
+                    : ResolveStartDistance(
                         candidate,
                         existingPositions[i]);
 
@@ -491,6 +506,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             // Distance remains a soft preference after the hard minimum passes.
             return Mathf.Min(300, minimum * 6);
+        }
+
+        private static int MinimumGridSteps(Vector2Int first, Vector2Int second)
+            => Mathf.Max(Mathf.Abs(first.x - second.x), Mathf.Abs(first.y - second.y));
+
+        private static bool CanImproveScore(
+            Vector2Int candidate, int terrainUtility,
+            bool found, Vector2Int best, int bestScore)
+        {
+            // Preserve the same winner and coordinate tie-break, even during
+            // exhaustive fallback, without routing candidates that cannot win.
+            int maximumScore = terrainUtility + 300;
+            return !found || maximumScore > bestScore ||
+                maximumScore == bestScore && ComparePosition(candidate, best) < 0;
         }
 
         private static bool ContainsPosition(

@@ -1,0 +1,11 @@
+{
+  "name": "Kruty1918.Moyva.Startup.Tests",
+  "references": [
+    "Kruty1918.Moyva.Bootstrap",
+    "Kruty1918.Moyva.Pathfinding",
+    "Kruty1918.Moyva.Signals"
+  ],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}
