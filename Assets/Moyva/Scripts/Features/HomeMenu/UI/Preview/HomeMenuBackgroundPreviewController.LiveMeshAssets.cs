@@ -4,6 +4,7 @@ using Kruty1918.Moyva.Clouds.API;
 using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
+using Kruty1918.Moyva.Generator.Runtime.Nodes;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
 using Kruty1918.Moyva.GraphSystem.API;
@@ -44,20 +45,80 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             return previewData.HeightMap[x, y];
         }
 
-        private static Dictionary<string, LivePreviewPrefabMesh> BuildTileLiveMeshCache(TileRegistrySO registry)
+        private static Dictionary<string, LivePreviewPrefabMesh> BuildTileLiveMeshCache(TileRegistrySO registry, GraphAsset graph)
         {
             var cache = new Dictionary<string, LivePreviewPrefabMesh>(StringComparer.OrdinalIgnoreCase);
-            if (registry?.Definitions == null)
-                return cache;
-
-            foreach (var definition in registry.Definitions)
+            if (registry?.Definitions != null)
             {
-                string id = NormalizePreviewId(definition?.Id);
-                if (!string.IsNullOrEmpty(id) && TryCollectLivePreviewPrefab(definition.VisualPrefab, out var prefabMesh))
-                    cache[id] = prefabMesh;
+                foreach (var definition in registry.Definitions)
+                {
+                    string id = NormalizePreviewId(definition?.Id);
+                    if (!string.IsNullOrEmpty(id) && TryCollectLivePreviewPrefab(definition.SurfaceReferencePrefab, out var prefabMesh))
+                        AddTileLiveMeshCacheEntry(cache, id, prefabMesh, true);
+                }
+            }
+
+            // Layer outputs use the canonical tile-type ID from their settings node.
+            // The legacy registry can contain only aliases for those IDs.
+            if (graph?.Nodes != null)
+            {
+                foreach (var graphNode in graph.Nodes)
+                {
+                    if (graphNode is not TileSettingsNode tileSettings)
+                        continue;
+
+                    string id = NormalizePreviewId(tileSettings.TileId);
+                    if (string.IsNullOrEmpty(id))
+                        continue;
+
+                    GameObject prefab = tileSettings.TileType?.Visual?.RepresentativePrefab;
+                    if (prefab == null && tileSettings.TilePreset != null)
+                    {
+                        prefab = tileSettings.UseDualGrid
+                            ? tileSettings.TilePreset.DUALGRD_fillTile
+                            : tileSettings.TilePreset.NRMGRD_fillTile;
+                    }
+
+                    if (TryCollectLivePreviewPrefab(prefab, out var prefabMesh))
+                        AddTileLiveMeshCacheEntry(cache, id, prefabMesh, false);
+                }
             }
 
             return cache;
+        }
+
+        private static void AddTileLiveMeshCacheEntry(
+            Dictionary<string, LivePreviewPrefabMesh> cache,
+            string id,
+            LivePreviewPrefabMesh prefabMesh,
+            bool addCanonicalAlias)
+        {
+            cache[id] = prefabMesh;
+            if (!addCanonicalAlias || !TryInferCanonicalPreviewTileId(id, out string canonicalId))
+                return;
+
+            if (!cache.ContainsKey(canonicalId))
+                cache[canonicalId] = prefabMesh;
+        }
+
+        private static bool TryInferCanonicalPreviewTileId(string id, out string canonicalId)
+        {
+            canonicalId = string.Empty;
+            if (string.IsNullOrWhiteSpace(id))
+                return false;
+
+            string normalized = id.Trim().ToLowerInvariant();
+            if (normalized.StartsWith("water", StringComparison.Ordinal))
+                canonicalId = "water";
+            else if (normalized.StartsWith("sand", StringComparison.Ordinal))
+                canonicalId = "sand";
+            else if (normalized.StartsWith("grass", StringComparison.Ordinal)
+                     || normalized.StartsWith("texture-grass", StringComparison.Ordinal)
+                     || string.Equals(normalized, "tilegrass", StringComparison.Ordinal))
+                canonicalId = "grass";
+
+            return !string.IsNullOrEmpty(canonicalId)
+                   && !string.Equals(canonicalId, id, StringComparison.OrdinalIgnoreCase);
         }
 
         private static Dictionary<string, LivePreviewPrefabMesh> BuildObjectLiveMeshCache(MapObjectRegistrySO registry)

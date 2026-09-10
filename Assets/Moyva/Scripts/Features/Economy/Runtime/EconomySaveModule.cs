@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
     [SaveModuleId("Kruty1918.Moyva.Economy.Runtime.EconomySaveModule")]
     internal sealed class EconomySaveModule : ISaveModule
     {
-        private const int SchemaVersion = 3;
+        private const int SchemaVersion = 4;
         private const string ModuleLogTag =
             "[MoyvaConstructionModules]";
         private const string PerfLogTag =
@@ -92,6 +92,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 context.Reader.ReadInt32();
             if (version != 1
                 && version != 2
+                && version != 3
                 && version != SchemaVersion)
             {
                 return;
@@ -196,6 +197,21 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     settlement.SettlementName
                     ?? string.Empty);
                 context.Writer.Write(settlement.IsActive);
+                context.Writer.Write(settlement.Residents != null);
+                if (settlement.Residents != null)
+                {
+                    context.Writer.Write(settlement.Residents.Count);
+                    foreach (var resident in settlement.Residents)
+                    {
+                        context.Writer.Write(resident.Age);
+                        context.Writer.Write(resident.Hp);
+                        context.Writer.Write(resident.Comfort);
+                        context.Writer.Write(resident.HouseCollapsed);
+                        context.Writer.Write(resident.ProfessionId ?? string.Empty);
+                        context.Writer.Write(resident.RecruitmentQueueId);
+                        context.Writer.Write(resident.MilitaryUnitId ?? string.Empty);
+                    }
+                }
 
                 WriteFloatMap(
                     context,
@@ -296,6 +312,19 @@ namespace Kruty1918.Moyva.Economy.Runtime
                         context.Reader.ReadString();
                     settlement.IsActive =
                         context.Reader.ReadBoolean();
+                }
+
+                if (version >= 4 && context.Reader.ReadBoolean())
+                {
+                    int count = context.Reader.ReadInt32();
+                    if (count < 0 || count > 1000000)
+                        throw new System.IO.InvalidDataException("Invalid resident count.");
+                    settlement.Residents = new List<EconomyResidentState>(count);
+                    for (int index = 0; index < count; index++)
+                        settlement.Residents.Add(new EconomyResidentState(
+                            context.Reader.ReadInt32(), context.Reader.ReadSingle(), context.Reader.ReadSingle(),
+                            context.Reader.ReadBoolean(), context.Reader.ReadString(),
+                            context.Reader.ReadInt64(), context.Reader.ReadString()));
                 }
 
                 ReadFloatMap(
@@ -444,6 +473,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
     internal sealed class EconomySettlementRuntimeSnapshot
     {
+        public List<EconomyResidentState> Residents;
         public string SettlementId;
         public string OwnerId;
         public string SettlementName;

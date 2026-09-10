@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Networking;
+using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.Graphics;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
@@ -47,9 +48,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private OverlayLoaderResult _overlayResult;
         private int _overlayLockCount;
 
-        public HomeMenuMoyvaUiViewController(HomeMenuMoyvaUiState state)
+        public HomeMenuMoyvaUiViewController(HomeMenuMoyvaUiState state,
+            [Zenject.InjectOptional] Kruty1918.Moyva.UIActions.API.IUiHotkeyService hotkeys = null)
         {
             _state = state;
+            Controls = new HomeMenuControlsEditor(state, this, hotkeys);
             _createRoomNextButton = CreateHiddenButton("MoyvaUI_CreateRoom_Next");
             _worldCreateButton = CreateHiddenButton("MoyvaUI_World_Create");
             _lobbyStartButton = CreateHiddenButton("MoyvaUI_Lobby_Start");
@@ -81,6 +84,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public string KickStatus { get; private set; } = string.Empty;
         public bool KickInteractable { get; private set; } = true;
         public bool SettingsInteractable { get; private set; } = true;
+        public bool GraphicsSettingsInteractable { get; private set; } = true;
         public bool OverlayVisible => _overlayResult != null && _overlayResult.IsLoading;
         public float OverlayProgress => _overlayResult?.Progress ?? 0f;
         public string OverlaySuffix { get; private set; } = "%";
@@ -123,6 +127,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public bool Shadows { get; set; }
         public bool AnisotropicFiltering { get; set; }
         public float LodBias { get; set; }
+        public float MouseSensitivity { get; private set; } = 1f;
+        public float MovementSpeed { get; private set; } = 1f;
+        public float OrbitSpeed { get; private set; } = 1f;
+        public float ZoomSpeed { get; private set; } = 1f;
+        public HomeMenuControlsEditor Controls { get; }
+        public IReadOnlyDictionary<PlayerControlAction, string> ControlBindings => _controlBindings;
+        private readonly Dictionary<PlayerControlAction, string> _controlBindings = PlayerControlSettingsData.CreateDefault().Bindings;
 
         public string JoinCode { get; set; }
         public bool JoinInteractable { get; private set; } = true;
@@ -169,6 +180,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public event Action<float> OnLodBiasChanged;
         public event Action OnResetGraphicsClicked;
         public event Action OnDeleteSavesClicked;
+        public event Action<float> OnMouseSensitivityChanged;
+        public event Action<float> OnMovementSpeedChanged;
+        public event Action<float> OnOrbitSpeedChanged;
+        public event Action<float> OnZoomSpeedChanged;
+        public event Action<PlayerControlAction, string> OnControlBindingChanged;
+        public event Action OnResetControlsClicked;
         public event Action OnAcknowledged;
         public event Action OnJoinRequested;
         public event Action OnJoinCodeChanged;
@@ -277,9 +294,28 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        public void RefreshControls(PlayerControlSettingsData settings)
+        {
+            var normalized = settings.Normalized();
+            MouseSensitivity = normalized.MouseSensitivity;
+            MovementSpeed = normalized.MovementSpeed;
+            OrbitSpeed = normalized.OrbitSpeed;
+            ZoomSpeed = normalized.ZoomSpeed;
+            _controlBindings.Clear();
+            foreach (var pair in normalized.Bindings)
+                _controlBindings[pair.Key] = pair.Value;
+            _state.MarkDirty();
+        }
+
         public void SetInteractable(bool interactable)
         {
             SettingsInteractable = interactable;
+            _state.MarkDirty();
+        }
+
+        public void SetGraphicsInteractable(bool interactable)
+        {
+            GraphicsSettingsInteractable = interactable;
             _state.MarkDirty();
         }
 
@@ -843,6 +879,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void AdjustLodBias(float delta) { LodBias = Mathf.Clamp(Mathf.Round((LodBias + delta) * 10f) / 10f, 0.4f, 2f); OnLodBiasChanged?.Invoke(LodBias); _state.MarkDirty(); }
         public void ResetGraphics() { OnResetGraphicsClicked?.Invoke(); _state.MarkDirty(); }
         public void DeleteSaves() { OnDeleteSavesClicked?.Invoke(); _state.MarkDirty(); }
+        public void SetMouseSensitivity(float value) { MouseSensitivity = Mathf.Clamp(value, 0.25f, 3f); OnMouseSensitivityChanged?.Invoke(MouseSensitivity); _state.MarkDirty(); }
+        public void SetMovementSpeed(float value) { MovementSpeed = Mathf.Clamp(value, 0.25f, 3f); OnMovementSpeedChanged?.Invoke(MovementSpeed); _state.MarkDirty(); }
+        public void SetOrbitSpeed(float value) { OrbitSpeed = Mathf.Clamp(value, 0.25f, 3f); OnOrbitSpeedChanged?.Invoke(OrbitSpeed); _state.MarkDirty(); }
+        public void SetZoomSpeed(float value) { ZoomSpeed = Mathf.Clamp(value, 0.25f, 3f); OnZoomSpeedChanged?.Invoke(ZoomSpeed); _state.MarkDirty(); }
+        public void SetControlBinding(PlayerControlAction action, string controlPath) { OnControlBindingChanged?.Invoke(action, controlPath); _state.MarkDirty(); }
+        public void ResetControls() { OnResetControlsClicked?.Invoke(); _state.MarkDirty(); }
 
         public void ConfirmModal()
         {

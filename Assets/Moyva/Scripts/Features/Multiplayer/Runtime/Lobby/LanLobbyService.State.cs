@@ -56,6 +56,58 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 room.CapabilityFlags, room.ConfigFingerprint);
         }
 
+        private static bool TryChooseSuccessorHost(LobbyRoom room, string leavingPlayerId, out string successorHostId)
+        {
+            successorHostId = string.Empty;
+            if (room?.Players == null)
+                return false;
+
+            var candidates = new List<LobbyPlayer>();
+            foreach (var player in room.Players)
+            {
+                if (player == null || string.IsNullOrWhiteSpace(player.PlayerId))
+                    continue;
+                if (string.Equals(player.PlayerId, leavingPlayerId, StringComparison.Ordinal))
+                    continue;
+                candidates.Add(player);
+            }
+
+            if (candidates.Count == 0)
+                return false;
+
+            candidates.Sort((a, b) => string.CompareOrdinal(a.PlayerId, b.PlayerId));
+            successorHostId = candidates[0].PlayerId;
+            return true;
+        }
+
+        private static LobbyRoom RehostRoom(
+            LobbyRoom room,
+            string hostPlayerId,
+            string relayJoinCode,
+            string removePlayerId = null)
+        {
+            var players = new List<LobbyPlayer>();
+            foreach (var player in room.Players ?? Array.Empty<LobbyPlayer>())
+            {
+                if (player == null || string.IsNullOrWhiteSpace(player.PlayerId))
+                    continue;
+                if (!string.IsNullOrWhiteSpace(removePlayerId) &&
+                    string.Equals(player.PlayerId, removePlayerId, StringComparison.Ordinal))
+                    continue;
+
+                players.Add(new LobbyPlayer(
+                    player.PlayerId,
+                    player.DisplayName,
+                    string.Equals(player.PlayerId, hostPlayerId, StringComparison.Ordinal),
+                    player.LocalTimeTicks));
+            }
+
+            return new LobbyRoom(room.LobbyId, room.LobbyCode, room.Name, room.MaxPlayers, room.IsPrivate,
+                hostPlayerId, relayJoinCode, players, room.PasswordHash, room.State,
+                room.ReconnectRecords, room.StartedWorldSettingsBytes, room.BannedPlayerIds,
+                room.CapabilityFlags, room.ConfigFingerprint);
+        }
+
         private static bool MatchesJoinInput(LobbyRoom room, string value)
         {
             if (room == null || string.IsNullOrWhiteSpace(value))

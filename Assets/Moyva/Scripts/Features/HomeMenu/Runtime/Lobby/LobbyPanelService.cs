@@ -47,6 +47,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private string _localPlayerId = string.Empty;
         private LobbyRoom _currentLobby;
         private bool _isStartingGame;
+        private bool _isLeavingLobby;
+        private bool _leavePromptOpen;
         private CancellationTokenSource _startGameCts;
         private readonly MultiplayerActionRateLimiter _rateLimiter = new MultiplayerActionRateLimiter();
         #endregion
@@ -203,6 +205,28 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             return count;
         }
 
+        private int CountOtherConnectedPlayers(LobbyRoom lobby)
+        {
+            if (lobby?.Players == null)
+                return 0;
+
+            var localId = ResolveLocalPlayerId(lobby);
+            if (string.IsNullOrWhiteSpace(localId))
+                return Math.Max(0, CountConnectedPlayers(lobby) - 1);
+
+            var count = 0;
+            foreach (var player in lobby.Players)
+            {
+                if (player == null || string.IsNullOrWhiteSpace(player.PlayerId))
+                    continue;
+
+                if (!string.Equals(player.PlayerId, localId, StringComparison.Ordinal))
+                    count++;
+            }
+
+            return count;
+        }
+
         /// <summary>
         /// Визначає, чи локальний гравець є хостом.
         /// Перевіряємо:
@@ -214,14 +238,25 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (lobby == null) return false;
 
+            if (_sessionManager != null && _sessionManager.IsLocalPlayerHost)
+                return true;
+
+            var localId = ResolveLocalPlayerId(lobby);
+            return !string.IsNullOrWhiteSpace(localId)
+                && string.Equals(lobby.HostPlayerId, localId, StringComparison.Ordinal);
+        }
+
+        private string ResolveLocalPlayerId(LobbyRoom lobby)
+        {
             var localId = (_lobbyService as ILobbyLocalIdentity)?.LocalPlayerId;
             if (string.IsNullOrWhiteSpace(localId))
                 localId = _sessionManager?.LocalPlayerId;
             if (string.IsNullOrWhiteSpace(localId))
                 localId = _localPlayerId;
+            if (string.IsNullOrWhiteSpace(localId) && _sessionManager != null && _sessionManager.IsLocalPlayerHost)
+                localId = lobby?.HostPlayerId;
 
-            return !string.IsNullOrWhiteSpace(localId)
-                && string.Equals(lobby.HostPlayerId, localId, StringComparison.Ordinal);
+            return localId?.Trim() ?? string.Empty;
         }
 
         /// <summary>
@@ -480,44 +515,75 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         /// </summary>
         private void OnBackClicked()
         {
-            // Якщо confirmation service не зареєстровано — fallback: виходимо одразу.
-            if (_confirmationService == null)
-            {
-                _ = LeaveLobbyAndNavigateBackAsync();
-                return;
-            }
-
-            var request = new ConfirmationRequest
-            {
-                LabelText = "Leave Lobby?",
-                MessageText = "Are you sure you want to leave the lobby?",
-                OnConfirm = () => { _ = LeaveLobbyAndNavigateBackAsync(); },
-                OnCancel = null
-            };
-            _confirmationService.Show(request);
+            if (!TryLeaveBeforeNavigation(() => _navigation.OpenLast()))
+                _navigation.OpenLast();
         }
 
-        /// <summary>
-        /// Покинути лобі та повернутися на попередню панель.
-        /// </summary>
-        private async Task LeaveLobbyAndNavigateBackAsync()
+        public bool TryLeaveBeforeNavigation(Action continuation)
         {
+            if (_isStartingGame || _lobbyService?.Current == null
+                || !string.Equals(_navigation.CurrentMenu, _lobbyPanelName, StringComparison.Ordinal))
+                return false;
+            if (_isLeavingLobby || _leavePromptOpen)
+                return true;
+            if (_confirmationService == null)
+            {
+                _infoPanelService?.Show(new InfoMessage("Leave unavailable", "The confirmation dialog is unavailable."));
+                return true;
+            }
+            _leavePromptOpen = true;
+            var lobby = _currentLobby ?? _lobbyService.Current;
+            bool host = IsHost(lobby);
+            _confirmationService.Show(new ConfirmationRequest
+            {
+                LabelText = "Leave Lobby?",
+                MessageText = BuildLeaveLobbyConfirmationMessage(lobby, host),
+                OnConfirm = () =>
+                {
+                    _leavePromptOpen = false;
+                    _ = LeaveLobbyAndNavigateBackAsync(continuation);
+                },
+                OnCancel = () => _leavePromptOpen = false,
+            });
+            return true;
+        }
+
+        private string BuildLeaveLobbyConfirmationMessage(LobbyRoom lobby, bool host)
+        {
+            if (!host)
+                return "Leave this lobby and disconnect from its participants?";
+
+            return CountOtherConnectedPlayers(lobby) > 0
+                ? "Leave the lobby? Host will transfer to another player before you disconnect."
+                : "Leave the lobby? The lobby will close because no other players are connected.";
+        }
+
+        private async Task LeaveLobbyAndNavigateBackAsync(Action continuation)
+        {
+            if (_isLeavingLobby)
+                return;
+            _isLeavingLobby = true;
             try
             {
                 if (_sessionManager != null)
-                {
                     await _sessionManager.LeaveSessionAsync();
-                }
                 else if (_lobbyService != null)
-                {
                     await _lobbyService.LeaveAsync();
-                }
+                await MainThreadDispatcher.EnqueueAsync(() =>
+                {
+                    _currentLobby = null;
+                    continuation?.Invoke();
+                });
             }
-            catch (Exception)
+            catch (Exception exception)
             {
+                await MainThreadDispatcher.EnqueueAsync(() =>
+                    _infoPanelService?.Show(new InfoMessage("Could not leave lobby", exception.Message)));
             }
-
-            await MainThreadDispatcher.EnqueueAsync(() => _navigation.OpenLast());
+            finally
+            {
+                _isLeavingLobby = false;
+            }
         }
         #endregion
     }

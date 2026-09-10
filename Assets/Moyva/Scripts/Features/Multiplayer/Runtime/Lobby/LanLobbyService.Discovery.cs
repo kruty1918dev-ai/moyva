@@ -16,11 +16,24 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
     {
         private void StartBroadcastLoop()
         {
-            _cts?.Cancel();
-            try { _listenUdp?.Close(); _listenUdp?.Dispose(); } catch { }
-            _cts = new CancellationTokenSource();
-            _listenUdp = CreateListeningClient(DiscoveryPort);
-            var ct = _cts.Token;
+            // Browsers must also listen on the discovery port: host advertisements
+            // never arrive at the ephemeral port used for query responses.
+            lock (_discoveryLock)
+            {
+                if (_disposed)
+                    throw new ObjectDisposedException(nameof(LanLobbyService));
+                if (_listenUdp != null)
+                    return;
+
+                _listenUdp = CreateListeningClient(DiscoveryPort);
+                _cts = new CancellationTokenSource();
+                RunDiscoveryLoops(_listenUdp, _cts.Token);
+                Debug.Log($"[LAN Discovery] Listening on UDP {DiscoveryPort}; local IPv4={GetLocalIPAddress() ?? "unavailable"}.");
+            }
+        }
+
+        private void RunDiscoveryLoops(UdpClient listener, CancellationToken ct)
+        {
             _ = Task.Run(async () =>
             {
                 while (!ct.IsCancellationRequested)
@@ -34,7 +47,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                             await SendDiscoveryPayloadAsync(bytes).ConfigureAwait(false);
                         }
                     }
-                    catch (Exception) { }
+                    catch (Exception ex) { LogDiscoveryFailure("advertise", ex); }
                     try { await Task.Delay(BroadcastIntervalMs, ct); } catch (OperationCanceledException) { break; }
                 }
             }, ct);
@@ -45,7 +58,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 {
                     try
                     {
-                        var result = await ReceiveResultWithTimeoutAsync(_listenUdp, TimeSpan.FromMilliseconds(1000), ct).ConfigureAwait(false);
+                        var result = await ReceiveResultWithTimeoutAsync(listener, TimeSpan.FromMilliseconds(1000), ct).ConfigureAwait(false);
                         if (!result.HasValue)
                             continue;
 
@@ -53,7 +66,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         if (IsDiscoveryQuery(json))
                         {
                             if (IsCurrentLocalHost())
-                                await SendDiscoveryResponseAsync(result.Value.RemoteEndPoint).ConfigureAwait(false);
+                                await SendDiscoveryResponseAsync(listener, result.Value.RemoteEndPoint).ConfigureAwait(false);
                             continue;
                         }
 
@@ -66,18 +79,27 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     }
                     catch (OperationCanceledException) { break; }
                     catch (ObjectDisposedException) { break; }
-                    catch (Exception) { }
+                    catch (Exception ex)
+                    {
+                        if (ct.IsCancellationRequested) break;
+                        LogDiscoveryFailure("receive", ex);
+                        try { await Task.Delay(BroadcastIntervalMs, ct).ConfigureAwait(false); }
+                        catch (OperationCanceledException) { break; }
+                    }
                 }
             }, ct);
         }
 
         private void StopBroadcastLoop()
         {
-            try { _cts?.Cancel(); } catch { }
-            try { _listenUdp?.Close(); _listenUdp?.Dispose(); } catch { }
-            _listenUdp = null;
-            _cts?.Dispose();
-            _cts = null;
+            lock (_discoveryLock)
+            {
+                try { _cts?.Cancel(); } catch { }
+                try { _listenUdp?.Close(); _listenUdp?.Dispose(); } catch { }
+                _listenUdp = null;
+                _cts?.Dispose();
+                _cts = null;
+            }
         }
 
         private string BuildPayload()
@@ -154,13 +176,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 await _udp.SendAsync(bytes, bytes.Length, _loopbackEndPoint).ConfigureAwait(false);
             }
-            catch (Exception) { }
+            catch (Exception ex) { LogDiscoveryFailure("send", ex); }
 
             try
             {
                 await _udp.SendAsync(bytes, bytes.Length, _broadcastEndPoint).ConfigureAwait(false);
             }
-            catch (Exception) { }
+            catch (Exception ex) { LogDiscoveryFailure("send", ex); }
 
             foreach (var endPoint in GetDirectedBroadcastEndPoints(DiscoveryPort))
             {
@@ -168,7 +190,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 {
                     await _udp.SendAsync(bytes, bytes.Length, endPoint).ConfigureAwait(false);
                 }
-                catch (Exception) { }
+                catch (Exception ex) { LogDiscoveryFailure("send", ex); }
             }
         }
 
@@ -181,7 +203,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 await _udp.SendAsync(bytes, bytes.Length, hostDiscoveryEndPoint).ConfigureAwait(false);
             }
-            catch (Exception) { }
+            catch (Exception ex) { LogDiscoveryFailure("send", ex); }
         }
 
         private async Task SendDiscoveryQueryAsync(UdpClient client)
@@ -192,13 +214,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 await client.SendAsync(bytes, bytes.Length, _loopbackEndPoint).ConfigureAwait(false);
             }
-            catch (Exception) { }
+            catch (Exception ex) { LogDiscoveryFailure("send query", ex); }
 
             try
             {
                 await client.SendAsync(bytes, bytes.Length, _broadcastEndPoint).ConfigureAwait(false);
             }
-            catch (Exception) { }
+            catch (Exception ex) { LogDiscoveryFailure("send query", ex); }
 
             foreach (var endPoint in GetDirectedBroadcastEndPoints(DiscoveryPort))
             {
@@ -206,18 +228,32 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 {
                     await client.SendAsync(bytes, bytes.Length, endPoint).ConfigureAwait(false);
                 }
-                catch (Exception) { }
+                catch (Exception ex) { LogDiscoveryFailure("send query", ex); }
             }
         }
 
-        private Task SendDiscoveryResponseAsync(IPEndPoint remoteEndPoint)
+        private Task SendDiscoveryResponseAsync(UdpClient listener, IPEndPoint remoteEndPoint)
         {
             if (remoteEndPoint == null || _current == null)
                 return Task.CompletedTask;
 
             var payload = BuildPayload();
             var bytes = Encoding.UTF8.GetBytes(payload);
-            return _udp.SendAsync(bytes, bytes.Length, remoteEndPoint);
+            // Reply from the queried port, so stateful firewalls can associate
+            // the response with the client's outgoing discovery request.
+            return listener.SendAsync(bytes, bytes.Length, remoteEndPoint);
+        }
+
+        private void LogDiscoveryFailure(string operation, Exception exception)
+        {
+            if (_disposed)
+                return;
+            var message = $"[LAN Discovery] {operation} failed on UDP {DiscoveryPort}: {exception.GetType().Name}: {exception.Message}";
+            if (string.Equals(_lastDiscoveryError, message, StringComparison.Ordinal))
+                return;
+
+            _lastDiscoveryError = message;
+            Debug.LogWarning(message);
         }
 
         private static bool TryResolveHostDiscoveryEndPoint(LobbyRoom room, out IPEndPoint endPoint)

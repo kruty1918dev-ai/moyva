@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.GameMode.API;
+using Kruty1918.Moyva.Shared.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zenject;
@@ -118,10 +119,18 @@ namespace Kruty1918.Moyva.GameMode.Runtime
     internal sealed class HomeMenuSceneLoader : IExitMatchSceneLoader
     {
         private const string HomeMenuSceneName = "HomeMenu";
+        private readonly ISceneTransitionService _sceneTransitionService;
 
-        public Task LoadHomeMenuAsync(CancellationToken cancellationToken)
+        public HomeMenuSceneLoader([InjectOptional] ISceneTransitionService sceneTransitionService = null)
+        {
+            _sceneTransitionService = sceneTransitionService;
+        }
+
+        public async Task LoadHomeMenuAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (_sceneTransitionService != null)
+                await _sceneTransitionService.CoverAsync(cancellationToken);
             AsyncOperation operation = SceneManager.LoadSceneAsync(
                 HomeMenuSceneName,
                 LoadSceneMode.Single);
@@ -131,12 +140,18 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                     $"Scene '{HomeMenuSceneName}' could not be loaded.");
 
             if (operation.isDone)
-                return Task.CompletedTask;
+            {
+                if (_sceneTransitionService != null)
+                    await _sceneTransitionService.RevealAsync(cancellationToken);
+                return;
+            }
 
             var completion = new TaskCompletionSource<bool>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
             operation.completed += _ => completion.TrySetResult(true);
-            return completion.Task;
+            await completion.Task;
+            if (_sceneTransitionService != null)
+                await _sceneTransitionService.RevealAsync(cancellationToken);
         }
     }
 }

@@ -6,5 +6,6 @@ namespace Kruty1918.Moyva.HomeMenu.API
     /// </summary>
     public interface ILobbyPanelService
     {
+        bool TryLeaveBeforeNavigation(System.Action continuation);
     }
 }

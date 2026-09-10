@@ -51,14 +51,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
             }
 
-            if (!_recruitment.TryPeekReady(
-                    owner,
-                    signal.RecruitingBuildingPosition,
-                    out UnitRecruitmentQueueItemSnapshot ready)
-                || ready.QueueId != signal.QueueId)
-            {
+            UnitRecruitmentQueueItemSnapshot ready = default;
+            foreach (var item in _recruitment.GetQueue(owner, signal.RecruitingBuildingPosition))
+                if (item.QueueId == signal.QueueId && item.IsReady)
+                    ready = item;
+            if (ready.QueueId == 0)
                 return;
-            }
 
             if (_session != null)
             {

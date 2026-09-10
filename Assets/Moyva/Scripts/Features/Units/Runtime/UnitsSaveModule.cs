@@ -14,7 +14,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     internal sealed class UnitsSaveModule : ISaveModule, IInitializable, IDisposable
     {
         private const int SaveMagic = unchecked((int)0x554E4954);
-        private const int SaveVersion = 4;
+        private const int SaveVersion = 5;
         private const int MaxRecordCount = 100000;
 
         private readonly struct UnitRecord
@@ -156,7 +156,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     int queueCount = ReadBoundedCount(context.Reader, "recruitment queue");
                     queue = new List<UnitRecruitmentQueueItemSnapshot>(queueCount);
                     for (int index = 0; index < queueCount; index++)
-                        queue.Add(ReadRecruitmentRecord(context.Reader));
+                        queue.Add(ReadRecruitmentRecord(context.Reader, version));
                 }
                 else
                 {
@@ -195,9 +195,24 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             writer.Write(item.TrainingTurns);
             writer.Write(item.EnqueuedGlobalTurn);
             writer.Write(item.LastProgressGlobalTurn);
+            writer.Write(item.TrainingSeconds);
+            writer.Write(item.CompletedSeconds);
+            writer.Write(item.PaidCosts != null);
+            if (item.PaidCosts != null)
+            {
+                writer.Write(item.FundingSettlementId ?? string.Empty);
+                var resourceIds = new List<string>(item.PaidCosts.Keys);
+                resourceIds.Sort(StringComparer.Ordinal);
+                writer.Write(resourceIds.Count);
+                foreach (string resourceId in resourceIds)
+                {
+                    writer.Write(resourceId);
+                    writer.Write(item.PaidCosts[resourceId]);
+                }
+            }
         }
 
-        private static UnitRecruitmentQueueItemSnapshot ReadRecruitmentRecord(BinaryReader reader)
+        private static UnitRecruitmentQueueItemSnapshot ReadRecruitmentRecord(BinaryReader reader, int version)
         {
             long queueId = reader.ReadInt64();
             string ownerId = reader.ReadString();
@@ -208,6 +223,29 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int trainingTurns = reader.ReadInt32();
             long enqueuedGlobalTurn = reader.ReadInt64();
             long lastProgressGlobalTurn = reader.ReadInt64();
+            float trainingSeconds = version >= 5 ? reader.ReadSingle() : 0f;
+            float completedSeconds = version >= 5 ? reader.ReadSingle() : 0f;
+            if (float.IsNaN(trainingSeconds) || float.IsInfinity(trainingSeconds) || trainingSeconds < 0f
+                || float.IsNaN(completedSeconds) || float.IsInfinity(completedSeconds)
+                || completedSeconds < 0f || completedSeconds > trainingSeconds)
+                throw new InvalidDataException("Invalid recruitment training time.");
+            Dictionary<string, float> paidCosts = null;
+            string fundingSettlementId = string.Empty;
+            if (version >= 5 && reader.ReadBoolean())
+            {
+                fundingSettlementId = reader.ReadString();
+                int count = ReadBoundedCount(reader, "recruitment payment receipt");
+                paidCosts = new Dictionary<string, float>(StringComparer.Ordinal);
+                for (int index = 0; index < count; index++)
+                {
+                    string resourceId = reader.ReadString();
+                    float amount = reader.ReadSingle();
+                    if (string.IsNullOrWhiteSpace(resourceId) || float.IsNaN(amount)
+                        || float.IsInfinity(amount) || amount < 0 || paidCosts.ContainsKey(resourceId))
+                        throw new InvalidDataException("Invalid recruitment payment receipt.");
+                    paidCosts.Add(resourceId, amount);
+                }
+            }
 
             if (queueId < 1 || string.IsNullOrWhiteSpace(ownerId) || string.IsNullOrWhiteSpace(unitTypeId)
                 || completedTurns < 0 || trainingTurns < 1 || completedTurns > trainingTurns
@@ -228,7 +266,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 lastProgressGlobalTurn,
                 completedTurns >= trainingTurns
                     ? UnitRecruitmentQueueStatus.Ready
-                    : UnitRecruitmentQueueStatus.Training);
+                    : UnitRecruitmentQueueStatus.Training,
+                paidCosts,
+                fundingSettlementId, trainingSeconds, completedSeconds);
         }
 
         private static int ReadBoundedCount(BinaryReader reader, string label)

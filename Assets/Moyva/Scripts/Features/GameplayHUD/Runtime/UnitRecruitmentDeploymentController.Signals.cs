@@ -46,11 +46,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
             }
 
-            if (!_recruitment.TryPeekReady(
-                    _session.OwnerId,
-                    _session.RecruitingBuildingPosition,
-                    out UnitRecruitmentQueueItemSnapshot ready)
-                || ready.QueueId != _session.QueueId)
+            bool stillReady = false;
+            foreach (var item in _recruitment.GetQueue(_session.OwnerId, _session.RecruitingBuildingPosition))
+                stillReady |= item.QueueId == _session.QueueId && item.IsReady;
+            if (!stillReady)
             {
                 EndSession(destroyPreview: true);
                 return;

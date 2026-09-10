@@ -118,6 +118,14 @@ namespace Kruty1918.Moyva.Economy.Runtime
                             ResourceId = pair.Key, NewAmount = settlement.GetResource(pair.Key),
                             Delta = request.Operation == CaravanCargoOperation.Load ? -pair.Value : pair.Value,
                         });
+                if (request.Operation == CaravanCargoOperation.Unload && settlement != null
+                    && TryWarehousePosition(request.WarehouseKey, out var deliveryPosition))
+                    _signals.Fire(new CaravanDeliveryCompletedSignal
+                    {
+                        OwnerId = request.OwnerId, UnitId = request.UnitId, SettlementId = settlement.SettlementId,
+                        WarehousePosition = deliveryPosition,
+                        Resources = new System.Collections.ObjectModel.ReadOnlyDictionary<string, float>(resources),
+                    });
                 Changed?.Invoke();
                 return CaravanTransferResult.Success();
             }

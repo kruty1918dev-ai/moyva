@@ -11,6 +11,9 @@
     "deactivateSettlementWhenPopulationIsZero": true
   },
   "population": {
+    "initialResidents": 15,
+    "constructionWorkersForFullSpeed": 10,
+    "minimumConstructionSpeed": 0.25,
     "newResidentsArrivalIntervalTurns": 10,
     "requireHousingForFamilyCreation": true,
     "enableWarMortality": true,

@@ -144,7 +144,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _joinState = JoinPipelineState.ResolvingTarget;
                 await ApplySelectedProviderAsync(ct);
 
-                if (_multiplayerState != null)
+                // LAN discovery and transport do not depend on Unity cloud authentication.
+                if (GetCurrentProviderType() == NetworkProviderType.Relay && _multiplayerState != null)
                     await _multiplayerState.WaitUntilReadyAsync(ct);
 
                 _joinState = JoinPipelineState.JoiningLobby;
@@ -155,10 +156,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         return;
 
                     shouldRefreshRoomListAfterFailure = true;
+                    var joinError = joinProviderType == NetworkProviderType.Lan && joinResult.Error.Code == DomainErrorCode.NotFound
+                        ? new MultiplayerUserFacingError(
+                            "MP-LAN-404",
+                            "No LAN host responded with this invite code.",
+                            "Check the code, keep the host lobby open, and allow the game through the firewall on both devices on the same local network.",
+                            traceId)
+                        : MultiplayerUserFacingError.FromDomainError(joinResult.Error, traceId);
                     await ReturnToLobbyChooserWithMessageAsync(
                         joinPanelName,
                         "Join Failed",
-                        MultiplayerUserFacingError.FromDomainError(joinResult.Error, traceId).BuildDisplayMessage(),
+                        joinError.BuildDisplayMessage(),
                         ct);
                     return;
                 }

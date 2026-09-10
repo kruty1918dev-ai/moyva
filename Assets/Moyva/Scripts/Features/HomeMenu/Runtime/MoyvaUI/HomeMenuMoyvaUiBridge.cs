@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.Multiplayer.Networking;
+using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.Graphics;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
@@ -53,7 +54,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         }
         public void Settings() => Open(SettingsPanel);
         public void WorldSetup() => Open(WorldSetupPanel);
-        public void Back() => _navigation?.CloseLast();
+        public void Back()
+        {
+            if (_view != null && _view.Controls.IsCapturing) { _view.Controls.CancelCapture(); return; }
+            _navigation?.CloseLast();
+        }
         public void BackForce() => _navigation?.CloseLastForce();
 
         public void Exit()
@@ -85,6 +90,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void ShowGeneralSettings() => _state?.SetSettingsSection(HomeMenuSettingsSection.General);
         public void ShowAudioSettings() => _state?.SetSettingsSection(HomeMenuSettingsSection.Audio);
         public void ShowGraphicsSettings() => _state?.SetSettingsSection(HomeMenuSettingsSection.Graphics);
+        public void ShowControlsSettings() => _state?.SetSettingsSection(HomeMenuSettingsSection.Controls);
 
         public void BeginControlInteraction() => _state?.BeginInteraction();
         public void EndControlInteraction() => _state?.EndInteraction();
@@ -200,6 +206,34 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void LodBiasUp() => _view?.AdjustLodBias(0.1f);
         public void ResetGraphics() => _view?.ResetGraphics();
         public void DeleteSaves() => _view?.DeleteSaves();
+        public void CommitMouseSensitivityValue(object value) => Commit(() => _view?.SetMouseSensitivity(ToFloat(value, _view.MouseSensitivity)));
+        public void CommitMovementSpeedValue(object value) => Commit(() => _view?.SetMovementSpeed(ToFloat(value, _view.MovementSpeed)));
+        public void CommitOrbitSpeedValue(object value) => Commit(() => _view?.SetOrbitSpeed(ToFloat(value, _view.OrbitSpeed)));
+        public void CommitZoomSpeedValue(object value) => Commit(() => _view?.SetZoomSpeed(ToFloat(value, _view.ZoomSpeed)));
+        public void ResetControls()
+        {
+            _view?.Controls.CancelCapture();
+            _confirmationService?.Show(new ConfirmationRequest
+            {
+                LabelText = "Restore camera controls?",
+                MessageText = "This resets camera shortcuts and sensitivity to their defaults.",
+                OnConfirm = () => { _view?.ResetControls(); _view?.Controls.ResetSelection(); }
+            });
+        }
+        public void SelectControlKey(string key) => _view?.Controls.SelectKey(key);
+        public void ToggleControlModifier(int modifier) => _view?.Controls.ToggleModifier(modifier);
+        public void EditControlAction(int action) => _view?.Controls.SelectAction(action, true);
+        public void SelectControlAction(object action) => _view?.Controls.SelectAction(ToInt(action, 0), false);
+        public void RecordControlShortcut() => _view?.Controls.StartCapture();
+        public void CancelControlCapture() => _view?.Controls.CancelCapture();
+        public void ApplyControlShortcut() => _view?.Controls.Apply();
+        public void RebindControl(int actionIndex, string controlPath)
+        {
+            if (!Enum.IsDefined(typeof(PlayerControlAction), actionIndex))
+                return;
+
+            _view?.SetControlBinding((PlayerControlAction)actionIndex, controlPath);
+        }
 
         public void Confirm() => _view?.ConfirmModal();
         public void Cancel() => _view?.CancelModal();

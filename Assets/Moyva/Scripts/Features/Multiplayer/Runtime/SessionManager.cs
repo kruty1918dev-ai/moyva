@@ -45,6 +45,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private SessionRules _currentRules;
         private bool _isHost;
         private string _localPlayerId;
+        private bool _hostTransportMigrationInProgress;
         private readonly Dictionary<string, CancellationTokenSource> _pendingDisconnects = new Dictionary<string, CancellationTokenSource>(StringComparer.Ordinal);
 
         public IReadOnlyList<Participant> Participants => _participants;

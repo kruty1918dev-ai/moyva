@@ -3,6 +3,184 @@
   src: url(global:moyvaFont);
 }
 
+/* Interactive controls workspace; scoped to the Controls settings tab. */
+.controls-page .brand-panel { display: none; }
+.moyva-ui-app.controls-page .navigation-panel {
+  width: 100%;
+  min-width: 0;
+  max-width: 1440px;
+  padding: 22px 28px;
+  border-color: rgba(197, 165, 107, 0.55);
+  border-radius: 12px;
+  background-color: rgba(12, 17, 24, 0.98);
+}
+.controls-intro, .keyboard-toolbar, .controls-section-heading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 12px;
+}
+.controls-intro { margin: 10px 0 22px; }
+.controls-title { font-size: 27px; color: rgb(244, 240, 230); margin: 5px 0; }
+.controls-badge, .keyboard-layer {
+  font-size: 10px;
+  color: rgb(192, 174, 136);
+  padding: 7px 10px;
+  border-width: 1px;
+  border-color: rgb(63, 64, 59);
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+.controls-workspace { display: flex; flex-direction: row; align-items: stretch; gap: 18px; flex-shrink: 0; width: 100%; }
+.keyboard-panel {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  flex-basis: 0;
+  min-width: 0;
+  padding: 18px;
+  border-width: 1px;
+  border-color: rgb(46, 57, 65);
+  border-radius: 10px;
+  background-color: rgb(17, 24, 32);
+}
+.keyboard-toolbar { margin-bottom: 18px; }
+.keyboard-board {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  background-color: rgb(9, 14, 20);
+  border-width: 1px;
+  border-color: rgb(37, 46, 56);
+  border-radius: 9px;
+}
+.keyboard-row { display: flex; flex-direction: row; gap: 5px; width: 100%; flex-shrink: 0; }
+.keyboard-key {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  height: 45px;
+  min-width: 0;
+  padding: 3px 0 6px;
+  background-color: rgb(29, 38, 49);
+  border-width: 1px;
+  border-bottom-width: 4px;
+  border-color: rgb(47, 59, 73);
+  border-bottom-color: rgb(17, 23, 31);
+  border-radius: 5px;
+  color: rgb(165, 178, 192);
+  cursor: pointer;
+}
+.keycap-label { font-size: 10px; text-align: center; }
+.keycap-marker { position: absolute; bottom: 4px; width: 12px; height: 2px; border-radius: 1px; background-color: transparent; }
+.keyboard-key.movement { background-color: rgb(30, 59, 57); color: rgb(155, 227, 208); border-color: rgb(48, 92, 84); border-bottom-color: rgb(18, 39, 37); }
+.keyboard-key.orbit { background-color: rgb(48, 43, 69); color: rgb(197, 181, 244); border-color: rgb(76, 66, 103); border-bottom-color: rgb(28, 23, 43); }
+.keyboard-key.zoom { background-color: rgb(57, 48, 30); color: rgb(239, 210, 139); border-color: rgb(99, 81, 45); border-bottom-color: rgb(38, 31, 18); }
+.keyboard-key.reserved { color: rgb(164, 188, 218); }
+.movement .keycap-marker, .movement .legend-dot { background-color: rgb(121, 206, 181); }
+.orbit .keycap-marker, .orbit .legend-dot { background-color: rgb(174, 151, 230); }
+.zoom .keycap-marker, .zoom .legend-dot { background-color: rgb(224, 189, 106); }
+.reserved .keycap-marker, .reserved .legend-dot { background-color: rgb(111, 147, 190); }
+.keyboard-key:hover { background-color: rgb(60, 72, 83); border-color: rgb(130, 146, 160); color: white; }
+.keyboard-key.selected { border-color: rgb(241, 213, 154); color: rgb(255, 239, 200); background-color: rgb(81, 67, 42); }
+.keyboard-key.modifier-active { background-color: rgb(81, 67, 42); border-color: rgb(203, 174, 117); color: rgb(255, 234, 187); }
+.keyboard-key:active { border-bottom-width: 1px; padding-top: 6px; }
+.keyboard-legend { display: flex; flex-direction: row; flex-wrap: wrap; gap: 18px; margin: 19px 2px 10px; }
+.legend-item { display: flex; flex-direction: row; align-items: center; gap: 6px; color: rgb(170, 183, 195); font-size: 11px; }
+.legend-dot { width: 6px; height: 6px; border-radius: 3px; }
+.keyboard-hint { font-size: 11px; line-height: 1.5em; color: rgb(139, 157, 174); margin: 3px 2px 0; }
+.key-inspector {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 260px;
+  padding: 18px;
+  border-width: 1px;
+  border-color: rgb(82, 74, 57);
+  border-radius: 10px;
+  background-color: rgb(24, 28, 34);
+}
+.selected-key-display { color: rgb(244, 214, 157); font-size: 27px; margin: 13px 0 5px; }
+.selected-key-assignment { min-height: 32px; color: rgb(184, 193, 202); font-size: 12px; line-height: 1.3em; }
+.modifier-switches { display: flex; flex-direction: row; gap: 6px; margin: 10px 0 16px; }
+.modifier-switch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  height: 30px;
+  background-color: rgb(30, 38, 46);
+  border-width: 1px;
+  border-color: rgb(59, 69, 80);
+  border-radius: 4px;
+  color: rgb(151, 167, 183);
+  font-size: 10px;
+}
+.modifier-switch.active { background-color: rgb(77, 64, 41); border-color: rgb(195, 166, 109); color: rgb(244, 218, 162); }
+.modifier-switch:hover { border-color: rgb(212, 193, 151); }
+.inspector-label { font-size: 10px; color: rgb(159, 174, 188); margin-bottom: 7px; }
+.key-inspector .inspector-select { width: 100%; height: 37px; margin-bottom: 12px; }
+.shortcut-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 35px;
+  margin-bottom: 8px;
+  border-width: 1px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.record-shortcut { background-color: rgb(32, 41, 50); border-color: rgb(67, 80, 92); color: rgb(205, 216, 224); }
+.apply-shortcut { background-color: rgb(203, 173, 110); border-color: rgb(220, 194, 142); color: rgb(28, 29, 27); }
+.shortcut-button:hover { border-color: rgb(243, 224, 185); }
+.shortcut-button:disabled { opacity: 0.4; }
+.binding-notice { font-size: 11px; line-height: 1.4em; color: rgb(156, 183, 169); margin-top: 3px; }
+.binding-notice.conflict { color: rgb(238, 161, 140); }
+.binding-notice.listening { color: rgb(242, 212, 150); }
+.controls-section-heading { margin: 21px 0 12px; }
+.binding-cards { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 8px; flex-shrink: 0; }
+.binding-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 24%;
+  min-width: 0;
+  min-height: 49px;
+  padding: 9px 12px;
+  background-color: rgb(24, 32, 40);
+  border-width: 1px;
+  border-left-width: 3px;
+  border-color: rgb(46, 58, 69);
+  border-radius: 5px;
+}
+.binding-card.movement { border-left-color: rgb(121, 206, 181); }
+.binding-card.orbit { border-left-color: rgb(174, 151, 230); }
+.binding-card.zoom { border-left-color: rgb(224, 189, 106); }
+.binding-card-title { color: rgb(204, 214, 222); font-size: 11px; flex-shrink: 1; }
+.binding-card-key { color: rgb(184, 202, 216); font-size: 11px; margin-left: 8px; flex-shrink: 1; text-align: right; }
+.binding-card.active, .binding-card:hover { border-color: rgb(186, 161, 110); background-color: rgb(39, 44, 46); }
+.controls-page .control-row { border-left-color: rgb(78, 106, 115); background-color: rgb(23, 31, 39); border-radius: 5px; }
+.vp-compact.controls-page .controls-workspace, .vp-tiny.controls-page .controls-workspace, .vp-portrait.controls-page .controls-workspace { flex-direction: column; }
+.vp-compact.controls-page .key-inspector, .vp-tiny.controls-page .key-inspector, .vp-portrait.controls-page .key-inspector { width: 100%; }
+.vp-compact.controls-page .keyboard-panel, .vp-tiny.controls-page .keyboard-panel, .vp-portrait.controls-page .keyboard-panel { flex-basis: auto; width: 100%; }
+.vp-tiny.controls-page .binding-card, .vp-portrait.controls-page .binding-card { width: 48%; }
+.vp-tiny.controls-page .controls-badge, .vp-portrait.controls-page .controls-badge { display: none; }
+.vp-tiny.controls-page .controls-title, .vp-portrait.controls-page .controls-title { font-size: 21px; }
+.vp-tiny.controls-page .keyboard-panel, .vp-portrait.controls-page .keyboard-panel { padding: 8px; }
+.vp-tiny.controls-page .keyboard-board, .vp-portrait.controls-page .keyboard-board { padding: 5px; gap: 4px; }
+.vp-tiny.controls-page .keyboard-row, .vp-portrait.controls-page .keyboard-row { gap: 2px; }
+.vp-tiny.controls-page .keycap-label, .vp-portrait.controls-page .keycap-label { font-size: 8px; }
+.vp-tiny.controls-page .keyboard-key, .vp-portrait.controls-page .keyboard-key { height: 36px; }
+
 .moyva-ui-app,
 .home-menu-shell {
   position: relative;

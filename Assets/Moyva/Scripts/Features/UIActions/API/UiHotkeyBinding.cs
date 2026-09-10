@@ -42,5 +42,15 @@ namespace Kruty1918.Moyva.UIActions.API
         public IReadOnlyCollection<string> AllowedContexts { get; }
 
         public bool HasBinding => PrimaryKey != Key.None || SecondaryKey != Key.None;
+
+        public static IReadOnlyList<UiHotkeyBinding> CreateDefaults() => new[]
+        {
+            new UiHotkeyBinding(UiActionIds.Construction.Toggle, Key.B, allowedContexts: new[] { "Gameplay", "ConstructionMode" }),
+            new UiHotkeyBinding(UiActionIds.Construction.ConfirmPlacement, Key.Enter, Key.NumpadEnter, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }),
+            new UiHotkeyBinding(UiActionIds.Construction.RotatePlacement, Key.R, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }),
+            new UiHotkeyBinding(UiActionIds.Construction.UndoPlacement, Key.Z, ctrl: true, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }),
+            new UiHotkeyBinding(UiActionIds.Construction.RedoPlacement, Key.Y, ctrl: true, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }),
+            new UiHotkeyBinding(UiActionIds.Deployment.Confirm, Key.Enter, Key.NumpadEnter, allowedContexts: new[] { "DeploymentMode" })
+        };
     }
 }

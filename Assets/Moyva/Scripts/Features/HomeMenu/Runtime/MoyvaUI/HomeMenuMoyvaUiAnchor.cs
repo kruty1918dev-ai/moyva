@@ -357,6 +357,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void ShowGeneralSettings() { }
             public void ShowAudioSettings() { }
             public void ShowGraphicsSettings() { }
+            public void ShowControlsSettings() { }
+            public void SelectControlKey(string key) { }
+            public void ToggleControlModifier(int modifier) { }
+            public void EditControlAction(int action) { }
+            public void SelectControlAction(object action) { }
+            public void RecordControlShortcut() { }
+            public void CancelControlCapture() { }
+            public void ApplyControlShortcut() { }
+            public void ResetControls() { }
+            public void CommitMouseSensitivityValue(object value) { }
+            public void CommitMovementSpeedValue(object value) { }
+            public void CommitOrbitSpeedValue(object value) { }
+            public void CommitZoomSpeedValue(object value) { }
             public void BeginControlInteraction() { }
             public void EndControlInteraction() { }
             public void CreateRoom() { }

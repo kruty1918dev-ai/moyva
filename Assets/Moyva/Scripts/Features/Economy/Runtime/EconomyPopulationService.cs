@@ -48,13 +48,16 @@ namespace Kruty1918.Moyva.Economy.Runtime
             for (int i = state.Residents.Count - 1; i >= 0; i--)
             {
                 var resident = state.Residents[i];
+                // Enlisted people are owned by recruitment/combat until released.
+                if (!resident.IsCivilian)
+                    continue;
 
                 // Aging (1 turn = 1 age unit; designer can adjust meaning via rules)
                 var aged = new EconomyResidentState(
                     age: resident.Age + 1,
                     hp: resident.Hp,
                     comfort: resident.Comfort,
-                    houseCollapsed: resident.HouseCollapsed);
+                    houseCollapsed: resident.HouseCollapsed, professionId: resident.ProfessionId);
 
                 // Consumption
                 var consumption = _consumptionService.ResolveConsumption(rules, aged.Age);
@@ -110,7 +113,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     age: aged.Age,
                     hp: newHp,
                     comfort: newComfort,
-                    houseCollapsed: aged.HouseCollapsed);
+                    houseCollapsed: aged.HouseCollapsed, professionId: aged.ProfessionId);
 
                 // Death check
                 float deathChance = _mortalityService.CalculateDeathChance(rules, updated, needs);

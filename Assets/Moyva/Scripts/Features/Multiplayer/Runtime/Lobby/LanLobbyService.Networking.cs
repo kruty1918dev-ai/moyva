@@ -17,9 +17,18 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private static UdpClient CreateListeningClient(int port)
         {
             var client = new UdpClient(AddressFamily.InterNetwork);
-            client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            client.Client.Bind(new IPEndPoint(IPAddress.Any, port));
-            return client;
+            try
+            {
+                client.ExclusiveAddressUse = false;
+                client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                client.Client.Bind(new IPEndPoint(IPAddress.Any, port));
+                return client;
+            }
+            catch (SocketException ex)
+            {
+                client.Dispose();
+                throw new NetworkTransportException($"LAN discovery cannot listen on UDP {port} ({ex.SocketErrorCode}).", ex);
+            }
         }
 
         private static UdpClient CreateQueryClient()
@@ -205,8 +214,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
         public void Dispose()
         {
-            StopBroadcastLoop();
-            try { _udp.Close(); _udp.Dispose(); } catch { }
+            lock (_discoveryLock)
+            {
+                if (_disposed) return;
+                _disposed = true;
+                StopBroadcastLoop();
+                try { _udp.Close(); _udp.Dispose(); } catch { }
+            }
         }
     }
 }

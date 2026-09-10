@@ -55,7 +55,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                     : MenuWorldPreviewKingdomPlacer.Apply(previewData, _kingdomPlacement);
             }
 
-            if (useLiveMeshPreview && TryBuildLiveMeshPreview(previewData, tileRegistry, projectSettings))
+            string livePreviewFailureReason = string.Empty;
+            if (useLiveMeshPreview && TryBuildLiveMeshPreview(previewData, tileRegistry, projectSettings, out livePreviewFailureReason))
             {
                 DisposeGeneratedTexture();
                 SetTexturePreviewVisible(true);
@@ -68,7 +69,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (useLiveMeshPreview)
             {
                 _livePreviewUnavailable = true;
-                LogLivePreviewFallbackOnce("The live mesh, material, camera, or RenderTexture setup is invalid.");
+                LogLivePreviewFallbackOnce(livePreviewFailureReason);
             }
 
             DestroyLiveMeshPreview();

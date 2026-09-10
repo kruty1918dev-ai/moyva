@@ -26,7 +26,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
     /// Real UGS Lobby implementation. Creates/joins lobbies, stores the Relay join code
     /// in lobby data, runs a heartbeat loop for the host and a poll loop for all peers.
     /// </summary>
-    public sealed partial class UgsLobbyService : ILobbyService, ILobbyLocalIdentity, IDisposable
+    public sealed partial class UgsLobbyService : ILobbyService, ILobbyLocalIdentity, ILobbyHostMigrationService, IDisposable
     {
         private const string RelayCodeDataKey = "relayJoinCode";
         private const string ProjectDataKey = "moyvaProject";
@@ -50,8 +50,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private bool _isHost;
         private CancellationTokenSource _loopCts;
 
-        private static readonly object ServicesReadyLock = new object();
-        private static Task _servicesReadyTask;
 
         public LobbyRoom Current => _current;
         public string LocalPlayerId => _current == null ? string.Empty : AuthenticationService.Instance.PlayerId;

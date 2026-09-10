@@ -75,6 +75,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         public void Initialize()
         {
             _calendar.OnHourChanged += OnTurnAdvanced;
+            _signalBus.Subscribe<UnitDestroyedSignal>(OnMilitaryUnitDestroyed);
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.Subscribe<BuildingOperationalSignal>(OnBuildingOperational);
             _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
@@ -86,6 +87,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         public void Dispose()
         {
             _calendar.OnHourChanged -= OnTurnAdvanced;
+            _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnMilitaryUnitDestroyed);
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.TryUnsubscribe<BuildingOperationalSignal>(OnBuildingOperational);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
@@ -459,6 +461,94 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 _ownerResourcePoolService.AddOwnerResource(ownerId, pair.Key, pair.Value, _signalBus);
         }
 
+        public RecruitmentPopulationSnapshot GetRecruitmentPopulation(string ownerId, Vector2Int position)
+        {
+            if (!TryResolveConstructionSettlement(position, ownerId, out var state) || state == null || !state.IsActive)
+                return default;
+            int available = 0, training = 0, military = 0;
+            foreach (var resident in state.Residents)
+            {
+                if (resident.CanRecruit) available++;
+                if (resident.RecruitmentQueueId > 0) training++;
+                if (!string.IsNullOrEmpty(resident.MilitaryUnitId)) military++;
+            }
+            float minimum = Rules?.Population?.MinimumConstructionSpeed ?? 0.25f;
+            float fullSpeed = Rules?.Population?.ConstructionWorkersForFullSpeed ?? 10;
+            return new RecruitmentPopulationSnapshot(state.Residents.Count, available, training, military,
+                Mathf.Clamp(available / fullSpeed, minimum, 1f));
+        }
+
+        public bool TryReserveRecruitmentPopulation(string ownerId, Vector2Int position, long queueId,
+            int count, out string reason)
+        {
+            reason = null;
+            count = Math.Max(1, count);
+            if (queueId < 1 || !TryResolveConstructionSettlement(position, ownerId, out var state)
+                || state == null || !state.IsActive)
+            {
+                reason = "An owned settlement with available population is required.";
+                return false;
+            }
+            if (GetRecruitmentPopulation(ownerId, position).Available < count)
+            {
+                reason = $"Not enough available population: {count} required.";
+                return false;
+            }
+            for (int index = 0; index < state.Residents.Count && count > 0; index++)
+            {
+                if (!state.Residents[index].CanRecruit) continue;
+                state.Residents[index] = state.Residents[index].WithMilitaryAssignment(queueId);
+                count--;
+            }
+            PublishPopulationChanged(state);
+            return true;
+        }
+
+        public void SetRecruitmentPopulationAssignment(string ownerId, long queueId, string unitId)
+        {
+            if (queueId < 1) return;
+            foreach (var state in _settlementRegistry.AllSettlements.Values)
+            {
+                if (!string.Equals(state.OwnerId, ownerId, StringComparison.Ordinal)) continue;
+                bool changed = false;
+                for (int index = 0; index < state.Residents.Count; index++)
+                {
+                    if (state.Residents[index].RecruitmentQueueId != queueId) continue;
+                    state.Residents[index] = state.Residents[index].WithMilitaryAssignment(0, unitId);
+                    changed = true;
+                }
+                if (changed) PublishPopulationChanged(state);
+            }
+        }
+
+        private void OnMilitaryUnitDestroyed(UnitDestroyedSignal signal)
+        {
+            if (string.IsNullOrWhiteSpace(signal.UnitId)) return;
+            foreach (var state in _settlementRegistry.AllSettlements.Values)
+                if (state.Residents.RemoveAll(resident => resident.MilitaryUnitId == signal.UnitId) > 0)
+                    PublishPopulationChanged(state);
+        }
+
+        private void PublishPopulationChanged(EconomySettlementState state)
+            => _signalBus.Fire(new SettlementPopulationChangedSignal
+            { OwnerId = state.OwnerId, SettlementId = state.SettlementId });
+
+        public void RefundRecruitmentResources(string ownerId, string settlementId,
+            IReadOnlyDictionary<string, float> resources)
+        {
+            var settlement = string.IsNullOrWhiteSpace(settlementId)
+                ? null : _settlementRegistry.GetSettlement(settlementId);
+            if (settlement == null || !settlement.IsActive
+                || !string.Equals(NormalizeOwnerId(settlement.OwnerId), NormalizeOwnerId(ownerId), StringComparison.Ordinal))
+            {
+                RefundOwnerPoolResources(ownerId, resources);
+                return;
+            }
+            if (resources != null)
+                foreach (var resource in resources)
+                    AddResource(settlementId, resource.Key, resource.Value);
+        }
+
         public bool TryGetBuildingAtPosition(Vector2Int position, out string buildingId, out string ownerId)
         {
             return _settlementRegistry.TryGetBuildingAtPosition(position, out buildingId, out ownerId);
@@ -556,6 +646,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                             state.CurrentTurn,
                         IsActive =
                             state.IsActive,
+                        Residents = new List<EconomyResidentState>(state.Residents),
                     };
 
                 foreach (var resource
@@ -765,6 +856,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 state.SettlementName = saved.SettlementName;
             state.IsActive = saved.IsActive;
             state.CurrentTurn = saved.CurrentTurn;
+            if (saved.Residents != null)
+            {
+                state.Residents.Clear();
+                state.Residents.AddRange(saved.Residents);
+            }
 
             state.ResourcePool.Clear();
             foreach (var resource in saved.ResourcePool)

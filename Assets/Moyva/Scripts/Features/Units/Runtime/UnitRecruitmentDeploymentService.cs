@@ -60,9 +60,10 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             if (owner == null
                 || queueId < 1
-                || !_queue.TryPeekReady(
+                || !_queue.TryGetReady(
                     owner,
                     recruitingBuildingPosition,
+                    queueId,
                     out UnitRecruitmentQueueItemSnapshot ready)
                 || ready.QueueId != queueId
                 || !_buildingContext.TryResolveDeployment(
@@ -132,14 +133,15 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (_progressClock?.IsRealtime != true && !_turns.CanOwnerAct(owner, out reason))
                 return false;
 
-            if (!_queue.TryPeekReady(
+            if (!_queue.TryGetReady(
                     owner,
                     recruitingBuildingPosition,
+                    queueId,
                     out UnitRecruitmentQueueItemSnapshot ready)
                 || ready.QueueId != queueId)
             {
                 reason =
-                    "Requested recruitment job is not the ready queue head.";
+                    "Requested recruitment job is not ready.";
                 return false;
             }
 

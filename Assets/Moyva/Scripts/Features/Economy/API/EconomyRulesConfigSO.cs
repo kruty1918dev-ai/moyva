@@ -26,6 +26,12 @@ namespace Kruty1918.Moyva.Economy.API
     [Serializable]
     public sealed class EconomyPopulationRules
     {
+        [SerializeField] private int _initialResidents = 15;
+        [SerializeField] private int _constructionWorkersForFullSpeed = 10;
+        [SerializeField] private float _minimumConstructionSpeed = 0.25f;
+        public int InitialResidents => Math.Max(1, _initialResidents);
+        public int ConstructionWorkersForFullSpeed => Math.Max(1, _constructionWorkersForFullSpeed);
+        public float MinimumConstructionSpeed => UnityEngine.Mathf.Clamp(_minimumConstructionSpeed, 0.05f, 1f);
         [Tooltip("Кожні N ходів до поселення прибувають нові жителі (якщо є вільне житло).\nПриклад: 10 — приріст кожні 10 ходів.")]
         [SerializeField] private int _newResidentsArrivalIntervalTurns = 10;
         [Tooltip("true = нові родини утворюються лише за наявності вільного місця в житловій будівлі.\nfalse = населення зростає незалежно від наявності будинків.")]

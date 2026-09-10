@@ -6,13 +6,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
     internal sealed class GameplayProgressClockConfigurator : IInitializable
     {
-        private const float DefaultSandboxRoundSeconds = 10f;
-
         private readonly IGameplayProgressClock _clock;
+        private readonly BootstrapGameSettings _settings;
 
-        public GameplayProgressClockConfigurator(IGameplayProgressClock clock)
+        public GameplayProgressClockConfigurator(
+            IGameplayProgressClock clock,
+            BootstrapGameSettings settings)
         {
             _clock = clock;
+            _settings = settings ?? new BootstrapGameSettings();
         }
 
         public void Initialize()
@@ -25,8 +27,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             _clock.Configure(
                 sandbox ? GameplayProgressMode.SandboxRealtime : GameplayProgressMode.TurnBased,
-                DefaultSandboxRoundSeconds,
-                1f);
+                _settings.SandboxProgress?.RoundSeconds ?? 10f,
+                _settings.SandboxProgress?.InitialSpeed ?? 1f);
         }
     }
 }

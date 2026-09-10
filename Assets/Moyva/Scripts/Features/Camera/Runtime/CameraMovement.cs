@@ -27,7 +27,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private float _forceBlockTimer;
         private bool _pendingTeleportLateTickLog;
-        private string _lastTeleportSource;
         private const float ForceBlockDuration = 1.5f; // Час затримки після форсованого руху (можна винести в SO)
 
         // Zenject автоматично підставить активну камеру та налаштування
@@ -234,7 +233,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _currentVelocity = Vector3.zero;
             _camera.transform.position = _targetPosition;
             _pendingTeleportLateTickLog = true;
-            _lastTeleportSource = "TeleportCamera";
         }
 
         public void TeleportCameraToFocusPoint(Vector3 focusPoint, float distance)
@@ -247,7 +245,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _currentVelocity = Vector3.zero;
             _camera.transform.position = _targetPosition;
             _pendingTeleportLateTickLog = true;
-            _lastTeleportSource = "TeleportCameraToFocusPoint";
         }
 
         public void LateTick()

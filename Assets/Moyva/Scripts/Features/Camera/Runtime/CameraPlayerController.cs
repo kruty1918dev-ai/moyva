@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using Kruty1918.Moyva.Camera.API;
 using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.Moyva.Shared.Controls;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
@@ -14,6 +16,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly ICameraZoom _cameraZoom;
         private readonly CameraSettingsSO _settings;
         private readonly IGameplayInputPolicy _inputPolicy;
+        private readonly IPlayerControlSettingsService _controlSettings;
+        private readonly Dictionary<PlayerControlAction, PlayerControlBinding> _keyboardBindings = new();
 
         private readonly InputAction _moveAction;
         private readonly InputAction _zoomAction;
@@ -26,12 +30,17 @@ namespace Kruty1918.Moyva.Camera.Runtime
             ICameraZoom cameraZoom,
             CameraSettingsSO settings,
             InputActionAsset inputAsset,
-            [InjectOptional] IGameplayInputPolicy inputPolicy = null)
+            [InjectOptional] IGameplayInputPolicy inputPolicy = null,
+            [InjectOptional] IPlayerControlSettingsService controlSettings = null)
         {
             _cameraMovement = cameraMovement;
             _cameraZoom = cameraZoom;
             _settings = settings;
             _inputPolicy = inputPolicy;
+            _controlSettings = controlSettings;
+            ApplyControlSettings(_controlSettings?.Settings ?? PlayerControlSettingsData.CreateDefault());
+            if (_controlSettings != null)
+                _controlSettings.OnSettingsChanged += ApplyControlSettings;
 
             if (inputAsset == null)
                 return;
@@ -62,23 +71,28 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             HandlePointerGestureCapture(mouse, pointerPosition, altPressed);
 
-            Vector2 moveDelta = _moveAction.ReadValue<Vector2>();
+            Vector2 moveDelta = _moveAction.activeControl?.device is Keyboard
+                ? Vector2.zero : _moveAction.ReadValue<Vector2>();
+            Vector2 keyboardMoveDelta = ResolveConfiguredKeyboardMove();
+            if (!middlePressed && keyboardMoveDelta.sqrMagnitude > 0.001f)
+                moveDelta = keyboardMoveDelta;
+
             if (middlePressed)
             {
                 if (altPressed)
                 {
                     if (_pointerOrbitCaptured)
-                        _cameraMovement.RotatePointerOrbit(mouse.delta.ReadValue().x);
+                        _cameraMovement.RotatePointerOrbit(mouse.delta.ReadValue().x * ResolveMouseSensitivity() * ResolveOrbitSpeed());
                 }
                 else if (_pointerPanCaptured && moveDelta.sqrMagnitude > 0.001f)
                 {
-                    _cameraMovement.MoveCamera(moveDelta);
+                    _cameraMovement.MoveCamera(moveDelta * ResolveMouseSensitivity() * ResolveMovementSpeed());
                 }
             }
             else if (moveDelta.sqrMagnitude > 0.001f
                      && CanProcess(GameplayInputKind.KeyboardNavigation, pointerPosition))
             {
-                _cameraMovement.MoveCameraKeyboard(moveDelta, Time.unscaledDeltaTime);
+                _cameraMovement.MoveCameraKeyboard(moveDelta * ResolveMovementSpeed(), Time.unscaledDeltaTime);
             }
             else
             {
@@ -86,16 +100,16 @@ namespace Kruty1918.Moyva.Camera.Runtime
             }
 
             // Зум (Scroll або Pinch)
-            float zoomDelta = _zoomAction.ReadValue<float>();
+            float zoomDelta = ReadNonKeyboardAxis(_zoomAction) + ResolveConfiguredKeyboardZoom();
             if (Mathf.Abs(zoomDelta) > 0.001f
                 && CanProcess(GameplayInputKind.PointerZoom, pointerPosition))
             {
-                _cameraZoom.ZoomCamera(zoomDelta, pointerPosition);
+                _cameraZoom.ZoomCamera(zoomDelta * ResolveZoomSpeed(), pointerPosition);
             }
 
-            float rotationDirection = _rotateAction?.ReadValue<float>() ?? 0f;
+            float rotationDirection = ReadNonKeyboardAxis(_rotateAction) + ResolveConfiguredKeyboardRotation();
             bool canRotateKeyboard = CanProcess(GameplayInputKind.KeyboardNavigation, pointerPosition);
-            _cameraMovement.SetCameraOrbitInput(canRotateKeyboard ? rotationDirection : 0f);
+            _cameraMovement.SetCameraOrbitInput(canRotateKeyboard ? Mathf.Clamp(rotationDirection * ResolveOrbitSpeed(), -1f, 1f) : 0f);
         }
 
         private void TryApplyEdgeScroll(Vector2 pointerPosition)
@@ -115,7 +129,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 return;
 
             _cameraMovement.MoveCameraKeyboard(
-                direction * _settings.ResolveEdgeScrollSpeedMultiplier(),
+                direction * _settings.ResolveEdgeScrollSpeedMultiplier() * ResolveMovementSpeed(),
                 Time.unscaledDeltaTime);
         }
 
@@ -193,7 +207,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (touchDelta.sqrMagnitude <= dragDeadZone * dragDeadZone)
                 return true;
 
-            _cameraMovement.MoveCameraImmediate(touchDelta, Mathf.Max(0.01f, _settings.ResolveTouchMoveSpeed()));
+            _cameraMovement.MoveCameraImmediate(touchDelta, Mathf.Max(0.01f, _settings.ResolveTouchMoveSpeed()) * ResolveMovementSpeed());
             return true;
         }
 
@@ -219,11 +233,13 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 Vector2 centerDelta = ClampTouchDelta(currentCenter - previousCenter);
                 float dragDeadZone = _settings.ResolveTouchDragDeadZonePixels();
                 if (centerDelta.sqrMagnitude > dragDeadZone * dragDeadZone)
-                    _cameraMovement.MoveCameraImmediate(centerDelta, Mathf.Max(0.01f, _settings.ResolveTouchMoveSpeed()));
+                    _cameraMovement.MoveCameraImmediate(centerDelta, Mathf.Max(0.01f, _settings.ResolveTouchMoveSpeed()) * ResolveMovementSpeed());
                 return;
             }
 
             float scaleFactor = previousDistance / currentDistance;
+            if (!Mathf.Approximately(ResolveZoomSpeed(), 1f))
+                scaleFactor = Mathf.Pow(scaleFactor, ResolveZoomSpeed());
             bool immediate = _settings.ResolveUseImmediateTouchGestures();
             if (_settings.ResolveKeepPinchFocusUnderFingers())
                 _cameraZoom.ZoomCameraByScale(scaleFactor, immediate, currentCenter);
@@ -273,6 +289,63 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return _inputPolicy?.IsPointerOverUi(touch.Position, touch.TouchId, interactiveOnly: true) ?? false;
         }
 
+        private Vector2 ResolveConfiguredKeyboardMove()
+        {
+            var value = Vector2.zero;
+            // CameraMovement consumes a pan vector and negates it into camera-world motion.
+            if (IsPressed(PlayerControlAction.MoveLeft)) value.x += 1f;
+            if (IsPressed(PlayerControlAction.MoveRight)) value.x -= 1f;
+            if (IsPressed(PlayerControlAction.MoveBackward)) value.y += 1f;
+            if (IsPressed(PlayerControlAction.MoveForward)) value.y -= 1f;
+            return value.sqrMagnitude > 1f ? value.normalized : value;
+        }
+
+        private float ResolveConfiguredKeyboardRotation()
+        {
+            float value = 0f;
+            if (IsPressed(PlayerControlAction.RotateLeft)) value -= 1f;
+            if (IsPressed(PlayerControlAction.RotateRight)) value += 1f;
+            return value;
+        }
+
+        private float ResolveConfiguredKeyboardZoom()
+        {
+            float value = 0f;
+            if (IsPressed(PlayerControlAction.ZoomOut)) value -= 1f;
+            if (IsPressed(PlayerControlAction.ZoomIn)) value += 1f;
+            return value;
+        }
+
+        private static float ReadNonKeyboardAxis(InputAction action)
+            => action == null || action.activeControl?.device is Keyboard ? 0f : action.ReadValue<float>();
+
+        private bool IsPressed(PlayerControlAction action)
+            => _keyboardBindings.TryGetValue(action, out var binding) && binding.IsPressed(Keyboard.current);
+
+        private void ApplyControlSettings(PlayerControlSettingsData data)
+        {
+            _keyboardBindings.Clear();
+            if (data.Bindings == null)
+                return;
+            foreach (var pair in data.Bindings)
+            {
+                if (PlayerControlBinding.TryParse(pair.Value, out var binding))
+                    _keyboardBindings[pair.Key] = binding;
+            }
+        }
+
+        private float ResolveMouseSensitivity()
+            => Mathf.Clamp(_controlSettings?.Settings.MouseSensitivity ?? 1f, 0.25f, 3f);
+
+        private float ResolveMovementSpeed()
+            => Mathf.Clamp(_controlSettings?.Settings.MovementSpeed ?? 1f, 0.25f, 3f);
+
+        private float ResolveOrbitSpeed()
+            => Mathf.Clamp(_controlSettings?.Settings.OrbitSpeed ?? 1f, 0.25f, 3f);
+
+        private float ResolveZoomSpeed()
+            => Mathf.Clamp(_controlSettings?.Settings.ZoomSpeed ?? 1f, 0.25f, 3f);
+
         private readonly struct TouchGestureSample
         {
             public readonly Vector2 Position;
@@ -289,6 +362,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         public void Dispose()
         {
+            if (_controlSettings != null)
+                _controlSettings.OnSettingsChanged -= ApplyControlSettings;
             _inputPolicy?.EndPointerCapture(GameplayInputKind.PointerPan);
             _inputPolicy?.EndPointerCapture(GameplayInputKind.PointerRotate);
             _cameraMovement.SetCameraOrbitInput(0f);

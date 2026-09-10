@@ -18,36 +18,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
     {
         private static async Task EnsureServicesReadyAsync()
         {
-            if (_servicesReadyTask == null || !_servicesReadyTask.IsCompletedSuccessfully)
-            {
-                lock (ServicesReadyLock)
-                {
-                    if (_servicesReadyTask == null || !_servicesReadyTask.IsCompletedSuccessfully)
-                    {
-                        _servicesReadyTask = InitializeServicesAsync();
-                    }
-                }
-            }
-
-            await _servicesReadyTask;
-
-            if (AuthenticationService.Instance == null)
-                throw new InvalidOperationException("[UgsLobby] AuthenticationService instance is unavailable after Unity Services initialization.");
-
             await MultiplayerAuthenticationGate.EnsureReadyAsync();
-
-            if (!AuthenticationService.Instance.IsSignedIn || string.IsNullOrEmpty(AuthenticationService.Instance.PlayerId))
-            {
-                throw new InvalidOperationException("[UgsLobby] Authentication failed after sign-in; PlayerId is unavailable.");
-            }
-        }
-
-        private static async Task InitializeServicesAsync()
-        {
-            if (UnityServices.State == ServicesInitializationState.Initialized)
-                return;
-
-            await UnityServices.InitializeAsync();
+            if (!AuthenticationService.Instance.IsSignedIn || !AuthenticationService.Instance.IsAuthorized
+                || string.IsNullOrEmpty(AuthenticationService.Instance.PlayerId))
+                throw new InvalidOperationException("[UgsLobby] Authentication did not become ready.");
         }
 
         private static Player BuildLocalPlayer(string displayName)

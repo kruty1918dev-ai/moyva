@@ -15,10 +15,13 @@ namespace Kruty1918.Moyva.Units.Runtime
         IUnitRecruitmentService,
         IUnitRecruitmentStateStore,
         ITurnParticipant,
+        ITickable,
         IInitializable,
         IDisposable
     {
         private readonly UnitRecruitmentQueueStateMachine _queue = new();
+        private double _lastGameplaySeconds;
+        private bool _enqueuing;
         private readonly IEconomyInfoMediator _economy;
         private readonly ITurnService _turns;
         private readonly IGameplayProgressClock _progressClock;
@@ -73,19 +76,30 @@ namespace Kruty1918.Moyva.Units.Runtime
         public void Initialize()
         {
             _signalBus?.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
-            if (_progressClock != null)
-                _progressClock.Progressed += OnProgressed;
+            _lastGameplaySeconds = _progressClock?.ElapsedGameplaySeconds ?? 0d;
         }
 
         public void Dispose()
         {
             _signalBus?.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
-            if (_progressClock != null)
-                _progressClock.Progressed -= OnProgressed;
+
         }
 
         public bool TryEnqueue(string ownerId, Vector2Int recruitingBuildingPosition, string unitTypeId, out string reason)
         {
+            if (_enqueuing)
+            {
+                reason = "Recruitment payment is already in progress.";
+                return false;
+            }
+            _enqueuing = true;
+            try { return TryEnqueueCore(ownerId, recruitingBuildingPosition, unitTypeId, out reason); }
+            finally { _enqueuing = false; }
+        }
+
+        private bool TryEnqueueCore(string ownerId, Vector2Int recruitingBuildingPosition, string unitTypeId, out string reason)
+        {
+            Tick();
             reason = null;
             string owner = NormalizeRequiredId(ownerId);
             string unitType = NormalizeRequiredId(unitTypeId);
@@ -123,8 +137,29 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
 
             Dictionary<string, float> costs = BuildCostMap(recipe.Costs);
-            if (!TryConsumeRecruitmentCosts(owner, recruitingBuildingPosition, costs, out reason))
+            long reservedQueueId = _queue.NextQueueId;
+            if (_economy == null)
+            {
+                reason = "Population service is unavailable.";
                 return false;
+            }
+            if (!_economy.TryReserveRecruitmentPopulation(owner, recruitingBuildingPosition,
+                    reservedQueueId, Math.Max(1, recipe.PopulationCost), out reason))
+                return false;
+            string fundingSettlementId;
+            try
+            {
+                if (!TryConsumeRecruitmentCosts(owner, recruitingBuildingPosition, costs, out fundingSettlementId, out reason))
+                {
+                    _economy.ReleaseRecruitmentPopulation(owner, reservedQueueId);
+                    return false;
+                }
+            }
+            catch
+            {
+                _economy.ReleaseRecruitmentPopulation(owner, reservedQueueId);
+                throw;
+            }
 
             UnitRecruitmentQueueItemSnapshot enqueued = _queue.EnqueueValidated(
                 owner,
@@ -132,7 +167,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                 recruitingBuildingId,
                 unitType,
                 Math.Max(1, recipe.TrainingTurns),
-                ResolveProgressSequence());
+                ResolveProgressSequence(), costs, fundingSettlementId,
+                recipe.TrainingSeconds > 0f && !float.IsInfinity(recipe.TrainingSeconds)
+                    ? recipe.TrainingSeconds
+                    : Math.Max(1, recipe.TrainingTurns) * (_progressClock?.SandboxRoundSeconds ?? 10f));
 
             if (_progressClock?.IsRealtime != true
                 && _turns != null
@@ -141,6 +179,42 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
 
             FireQueueChanged(enqueued);
+            return true;
+        }
+
+        public bool TryCancel(string ownerId, Vector2Int recruitingBuildingPosition,
+            long queueId, out string reason)
+        {
+            Tick();
+            reason = null;
+            string owner = NormalizeRequiredId(ownerId);
+            if (owner == null || queueId < 1)
+            {
+                reason = "Invalid recruitment cancellation.";
+                return false;
+            }
+            if (_progressClock?.IsRealtime != true
+                && (_turns == null || !_turns.CanOwnerAct(owner, out reason)))
+                return false;
+            UnitRecruitmentQueueItemSnapshot selected = default;
+            foreach (var item in _queue.GetQueue(owner, recruitingBuildingPosition))
+                if (item.QueueId == queueId)
+                    selected = item;
+            if (selected.QueueId == 0 || selected.IsReady)
+            {
+                reason = "This training job is no longer cancellable.";
+                return false;
+            }
+            if (selected.PaidCosts == null || _economy == null)
+            {
+                reason = "The original payment receipt is unavailable for this saved job.";
+                return false;
+            }
+            if (!_queue.TryCancel(owner, recruitingBuildingPosition, queueId, out var cancelled))
+                return false;
+            _economy.ReleaseRecruitmentPopulation(owner, queueId);
+            _economy.RefundRecruitmentResources(owner, cancelled.FundingSettlementId, cancelled.PaidCosts);
+            FireQueueChanged(cancelled);
             return true;
         }
 
@@ -188,13 +262,16 @@ namespace Kruty1918.Moyva.Units.Runtime
             out string unitId,
             out string reason)
         {
-            return _deployment.TryDeployReady(
+            bool deployed = _deployment.TryDeployReady(
                 ownerId,
                 recruitingBuildingPosition,
                 queueId,
                 targetPosition,
                 out unitId,
                 out reason);
+            if (deployed)
+                _economy?.DeployRecruitmentPopulation(ownerId, queueId, unitId);
+            return deployed;
         }
 
         public IReadOnlyList<UnitRecruitmentQueueItemSnapshot> CaptureState()
@@ -208,6 +285,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                     : _queue.CaptureAll();
 
             _queue.RestoreAll(items);
+            _lastGameplaySeconds = _progressClock?.ElapsedGameplaySeconds ?? 0d;
 
             if (_signalBus != null)
                 FireRestoreQueueNotifications(before, _queue.CaptureAll());
@@ -215,6 +293,8 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         public void OnTurnStarted(TurnContext context)
         {
+            if (_progressClock?.IsRealtime == true)
+                return;
             string owner = NormalizeRequiredId(context.Faction.OwnerId);
             if (owner == null)
                 return;
@@ -222,16 +302,25 @@ namespace Kruty1918.Moyva.Units.Runtime
             AdvanceOwnerProgress(owner, context.GlobalTurn);
         }
 
-        private void OnProgressed(GameplayProgressTick tick)
+        public void Tick()
         {
-            if (!tick.IsRealtime)
+            double now = _progressClock?.ElapsedGameplaySeconds ?? 0d;
+            float delta = (float)Math.Max(0d, now - _lastGameplaySeconds);
+            _lastGameplaySeconds = now;
+            if (_progressClock?.IsRealtime != true || delta <= 0f)
                 return;
-
-            string owner = NormalizeRequiredId(tick.OwnerId);
-            if (owner == null)
-                return;
-
-            AdvanceOwnerProgress(owner, tick.Sequence);
+            foreach (var item in _queue.AdvanceRealtime(delta, _progressClock.SandboxRoundSeconds))
+            {
+                FireQueueChanged(item);
+                if (item.IsReady)
+                    _signalBus?.Fire(new UnitRecruitmentReadySignal
+                    {
+                        OwnerId = item.OwnerId,
+                        BuildingPosition = item.RecruitingBuildingPosition,
+                        QueueId = item.QueueId,
+                        UnitTypeId = item.UnitTypeId,
+                    });
+            }
         }
 
         private void AdvanceOwnerProgress(string owner, long sequence)
@@ -419,8 +508,14 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private void OnBuildingDemolished(BuildingDemolishedSignal signal)
         {
+            var removed = new List<UnitRecruitmentQueueItemSnapshot>();
+            foreach (var item in _queue.CaptureAll())
+                if (item.RecruitingBuildingPosition == signal.Position)
+                    removed.Add(item);
             if (_queue.RemoveBuildingQueues(signal.Position))
             {
+                foreach (var item in removed)
+                    _economy?.ReleaseRecruitmentPopulation(item.OwnerId, item.QueueId);
                 _signalBus?.Fire(new UnitRecruitmentQueueChangedSignal
                 {
                     OwnerId = signal.OwnerId,
@@ -457,8 +552,10 @@ namespace Kruty1918.Moyva.Units.Runtime
             string ownerId,
             Vector2Int buildingPosition,
             IReadOnlyDictionary<string, float> costs,
+            out string fundingSettlementId,
             out string reason)
         {
+            fundingSettlementId = string.Empty;
             reason = null;
             if (costs == null || costs.Count == 0)
                 return true;
@@ -480,6 +577,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 reason = "No owned settlement is available to fund recruitment at this building.";
                 return false;
             }
+            fundingSettlementId = settlement.SettlementId;
             return _economy.TryConsumeSettlementResources(settlement.SettlementId, costs, out reason);
         }
 

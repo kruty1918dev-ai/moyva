@@ -9,6 +9,7 @@ using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Shared.Common;
 using Kruty1918.Moyva.Shared.Graphics;
 using Kruty1918.Moyva.Shared.Performance;
+using Kruty1918.Moyva.Shared.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zenject;
@@ -42,6 +43,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
 
         /// <summary>Опційний prewarm сервіс для прогріву систем.</summary>
         private readonly IStartupPrewarmService _startupPrewarmService;
+        private readonly ISceneTransitionService _sceneTransitionService;
 
         /// <summary>Ініціалізатори, які мають відпрацювати до активації сцени.</summary>
         private readonly IScenePreActivationInitializer[] _preActivationInitializers;
@@ -72,6 +74,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             IGameplaySession session,
             [InjectOptional] IGraphicsSettingsService graphicsSettingsService = null,
             [InjectOptional] IStartupPrewarmService startupPrewarmService = null,
+            [InjectOptional] ISceneTransitionService sceneTransitionService = null,
             [InjectOptional] List<IScenePreActivationInitializer> preActivationInitializers = null,
             [InjectOptional] IServiceModeProfileProvider serviceModeProfileProvider = null)
         {
@@ -80,6 +83,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             _session = Guard.NotNull(session, nameof(session));
             _graphicsSettingsService = graphicsSettingsService;
             _startupPrewarmService = startupPrewarmService;
+            _sceneTransitionService = sceneTransitionService;
             _preActivationInitializers = preActivationInitializers != null ? preActivationInitializers.ToArray() : Array.Empty<IScenePreActivationInitializer>();
             _gameplayProfile = serviceModeProfileProvider?.Get(ServiceRuntimeMode.Gameplay) ?? ServiceModeProfileDefaults.Gameplay;
         }
@@ -257,6 +261,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             {
                 await Task.Delay(Mathf.RoundToInt(_config.sceneActivationDelay * 1000f), ct);
             }
+
+            if (_sceneTransitionService != null)
+                await _sceneTransitionService.CoverAsync(ct);
         }
 
         /// <summary>Дозволити активацію сцени й дочекатися її фінального завершення.</summary>
@@ -275,6 +282,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
                 ct.ThrowIfCancellationRequested();
                 await Task.Yield();
             }
+            if (_sceneTransitionService != null)
+                await _sceneTransitionService.RevealAsync(ct);
             Debug.Log($"{Prefix} Scene activation completed. ActiveScene='{SceneManager.GetActiveScene().name}'.");
         }
 

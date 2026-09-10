@@ -17,6 +17,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly IConfirmationService _confirmationService;
         private readonly HashSet<string> _confirmOnBackNames;
         private bool _suppressConfirmationNextClose;
+        // LobbyPanelService also consumes INavigation; resolve it only when navigating.
+        private readonly LazyInject<ILobbyPanelService> _lobby;
 
         public event Action<NavigationChangeEventArgs> OnMenuChanged;
 
@@ -25,9 +27,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public HomeMenuNavigation(
             INavigationPanel[] panels,
             [InjectOptional] IConfirmationService confirmationService = null,
-            [InjectOptional] string[] confirmOnBackMenuNames = null)
+            [InjectOptional] string[] confirmOnBackMenuNames = null,
+            [InjectOptional] LazyInject<ILobbyPanelService> lobby = null)
         {
             _confirmationService = confirmationService;
+            _lobby = lobby;
             _confirmOnBackNames = new HashSet<string>(confirmOnBackMenuNames ?? Array.Empty<string>(), StringComparer.Ordinal);
 
             if (panels == null) return;
@@ -63,17 +67,20 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     return;
 
                 menuName = menuName.Trim();
-
                 if (!_panelsByName.TryGetValue(menuName, out var panel))
                 {
                     LogWarning($"Panel '{menuName}' not found.");
                     return;
                 }
-                // Повторне відкриття вже активної панелі працює як toggle-all:
-                // просто закриваємо весь стек відкритих панелей без confirm flow.
+                // Reopening the current panel leaves navigation and lobby state unchanged.
                 if (_menuStack.Count > 0 && _menuStack.Peek() == menuName)
                 {
                     LogInfo($"Menu '{menuName}' already open. Ignoring duplicate open.");
+                    return;
+                }
+                if (!_suppressConfirmationNextClose
+                    && _lobby?.Value?.TryLeaveBeforeNavigation(() => Open(menuName)) == true)
+                {
                     return;
                 }
                 var previous = CurrentMenu;
@@ -112,6 +119,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
+            if (_lobby?.Value?.TryLeaveBeforeNavigation(() => Close(menuName)) == true)
+                return;
+
             if (_confirmationService != null && _confirmOnBackNames.Contains(menuName))
             {
                 _confirmationService.Show(new ConfirmationRequest
@@ -133,26 +143,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_menuStack.Count == 0 || _menuStack.Peek() != menuName)
                 return;
 
-            if (await condition().ConfigureAwait(false))
-            {
-                var previous = CurrentMenu;
-                _menuStack.Pop();
-                if (_panelsByName.TryGetValue(menuName, out var panel))
-                    panel.Close();
-                else
-                    LogWarning($"Panel '{menuName}' not found when conditional closing.");
-
-                _closedStack.Push(menuName);
-
-                LogInfo($"Conditionally closed menu '{menuName}'.");
-
-                RaiseMenuChanged(previous, CurrentMenu, _menuStack.Count > 0 && _menuStack.Peek() == CurrentMenu);
-            }
+            if (await condition())
+                Close(menuName);
         }
 
         public async Task OpenIfAsync(string menuName, Func<Task<bool>> condition)
         {
-            if (await condition().ConfigureAwait(false))
+            if (await condition())
             {
                 Open(menuName);
             }
@@ -161,6 +158,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void CloseLast()
         {
             if (_menuStack.Count == 0)
+                return;
+            if (!_suppressConfirmationNextClose
+                && _lobby?.Value?.TryLeaveBeforeNavigation(CloseLast) == true)
                 return;
 
             var menuName = _menuStack.Peek();
@@ -195,6 +195,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 LogWarning("No closed menus to reopen.");
                 return;
             }
+            if (_lobby?.Value?.TryLeaveBeforeNavigation(OpenLast) == true)
+                return;
             // Try to reopen the most-recently closed panel that still exists.
             while (_closedStack.Count > 0)
             {
@@ -368,6 +370,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void CloseLastForce()
         {
             if (_menuStack.Count == 0) return;
+            if (_lobby?.Value?.TryLeaveBeforeNavigation(CloseLastForce) == true)
+                return;
             var menuName = _menuStack.Peek();
             DoClose(menuName);
         }

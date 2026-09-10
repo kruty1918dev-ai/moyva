@@ -66,24 +66,96 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         {
             StopLoops();
             if (_lobby == null) return;
+            bool left = false;
 
             try
             {
-                if (_isHost)
+                string localPlayerId = AuthenticationService.Instance.PlayerId;
+                if (_isHost && TryChooseSuccessorHost(_lobby, localPlayerId, out var successorHostId))
+                {
+                    await LobbyService.Instance.UpdateLobbyAsync(_lobby.Id, new UpdateLobbyOptions
+                    {
+                        HostId = successorHostId,
+                        Data = new Dictionary<string, DataObject>
+                        {
+                            { RelayCodeDataKey, new DataObject(DataObject.VisibilityOptions.Member, string.Empty) },
+                        }
+                    });
+                    await LobbyService.Instance.RemovePlayerAsync(_lobby.Id, localPlayerId);
+                }
+                else if (_isHost)
+                {
                     await LobbyService.Instance.DeleteLobbyAsync(_lobby.Id);
+                }
                 else
-                    await LobbyService.Instance.RemovePlayerAsync(_lobby.Id, AuthenticationService.Instance.PlayerId);
+                {
+                    await LobbyService.Instance.RemovePlayerAsync(_lobby.Id, localPlayerId);
+                }
+                left = true;
             }
-            catch (Exception)
+            catch
             {
+                StartLoops();
+                throw;
             }
             finally
             {
-                _lobby = null;
-                _current = null;
-                _isHost = false;
-                PublishState(LobbyState.Closed);
+                if (left)
+                {
+                    _lobby = null;
+                    _current = null;
+                    _isHost = false;
+                    PublishState(LobbyState.Closed);
+                }
             }
+        }
+
+        public async Task<bool> TryTransferHostAsync(string newHostPlayerId, string relayJoinCode, CancellationToken ct = default)
+        {
+            if (_lobby == null || string.IsNullOrWhiteSpace(newHostPlayerId))
+                return false;
+
+            var update = new UpdateLobbyOptions
+            {
+                HostId = newHostPlayerId.Trim(),
+                Data = new Dictionary<string, DataObject>
+                {
+                    { RelayCodeDataKey, new DataObject(DataObject.VisibilityOptions.Member, relayJoinCode?.Trim() ?? string.Empty) },
+                }
+            };
+
+            _lobby = await LobbyService.Instance.UpdateLobbyAsync(_lobby.Id, update);
+            _current = Project(_lobby);
+            _isHost = string.Equals(_current.HostPlayerId, AuthenticationService.Instance.PlayerId, StringComparison.Ordinal);
+            LobbyUpdated?.Invoke(_current);
+            PublishState(_current.State);
+            if (_isHost)
+                StartLoops();
+            return true;
+        }
+
+        private static bool TryChooseSuccessorHost(Lobby lobby, string leavingPlayerId, out string successorHostId)
+        {
+            successorHostId = string.Empty;
+            if (lobby?.Players == null)
+                return false;
+
+            var candidates = new List<Player>();
+            foreach (var player in lobby.Players)
+            {
+                if (player == null || string.IsNullOrWhiteSpace(player.Id))
+                    continue;
+                if (string.Equals(player.Id, leavingPlayerId, StringComparison.Ordinal))
+                    continue;
+                candidates.Add(player);
+            }
+
+            if (candidates.Count == 0)
+                return false;
+
+            candidates.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            successorHostId = candidates[0].Id;
+            return true;
         }
 
         public async Task KickAsync(string playerId, CancellationToken ct = default)

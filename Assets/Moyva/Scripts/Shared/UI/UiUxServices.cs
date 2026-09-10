@@ -55,6 +55,7 @@ namespace Kruty1918.Moyva.Shared.UI
     internal sealed class UiMotionService : IUiMotionService, ITickable
     {
         private readonly List<Motion> _motions = new List<Motion>();
+        private readonly Dictionary<RectTransform, Vector2> _shownPositions = new Dictionary<RectTransform, Vector2>();
 
         public bool ReducedMotion { get; set; }
 
@@ -70,7 +71,7 @@ namespace Kruty1918.Moyva.Shared.UI
 
             Cancel(canvasGroup);
             Vector2 offset = hiddenOffset ?? new Vector2(0f, -8f);
-            Vector2 shownPosition = panel != null ? panel.anchoredPosition : Vector2.zero;
+            Vector2 shownPosition = ResolveShownPosition(panel, offset);
             if (!visible && canvasGroup.gameObject.activeSelf == false)
                 return;
 
@@ -121,6 +122,22 @@ namespace Kruty1918.Moyva.Shared.UI
                 if (ReferenceEquals(motion.CanvasGroup, target) || ReferenceEquals(motion.Panel, target))
                     _motions.RemoveAt(index);
             }
+        }
+
+        private Vector2 ResolveShownPosition(RectTransform panel, Vector2 offset)
+        {
+            if (panel == null)
+                return Vector2.zero;
+
+            if (_shownPositions.TryGetValue(panel, out var stored))
+                return stored;
+
+            var position = panel.anchoredPosition;
+            if (!panel.gameObject.activeSelf)
+                position -= offset;
+
+            _shownPositions[panel] = position;
+            return position;
         }
 
         public void Tick()

@@ -72,6 +72,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (!_initialized || _mountedAnchor == null || _state.IsFallback)
                 return;
 
+            _view.Controls.Tick();
             _mountedAnchor.ApplyViewportLayoutNow();
             var viewportClass = _mountedAnchor.CurrentViewportClass;
             if (!string.Equals(_lastViewportClass, viewportClass, StringComparison.Ordinal))
@@ -88,6 +89,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public void Dispose()
         {
+            _view.Controls.CancelCapture();
             _state.Changed -= HandleStateChanged;
 
             if (_navigation != null)

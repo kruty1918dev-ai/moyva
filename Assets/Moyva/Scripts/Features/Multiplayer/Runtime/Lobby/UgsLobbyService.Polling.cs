@@ -78,6 +78,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         var previous = _current;
                         _lobby = refreshed;
                         _current = Project(_lobby);
+                        bool wasHost = _isHost;
+                        _isHost = string.Equals(_current.HostPlayerId, AuthenticationService.Instance.PlayerId, StringComparison.Ordinal);
+                        if (!wasHost && _isHost)
+                            StartLoops();
                         if (_isHost)
                             await PublishReconnectRecordsForRemovedPlayersAsync(previous, _current, ct);
 

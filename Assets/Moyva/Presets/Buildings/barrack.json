@@ -126,15 +126,15 @@
       "queueCapacity": 3,
       "spawnRadius": 2,
       "recipes": [
-        { "unitTypeId": "warrior", "trainingTurns": 1, "costs": [
+        { "unitTypeId": "warrior", "trainingTurns": 1, "trainingSeconds": 10, "populationCost": 1, "costs": [
           { "resourceId": "steak-food-resources", "amount": 10 },
           { "resourceId": "hardwood-materials-resources", "amount": 5 }
         ] },
-        { "unitTypeId": "spearman", "trainingTurns": 2, "costs": [
+        { "unitTypeId": "spearman", "trainingTurns": 2, "trainingSeconds": 20, "populationCost": 1, "costs": [
           { "resourceId": "steak-food-resources", "amount": 12 },
           { "resourceId": "hardwood-materials-resources", "amount": 8 }
         ] },
-        { "unitTypeId": "archer", "trainingTurns": 2, "costs": [
+        { "unitTypeId": "archer", "trainingTurns": 2, "trainingSeconds": 20, "populationCost": 1, "costs": [
           { "resourceId": "steak-food-resources", "amount": 10 },
           { "resourceId": "hardwood-materials-resources", "amount": 10 }
         ] }

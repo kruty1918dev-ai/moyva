@@ -6,7 +6,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     {
         General,
         Audio,
-        Graphics
+        Graphics,
+        Controls
     }
 
     internal enum HomeMenuPlayFlow

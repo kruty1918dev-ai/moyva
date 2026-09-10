@@ -3,6 +3,7 @@ using Kruty1918.Moyva.Shared.Connectivity;
 using Kruty1918.Moyva.Shared.Diagnostics;
 using Kruty1918.Moyva.Shared.Graphics;
 using Kruty1918.Moyva.Shared.Performance;
+using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.UI;
 using Zenject;
 
@@ -41,6 +42,10 @@ namespace Kruty1918.Moyva.Shared
                 .AsSingle()
                 .NonLazy();
 
+            container.BindInterfacesAndSelfTo<PlayerControlSettingsService>()
+                .AsSingle()
+                .NonLazy();
+
             container.Bind<IFrameBudgetMonitorService>()
                 .To<FrameBudgetMonitorService>()
                 .AsSingle()
@@ -57,6 +62,7 @@ namespace Kruty1918.Moyva.Shared
 
             container.BindInterfacesTo<UiMotionService>().AsSingle();
             container.BindInterfacesTo<UiTooltipService>().AsSingle();
+            container.BindInterfacesTo<SceneTransitionService>().AsSingle();
 
             container.BindInterfacesAndSelfTo<InternetConnectivityHealthReporter>().AsSingle();
             container.Bind<IHealthCheckService>().To<HealthCheckService>().AsSingle().NonLazy();

@@ -75,23 +75,25 @@ namespace Kruty1918.Moyva.UIActions.Runtime
                 return false;
 
             int index = _bindings.FindIndex(x => x.ActionId == binding.ActionId);
+            UiHotkeyBinding previous = index >= 0 ? _bindings[index] : default;
             if (index >= 0)
                 _bindings[index] = binding;
             else
                 _bindings.Add(binding);
 
-            return DetectConflicts().Count == 0;
+            if (DetectConflicts().Count == 0)
+                return true;
+            if (index >= 0)
+                _bindings[index] = previous;
+            else
+                _bindings.RemoveAt(_bindings.Count - 1);
+            return false;
         }
 
         public void ResetDefaults()
         {
             _bindings.Clear();
-            _bindings.Add(new UiHotkeyBinding(UiActionIds.Construction.Toggle, Key.B, allowedContexts: new[] { "Gameplay", "ConstructionMode" }));
-            _bindings.Add(new UiHotkeyBinding(UiActionIds.Construction.ConfirmPlacement, Key.Enter, Key.NumpadEnter, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }));
-            _bindings.Add(new UiHotkeyBinding(UiActionIds.Construction.RotatePlacement, Key.R, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }));
-            _bindings.Add(new UiHotkeyBinding(UiActionIds.Construction.UndoPlacement, Key.Z, ctrl: true, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }));
-            _bindings.Add(new UiHotkeyBinding(UiActionIds.Construction.RedoPlacement, Key.Y, ctrl: true, allowedContexts: new[] { "ConstructionMode", "BuildingPlacement" }));
-            _bindings.Add(new UiHotkeyBinding(UiActionIds.Deployment.Confirm, Key.Enter, Key.NumpadEnter, allowedContexts: new[] { "DeploymentMode" }));
+            _bindings.AddRange(UiHotkeyBinding.CreateDefaults());
         }
 
         public IReadOnlyList<string> DetectConflicts()

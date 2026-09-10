@@ -33,7 +33,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             {
                 EconomyResidentState resident = state.Residents[i];
                 int age = resident.Age;
-                if (age < 16 || age >= 60)
+                if (!resident.IsCivilian || age < 16 || age >= 60)
                     continue;
 
                 available++;

@@ -60,7 +60,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             var unityInitialized = UnityServices.State == ServicesInitializationState.Initialized;
             var unityInitializing = UnityServices.State == ServicesInitializationState.Initializing;
-            var authenticated = unityInitialized && AuthenticationService.Instance.IsSignedIn;
+            var authenticated = unityInitialized && AuthenticationService.Instance.IsSignedIn
+                && AuthenticationService.Instance.IsAuthorized;
 
             var isConnecting = unityInitializing || (unityInitialized && !authenticated);
             var isConnected = unityInitialized && authenticated;
@@ -88,28 +89,47 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         public static async Task EnsureReadyAsync(CancellationToken ct = default)
         {
-            if (_initializationTask == null || _initializationTask.IsFaulted || _initializationTask.IsCanceled)
-            {
-                lock (Gate)
-                {
-                    if (_initializationTask == null || _initializationTask.IsFaulted || _initializationTask.IsCanceled)
-                        _initializationTask = InitializeAndSignInAsync();
-                }
-            }
-
-            await _initializationTask;
             ct.ThrowIfCancellationRequested();
+            Task pending;
+            lock (Gate)
+            {
+                bool ready = UnityServices.State == ServicesInitializationState.Initialized
+                    && AuthenticationService.Instance.IsSignedIn
+                    && AuthenticationService.Instance.IsAuthorized;
+                if (ready)
+                    return;
+                if (_initializationTask == null || _initializationTask.IsCompleted)
+                    _initializationTask = InitializeAndSignInAsync();
+                pending = _initializationTask;
+            }
+            // Cancelling one menu must not cancel application-wide initialization.
+            var cancelled = new TaskCompletionSource<bool>();
+            using (ct.Register(() => cancelled.TrySetCanceled(ct)))
+            {
+                await await Task.WhenAny(pending, cancelled.Task);
+            }
         }
 
         private static async Task InitializeAndSignInAsync()
         {
+            DateTime deadline = DateTime.UtcNow.AddSeconds(30);
+            while (UnityServices.State == ServicesInitializationState.Initializing)
+            {
+                if (DateTime.UtcNow >= deadline)
+                    throw new TimeoutException("Unity Services initialization did not finish.");
+                await Task.Delay(100);
+            }
             if (UnityServices.State != ServicesInitializationState.Initialized)
                 await UnityServices.InitializeAsync();
 
             MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded();
 
-            if (AuthenticationService.Instance == null || AuthenticationService.Instance.IsSignedIn)
+            if (AuthenticationService.Instance == null)
+                throw new InvalidOperationException("Authentication service is unavailable.");
+            if (AuthenticationService.Instance.IsSignedIn && AuthenticationService.Instance.IsAuthorized)
                 return;
+            if (AuthenticationService.Instance.IsSignedIn)
+                AuthenticationService.Instance.SignOut();
 
             try
             {
@@ -129,14 +149,16 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             while (waitedMs < timeoutMs)
             {
-                if (AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn)
+                if (AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn
+                    && AuthenticationService.Instance.IsAuthorized)
                     return;
 
                 await Task.Delay(delayMs);
                 waitedMs += delayMs;
             }
 
-            if (AuthenticationService.Instance == null || !AuthenticationService.Instance.IsSignedIn)
+            if (AuthenticationService.Instance == null || !AuthenticationService.Instance.IsSignedIn
+                || !AuthenticationService.Instance.IsAuthorized)
                 throw new InvalidOperationException("Authentication is already signing in and did not complete.");
         }
     }

@@ -133,6 +133,8 @@
         {
           "unitTypeId": "light-cavalry",
           "trainingTurns": 3,
+          "trainingSeconds": 30,
+          "populationCost": 1,
           "costs": [
             {
               "resourceId": "steak-food-resources",

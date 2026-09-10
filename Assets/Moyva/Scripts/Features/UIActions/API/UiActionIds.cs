@@ -42,6 +42,8 @@ namespace Kruty1918.Moyva.UIActions.API
 
             public static readonly UiActionId Enqueue =
                 new("ui.recruitment.enqueue");
+            public static readonly UiActionId Cancel = new("ui.recruitment.cancel");
+            public static readonly UiActionId Deploy = new("ui.recruitment.deploy");
         }
 
         public static class Combat

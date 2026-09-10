@@ -16,16 +16,27 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 {
     public sealed partial class HomeMenuBackgroundPreviewController
     {
-        private bool TryBuildLiveMeshPreview(MenuWorldPreviewData previewData, TileRegistrySO tileRegistry, MoyvaProjectSettingsSO projectSettings)
+        private bool TryBuildLiveMeshPreview(
+            MenuWorldPreviewData previewData,
+            TileRegistrySO tileRegistry,
+            MoyvaProjectSettingsSO projectSettings,
+            out string failureReason)
         {
+            failureReason = string.Empty;
             DestroyLiveMeshPreview();
 
             if (previewData?.BiomeMap == null || tileRegistry?.Definitions == null || projectSettings == null)
+            {
+                failureReason = "The generated terrain, tile registry, or project settings are missing.";
                 return false;
+            }
 
-            var tileMeshCache = BuildTileLiveMeshCache(tileRegistry);
+            var tileMeshCache = BuildTileLiveMeshCache(tileRegistry, _graphAsset);
             if (tileMeshCache.Count == 0)
+            {
+                failureReason = "The tile registry contains no usable mesh prefabs.";
                 return false;
+            }
 
             var objectMeshCache = projectSettings.HomeMenuPreviewIncludeObjects
                 ? BuildObjectLiveMeshCache(_mapObjectRegistry)
@@ -52,6 +63,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 int terrainCount = AddLiveTerrainMeshes(previewData, tileMeshCache, projection, projectSettings, builder, terrainSurfaceY, tileStride);
                 if (terrainCount == 0)
                 {
+                    failureReason = "No generated terrain IDs match usable tile mesh prefabs.";
                     DestroyLiveMeshPreview();
                     return false;
                 }
@@ -63,11 +75,12 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 int meshObjectCount = builder.Flush();
                 if (meshObjectCount == 0)
                 {
+                    failureReason = "The preview meshes contain no usable material draws.";
                     DestroyLiveMeshPreview();
                     return false;
                 }
 
-                if (!ConfigureLivePreviewCamera(builder.WorldBounds, projectSettings, previewLayer, out _))
+                if (!ConfigureLivePreviewCamera(builder.WorldBounds, projectSettings, previewLayer, out failureReason))
                 {
                     DestroyLiveMeshPreview();
                     return false;
@@ -76,8 +89,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 ConfigureLivePreviewLight(projectSettings, previewLayer);
                 return true;
             }
-            catch (Exception)
+            catch (Exception exception)
             {
+                failureReason = $"Live preview initialization failed: {exception.GetType().Name}: {exception.Message}";
                 DestroyLiveMeshPreview();
                 return false;
             }

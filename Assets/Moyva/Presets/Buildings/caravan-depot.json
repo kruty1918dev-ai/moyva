@@ -144,7 +144,7 @@
       "recipes": [
         {
           "unitTypeId": "caravan-wagon",
-          "trainingTurns": 2,
+          "trainingTurns": 2, "trainingSeconds": 20, "populationCost": 1,
           "costs": [
             {
               "resourceId": "walnut-wood-materials-resources",

@@ -71,6 +71,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
         public async Task LeaveSessionAsync(CancellationToken ct = default)
         {
+            // Voluntary leave must preserve the lobby if the provider rejects the request.
+            await _lobby.LeaveAsync(ct);
             await SafeCleanupAsync(ct);
         }
 

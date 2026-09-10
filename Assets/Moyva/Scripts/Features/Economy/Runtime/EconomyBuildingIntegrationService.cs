@@ -257,9 +257,9 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 definition,
                 database);
 
-            // Start with initial population (2 residents)
-            state.Residents.Add(new EconomyResidentState(age: 25, hp: 100f, comfort: 50f, houseCollapsed: false));
-            state.Residents.Add(new EconomyResidentState(age: 22, hp: 100f, comfort: 50f, houseCollapsed: false));
+            int initialResidents = database?.RulesConfig?.Population?.InitialResidents ?? 15;
+            for (int index = 0; index < initialResidents; index++)
+                state.Residents.Add(new EconomyResidentState(20 + index % 10, 100f, 50f, false));
 
             RecalculateHousing(state, buildingRegistry);
 

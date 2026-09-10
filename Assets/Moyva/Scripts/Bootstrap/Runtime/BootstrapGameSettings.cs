@@ -51,6 +51,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             public float StartAlpha = 1f;
         }
 
+        [Serializable]
+        public sealed class SandboxProgressSettings
+        {
+            [Tooltip("Realtime seconds that represent one gameplay progress cycle in sandbox mode.")]
+            [Min(0.1f)]
+            [SerializeField]
+            public float RoundSeconds = 10f;
+
+            [Tooltip("Initial sandbox speed multiplier.")]
+            [Range(0.1f, 8f)]
+            [SerializeField]
+            public float InitialSpeed = 1f;
+        }
+
         [Header("Initial Resources")]
         [Tooltip("Список ресурсів, які гравець отримує на старт нової гри.")]
         [SerializeField]
@@ -71,6 +85,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         [Tooltip("Налаштування плавного проявлення світу після генерації/завантаження.")]
         [SerializeField]
         public WorldRevealFadeSettings WorldRevealFade = new();
+
+        [Header("Sandbox Progress")]
+        [Tooltip("Realtime progress settings used when gameplay runs without turn ownership.")]
+        [SerializeField]
+        public SandboxProgressSettings SandboxProgress = new();
 
         public BootstrapGameSettings() { }
     }

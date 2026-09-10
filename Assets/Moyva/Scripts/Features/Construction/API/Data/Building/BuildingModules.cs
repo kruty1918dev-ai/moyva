@@ -248,6 +248,8 @@ namespace Kruty1918.Moyva.Construction.API
         public string UnitTypeId;
         public List<BuildingResourceAmount> Costs = new List<BuildingResourceAmount>();
         [Min(1)] public int TrainingTurns = 1;
+        [Min(0)] public float TrainingSeconds;
+        [Min(1)] public int PopulationCost = 1;
     }
 
     [Serializable]

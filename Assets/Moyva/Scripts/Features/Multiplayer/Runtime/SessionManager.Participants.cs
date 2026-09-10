@@ -19,11 +19,15 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             var existing = _participants.Find(p => p.Identity.PlayerId == identity.PlayerId);
             if (existing == null)
                 _participants.Add(new Participant(identity, isHost));
+            else if (existing.IsHost != isHost)
+                _participants[_participants.IndexOf(existing)] = new Participant(existing.Identity, isHost);
         }
 
         private void OnLobbyUpdated(LobbyRoom snapshot)
         {
             if (snapshot == null) return;
+            var previousHostId = ResolveHostPlayerId();
+            var previousSessionId = _currentSessionId;
 
             if (_lobby is ILobbyLocalIdentity lobbyIdentity
                 && !string.IsNullOrWhiteSpace(lobbyIdentity.LocalPlayerId))
@@ -32,11 +36,22 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 _isHost = string.Equals(snapshot.HostPlayerId, _localPlayerId, StringComparison.Ordinal);
             }
 
+            _currentLobbyId = string.IsNullOrWhiteSpace(snapshot.LobbyId) ? _currentLobbyId : snapshot.LobbyId;
+            _currentLobbyCode = string.IsNullOrWhiteSpace(snapshot.LobbyCode) ? _currentLobbyCode : snapshot.LobbyCode;
+
             // Add missing remote participants from the lobby's player list.
             foreach (var p in snapshot.Players)
             {
                 if (string.IsNullOrEmpty(p.PlayerId)) continue;
-                if (_participants.Exists(x => x.Identity.PlayerId == p.PlayerId)) continue;
+                var existingIndex = _participants.FindIndex(x => x.Identity.PlayerId == p.PlayerId);
+                if (existingIndex >= 0)
+                {
+                    var existing = _participants[existingIndex];
+                    _participants[existingIndex] = new Participant(
+                        new ParticipantIdentity(p.PlayerId, string.IsNullOrWhiteSpace(p.DisplayName) ? existing.Identity.Nickname : p.DisplayName),
+                        isHost: p.IsHost);
+                    continue;
+                }
 
                 // In tests/stubs the lobby host id may not match the local identity.
                 // When we're the authoritative host, ignore that foreign host alias.
@@ -64,6 +79,96 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
                     _participants.RemoveAt(i);
                 }
+            }
+
+            string nextHostId = snapshot.HostPlayerId ?? string.Empty;
+            bool hostChanged = !string.IsNullOrWhiteSpace(previousHostId) &&
+                               !string.Equals(previousHostId, nextHostId, StringComparison.Ordinal);
+
+            if (hostChanged)
+                SaveMigrationCheckpoint();
+
+            if (!_hostTransportMigrationInProgress &&
+                !string.IsNullOrWhiteSpace(_localPlayerId) &&
+                string.Equals(nextHostId, _localPlayerId, StringComparison.Ordinal) &&
+                hostChanged)
+            {
+                _ = PromoteLocalHostTransportAsync(snapshot);
+            }
+            else if (!_hostTransportMigrationInProgress &&
+                     !string.IsNullOrWhiteSpace(snapshot.RelayJoinCode) &&
+                     !string.IsNullOrWhiteSpace(previousSessionId) &&
+                     !string.Equals(snapshot.RelayJoinCode, previousSessionId, StringComparison.Ordinal))
+            {
+                _ = JoinMigratedHostTransportAsync(snapshot);
+            }
+        }
+
+        private async Task PromoteLocalHostTransportAsync(LobbyRoom snapshot)
+        {
+            if (_config == null || _config.ProviderType == NetworkProviderType.Offline)
+                return;
+
+            _hostTransportMigrationInProgress = true;
+            try
+            {
+                try { await _network.LeaveSessionAsync(); } catch { }
+
+                var result = await _network.HostSessionAsync(
+                    BuildTransportHostSessionId(_config.ProviderType, snapshot?.LobbyId));
+                if (result == null || !result.Success)
+                {
+                    _failurePolicy.HandleNonRecoverable(FailureCategory.HostMigrationFailed, result?.ErrorMessage ?? "Failed to host migrated transport.");
+                    return;
+                }
+
+                string joinCode = result.SessionId?.Trim() ?? string.Empty;
+                _currentSessionId = joinCode;
+                _isHost = true;
+                if (_lobby is ILobbyHostMigrationService migrationLobby)
+                    await migrationLobby.TryTransferHostAsync(_localPlayerId, joinCode);
+                else
+                    await _lobby.SetRelayJoinCodeAsync(joinCode);
+
+                SaveMigrationCheckpoint();
+            }
+            catch (Exception e)
+            {
+                _failurePolicy.HandleNonRecoverable(FailureCategory.HostMigrationFailed, e.Message);
+            }
+            finally
+            {
+                _hostTransportMigrationInProgress = false;
+            }
+        }
+
+        private async Task JoinMigratedHostTransportAsync(LobbyRoom snapshot)
+        {
+            if (_config == null || _config.ProviderType == NetworkProviderType.Offline)
+                return;
+
+            _hostTransportMigrationInProgress = true;
+            try
+            {
+                try { await _network.LeaveSessionAsync(); } catch { }
+                var result = await _network.JoinSessionAsync(snapshot.RelayJoinCode);
+                if (result == null || !result.Success)
+                {
+                    _failurePolicy.HandleRecoverable(FailureCategory.HostMigrationFailed, result?.ErrorMessage ?? "Failed to join migrated transport.");
+                    return;
+                }
+
+                _currentSessionId = result.SessionId;
+                _isHost = false;
+                SaveMigrationCheckpoint();
+            }
+            catch (Exception e)
+            {
+                _failurePolicy.HandleRecoverable(FailureCategory.HostMigrationFailed, e.Message);
+            }
+            finally
+            {
+                _hostTransportMigrationInProgress = false;
             }
         }
 

@@ -72,6 +72,8 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<FogStateChangedSignal>();
 
             // Economy
+            Container.DeclareSignal<CaravanDeliveryCompletedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<SettlementPopulationChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<EconomyTickCompletedSignal>().OptionalSubscriber();
             Container.DeclareSignal<SettlementCreatedSignal>().OptionalSubscriber();
             Container.DeclareSignal<SettlementDeactivatedSignal>().OptionalSubscriber();

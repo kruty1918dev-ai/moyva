@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.Multiplayer.Networking;
+using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.WorldCreation.API;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
@@ -23,7 +24,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var route = string.IsNullOrWhiteSpace(state.CurrentRoute) ? "Main" : state.CurrentRoute.Trim();
             var showBack = !string.Equals(route, "Main", StringComparison.Ordinal);
             var sb = new StringBuilder(18000);
-            sb.Append("<view className=\"moyva-ui-app ").Append(E(viewportClass)).Append(' ').Append(RouteClass(route)).Append("\">");
+            sb.Append("<view className=\"moyva-ui-app ").Append(E(viewportClass)).Append(' ').Append(RouteClass(route));
+            if (route == "SettingsPanel" && state.SettingsSection == HomeMenuSettingsSection.Controls) sb.Append(" controls-page");
+            sb.Append("\">");
             sb.Append("<view className=\"background-veil\"></view><view className=\"shell-content\">");
             AppendBrand(sb, view);
             sb.Append("<view className=\"navigation-panel\">");
@@ -174,17 +177,27 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 case HomeMenuSettingsSection.Graphics:
                     SectionIntro(sb, "GRAPHICS", "Choose a profile, then fine-tune individual options.");
                     sb.Append("<view className=\"settings-grid\">");
-                    Select(sb, "Quality profile", GraphicsProfileOptions, (int)view.GraphicsProfile, "Globals.moyvaMenu.SetGraphicsProfileValue(event)", view.SettingsInteractable);
-                    Select(sb, "Frame limit", FrameRateOptions, FrameRateIndex(view.TargetFrameRate), "Globals.moyvaMenu.SetFrameRateOption(event)", view.SettingsInteractable);
-                    Slider(sb, "Render scale", view.RenderScale, 0.42f, 1f, "Globals.moyvaMenu.CommitRenderScaleValue(event)", "percent", view.SettingsInteractable);
-                    Select(sb, "Texture quality", TextureQualityOptions, view.TextureMipmapLimit, "Globals.moyvaMenu.SetTextureQualityOption(event)", view.SettingsInteractable);
-                    Select(sb, "Anti-aliasing", AntiAliasingOptions, AntiAliasingIndex(view.AntiAliasing), "Globals.moyvaMenu.SetAntiAliasingOption(event)", view.SettingsInteractable);
-                    Slider(sb, "Level of detail", view.LodBias, 0.4f, 2f, "Globals.moyvaMenu.CommitLodBiasValue(event)", "decimal1", view.SettingsInteractable, "x");
-                    Toggle(sb, "Vertical sync", "Match frames to the display refresh.", view.VSync, "Globals.moyvaMenu.SetVSync(event)");
-                    Toggle(sb, "Shadows", "Render realtime world shadows.", view.Shadows, "Globals.moyvaMenu.SetShadows(event)");
-                    Toggle(sb, "Anisotropic filtering", "Keep angled textures sharp.", view.AnisotropicFiltering, "Globals.moyvaMenu.SetAnisotropic(event)");
+                    Select(sb, "Quality profile", GraphicsProfileOptions, (int)view.GraphicsProfile, "Globals.moyvaMenu.SetGraphicsProfileValue(event)", view.GraphicsSettingsInteractable);
+                    Select(sb, "Frame limit", FrameRateOptions, FrameRateIndex(view.TargetFrameRate), "Globals.moyvaMenu.SetFrameRateOption(event)", view.GraphicsSettingsInteractable);
+                    Slider(sb, "Render scale", view.RenderScale, 0.42f, 1f, "Globals.moyvaMenu.CommitRenderScaleValue(event)", "percent", view.GraphicsSettingsInteractable);
+                    Select(sb, "Texture quality", TextureQualityOptions, view.TextureMipmapLimit, "Globals.moyvaMenu.SetTextureQualityOption(event)", view.GraphicsSettingsInteractable);
+                    Select(sb, "Anti-aliasing", AntiAliasingOptions, AntiAliasingIndex(view.AntiAliasing), "Globals.moyvaMenu.SetAntiAliasingOption(event)", view.GraphicsSettingsInteractable);
+                    Slider(sb, "Level of detail", view.LodBias, 0.4f, 2f, "Globals.moyvaMenu.CommitLodBiasValue(event)", "decimal1", view.GraphicsSettingsInteractable, "x");
+                    Toggle(sb, "Vertical sync", "Match frames to the display refresh.", view.VSync, "Globals.moyvaMenu.SetVSync(event)", null, view.GraphicsSettingsInteractable);
+                    Toggle(sb, "Shadows", "Render realtime world shadows.", view.Shadows, "Globals.moyvaMenu.SetShadows(event)", null, view.GraphicsSettingsInteractable);
+                    Toggle(sb, "Anisotropic filtering", "Keep angled textures sharp.", view.AnisotropicFiltering, "Globals.moyvaMenu.SetAnisotropic(event)", null, view.GraphicsSettingsInteractable);
                     sb.Append("</view>");
-                    CompactButton(sb, "RESET GRAPHICS", "Globals.moyvaMenu.ResetGraphics()");
+                    CompactButton(sb, "RESET GRAPHICS", "Globals.moyvaMenu.ResetGraphics()", false, view.GraphicsSettingsInteractable);
+                    break;
+                case HomeMenuSettingsSection.Controls:
+                    HomeMenuControlsMarkup.Append(sb, view);
+                    sb.Append("<view className=\"settings-grid\">");
+                    Slider(sb, "Mouse sensitivity", view.MouseSensitivity, 0.25f, 3f, "Globals.moyvaMenu.CommitMouseSensitivityValue(event)", "decimal1", view.SettingsInteractable, "x");
+                    Slider(sb, "Movement speed", view.MovementSpeed, 0.25f, 3f, "Globals.moyvaMenu.CommitMovementSpeedValue(event)", "decimal1", view.SettingsInteractable, "x");
+                    Slider(sb, "Orbit speed", view.OrbitSpeed, 0.25f, 3f, "Globals.moyvaMenu.CommitOrbitSpeedValue(event)", "decimal1", view.SettingsInteractable, "x");
+                    Slider(sb, "Zoom speed", view.ZoomSpeed, 0.25f, 3f, "Globals.moyvaMenu.CommitZoomSpeedValue(event)", "decimal1", view.SettingsInteractable, "x");
+                    sb.Append("</view>");
+                    CompactButton(sb, "RESET CONTROLS", "Globals.moyvaMenu.ResetControls()");
                     break;
                 default:
                     SectionIntro(sb, "GENERAL", "Player identity and local data.");
@@ -368,14 +381,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             sb.Append("></slider></view>");
         }
 
-        private static void Toggle(StringBuilder sb, string label, string help, bool value, string changed, string extraClass = null)
+        private static void Toggle(StringBuilder sb, string label, string help, bool value, string changed, string extraClass = null, bool enabled = true)
         {
             sb.Append("<view className=\"control-row toggle-row");
             if (!string.IsNullOrWhiteSpace(extraClass)) sb.Append(' ').Append(E(extraClass));
             sb.Append("\"><view className=\"control-copy\"><text className=\"control-label\">").Append(E(label))
                 .Append("</text><text className=\"control-help\">").Append(E(help))
                 .Append("</text></view><toggle className=\"menu-toggle\" checked=\"").Append(value ? "true" : "false")
-                .Append("\" onChange=\"").Append(changed).Append("\"><view className=\"toggle-knob\"></view></toggle></view>");
+                .Append("\" onChange=\"").Append(changed).Append('"');
+            if (!enabled) sb.Append(" disabled=\"true\"");
+            sb.Append("><view className=\"toggle-knob\"></view></toggle></view>");
         }
 
         private static void Stepper(StringBuilder sb, string label, string help, int value, string decrease, string increase)
@@ -394,6 +409,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             SettingsTab(sb, "GENERAL", "Globals.moyvaMenu.ShowGeneralSettings()", active == HomeMenuSettingsSection.General);
             SettingsTab(sb, "AUDIO", "Globals.moyvaMenu.ShowAudioSettings()", active == HomeMenuSettingsSection.Audio);
             SettingsTab(sb, "GRAPHICS", "Globals.moyvaMenu.ShowGraphicsSettings()", active == HomeMenuSettingsSection.Graphics);
+            SettingsTab(sb, "CONTROLS", "Globals.moyvaMenu.ShowControlsSettings()", active == HomeMenuSettingsSection.Controls);
             sb.Append("</view>");
         }
 

@@ -13,10 +13,9 @@ using UnityEngine;
 namespace Kruty1918.Moyva.Multiplayer.Lobbies
 {
     /// <summary>
-    /// Simple LAN lobby service using UDP broadcast for discovery.
-    /// This is a lightweight implementation intended as a skeleton.
+    /// LAN room discovery and lobby snapshots exchanged over UDP.
     /// </summary>
-    public sealed partial class LanLobbyService : ILobbyService, ILobbyLocalIdentity, IDisposable
+    public sealed partial class LanLobbyService : ILobbyService, ILobbyLocalIdentity, ILobbyHostMigrationService, IDisposable
     {
         public const int DefaultPort = 54545;
         private const int DiscoveryPort = 54544;
@@ -24,6 +23,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private const string DiscoveryQuery = "QUERY";
         private const int BroadcastIntervalMs = 1000;
         private const int QueryTimeoutMs = 2500;
+        private const int QueryRetryIntervalMs = 500;
         private const int DiscoveredRoomTtlMs = 8000;
         private const int ShortLobbyCodeLength = 6;
 
@@ -31,6 +31,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private readonly IPEndPoint _broadcastEndPoint;
         private readonly IPEndPoint _loopbackEndPoint;
         private readonly object _stateLock = new object();
+        private readonly object _discoveryLock = new object();
         private readonly Dictionary<string, DiscoveredRoomEntry> _discoveredRooms = new Dictionary<string, DiscoveredRoomEntry>(StringComparer.OrdinalIgnoreCase);
 
         private CancellationTokenSource _cts;
@@ -38,6 +39,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private LobbyRoom _current;
         private string _currentPasswordHash = string.Empty;
         private LobbyState _state = LobbyState.Closed;
+        private string _lastDiscoveryError;
+        private volatile bool _disposed;
 
         public event Action<LobbyRoom> LobbyUpdated;
         public event Action<LobbyState> StateChanged;

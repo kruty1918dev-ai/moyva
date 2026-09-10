@@ -213,6 +213,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     }
                 }
             }
+            catch (OperationCanceledException) { throw; }
             catch (Exception)
             {
             }

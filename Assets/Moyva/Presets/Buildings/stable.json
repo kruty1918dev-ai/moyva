@@ -130,7 +130,7 @@
       "queueCapacity": 3,
       "spawnRadius": 2,
       "recipes": [
-        { "unitTypeId": "light-cavalry", "trainingTurns": 3, "costs": [
+        { "unitTypeId": "light-cavalry", "trainingTurns": 3, "trainingSeconds": 30, "populationCost": 1, "costs": [
           { "resourceId": "steak-food-resources", "amount": 20 },
           { "resourceId": "hardwood-materials-resources", "amount": 10 },
           { "resourceId": "iron-ingot-materials-resources", "amount": 5 }

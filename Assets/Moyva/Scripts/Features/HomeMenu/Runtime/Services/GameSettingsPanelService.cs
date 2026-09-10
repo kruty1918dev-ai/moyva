@@ -1,6 +1,8 @@
 using System;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.UI;
+using Kruty1918.Moyva.Multiplayer.Lobbies;
+using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.Graphics;
 using Zenject;
 
@@ -11,12 +13,18 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private IGameSettingsViewController _viewController;
         [Inject] private ILocalGameSettingsService _settingsService;
         [InjectOptional] private IConfirmationService _confirmationService;
+        [InjectOptional] private HomeMenuMoyvaUiViewController _moyvaUiViewController;
+        [InjectOptional] private ILobbyService _lobbyService;
         private IGraphicsSettingsService _graphicsSettingsService;
+        private IPlayerControlSettingsService _controlSettingsService;
 
         [Inject]
-        private void Construct([InjectOptional] IGraphicsSettingsService graphicsSettingsService)
+        private void Construct(
+            [InjectOptional] IGraphicsSettingsService graphicsSettingsService,
+            [InjectOptional] IPlayerControlSettingsService controlSettingsService)
         {
             _graphicsSettingsService = graphicsSettingsService;
+            _controlSettingsService = controlSettingsService;
         }
 
         public void Initialize()
@@ -68,6 +76,25 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _graphicsSettingsService.OnSettingsChanged += OnGraphicsSettingsChanged;
                 _viewController.RefreshGraphics(_graphicsSettingsService.Settings);
             }
+            if (_controlSettingsService != null && _moyvaUiViewController != null)
+            {
+                _controlSettingsService.OnSettingsChanged -= OnControlSettingsChanged;
+                _controlSettingsService.OnSettingsChanged += OnControlSettingsChanged;
+                _moyvaUiViewController.OnMouseSensitivityChanged -= OnMouseSensitivityChanged;
+                _moyvaUiViewController.OnMouseSensitivityChanged += OnMouseSensitivityChanged;
+                _moyvaUiViewController.OnMovementSpeedChanged -= OnMovementSpeedChanged;
+                _moyvaUiViewController.OnMovementSpeedChanged += OnMovementSpeedChanged;
+                _moyvaUiViewController.OnOrbitSpeedChanged -= OnOrbitSpeedChanged;
+                _moyvaUiViewController.OnOrbitSpeedChanged += OnOrbitSpeedChanged;
+                _moyvaUiViewController.OnZoomSpeedChanged -= OnZoomSpeedChanged;
+                _moyvaUiViewController.OnZoomSpeedChanged += OnZoomSpeedChanged;
+                _moyvaUiViewController.OnControlBindingChanged -= OnControlBindingChanged;
+                _moyvaUiViewController.OnControlBindingChanged += OnControlBindingChanged;
+                _moyvaUiViewController.OnResetControlsClicked -= OnResetControlsClicked;
+                _moyvaUiViewController.OnResetControlsClicked += OnResetControlsClicked;
+                _moyvaUiViewController.RefreshControls(_controlSettingsService.Settings);
+            }
+            ApplySettingsPolicy();
             _viewController.Refresh(_settingsService.Settings);
         }
 
@@ -100,6 +127,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (_graphicsSettingsService != null)
                 _graphicsSettingsService.OnSettingsChanged -= OnGraphicsSettingsChanged;
+
+            if (_controlSettingsService != null)
+                _controlSettingsService.OnSettingsChanged -= OnControlSettingsChanged;
+
+            if (_moyvaUiViewController != null)
+            {
+                _moyvaUiViewController.OnMouseSensitivityChanged -= OnMouseSensitivityChanged;
+                _moyvaUiViewController.OnMovementSpeedChanged -= OnMovementSpeedChanged;
+                _moyvaUiViewController.OnOrbitSpeedChanged -= OnOrbitSpeedChanged;
+                _moyvaUiViewController.OnZoomSpeedChanged -= OnZoomSpeedChanged;
+                _moyvaUiViewController.OnControlBindingChanged -= OnControlBindingChanged;
+                _moyvaUiViewController.OnResetControlsClicked -= OnResetControlsClicked;
+            }
         }
 
         private void OnPlayerNameChanged(string playerName)
@@ -213,6 +253,43 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private void OnGraphicsSettingsChanged(GraphicsSettingsData settings)
         {
             _viewController?.RefreshGraphics(settings);
+            ApplySettingsPolicy();
+        }
+
+        private void OnMouseSensitivityChanged(float value) => _controlSettingsService?.SetMouseSensitivity(value);
+        private void OnMovementSpeedChanged(float value) => _controlSettingsService?.SetMovementSpeed(value);
+        private void OnOrbitSpeedChanged(float value) => _controlSettingsService?.SetOrbitSpeed(value);
+        private void OnZoomSpeedChanged(float value) => _controlSettingsService?.SetZoomSpeed(value);
+
+        private void OnControlBindingChanged(PlayerControlAction action, string controlPath)
+        {
+            if (_controlSettingsService == null)
+                return;
+
+            if (!_controlSettingsService.TrySetBinding(action, controlPath, out var conflictingAction))
+            {
+                _confirmationService?.Show(new ConfirmationRequest
+                {
+                    LabelText = "Control conflict",
+                    MessageText = $"This key is already assigned to {conflictingAction}.",
+                    OnConfirm = () => { }
+                });
+            }
+        }
+
+        private void OnResetControlsClicked() => _controlSettingsService?.ResetToDefaults();
+
+        private void OnControlSettingsChanged(PlayerControlSettingsData settings)
+        {
+            _moyvaUiViewController?.RefreshControls(settings);
+        }
+
+        private void ApplySettingsPolicy()
+        {
+            bool humanMultiplayer = _lobbyService?.Current != null &&
+                                    _lobbyService.Current.Players != null &&
+                                    _lobbyService.Current.Players.Count > 1;
+            _moyvaUiViewController?.SetGraphicsInteractable(!humanMultiplayer);
         }
     }
 }

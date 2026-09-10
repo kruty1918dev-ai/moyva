@@ -18,7 +18,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     {
         private const string ContainerName = "RecruitmentReadyIndicators";
         private const string IndicatorPrefix = "ReadyIndicator_";
-        private const float IndicatorWorldHeightOffset = 1.35f;
+        private const float IndicatorWorldHeightOffset = 0f;
         private const float IndicatorSize = 52f;
 
         private readonly Dictionary<long, IndicatorHandle> _indicators = new();
@@ -298,6 +298,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _canvas,
                 _canvasRect,
                 camera);
+
+            var placed = new Dictionary<Vector2Int, int>();
+            var ordered = new List<long>(_indicators.Keys);
+            ordered.Sort();
+            foreach (long queueId in ordered)
+            {
+                IndicatorHandle handle = _indicators[queueId];
+                Vector2Int position = handle.Snapshot.RecruitingBuildingPosition;
+                placed.TryGetValue(position, out int index);
+                handle.Root.anchoredPosition += new Vector2(
+                    (index % 3) * (handle.Root.rect.width + 6f),
+                    -36f - (index / 3) * (handle.Root.rect.height + 6f));
+                placed[position] = index + 1;
+            }
         }
 
         private void SetAllIndicatorsVisible(bool visible)

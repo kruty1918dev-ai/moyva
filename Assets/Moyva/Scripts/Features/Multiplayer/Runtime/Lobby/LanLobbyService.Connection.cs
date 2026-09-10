@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         {
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
+            ct.ThrowIfCancellationRequested();
 
             // For LAN we simply return a LobbyRoom and start broadcasting
             var roomId = Guid.NewGuid().ToString("N");
@@ -56,35 +57,28 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     return null;
                 }
 
-                try
+                ct.ThrowIfCancellationRequested();
+                var cachedRoom = FindDiscoveredRoom(value);
+                if (cachedRoom != null)
                 {
-                    // Спершу пробуємо кеш виявлених кімнат (заповнюється під час QueryRoomsAsync та StartBroadcastLoop).
-                    var cachedRoom = FindDiscoveredRoom(value);
-                    if (cachedRoom != null)
+                    _current = AddLocalPlayer(cachedRoom, displayName);
+                    StartBroadcastLoop();
+                    LobbyUpdated?.Invoke(_current);
+                    PublishState(_current.State);
+                    return _current;
+                }
+                var rooms = await QueryRoomsAsync(ct).ConfigureAwait(false);
+                foreach (var r in rooms)
+                {
+                    if (MatchesJoinInput(r, value))
                     {
-                        _current = AddLocalPlayer(cachedRoom, displayName);
+                        _current = AddLocalPlayer(r, displayName);
                         StartBroadcastLoop();
                         LobbyUpdated?.Invoke(_current);
                         PublishState(_current.State);
                         return _current;
                     }
-                    var rooms = await QueryRoomsAsync(ct).ConfigureAwait(false);
-                    foreach (var r in rooms)
-                    {
-                        if (MatchesJoinInput(r, value))
-                        {
-                            _current = AddLocalPlayer(r, displayName);
-                            StartBroadcastLoop();
-                            LobbyUpdated?.Invoke(_current);
-                            PublishState(_current.State);
-                            return _current;
-                        }
-                    }
                 }
-                catch (Exception)
-                {
-                }
-
                 if (IsLanJoinCode(value))
                 {
                     _current = CreateDirectJoinRoom(value, displayName);
@@ -103,6 +97,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
         public async Task<LobbyRoom> JoinByCodeWithPasswordAsync(string lobbyCode, string displayName, string password, CancellationToken ct = default)
         {
+            ct.ThrowIfCancellationRequested();
             // Спочатку знаходимо кімнату (без додавання локального гравця), звіряємо хеш пароля.
             var value = lobbyCode?.Trim();
             if (string.IsNullOrWhiteSpace(value))
@@ -145,64 +140,86 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
         public async Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(CancellationToken ct = default)
         {
+            ct.ThrowIfCancellationRequested();
+            StartBroadcastLoop();
             var roomsByKey = new Dictionary<string, LobbyRoom>(StringComparer.Ordinal);
+            var responseCount = 0;
             using (var client = CreateQueryClient())
             {
                 var deadline = DateTime.UtcNow.AddMilliseconds(QueryTimeoutMs);
+                var nextQuery = DateTime.MinValue;
                 try
                 {
-                    await SendDiscoveryQueryAsync(client).ConfigureAwait(false);
-
                     while (DateTime.UtcNow < deadline)
                     {
-                        if (ct.IsCancellationRequested) break;
-                        try
+                        ct.ThrowIfCancellationRequested();
+                        if (DateTime.UtcNow >= nextQuery)
                         {
-                            var remaining = deadline - DateTime.UtcNow;
-                            if (remaining <= TimeSpan.Zero) break;
-
-                            var result = await ReceiveResultWithTimeoutAsync(client, remaining, ct).ConfigureAwait(false);
-                            if (!result.HasValue) break;
-                            var json = Encoding.UTF8.GetString(result.Value.Buffer);
-                            if (IsDiscoveryQuery(json))
-                                continue;
-
-                            if (TryParsePayload(json, out var room, out var joinCode, result.Value.RemoteEndPoint))
-                            {
-                                var key = $"{room.LobbyId}:{joinCode}";
-                                roomsByKey[key] = roomsByKey.TryGetValue(key, out var existing)
-                                    ? MergeRooms(existing, room)
-                                    : room;
-                                RememberDiscoveredRoom(roomsByKey[key]);
-                            }
+                            await SendDiscoveryQueryAsync(client).ConfigureAwait(false);
+                            nextQuery = DateTime.UtcNow.AddMilliseconds(QueryRetryIntervalMs);
                         }
-                        catch (SocketException) { break; }
-                        catch (OperationCanceledException) { break; }
-                        catch (Exception)
+
+                        var remaining = deadline - DateTime.UtcNow;
+                        if (remaining <= TimeSpan.Zero) break;
+                        var receiveWindow = TimeSpan.FromMilliseconds(Math.Min(remaining.TotalMilliseconds, QueryRetryIntervalMs));
+
+                        var result = await ReceiveResultWithTimeoutAsync(client, receiveWindow, ct).ConfigureAwait(false);
+                        if (!result.HasValue) continue;
+                        var json = Encoding.UTF8.GetString(result.Value.Buffer);
+                        if (IsDiscoveryQuery(json))
+                            continue;
+
+                        if (TryParsePayload(json, out var room, out _, result.Value.RemoteEndPoint))
                         {
+                            responseCount++;
+                            var key = room.LobbyId;
+                            roomsByKey[key] = roomsByKey.TryGetValue(key, out var existing)
+                                ? MergeRooms(existing, room)
+                                : room;
+                            RememberDiscoveredRoom(roomsByKey[key]);
                         }
                     }
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    LogDiscoveryFailure("query", ex);
+                    throw;
+                }
             }
 
+            ct.ThrowIfCancellationRequested();
             foreach (var cachedRoom in SnapshotDiscoveredRooms())
             {
-                var key = $"{cachedRoom.LobbyId}:{cachedRoom.RelayJoinCode}";
+                var key = cachedRoom.LobbyId;
                 roomsByKey[key] = roomsByKey.TryGetValue(key, out var existing)
                     ? MergeRooms(existing, cachedRoom)
                     : cachedRoom;
             }
 
+            Debug.Log($"[LAN Discovery] Query completed: responses={responseCount}, rooms={roomsByKey.Count}, UDP={DiscoveryPort}.");
             return new List<LobbyRoom>(roomsByKey.Values);
         }
 
-        public Task LeaveAsync(CancellationToken ct = default)
+        public async Task LeaveAsync(CancellationToken ct = default)
         {
+            ct.ThrowIfCancellationRequested();
+            bool needsFinalAdvertise = false;
+            lock (_stateLock)
+            {
+                if (_current != null && IsCurrentLocalHost() && TryChooseSuccessorHost(_current, BuildLocalHostId(), out var successorHostId))
+                {
+                    _current = RehostRoom(_current, successorHostId, string.Empty, removePlayerId: BuildLocalHostId());
+                    needsFinalAdvertise = true;
+                }
+            }
+
+            if (needsFinalAdvertise)
+                await SendHostDiscoveryPayloadAsync(Encoding.UTF8.GetBytes(BuildPayload())).ConfigureAwait(false);
+
             StopBroadcastLoop();
             _current = null;
             PublishState(LobbyState.Closed);
-            return Task.CompletedTask;
         }
 
         public Task KickAsync(string playerId, CancellationToken ct = default)
@@ -225,6 +242,27 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             }
 
             return Task.CompletedTask;
+        }
+
+        public Task<bool> TryTransferHostAsync(string newHostPlayerId, string relayJoinCode, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(newHostPlayerId))
+                return Task.FromResult(false);
+
+            lock (_stateLock)
+            {
+                if (_current == null)
+                    return Task.FromResult(false);
+
+                _current = RehostRoom(_current, newHostPlayerId.Trim(), relayJoinCode?.Trim() ?? string.Empty);
+                RememberDiscoveredRoom(_current);
+            }
+
+            LobbyUpdated?.Invoke(_current);
+            PublishState(_current.State);
+            StartBroadcastLoop();
+            return Task.FromResult(true);
         }
 
         public Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, CancellationToken ct = default)

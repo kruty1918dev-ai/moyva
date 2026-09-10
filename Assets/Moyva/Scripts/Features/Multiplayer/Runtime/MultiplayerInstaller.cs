@@ -226,7 +226,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var hasInternet = false;
             try
             {
-                var initTask = UnityServices.InitializeAsync();
+                var initTask = MultiplayerAuthenticationGate.EnsureReadyAsync();
                 var initTimeout = Task.Delay(TimeSpan.FromSeconds(6));
                 var initCompleted = await Task.WhenAny(initTask, initTimeout);
 
@@ -234,6 +234,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 {
                     try
                     {
+                        await initTask;
                         // Try quick anonymous sign-in if not already signed in/authorized
                         if (!AuthenticationService.Instance.IsSignedIn || !AuthenticationService.Instance.IsAuthorized)
                         {
@@ -356,31 +357,14 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
             try
             {
-                var switchable = container.Resolve<SwitchableLobbyService>();
-                await switchable.SwitchToAsync(finalCfg.ProviderType);
-            }
-            catch (Exception)
-            {
-            }
-
-            try
-            {
-                if (container.HasBinding(typeof(SwitchableNetworkProvider)))
-                {
-                    var switchableNetwork = container.Resolve<SwitchableNetworkProvider>();
-                    await switchableNetwork.SwitchToAsync(ResolveNetworkBootstrapProviderType(finalCfg));
-                }
-            }
-            catch (Exception)
-            {
-            }
-
-            try
-            {
                 if (container.HasBinding(typeof(IMultiplayerModeSelector)))
                 {
-                    var modeSelector = container.Resolve<IMultiplayerModeSelector>();
-                    await modeSelector.SetModeAsync(finalCfg.ProviderType);
+                    if (container.Resolve<IMultiplayerModeSelector>() is MultiplayerModeSelector modeSelector)
+                    {
+                        await modeSelector.ApplyBootstrapModeAsync(
+                            finalCfg.ProviderType,
+                            ResolveNetworkBootstrapProviderType(finalCfg));
+                    }
                 }
             }
             catch (Exception)
