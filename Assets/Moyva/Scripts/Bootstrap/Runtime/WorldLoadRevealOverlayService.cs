@@ -1,4 +1,7 @@
 using Kruty1918.Moyva.Shared.UI;
+using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,6 +29,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private readonly SignalBus _signalBus;
         private readonly BootstrapGameSettings _settings;
+        private readonly IMultiplayerStartupBarrier _startupBarrier;
+        private readonly IGameplayInputPolicy _inputPolicy;
+        private System.IDisposable _inputBlock;
+        private bool _waitForMultiplayer;
 
         private Canvas _canvas;
         private Image _image;
@@ -35,14 +42,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private float _duration;
         private float _startAlpha;
 
-        public WorldLoadRevealOverlayService(SignalBus signalBus, BootstrapGameSettings settings)
+        public WorldLoadRevealOverlayService(SignalBus signalBus, BootstrapGameSettings settings,
+            [InjectOptional] IMultiplayerStartupBarrier startupBarrier = null,
+            [InjectOptional] IGameplayInputPolicy inputPolicy = null)
         {
             _signalBus = signalBus;
             _settings = settings;
+            _startupBarrier = startupBarrier;
+            _inputPolicy = inputPolicy;
         }
 
         public void Initialize()
         {
+            _waitForMultiplayer = GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame && _startupBarrier != null;
+            if (_waitForMultiplayer)
+                _inputBlock = _inputPolicy?.AcquireBlock(GameplayInputKind.All, this);
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
             _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
 
@@ -64,6 +78,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void Dispose()
         {
+            _inputBlock?.Dispose();
+            _inputBlock = null;
             _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
             _signalBus.TryUnsubscribe<WorldBuiltSignal>(OnWorldBuilt);
 
@@ -77,6 +93,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void Tick()
         {
+            if (_waitForMultiplayer && _startupBarrier.IsReadyToPlay)
+            {
+                _inputBlock?.Dispose();
+                _inputBlock = null;
+                BeginFade();
+            }
             if (_image == null)
                 return;
 
@@ -84,7 +106,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 case FadeState.WaitingSignal:
                     _timer += Time.unscaledDeltaTime;
-                    if (_timer >= FallbackStartFadeTimeoutSeconds)
+                    if (!_waitForMultiplayer && _timer >= FallbackStartFadeTimeoutSeconds)
                         BeginFade();
                     break;
 
@@ -123,6 +145,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void BeginFade()
         {
+            if (_waitForMultiplayer && !_startupBarrier.IsReadyToPlay)
+                return;
             if (_state != FadeState.WaitingSignal)
                 return;
 

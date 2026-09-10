@@ -48,6 +48,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private Action<NetworkProviderType> _onModeChangedCallback;
         private Action<LobbyState> _onLobbyStateChangedCallback;
         private bool _isJoining;
+        private bool _joinedRoomClosed;
         private JoinPipelineState _joinState = JoinPipelineState.Idle;
         private readonly MultiplayerActionRateLimiter _actionRateLimiter = new MultiplayerActionRateLimiter();
         private readonly MultiplayerIdempotencyGuard _idempotencyGuard = new MultiplayerIdempotencyGuard();

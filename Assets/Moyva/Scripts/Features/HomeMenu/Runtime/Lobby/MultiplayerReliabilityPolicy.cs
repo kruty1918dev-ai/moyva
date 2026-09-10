@@ -11,8 +11,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
     {
         private static readonly Dictionary<NetworkProviderType, TimeSpan> JoinTimeoutByProvider = new Dictionary<NetworkProviderType, TimeSpan>
         {
-            { NetworkProviderType.Relay, TimeSpan.FromSeconds(15) },
-            { NetworkProviderType.Lan, TimeSpan.FromSeconds(8) },
+            // This budget includes authentication, lobby discovery/join and
+            // allocation before the transport's own connection timeout starts.
+            { NetworkProviderType.Relay, TimeSpan.FromSeconds(40) },
+            { NetworkProviderType.Lan, TimeSpan.FromSeconds(20) },
             { NetworkProviderType.Offline, TimeSpan.FromSeconds(5) },
         };
 

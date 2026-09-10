@@ -27,6 +27,26 @@ namespace Kruty1918.Moyva.Tests.Startup
             Assert.That(lobby.QueryCalls, Is.Zero, "Rejected configuration must not become an alias-search timeout.");
         }
 
+        [TestCase("ResolvingTarget", LobbyState.Closed, false)]
+        [TestCase("JoiningLobby", LobbyState.Closed, false)]
+        [TestCase("JoiningLobby", LobbyState.Started, false)]
+        [TestCase("ConnectingTransport", LobbyState.Closed, true)]
+        [TestCase("ConnectingTransport", LobbyState.Started, false)]
+        [TestCase("Failed", LobbyState.Closed, false)]
+        public void OnlyClosingTheJoinedRoomCancelsTransport(string phase, LobbyState state, bool cancelled)
+        {
+            var type = typeof(JoinRoomTarget).Assembly.GetType("Kruty1918.Moyva.HomeMenu.Runtime.JoinRoomPanelService");
+            var service = Activator.CreateInstance(type, true);
+            const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic;
+            using var cancellation = new CancellationTokenSource();
+            type.GetField("_joinCts", fields).SetValue(service, cancellation);
+            type.GetField("_isJoining", fields).SetValue(service, true);
+            var phaseField = type.GetField("_joinState", fields);
+            phaseField.SetValue(service, Enum.Parse(phaseField.FieldType, phase));
+            type.GetMethod("OnLobbyStateChanged", fields).Invoke(service, new object[] { state });
+            Assert.That(cancellation.IsCancellationRequested, Is.EqualTo(cancelled));
+        }
+
         private sealed class RejectedLobby : ILobbyService
         {
             public int JoinCalls;

@@ -180,6 +180,7 @@ Host authorization → canonical Units/Construction commands.
 | Sync / authorization | `Runtime/GameCommandSyncService.cs`; `Runtime/MultiplayerAuthorityService.cs`; `Runtime/MultiplayerAuthorityService.Authorization.cs` |
 | Construction / Units commands | `Runtime/MultiplayerAuthorityService.ConstructionCommands.cs`; `Runtime/MultiplayerAuthorityService.UnitCommands.cs` |
 | Frame / pump lifecycle | `Runtime/MultiplayerFrameCodec.cs`; `Runtime/MultiplayerTransportPump.cs` |
+| Host readiness / client loading barrier | `API/IMultiplayerStartupBarrier.cs`; `Runtime/MultiplayerStartupBarrier.cs`; `Runtime/StartingPositionSyncService.cs` |
 
 ## FogOfWar state / composition
 

@@ -39,12 +39,15 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         {
             while (!ct.IsCancellationRequested && _lobby != null && _isHost)
             {
+                string lobbyId = _lobby.Id;
                 try
                 {
-                    await LobbyService.Instance.SendHeartbeatPingAsync(_lobby.Id);
+                    await LobbyService.Instance.SendHeartbeatPingAsync(lobbyId);
                 }
                 catch (LobbyServiceException e) when (IsUnauthorized(e))
                 {
+                    if (!IsCurrentLobbyOperation(lobbyId, ct))
+                        return;
                     CloseLobbyState("unauthorized");
                     return;
                 }
@@ -61,6 +64,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         {
             while (!ct.IsCancellationRequested && _lobby != null)
             {
+                string lobbyId = _lobby.Id;
                 try
                 {
                     var lobby = _lobby;
@@ -69,10 +73,12 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         return;
 
                     await UpdateLocalPlayerTimeAsync();
-                    if (ct.IsCancellationRequested || _lobby == null)
+                    if (!IsCurrentLobbyOperation(lobbyId, ct))
                         return;
 
                     var refreshed = await lobbyService.GetLobbyAsync(lobby.Id);
+                    if (!IsCurrentLobbyOperation(lobbyId, ct))
+                        return;
                     if (refreshed != null)
                     {
                         var previous = _current;
@@ -80,10 +86,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         _current = Project(_lobby);
                         bool wasHost = _isHost;
                         _isHost = string.Equals(_current.HostPlayerId, AuthenticationService.Instance.PlayerId, StringComparison.Ordinal);
-                        if (!wasHost && _isHost)
-                            StartLoops();
                         if (_isHost)
                             await PublishReconnectRecordsForRemovedPlayersAsync(previous, _current, ct);
+
+                        if (!IsCurrentLobbyOperation(lobbyId, ct))
+                            return;
 
                         LobbyUpdated?.Invoke(_current);
                         PublishState(_current.State);
@@ -103,10 +110,17 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                             PublishState(LobbyState.Closed);
                             return;
                         }
+                        if (!wasHost && _isHost)
+                        {
+                            StartLoops();
+                            return;
+                        }
                     }
                 }
                 catch (LobbyServiceException e) when ((int)e.Reason == (int)LobbyExceptionReason.LobbyNotFound)
                 {
+                    if (!IsCurrentLobbyOperation(lobbyId, ct))
+                        return;
                     KickedFromLobby?.Invoke("lobby_closed");
                     StopLoops();
                     _lobby = null;
@@ -116,6 +130,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 }
                 catch (LobbyServiceException e) when (IsUnauthorized(e))
                 {
+                    if (!IsCurrentLobbyOperation(lobbyId, ct))
+                        return;
                     CloseLobbyState("unauthorized");
                     return;
                 }
@@ -131,6 +147,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 catch (OperationCanceledException) { return; }
             }
         }
+
+        private bool IsCurrentLobbyOperation(string lobbyId, CancellationToken ct)
+            => !ct.IsCancellationRequested && _lobby != null &&
+               string.Equals(_lobby.Id, lobbyId, StringComparison.Ordinal);
 
     }
 }

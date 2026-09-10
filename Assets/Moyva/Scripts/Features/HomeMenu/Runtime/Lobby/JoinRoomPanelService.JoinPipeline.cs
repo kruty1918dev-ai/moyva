@@ -130,6 +130,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var joinProviderType = GetCurrentProviderType();
             var shouldRefreshRoomListAfterFailure = false;
             _isJoining = true;
+            _joinedRoomClosed = false;
             _roomsCts?.Cancel();
             _joinCts?.Cancel();
             _joinCts?.Dispose();
@@ -250,8 +251,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 shouldRefreshRoomListAfterFailure = true;
                 await ReturnToLobbyChooserWithMessageAsync(
                     joinPanelName,
-                    "Join Timeout",
-                    new MultiplayerUserFacingError(
+                    _joinedRoomClosed ? "Room Unavailable" : "Join Timeout",
+                    _joinedRoomClosed ? "The room is closed. Refresh the room list and try again." : new MultiplayerUserFacingError(
                         "MP-NET-408",
                         "Joining the room timed out.",
                         "Make sure the host is still in the lobby and both devices are on the same network.",

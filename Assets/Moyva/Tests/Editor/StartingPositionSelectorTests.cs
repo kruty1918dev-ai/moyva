@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.Pathfinding.API;
 using Kruty1918.Moyva.Signals;
@@ -85,6 +87,54 @@ namespace Kruty1918.Moyva.Tests.Startup
                 new object[] { Vector2Int.zero, 999, true, best, 1300 }), Is.False);
         }
 
+        [Test]
+        public async Task AsyncSelectionKeepsFallbackResultAndLetsOtherWorkRun()
+        {
+            var signal = new WorldGeneratedDataSignal
+            {
+                Width = 128, Height = 128, HeightMap = new float[128, 128],
+                Source = WorldGeneratedDataSource.GeneratedHost
+            };
+            var expected = Invoke<List<Vector2Int>>(CreateSelector(new CountingPathfinder()),
+                "PickStartingPositions", signal, 2);
+            var routes = new CountingPathfinder { DelayMilliseconds = 5 };
+            var task = Invoke<Task<List<Vector2Int>>>(CreateSelector(routes),
+                "PickStartingPositionsAsync", signal, 2, CancellationToken.None);
+            Assert.That(task.IsCompleted, Is.False, "WorldGenerated must return before spawn publication.");
+            int continuations = 0;
+            while (!task.IsCompleted)
+            {
+                await Task.Yield();
+                continuations++;
+            }
+            Assert.That(await task, Is.EqualTo(expected));
+            Assert.That(continuations, Is.GreaterThan(2), "Selection must leave time for network updates.");
+        }
+
+        [Test]
+        public async Task CancellingSelectionStopsRemainingWork()
+        {
+            using var cancellation = new CancellationTokenSource();
+            var routes = new CountingPathfinder { DelayMilliseconds = 5 };
+            var signal = new WorldGeneratedDataSignal
+            {
+                Width = 128, Height = 128, HeightMap = new float[128, 128],
+                Source = WorldGeneratedDataSource.GeneratedHost
+            };
+            var task = Invoke<Task<List<Vector2Int>>>(CreateSelector(routes),
+                "PickStartingPositionsAsync", signal, 2, cancellation.Token);
+            await Task.Yield();
+            cancellation.Cancel();
+            int calls = routes.Calls;
+            try
+            {
+                await task;
+                Assert.Fail("A cancelled startup must not return spawn positions.");
+            }
+            catch (OperationCanceledException) { }
+            Assert.That(routes.Calls, Is.EqualTo(calls));
+        }
+
         private static object CreateSelector(IPathfinder routes)
             => Activator.CreateInstance(SelectorType, new object[]
             {
@@ -107,10 +157,13 @@ namespace Kruty1918.Moyva.Tests.Startup
         {
             public int Calls;
             public int? ForcedLength;
+            public int DelayMilliseconds;
 
             public List<Vector2Int> FindPath(Vector2Int start, Vector2Int end)
             {
                 Calls++;
+                if (DelayMilliseconds > 0)
+                    Thread.Sleep(DelayMilliseconds);
                 int length = ForcedLength ?? Mathf.Max(
                     Mathf.Abs(start.x - end.x), Mathf.Abs(start.y - end.y));
                 var path = new List<Vector2Int>();

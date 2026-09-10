@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Audio.Runtime;
 using Kruty1918.Moyva.HomeMenu.API;
+using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Shared.Common;
@@ -44,6 +45,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
         /// <summary>Опційний prewarm сервіс для прогріву систем.</summary>
         private readonly IStartupPrewarmService _startupPrewarmService;
         private readonly ISceneTransitionService _sceneTransitionService;
+        private readonly IMultiplayerStartupBarrier _startupBarrier;
+        private readonly ISessionManager _networkSession;
+        private string _originSceneName;
+        private bool _multiplayerStartup;
+        private bool _startupIsHost;
 
         /// <summary>Ініціалізатори, які мають відпрацювати до активації сцени.</summary>
         private readonly IScenePreActivationInitializer[] _preActivationInitializers;
@@ -76,7 +82,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             [InjectOptional] IStartupPrewarmService startupPrewarmService = null,
             [InjectOptional] ISceneTransitionService sceneTransitionService = null,
             [InjectOptional] List<IScenePreActivationInitializer> preActivationInitializers = null,
-            [InjectOptional] IServiceModeProfileProvider serviceModeProfileProvider = null)
+            [InjectOptional] IServiceModeProfileProvider serviceModeProfileProvider = null,
+            [InjectOptional] IMultiplayerStartupBarrier startupBarrier = null,
+            [InjectOptional] ISessionManager networkSession = null)
         {
             _config = Guard.NotNull(config, nameof(config));
             _overlayLoader = Guard.NotNull(overlayLoader, nameof(overlayLoader));
@@ -84,6 +92,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             _graphicsSettingsService = graphicsSettingsService;
             _startupPrewarmService = startupPrewarmService;
             _sceneTransitionService = sceneTransitionService;
+            _startupBarrier = startupBarrier;
+            _networkSession = networkSession;
             _preActivationInitializers = preActivationInitializers != null ? preActivationInitializers.ToArray() : Array.Empty<IScenePreActivationInitializer>();
             _gameplayProfile = serviceModeProfileProvider?.Get(ServiceRuntimeMode.Gameplay) ?? ServiceModeProfileDefaults.Gameplay;
         }
@@ -93,6 +103,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
         /// </summary>
         public async Task RunAsync(CancellationToken ct = default)
         {
+            _originSceneName = SceneManager.GetActiveScene().name;
+            _multiplayerStartup = _session.Mode != NetworkProviderType.Offline ||
+                GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame;
+            if (_multiplayerStartup)
+            {
+                if (_startupBarrier == null || _networkSession == null)
+                    throw new InvalidOperationException("Multiplayer startup synchronization is unavailable.");
+                _startupIsHost = _networkSession.IsLocalPlayerHost;
+                _startupBarrier.BeginStartup();
+            }
             Debug.Log($"{Prefix} Run started. ConfigScene='{_config.gameplaySceneName}', " +
                       $"LaunchContextBefore={DescribeLaunchContext()}, Session={DescribeSession()}");
 
@@ -282,9 +302,43 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
                 ct.ThrowIfCancellationRequested();
                 await Task.Yield();
             }
-            if (_sceneTransitionService != null)
-                await _sceneTransitionService.RevealAsync(ct);
+            try
+            {
+                if (_multiplayerStartup)
+                {
+                    await _startupBarrier.WaitForLocalWorldAsync(ct);
+                    if (!_startupIsHost)
+                        await _startupBarrier.WaitForHostAsync(ct);
+                }
+
+                if (_sceneTransitionService != null)
+                    await _sceneTransitionService.RevealAsync(ct);
+
+                // Clients may finish only after the host has revealed its ready world.
+                if (_multiplayerStartup && _startupIsHost)
+                    _startupBarrier.MarkHostReady();
+            }
+            catch when (_multiplayerStartup)
+            {
+                await ReturnToMenuAfterStartupFailureAsync();
+                throw;
+            }
             Debug.Log($"{Prefix} Scene activation completed. ActiveScene='{SceneManager.GetActiveScene().name}'.");
+        }
+
+        private async Task ReturnToMenuAfterStartupFailureAsync()
+        {
+            // A failed barrier must not expose an unfinished gameplay scene.
+            using var cleanup = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            try { await _networkSession.LeaveSessionAsync(cleanup.Token); }
+            catch (Exception exception) { Debug.LogWarning($"{Prefix} Session cleanup: {exception.Message}"); }
+            GameLaunchContext.Reset();
+            var returnToMenu = SceneManager.LoadSceneAsync(_originSceneName, LoadSceneMode.Single);
+            if (returnToMenu != null)
+                while (!returnToMenu.isDone)
+                    await Task.Yield();
+            if (_sceneTransitionService != null)
+                await _sceneTransitionService.RevealAsync(CancellationToken.None);
         }
 
         /// <summary>Попередньо завантажити ресурси, потрібні на ранній фазі старту gameplay.</summary>

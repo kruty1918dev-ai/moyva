@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
@@ -12,7 +15,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     }
 
     internal sealed class StartingPositionSpawnSetupService
-        : IStartingPositionSpawnSetupService
+        : IStartingPositionSpawnSetupService, IDisposable
     {
         private readonly IStartingPositionSelector _selector;
         private readonly IStartingPositionAssignmentFactory _assignmentFactory;
@@ -20,6 +23,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IStartingPositionState _startingPositionState;
         private readonly SignalBus _signalBus;
         private readonly IWorldGenerationSignalState _worldGenerationSignalState;
+        private CancellationTokenSource _preparation;
+        private WorldGeneratedDataSignal _preparingWorld;
+        private bool _disposed;
 
         public StartingPositionSpawnSetupService(
             IStartingPositionSelector selector,
@@ -39,6 +45,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public bool TryPrepareStartingPositions(WorldGeneratedDataSignal signal)
         {
+            if (_disposed)
+                return false;
             int requestedPlayerCount = _policy.ResolveStartPositionCount();
             Vector2Int baseMapSize = StartingPositionMapUtility.ResolveBaseMapSize(signal);
             bool shouldCompute = _policy.ShouldComputeHostStartPositions();
@@ -51,7 +59,59 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return false;
             }
 
-            List<Vector2Int> startPositions = _selector.PickStartingPositions(signal, requestedPlayerCount);
+            if (_preparation != null)
+            {
+                if (_preparingWorld.StartupSequence == signal.StartupSequence &&
+                    _preparingWorld.StartupSessionId == signal.StartupSessionId)
+                    return false;
+
+                _preparation.Cancel();
+            }
+
+            _preparingWorld = signal;
+            var preparation = new CancellationTokenSource();
+            _preparation = preparation;
+            _ = PrepareAsync(signal, requestedPlayerCount, baseMapSize, preparation);
+            return false;
+        }
+
+        private async Task PrepareAsync(WorldGeneratedDataSignal signal, int requestedPlayerCount,
+            Vector2Int baseMapSize, CancellationTokenSource preparation)
+        {
+            try
+            {
+                var elapsed = System.Diagnostics.Stopwatch.StartNew();
+                List<Vector2Int> startPositions = await _selector.PickStartingPositionsAsync(
+                    signal, requestedPlayerCount, preparation.Token);
+                preparation.Token.ThrowIfCancellationRequested();
+                if (!_policy.ShouldComputeHostStartPositions() || _startingPositionState.IsSet)
+                    return;
+
+                PublishStartingPositions(signal, requestedPlayerCount, baseMapSize, startPositions);
+                Debug.Log($"{StartingPositionInitializer.DebugTag} Host start positions prepared in {elapsed.ElapsedMilliseconds} ms.");
+            }
+            catch (OperationCanceledException) when (preparation.IsCancellationRequested) { }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+            finally
+            {
+                if (ReferenceEquals(_preparation, preparation))
+                    _preparation = null;
+                preparation.Dispose();
+            }
+        }
+
+        public void Dispose()
+        {
+            _disposed = true;
+            _preparation?.Cancel();
+        }
+
+        private void PublishStartingPositions(WorldGeneratedDataSignal signal, int requestedPlayerCount,
+            Vector2Int baseMapSize, List<Vector2Int> startPositions)
+        {
             Vector2Int startPos = startPositions.Count > 0
                 ? startPositions[0]
                 : _selector.PickStartingPosition(baseMapSize);
@@ -91,7 +151,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     _signalBus.Fire(spawnPositionsSignal);
             }
 
-            return true;
         }
     }
 }

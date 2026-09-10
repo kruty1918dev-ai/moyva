@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
     #pragma warning disable CS0649
         [InjectOptional] private ISessionManager _sessionManager;
+        [InjectOptional] private IMultiplayerStartupBarrier _startupBarrier;
     #pragma warning restore CS0649
 
         private bool _suppressNextBroadcast;
@@ -75,6 +76,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         private void OnPeerConnected(string peerId)
         {
+            if (_startupBarrier != null && !_startupBarrier.IsHostReady)
+                return;
             if (string.IsNullOrEmpty(peerId) || !ShouldBroadcastFromThisPeer() || _cachedAssignments == null || _cachedAssignments.Length == 0)
                 return;
             _commandSyncService.SendCommand(GameCommandType.StartingPositions, SerializeAssignments(_cachedAssignments));
@@ -82,6 +85,24 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         private void OnStartingPositionsCommand(string senderId, byte[] payload)
         {
+            if (_sessionManager?.IsLocalPlayerHost == true && payload != null && payload.Length == 0)
+            {
+                // Catch up a client whose world cycle started after the broadcast.
+                // Never replay the previous world's cached positions during a new load.
+                if (_startupBarrier?.IsHostReady != true || _worldGenerationSignalState == null)
+                    return;
+                foreach (var participant in _sessionManager.Participants)
+                {
+                    if (participant?.Identity?.PlayerId != senderId || participant.IsHost)
+                        continue;
+                    if (_worldGenerationSignalState.TryGetWorldSpawnPositions(out var current) && current.Assignments?.Length > 0)
+                        _commandSyncService.SendCommandToPeer(senderId, GameCommandType.StartingPositions,
+                            SerializeAssignments(current.Assignments));
+                    return;
+                }
+                return;
+            }
+
             if (_sessionManager == null
                 || _sessionManager.IsLocalPlayerHost
                 || !MultiplayerAuthorityService.IsAuthorizedHostSender(

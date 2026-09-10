@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Kruty1918.Moyva.Pathfinding.API;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
@@ -12,6 +14,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         List<Vector2Int> PickStartingPositions(
             WorldGeneratedDataSignal signal,
             int positionsCount);
+
+        Task<List<Vector2Int>> PickStartingPositionsAsync(
+            WorldGeneratedDataSignal signal, int positionsCount, CancellationToken cancellationToken);
 
         Vector2Int PickStartingPosition(Vector2Int baseMapSize);
     }
@@ -42,8 +47,38 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             WorldGeneratedDataSignal signal,
             int positionsCount)
         {
-            positionsCount = Mathf.Max(0, positionsCount);
-            var positions = new List<Vector2Int>(positionsCount);
+            var positions = new List<Vector2Int>(Mathf.Max(0, positionsCount));
+            foreach (var step in SelectPositions(signal, positionsCount, positions)) { }
+            return positions;
+        }
+
+        public async Task<List<Vector2Int>> PickStartingPositionsAsync(
+            WorldGeneratedDataSignal signal, int positionsCount, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            // Leave the world-generated signal handler before publishing spawns.
+            await Task.Yield();
+            var positions = new List<Vector2Int>(Mathf.Max(0, positionsCount));
+            var slice = System.Diagnostics.Stopwatch.StartNew();
+            foreach (var step in SelectPositions(signal, positionsCount, positions))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (slice.ElapsedMilliseconds < 4)
+                    continue;
+
+                // Keep Unity, transport updates and Relay keep-alives running.
+                // Selection still runs on Unity's thread; pathfinding is not thread safe.
+                await Task.Yield();
+                cancellationToken.ThrowIfCancellationRequested();
+                slice.Restart();
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            return positions;
+        }
+
+        private IEnumerable<object> SelectPositions(
+            WorldGeneratedDataSignal signal, int positionsCount, List<Vector2Int> positions)
+        {
             int attempts = Mathf.Max(
                 1,
                 _settings.startCandidateAttempts);
@@ -60,51 +95,30 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                  positionIndex < positionsCount;
                  positionIndex++)
             {
-                if (TryPickStartingPosition(
-                        signal,
-                        positions,
-                        attempts,
-                        out Vector2Int position))
+                var result = new SelectionResult();
+                foreach (var step in SelectCandidate(signal, positions, attempts, result))
+                    yield return step;
+                if (result.Found)
                 {
-                    positions.Add(position);
+                    positions.Add(result.Position);
                     continue;
                 }
 
                 // Keep the topology alive, but relax constraints in an explicit
                 // order. Every participant slot goes through the same selector.
-                if (allowBestEffortFallback &&
-                    TryPickBestEffortPosition(
-                        signal,
-                        positions,
-                        requireTerrainQuality: true,
-                        requireValidHeight: true,
-                        out position))
+                if (allowBestEffortFallback)
                 {
-                    positions.Add(position);
-                    continue;
+                    for (int relaxation = 0; relaxation < 3 && !result.Found; relaxation++)
+                    {
+                        foreach (var step in SelectBestEffort(signal, positions,
+                                     relaxation == 0, relaxation < 2, result))
+                            yield return step;
+                    }
                 }
 
-                if (allowBestEffortFallback &&
-                    TryPickBestEffortPosition(
-                        signal,
-                        positions,
-                        requireTerrainQuality: false,
-                        requireValidHeight: true,
-                        out position))
+                if (result.Found)
                 {
-                    positions.Add(position);
-                    continue;
-                }
-
-                if (allowBestEffortFallback &&
-                    TryPickBestEffortPosition(
-                        signal,
-                        positions,
-                        requireTerrainQuality: false,
-                        requireValidHeight: false,
-                        out position))
-                {
-                    positions.Add(position);
+                    positions.Add(result.Position);
                     continue;
                 }
 
@@ -113,11 +127,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     $"#{positionIndex + 1}/{positionsCount}.");
             }
 
-            if (positions.Count > 1)
-            {
-            }
-
-            return positions;
         }
 
         public bool TryPickStartingPosition(
@@ -125,6 +134,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IReadOnlyList<Vector2Int> existingPositions,
             int attempts,
             out Vector2Int position)
+        {
+            var result = new SelectionResult();
+            foreach (var step in SelectCandidate(signal, existingPositions, attempts, result)) { }
+            position = result.Position;
+            return result.Found;
+        }
+
+        private IEnumerable<object> SelectCandidate(
+            WorldGeneratedDataSignal signal, IReadOnlyList<Vector2Int> existingPositions,
+            int attempts, SelectionResult result)
         {
             Vector2Int baseMapSize =
                 StartingPositionMapUtility.ResolveBaseMapSize(signal);
@@ -145,6 +164,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             // sampled set is selected by deterministic utility.
             for (int attempt = 0; attempt < attempts; attempt++)
             {
+                yield return null;
                 Vector2Int candidate =
                     PickStartingPosition(baseMapSize);
 
@@ -207,6 +227,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 {
                     for (int y = 0; y < baseMapSize.y; y++)
                     {
+                        yield return null;
                         var candidate = new Vector2Int(x, y);
 
                         if (!IsInsideStartBounds(
@@ -248,8 +269,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
             }
 
-            position = best;
-            return found;
+            result.Position = best;
+            result.Found = found;
         }
 
         public Vector2Int PickStartingPosition(
@@ -406,6 +427,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool requireValidHeight,
             out Vector2Int position)
         {
+            var result = new SelectionResult();
+            foreach (var step in SelectBestEffort(signal, existingPositions,
+                         requireTerrainQuality, requireValidHeight, result)) { }
+            position = result.Position;
+            return result.Found;
+        }
+
+        private sealed class SelectionResult
+        {
+            public bool Found;
+            public Vector2Int Position;
+        }
+
+        private IEnumerable<object> SelectBestEffort(
+            WorldGeneratedDataSignal signal, IReadOnlyList<Vector2Int> existingPositions,
+            bool requireTerrainQuality, bool requireValidHeight, SelectionResult result)
+        {
             Vector2Int baseMapSize =
                 StartingPositionMapUtility.ResolveBaseMapSize(signal);
 
@@ -417,6 +455,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 for (int y = 0; y < baseMapSize.y; y++)
                 {
+                    yield return null;
                     var candidate = new Vector2Int(x, y);
 
                     if (!IsInsideStartBounds(
@@ -470,8 +509,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
             }
 
-            position = best;
-            return found;
+            result.Position = best;
+            result.Found = found;
         }
 
         private int ScoreInterPlayerSeparation(

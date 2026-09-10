@@ -153,6 +153,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .AsSingle();
             }
 
+            EnsureStartupBarrierBinding(Container);
             if (!Container.HasBinding(typeof(StartingPositionSyncService)))
             {
                 Container.BindInterfacesAndSelfTo<StartingPositionSyncService>()
@@ -216,6 +217,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         .AsSingle();
                 }
 
+                EnsureStartupBarrierBinding(container);
                 if (!container.HasBinding(typeof(StartingPositionSyncService)))
                     container.BindInterfacesAndSelfTo<StartingPositionSyncService>().AsSingle().NonLazy();
             }
@@ -516,6 +518,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .AsSingle();
             }
 
+        }
+
+        private static void EnsureStartupBarrierBinding(DiContainer container)
+        {
+            if (!container.HasBinding<IMultiplayerStartupBarrier>())
+                container.BindInterfacesAndSelfTo<MultiplayerStartupBarrier>().AsSingle().NonLazy();
         }
 
         private static MultiplayerConfig ApplyRiskFeatureToggles(MultiplayerConfig config)

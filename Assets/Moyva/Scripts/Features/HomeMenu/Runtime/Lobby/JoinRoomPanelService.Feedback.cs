@@ -20,6 +20,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     {
         private async Task ReturnToLobbyChooserWithMessageAsync(string joinPanelName, string title, string message, CancellationToken ct)
         {
+            // Cleanup emits Closed too; preserve the original failure and token.
+            _joinState = JoinPipelineState.Failed;
             Debug.LogWarning($"[Multiplayer Join] Provider={GetCurrentProviderType()}, {title}: {message}");
             _passwordPanelService?.Cancel();
 

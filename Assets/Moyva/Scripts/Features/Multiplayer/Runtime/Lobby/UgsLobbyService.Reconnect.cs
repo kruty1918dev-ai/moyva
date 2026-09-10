@@ -67,7 +67,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 }
             };
 
-            _lobby = await LobbyService.Instance.UpdateLobbyAsync(_lobby.Id, update).ConfigureAwait(false);
+            string lobbyId = _lobby.Id;
+            var refreshed = await LobbyService.Instance.UpdateLobbyAsync(lobbyId, update);
+            if (!IsCurrentLobbyOperation(lobbyId, ct))
+                return;
+            _lobby = refreshed;
             _current = Project(_lobby);
         }
 

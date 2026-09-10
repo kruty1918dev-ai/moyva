@@ -121,15 +121,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (state != LobbyState.Started && state != LobbyState.Closed)
                 return;
 
-            _passwordPanelService?.Cancel();
-            _joinCts?.Cancel();
             if (_isJoining)
             {
-                _infoPanelService?.Show(new InfoMessage(
-                    "Room Unavailable",
-                    state == LobbyState.Started
-                        ? "The game has already started. Choose another room."
-                        : "The room is closed. Choose another room."));
+                // Joining may first leave an old lobby or retry with a password.
+                // Those Closed events do not describe the target room. Started
+                // is handled by the join/reconnect pipeline once it has the room.
+                if (_joinState != JoinPipelineState.ConnectingTransport || state != LobbyState.Closed)
+                    return;
+
+                _joinedRoomClosed = true;
+                _joinCts?.Cancel();
+                return;
             }
 
             RefreshRoomList();
