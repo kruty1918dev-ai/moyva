@@ -79,7 +79,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return Result<LobbyRoom>.Fail(DomainErrorCode.Validation, "Join target is invalid.");
 
             var room = await JoinExactTargetAsync(target, password, ct);
-            if (room.IsSuccess || target.Kind != JoinRoomTargetKind.JoinCode)
+            // An alias can resolve a missing room, but cannot repair a rejected
+            // join. Preserve configuration/password/access errors immediately.
+            if (room.IsSuccess || target.Kind != JoinRoomTargetKind.JoinCode ||
+                room.Error.Code != DomainErrorCode.NotFound)
                 return room;
 
             var resolved = await ResolveJoinCodeAliasAsync(target.Value, ct);
