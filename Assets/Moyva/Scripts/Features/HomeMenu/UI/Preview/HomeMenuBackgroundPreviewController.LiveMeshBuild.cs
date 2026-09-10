@@ -70,8 +70,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
                 int objectCount = AddLiveOverlayMeshes(previewData.ObjectMap, previewData, objectMeshCache, tileMeshCache, projection,
                     projectSettings, builder, terrainSurfaceY, tileStride);
-                int buildingCount = AddLiveOverlayMeshes(previewData.BuildingMap, previewData, buildingMeshCache, tileMeshCache, projection,
-                    projectSettings, builder, terrainSurfaceY, tileStride);
+                int buildingCount = _simulationSettings != null && _simulationSettings.enabled ? 0 :
+                    AddLiveOverlayMeshes(previewData.BuildingMap, previewData, buildingMeshCache, tileMeshCache, projection,
+                        projectSettings, builder, terrainSurfaceY, tileStride);
                 int meshObjectCount = builder.Flush();
                 if (meshObjectCount == 0)
                 {

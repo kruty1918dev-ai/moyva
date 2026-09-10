@@ -60,6 +60,23 @@
       "type": "number",
       "title": "Scene Activation Delay"
     },
+    "menuSimulation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "mapSide": { "type": "integer", "minimum": 16, "maximum": 48 },
+        "mobileMapSide": { "type": "integer", "minimum": 16, "maximum": 48 },
+        "textureEdge": { "type": "integer", "minimum": 256, "maximum": 1280 },
+        "mobileTextureEdge": { "type": "integer", "minimum": 256, "maximum": 1280 },
+        "framesPerSecond": { "type": "integer", "minimum": 10, "maximum": 30 },
+        "mobileFramesPerSecond": { "type": "integer", "minimum": 10, "maximum": 30 },
+        "maxUnits": { "type": "integer", "minimum": 2, "maximum": 12 },
+        "turnSeconds": { "type": "number", "minimum": 1, "maximum": 10 },
+        "shotSeconds": { "type": "number", "minimum": 4, "maximum": 15 },
+        "cycleSeconds": { "type": "number", "minimum": 45, "maximum": 180 }
+      }
+    },
     "useUnityHtmlShell": {
       "type": "boolean",
       "title": "Use Unity HTML Shell",

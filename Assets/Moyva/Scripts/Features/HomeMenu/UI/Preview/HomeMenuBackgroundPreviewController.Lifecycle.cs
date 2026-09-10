@@ -60,7 +60,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_targetImage != null && _targetImage.enabled && _targetImage.texture != null)
                 ApplyCoverUv();
 
-            TickClouds(Time.unscaledDeltaTime);
+            TickSimulation(Time.unscaledDeltaTime);
+            if (_simulation == null) TickClouds(Time.unscaledDeltaTime);
         }
 
         private void OnDisable()

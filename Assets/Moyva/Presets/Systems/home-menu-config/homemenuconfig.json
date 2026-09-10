@@ -9,6 +9,19 @@
   "minPreloadSeconds": 0.8,
   "sceneActivationDelay": 0.2,
   "useUnityHtmlShell": true,
+  "menuSimulation": {
+    "enabled": false,
+    "mapSide": 32,
+    "mobileMapSide": 24,
+    "textureEdge": 960,
+    "mobileTextureEdge": 640,
+    "framesPerSecond": 24,
+    "mobileFramesPerSecond": 20,
+    "maxUnits": 8,
+    "turnSeconds": 3.5,
+    "shotSeconds": 7.0,
+    "cycleSeconds": 90.0
+  },
   "migration": {
     "sourceAssetGuid": "a1b2c3d4e5f6e0010000000000000001",
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/HomeMenu/HomeMenuConfig.asset",

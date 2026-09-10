@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         [ContextMenu("Regenerate Menu Preview")]
         public void RegeneratePreview()
         {
+            ResolveSimulationSettings();
             var projectSettings = ResolveProjectSettings();
             bool useLiveMeshPreview = ShouldUseLiveMeshPreview(projectSettings) && !_livePreviewUnavailable;
 
@@ -48,7 +49,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 return;
             }
 
-            if (_kingdomPlacement != null && _kingdomPlacement.Enabled)
+            if (!_simulationSettings.enabled && _kingdomPlacement != null && _kingdomPlacement.Enabled)
             {
                 var placementReport = _kingdomPlacementService != null
                     ? _kingdomPlacementService.Apply(previewData, _kingdomPlacement)
@@ -62,6 +63,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 SetTexturePreviewVisible(true);
                 ApplyCoverUv();
                 _currentSeed = seed;
+                if (_simulationSettings.enabled)
+                    StartSimulation(previewData, tileRegistry, projectSettings);
                 ResetClouds();
                 return;
             }
@@ -136,6 +139,12 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         private Vector2Int ResolveMapSize()
         {
+            if (_simulationSettings != null && _simulationSettings.enabled)
+            {
+                int side = Mathf.Clamp(Application.isMobilePlatform
+                    ? _simulationSettings.mobileMapSide : _simulationSettings.mapSide, 16, 48);
+                return new Vector2Int(side, side);
+            }
             if (_mapTileCount.x > 0 && _mapTileCount.y > 0)
                 return new Vector2Int(_mapTileCount.x, _mapTileCount.y);
 

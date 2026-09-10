@@ -3,7 +3,9 @@
   "references": [
     "Kruty1918.Moyva.Bootstrap",
     "Kruty1918.Moyva.Pathfinding",
-    "Kruty1918.Moyva.Signals"
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.HomeMenu",
+    "Kruty1918.Moyva.Multiplayer"
   ],
   "includePlatforms": ["Editor"],
   "autoReferenced": false,

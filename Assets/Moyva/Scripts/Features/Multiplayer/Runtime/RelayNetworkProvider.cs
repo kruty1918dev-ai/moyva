@@ -148,9 +148,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 await EnsureRelayReadyAsync();
                 _localPeerId = ResolveLocalPeerId(
                     AuthenticationService.Instance.PlayerId);
-                _hostPeerId = _localPeerId;
 
                 await ShutdownTransportAsync();
+                _hostPeerId = _localPeerId;
 
                 var relayService = ResolveRelayServiceInstance();
                 var allocation = await CreateAllocationAsync(
@@ -159,15 +159,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     string.IsNullOrEmpty(_settings.Region) ? null : _settings.Region);
 
                 var allocationId = GetPropertyValue<Guid>(allocation, "AllocationId");
-                var joinCode = await GetJoinCodeAsync(relayService, allocationId);
-                if (!RelayJoinCodeUtility.IsValid(joinCode))
-                    return await FailAndShutdownAsync($"Relay GetJoinCodeAsync returned invalid join code '{joinCode ?? string.Empty}'.");
-
                 var relayServerData = BuildRelayServerData(allocation, RelayConnectionType, isHostAllocation: true);
-                var netSettings = new NetworkSettings();
-                netSettings.WithRelayParameters(ref relayServerData);
-
-                _driver = NetworkDriver.Create(netSettings);
+                _driver = CreateRelayDriver(ref relayServerData);
                 _serverConnections = new NativeList<NetworkConnection>(
                     Math.Max(_settings.MaxConnections, 4), Allocator.Persistent);
 
@@ -178,7 +171,21 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     return await FailAndShutdownAsync("Relay host listen failed.");
 
                 _isHost = true;
+                Application.runInBackground = true;
                 StartPumpLoop(ct);
+                var deadline = DateTime.UtcNow.AddMilliseconds(HandshakeTimeoutMs);
+                while (_driver.GetRelayConnectionStatus() != RelayConnectionStatus.Established)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if (_driver.GetRelayConnectionStatus() == RelayConnectionStatus.AllocationInvalid)
+                        return await FailAndShutdownAsync("Relay host allocation expired or was rejected before binding.");
+                    if (DateTime.UtcNow >= deadline)
+                        return await FailAndShutdownAsync("Relay host binding timeout. Could not reach the Relay server.");
+                    await Task.Delay(50, ct);
+                }
+                var joinCode = await GetJoinCodeAsync(relayService, allocationId);
+                if (!RelayJoinCodeUtility.IsValid(joinCode))
+                    return await FailAndShutdownAsync("Relay returned an invalid join code.");
                 PeerConnected?.Invoke(_localPeerId);
                 return SessionResult.Ok(joinCode);
             }
@@ -210,10 +217,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 var joinAllocation = await JoinAllocationAsync(relayService, normalizedJoinCode);
 
                 var relayServerData = BuildRelayServerData(joinAllocation, RelayConnectionType, isHostAllocation: false);
-                var netSettings = new NetworkSettings();
-                netSettings.WithRelayParameters(ref relayServerData);
-
-                _driver = NetworkDriver.Create(netSettings);
+                _driver = CreateRelayDriver(ref relayServerData);
 
                 if (_driver.Bind(NetworkEndpoint.AnyIpv4) != 0)
                     return await FailAndShutdownAsync("Relay client bind failed.");
@@ -223,12 +227,15 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     return await FailAndShutdownAsync("Relay client connect request failed.");
 
                 _isHost = false;
+                Application.runInBackground = true;
                 StartPumpLoop(ct);
 
                 var deadline = DateTime.UtcNow.AddMilliseconds(HandshakeTimeoutMs);
                 while (!_hostHelloReceived)
                 {
                     if (ct.IsCancellationRequested) return await FailAndShutdownAsync("Join cancelled.");
+                    if (_driver.GetRelayConnectionStatus() == RelayConnectionStatus.AllocationInvalid)
+                        return await FailAndShutdownAsync("Relay allocation expired or was rejected. Ask the host to recreate the room.");
                     if (DateTime.UtcNow > deadline) return await FailAndShutdownAsync("Relay handshake timeout.");
                     await Task.Delay(50, ct);
                 }
@@ -389,14 +396,23 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             return null;
         }
 
+        private static NetworkDriver CreateRelayDriver(ref RelayServerData relayServerData)
+        {
+            var settings = new NetworkSettings();
+            try
+            {
+                settings.WithRelayParameters(ref relayServerData);
+                return NetworkDriver.Create(settings);
+            }
+            finally { settings.Dispose(); }
+        }
+
         private static RelayServerData BuildRelayServerData(object allocation, string connectionType, bool isHostAllocation)
         {
             var endpoints = GetPropertyValue<System.Collections.IEnumerable>(allocation, "ServerEndpoints");
             object selectedEndpoint = null;
-            object firstEndpoint = null;
             foreach (var endpoint in endpoints)
             {
-                firstEndpoint ??= endpoint;
                 var endpointType = GetPropertyValue<string>(endpoint, "ConnectionType");
                 if (string.Equals(endpointType, connectionType, StringComparison.OrdinalIgnoreCase))
                 {
@@ -405,9 +421,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 }
             }
 
-            selectedEndpoint ??= firstEndpoint;
             if (selectedEndpoint == null)
-                throw new InvalidOperationException("Relay allocation does not contain server endpoints.");
+                throw new InvalidOperationException($"Relay allocation does not contain a '{connectionType}' endpoint.");
 
             var host = GetPropertyValue<string>(selectedEndpoint, "Host");
             var port = Convert.ToUInt16(GetPropertyValue<int>(selectedEndpoint, "Port"));
@@ -438,7 +453,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         private void StartPumpLoop(CancellationToken externalCt)
         {
             _transportPump.Start(
-                externalCt,
+                // The connect token owns setup only. The established transport
+                // belongs to the session and stops explicitly on leave/dispose.
+                CancellationToken.None,
                 () => _driver.IsCreated,
                 PumpTransportOnce);
         }

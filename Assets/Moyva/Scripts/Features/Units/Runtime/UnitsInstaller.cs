@@ -14,6 +14,19 @@ namespace Kruty1918.Moyva.Units.Runtime
         [SerializeField] private UnitRegistrySO _unitRegistry;
         [SerializeField] private WorldCreationDefaultsSO _worldDefaults;
 
+        public static void InstallPreviewBindings(DiContainer container, UnitRegistrySO registry)
+        {
+            container.BindInstance(registry);
+            CombatInstaller.Install(container);
+            container.BindInterfacesAndSelfTo<UnitService>().AsSingle();
+            container.Bind<IUnitFactory>().To<UnitFactory>().AsSingle();
+            container.Bind<IUnitClassConfig>().To<UnitClassConfigService>().AsSingle();
+            container.Bind<IUnitGameplayProfileService>().To<UnitGameplayProfileService>().AsSingle();
+            container.Bind<IUnitWorldPositionResolver>().To<UnitWorldPositionResolver>().AsSingle();
+            container.BindInterfacesAndSelfTo<UnitMovementService>().AsSingle();
+            container.BindInterfacesAndSelfTo<UnitCombatService>().AsSingle();
+        }
+
         public override void InstallBindings()
         {
             Container.BindInstance(_unitRegistry).AsSingle();

@@ -120,7 +120,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         view.CreateWorldButton == null || view.CreateWorldButton.interactable);
                     break;
                 case "LobbyPanel":
-                    Header(sb, "LOBBY", "Players and session", showBack);
+                    Header(sb, "LOBBY", view.LobbyDisplayName, showBack);
                     Stat(sb, "Invite", view.InviteCodeText);
                     sb.Append("<view className=\"player-list\">");
                     if (view.LobbyUsers.Count == 0)

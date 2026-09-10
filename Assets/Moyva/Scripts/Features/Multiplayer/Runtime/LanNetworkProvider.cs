@@ -248,7 +248,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 private void StartPumpLoop(CancellationToken externalCt)
                 {
                     _transportPump.Start(
-                        externalCt,
+                        CancellationToken.None,
                         () => _driver.IsCreated,
                         PumpTransportOnce);
                 }

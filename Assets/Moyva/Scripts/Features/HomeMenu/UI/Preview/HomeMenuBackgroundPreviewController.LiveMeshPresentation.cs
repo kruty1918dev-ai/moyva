@@ -245,6 +245,14 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 }
             }
 
+            if (_simulationSettings != null && _simulationSettings.enabled)
+            {
+                int edge = Mathf.Clamp(Application.isMobilePlatform
+                    ? _simulationSettings.mobileTextureEdge : _simulationSettings.textureEdge, 256, 1280);
+                float ratio = Mathf.Min(1f, edge / Mathf.Max(width, height));
+                width *= ratio;
+                height *= ratio;
+            }
             return CalculateLivePreviewTextureSize(
                 Mathf.Max(1, Mathf.RoundToInt(width)),
                 Mathf.Max(1, Mathf.RoundToInt(height)));
@@ -277,6 +285,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         private void DestroyLiveMeshPreview()
         {
+            _simulation?.Dispose();
+            _simulation = null;
             DisposeLivePreviewRenderTexture();
 
             if (_livePreviewRoot != null)

@@ -13,9 +13,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             var code = provider == NetworkProviderType.Lan
                 ? FirstNonEmpty(lobby.LobbyCode, lobby.RelayJoinCode, lobby.LobbyId)
-                : FirstNonEmpty(lobby.LobbyCode, lobby.LobbyId, lobby.RelayJoinCode);
+                : FirstNonEmpty(lobby.LobbyCode);
 
-            return new LobbyInviteCodePresentation(GetLabel(provider), code);
+            return new LobbyInviteCodePresentation(GetLabel(provider), code, lobby.Name);
         }
 
         private static string GetLabel(NetworkProviderType provider)

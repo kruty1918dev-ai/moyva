@@ -81,6 +81,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public string CreateRoomSectionTitle { get; private set; } = "Room Settings";
         public string CreateRoomNextText { get; private set; } = "NEXT";
         public string InviteCodeText { get; private set; } = "Invite Code: N/A";
+        public string LobbyDisplayName { get; private set; } = "Lobby";
         public string KickStatus { get; private set; } = string.Empty;
         public bool KickInteractable { get; private set; } = true;
         public bool SettingsInteractable { get; private set; } = true;
@@ -388,12 +389,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetInviteCode(LobbyInviteCodePresentation presentation)
         {
             InviteCodeText = presentation.DisplayText;
+            if (!string.IsNullOrWhiteSpace(presentation.RoomName))
+                LobbyDisplayName = presentation.RoomName;
             _state.MarkDirty();
         }
 
         public void ClearLobbyInvateCode()
         {
             InviteCodeText = "Invite Code: N/A";
+            LobbyDisplayName = "Lobby";
             _state.MarkDirty();
         }
 
