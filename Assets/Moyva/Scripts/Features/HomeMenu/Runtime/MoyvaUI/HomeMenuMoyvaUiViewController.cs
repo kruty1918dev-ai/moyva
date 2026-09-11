@@ -49,10 +49,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private int _overlayLockCount;
 
         public HomeMenuMoyvaUiViewController(HomeMenuMoyvaUiState state,
-            [Zenject.InjectOptional] Kruty1918.Moyva.UIActions.API.IUiHotkeyService hotkeys = null)
+            [Zenject.InjectOptional] Kruty1918.Moyva.UIActions.API.IUiHotkeyService hotkeys = null,
+            [Zenject.InjectOptional] IPlayerControlSettingsService controlSettings = null,
+            [Zenject.InjectOptional] IInputDeviceContext devices = null)
         {
             _state = state;
-            Controls = new HomeMenuControlsEditor(state, this, hotkeys);
+            Controls = new HomeMenuControlsEditor(state, this, hotkeys, controlSettings, devices);
             _createRoomNextButton = CreateHiddenButton("MoyvaUI_CreateRoom_Next");
             _worldCreateButton = CreateHiddenButton("MoyvaUI_World_Create");
             _lobbyStartButton = CreateHiddenButton("MoyvaUI_Lobby_Start");

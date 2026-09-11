@@ -1,0 +1,208 @@
+{
+  "Profiles": [
+    {
+      "Profile": 1,
+      "Sensitivity": 1,
+      "Deadzone": 0.2,
+      "EdgePan": true,
+      "Gestures": true,
+      "PanBinding": "<Mouse>/middleButton",
+      "OrbitBinding": "Alt+<Mouse>/middleButton",
+      "Bindings": [
+        {
+          "Action": 0,
+          "Path": "<Keyboard>/w"
+        },
+        {
+          "Action": 1,
+          "Path": "<Keyboard>/s"
+        },
+        {
+          "Action": 2,
+          "Path": "<Keyboard>/a"
+        },
+        {
+          "Action": 3,
+          "Path": "<Keyboard>/d"
+        },
+        {
+          "Action": 4,
+          "Path": "<Keyboard>/q"
+        },
+        {
+          "Action": 5,
+          "Path": "<Keyboard>/e"
+        },
+        {
+          "Action": 6,
+          "Path": "<Keyboard>/equals"
+        },
+        {
+          "Action": 7,
+          "Path": "<Keyboard>/minus"
+        },
+        {
+          "Action": 8,
+          "Path": "<Mouse>/leftButton"
+        },
+        {
+          "Action": 9,
+          "Path": "<Mouse>/rightButton"
+        }
+      ]
+    },
+    {
+      "Profile": 2,
+      "Sensitivity": 1,
+      "Deadzone": 0.2,
+      "EdgePan": false,
+      "Gestures": true,
+      "PanBinding": "<Touchpad>/spaceDrag",
+      "OrbitBinding": "Alt+<Touchpad>/spaceDrag",
+      "Bindings": [
+        {
+          "Action": 0,
+          "Path": "<Keyboard>/w"
+        },
+        {
+          "Action": 1,
+          "Path": "<Keyboard>/s"
+        },
+        {
+          "Action": 2,
+          "Path": "<Keyboard>/a"
+        },
+        {
+          "Action": 3,
+          "Path": "<Keyboard>/d"
+        },
+        {
+          "Action": 4,
+          "Path": "<Keyboard>/q"
+        },
+        {
+          "Action": 5,
+          "Path": "<Keyboard>/e"
+        },
+        {
+          "Action": 6,
+          "Path": "<Keyboard>/equals"
+        },
+        {
+          "Action": 7,
+          "Path": "<Keyboard>/minus"
+        },
+        {
+          "Action": 8,
+          "Path": "<Mouse>/leftButton"
+        },
+        {
+          "Action": 9,
+          "Path": "<Mouse>/rightButton"
+        }
+      ]
+    },
+    {
+      "Profile": 3,
+      "Sensitivity": 1,
+      "Deadzone": 0.2,
+      "EdgePan": false,
+      "Gestures": true,
+      "PanBinding": "<Mouse>/middleButton",
+      "OrbitBinding": "Alt+<Mouse>/middleButton",
+      "Bindings": [
+        {
+          "Action": 0,
+          "Path": "<Gamepad>/leftStick/up"
+        },
+        {
+          "Action": 1,
+          "Path": "<Gamepad>/leftStick/down"
+        },
+        {
+          "Action": 2,
+          "Path": "<Gamepad>/leftStick/left"
+        },
+        {
+          "Action": 3,
+          "Path": "<Gamepad>/leftStick/right"
+        },
+        {
+          "Action": 4,
+          "Path": "<Gamepad>/rightStick/left"
+        },
+        {
+          "Action": 5,
+          "Path": "<Gamepad>/rightStick/right"
+        },
+        {
+          "Action": 6,
+          "Path": "<Gamepad>/rightTrigger"
+        },
+        {
+          "Action": 7,
+          "Path": "<Gamepad>/leftTrigger"
+        },
+        {
+          "Action": 8,
+          "Path": "<Gamepad>/buttonSouth"
+        },
+        {
+          "Action": 9,
+          "Path": "<Gamepad>/buttonEast"
+        }
+      ]
+    },
+    {
+      "Profile": 4,
+      "Sensitivity": 1,
+      "Deadzone": 0.2,
+      "EdgePan": false,
+      "Gestures": true,
+      "PanBinding": "<Touch>/drag",
+      "OrbitBinding": "<Touch>/twist",
+      "Bindings": [
+        {
+          "Action": 0,
+          "Path": "<Keyboard>/w"
+        },
+        {
+          "Action": 1,
+          "Path": "<Keyboard>/s"
+        },
+        {
+          "Action": 2,
+          "Path": "<Keyboard>/a"
+        },
+        {
+          "Action": 3,
+          "Path": "<Keyboard>/d"
+        },
+        {
+          "Action": 4,
+          "Path": "<Keyboard>/q"
+        },
+        {
+          "Action": 5,
+          "Path": "<Keyboard>/e"
+        },
+        {
+          "Action": 6,
+          "Path": "<Touch>/pinchOut"
+        },
+        {
+          "Action": 7,
+          "Path": "<Touch>/pinchIn"
+        },
+        {
+          "Action": 8,
+          "Path": "<Touch>/tap"
+        },
+        {
+          "Action": 9,
+          "Path": "<Touch>/longPress"
+        }
+      ]
+    }
+  ]
+}

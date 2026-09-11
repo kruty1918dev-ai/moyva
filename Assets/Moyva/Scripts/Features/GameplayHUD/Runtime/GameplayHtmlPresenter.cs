@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.Shared.Controls;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -51,6 +52,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly ITurnService _turns;
         private readonly IUiContextStack _contexts;
         private readonly GameplayHtmlAnchor[] _anchors;
+        private bool _controlHintsDirty = true;
+        private ControlProfile _hintProfile;
+        private void OnControlSettingsChanged(PlayerControlSettingsData _) => _controlHintsDirty = true;
+        private readonly IInputDeviceContext _inputDevices;
+        private readonly IPlayerControlSettingsService _controlSettings;
         private readonly LazyInject<IUiActionRouter> _actions;
         private readonly IConstructionSessionCommands _construction;
         private readonly IConstructionBootstrapQuery _bootstrap;
@@ -90,8 +96,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] ICombatRemoteCommandRequester remoteCombat = null,
             [InjectOptional] ISettlementCaptureRemoteCommandRequester remoteSettlementCapture = null,
             [InjectOptional] IGameResultStateStore gameResult = null,
-            [InjectOptional] ITurnRemoteCommandRequester remoteTurns = null)
+            [InjectOptional] ITurnRemoteCommandRequester remoteTurns = null,
+            [InjectOptional] IInputDeviceContext inputDevices = null,
+            [InjectOptional] IPlayerControlSettingsService controlSettings = null)
         {
+            _inputDevices = inputDevices; _controlSettings = controlSettings;
+            if (_controlSettings != null) _controlSettings.OnSettingsChanged += OnControlSettingsChanged;
             _signals = signals;
             _host = host;
             _state = state;
@@ -175,6 +185,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void Tick()
         {
+            var profile = _inputDevices?.ActiveProfile ?? ControlProfile.KeyboardMouse;
+            if (_controlHintsDirty || _hintProfile != profile)
+            {
+                _controlHintsDirty = false; _hintProfile = profile;
+                var options = _controlSettings?.Settings.Profile(profile);
+                _state.ControlHints = ControlPromptText.Camera(profile, options);
+                _state.GamepadAim = profile == ControlProfile.Gamepad;
+                _state.MarkDirty();
+            }
             if (_anchor == null)
                 return;
 
@@ -202,6 +221,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void Dispose()
         {
+            if (_controlSettings != null) _controlSettings.OnSettingsChanged -= OnControlSettingsChanged;
             _state.Changed -= MarkDirty;
             GameplayNotificationStream.Published -= OnNotificationPublished;
             if (_turns != null)

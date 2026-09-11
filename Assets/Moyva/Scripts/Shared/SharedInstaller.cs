@@ -42,6 +42,8 @@ namespace Kruty1918.Moyva.Shared
                 .AsSingle()
                 .NonLazy();
 
+            container.BindInterfacesAndSelfTo<InputDeviceContext>().AsSingle();
+
             container.BindInterfacesAndSelfTo<PlayerControlSettingsService>()
                 .AsSingle()
                 .NonLazy();

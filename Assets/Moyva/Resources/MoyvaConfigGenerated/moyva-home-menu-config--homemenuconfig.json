@@ -10,7 +10,7 @@
   "sceneActivationDelay": 0.2,
   "useUnityHtmlShell": true,
   "menuSimulation": {
-    "enabled": true,
+    "enabled": false,
     "mapSide": 32,
     "mobileMapSide": 24,
     "textureEdge": 960,

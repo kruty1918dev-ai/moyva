@@ -1,5 +1,6 @@
 using System;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace Kruty1918.Moyva.Shared.Controls
 {
@@ -12,7 +13,7 @@ namespace Kruty1918.Moyva.Shared.Controls
         Alt = 4
     }
 
-    /// <summary>A keyboard key with an exact set of modifiers; persisted as Ctrl+Shift+Alt+&lt;Keyboard&gt;/key.</summary>
+    /// <summary>An allow-listed device control or gesture with exact keyboard modifiers.</summary>
     public readonly struct PlayerControlBinding
     {
         private const string KeyboardPrefix = "<Keyboard>/";
@@ -36,6 +37,44 @@ namespace Kruty1918.Moyva.Shared.Controls
             ControlPath = KeyboardPrefix + controlName;
             CanonicalPath = ModifierPrefix(modifiers, "+") + ControlPath;
             DisplayName = ModifierPrefix(modifiers, " + ") + KeyLabel(key, controlName);
+        }
+
+        private PlayerControlBinding(string path, PlayerControlModifiers modifiers)
+        {
+            Key = Key.None; Modifiers = modifiers; ControlPath = path;
+            CanonicalPath = ModifierPrefix(modifiers, "+") + path;
+            DisplayName = ModifierPrefix(modifiers, " + ") + path.Replace("<", "").Replace(">/", " · ");
+        }
+
+        // Stable allow-list, including synthetic gestures evaluated by the camera adapter.
+        public static readonly string[] DevicePaths = {
+            "<Mouse>/leftButton", "<Mouse>/rightButton", "<Mouse>/middleButton",
+            "<Mouse>/forwardButton", "<Mouse>/backButton", "<Mouse>/scroll/up", "<Mouse>/scroll/down",
+            "<Gamepad>/start", "<Gamepad>/select", "<Gamepad>/leftStickPress", "<Gamepad>/rightStickPress",
+            "<Gamepad>/buttonSouth", "<Gamepad>/buttonNorth", "<Gamepad>/buttonEast", "<Gamepad>/buttonWest",
+            "<Gamepad>/leftShoulder", "<Gamepad>/rightShoulder", "<Gamepad>/leftTrigger", "<Gamepad>/rightTrigger",
+            "<Gamepad>/leftStick/up", "<Gamepad>/leftStick/down", "<Gamepad>/leftStick/left", "<Gamepad>/leftStick/right",
+            "<Gamepad>/rightStick/up", "<Gamepad>/rightStick/down", "<Gamepad>/rightStick/left", "<Gamepad>/rightStick/right",
+            "<Gamepad>/dpad/up", "<Gamepad>/dpad/down", "<Gamepad>/dpad/left", "<Gamepad>/dpad/right",
+            "<Touchpad>/spaceDrag", "<Touchpad>/scroll/up", "<Touchpad>/scroll/down",
+            "<Touch>/tap", "<Touch>/longPress", "<Touch>/drag", "<Touch>/pinchIn", "<Touch>/pinchOut", "<Touch>/twist"
+        };
+
+        public float ReadValue(float deadzone = 0.2f)
+        {
+            if (Key != Key.None) return IsPressed(Keyboard.current) ? 1f : 0f;
+            if (ReadModifiers(Keyboard.current) != Modifiers) return 0f;
+            string path = ControlPath;
+            if (path == "<Touchpad>/spaceDrag") return Keyboard.current?.spaceKey.isPressed == true ? 1f : 0f;
+            if (path?.StartsWith("<Touchpad>/scroll/", StringComparison.Ordinal) == true)
+                path = path.Replace("<Touchpad>", "<Mouse>");
+            if (path == null || path.StartsWith("<Touch>", StringComparison.Ordinal)) return 0f;
+            float value = 0f;
+            using var controls = InputSystem.FindControls(path);
+            foreach (var control in controls)
+                if (control is AxisControl axis) value = UnityEngine.Mathf.Max(value, axis.ReadValue());
+            if (path.Contains("scroll/")) return value / 120f;
+            return value <= deadzone ? 0f : UnityEngine.Mathf.Clamp01((value - deadzone) / (1f - deadzone));
         }
 
         public static bool TryParse(string value, out PlayerControlBinding binding)
@@ -64,6 +103,9 @@ namespace Kruty1918.Moyva.Shared.Controls
             }
 
             string path = parts[parts.Length - 1].Trim();
+            foreach (var devicePath in DevicePaths)
+                if (string.Equals(path, devicePath, StringComparison.OrdinalIgnoreCase))
+                { binding = new PlayerControlBinding(devicePath, modifiers); return true; }
             if (!path.StartsWith(KeyboardPrefix, StringComparison.OrdinalIgnoreCase))
                 return false;
 
@@ -89,18 +131,26 @@ namespace Kruty1918.Moyva.Shared.Controls
             return true;
         }
 
+        public static bool Conflicts(string first, string second)
+        {
+            if (!TryParse(first, out var a) || !TryParse(second, out var b) || a.Modifiers != b.Modifiers) return false;
+            string Physical(string path) => path.Replace("<Touchpad>/spaceDrag", "<Keyboard>/space").Replace("<Touchpad>/scroll/", "<Mouse>/scroll/");
+            return string.Equals(Physical(a.ControlPath), Physical(b.ControlPath), StringComparison.OrdinalIgnoreCase);
+        }
+
         public static string CreatePath(string keyNameOrControlPath, PlayerControlModifiers modifiers)
         {
             if (string.IsNullOrWhiteSpace(keyNameOrControlPath) || (modifiers & ~AllModifiers) != 0)
                 return string.Empty;
 
             string path = keyNameOrControlPath.Trim();
-            if (!path.StartsWith(KeyboardPrefix, StringComparison.OrdinalIgnoreCase))
+            if (!path.StartsWith("<", StringComparison.Ordinal))
                 path = KeyboardPrefix + path;
             if (!TryParse(path, out var binding) || binding.Modifiers != PlayerControlModifiers.None)
                 return string.Empty;
 
-            return new PlayerControlBinding(binding.Key, modifiers).CanonicalPath;
+            return binding.Key == Key.None ? new PlayerControlBinding(binding.ControlPath, modifiers).CanonicalPath
+                : new PlayerControlBinding(binding.Key, modifiers).CanonicalPath;
         }
 
         public static bool IsModifierKey(Key key)

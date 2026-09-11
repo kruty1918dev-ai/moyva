@@ -1,0 +1,6 @@
+{
+  "name": "Kruty1918.Moyva.Shared.Controls.Tests",
+  "references": ["Kruty1918.Moyva.Shared", "Unity.InputSystem", "Zenject"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

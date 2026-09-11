@@ -220,6 +220,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 OnConfirm = () => { _view?.ResetControls(); _view?.Controls.ResetSelection(); }
             });
         }
+        public void SelectControlDevice(int tab) => _view?.Controls.SelectDevice(tab);
+        public void ControlProfileSelection(object profile) => _view?.Controls.SelectProfile(ToInt(profile, 0));
+        public void SelectControlProfile(int profile) => _view?.Controls.SelectProfile(profile);
+        public void SelectControlPointerMode(int mode) => _view?.Controls.SelectPointerMode(mode);
+        public void TestControls() => _view?.Controls.ToggleTest();
+        public void ResetControlProfile() => _view?.Controls.ResetProfile();
+        public void ControlOption(int option, float value) => _view?.Controls.ChangeOption(option, value);
+        public void SelectControlGesture(int slot) => _view?.Controls.SelectGestureSlot(slot);
         public void SelectControlKey(string key) => _view?.Controls.SelectKey(key);
         public void ToggleControlModifier(int modifier) => _view?.Controls.ToggleModifier(modifier);
         public void EditControlAction(int action) => _view?.Controls.SelectAction(action, true);

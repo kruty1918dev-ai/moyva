@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.InputRouting.API;
@@ -8,7 +9,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Interactions.Runtime
 {
-    internal sealed class TileClickInputService : ITickable
+    internal sealed class TileClickInputService : ITickable, System.IDisposable
     {
         private const float TouchTapMaxMovePixels = 18f;
         private const float TouchTapMaxDurationSeconds = 0.45f;
@@ -17,6 +18,15 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly IGridProjection _gridProjection;
         private readonly IWorldPointerGridResolver _pointerGridResolver;
         private readonly IGameplayInputPolicy _inputPolicy;
+        private readonly IPlayerControlSettingsService _controls;
+        private readonly IInputDeviceContext _devices;
+        private bool _primaryHeld;
+        private bool _secondaryHeld;
+        private bool _bindingsDirty = true;
+        private ControlProfile _bindingProfile;
+        private System.Collections.Generic.Dictionary<PlayerControlAction, string> _bindings;
+        private void OnSettingsChanged(PlayerControlSettingsData _) => _bindingsDirty = true;
+        public void Dispose() { if (_controls != null) _controls.OnSettingsChanged -= OnSettingsChanged; }
 
         private int _trackedTouchId = -1;
         private Vector2 _touchStartScreenPosition;
@@ -30,12 +40,16 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             SignalBus signalBus,
             [InjectOptional] IGridProjection gridProjection = null,
             [InjectOptional] IWorldPointerGridResolver pointerGridResolver = null,
-            [InjectOptional] IGameplayInputPolicy inputPolicy = null)
+            [InjectOptional] IGameplayInputPolicy inputPolicy = null,
+            [InjectOptional] IPlayerControlSettingsService controls = null,
+            [InjectOptional] IInputDeviceContext devices = null)
         {
             _signalBus = signalBus;
             _gridProjection = gridProjection;
             _pointerGridResolver = pointerGridResolver;
             _inputPolicy = inputPolicy;
+            _controls = controls; _devices = devices;
+            if (_controls != null) _controls.OnSettingsChanged += OnSettingsChanged;
         }
 
         public void Tick()
@@ -44,14 +58,27 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 return;
 
             var mouse = Mouse.current;
-            if (mouse == null)
-                return;
-
-            Vector2 screenPos = mouse.position.ReadValue();
-            if (mouse.leftButton.wasPressedThisFrame)
-                TryFireMouseTileClick(screenPos, TilePointerButton.Primary);
-            else if (mouse.rightButton.wasPressedThisFrame)
-                TryFireMouseTileClick(screenPos, TilePointerButton.Secondary);
+            var profile = _devices?.ActiveProfile ?? ControlProfile.KeyboardMouse;
+            Vector2 screenPos = profile == ControlProfile.Gamepad
+                ? new Vector2(Screen.width * 0.5f, Screen.height * 0.5f)
+                : mouse?.position.ReadValue() ?? Vector2.zero;
+            if (_bindingsDirty || profile != _bindingProfile)
+            {
+                _bindings = _controls?.Settings.Profile(profile)?.ToBindings();
+                _bindingsDirty = false; _bindingProfile = profile;
+            }
+            var bindings = _bindings;
+            bool Pressed(PlayerControlAction action, bool fallback)
+                => bindings != null && bindings.TryGetValue(action, out var path) && PlayerControlBinding.TryParse(path, out var binding)
+                    ? binding.ReadValue() > 0.5f : fallback;
+            bool primary = Pressed(PlayerControlAction.PrimarySelect, mouse?.leftButton.isPressed == true);
+            bool secondary = Pressed(PlayerControlAction.SecondarySelect, mouse?.rightButton.isPressed == true);
+            if (Application.isFocused && (_inputPolicy?.CanProcess(GameplayInputKind.KeyboardNavigation, screenPos) ?? true))
+            {
+                if (primary && !_primaryHeld) TryFireMouseTileClick(screenPos, TilePointerButton.Primary);
+                else if (secondary && !_secondaryHeld) TryFireMouseTileClick(screenPos, TilePointerButton.Secondary);
+            }
+            _primaryHeld = primary; _secondaryHeld = secondary;
         }
 
         private bool HandleTouchInput()
@@ -116,16 +143,18 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         private void CompleteTouchTracking(Vector2 releaseScreenPosition)
         {
-            bool isTap = !_touchStartedOverUi
-                && !_touchMovedBeyondTap
-                && !_multiTouchObserved
-                && Time.unscaledTime - _touchStartTime <= TouchTapMaxDurationSeconds;
-
-            if (isTap)
+            bool stationary = !_touchStartedOverUi && !_touchMovedBeyondTap && !_multiTouchObserved;
+            if (stationary)
             {
-                var cam = ResolveCamera();
-                if (cam != null)
-                    FireTileClick(releaseScreenPosition, cam, TilePointerButton.Primary);
+                string gesture = Time.unscaledTime - _touchStartTime <= TouchTapMaxDurationSeconds ? "<Touch>/tap" : "<Touch>/longPress";
+                var bindings = _controls?.Settings.Profile(ControlProfile.TouchPhone)?.ToBindings();
+                TilePointerButton? button = bindings == null ? (gesture == "<Touch>/tap" ? TilePointerButton.Primary : (TilePointerButton?)null) : null;
+                if (bindings != null)
+                {
+                    if (bindings.TryGetValue(PlayerControlAction.PrimarySelect, out var primary) && primary == gesture) button = TilePointerButton.Primary;
+                    else if (bindings.TryGetValue(PlayerControlAction.SecondarySelect, out var secondary) && secondary == gesture) button = TilePointerButton.Secondary;
+                }
+                if (button.HasValue) TryFireMouseTileClick(releaseScreenPosition, button.Value);
             }
 
             ResetTouchTracking();

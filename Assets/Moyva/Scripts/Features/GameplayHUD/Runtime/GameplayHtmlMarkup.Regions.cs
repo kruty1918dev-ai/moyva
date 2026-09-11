@@ -28,6 +28,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!string.IsNullOrWhiteSpace(state.Feedback) && !snapshot.RequiresFirstCastle)
                 html.Append("<text id=\"gameplay-toast\" className=\"toast\" data-motion=\"slide-up\" data-motion-duration=\"0.14\">")
                     .Append(E(state.Feedback)).Append("</text>");
+            html.Append("<view className=\"control-prompts\" style=\"position:absolute;bottom:82px;left:25%;width:50%;height:26px;align-items:center;\"><text style=\"font-size:12px;color:#e9eee7;\">")
+                .Append(E(state.ControlHints)).Append("</text></view>");
+            if (state.GamepadAim)
+                html.Append("<view style=\"position:absolute;left:50%;top:50%;width:12px;height:12px;\"><text style=\"color:#ffffff;font-size:18px;\">+</text></view>");
             regions[FeedbackRegion] = html.ToString();
             html.Clear();
             if (state.OpenPanelId == GameplayHtmlPanel.Kingdom)

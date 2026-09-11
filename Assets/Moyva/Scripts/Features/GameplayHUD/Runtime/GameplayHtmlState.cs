@@ -36,6 +36,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     internal sealed class GameplayHtmlState
     {
         public event Action Changed;
+        public bool GamepadAim { get; set; }
+        public string ControlHints { get; set; } = string.Empty;
 
         public GameplayHtmlPanel OpenPanelId { get; private set; }
         public KingdomDashboardTab DashboardTab { get; private set; }

@@ -181,6 +181,38 @@
 .vp-tiny.controls-page .keycap-label, .vp-portrait.controls-page .keycap-label { font-size: 8px; }
 .vp-tiny.controls-page .keyboard-key, .vp-portrait.controls-page .keyboard-key { height: 36px; }
 
+
+.adaptive-workspace { flex-direction: row; align-items: flex-start; }
+.adaptive-workspace .keyboard-panel { flex-grow: 1; flex-shrink: 1; min-width: 0; padding: 12px; }
+.adaptive-workspace .key-inspector { width: 230px; flex-shrink: 0; padding: 12px; }
+.adaptive-workspace .keyboard-row { flex-direction: row; }
+.adaptive-workspace .keyboard-key { min-width: 0; height: 38px; margin: 2px; padding: 2px; }
+.adaptive-workspace .keycap-label { font-size: 12px; }
+.device-toolbar { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; margin: 4px 0; }
+.device-toolbar text { font-size: 12px; margin: 3px; }
+.device-choice, .device-control { width: auto; min-height: 30px; margin: 3px; padding: 5px 9px; border-radius: 7px; background-color: #293433; color: #e9eee7; }
+.device-choice text, .device-control text { font-size: 12px; }
+.device-choice.active, .device-control.selected { background-color: #52664b; }
+.device-diagram { display: flex; flex-direction: column; align-self: center; align-items: center; padding: 12px; margin: 8px; background-color: #192624; border-width: 2px; border-color: #66796c; }
+.device-diagram text { color: #e9eee7; font-size: 12px; }
+.desktop-device-row { display: flex; flex-direction: row; align-items: center; width: 100%; }
+.desktop-device-row .keyboard-board { flex-grow: 1; flex-shrink: 1; flex-basis: 0; min-width: 0; }
+.mouse-diagram { width: 145px; height: 190px; flex-shrink: 0; border-radius: 65px 65px 45px 45px; }
+.mouse-diagram .device-control { padding: 4px 7px; margin: 2px; }
+.device-toolbar .device-profile-select { width: 195px; height: 32px; margin: 3px 12px 3px 3px; }
+.phone-diagram { min-height: 365px; }
+.touchpad-diagram { width: 380px; border-radius: 14px; }
+.gamepad-diagram { width: 430px; border-radius: 65px 65px 90px 90px; }
+.gamepad-diagram .device-toolbar { margin: 2px 0; }
+.controller-stick .device-control { min-height: 22px; padding: 2px 8px; margin: 1px; }
+.controller-stick text { font-size: 11px; }
+.controller-stick, .controller-face { align-items: center; margin: 0 15px; }
+.controller-stick { border-radius: 50px; background-color: #293433; padding: 5px; }
+.phone-diagram { width: 235px; border-radius: 24px; padding: 16px; }
+.phone-speaker { width: 55px; height: 5px; border-radius: 5px; background-color: #66796c; margin-bottom: 14px; }
+.control-live { background-color: #96b95b; color: #10221b; }
+.control-conflict { background-color: #8c4343; border-color: #ffb8a0; border-width: 2px; }
+
 .moyva-ui-app,
 .home-menu-shell {
   position: relative;
