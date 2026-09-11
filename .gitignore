@@ -163,3 +163,6 @@ __pycache__/
 /CAPTURE_RUNTIME_AUDIT.sh
 /tools/p24d-ready-indicators/
 # END MOYVA GENERATED DOCS / LEGACY TOOLING HYGIENE
+
+# Unity/IDE generated solution metadata
+/moyva.slnx
