@@ -7,8 +7,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     /// Конфігурація сцен і часових затримок для старту гри з домашнього меню.
     /// Залежності: використовується HomeMenuGameStarter та startup pipeline.
     /// </summary>
-[System.Serializable]
-public sealed class HomeMenuConfigSO : MoyvaJsonConfigObject
+    [System.Serializable]
+    public sealed class HomeMenuConfigSO : MoyvaJsonConfigObject
     {
         /// <summary>Назва gameplay-сцени.</summary>
         public string gameplaySceneName = "Gamplay_Scene";
@@ -31,16 +31,19 @@ public sealed class HomeMenuConfigSO : MoyvaJsonConfigObject
     [System.Serializable]
     public sealed class MenuSimulationSettings
     {
-        public bool enabled = false;
-        public int mapSide = 32;
+        // The menu preview is a lightweight, isolated gameplay vignette.
+        // It uses real generated terrain plus the real construction/unit/combat services,
+        // but owns its own DI scope and never mutates a live game/session/save.
+        public bool enabled = true;
+        public int mapSide = 36;
         public int mobileMapSide = 24;
         public int textureEdge = 960;
         public int mobileTextureEdge = 640;
         public int framesPerSecond = 24;
-        public int mobileFramesPerSecond = 20;
-        public int maxUnits = 8;
-        public float turnSeconds = 3.5f;
-        public float shotSeconds = 7f;
-        public float cycleSeconds = 90f;
+        public int mobileFramesPerSecond = 18;
+        public int maxUnits = 10;
+        public float turnSeconds = 2.4f;
+        public float shotSeconds = 5.5f;
+        public float cycleSeconds = 105f;
     }
 }
