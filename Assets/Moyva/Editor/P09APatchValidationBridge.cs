@@ -42,7 +42,7 @@ namespace Kruty1918.Moyva.EditorTools
                 return;
 
             Debug.Log(
-                $"[MOYVA_P09A][EDITOR] request detected; " +
+                "[MOYVA_P09A][EDITOR] request detected; " +
                 $"playing={EditorApplication.isPlaying}; " +
                 $"changing={EditorApplication.isPlayingOrWillChangePlaymode}; " +
                 $"compiling={EditorApplication.isCompiling}; " +

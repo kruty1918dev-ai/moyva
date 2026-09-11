@@ -115,23 +115,23 @@ namespace Kruty1918.Moyva.WorldCreation.Runtime
         {
             return new WorldCreationConfigData
             {
-                WorldName          = config.WorldName,
-                Seed               = config.Seed != 0 ? config.Seed : GenerateRandomSeed(),
-                SizePresetIndex    = (int)config.SizePreset,
-                CustomWidth        = config.CustomWidth,
-                CustomHeight       = config.CustomHeight,
+                WorldName = config.WorldName,
+                Seed = config.Seed != 0 ? config.Seed : GenerateRandomSeed(),
+                SizePresetIndex = (int)config.SizePreset,
+                CustomWidth = config.CustomWidth,
+                CustomHeight = config.CustomHeight,
                 MapTypePresetIndex = (int)config.MapType,
-                DifficultyIndex    = (int)config.Difficulty,
-                PlayerCount        = config.PlayerCount,
-                StartingGold       = config.StartingGold,
-                StartingFood       = config.StartingFood,
-                ForestDensity      = config.ForestDensity,
-                MountainDensity    = config.MountainDensity,
-                WaterDensity       = config.WaterDensity,
-                VillageDensity     = config.VillageDensity,
-                GenerateRivers     = config.GenerateRivers,
-                GenerateBiomes     = config.GenerateBiomes,
-                ApplyWFC           = config.ApplyWFC
+                DifficultyIndex = (int)config.Difficulty,
+                PlayerCount = config.PlayerCount,
+                StartingGold = config.StartingGold,
+                StartingFood = config.StartingFood,
+                ForestDensity = config.ForestDensity,
+                MountainDensity = config.MountainDensity,
+                WaterDensity = config.WaterDensity,
+                VillageDensity = config.VillageDensity,
+                GenerateRivers = config.GenerateRivers,
+                GenerateBiomes = config.GenerateBiomes,
+                ApplyWFC = config.ApplyWFC
             };
         }
     }

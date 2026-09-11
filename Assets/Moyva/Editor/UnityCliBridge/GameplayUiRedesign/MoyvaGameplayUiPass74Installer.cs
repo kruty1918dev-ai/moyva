@@ -179,8 +179,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
                 iconRect.pivot = new Vector2(0f, 0.5f);
                 iconRect.anchoredPosition = new Vector2(12f, 0f);
                 iconRect.sizeDelta = new Vector2(24f, 24f);
-                Image iconImage = icon.GetComponent<Image>();
-                if (iconImage != null) iconImage.raycastTarget = false;
+                if (icon.TryGetComponent<Image>(out var iconImage)) iconImage.raycastTarget = false;
             }
 
             TMP_Text label = go.GetComponentInChildren<TMP_Text>(true);
@@ -309,8 +308,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             GameObject content = Find(scene, "Canvas/ConstructionUI/Root/BuildingSelectionPanel/Viewport/Content");
             if (content != null)
             {
-                HorizontalLayoutGroup contentLayout = content.GetComponent<HorizontalLayoutGroup>();
-                if (contentLayout != null)
+                if (content.TryGetComponent<HorizontalLayoutGroup>(out var contentLayout))
                 {
                     contentLayout.padding = new RectOffset(8, 8, 6, 6);
                     contentLayout.spacing = 7f;
@@ -505,8 +503,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
                 rect.sizeDelta = new Vector2(Mathf.Clamp(rect.sizeDelta.x, 300f, 420f), Mathf.Clamp(rect.sizeDelta.y, 190f, 300f));
             }
 
-            Image image = pause.GetComponent<Image>();
-            if (image != null)
+            if (pause.TryGetComponent<Image>(out var image))
             {
                 image.color = PanelDark;
                 EnsureOutline(pause, new Color(Gold.r, Gold.g, Gold.b, 0.55f), Vector2.one);
@@ -541,8 +538,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             if (image.color.a < 0.1f) image.color = PanelSoft;
             image.raycastTarget = true;
 
-            Button button = go.GetComponent<Button>();
-            if (button == null) return;
+            if (!go.TryGetComponent<Button>(out var button)) return;
             button.targetGraphic = image;
             ColorBlock colors = button.colors;
             colors.normalColor = PanelSoft;
@@ -560,8 +556,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
 
         private static void EnsureOutline(GameObject go, Color color, Vector2 distance)
         {
-            Outline outline = go.GetComponent<Outline>();
-            if (outline == null) outline = go.AddComponent<Outline>();
+            if (!go.TryGetComponent<Outline>(out var outline)) outline = go.AddComponent<Outline>();
             outline.effectColor = color;
             outline.effectDistance = distance;
             outline.useGraphicAlpha = true;
@@ -575,8 +570,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
 
         private static RectTransform RequireRect(GameObject go)
         {
-            RectTransform rect = go.GetComponent<RectTransform>();
-            if (rect == null)
+            if (!go.TryGetComponent<RectTransform>(out var rect))
                 throw new InvalidOperationException("RectTransform missing: " + HierarchyPath(go.transform));
             return rect;
         }

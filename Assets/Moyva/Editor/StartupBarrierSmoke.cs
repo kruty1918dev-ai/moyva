@@ -23,15 +23,19 @@ public static class StartupBarrierSmoke
     static StartupBarrierSmoke()
     {
         EditorApplication.update += Update;
-        EditorApplication.playModeStateChanged += state => {
+        EditorApplication.playModeStateChanged += state =>
+        {
             if (state == PlayModeStateChange.EnteredPlayMode) began = EditorApplication.timeSinceStartup;
-            if (state == PlayModeStateChange.EnteredEditMode && SessionState.GetString(Key, "") != "") {
+            if (state == PlayModeStateChange.EnteredEditMode && SessionState.GetString(Key, "") != "")
+            {
                 EditorSceneManager.playModeStartScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(SessionState.GetString(Key + ".previous", ""));
                 SessionState.EraseString(Key);
             }
         };
-        Application.logMessageReceived += (condition, stack, type) => {
-            if (SessionState.GetString(Key, "") != "" && (type == LogType.Error || type == LogType.Exception || type == LogType.Assert)) {
+        Application.logMessageReceived += (condition, stack, type) =>
+        {
+            if (SessionState.GetString(Key, "") != "" && (type == LogType.Error || type == LogType.Exception || type == LogType.Assert))
+            {
                 errors++; File.AppendAllText("Temp/ai/barrier-smoke-errors.log", condition + "\n" + stack + "\n");
             }
         };

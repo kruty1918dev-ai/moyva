@@ -111,15 +111,23 @@ public static class RunAllEditModeTestsLive
             string upper = state.ToUpperInvariant();
 
             if (upper.Contains("PASS"))
+            {
                 _passed++;
+            }
             else if (upper.Contains("FAIL") || upper.Contains("ERROR"))
+            {
                 _failed++;
+            }
             else if (upper.Contains("SKIP") ||
-                     upper.Contains("IGNORE") ||
-                     upper.Contains("NOTRUN"))
+                                 upper.Contains("IGNORE") ||
+                                 upper.Contains("NOTRUN"))
+            {
                 _skipped++;
+            }
             else
+            {
                 _other++;
+            }
 
             Debug.Log(
                 $"{Prefix} RESULT | {state,-12} | " +

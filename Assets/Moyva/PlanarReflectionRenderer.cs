@@ -82,8 +82,7 @@ public class PlanarReflectionRenderer : MonoBehaviour
             return;
         }
 
-        Renderer waterRenderer = GetComponent<Renderer>();
-        if (waterRenderer != null)
+        if (TryGetComponent<Renderer>(out var waterRenderer))
         {
             WaterMaterial = waterRenderer.sharedMaterial;
         }
@@ -243,7 +242,7 @@ public class PlanarReflectionRenderer : MonoBehaviour
 
     private static Vector4 CameraSpacePlane(Camera camera, Vector3 position, Vector3 normal, float sideSign, float clipPlaneOffset)
     {
-        Vector3 offsetPosition = position + normal * clipPlaneOffset;
+        Vector3 offsetPosition = position + (normal * clipPlaneOffset);
         Matrix4x4 worldToCamera = camera.worldToCameraMatrix;
 
         Vector3 cameraPosition = worldToCamera.MultiplyPoint(offsetPosition);
@@ -259,19 +258,19 @@ public class PlanarReflectionRenderer : MonoBehaviour
 
     private static void CalculateReflectionMatrix(ref Matrix4x4 reflectionMatrix, Vector4 plane)
     {
-        reflectionMatrix.m00 = 1F - 2F * plane[0] * plane[0];
+        reflectionMatrix.m00 = 1F - (2F * plane[0] * plane[0]);
         reflectionMatrix.m01 = -2F * plane[0] * plane[1];
         reflectionMatrix.m02 = -2F * plane[0] * plane[2];
         reflectionMatrix.m03 = -2F * plane[3] * plane[0];
 
         reflectionMatrix.m10 = -2F * plane[1] * plane[0];
-        reflectionMatrix.m11 = 1F - 2F * plane[1] * plane[1];
+        reflectionMatrix.m11 = 1F - (2F * plane[1] * plane[1]);
         reflectionMatrix.m12 = -2F * plane[1] * plane[2];
         reflectionMatrix.m13 = -2F * plane[3] * plane[1];
 
         reflectionMatrix.m20 = -2F * plane[2] * plane[0];
         reflectionMatrix.m21 = -2F * plane[2] * plane[1];
-        reflectionMatrix.m22 = 1F - 2F * plane[2] * plane[2];
+        reflectionMatrix.m22 = 1F - (2F * plane[2] * plane[2]);
         reflectionMatrix.m23 = -2F * plane[3] * plane[2];
 
         reflectionMatrix.m30 = 0F;
