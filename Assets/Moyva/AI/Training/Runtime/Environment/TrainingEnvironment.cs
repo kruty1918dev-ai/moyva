@@ -94,14 +94,14 @@ namespace Kruty1918.Moyva.AI.Training
             _pendingReset = true;
             try
             {
+                if (!_simulation.Reset(context) || !_simulation.IsReady)
+                { Fail("Simulation reset adapter did not produce a ready environment."); return; }
                 if (!_config.allowScaffoldSimulation)
                 {
                     var source = _simulation as ITrainingBotRuntimeSource;
                     if (!IsRealGameplay || source?.Perception == null || source.Perception is EmptyBotPerceptionSource)
                         throw new InvalidOperationException("REAL_SIMULATION/PERCEPTION_BLOCKED: scaffold and fallback perception are forbidden.");
                 }
-                if (!_simulation.Reset(context) || !_simulation.IsReady)
-                { Fail("Simulation reset adapter did not produce a ready environment."); return; }
                 Bridge.Reset((int)Stage);
                 Bridge.Orchestrator.DecisionFinished += OnDecisionFinished;
             }
@@ -126,9 +126,11 @@ namespace Kruty1918.Moyva.AI.Training
         {
             CompletePendingOutcome();
             if (!IsReady) return;
+            (_simulation as GameplayTrainingSimulation)?.Tick(seconds);
             Bridge.Tick(seconds);
             CompletePendingOutcome();
-            if (Bridge.Orchestrator.Session?.State == BotOrchestratorState.Cancelled)
+            if (IsReady && Bridge.Orchestrator.Session?.State == BotOrchestratorState.Cancelled
+                && !string.IsNullOrEmpty(Bridge.Telemetry.LastError))
                 Fail(Bridge.Telemetry.LastError ?? "Bot session cancelled.");
         }
 

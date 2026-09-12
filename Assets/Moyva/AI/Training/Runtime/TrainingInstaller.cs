@@ -8,6 +8,8 @@ namespace Kruty1918.Moyva.AI.Training
         {
             config.Validate();
             container.Bind<TrainingConfig>().FromInstance(config).AsSingle();
+            if (!container.HasBinding<ITrainingGameplayScopeFactory>())
+                container.Bind<ITrainingGameplayScopeFactory>().To<GameplayTrainingScopeFactory>().AsSingle();
             // Scaffold is an explicit debugging selection, never an exception fallback.
             ITrainingSimulationFactory factory = config.allowScaffoldSimulation
                 ? (ITrainingSimulationFactory)new ScaffoldSimulationFactory()

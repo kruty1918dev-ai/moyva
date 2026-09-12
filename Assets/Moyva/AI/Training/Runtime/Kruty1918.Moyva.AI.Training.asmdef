@@ -1,6 +1,25 @@
 {
-  "name": "Kruty1918.Moyva.AI.Training",
-  "rootNamespace": "Kruty1918.Moyva.AI.Training",
-  "references": ["Unity.ML-Agents", "Kruty1918.Moyva.Turns", "Kruty1918.Moyva.Units", "Kruty1918.Moyva.FogOfWar", "Kruty1918.Moyva.Signals", "Zenject", "Kruty1918.Moyva.AI.Bot.Core", "Kruty1918.Moyva.AI.Bot.MLAgents"],
-  "autoReferenced": false
+    "name":  "Kruty1918.Moyva.AI.Training",
+    "rootNamespace":  "Kruty1918.Moyva.AI.Training",
+    "references":  [
+                       "Unity.ML-Agents",
+                       "Kruty1918.Moyva.Turns",
+                       "Kruty1918.Moyva.Units",
+                       "Kruty1918.Moyva.FogOfWar",
+                       "Kruty1918.Moyva.Signals",
+                       "Zenject",
+                       "Kruty1918.Moyva.AI.Bot.Core",
+                       "Kruty1918.Moyva.AI.Bot.MLAgents",
+                       "Kruty1918.Moyva.Animations",
+                       "Kruty1918.Moyva.Calendar",
+                       "Kruty1918.Moyva.GameMode",
+                       "Kruty1918.Moyva.Generator",
+                       "Kruty1918.Moyva.GraphSystem",
+                       "Kruty1918.Moyva.Grid",
+                       "Kruty1918.Moyva.Jsonization",
+                       "Kruty1918.Moyva.ObjectsMap",
+                       "Kruty1918.Moyva.Pathfinding",
+                       "Kruty1918.Moyva.Shared"
+                   ],
+    "autoReferenced":  false
 }

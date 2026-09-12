@@ -27,6 +27,16 @@ namespace Kruty1918.Moyva.Units.Runtime
             container.BindInterfacesAndSelfTo<UnitCombatService>().AsSingle();
         }
 
+        public static void InstallSimulationBindings(DiContainer container, UnitRegistrySO registry)
+        {
+            InstallPreviewBindings(container, registry);
+            container.Bind<IUnitPlacementValidator>().To<UnitPlacementValidator>().AsSingle();
+            container.BindInterfacesAndSelfTo<UnitTraversalPolicy>().AsSingle();
+            container.BindInterfacesAndSelfTo<UnitMovementRangeQuery>().AsSingle();
+            container.Decorate<IUnitMovementService>().With<UnitTurnAuthorityMovementService>();
+            container.BindInterfacesTo<UnitTurnParticipant>().AsSingle();
+        }
+
         public override void InstallBindings()
         {
             Container.BindInstance(_unitRegistry).AsSingle();

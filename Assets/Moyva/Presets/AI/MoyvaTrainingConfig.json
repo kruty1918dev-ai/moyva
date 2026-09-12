@@ -7,7 +7,7 @@
   "maxDecisionsPerEpisode": 1000,
   "decisionInterval": 5,
   "behaviorType": 0,
-  "curriculum": { "stage": 0 },
+  "curriculum": { "stage": 1 },
   "rewards": {
     "victory": 1.0,
     "defeat": -1.0,

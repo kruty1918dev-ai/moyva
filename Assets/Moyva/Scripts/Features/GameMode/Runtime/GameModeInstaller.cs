@@ -7,6 +7,12 @@ namespace Kruty1918.Moyva.GameMode.Runtime
 {
     public sealed class GameModeInstaller : MonoInstaller
     {
+        public static void InstallSimulationBindings(DiContainer container)
+        {
+            container.BindInterfacesAndSelfTo<GameStateService>().AsSingle();
+            container.BindInterfacesAndSelfTo<MatchEndConditionService>().AsSingle();
+        }
+
         public override void InstallBindings()
         {
             UiActionsInstaller.Install(Container);

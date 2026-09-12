@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.AI.Training
             return IsReady;
         }
         public bool CanEndTurn() => IsReady && TurnGateway.CanEndTurn(PlayerId, out _);
+        public void Tick(float seconds) { if (IsReady) _scope.Tick(seconds); }
         public void Dispose()
         {
             if (_disposed) return;

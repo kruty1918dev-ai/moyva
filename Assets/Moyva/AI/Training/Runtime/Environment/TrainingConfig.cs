@@ -9,6 +9,9 @@ namespace Kruty1918.Moyva.AI.Training
     {
         public int environmentCount = 1;
         public int baseSeed = 1918;
+        public int worldSize = 24;
+        public string generatorGraphId = "generatorgraph";
+        public string startingUnitTypeId = "warrior";
         public bool deterministicMode = true;
         public bool autoReset = true;
         public int maxTurnsPerEpisode = 200;
@@ -50,6 +53,8 @@ namespace Kruty1918.Moyva.AI.Training
         public void Validate()
         {
             if (environmentCount < 1 || maxTurnsPerEpisode < 1 || maxDecisionsPerEpisode < 1
+                || worldSize < 12 || worldSize > 128 || string.IsNullOrWhiteSpace(generatorGraphId)
+                || string.IsNullOrWhiteSpace(startingUnitTypeId)
                 || decisionInterval < 1 || !Finite(trainingTimeScale) || trainingTimeScale <= 0
                 || curriculum == null || rewards == null
                 || !Finite(visualTimeScale) || !Finite(headlessTimeScale)
