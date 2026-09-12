@@ -1,0 +1,6 @@
+{
+  "name": "Kruty1918.Moyva.AI.Training.Editor",
+  "references": ["UnityEditor.TestRunner", "UnityEngine.TestRunner"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false
+}

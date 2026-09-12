@@ -1,0 +1,33 @@
+{
+  "environmentCount": 1,
+  "baseSeed": 1918,
+  "deterministicMode": true,
+  "autoReset": true,
+  "maxTurnsPerEpisode": 200,
+  "maxDecisionsPerEpisode": 1000,
+  "decisionInterval": 5,
+  "behaviorType": 0,
+  "curriculum": { "stage": 0 },
+  "rewards": {
+    "victory": 1.0,
+    "defeat": -1.0,
+    "draw": -0.10,
+    "timeout": -0.15,
+    "objectiveCaptured": 0.02,
+    "objectiveLost": -0.02,
+    "enemyUnitDestroyed": 0.01,
+    "ownUnitLost": -0.01,
+    "resourceMilestone": 0.005,
+    "buildOrRecruit": 0.002,
+    "perDecision": -0.0002,
+    "perTurn": -0.001,
+    "penalizePerDecision": true,
+    "invalidAction": -0.005,
+    "invalidActionLimit": 20,
+    "shapingCap": 0.25
+  },
+  "enableStats": true,
+  "verboseLogging": false,
+  "trainingTimeScale": 1.0,
+  "disableRenderingWhenPossible": false
+}

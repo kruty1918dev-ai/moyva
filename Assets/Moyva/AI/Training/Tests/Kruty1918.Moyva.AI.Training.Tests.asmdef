@@ -1,0 +1,7 @@
+{
+  "name": "Kruty1918.Moyva.AI.Training.Tests",
+  "references": ["Kruty1918.Moyva.AI.Training", "Kruty1918.Moyva.Turns", "Unity.ML-Agents"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

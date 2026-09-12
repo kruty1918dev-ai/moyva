@@ -1,0 +1,6 @@
+{
+  "name": "Kruty1918.Moyva.AI.Training",
+  "rootNamespace": "Kruty1918.Moyva.AI.Training",
+  "references": ["Unity.ML-Agents", "Kruty1918.Moyva.Turns", "Zenject"],
+  "autoReferenced": false
+}
