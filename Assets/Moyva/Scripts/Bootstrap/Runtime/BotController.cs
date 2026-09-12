@@ -1,4 +1,5 @@
 using System;
+using Kruty1918.Moyva.AI.Bot;
 using Kruty1918.Moyva.InputRouting.API;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Turns.API;
@@ -12,16 +13,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly ITurnService _turns;
         private readonly IGameplayInputPolicy _input;
         private readonly ITurnAuthorityPolicy _authority;
+        private readonly IBotDecisionOrchestrator _orchestrator;
+        private readonly float _presentationDelay;
         private IDisposable _inputBlock;
         private long _observedTurn = -1;
         private float _delay;
 
         public BotController(ITurnService turns, IGameplayInputPolicy input,
-            [InjectOptional] ITurnAuthorityPolicy authority = null)
+            [InjectOptional] ITurnAuthorityPolicy authority = null,
+            [InjectOptional] IBotDecisionOrchestrator orchestrator = null,
+            [InjectOptional] BotRuntimeConfig config = null)
         {
             _turns = turns;
             _input = input;
             _authority = authority;
+            _orchestrator = orchestrator;
+            _presentationDelay = config?.visibleDelay ?? 0.35f;
         }
 
         public void Initialize()
@@ -46,8 +53,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_delay > 0f)
                 return;
 
-            _delay = 0.35f;
-            _turns.TryEndTurn(_turns.ActiveOwnerId, out _);
+            _orchestrator?.BeginTurn(_turns.ActiveOwnerId);
+            _orchestrator?.Tick(deltaSeconds);
         }
 
         private bool IsBotTurn()
@@ -63,7 +70,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (_observedTurn != _turns.GlobalTurn)
                 {
                     _observedTurn = _turns.GlobalTurn;
-                    _delay = 0.35f;
+                    _delay = _presentationDelay;
                 }
             }
             else
@@ -71,11 +78,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _inputBlock?.Dispose();
                 _inputBlock = null;
                 _observedTurn = -1;
+                _orchestrator?.Cancel();
             }
         }
 
         public void Dispose()
         {
+            _orchestrator?.Cancel();
             _turns.StateChanged -= RefreshControl;
             _inputBlock?.Dispose();
             _inputBlock = null;

@@ -3,6 +3,7 @@ using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Policies;
 using Unity.MLAgents.Sensors;
 using UnityEngine;
+using Kruty1918.Moyva.AI.Bot;
 
 namespace Kruty1918.Moyva.AI.Training
 {
@@ -37,7 +38,9 @@ namespace Kruty1918.Moyva.AI.Training
 
         private void FixedUpdate()
         {
-            if (_environment == null || !_environment.IsReady || _pendingDecision) return;
+            if (_environment == null) return;
+            _environment.Tick(Time.fixedDeltaTime);
+            if (!_environment.CanRequestDecision || _pendingDecision) return;
             if (++_ticks < _config.decisionInterval) return;
             _ticks = 0;
             _pendingDecision = true;
@@ -67,11 +70,17 @@ namespace Kruty1918.Moyva.AI.Training
             if (_config.enableStats)
             {
                 var stats = Academy.Instance.StatsRecorder;
-                stats.Add("Moyva/Reward", d.TotalReward);
-                stats.Add("Moyva/Shaping", d.ShapingReward);
-                stats.Add("Moyva/Decisions", d.Decisions);
-                stats.Add("Moyva/Turns", d.Turns);
-                stats.Add("Moyva/InvalidActions", d.InvalidActions);
+                stats.Add("MoyvaAI/Reward", d.TotalReward);
+                stats.Add("MoyvaAI/Shaping", d.ShapingReward);
+                stats.Add("MoyvaAI/EpisodeLength", d.Decisions);
+                stats.Add("MoyvaAI/Turns", d.Turns);
+                stats.Add("MoyvaAI/InvalidRate", d.InvalidActions / (float)System.Math.Max(1, d.Decisions));
+                stats.Add("MoyvaAI/StaleRate", d.StaleActions / (float)System.Math.Max(1, d.Decisions));
+                stats.Add("MoyvaAI/WinRate", result == TrainingEpisodeResult.Victory ? 1 : 0);
+                stats.Add("MoyvaAI/TimeoutRate", result == TrainingEpisodeResult.Timeout ? 1 : 0);
+                int candidates = _environment.Bridge.Frame?.Candidates.Count ?? 0;
+                stats.Add("MoyvaAI/Candidates", candidates);
+                stats.Add("MoyvaAI/MaskedRatio", 1 - candidates / (float)BotDecisionContract.MaxCandidateSlots);
             }
             if (_config.verboseLogging || result == TrainingEpisodeResult.InvalidState)
                 Debug.Log($"Training environment {_environment.EnvironmentId}, episode {d.EpisodeNumber}: "

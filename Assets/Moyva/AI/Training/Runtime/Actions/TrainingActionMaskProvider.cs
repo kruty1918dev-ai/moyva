@@ -1,42 +1,38 @@
 using System;
+using Kruty1918.Moyva.AI.Bot;
 using Unity.MLAgents.Actuators;
-
 namespace Kruty1918.Moyva.AI.Training
 {
     public sealed class TrainingActionMaskProvider : ITrainingActionProvider
     {
-        public const int BranchSize = 7;
-        public const int SafeActionIndex = (int)TrainingActionType.NoOp;
-        private readonly ITrainingSimulation _simulation;
-
-        public TrainingActionMaskProvider(ITrainingSimulation simulation) { _simulation = simulation; }
+        public const int BranchSize = BotDecisionContract.MaxCandidateSlots;
+        public const int SafeActionIndex = 0;
+        public TrainingBotBridge Bridge { get; }
+        public TrainingActionMaskProvider(ITrainingSimulation simulation) : this(new TrainingBotBridge(simulation)) { }
+        public TrainingActionMaskProvider(TrainingBotBridge bridge) { Bridge = bridge; }
         public int ActionCount => BranchSize;
         public TrainingAction Decode(int index)
         {
-            if (index < 0 || index >= ActionCount) throw new ArgumentOutOfRangeException(nameof(index));
-            return new TrainingAction((TrainingActionType)index, _simulation.PlayerId);
+            var candidate = Bridge.Frame?.Candidates[index];
+            if (candidate == null) throw new ArgumentOutOfRangeException(nameof(index));
+            return FromCandidate(candidate);
         }
-
-        public bool IsLegal(int index)
+        public static TrainingAction FromCandidate(BotCandidateAction candidate)
         {
-            if (index == SafeActionIndex) return true;
-            return index == (int)TrainingActionType.EndTurn && _simulation.IsReady
-                && _simulation.Turns != null
-                && _simulation.Turns.CanOwnerAct(_simulation.PlayerId, out _)
-                && _simulation.CanEndTurn();
+            var type = candidate.Intent switch
+            {
+                BotIntentType.EndTurn => TrainingActionType.EndTurn,
+                BotIntentType.Move => TrainingActionType.MoveUnit,
+                BotIntentType.Attack => TrainingActionType.Attack,
+                BotIntentType.Recruit => TrainingActionType.Recruit,
+                BotIntentType.Build => TrainingActionType.Build,
+                BotIntentType.Capture => TrainingActionType.Capture,
+                _ => TrainingActionType.NoOp
+            };
+            return new TrainingAction(type, candidate.ActorKey, candidate.TargetKey);
         }
-
-        public int FirstLegalAction()
-        {
-            for (int i = 0; i < ActionCount; i++)
-                if (IsLegal(i)) return i;
-            return SafeActionIndex;
-        }
-
-        public void WriteMask(IDiscreteActionMask mask)
-        {
-            for (int i = 0; i < ActionCount; i++)
-                mask.SetActionEnabled(0, i, IsLegal(i));
-        }
+        public bool IsLegal(int index) => Bridge.Frame?.Candidates.IsLegal(index) ?? false;
+        public int FirstLegalAction() => 0;
+        public void WriteMask(IDiscreteActionMask mask) => BotMlFrameWriter.Mask(Bridge.Frame, mask);
     }
 }

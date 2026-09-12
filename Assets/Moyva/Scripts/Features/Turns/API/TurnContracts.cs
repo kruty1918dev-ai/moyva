@@ -66,6 +66,11 @@ namespace Kruty1918.Moyva.Turns.API
         string ResolveLocalOwnerId(IReadOnlyList<TurnFaction> factions);
     }
 
+    public interface ITurnEndQuery
+    {
+        bool CanEndTurn(string ownerId, out string reason);
+    }
+
     public interface ITurnService
     {
         event Action StateChanged;

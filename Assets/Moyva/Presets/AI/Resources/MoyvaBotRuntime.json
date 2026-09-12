@@ -1,0 +1,15 @@
+{
+  "policyMode": 0,
+  "modelProfileResourceId": "MoyvaBotModelProfile",
+  "maxDecisionsPerTurn": 32,
+  "maxInvalidDecisions": 3,
+  "maxStaleDecisions": 5,
+  "decisionTimeout": 10,
+  "executionTimeout": 30,
+  "visibleDelay": 0.35,
+  "autoEndTurn": true,
+  "telemetryEnabled": true,
+  "detailedTelemetry": false,
+  "telemetryCapacity": 128,
+  "curriculumStage": 8
+}

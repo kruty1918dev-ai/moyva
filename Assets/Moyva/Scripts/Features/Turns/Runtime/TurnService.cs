@@ -8,7 +8,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Turns.Runtime
 {
-    internal sealed partial class TurnService : ITurnService, ITurnHistoryQuery, ITurnStateRestorer,
+    internal sealed partial class TurnService : ITurnService, ITurnEndQuery, ITurnHistoryQuery, ITurnStateRestorer,
         ITurnHistoryRestorer, IInitializable, IDisposable
     {
         private readonly SignalBus _signalBus;
@@ -201,6 +201,18 @@ namespace Kruty1918.Moyva.Turns.Runtime
 
         public bool TryEndTurn(string requesterOwnerId, out string reason)
         {
+            if (!CanEndTurn(requesterOwnerId, out reason))
+                return false;
+            if (!EndCurrentTurn())
+            {
+                reason = StateChangedDuringTransitionReason;
+                return false;
+            }
+            return true;
+        }
+
+        public bool CanEndTurn(string requesterOwnerId, out string reason)
+        {
             if (_authority != null && !_authority.IsAuthoritative)
             {
                 reason = "Only the host can advance the turn.";
@@ -254,12 +266,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
             if (!MatchesTurnState(snapshot, TurnPhase.AwaitingInput))
             {
                 reason = StateChangedDuringEvaluationReason;
-                return false;
-            }
-
-            if (!EndCurrentTurn())
-            {
-                reason = StateChangedDuringTransitionReason;
                 return false;
             }
 

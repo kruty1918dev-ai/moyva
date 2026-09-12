@@ -7,6 +7,7 @@ namespace Kruty1918.Moyva.AI.Training
         public int Turns { get; internal set; }
         public int ValidActions { get; internal set; }
         public int InvalidActions { get; internal set; }
+        public int StaleActions { get; internal set; }
         public float TotalReward { get; internal set; }
         public float ShapingReward { get; internal set; }
         public TrainingEpisodeResult EpisodeResult { get; internal set; }
@@ -21,6 +22,7 @@ namespace Kruty1918.Moyva.AI.Training
             LastSeed = context.Seed;
             ResetCount++;
             Decisions = Turns = ValidActions = InvalidActions = 0;
+            StaleActions = 0;
             TotalReward = ShapingReward = 0;
             EpisodeResult = TrainingEpisodeResult.None;
             LastError = null;

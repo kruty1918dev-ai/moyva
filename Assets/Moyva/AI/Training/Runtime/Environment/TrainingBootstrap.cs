@@ -30,7 +30,7 @@ namespace Kruty1918.Moyva.AI.Training
                 if (config.disableRenderingWhenPossible)
                 {
                     foreach (var root in gameObject.scene.GetRootGameObjects())
-                        foreach (var camera in root.GetComponentsInChildren<Camera>(true))
+                        foreach (var camera in root.GetComponentsInChildren<UnityEngine.Camera>(true))
                             camera.enabled = false;
                 }
                 environmentManager.Initialize(config, container.Resolve<ITrainingSimulationFactory>());

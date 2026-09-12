@@ -3,6 +3,7 @@
   "rootNamespace": "Kruty1918.Moyva.Bootstrap",
   "references": [
     "Zenject",
+    "Kruty1918.Moyva.AI.Bot.Core",
     "Kruty1918.Moyva.FogOfWar",
     "Kruty1918.Moyva.SaveSystem",
     "Kruty1918.Moyva.Signals",

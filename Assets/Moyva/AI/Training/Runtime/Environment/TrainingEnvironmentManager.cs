@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Policies;
 using UnityEngine;
+using Kruty1918.Moyva.AI.Bot;
 
 namespace Kruty1918.Moyva.AI.Training
 {
@@ -36,6 +37,7 @@ namespace Kruty1918.Moyva.AI.Training
                 behavior.BrainParameters.ActionSpec = ActionSpec.MakeDiscrete(TrainingActionMaskProvider.BranchSize);
                 var agent = go.AddComponent<MoyvaStrategyAgent>();
                 agent.Configure(environment, config);
+                go.AddComponent<BotTelemetryView>().ConfigureProvider(() => environment.Bridge.Orchestrator);
                 go.SetActive(true);
                 if (id == 0 && !string.IsNullOrEmpty(environment.Limitation))
                     Debug.LogWarning(environment.Limitation, this);
