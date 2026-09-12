@@ -12,11 +12,17 @@ namespace Kruty1918.Moyva.AI.Training
         private readonly List<TrainingEnvironment> _environments = new List<TrainingEnvironment>();
         private readonly List<GameObject> _agentObjects = new List<GameObject>();
         public IReadOnlyList<TrainingEnvironment> Environments => _environments.AsReadOnly();
+        public TrainingMetricsHub Metrics { get; private set; }
+        private TrainingReadinessReport _readiness;
+        public TrainingReadinessReport Readiness => _environments.Count > 0 ? _environments[0].Readiness : _readiness;
 
         public void Initialize(TrainingConfig config, ITrainingSimulationFactory factory)
         {
             if (_environments.Count != 0) throw new InvalidOperationException("Manager is already initialized.");
             config.Validate();
+            if (factory is ScaffoldSimulationFactory && !config.allowScaffoldSimulation)
+                throw new InvalidOperationException("Scaffold simulation requires allowScaffoldSimulation=true.");
+            Metrics = new TrainingMetricsHub(config.metricsHistoryCapacity);
             if (config.environmentCount > 1 && !factory.SupportsIndependentEnvironments)
                 throw new InvalidOperationException("Simulation factory cannot isolate multiple gameplay environments. Use environmentCount=1.");
             for (int id = 0; id < config.environmentCount; id++)
@@ -24,6 +30,12 @@ namespace Kruty1918.Moyva.AI.Training
                 var simulation = factory.Create(id);
                 var environment = new TrainingEnvironment(id, config, simulation);
                 _environments.Add(environment);
+                Metrics.Attach(environment);
+                environment.CheckReadiness(factory);
+                environment.BeginEpisode();
+                _readiness = environment.CheckReadiness(factory);
+                if (!config.allowScaffoldSimulation && !Readiness.IsReady)
+                    throw new InvalidOperationException(Readiness.ToString());
                 var slot = transform.parent.Find("Environment_" + id);
                 var go = slot != null ? slot.gameObject : new GameObject("Environment_" + id);
                 go.transform.SetParent(transform.parent, false);
@@ -37,7 +49,8 @@ namespace Kruty1918.Moyva.AI.Training
                 behavior.BrainParameters.ActionSpec = ActionSpec.MakeDiscrete(TrainingActionMaskProvider.BranchSize);
                 var agent = go.AddComponent<MoyvaStrategyAgent>();
                 agent.Configure(environment, config);
-                go.AddComponent<BotTelemetryView>().ConfigureProvider(() => environment.Bridge.Orchestrator);
+                if (config.enableEditorTelemetry && config.presentationMode != TrainingPresentationMode.HeadlessFast)
+                    go.AddComponent<BotTelemetryView>().ConfigureProvider(() => environment.Bridge.Orchestrator);
                 go.SetActive(true);
                 if (id == 0 && !string.IsNullOrEmpty(environment.Limitation))
                     Debug.LogWarning(environment.Limitation, this);
@@ -46,6 +59,7 @@ namespace Kruty1918.Moyva.AI.Training
 
         public void Shutdown()
         {
+            Metrics?.Dispose();
             foreach (var go in _agentObjects)
                 if (go != null) { go.SetActive(false); Destroy(go); }
             _agentObjects.Clear();

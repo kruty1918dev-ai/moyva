@@ -8,8 +8,14 @@ namespace Kruty1918.Moyva.AI.Training
     {
         [SerializeField] private TextAsset configuration;
         [SerializeField] private TrainingEnvironmentManager environmentManager;
-        private float _previousTimeScale;
-        private bool _ownsSettings;
+        public TextAsset Configuration => configuration;
+        public TrainingConfig Config { get; private set; }
+        public TrainingEnvironmentManager Environments => environmentManager;
+        public TrainingPresentationController Presentation { get; private set; }
+        public TrainingPerformanceController Performance { get; private set; }
+        private TrainingReadinessReport _readiness;
+        public TrainingReadinessReport Readiness => environmentManager?.Environments.Count > 0 ? environmentManager.Readiness : _readiness;
+        public string Status { get; private set; } = "Not running";
 
         private void Start()
         {
@@ -21,36 +27,39 @@ namespace Kruty1918.Moyva.AI.Training
             }
             try
             {
-                var config = TrainingConfig.Load(configuration);
+                Config = TrainingConfig.Load(configuration);
+                Config.presentationMode = TrainingPresentationModeResolver.Resolve(Config, Application.isBatchMode, Environment.GetCommandLineArgs());
+                if (environmentManager == null) throw new InvalidOperationException("TrainingEnvironmentManager is missing.");
+                Performance = new TrainingPerformanceController(Config, Config.presentationMode);
+                var presentation = new GameObject("TrainingPresentation");
+                presentation.transform.SetParent(transform.parent != null ? transform.parent : transform, false);
+                Presentation = presentation.AddComponent<TrainingPresentationController>();
+                Presentation.Initialize(this);
                 var container = new DiContainer();
-                new TrainingInstaller().Install(container, config);
-                _previousTimeScale = Time.timeScale;
-                _ownsSettings = true;
-                Time.timeScale = config.trainingTimeScale;
-                if (config.disableRenderingWhenPossible)
-                {
-                    foreach (var root in gameObject.scene.GetRootGameObjects())
-                        foreach (var camera in root.GetComponentsInChildren<UnityEngine.Camera>(true))
-                            camera.enabled = false;
-                }
-                environmentManager.Initialize(config, container.Resolve<ITrainingSimulationFactory>());
+                new TrainingInstaller().Install(container, Config);
+                environmentManager.Initialize(Config, container.Resolve<ITrainingSimulationFactory>());
+                Presentation.RefreshCameras();
+                _readiness = environmentManager.Readiness;
+                Status = Config.allowScaffoldSimulation ? "SCAFFOLD / NOT REAL GAMEPLAY" : "Running / Real Gameplay";
             }
             catch (Exception exception)
             {
-                Debug.LogError("Training initialization failed: " + exception.Message, this);
+                _readiness = environmentManager?.Readiness ?? new TrainingReadinessReport();
+                Readiness.Block(exception.Message);
+                Readiness.Block("TERMINAL_OUTCOME_BLOCKED: no running real episode.");
+                Status = "Initialization blocked";
+                Debug.LogError(Readiness.ToString(), this);
                 environmentManager?.Shutdown();
                 RestoreSettings();
-                enabled = false;
             }
         }
 
         private void RestoreSettings()
         {
-            if (!_ownsSettings) return;
-            Time.timeScale = _previousTimeScale;
-            _ownsSettings = false;
+            Presentation?.RestoreCameras();
+            Performance?.Dispose();
         }
 
-        private void OnDestroy() => RestoreSettings();
+        private void OnDestroy() { environmentManager?.Shutdown(); RestoreSettings(); }
     }
 }

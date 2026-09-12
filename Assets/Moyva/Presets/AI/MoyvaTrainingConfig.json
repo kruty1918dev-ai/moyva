@@ -28,6 +28,15 @@
   },
   "enableStats": true,
   "verboseLogging": false,
+  "allowScaffoldSimulation": false,
+  "presentationMode": 0,
+  "autoHeadlessInBatchMode": true,
+  "visualTimeScale": 1.0,
+  "headlessTimeScale": 10.0,
+  "enableSceneOverlay": true,
+  "enableEditorTelemetry": true,
+  "enableAudioInVisualMode": false,
+  "metricsHistoryCapacity": 500,
   "trainingTimeScale": 1.0,
   "disableRenderingWhenPossible": false
 }

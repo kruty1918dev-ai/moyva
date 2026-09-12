@@ -37,13 +37,27 @@ Default behavior is Default; HeuristicOnly is behaviorType=2.
 Training configuration only controls episodes, rewards and pacing.
 Curriculum masks capabilities through the shared contract.
 
-The default ScaffoldSimulationFactory has no gameplay world.
-Its only candidate is Wait, which times out the episode without a gameplay command.
-It does not fabricate turns, units, observations or success.
-Do not train against this placeholder.
-GameplayTrainingSimulationAdapter accepts the real TurnGateway, Capabilities and
-Perception used by production, plus an explicit IGameplayTrainingReset boundary.
-A scoped world factory/reset and opponent progression still need implementation.
+The default GameplayTrainingSimulationFactory fails closed. **Real training is blocked.**
+MoyvaTraining does not yet bind ITrainingGameplayScopeFactory. The existing generator
+requires scene-owned graph/TWC assets and asynchronous startup; BootstrapInstaller also
+installs input, HUD, saves and multiplayer. No complete episode reset is available at
+the inspected public boundary. A reset adapter has deliberately not been fabricated.
+The scope composition must initialize the real world, players, ownership, units, fog,
+turns and opponent progression, own their lifetime, and supply IGameplayTrainingReset.
+That reset must finish world initialization, drain/cancel prior commands, restore all
+episode state and consume the full TrainingResetContext before returning true.
+Scene reload would require an asynchronous reset lifecycle; it is not implemented.
+TrainingGameplayScope resolves the production turn/movement APIs, creates the shared
+MovementBotCapability and MoyvaBotPerceptionSource, and requires gameplay authority.
+It is a service adapter boundary, not a completed world composition.
+TrainingGameplayEventBridge translates GameEndedSignal into real terminal rewards when
+an owned scope supplies its SignalBus and ITurnHistoryQuery. Empty winners are draws
+only with no surviving participants; cancellation becomes InvalidState. Unit destruction
+signals lack owner/attacker data, so unit/building/objective shaping remains disconnected.
+No real event subscription is active in the current training scene.
+Explicit allowScaffoldSimulation=true selects the debugging scaffold, prominently marked
+SCAFFOLD / NOT REAL GAMEPLAY; it can never receive READY_FOR_REAL_TRAINING.
+No initialization exception falls back to scaffold.
 Each environment owns its orchestrator, policy, counters and telemetry.
 N scaffold environments are not N independent gameplay worlds.
 
@@ -73,4 +87,30 @@ mlagents-learn Assets/Moyva/AI/Training/Config/moyva_ppo.yaml --run-id=moyva-001
 Press Play in MoyvaTraining, or add --env=<training-player> --no-graphics.
 Use --num-envs=4 for trainer-managed player processes; custom launchers need
 distinct worker_id values. Separate trainer jobs need distinct ports/run IDs.
-No tests, trainer, model generation or PPO tuning are part of this integration pass.
+No trainer, model generation or PPO tuning was run in this pass.
+
+## Presentation and fast training
+
+Open Moyva/AI/Training Monitor for readiness blockers, bounded episode graphs, completed
+action distribution, heuristic learning health and Unity-measured throughput. Bot Monitor
+remains available for decision details. TensorBoard remains the long-term history.
+Visual (presentationMode=0) observes the same environment and enables a scene overlay;
+MetricsOnly (1) disables cameras/overlay while retaining live metrics; HeadlessFast (2)
+also skips telemetry views, retains four decision traces and disables VSync/frame limits.
+The current scene has no real map/units to watch until the scope blocker is resolved.
+Action actor/target coordinates are shown as text; world-space highlighting is not connected.
+visualTimeScale and headlessTimeScale are separate, clamped to 0.1–20. Settings and camera
+states are restored at shutdown or initialization failure. Legacy trainingTimeScale and
+disableRenderingWhenPossible are retained for compatibility but no longer control mode.
+Batch mode forces HeadlessFast when autoHeadlessInBatchMode=true, including when a CLI
+mode is specified. Otherwise -moyvaTrainingMode Visual|MetricsOnly|HeadlessFast overrides JSON.
+
+After readiness blockers are fixed, intended short smoke usage is:
+```text
+mlagents-learn Assets/Moyva/AI/Training/Config/moyva_ppo_fast_test.yaml --run-id=moyva-smoke --env=<training-player> --no-graphics
+```
+A directly launched training player accepts `-batchmode -nographics -moyvaTrainingMode HeadlessFast`.
+Keep environmentCount=1 for real gameplay. Multiple Unity processes with distinct worker IDs
+are the parallelization path until independent scopes exist. The fast YAML is unchanged
+(512 steps); no unsupported engine YAML fields were added. Visual/headless gameplay parity
+and runtime initialization remain unverified; presentation never selects or executes actions.

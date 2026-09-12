@@ -30,7 +30,8 @@ namespace Kruty1918.Moyva.AI.Training
             _ticks = 0;
             _pendingDecision = false;
             if (_environment == null) return;
-            if (_environment.IsReady) _environment.ResetEnvironment();
+            // Manager prepares the initial episode before enabling this Agent.
+            if (_environment.IsReady) return;
             if (_environment.EpisodeId == 0 || (_config.autoReset
                 && _environment.Result != TrainingEpisodeResult.InvalidState))
                 _environment.BeginEpisode();
@@ -82,7 +83,8 @@ namespace Kruty1918.Moyva.AI.Training
                 stats.Add("MoyvaAI/Candidates", candidates);
                 stats.Add("MoyvaAI/MaskedRatio", 1 - candidates / (float)BotDecisionContract.MaxCandidateSlots);
             }
-            if (_config.verboseLogging || result == TrainingEpisodeResult.InvalidState)
+            if ((_config.verboseLogging && _config.presentationMode != TrainingPresentationMode.HeadlessFast)
+                || result == TrainingEpisodeResult.InvalidState)
                 Debug.Log($"Training environment {_environment.EnvironmentId}, episode {d.EpisodeNumber}: "
                     + $"{result}, decisions={d.Decisions}, turns={d.Turns}, reward={d.TotalReward}. {d.LastError}", this);
             if (result == TrainingEpisodeResult.InvalidState) EpisodeInterrupted();

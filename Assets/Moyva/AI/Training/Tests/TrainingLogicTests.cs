@@ -26,7 +26,7 @@ namespace Kruty1918.Moyva.AI.Training.Tests
         [Test]
         public void TerminalEventEndsEnvironmentAndResetClearsActiveEpisode()
         {
-            using var environment = new TrainingEnvironment(0, new TrainingConfig(),
+            using var environment = new TrainingEnvironment(0, new TrainingConfig { allowScaffoldSimulation = true },
                 new ScaffoldSimulationFactory().Create(0));
             environment.BeginEpisode();
             environment.Step(TrainingActionMaskProvider.SafeActionIndex);
@@ -172,7 +172,7 @@ namespace Kruty1918.Moyva.AI.Training.Tests
         [Test]
         public void IndependentEnvironmentsResetAllEpisodeState()
         {
-            var config = new TrainingConfig { maxDecisionsPerEpisode = 2 };
+            var config = new TrainingConfig { maxDecisionsPerEpisode = 2, allowScaffoldSimulation = true };
             var factory = new ScaffoldSimulationFactory();
             using var a = new TrainingEnvironment(0, config, factory.Create(0));
             using var b = new TrainingEnvironment(1, config, factory.Create(1));
@@ -198,7 +198,7 @@ namespace Kruty1918.Moyva.AI.Training.Tests
         [Test]
         public void InvalidActionsTerminateAtConfiguredLimit()
         {
-            var config = new TrainingConfig();
+            var config = new TrainingConfig { allowScaffoldSimulation = true };
             config.rewards.invalidActionLimit = 2;
             using var environment = new TrainingEnvironment(0, config, new ScaffoldSimulationFactory().Create(0));
             environment.BeginEpisode();

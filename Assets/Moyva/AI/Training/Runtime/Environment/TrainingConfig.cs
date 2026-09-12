@@ -19,6 +19,16 @@ namespace Kruty1918.Moyva.AI.Training
         public TrainingRewardConfig rewards = new TrainingRewardConfig();
         public bool enableStats = true;
         public bool verboseLogging = false;
+        public bool allowScaffoldSimulation = false;
+        public TrainingPresentationMode presentationMode = TrainingPresentationMode.Visual;
+        public bool autoHeadlessInBatchMode = true;
+        public float visualTimeScale = 1;
+        public float headlessTimeScale = 10;
+        public bool enableSceneOverlay = true;
+        public bool enableEditorTelemetry = true;
+        public bool enableAudioInVisualMode = false;
+        public int metricsHistoryCapacity = 500;
+        // Retained for compatibility with existing serialized configurations.
         public float trainingTimeScale = 1;
         public bool disableRenderingWhenPossible = false;
 
@@ -42,12 +52,18 @@ namespace Kruty1918.Moyva.AI.Training
             if (environmentCount < 1 || maxTurnsPerEpisode < 1 || maxDecisionsPerEpisode < 1
                 || decisionInterval < 1 || !Finite(trainingTimeScale) || trainingTimeScale <= 0
                 || curriculum == null || rewards == null
+                || !Finite(visualTimeScale) || !Finite(headlessTimeScale)
+                || visualTimeScale <= 0 || headlessTimeScale <= 0
+                || metricsHistoryCapacity < 1 || metricsHistoryCapacity > 5000
+                || !Enum.IsDefined(typeof(TrainingPresentationMode), presentationMode)
                 || !Enum.IsDefined(typeof(TrainingCurriculumStage), curriculum.stage)
                 || !Enum.IsDefined(typeof(BehaviorType), behaviorType))
                 throw new ArgumentException("Invalid training configuration.");
             if (behaviorType == BehaviorType.InferenceOnly)
                 throw new ArgumentException("InferenceOnly requires a future model adapter; use Default or HeuristicOnly.");
             rewards.Validate();
+            visualTimeScale = Mathf.Clamp(visualTimeScale, 0.1f, 20f);
+            headlessTimeScale = Mathf.Clamp(headlessTimeScale, 0.1f, 20f);
         }
 
         internal static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);

@@ -41,8 +41,8 @@ namespace Kruty1918.Moyva.AI.Training
         public BotTelemetryHub Telemetry { get; }
         public BotDecisionFrame Frame => Orchestrator?.Frame;
         public bool CanRequestDecision => Orchestrator?.Session?.State == BotOrchestratorState.AwaitingPolicy;
-        public TrainingBotBridge(ITrainingSimulation simulation, int environmentId = -1)
-        { _simulation = simulation; Telemetry = new BotTelemetryHub { EnvironmentId = environmentId }; }
+        public TrainingBotBridge(ITrainingSimulation simulation, int environmentId = -1, int telemetryCapacity = 128)
+        { _simulation = simulation; Telemetry = new BotTelemetryHub(telemetryCapacity) { EnvironmentId = environmentId }; }
         public void Reset(int stage)
         {
             Orchestrator?.Dispose();

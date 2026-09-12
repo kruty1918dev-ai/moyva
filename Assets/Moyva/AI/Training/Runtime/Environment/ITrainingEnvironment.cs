@@ -43,7 +43,7 @@ namespace Kruty1918.Moyva.AI.Training
             public ITurnService Turns => null;
             public string PlayerId => string.Empty;
             public bool IsReady { get; private set; }
-            public string Limitation => "No gameplay simulation attached: implement scoped simulation creation/reset and a non-mutating EndTurn legality query. Only NoOp is available.";
+            public string Limitation => "SCAFFOLD / NOT REAL GAMEPLAY. No world, units, perception or gameplay reset. Only Wait is available.";
             public bool Reset(TrainingResetContext context) { IsReady = true; return true; }
             public bool CanEndTurn() => false;
             public void Dispose() { IsReady = false; }
