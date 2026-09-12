@@ -1,0 +1,19 @@
+{
+    "mcpServers":  {
+                       "Moyva AI Council":  {
+                                                "args":  [
+                                                             "C:\\Users\\yelyzaveta.khodos.TP-GE26-20\\Documents\\GitHub\\moyva\\moyva\\.continue\\mcpServers\\moyva-ai-council\\server.mjs"
+                                                         ],
+                                                "env":  {
+                                                            "COUNCIL_QWEN30B":  "qwen3-coder:30b",
+                                                            "COUNCIL_DEVSTRAL":  "devstral:24b",
+                                                            "MOYVA_ROOT":  "C:\\Users\\yelyzaveta.khodos.TP-GE26-20\\Documents\\GitHub\\moyva\\moyva",
+                                                            "COUNCIL_GPT_OSS":  "gpt-oss:20b",
+                                                            "OLLAMA_BASE_URL":  "http://127.0.0.1:11434",
+                                                            "COUNCIL_QWEN7B":  "qwen2.5-coder:7b"
+                                                        },
+                                                "command":  "C:\\Users\\yelyzaveta.khodos.TP-GE26-20\\Tools\\node-portable\\node.exe",
+                                                "type":  "stdio"
+                                            }
+                   }
+}

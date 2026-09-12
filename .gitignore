@@ -166,3 +166,6 @@ __pycache__/
 
 # Unity/IDE generated solution metadata
 /moyva.slnx
+
+# Installed Continue MCP server dependencies
+/.continue/**/node_modules/
