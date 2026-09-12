@@ -188,6 +188,7 @@ namespace UnityHTML.Runtime
 
         private void CompleteLayoutPass()
         {
+            var scrollPositions = CaptureRenderedScrollPositions(_root);
             if (Application.isPlaying && _tooltips == null)
             {
                 _tooltips = _root.gameObject.AddComponent<UnityHtmlTooltipLayer>();
@@ -202,7 +203,68 @@ namespace UnityHTML.Runtime
             FlushReactElementLayout(_root);
             ConfigureRenderedInputs(_root);
             Canvas.ForceUpdateCanvases();
+            RestoreRenderedScrollPositions(scrollPositions);
             _tooltips?.RefreshTargets();
+        }
+
+        private static List<RenderedScrollPosition> CaptureRenderedScrollPositions(RectTransform root)
+        {
+            if (root == null)
+                return null;
+
+            var scrollRects = root.GetComponentsInChildren<ScrollRect>(true);
+            if (scrollRects == null || scrollRects.Length == 0)
+                return null;
+
+            var result = new List<RenderedScrollPosition>(scrollRects.Length);
+            for (var i = 0; i < scrollRects.Length; i++)
+            {
+                var scrollRect = scrollRects[i];
+                if (scrollRect == null)
+                    continue;
+
+                result.Add(new RenderedScrollPosition(
+                    scrollRect,
+                    scrollRect.normalizedPosition,
+                    scrollRect.velocity));
+            }
+
+            return result;
+        }
+
+        private static void RestoreRenderedScrollPositions(List<RenderedScrollPosition> positions)
+        {
+            if (positions == null)
+                return;
+
+            for (var i = 0; i < positions.Count; i++)
+                positions[i].Restore();
+        }
+
+        private readonly struct RenderedScrollPosition
+        {
+            private readonly ScrollRect _scrollRect;
+            private readonly Vector2 _normalizedPosition;
+            private readonly Vector2 _velocity;
+
+            public RenderedScrollPosition(
+                ScrollRect scrollRect,
+                Vector2 normalizedPosition,
+                Vector2 velocity)
+            {
+                _scrollRect = scrollRect;
+                _normalizedPosition = normalizedPosition;
+                _velocity = velocity;
+            }
+
+            public void Restore()
+            {
+                if (_scrollRect == null)
+                    return;
+
+                _scrollRect.normalizedPosition = _normalizedPosition;
+                _scrollRect.velocity = _velocity;
+            }
         }
 
         private GlobalRecord CreateGlobals(IReadOnlyDictionary<string, object> globals)

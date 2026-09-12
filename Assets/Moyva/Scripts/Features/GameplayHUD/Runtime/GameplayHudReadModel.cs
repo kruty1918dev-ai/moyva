@@ -249,6 +249,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public bool IsTurnUiEnabled()
         {
             GameLaunchContext.EnsureNotExpired();
+            if (GameLaunchContext.Mode == GameLaunchMode.MenuBotGame)
+                return true;
             if (GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest
                 || GameLaunchContext.Source == GameLaunchSource.DirectGameplayTest)
             {

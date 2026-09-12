@@ -89,6 +89,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest ||
                 GameLaunchContext.Source == GameLaunchSource.DirectGameplayTest ||
                 GameLaunchContext.Mode == GameLaunchMode.MenuNewGame ||
+                GameLaunchContext.Mode == GameLaunchMode.MenuBotGame ||
                 GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame;
 
             for (int positionIndex = 0;

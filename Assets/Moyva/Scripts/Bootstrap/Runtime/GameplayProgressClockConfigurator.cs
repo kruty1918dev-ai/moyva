@@ -26,7 +26,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 || (GameLaunchContext.HasWorldSettings && GameLaunchContext.MaxPlayers <= 1);
 
             _clock.Configure(
-                sandbox ? GameplayProgressMode.SandboxRealtime : GameplayProgressMode.TurnBased,
+                sandbox && GameLaunchContext.Mode != GameLaunchMode.MenuBotGame
+                    ? GameplayProgressMode.SandboxRealtime : GameplayProgressMode.TurnBased,
                 _settings.SandboxProgress?.RoundSeconds ?? 10f,
                 _settings.SandboxProgress?.InitialSpeed ?? 1f);
         }

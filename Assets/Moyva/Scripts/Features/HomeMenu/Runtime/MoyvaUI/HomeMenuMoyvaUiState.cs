@@ -13,7 +13,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     internal enum HomeMenuPlayFlow
     {
         Solo,
-        Multiplayer
+        Multiplayer,
+        HumanVsBot
     }
 
     internal sealed class HomeMenuMoyvaUiState

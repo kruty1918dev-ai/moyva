@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
@@ -12,8 +13,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             float landRatio,
             int nearestWaterDistance,
             float localHeightRange,
-            int sampledTiles,
-            string reason)
+            int sampledTiles)
         {
             HardValid = hardValid;
             Utility = utility;
@@ -21,7 +21,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             NearestWaterDistance = nearestWaterDistance;
             LocalHeightRange = localHeightRange;
             SampledTiles = sampledTiles;
-            Reason = reason ?? string.Empty;
         }
 
         public bool HardValid { get; }
@@ -30,7 +29,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public int NearestWaterDistance { get; }
         public float LocalHeightRange { get; }
         public int SampledTiles { get; }
-        public string Reason { get; }
+        public string Reason
+        {
+            get
+            {
+                string waterText = NearestWaterDistance == int.MaxValue
+                    ? "none"
+                    : NearestWaterDistance.ToString();
+                return $"landRatio={LandRatio:0.00}; waterDistance={waterText}; " +
+                    $"heightRange={LocalHeightRange:0.000}; sampled={SampledTiles}; " +
+                    $"hardValid={HardValid}; utility={Utility}";
+            }
+        }
     }
 
     /// <summary>
@@ -48,7 +58,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     /// </summary>
     internal sealed class StartingPositionTerrainQualityEvaluator
     {
+        private static readonly string[] WaterTokens =
+            { "water", "river", "lake", "sea", "ocean", "swamp" };
+
         private readonly StartingPositionInitializerSettings _settings;
+        private readonly Dictionary<string, bool> _waterTileIds =
+            new(StringComparer.Ordinal);
 
         public StartingPositionTerrainQualityEvaluator(
             StartingPositionInitializerSettings settings)
@@ -66,6 +81,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int nearestWater = int.MaxValue;
             float minHeight = float.MaxValue;
             float maxHeight = float.MinValue;
+            float minimumLandHeight = Mathf.Min(
+                _settings.startMinHeight, _settings.startMaxHeight);
 
             for (int dx = -radius; dx <= radius; dx++)
             {
@@ -77,7 +94,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                     sampled++;
 
-                    bool water = IsWater(signal, cell);
+                    bool hasHeight = TryReadHeight(signal, cell, out float height);
+                    bool water = IsWaterTileId(ReadTileId(signal, cell)) ||
+                        hasHeight && height < minimumLandHeight;
                     if (water)
                     {
                         int distance = Mathf.Abs(dx) + Mathf.Abs(dy);
@@ -88,7 +107,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                     land++;
 
-                    if (TryReadHeight(signal, cell, out float height))
+                    if (hasHeight)
                     {
                         minHeight = Mathf.Min(minHeight, height);
                         maxHeight = Mathf.Max(maxHeight, height);
@@ -136,53 +155,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
             }
 
-            string waterText = nearestWater == int.MaxValue
-                ? "none"
-                : nearestWater.ToString();
-
-            string reason =
-                $"landRatio={landRatio:0.00}; waterDistance={waterText}; " +
-                $"heightRange={heightRange:0.000}; sampled={sampled}; " +
-                $"hardValid={hardValid}; utility={utility}";
-
             return new StartingPositionTerrainQuality(
                 hardValid,
                 utility,
                 landRatio,
                 nearestWater,
                 heightRange,
-                sampled,
-                reason);
+                sampled);
         }
 
-        private bool IsWater(
-            WorldGeneratedDataSignal signal,
-            Vector2Int cell)
+        private bool IsWaterTileId(string tileId)
         {
-            string tileId = ReadTileId(signal, cell);
-            if (ContainsAny(
-                    tileId,
-                    "water",
-                    "river",
-                    "lake",
-                    "sea",
-                    "ocean",
-                    "swamp"))
-            {
-                return true;
-            }
+            if (string.IsNullOrWhiteSpace(tileId))
+                return false;
 
-            if (TryReadHeight(signal, cell, out float height))
-            {
-                float minimumLandHeight =
-                    Mathf.Min(
-                        _settings.startMinHeight,
-                        _settings.startMaxHeight);
+            if (_waterTileIds.TryGetValue(tileId, out bool water))
+                return water;
 
-                return height < minimumLandHeight;
-            }
-
-            return false;
+            water = ContainsWaterToken(tileId);
+            _waterTileIds.Add(tileId, water);
+            return water;
         }
 
         private static bool Contains(
@@ -251,17 +243,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return signal.TileMap[cell.x, cell.y] ?? string.Empty;
         }
 
-        private static bool ContainsAny(
-            string value,
-            params string[] tokens)
+        private static bool ContainsWaterToken(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                return false;
-
-            for (int i = 0; i < tokens.Length; i++)
+            for (int i = 0; i < WaterTokens.Length; i++)
             {
                 if (value.IndexOf(
-                        tokens[i],
+                        WaterTokens[i],
                         StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     return true;

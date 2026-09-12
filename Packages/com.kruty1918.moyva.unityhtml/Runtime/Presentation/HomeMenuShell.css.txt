@@ -9,9 +9,9 @@
   width: 100%;
   min-width: 0;
   max-width: 1440px;
-  padding: 22px 28px;
+  padding: 14px 18px;
   border-color: rgba(197, 165, 107, 0.55);
-  border-radius: 12px;
+  border-radius: 8px;
   background-color: rgba(12, 17, 24, 0.98);
 }
 .controls-intro, .keyboard-toolbar, .controls-section-heading {
@@ -22,62 +22,62 @@
   flex-shrink: 0;
   gap: 12px;
 }
-.controls-intro { margin: 10px 0 22px; }
-.controls-title { font-size: 27px; color: rgb(244, 240, 230); margin: 5px 0; }
+.controls-intro { margin: 6px 0 12px; }
+.controls-title { font-size: 23px; color: rgb(244, 240, 230); margin: 3px 0; }
 .controls-badge, .keyboard-layer {
   font-size: 10px;
   color: rgb(192, 174, 136);
-  padding: 7px 10px;
+  padding: 5px 8px;
   border-width: 1px;
   border-color: rgb(63, 64, 59);
   border-radius: 5px;
   flex-shrink: 0;
 }
-.controls-workspace { display: flex; flex-direction: row; align-items: stretch; gap: 18px; flex-shrink: 0; width: 100%; }
+.controls-workspace { display: flex; flex-direction: row; align-items: stretch; gap: 12px; flex-shrink: 0; width: 100%; }
 .keyboard-panel {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   flex-basis: 0;
   min-width: 0;
-  padding: 18px;
+  padding: 10px;
   border-width: 1px;
   border-color: rgb(46, 57, 65);
-  border-radius: 10px;
+  border-radius: 7px;
   background-color: rgb(17, 24, 32);
 }
 .keyboard-toolbar { margin-bottom: 18px; }
 .keyboard-board {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
   width: 100%;
-  padding: 12px;
+  padding: 7px;
   background-color: rgb(9, 14, 20);
   border-width: 1px;
   border-color: rgb(37, 46, 56);
-  border-radius: 9px;
+  border-radius: 6px;
 }
-.keyboard-row { display: flex; flex-direction: row; gap: 5px; width: 100%; flex-shrink: 0; }
+.keyboard-row { display: flex; flex-direction: row; gap: 3px; width: 100%; flex-shrink: 0; }
 .keyboard-key {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
-  height: 45px;
+  height: 31px;
   min-width: 0;
-  padding: 3px 0 6px;
+  padding: 2px 0 4px;
   background-color: rgb(29, 38, 49);
   border-width: 1px;
-  border-bottom-width: 4px;
+  border-bottom-width: 3px;
   border-color: rgb(47, 59, 73);
   border-bottom-color: rgb(17, 23, 31);
   border-radius: 5px;
   color: rgb(165, 178, 192);
   cursor: pointer;
 }
-.keycap-label { font-size: 10px; text-align: center; }
+.keycap-label { font-size: 10px; text-align: center; color: rgb(205, 215, 224); }
 .keycap-marker { position: absolute; bottom: 4px; width: 12px; height: 2px; border-radius: 1px; background-color: transparent; }
 .keyboard-key.movement { background-color: rgb(30, 59, 57); color: rgb(155, 227, 208); border-color: rgb(48, 92, 84); border-bottom-color: rgb(18, 39, 37); }
 .keyboard-key.orbit { background-color: rgb(48, 43, 69); color: rgb(197, 181, 244); border-color: rgb(76, 66, 103); border-bottom-color: rgb(28, 23, 43); }
@@ -90,31 +90,31 @@
 .keyboard-key:hover { background-color: rgb(60, 72, 83); border-color: rgb(130, 146, 160); color: white; }
 .keyboard-key.selected { border-color: rgb(241, 213, 154); color: rgb(255, 239, 200); background-color: rgb(81, 67, 42); }
 .keyboard-key.modifier-active { background-color: rgb(81, 67, 42); border-color: rgb(203, 174, 117); color: rgb(255, 234, 187); }
-.keyboard-key:active { border-bottom-width: 1px; padding-top: 6px; }
+.keyboard-key:active { border-bottom-width: 1px; padding-top: 4px; }
 .keyboard-legend { display: flex; flex-direction: row; flex-wrap: wrap; gap: 18px; margin: 19px 2px 10px; }
 .legend-item { display: flex; flex-direction: row; align-items: center; gap: 6px; color: rgb(170, 183, 195); font-size: 11px; }
 .legend-dot { width: 6px; height: 6px; border-radius: 3px; }
-.keyboard-hint { font-size: 11px; line-height: 1.5em; color: rgb(139, 157, 174); margin: 3px 2px 0; }
+.keyboard-hint { font-size: 12px; line-height: 1.35em; color: rgb(178, 191, 203); margin: 2px 2px 5px; }
 .key-inspector {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  width: 260px;
-  padding: 18px;
+  width: 218px;
+  padding: 12px;
   border-width: 1px;
   border-color: rgb(82, 74, 57);
-  border-radius: 10px;
+  border-radius: 7px;
   background-color: rgb(24, 28, 34);
 }
-.selected-key-display { color: rgb(244, 214, 157); font-size: 27px; margin: 13px 0 5px; }
-.selected-key-assignment { min-height: 32px; color: rgb(184, 193, 202); font-size: 12px; line-height: 1.3em; }
-.modifier-switches { display: flex; flex-direction: row; gap: 6px; margin: 10px 0 16px; }
+.selected-key-display { color: rgb(244, 214, 157); font-size: 22px; margin: 8px 0 4px; }
+.selected-key-assignment { min-height: 26px; color: rgb(204, 212, 220); font-size: 12px; line-height: 1.25em; }
+.modifier-switches { display: flex; flex-direction: row; gap: 5px; margin: 8px 0 10px; }
 .modifier-switch {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-grow: 1;
-  height: 30px;
+  height: 26px;
   background-color: rgb(30, 38, 46);
   border-width: 1px;
   border-color: rgb(59, 69, 80);
@@ -124,16 +124,16 @@
 }
 .modifier-switch.active { background-color: rgb(77, 64, 41); border-color: rgb(195, 166, 109); color: rgb(244, 218, 162); }
 .modifier-switch:hover { border-color: rgb(212, 193, 151); }
-.inspector-label { font-size: 10px; color: rgb(159, 174, 188); margin-bottom: 7px; }
-.key-inspector .inspector-select { width: 100%; height: 37px; margin-bottom: 12px; }
+.inspector-label { font-size: 10px; color: rgb(176, 190, 203); margin-bottom: 5px; }
+.key-inspector .inspector-select { width: 100%; height: 32px; min-height: 32px; margin-bottom: 8px; font-size: 12px; }
 .shortcut-button {
   display: flex;
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
   width: 100%;
-  min-height: 35px;
-  margin-bottom: 8px;
+  min-height: 30px;
+  margin-bottom: 6px;
   border-width: 1px;
   border-radius: 5px;
   font-size: 11px;
@@ -142,11 +142,11 @@
 .apply-shortcut { background-color: rgb(203, 173, 110); border-color: rgb(220, 194, 142); color: rgb(28, 29, 27); }
 .shortcut-button:hover { border-color: rgb(243, 224, 185); }
 .shortcut-button:disabled { opacity: 0.4; }
-.binding-notice { font-size: 11px; line-height: 1.4em; color: rgb(156, 183, 169); margin-top: 3px; }
+.binding-notice { font-size: 11px; line-height: 1.25em; color: rgb(178, 205, 190); margin-top: 2px; }
 .binding-notice.conflict { color: rgb(238, 161, 140); }
 .binding-notice.listening { color: rgb(242, 212, 150); }
-.controls-section-heading { margin: 21px 0 12px; }
-.binding-cards { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 8px; flex-shrink: 0; }
+.controls-section-heading { margin: 12px 0 8px; }
+.binding-cards { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 6px; flex-shrink: 0; }
 .binding-card {
   display: flex;
   flex-direction: row;
@@ -154,8 +154,8 @@
   justify-content: space-between;
   width: 24%;
   min-width: 0;
-  min-height: 49px;
-  padding: 9px 12px;
+  min-height: 38px;
+  padding: 7px 9px;
   background-color: rgb(24, 32, 40);
   border-width: 1px;
   border-left-width: 3px;
@@ -165,13 +165,23 @@
 .binding-card.movement { border-left-color: rgb(121, 206, 181); }
 .binding-card.orbit { border-left-color: rgb(174, 151, 230); }
 .binding-card.zoom { border-left-color: rgb(224, 189, 106); }
-.binding-card-title { color: rgb(204, 214, 222); font-size: 11px; flex-shrink: 1; }
-.binding-card-key { color: rgb(184, 202, 216); font-size: 11px; margin-left: 8px; flex-shrink: 1; text-align: right; }
+.binding-card-title { color: rgb(218, 226, 232); font-size: 11px; flex-shrink: 1; }
+.binding-card-key { color: rgb(203, 218, 229); font-size: 11px; margin-left: 6px; flex-shrink: 1; text-align: right; }
 .binding-card.active, .binding-card:hover { border-color: rgb(186, 161, 110); background-color: rgb(39, 44, 46); }
 .controls-page .control-row { border-left-color: rgb(78, 106, 115); background-color: rgb(23, 31, 39); border-radius: 5px; }
+.controls-page .settings-grid .control-row {
+  width: 24%;
+  min-height: 58px;
+  margin-bottom: 6px;
+  padding: 7px 9px;
+}
+.controls-page .settings-grid .control-label { font-size: 11px; }
+.controls-page .settings-grid .control-help { font-size: 10px; margin-top: 2px; }
+.controls-page .settings-grid .menu-slider { height: 26px; min-height: 26px; margin-top: 4px; }
 .vp-compact.controls-page .controls-workspace, .vp-tiny.controls-page .controls-workspace, .vp-portrait.controls-page .controls-workspace { flex-direction: column; }
 .vp-compact.controls-page .key-inspector, .vp-tiny.controls-page .key-inspector, .vp-portrait.controls-page .key-inspector { width: 100%; }
 .vp-compact.controls-page .keyboard-panel, .vp-tiny.controls-page .keyboard-panel, .vp-portrait.controls-page .keyboard-panel { flex-basis: auto; width: 100%; }
+.vp-compact.controls-page .settings-grid .control-row, .vp-tiny.controls-page .settings-grid .control-row, .vp-portrait.controls-page .settings-grid .control-row { width: 49%; }
 .vp-tiny.controls-page .binding-card, .vp-portrait.controls-page .binding-card { width: 48%; }
 .vp-tiny.controls-page .controls-badge, .vp-portrait.controls-page .controls-badge { display: none; }
 .vp-tiny.controls-page .controls-title, .vp-portrait.controls-page .controls-title { font-size: 21px; }
@@ -183,23 +193,23 @@
 
 
 .adaptive-workspace { flex-direction: row; align-items: flex-start; }
-.adaptive-workspace .keyboard-panel { flex-grow: 1; flex-shrink: 1; min-width: 0; padding: 12px; }
-.adaptive-workspace .key-inspector { width: 230px; flex-shrink: 0; padding: 12px; }
+.adaptive-workspace .keyboard-panel { flex-grow: 1; flex-shrink: 1; min-width: 0; padding: 8px; }
+.adaptive-workspace .key-inspector { width: 218px; flex-shrink: 0; padding: 12px; }
 .adaptive-workspace .keyboard-row { flex-direction: row; }
-.adaptive-workspace .keyboard-key { min-width: 0; height: 38px; margin: 2px; padding: 2px; }
-.adaptive-workspace .keycap-label { font-size: 12px; }
-.device-toolbar { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; margin: 4px 0; }
-.device-toolbar text { font-size: 12px; margin: 3px; }
-.device-choice, .device-control { width: auto; min-height: 30px; margin: 3px; padding: 5px 9px; border-radius: 7px; background-color: #293433; color: #e9eee7; }
-.device-choice text, .device-control text { font-size: 12px; }
+.adaptive-workspace .keyboard-key { min-width: 0; height: 31px; margin: 1px; padding: 1px; }
+.adaptive-workspace .keycap-label { font-size: 10px; }
+.device-toolbar { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; margin: 2px 0; }
+.device-toolbar text { font-size: 11px; margin: 2px; color: rgb(213, 221, 224); }
+.device-choice, .device-control { width: auto; min-height: 25px; margin: 2px; padding: 4px 7px; border-radius: 5px; background-color: #293433; color: #e9eee7; }
+.device-choice text, .device-control text { font-size: 10px; }
 .device-choice.active, .device-control.selected { background-color: #52664b; }
-.device-diagram { display: flex; flex-direction: column; align-self: center; align-items: center; padding: 12px; margin: 8px; background-color: #192624; border-width: 2px; border-color: #66796c; }
+.device-diagram { display: flex; flex-direction: column; align-self: center; align-items: center; padding: 8px; margin: 5px; background-color: #192624; border-width: 1px; border-color: #66796c; }
 .device-diagram text { color: #e9eee7; font-size: 12px; }
-.desktop-device-row { display: flex; flex-direction: row; align-items: center; width: 100%; }
+.desktop-device-row { display: flex; flex-direction: row; align-items: flex-start; width: 100%; }
 .desktop-device-row .keyboard-board { flex-grow: 1; flex-shrink: 1; flex-basis: 0; min-width: 0; }
-.mouse-diagram { width: 145px; height: 190px; flex-shrink: 0; border-radius: 65px 65px 45px 45px; }
-.mouse-diagram .device-control { padding: 4px 7px; margin: 2px; }
-.device-toolbar .device-profile-select { width: 195px; height: 32px; margin: 3px 12px 3px 3px; }
+.mouse-diagram { width: 112px; height: 146px; flex-shrink: 0; border-radius: 52px 52px 34px 34px; }
+.mouse-diagram .device-control { padding: 3px 6px; margin: 1px; }
+.device-toolbar .device-profile-select { width: 178px; height: 30px; min-height: 30px; margin: 2px 9px 2px 2px; font-size: 12px; }
 .phone-diagram { min-height: 365px; }
 .touchpad-diagram { width: 380px; border-radius: 14px; }
 .gamepad-diagram { width: 430px; border-radius: 65px 65px 90px 90px; }

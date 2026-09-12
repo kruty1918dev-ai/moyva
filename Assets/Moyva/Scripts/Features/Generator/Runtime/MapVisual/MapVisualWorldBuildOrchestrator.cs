@@ -41,9 +41,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (GameLaunchContext.Mode == GameLaunchMode.MenuLoadGame && !hasPendingWorld)
                 throw new GeneratedWorldDataIntegrityException(
                     $"Cannot continue slot {GameLaunchContext.SaveSlot:D2}: no saved world was restored. New generation is disabled for a load request.");
-            string source = ResolveSource(hasPendingWorld);
+            bool botMatch = GameLaunchContext.Mode == GameLaunchMode.MenuBotGame;
+            string source = ResolveSource(hasPendingWorld && !botMatch);
 
-            GeneratedWorldData worldData = _state.TryConsumePendingWorldData(out var pending)
+            GeneratedWorldData worldData = _state.TryConsumePendingWorldData(out var pending) && !botMatch
                 ? pending
                 : _dataFactory.Generate();
             worldData = _integrity != null

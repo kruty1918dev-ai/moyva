@@ -15,11 +15,7 @@ using UtpDataStreamReader = Unity.Collections.DataStreamReader;
 namespace Kruty1918.Moyva.Multiplayer.Networking
 {
     /// <summary>
-    /// LAN network provider skeleton.
-    ///
-    /// Real implementation uses Netcode for GameObjects (NGO) CustomMessagingManager
-    /// or a UDP transport. This provider uses Unity Transport primitives and assumes
-    /// the necessary Unity Transport / Netcode packages are installed in the project.
+    /// LAN transport with reliable, ordered delivery over Unity Transport.
     /// </summary>
     public sealed class LanNetworkProvider :
         INetworkProvider,
@@ -63,9 +59,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             return ShutdownTransportAsync();
         }
 
-        public Task SendMessageAsync(string targetPeerId, byte[] payload, CancellationToken ct = default)
+        public async Task SendMessageAsync(string targetPeerId, byte[] payload, CancellationToken ct = default)
         {
-            return SendViaLanAsync(targetPeerId, payload, ct);
+            await SendViaLanAsync(targetPeerId, payload, ct);
         }
 
         public void SetLocalPeerId(string playerId)
@@ -82,7 +78,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 private const byte FrameBye = 4;
 
                 private const int MaxFrameBodyBytes = 60 * 1024;
-                private const int HandshakeTimeoutMs = 10_000;
+                private const int HandshakeTimeoutMs = 30_000;
+                private const uint ProtocolVersion = 2;
+                private const int MaximumIdentityBytes = 256;
                 private const int HostPortSearchCount = 32;
 
                 private NetworkDriver _driver;
@@ -93,6 +91,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 private string _localPeerId;
                 private string _hostPeerId;
                 private bool _hostHelloReceived;
+                private ReliableTransportChannel _reliableChannel;
+                private readonly Dictionary<NetworkConnection, string> _helloPeerIds = new();
+                private readonly List<NetworkConnection> _expiredHandshakes = new();
+                private string _transportError;
 
                 private async Task<SessionResult> HostViaLanAsync(string sessionId, CancellationToken ct)
                 {
@@ -106,7 +108,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                             return SessionResult.Fail(error);
 
                         _isHost = true;
-                        StartPumpLoop(ct);
+                        StartPumpLoop();
                         PeerConnected?.Invoke(_localPeerId);
 
                         var ip = GetLocalIPAddress() ?? "127.0.0.1";
@@ -134,7 +136,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                             continue;
 
                         var netSettings = new NetworkSettings();
+                        ReliableTransportChannel.Configure(ref netSettings);
                         var candidateDriver = NetworkDriver.Create(netSettings);
+                        netSettings.Dispose();
+                        var candidateChannel = new ReliableTransportChannel(candidateDriver);
                         var candidateConnections = new NativeList<NetworkConnection>(4, Allocator.Persistent);
                         var endpoint = NetworkEndpoint.AnyIpv4.WithPort((ushort)candidatePort);
 
@@ -151,6 +156,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         }
 
                         _driver = candidateDriver;
+                        _reliableChannel = candidateChannel;
                         _serverConnections = candidateConnections;
                         boundPort = (ushort)candidatePort;
                         return true;
@@ -214,7 +220,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         await ShutdownTransportAsync();
 
                         var netSettings = new NetworkSettings();
+                        ReliableTransportChannel.Configure(ref netSettings);
                         _driver = NetworkDriver.Create(netSettings);
+                        netSettings.Dispose();
+                        _reliableChannel = new ReliableTransportChannel(_driver);
 
                         var ep = default(NetworkEndpoint);
                         if (!NetworkEndpoint.TryParse(ip, port, out ep))
@@ -224,13 +233,14 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                         _serverConnection = _driver.Connect(ep);
                         _isHost = false;
-                        StartPumpLoop(ct);
+                        StartPumpLoop();
 
                         var deadline = DateTime.UtcNow.AddMilliseconds(HandshakeTimeoutMs);
                         while (!_hostHelloReceived)
                         {
                             if (ct.IsCancellationRequested) return SessionResult.Fail("Join cancelled.");
-                            if (DateTime.UtcNow > deadline) return SessionResult.Fail("LAN handshake timeout.");
+                            if (!string.IsNullOrEmpty(_transportError)) return SessionResult.Fail(_transportError);
+                            if (DateTime.UtcNow > deadline) return SessionResult.Fail("LAN handshake timed out after 30 seconds. Check that both players use the same game version.");
                             await Task.Delay(50, ct);
                         }
                         return SessionResult.Ok(joinCode);
@@ -243,9 +253,14 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     {
                         return SessionResult.Fail(e.Message);
                     }
+                    finally
+                    {
+                        if (!_hostHelloReceived)
+                            await ShutdownTransportAsync();
+                    }
                 }
 
-                private void StartPumpLoop(CancellationToken externalCt)
+                private void StartPumpLoop()
                 {
                     _transportPump.Start(
                         CancellationToken.None,
@@ -260,6 +275,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         PumpHost();
                     else
                         PumpClient();
+                    _reliableChannel?.Flush(_driver, FailTransportPeer);
                 }
 
                 private void PumpHost()
@@ -270,6 +286,15 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         _connectionPlayerIds,
                         HandleFrame,
                         PeerDisconnected);
+                    _expiredHandshakes.Clear();
+                    foreach (var pair in _helloPeerIds)
+                        if (_driver.GetConnectionState(pair.Key) == NetworkConnection.State.Disconnected)
+                            _expiredHandshakes.Add(pair.Key);
+                    foreach (var connection in _expiredHandshakes)
+                    {
+                        _helloPeerIds.Remove(connection);
+                        _reliableChannel?.Forget(connection);
+                    }
                 }
 
                 private void PumpClient()
@@ -282,14 +307,17 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         switch (eventType)
                         {
                             case NetworkEvent.Type.Connect:
-                                SendFrame(_serverConnection, BuildHelloFrame(_localPeerId));
-                                SendFrame(_serverConnection, BuildIdentityFrame(_localPeerId));
+                                SendControlFrame(_serverConnection, BuildHelloFrame(_localPeerId));
+                                SendControlFrame(_serverConnection, BuildIdentityFrame(_localPeerId));
                                 break;
                             case NetworkEvent.Type.Data:
                                 HandleFrame(_serverConnection, stream, isHostSide: false);
                                 break;
                             case NetworkEvent.Type.Disconnect:
+                                _reliableChannel?.Forget(_serverConnection);
+                                _helloPeerIds.Remove(_serverConnection);
                                 _serverConnection = default;
+                                _transportError ??= "LAN host disconnected during the connection.";
                                 if (!string.IsNullOrEmpty(_hostPeerId))
                                     PeerDisconnected?.Invoke(_hostPeerId);
                                 break;
@@ -299,8 +327,17 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 private void HandleFrame(NetworkConnection source, UtpDataStreamReader stream, bool isHostSide)
                 {
+                    if (_reliableChannel == null || _driver.GetConnectionState(source) != NetworkConnection.State.Connected)
+                        return;
+                    if (!_reliableChannel.TryReadFrame(source, ref stream, out var error))
+                    {
+                        if (error != null)
+                            FailTransportPeer(source, error);
+                        return;
+                    }
                     if (!TryReadFrame(stream, out byte type, out byte[] body))
                     {
+                        FailTransportPeer(source, "Invalid LAN message frame.");
                         return;
                     }
 
@@ -317,47 +354,71 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 private void HandleHello(NetworkConnection source, byte[] body, bool isHostSide)
                 {
-                    if (body == null || body.Length < 4)
+                    if (body == null || body.Length <= 4 || body.Length > MaximumIdentityBytes + 4)
                     {
+                        FailTransportPeer(source, "Invalid LAN handshake identity.");
                         return;
                     }
 
                     uint version = BitConverter.ToUInt32(body, 0);
-                    if (version != 1)
+                    if (version != ProtocolVersion)
                     {
-                        _driver.Disconnect(source);
+                        FailTransportPeer(source, "LAN game versions are incompatible.");
                         return;
                     }
 
                     string peerId = body.Length > 4 ? System.Text.Encoding.UTF8.GetString(body, 4, body.Length - 4) : string.Empty;
+                    if (string.IsNullOrWhiteSpace(peerId) || string.Equals(peerId, _localPeerId, StringComparison.Ordinal))
+                    {
+                        FailTransportPeer(source, "LAN peer identity conflicts with the local player.");
+                        return;
+                    }
+                    if (_helloPeerIds.TryGetValue(source, out var previousIdentity))
+                    {
+                        if (!string.Equals(previousIdentity, peerId, StringComparison.Ordinal))
+                            FailTransportPeer(source, "LAN peer tried to change its identity.");
+                        return;
+                    }
+                    _helloPeerIds.Add(source, peerId);
                     if (isHostSide)
                     {
-                        SendFrame(source, BuildHelloFrame(_localPeerId));
-                        SendFrame(source, BuildIdentityFrame(_localPeerId));
-                    }
-                    else
-                    {
-                        if (!string.IsNullOrEmpty(peerId))
-                            _hostPeerId = peerId;
+                        SendControlFrame(source, BuildHelloFrame(_localPeerId));
+                        SendControlFrame(source, BuildIdentityFrame(_localPeerId));
                     }
                 }
 
                 private void HandleIdentity(NetworkConnection source, byte[] body, bool isHostSide)
                 {
                     string peerId = body != null && body.Length > 0 ? System.Text.Encoding.UTF8.GetString(body) : string.Empty;
-                    if (string.IsNullOrEmpty(peerId))
+                    if (string.IsNullOrWhiteSpace(peerId) || body.Length > MaximumIdentityBytes ||
+                        !_helloPeerIds.TryGetValue(source, out var helloIdentity) ||
+                        !string.Equals(helloIdentity, peerId, StringComparison.Ordinal))
                     {
+                        FailTransportPeer(source, "LAN identity does not match the handshake.");
                         return;
                     }
 
                     int key = source.GetHashCode();
                     if (isHostSide)
                     {
+                        if (_connectionPlayerIds.TryGetValue(key, out var existingIdentity))
+                        {
+                            if (!string.Equals(existingIdentity, peerId, StringComparison.Ordinal))
+                                FailTransportPeer(source, "LAN peer tried to change its identity.");
+                            return;
+                        }
+                        if (TryFindConnectionByPlayerId(peerId, out var existingConnection) && existingConnection != source)
+                        {
+                            FailTransportPeer(source, "Another connected LAN player already uses this identity.");
+                            return;
+                        }
                         _connectionPlayerIds[key] = peerId;
                         PeerConnected?.Invoke(peerId);
                     }
                     else
                     {
+                        if (_hostHelloReceived)
+                            return;
                         _hostPeerId = peerId;
                         _hostHelloReceived = true;
                         PeerConnected?.Invoke(peerId);
@@ -387,14 +448,12 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                             return;
                         }
 
-                        if (!string.Equals(
-                                senderId,
-                                authoritativeSenderId,
-                                StringComparison.Ordinal))
-                        {
-                        }
-
                         senderId = authoritativeSenderId;
+                    }
+                    else if (!_hostHelloReceived)
+                    {
+                        FailTransportPeer(source, "LAN gameplay message arrived before the host handshake.");
+                        return;
                     }
 
                     DispatchUserMessage(senderId, payload);
@@ -411,21 +470,22 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         for (int i = 0; i < _serverConnections.Length; i++)
                         {
                             var c = _serverConnections[i];
-                            if (!c.IsCreated || c == source) continue;
-                            SendFrame(c, wireFrame);
+                            if (!IsAuthenticatedConnection(c) || c == source) continue;
+                            SendControlFrame(c, wireFrame);
                         }
                     }
                     else if (target != _localPeerId && TryFindConnectionByPlayerId(target, out var dest))
                     {
-                        SendFrame(dest, wireFrame);
+                        SendControlFrame(dest, wireFrame);
                     }
                 }
 
                 private Task SendViaLanAsync(string targetPeerId, byte[] payload, CancellationToken ct)
                 {
+                    ct.ThrowIfCancellationRequested();
                     if (!_driver.IsCreated)
                     {
-                        return Task.CompletedTask;
+                        throw new InvalidOperationException("LAN session is not connected.");
                     }
 
                     var safePayload = payload ?? Array.Empty<byte>();
@@ -440,16 +500,25 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     {
                         if (string.IsNullOrWhiteSpace(targetPeerId) || targetPeerId == "*")
                         {
+                            var recipientCount = 0;
+                            for (var i = 0; i < _serverConnections.Length; i++)
+                                if (IsAuthenticatedConnection(_serverConnections[i]))
+                                    recipientCount++;
+                            _reliableChannel.EnsureCapacity(frame.Length, recipientCount);
                             for (int i = 0; i < _serverConnections.Length; i++)
                             {
                                 var c = _serverConnections[i];
-                                if (c.IsCreated)
+                                if (IsAuthenticatedConnection(c))
                                     SendFrame(c, frame);
                             }
                         }
                         else if (TryFindConnectionByPlayerId(targetPeerId, out var target))
                         {
                             SendFrame(target, frame);
+                        }
+                        else if (!string.Equals(targetPeerId, _localPeerId, StringComparison.Ordinal))
+                        {
+                            throw new InvalidOperationException("The requested LAN peer is not connected.");
                         }
 
                         DispatchUserMessage(_localPeerId, safePayload);
@@ -464,29 +533,51 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 private void SendFrame(NetworkConnection connection, byte[] frame)
                 {
-                    if (!_driver.IsCreated || !connection.IsCreated || frame == null) return;
-                    if (frame.Length > MaxFrameBodyBytes + 3) { return; }
+                    if (_reliableChannel == null)
+                        throw new InvalidOperationException("LAN transport is not initialized.");
+                    _reliableChannel.Send(_driver, connection, frame);
+                }
 
-                    if (_driver.BeginSend(connection, out var writer) != 0)
+                private void SendControlFrame(NetworkConnection connection, byte[] frame)
+                {
+                    try { SendFrame(connection, frame); }
+                    catch (Exception exception) { FailTransportPeer(connection, exception.Message); }
+                }
+
+                private bool IsAuthenticatedConnection(NetworkConnection connection)
+                    => connection.IsCreated && _driver.GetConnectionState(connection) == NetworkConnection.State.Connected &&
+                       _connectionPlayerIds.ContainsKey(connection.GetHashCode());
+
+                private void FailTransportPeer(NetworkConnection connection, string reason)
+                {
+                    UnityEngine.Debug.LogWarning($"[LAN Transport] {reason}");
+                    _reliableChannel?.Forget(connection);
+                    _helloPeerIds.Remove(connection);
+                    if (_driver.IsCreated && connection.IsCreated)
+                        _driver.Disconnect(connection);
+                    if (!_isHost)
                     {
-                        return;
+                        _transportError = reason;
+                        _serverConnection = default;
+                        if (!string.IsNullOrEmpty(_hostPeerId))
+                            PeerDisconnected?.Invoke(_hostPeerId);
                     }
-
-                    var buffer = new NativeArray<byte>(frame, Allocator.Temp);
-                    writer.WriteBytes(buffer);
-                    buffer.Dispose();
-                    _driver.EndSend(writer);
+                    else if (_connectionPlayerIds.TryGetValue(connection.GetHashCode(), out var peerId))
+                    {
+                        _connectionPlayerIds.Remove(connection.GetHashCode());
+                        PeerDisconnected?.Invoke(peerId);
+                    }
                 }
 
                 private static bool TryReadFrame(UtpDataStreamReader stream, out byte type, out byte[] body)
                 {
                     type = 0; body = null;
-                    if (stream.Length < 3) return false;
+                    if (stream.Length - stream.GetBytesRead() < 3) return false;
 
                     type = stream.ReadByte();
                     ushort len = stream.ReadUShort();
                     if (len > MaxFrameBodyBytes) return false;
-                    if (stream.Length - stream.GetBytesRead() < len) return false;
+                    if (stream.Length - stream.GetBytesRead() != len) return false;
 
                     body = new byte[len];
                     if (len > 0)
@@ -503,7 +594,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 {
                     var idBytes = System.Text.Encoding.UTF8.GetBytes(peerId ?? string.Empty);
                     var body = new byte[4 + idBytes.Length];
-                    Buffer.BlockCopy(BitConverter.GetBytes((uint)1), 0, body, 0, 4);
+                    Buffer.BlockCopy(BitConverter.GetBytes(ProtocolVersion), 0, body, 0, 4);
                     if (idBytes.Length > 0) Buffer.BlockCopy(idBytes, 0, body, 4, idBytes.Length);
                     return MultiplayerFrameCodec.Wrap(
                         FrameHello,
@@ -537,7 +628,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                             for (int i = 0; i < _serverConnections.Length; i++)
                             {
                                 var c = _serverConnections[i];
-                                if (c.IsCreated && c.GetHashCode() == kv.Key)
+                                if (IsAuthenticatedConnection(c) && c.GetHashCode() == kv.Key)
                                 {
                                     connection = c;
                                     return true;
@@ -587,6 +678,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     try { if (_serverConnections.IsCreated) _serverConnections.Dispose(); } catch { }
 
                     _serverConnection = default;
+                    _reliableChannel?.Clear();
+                    _reliableChannel = null;
+                    _helloPeerIds.Clear();
+                    _expiredHandshakes.Clear();
+                    _transportError = null;
                     _connectionPlayerIds.Clear();
                     _hostHelloReceived = false;
                     _hostPeerId = null;

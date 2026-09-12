@@ -2,6 +2,12 @@ namespace Kruty1918.Moyva.SaveSystem
 {
     using System;
 
+    public enum PlayerControllerType
+    {
+        Human = 0,
+        Bot = 1
+    }
+
     public enum GameLaunchMode
     {
         Unknown = 0,
@@ -10,6 +16,7 @@ namespace Kruty1918.Moyva.SaveSystem
         MenuLoadGame = 3,
         MenuJoinGame = 4,
         MenuMultiplayerGame = 5,
+        MenuBotGame = 6,
     }
 
     public enum GameLaunchSource
@@ -49,6 +56,22 @@ namespace Kruty1918.Moyva.SaveSystem
         public static bool HasLocalPlayerRole { get; private set; }
         public static bool IsLocalPlayerHost { get; private set; }
         public static string LocalPlayerId { get; private set; } = string.Empty;
+        public static string BotPlayerId { get; private set; } = string.Empty;
+        public static bool HasBotOpponent => Mode == GameLaunchMode.MenuBotGame && !string.IsNullOrEmpty(BotPlayerId);
+
+        public static void ConfigureBotOpponent(string playerId)
+        {
+            if (Mode != GameLaunchMode.MenuNewGame || MaxPlayers != 2
+                || string.IsNullOrWhiteSpace(playerId) || playerId == LocalPlayerId)
+                throw new InvalidOperationException("A bot opponent requires a two-player local new game.");
+            BotPlayerId = playerId.Trim();
+            Mode = GameLaunchMode.MenuBotGame;
+            _autoLoadOverride = false;
+        }
+
+        public static PlayerControllerType GetPlayerController(string playerId)
+            => HasBotOpponent && string.Equals(playerId, BotPlayerId, StringComparison.Ordinal)
+                ? PlayerControllerType.Bot : PlayerControllerType.Human;
         public static DateTime ConfiguredAtUtc => _configuredAtUtc;
         public static DateTime ExpiresAtUtc => _expiresAtUtc;
         public static bool HasActiveContext => Mode != GameLaunchMode.Unknown;
@@ -283,6 +306,7 @@ namespace Kruty1918.Moyva.SaveSystem
 
         private static void ClearWorldSettings()
         {
+            BotPlayerId = string.Empty;
             HasWorldSettings = false;
             WorldName = string.Empty;
             Seed = 0;
@@ -297,6 +321,7 @@ namespace Kruty1918.Moyva.SaveSystem
 
         private static void SetLocalPlayerRole(bool? isLocalPlayerHost, string localPlayerId)
         {
+            BotPlayerId = string.Empty;
             HasLocalPlayerRole = isLocalPlayerHost.HasValue || !string.IsNullOrWhiteSpace(localPlayerId);
             IsLocalPlayerHost = isLocalPlayerHost ?? false;
             LocalPlayerId = string.IsNullOrWhiteSpace(localPlayerId) ? string.Empty : localPlayerId.Trim();

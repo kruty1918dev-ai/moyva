@@ -39,7 +39,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         var isLocal = p.IsLocal ||
                                       (!string.IsNullOrEmpty(localPlayerId) &&
                                        string.Equals(p.PlayerId, localPlayerId, StringComparison.Ordinal));
-                        _players.Add(new GameplayPlayer(p.PlayerId, p.DisplayName, p.IsHost, isLocal));
+                        _players.Add(new GameplayPlayer(p.PlayerId, p.DisplayName, p.IsHost, isLocal, p.ControllerType));
                     }
                 }
 

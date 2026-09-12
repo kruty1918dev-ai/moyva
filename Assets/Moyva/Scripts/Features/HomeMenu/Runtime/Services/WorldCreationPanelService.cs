@@ -152,9 +152,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 ? "Player"
                 : _localSettings.PlayerName;
             bool soloFlow = IsSoloFlow();
+            bool botMatch = _moyvaUiState?.PlayFlow == HomeMenuPlayFlow.HumanVsBot;
             var currentLobby = _lobbyService?.Current;
             int maxPlayers = soloFlow
-                ? 1
+                ? (botMatch ? 2 : 1)
                 : currentLobby != null && currentLobby.MaxPlayers > 0
                     ? currentLobby.MaxPlayers
                     : 2;
@@ -175,6 +176,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 new GameplayPlayer(localId, playerName, isHost: true, isLocal: true)
             };
 
+            if (botMatch)
+                players.Add(new GameplayPlayer("bot-1", "Bot", false, false, PlayerControllerType.Bot));
+
             _gameplaySession.Apply(ResolveProvider(), worldSettings, players, localId);
             if (soloFlow)
             {
@@ -191,6 +195,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     worldSettings.Height,
                     isLocalPlayerHost: true,
                     localPlayerId: localId);
+                if (botMatch)
+                    GameLaunchContext.ConfigureBotOpponent(players[1].PlayerId);
             }
             else
             {
@@ -284,7 +290,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private bool IsSoloFlow()
         {
             if (_moyvaUiState != null)
-                return _moyvaUiState.PlayFlow == HomeMenuPlayFlow.Solo;
+                return _moyvaUiState.PlayFlow != HomeMenuPlayFlow.Multiplayer;
 
             if (_lobbyFlowContext != null && _lobbyFlowContext.FlowKind != LobbyFlowKind.None)
                 return false;

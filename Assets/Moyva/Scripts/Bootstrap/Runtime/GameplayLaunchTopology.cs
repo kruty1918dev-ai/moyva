@@ -38,6 +38,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (mode == GameLaunchMode.DirectGameplayTest)
                 return 1;
 
+            if (GameLaunchContext.HasBotOpponent)
+                return 2;
+
             int participantCount = Mathf.Max(0, sessionParticipantCount);
             return Mathf.Max(1, participantCount);
         }
@@ -60,6 +63,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             if (isDirectGameplay)
                 return 1;
+
+            if (GameLaunchContext.HasBotOpponent)
+                return 2;
 
             return Mathf.Max(1, sessionParticipantCount);
         }
@@ -87,6 +93,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (isDirectGameplay)
                 return slotIndex == 0 ? new GameplayParticipantSpec(DirectLocalOwnerId) : default;
+
+            if (GameLaunchContext.HasBotOpponent)
+                return new GameplayParticipantSpec(slotIndex == 0
+                    ? GameLaunchContext.LocalPlayerId : GameLaunchContext.BotPlayerId);
 
             if (participant != null)
             {

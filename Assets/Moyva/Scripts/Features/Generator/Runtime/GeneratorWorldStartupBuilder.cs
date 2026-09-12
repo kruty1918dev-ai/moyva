@@ -84,6 +84,7 @@ namespace Kruty1918.Moyva.Generator
             {
                 case GameLaunchMode.DirectGameplayTest:
                 case GameLaunchMode.MenuNewGame:
+                case GameLaunchMode.MenuBotGame:
                 case GameLaunchMode.MenuLoadGame:
                 case GameLaunchMode.MenuMultiplayerGame:
                     return true;

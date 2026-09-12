@@ -286,7 +286,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool shortened = string.Equals(viewportClass, "vp-short", StringComparison.Ordinal);
 
             float padding = shortened ? 8f : compact ? 10f : 18f;
-            float topbarHeight = shortened ? 50f : compact ? 54f : 62f;
+            float topbarHeight = shortened || compact ? 104f : 112f;
             float commandHeight = shortened ? 50f : 58f;
             float sideWidth = wide ? 500f : compact ? 400f : 460f;
             float sideRatio = compact ? 0.50f : 0.48f;

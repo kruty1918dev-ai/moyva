@@ -29,7 +29,7 @@ public static class StartupBarrierSmoke
             if (state == PlayModeStateChange.EnteredEditMode && SessionState.GetString(Key, "") != "")
             {
                 EditorSceneManager.playModeStartScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(SessionState.GetString(Key + ".previous", ""));
-                SessionState.EraseString(Key);
+                SessionState.EraseString(Key); stopping = false; launched = false; transition = null; began = 0; errors = 0; sawInputBlock = false;
             }
         };
         Application.logMessageReceived += (condition, stack, type) =>

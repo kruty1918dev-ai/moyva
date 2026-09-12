@@ -31,10 +31,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             html.Append("</view></view><view className=\"top-section turn-summary\">");
             if (snapshot.TurnUiEnabled)
             {
+                bool botMatch = Kruty1918.Moyva.SaveSystem.GameLaunchContext.HasBotOpponent;
+                if (botMatch)
+                    TurnPill(html, "VS BOT", "MODE", "local-turn");
                 TurnPill(html, snapshot.Round.ToString(CultureInfo.InvariantCulture), "ROUND", string.Empty);
-                TurnPill(html, snapshot.GlobalTurn.ToString(CultureInfo.InvariantCulture), "GLOBAL TURN", string.Empty);
-                TurnPill(html, Display(snapshot.ActiveOwnerId), "ACTIVE PLAYER", string.Empty);
-                TurnPill(html, snapshot.IsLocalTurn ? "YOUR TURN" : "WAITING", "STATUS", snapshot.IsLocalTurn ? "local-turn" : "waiting-turn");
+                if (!botMatch)
+                    TurnPill(html, snapshot.GlobalTurn.ToString(CultureInfo.InvariantCulture), "GLOBAL TURN", string.Empty);
+                TurnPill(html, botMatch ? "BOT" : Display(snapshot.ActiveOwnerId), botMatch ? "OPPONENT" : "ACTIVE PLAYER", string.Empty);
+                TurnPill(html, botMatch ? (snapshot.IsLocalTurn ? "YOUR TURN" : "BOT TURN") : snapshot.IsLocalTurn ? "YOUR TURN" :
+                    Kruty1918.Moyva.SaveSystem.GameLaunchContext.GetPlayerController(snapshot.ActiveOwnerId)
+                        == Kruty1918.Moyva.SaveSystem.PlayerControllerType.Bot ? "BOT TURN" : "WAITING",
+                    "STATUS", snapshot.IsLocalTurn ? "local-turn" : "waiting-turn");
             }
             else
             {
@@ -330,7 +337,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (!string.IsNullOrWhiteSpace(snapshot.SelectionId))
                     html.Append(Button("CLEAR", "Globals.gameplay.ClearSelection()", "button", "Clear selection"));
                 if (snapshot.TurnUiEnabled)
-                    html.Append(Button(snapshot.EndTurnPending ? "WAITING..." : "END TURN",
+                    html.Append(Button(Kruty1918.Moyva.SaveSystem.GameLaunchContext.HasBotOpponent
+                            ? (snapshot.IsLocalTurn ? "END TURN" : "BOT TURN")
+                            : snapshot.EndTurnPending ? "WAITING..." : "END TURN",
                         "Globals.gameplay.EndTurn()", "button positive",
                         snapshot.EndTurnPending ? "Waiting for host confirmation" : "End current turn",
                         snapshot.EndTurnPending || !snapshot.IsLocalTurn));

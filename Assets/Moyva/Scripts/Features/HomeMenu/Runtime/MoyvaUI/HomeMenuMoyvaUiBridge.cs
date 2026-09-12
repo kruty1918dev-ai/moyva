@@ -52,6 +52,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state?.SetPlayFlow(HomeMenuPlayFlow.Multiplayer);
             Open(MultiplayerPanel);
         }
+        public void PlayVsBot()
+        {
+            _lobbyFlowContext?.Set(NetworkProviderType.Offline, LobbyFlowKind.None);
+            _state?.SetPlayFlow(HomeMenuPlayFlow.HumanVsBot);
+            Open(WorldSetupPanel);
+        }
         public void Settings() => Open(SettingsPanel);
         public void WorldSetup() => Open(WorldSetupPanel);
         public void Back()

@@ -53,7 +53,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         Button(sb, "SAVE", "CONTINUE", $"Resume one of {view.Slots.Count} saved realms.", "Globals.moyvaMenu.Continue()", true);
                     Button(sb, "SOLO", "SOLO SANDBOX", "Build a world without an opponent.", "Globals.moyvaMenu.Solo()", view.Slots.Count == 0);
                     Button(sb, "NET", "MULTIPLAYER", "Host or join an online or LAN lobby.", "Globals.moyvaMenu.Multiplayer()");
-                    Button(sb, "AI", "PLAY AGAINST AI", "Computer opponents are still in development.", string.Empty, false, false, "COMING SOON");
+                    Button(sb, "AI", "Bot", "Start a turn-based match against a computer opponent.", "Globals.moyvaMenu.PlayVsBot()");
                     break;
                 case "ContinuePanel":
                     Header(sb, "CONTINUE", "Saved realms", showBack);
@@ -103,7 +103,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     sb.Append("</view>");
                     break;
                 case "WorldSetupPanel":
-                    Header(sb, "WORLD SETUP", state.PlayFlow == HomeMenuPlayFlow.Solo ? "Create a sandbox" : "Shape the campaign", showBack);
+                    Header(sb, "WORLD SETUP", state.PlayFlow == HomeMenuPlayFlow.HumanVsBot ? "Match Setup — Human vs Bot" : state.PlayFlow == HomeMenuPlayFlow.Solo ? "Create a sandbox" : "Shape the campaign", showBack);
                     sb.Append("<view className=\"form-grid\">");
                     Input(sb, "World name", view.WorldName, "New World", "Globals.moyvaMenu.PreviewWorldName(event)", "Globals.moyvaMenu.CommitWorldName(event)", 48, true, "Standard", "full");
                     Input(sb, "Seed", view.Seed.ToString(CultureInfo.InvariantCulture), "World seed", string.Empty, "Globals.moyvaMenu.CommitSeed(event)", 12, true, "IntegerNumber");
@@ -114,8 +114,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     sb.Append("</view>");
                     ActionButton(
                         sb,
-                        state.PlayFlow == HomeMenuPlayFlow.Solo ? "START SANDBOX" : "CREATE LOBBY",
-                        state.PlayFlow == HomeMenuPlayFlow.Solo ? "Generate the world and enter the game." : "Create the room and wait for players.",
+                        state.PlayFlow == HomeMenuPlayFlow.HumanVsBot ? "START" : state.PlayFlow == HomeMenuPlayFlow.Solo ? "START SANDBOX" : "CREATE LOBBY",
+                        state.PlayFlow != HomeMenuPlayFlow.Multiplayer ? "Generate the world and enter the game." : "Create the room and wait for players.",
                         "Globals.moyvaMenu.CreateWorld()",
                         view.CreateWorldButton == null || view.CreateWorldButton.interactable);
                     break;
@@ -258,7 +258,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 .Append(E(kicker)).Append("</text><text className=\"navigation-title\">").Append(E(title)).Append("</text></view>");
             if (showBack)
                 sb.Append("<button className=\"top-back-button\" onClick=\"Globals.moyvaMenu.Back()\"><text className=\"top-back-label\">BACK</text></button>");
-            sb.Append("</view></view><scroll className=\"navigation-list\" sensitivity=\"55\">");
+            sb.Append("</view></view><scroll className=\"navigation-list\" data-key=\"scroll-")
+                .Append(E(kicker)).Append('-').Append(E(title)).Append("\" sensitivity=\"24\">");
         }
 
         private static void Button(
