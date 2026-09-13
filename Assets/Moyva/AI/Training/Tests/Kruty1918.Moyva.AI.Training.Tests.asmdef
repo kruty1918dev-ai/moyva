@@ -1,7 +1,18 @@
 {
   "name": "Kruty1918.Moyva.AI.Training.Tests",
-  "references": ["Kruty1918.Moyva.AI.Training", "Kruty1918.Moyva.Turns", "Unity.ML-Agents"],
-  "includePlatforms": ["Editor"],
-  "optionalUnityReferences": ["TestAssemblies"],
+  "references": [
+    "Kruty1918.Moyva.AI.Training",
+    "Kruty1918.Moyva.Turns",
+    "Unity.ML-Agents",
+    "Kruty1918.Moyva.AI.Bot.Core",
+    "Kruty1918.Moyva.Construction",
+    "Zenject"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
   "autoReferenced": false
 }

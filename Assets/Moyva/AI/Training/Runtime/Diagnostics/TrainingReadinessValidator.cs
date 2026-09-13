@@ -29,13 +29,28 @@ namespace Kruty1918.Moyva.AI.Training
             var outcomes = (simulation as GameplayTrainingSimulation)?.Outcomes;
             if (outcomes == null || !outcomes.IsConnected) report.Block("TERMINAL_OUTCOME_BLOCKED");
             var frame = environment?.Bridge.Frame;
-            if (environment?.Stage == TrainingCurriculumStage.FullGame && source?.Capabilities != null)
-                foreach (var id in new[] { BotCapabilityId.Combat, BotCapabilityId.Recruitment, BotCapabilityId.Construction, BotCapabilityId.Capture })
+            if (environment?.Stage == TrainingCurriculumStage.FullGame)
+            {
+                foreach (var id in new[] { BotCapabilityId.Turn, BotCapabilityId.Movement, BotCapabilityId.Combat,
+                    BotCapabilityId.Recruitment, BotCapabilityId.Construction, BotCapabilityId.Capture })
                 {
-                    var capability = source.Capabilities.Get(id);
-                    if (capability == null || capability.UnavailableReason(simulation.PlayerId) != null)
-                        report.Block("FULLGAME_BLOCKED: " + id + " is not connected.");
+                    var capability = source?.Capabilities?.Get(id);
+                    string unavailable = capability == null ? "Runtime capability is absent." : capability.UnavailableReason(simulation.PlayerId);
+                    report.SetMechanic(id.ToString().ToUpperInvariant(), unavailable == null ? TrainingMechanicStatus.Ready
+                        : TrainingMechanicStatus.Blocked, unavailable);
                 }
+                var episode = (simulation as GameplayTrainingSimulation)?.Episode;
+                bool economyReady = episode?.EconomyInstalled == true && string.IsNullOrEmpty(episode.FullGameSetupError);
+                report.SetMechanic("ECONOMY", economyReady ? TrainingMechanicStatus.Ready : TrainingMechanicStatus.Blocked,
+                    episode?.FullGameSetupError ?? "Authoritative economy and game-start services are not installed.");
+                bool eliminationReady = economyReady && source?.Capabilities?.Get(BotCapabilityId.Combat) is CombatBotCapability combat
+                    && combat.SupportsBuildingTargets;
+                report.SetMechanic("ELIMINATION", eliminationReady ? TrainingMechanicStatus.Ready : TrainingMechanicStatus.Blocked,
+                    "Requires active owned settlements and authoritative building attacks/destruction.");
+                report.SetMechanic("TERMINAL_OUTCOME", eliminationReady && outcomes?.IsConnected == true
+                    ? TrainingMechanicStatus.Ready : TrainingMechanicStatus.Blocked,
+                    "A result subscription alone does not establish an accessible win condition.");
+            }
             if (frame == null) report.Block("DECISION_FRAME_BLOCKED: episode cannot request a policy decision.");
             else
             {
@@ -50,8 +65,8 @@ namespace Kruty1918.Moyva.AI.Training
                 if (frame.Candidates.Count <= 1) report.Warn("REAL GAMEPLAY CANDIDATES NOT AVAILABLE: only one candidate; verify curriculum and real movement state.");
                 foreach (var unavailable in frame.Unavailable) report.Warn(unavailable.Key + ": " + unavailable.Value);
             }
-            report.Warn("Gameplay reward sources: terminal results and confirmed combat losses; building/objective rewards are disconnected.");
-            report.Warn("Early curriculum uses episode timeouts. FullGame requires settlement/elimination and economic mechanics, which this scope does not yet install.");
+            report.Warn("Gameplay rewards: authoritative terminal/combat events, first operational building and deployed recruit per type, settlement capture/loss. Shaping remains capped.");
+            report.Warn("Capture is an explicit gameplay operation, not NOT_APPLICABLE_BY_GAME_DESIGN. Its player/unit eligibility boundary is still missing.");
             report.Warn("Visual/headless share the Bot path; runtime parity has not been verified.");
             return report;
         }

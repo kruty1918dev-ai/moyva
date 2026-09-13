@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         bool TryGrant(string settlementId, string ownerId);
     }
 
-    internal sealed class BootstrapStarterPackGrantService : IBootstrapStarterPackGrantService
+    public sealed class BootstrapStarterPackGrantService : IBootstrapStarterPackGrantService
     {
         private const string StarterPackLogTag = "[Bootstrap][StarterPack]";
 

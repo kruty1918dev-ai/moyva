@@ -5,6 +5,12 @@ using Kruty1918.Moyva.AI.Bot;
 using Kruty1918.Moyva.Animations.Runtime;
 using Kruty1918.Moyva.Calendar.Runtime;
 using Kruty1918.Moyva.Combat.API;
+using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Construction.Runtime;
+using Kruty1918.Moyva.Economy;
+using Kruty1918.Moyva.Economy.API;
+using Kruty1918.Moyva.Economy.Runtime;
+using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
 using Kruty1918.Moyva.GameMode.API;
@@ -32,10 +38,12 @@ namespace Kruty1918.Moyva.AI.Training
         private readonly DiContainer _container = new DiContainer();
         private readonly GameObject _root;
         private readonly List<IDisposable> _disposables = new List<IDisposable>();
-        private readonly List<GameObject> _units = new List<GameObject>();
+        private SignalBus _signals;
         private BotDecisionOrchestrator _opponent;
         private OwnedGameplayMap _world;
         private bool _disposed;
+        public bool EconomyInstalled { get; private set; }
+        public string FullGameSetupError { get; private set; }
         public ITurnService Turns { get; private set; }
         public IBotTurnGateway Gateway { get; private set; }
         public BotCapabilityRegistry Capabilities { get; private set; }
@@ -44,6 +52,8 @@ namespace Kruty1918.Moyva.AI.Training
         public IGridService Grid => _container.Resolve<IGridService>();
         public IGridProjection Projection => _container.Resolve<IGridProjection>();
         public GameObject Root => _root;
+        internal IConstructionSaveSnapshotSource Placements => _container.Resolve<IConstructionSaveSnapshotSource>();
+        internal IConstructionPlacedBuildingDestruction Destruction => _container.Resolve<IConstructionPlacedBuildingDestruction>();
 
         public GameplayTrainingEpisode(TrainingConfig config, TrainingResetContext context)
         {
@@ -68,6 +78,14 @@ namespace Kruty1918.Moyva.AI.Training
                 UnitsInstaller.InstallSimulationBindings(_container, Required<UnitRegistrySO>());
                 FogOfWarInstaller.InstallSimulationBindings(_container);
                 GameModeInstaller.InstallSimulationBindings(_container);
+                if ((int)context.CurriculumStage >= 3)
+                {
+                    var economy = Required<EconomyDatabaseSO>();
+                    EconomyInstaller.InstallSimulationBindings(_container, economy);
+                    ConstructionInstaller.InstallSimulationBindings(_container, Required<BuildingRegistrySO>(),
+                        economy.RulesConfig.Settlement.MinTownHallDistance);
+                    EconomyInstalled = true;
+                }
 
                 var signals = _container.Resolve<SignalBus>();
                 var grid = _container.Resolve<IGridService>();
@@ -85,6 +103,8 @@ namespace Kruty1918.Moyva.AI.Training
                 var initializers = _container.ResolveAll<IInitializable>();
                 _disposables.AddRange(_container.ResolveAll<IDisposable>());
                 foreach (var initializer in initializers) initializer.Initialize();
+                _signals = signals;
+                _signals.Subscribe<UnitCreatedSignal>(OwnUnitObject);
                 _container.Resolve<IGameStateService>().StartGame();
                 signals.Fire(new WorldGeneratedDataSignal { Width = world.Width, Height = world.Height,
                     TileMap = world.BiomeMap, ObjectMap = world.ObjectMap, HeightMap = world.HeightMap,
@@ -112,12 +132,41 @@ namespace Kruty1918.Moyva.AI.Training
                 signals.Fire(new WorldBuiltSignal());
 
                 Gateway = new MoyvaBotTurnAdapter(Turns, _container.Resolve<ITurnAuthorityPolicy>());
-                Capabilities = BotRuntimeInstaller.CreateRegistry(Gateway, new CombatBotCapability(Gateway, unitService, owners,
-                    _container.Resolve<IUnitCombatQuery>(), _container.Resolve<ICombatCommandService>(), fog));
-                Capabilities.Register(new MovementBotCapability(Gateway, unitService, owners, movementQuery, movement, fog));
-                Perception = new MoyvaBotPerceptionSource(Turns, unitService, owners, fog);
+                Capabilities = BotRuntimeInstaller.CreateGameplayRegistry(_container, Gateway);
+                Perception = new MoyvaBotPerceptionSource(Turns, unitService, owners, fog, _container.TryResolve<IEconomyInfoMediator>());
+                if (EconomyInstalled)
+                {
+                    var starter = new BootstrapStarterPackGrantService(Required<BootstrapInstallerConfigSO>().GameSettings, signals);
+                    foreach (string owner in new[] { TrainingGameplayScope.LearnerId, TrainingGameplayScope.OpponentId })
+                    {
+                        starter.TryGrant(null, owner);
+                        var bootstrap = _container.Resolve<IConstructionBootstrapQuery>();
+                        if (!bootstrap.RequiresInitialCastle(owner, out string castle))
+                            FullGameSetupError = "No required initial castle was found in the production registry.";
+                        else
+                        {
+                            var action = Capabilities.Get(BotCapabilityId.Construction).Enumerate(owner)
+                                .FirstOrDefault(c => c.TargetKey == castle);
+                            if (action == null || !_container.Resolve<IAuthoritativeConstructionPlacementExecutor>()
+                                .TryPlaceAuthoritatively(castle, new Vector2Int(action.X, action.Y), owner, ConstructionPlacementCommitIntent.None))
+                                FullGameSetupError = "No legal initial castle placement for " + owner + ".";
+                        }
+                        var registry = _container.Resolve<IBuildingRegistry>();
+                        var recruitmentSource = Capabilities.Get(BotCapabilityId.Construction).Enumerate(owner)
+                            .FirstOrDefault(c => BuildingDefinitionCapabilities.TryGetEnabledModule(
+                                registry.GetById(c.TargetKey), out UnitRecruitmentBuildingModule _));
+                        if (recruitmentSource == null || !_container.Resolve<IAuthoritativeConstructionPlacementExecutor>()
+                            .TryPlaceAuthoritatively(recruitmentSource.TargetKey, new Vector2Int(recruitmentSource.X, recruitmentSource.Y),
+                                owner, ConstructionPlacementCommitIntent.None))
+                            FullGameSetupError = "No affordable legal recruitment source can be constructed for " + owner + ".";
+                        if (_container.Resolve<IEconomyRuntimeApi>().GetSettlementIdsForOwner(owner).Count == 0)
+                            FullGameSetupError = "Initial castle did not create an active economic settlement for " + owner + ".";
+                        if (!Turns.TryEndTurn(owner, out string turnReason))
+                            throw new InvalidOperationException("Initial settlement turn could not finish: " + turnReason);
+                    }
+                }
                 Outcomes = new TrainingGameplayEventBridge(signals, _container.Resolve<ITurnHistoryQuery>(), TrainingGameplayScope.LearnerId,
-                    _container.Resolve<IUnitCombatService>(), owners, context.EpisodeId);
+                    _container.Resolve<IUnitCombatService>(), owners, context.EpisodeId, _container.TryResolve<IBuildingRegistry>());
                 _opponent = new BotDecisionOrchestrator(Gateway, Capabilities, Perception, new HeuristicBotPolicyDriver(),
                     new BotRuntimeConfig { curriculumStage = (int)context.CurriculumStage, visibleDelay = 0 }, new BotTelemetryHub(4));
                 if (!Turns.CanOwnerAct(TrainingGameplayScope.LearnerId, out var reason))
@@ -141,19 +190,23 @@ namespace Kruty1918.Moyva.AI.Training
             string id = _container.Resolve<IUnitFactory>().CreateUnit(type, cell, owner);
             if (string.IsNullOrEmpty(id)) throw new InvalidOperationException("UnitFactory failed for " + owner);
             var unit = _container.Resolve<IUnitService>().GetUnitObject(id);
-            _units.Add(unit);
             unit.transform.SetParent(_root.transform, true);
+        }
+        private void OwnUnitObject(UnitCreatedSignal signal)
+        {
+            if (signal.UnitObject != null) signal.UnitObject.transform.SetParent(_root.transform, true);
         }
         public void Tick(float seconds)
         {
-            if (!Turns.IsOwnerActive(TrainingGameplayScope.OpponentId)) return;
-            _opponent.BeginTurn(TrainingGameplayScope.OpponentId);
+            if (Turns.IsOwnerActive(TrainingGameplayScope.OpponentId))
+                _opponent.BeginTurn(TrainingGameplayScope.OpponentId);
             _opponent.Tick(seconds);
         }
         public void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
+            _signals?.TryUnsubscribe<UnitCreatedSignal>(OwnUnitObject);
             _opponent?.Dispose();
             Outcomes?.Dispose();
             for (int i = _disposables.Count - 1; i >= 0; i--) _disposables[i].Dispose();

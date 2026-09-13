@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.Threading;
 using Kruty1918.Moyva.AI.Bot;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
@@ -42,6 +44,83 @@ namespace Kruty1918.Moyva.AI.Training.Editor
                 environment.EndEpisode(TrainingEpisodeResult.Timeout);
             }
             Debug.Log("MOYVA_SCOPE_SANITY_OK: two worlds, EndTurn, opponent, reset, real observations/candidates.");
+        }
+        public static void ValidateFullGameScope()
+        {
+            var config = TrainingConfig.Load(AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Moyva/Presets/AI/MoyvaTrainingConfig.json"));
+            config.curriculum.stage = TrainingCurriculumStage.FullGame;
+            var container = new Zenject.DiContainer();
+            new TrainingInstaller().Install(container, config);
+            var factory = container.Resolve<ITrainingSimulationFactory>();
+            using var simulation = factory.Create(0);
+            using var environment = new TrainingEnvironment(0, config, simulation);
+            for (int episode = 0; episode < 2; episode++)
+            {
+                environment.BeginEpisode();
+                if (!environment.IsReady) throw new InvalidOperationException(environment.Diagnostics.LastError);
+                var source = (ITrainingBotRuntimeSource)simulation;
+                var frame = environment.Bridge.Frame;
+                if (frame == null || frame.Candidates.Count < 2 || frame.Observations[BotObservationSchema.EconomyAvailable] != 1)
+                    throw new InvalidOperationException("FullGame is missing real actions or economy.");
+                foreach (var id in new[] { BotCapabilityId.Turn, BotCapabilityId.Movement, BotCapabilityId.Combat,
+                    BotCapabilityId.Recruitment, BotCapabilityId.Construction })
+                {
+                    var capability = source.Capabilities.Get(id);
+                    if (capability == null || capability.UnavailableReason(simulation.PlayerId) != null)
+                        throw new InvalidOperationException("FullGame capability unavailable: " + id);
+                    int count = 0;
+                    foreach (var action in capability.Enumerate(simulation.PlayerId))
+                    {
+                        if (!capability.Validate(simulation.PlayerId, action, out string reason))
+                            throw new InvalidOperationException("Invalid enumerated candidate: " + reason);
+                        count++;
+                    }
+                    Debug.Log($"MOYVA_FULLGAME_CANDIDATES episode={episode + 1} capability={id} legal={count}");
+                }
+                var report = TrainingReadinessValidator.Validate(factory, simulation, environment);
+                Debug.Log(report.ToString());
+                if (report.Mechanics["ECONOMY"] != TrainingMechanicStatus.Ready)
+                    throw new InvalidOperationException("Initial economy/settlements are invalid: " + report);
+                var recruitment = source.Capabilities.Get(BotCapabilityId.Recruitment);
+                BotCandidateAction recruit = null;
+                for (int round = 0; round < 12 && recruit == null; round++)
+                {
+                    recruit = recruitment.Enumerate(simulation.PlayerId).FirstOrDefault(c => c.ActorKey == "enqueue");
+                    if (recruit == null) AdvanceRound(simulation);
+                }
+                if (recruit == null) throw new InvalidOperationException("Recruitment never became legal through real construction/turn progression.");
+                float resourcesBeforeQuery = source.Perception.Capture(simulation.PlayerId).Global[24];
+                var firstQuery = recruitment.Enumerate(simulation.PlayerId).Select(c => c.Id).ToArray();
+                var secondQuery = recruitment.Enumerate(simulation.PlayerId).Select(c => c.Id).ToArray();
+                if (!firstQuery.SequenceEqual(secondQuery)
+                    || source.Perception.Capture(simulation.PlayerId).Global[24] != resourcesBeforeQuery)
+                    throw new InvalidOperationException("Recruitment enumeration changed gameplay state or ordering.");
+                if (recruitment.Execute(simulation.PlayerId, recruit, CancellationToken.None).GetAwaiter().GetResult().Status != BotExecutionStatus.Completed)
+                    throw new InvalidOperationException("Authoritative recruitment enqueue failed.");
+                BotCandidateAction deploy = null;
+                for (int round = 0; round < 12 && deploy == null; round++)
+                {
+                    AdvanceRound(simulation);
+                    deploy = recruitment.Enumerate(simulation.PlayerId).FirstOrDefault(c => c.ActorKey.StartsWith("queue:", StringComparison.Ordinal));
+                }
+                if (deploy == null || recruitment.Execute(simulation.PlayerId, deploy, CancellationToken.None).GetAwaiter().GetResult().Status != BotExecutionStatus.Completed
+                    || recruitment.Validate(simulation.PlayerId, deploy, out _))
+                    throw new InvalidOperationException("Recruitment deployment failed or accepted a stale queue action.");
+                Debug.Log("MOYVA_FULLGAME_RECRUITMENT_OK: paid enqueue, real turn progress, deployment, stale rejection.");
+                long turn = simulation.Turns.GlobalTurn;
+                if (!simulation.Turns.TryEndTurn(simulation.PlayerId, out var turnReason)
+                    || !simulation.Turns.TryEndTurn(simulation.Turns.ActiveOwnerId, out turnReason)
+                    || simulation.Turns.GlobalTurn != turn + 2)
+                    throw new InvalidOperationException("FullGame turn participants failed: " + turnReason);
+                environment.EndEpisode(TrainingEpisodeResult.Timeout);
+            }
+            Debug.Log("MOYVA_FULLGAME_SCOPE_SANITY_OK: two owned worlds, economy, legal queries and turn participants. Capture remains blocked.");
+        }
+        private static void AdvanceRound(ITrainingSimulation simulation)
+        {
+            for (int i = 0; i < 2; i++)
+                if (!simulation.Turns.TryEndTurn(simulation.Turns.ActiveOwnerId, out var reason))
+                    throw new InvalidOperationException("Turn progression failed: " + reason);
         }
         public static void BuildPlayer(BuildTarget target, string output)
         {

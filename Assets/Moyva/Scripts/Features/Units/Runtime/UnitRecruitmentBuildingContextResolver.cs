@@ -105,6 +105,21 @@ namespace Kruty1918.Moyva.Units.Runtime
             return true;
         }
 
+        public System.Collections.Generic.IEnumerable<UnitRecruitmentOption> GetOptions(string ownerId)
+        {
+            var placements = _constructionSnapshot?.GetSavedPlacements();
+            if (placements == null || _buildingRegistry == null) yield break;
+            foreach (var placement in placements)
+            {
+                if (!string.Equals(NormalizeRequiredId(placement.OwnerId), ownerId, StringComparison.Ordinal)) continue;
+                var definition = _buildingRegistry.GetById(placement.BuildingId);
+                if (definition == null || !BuildingDefinitionCapabilities.TryGetEnabledModule(
+                        definition, out UnitRecruitmentBuildingModule module) || module.Recipes == null) continue;
+                foreach (var recipe in module.Recipes)
+                    if (recipe != null) yield return new UnitRecruitmentOption(placement.Position, recipe.UnitTypeId);
+            }
+        }
+
         public bool TryResolveDeployment(
             UnitRecruitmentQueueItemSnapshot ready,
             out UnitRecruitmentBuildingModule module,

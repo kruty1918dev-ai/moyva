@@ -20,6 +20,19 @@ namespace Kruty1918.Moyva.Economy
     /// </summary>
     public sealed class EconomyInstaller : MonoInstaller
     {
+        public static void InstallSimulationBindings(DiContainer container, EconomyDatabaseSO database)
+        {
+            if (database?.RulesConfig == null) throw new System.InvalidOperationException("Economy rules are missing.");
+            container.BindInstance(database).IfNotBound();
+            container.BindInterfacesAndSelfTo<EconomyManager>().AsSingle();
+            container.Bind<ISettlementRegistry>().To<EconomySettlementRegistryService>().AsSingle();
+            container.Bind<IEconomyOwnerResourcePoolService>().To<EconomyOwnerResourcePoolService>().AsSingle();
+            container.Bind<IEconomyBuildingIntegration>().To<EconomyBuildingIntegrationService>().AsSingle();
+            container.Bind<IEconomyTurnProcessor>().To<EconomyTurnProcessorService>().AsSingle();
+            container.Bind<IEconomyInfoMediator>().To<EconomyInfoMediator>().AsSingle();
+            container.Bind<IEconomyRuntimeApi>().To<EconomyRuntimeApi>().AsSingle();
+        }
+
         [SerializeField]
         [Tooltip("Основна база даних економіки. Створюється через Economy Hub (Moyva/Tools/Редактор Економіки).")]
         private EconomyDatabaseSO _database;

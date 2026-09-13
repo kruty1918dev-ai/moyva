@@ -37,43 +37,35 @@ Default behavior is Default; HeuristicOnly is behaviorType=2.
 Training configuration only controls episodes, rewards and pacing.
 Curriculum masks capabilities through the shared contract.
 
-The default GameplayTrainingSimulationFactory fails closed. **Real training is blocked.**
-MoyvaTraining does not yet bind ITrainingGameplayScopeFactory. The existing generator
-requires scene-owned graph/TWC assets and asynchronous startup; BootstrapInstaller also
-installs input, HUD, saves and multiplayer. No complete episode reset is available at
-the inspected public boundary. A reset adapter has deliberately not been fabricated.
-The scope composition must initialize the real world, players, ownership, units, fog,
-turns and opponent progression, own their lifetime, and supply IGameplayTrainingReset.
-That reset must finish world initialization, drain/cancel prior commands, restore all
-episode state and consume the full TrainingResetContext before returning true.
-Scene reload would require an asynchronous reset lifecycle; it is not implemented.
-TrainingGameplayScope resolves the production turn/movement APIs, creates the shared
-MovementBotCapability and MoyvaBotPerceptionSource, and requires gameplay authority.
-It is a service adapter boundary, not a completed world composition.
-TrainingGameplayEventBridge translates GameEndedSignal into real terminal rewards when
-an owned scope supplies its SignalBus and ITurnHistoryQuery. Empty winners are draws
-only with no surviving participants; cancellation becomes InvalidState. Unit destruction
-signals lack owner/attacker data, so unit/building/objective shaping remains disconnected.
-No real event subscription is active in the current training scene.
-Explicit allowScaffoldSimulation=true selects the debugging scaffold, prominently marked
-SCAFFOLD / NOT REAL GAMEPLAY; it can never receive READY_FOR_REAL_TRAINING.
-No initialization exception falls back to scaffold.
-Each environment owns its orchestrator, policy, counters and telemetry.
-N scaffold environments are not N independent gameplay worlds.
+GameplayTrainingSimulationFactory owns a fresh generated world per episode. From stage 3,
+the scope installs production economy, construction lifecycle, recruitment, building health
+and settlement elimination. Each owner receives the JSON Bootstrap starter pack, a castle
+and an affordable recruiting building through authoritative placement. Construction and
+recruitment finish through real turn participants; ready recruits require explicit deployment.
 
-Integrated capabilities:
-- EndTurn: ITurnEndQuery.CanEndTurn and ITurnService.TryEndTurn share validation.
-- Movement: owner-filtered IUnitService, IUnitMovementQuery, owner fog visibility,
-  and IUnitMovementService.MoveUnitAsync; completion verifies the final position.
-- Combat: unavailable until a visible combat entity/owner/position gateway connects
-  unit/building IDs to ICombatCommandService. No combat rule is copied.
-- Recruitment: IUnitRecruitmentService lacks a non-mutating enqueue/options query.
-- Construction: EvaluatePlacement exists; player-scoped catalog and bounded
-  candidate-location gateway are not connected.
-- Capture: no public candidate/legality/command gateway identified.
-Perception currently includes actual turn state, own unit count and visible
-non-owned unit count. Economy/building/territory/spatial groups remain zero.
-No team relation is inferred from the non-owned count.
+Shared production/training capabilities are EndTurn, Movement, Combat (including visible
+buildings), Recruitment (enqueue/deploy), and bounded Construction. Queries do not spend
+resources or advance queues. Existing candidate slots expose costs, construction/training
+progress requirements, queue capacity and available recruiting population. Reserved globals
+24?26 expose only the acting owner's resource totals, owner pool and resource kind count.
+Income and detailed territory/spatial observations are not connected.
+
+**FullGame remains BLOCKED.** Capture is an explicit operation, so it is not classified as
+NOT_APPLICABLE_BY_GAME_DESIGN. SettlementCaptureService can transfer a settlement but does
+not expose an authoritative player/unit eligibility query or guarded player capture command.
+Exposing its raw ownership transfer to the bot would bypass capture gameplay requirements.
+The production capture eligibility/command boundary must be consolidated before enabling it.
+Destroying an owner's last active settlement center emits FactionEliminatedSignal;
+MatchEndConditionService then emits GameEndedSignal through GameStateService. A result
+subscription alone is insufficient for FullGame readiness.
+
+Terminal and confirmed combat rewards remain dominant. Deployment and operational-building
+milestones pay once per type per episode; settlement capture/loss pays once per settlement
+and event type. Rebuild, recruit/delete and recapture loops cannot repeat those rewards.
+All shaping remains capped. Reset disposes the owned services, subscriptions and unit objects.
+`TrainingPlayerBuilder.ValidateFullGameScope` checks two fresh scopes, real turn progression,
+paid recruitment/deployment and stale-action rejection without running PPO.
+
 
 A model profile must match the contract version and SHA-256 signature.
 Internal implementation, prefab and UI changes alone need not change the contract.

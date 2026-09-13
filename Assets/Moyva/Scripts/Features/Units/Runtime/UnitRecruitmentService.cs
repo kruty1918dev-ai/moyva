@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 {
     internal sealed class UnitRecruitmentService :
         IUnitRecruitmentService,
+        IUnitRecruitmentQuery,
         IUnitRecruitmentStateStore,
         ITurnParticipant,
         ITickable,
@@ -100,42 +101,10 @@ namespace Kruty1918.Moyva.Units.Runtime
         private bool TryEnqueueCore(string ownerId, Vector2Int recruitingBuildingPosition, string unitTypeId, out string reason)
         {
             Tick();
-            reason = null;
-            string owner = NormalizeRequiredId(ownerId);
+            if (!CanEnqueue(ownerId, recruitingBuildingPosition, unitTypeId, out reason)) return false;
+            if (!TryResolveEligibility(ownerId, recruitingBuildingPosition, unitTypeId,
+                    out string owner, out string recruitingBuildingId, out var recipe, out reason)) return false;
             string unitType = NormalizeRequiredId(unitTypeId);
-            if (owner == null)
-            {
-                reason = "Recruitment owner is empty.";
-                return false;
-            }
-            if (unitType == null)
-            {
-                reason = "Unit type is empty.";
-                return false;
-            }
-            if (_progressClock?.IsRealtime != true && _turns == null)
-            {
-                reason = "Turn authority is unavailable for recruitment.";
-                return false;
-            }
-            if (_progressClock?.IsRealtime != true && !_turns.CanOwnerAct(owner, out reason))
-                return false;
-            if (!_buildingContext.TryResolveEnqueue(
-                    recruitingBuildingPosition,
-                    owner,
-                    unitType,
-                    out string recruitingBuildingId,
-                    out UnitRecruitmentBuildingModule recruitmentModule,
-                    out UnitRecruitmentRecipeDefinition recipe,
-                    out reason))
-            {
-                return false;
-            }
-
-            int capacity = Math.Max(1, recruitmentModule.QueueCapacity);
-            if (!_queue.CanEnqueue(owner, recruitingBuildingPosition, capacity, out reason))
-                return false;
-
             Dictionary<string, float> costs = BuildCostMap(recipe.Costs);
             long reservedQueueId = _queue.NextQueueId;
             if (_economy == null)
@@ -179,6 +148,95 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
 
             FireQueueChanged(enqueued);
+            return true;
+        }
+
+        private bool TryResolveEligibility(string ownerId, Vector2Int recruitingBuildingPosition, string unitTypeId,
+            out string owner, out string recruitingBuildingId, out UnitRecruitmentRecipeDefinition recipe, out string reason)
+        {
+            recruitingBuildingId = null;
+            recipe = null;
+            reason = null;
+            owner = NormalizeRequiredId(ownerId);
+            string unitType = NormalizeRequiredId(unitTypeId);
+            if (owner == null)
+            {
+                reason = "Recruitment owner is empty.";
+                return false;
+            }
+            if (unitType == null)
+            {
+                reason = "Unit type is empty.";
+                return false;
+            }
+            if (_progressClock?.IsRealtime != true && _turns == null)
+            {
+                reason = "Turn authority is unavailable for recruitment.";
+                return false;
+            }
+            if (_progressClock?.IsRealtime != true && !_turns.CanOwnerAct(owner, out reason))
+                return false;
+            if (!_buildingContext.TryResolveEnqueue(
+                    recruitingBuildingPosition,
+                    owner,
+                    unitType,
+                    out recruitingBuildingId,
+                    out var recruitmentModule,
+                    out recipe,
+                    out reason))
+            {
+                return false;
+            }
+
+            int capacity = Math.Max(1, recruitmentModule.QueueCapacity);
+            if (!_queue.CanEnqueue(owner, recruitingBuildingPosition, capacity, out reason))
+                return false;
+
+            return true;
+        }
+
+        public IReadOnlyList<UnitRecruitmentOption> GetOptions(string ownerId)
+        {
+            var result = new List<UnitRecruitmentOption>();
+            string owner = NormalizeRequiredId(ownerId);
+            if (owner == null) return result;
+            foreach (var option in _buildingContext.GetOptions(owner))
+            {
+                if (!CanEnqueue(owner, option.Source, option.UnitTypeId, out _)
+                    || !_buildingContext.TryResolveEnqueue(option.Source, owner, option.UnitTypeId,
+                        out _, out var module, out var recipe, out _)) continue;
+                float cost = 0;
+                foreach (float amount in BuildCostMap(recipe.Costs).Values) cost += amount;
+                result.Add(new UnitRecruitmentOption(option.Source, option.UnitTypeId, cost,
+                    Math.Max(1, module.QueueCapacity) - _queue.GetQueue(owner, option.Source).Count,
+                    _economy.GetRecruitmentPopulation(owner, option.Source).Available, Math.Max(1, recipe.TrainingTurns)));
+            }
+            result.Sort((a, b) => a.Source.y != b.Source.y ? a.Source.y.CompareTo(b.Source.y)
+                : a.Source.x != b.Source.x ? a.Source.x.CompareTo(b.Source.x)
+                : string.CompareOrdinal(a.UnitTypeId, b.UnitTypeId));
+            return result;
+        }
+
+        public bool CanEnqueue(string ownerId, Vector2Int source, string unitTypeId, out string reason)
+        {
+            if (!TryResolveEligibility(ownerId, source, unitTypeId, out var owner, out _, out var recipe, out reason))
+                return false;
+            if (_economy == null || _economy.GetRecruitmentPopulation(owner, source).Available < Math.Max(1, recipe.PopulationCost))
+            { reason = "Not enough available settlement population."; return false; }
+            var costs = BuildCostMap(recipe.Costs);
+            if (costs.Count == 0) return true;
+            IReadOnlyDictionary<string, float> available;
+            if (!_economy.OwnerHasAnyWarehouse(owner)) available = _economy.GetOwnerPoolResourceTotals(owner);
+            else
+            {
+                if (!_economy.TryResolveConstructionSettlement(source, owner, out var settlement)
+                    || string.IsNullOrWhiteSpace(settlement.SettlementId) || settlement.OwnerId != owner)
+                { reason = "No owned settlement is available to fund recruitment at this building."; return false; }
+                available = _economy.GetSettlementResourceTotals(settlement.SettlementId);
+            }
+            foreach (var cost in costs)
+                if (available == null || !available.TryGetValue(cost.Key, out float amount) || amount + 0.0001f < cost.Value)
+                { reason = "Insufficient recruitment resource: " + cost.Key; return false; }
             return true;
         }
 

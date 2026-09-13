@@ -22,9 +22,13 @@ namespace Kruty1918.Moyva.AI.Bot
         public BotPolicyMode Mode => BotPolicyMode.Heuristic;
         public Task<BotPolicyDecision> Decide(BotDecisionFrame frame, CancellationToken token)
         {
-            for (int i = 0; i < frame.Candidates.Count; i++)
-                if (frame.Candidates[i].Intent == BotIntentType.EndTurn)
-                    return Task.FromResult(new BotPolicyDecision(i, frame.Sequence, Mode));
+            token.ThrowIfCancellationRequested();
+            // Only the shared, player-visible frame is available to this policy.
+            foreach (var intent in new[] { BotIntentType.Attack, BotIntentType.Capture, BotIntentType.Recruit,
+                BotIntentType.Build, BotIntentType.Move, BotIntentType.EndTurn })
+                for (int i = 0; i < frame.Candidates.Count; i++)
+                    if (frame.Candidates.IsLegal(i) && frame.Candidates[i].Intent == intent)
+                        return Task.FromResult(new BotPolicyDecision(i, frame.Sequence, Mode));
             return Task.FromResult(new BotPolicyDecision(0, frame.Sequence, Mode));
         }
     }

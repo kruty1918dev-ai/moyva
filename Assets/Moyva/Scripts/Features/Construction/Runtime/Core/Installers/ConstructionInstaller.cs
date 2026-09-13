@@ -16,6 +16,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     public sealed class ConstructionInstaller : MonoInstaller
     {
+        public static void InstallSimulationBindings(DiContainer container, IBuildingRegistry registry,
+            int townHallBuildRadius)
+        {
+            container.BindInstance(registry).AsSingle();
+            container.BindInstance(0).WithId("fallbackMinSpacing");
+            container.BindInstance(townHallBuildRadius).WithId("fallbackTownHallBuildRadius");
+            container.BindInterfacesAndSelfTo<ConstructionSceneSettingsProvider>().AsSingle();
+            container.Bind<int>().WithId("minSpacing")
+                .FromResolveGetter<IConstructionPlacementRulesProvider>(p => p.MinSpacing).AsCached();
+            container.Bind<int>().WithId("townHallBuildRadius")
+                .FromResolveGetter<IConstructionPlacementRulesProvider>(p => p.TownHallBuildRadius).AsCached();
+            container.BindInterfacesAndSelfTo<ConstructionService>().AsSingle();
+            container.BindInterfacesTo<ConstructionTurnParticipant>().AsSingle();
+            container.BindInterfacesAndSelfTo<ConstructionLifecycleService>().AsSingle();
+            container.BindInterfacesAndSelfTo<WallTopologyService>().AsSingle();
+            container.Bind<IWallGateReplacementValidator>().To<WallGateReplacementValidator>().AsSingle();
+            container.BindInterfacesAndSelfTo<BuildingHealthService>().AsSingle();
+        }
+
         [SerializeField] private BuildingRegistrySO buildingRegistry;
         [SerializeField] private WorldCreationDefaultsSO _worldDefaults;
         [SerializeField] private ConstructionSceneContext _sceneContext;

@@ -1,6 +1,7 @@
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.Signals;
 
 namespace Kruty1918.Moyva.AI.Bot
 {
@@ -30,8 +31,9 @@ namespace Kruty1918.Moyva.AI.Bot
         private readonly IUnitService _units;
         private readonly IUnitOwnershipQuery _owners;
         private readonly IFogOwnerStateReader _fog;
-        public MoyvaBotPerceptionSource(ITurnService turns, IUnitService units, IUnitOwnershipQuery owners, IFogOwnerStateReader fog)
-        { _turns = turns; _units = units; _owners = owners; _fog = fog; }
+        private readonly IEconomyInfoMediator _economy;
+        public MoyvaBotPerceptionSource(ITurnService turns, IUnitService units, IUnitOwnershipQuery owners, IFogOwnerStateReader fog, IEconomyInfoMediator economy = null)
+        { _turns = turns; _units = units; _owners = owners; _fog = fog; _economy = economy; }
         public BotPerceptionSnapshot Capture(string player)
         {
             var result = new BotPerceptionSnapshot();
@@ -50,6 +52,21 @@ namespace Kruty1918.Moyva.AI.Bot
                 }
             result.Global[BotObservationSchema.OwnUnits] = own / (float)(own + 100);
             result.Global[BotObservationSchema.VisibleOtherUnits] = visibleOther / (float)(visibleOther + 100);
+            result.Global[BotObservationSchema.EconomyAvailable] = _economy != null ? 1 : 0;
+            if (_economy != null)
+            {
+                // Reserved globals: own total resources, pool resources, resource kinds.
+                var resources = _economy.GetOwnerResourceTotals(player);
+                double total = 0, pool = 0;
+                if (resources != null) foreach (var value in resources.Values)
+                    if (!float.IsNaN(value) && !float.IsInfinity(value)) total += System.Math.Max(0, value);
+                var poolResources = _economy.GetOwnerPoolResourceTotals(player);
+                if (poolResources != null) foreach (var value in poolResources.Values)
+                    if (!float.IsNaN(value) && !float.IsInfinity(value)) pool += System.Math.Max(0, value);
+                result.Global[24] = (float)(total / (total + 1000));
+                result.Global[25] = (float)(pool / (pool + 1000));
+                result.Global[26] = (resources?.Count ?? 0) / (float)((resources?.Count ?? 0) + 32);
+            }
             return result;
         }
     }

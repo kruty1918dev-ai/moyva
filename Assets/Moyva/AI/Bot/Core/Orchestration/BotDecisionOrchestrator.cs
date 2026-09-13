@@ -202,6 +202,6 @@ namespace Kruty1918.Moyva.AI.Bot
             _cancellation?.Cancel();
             if (Session != null) Session.State = BotOrchestratorState.Cancelled;
         }
-        public void Dispose() { Cancel(); _cancellation?.Dispose(); }
+        public void Dispose() { Cancel(); _cancellation?.Dispose(); _cancellation = null; }
     }
 }
