@@ -4,6 +4,10 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
+using Kruty1918.Moyva.Units.API;
+using Kruty1918.Moyva.Turns.API;
+using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.Combat.API;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
@@ -12,6 +16,63 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly ISettlementRegistry _settlements;
         private readonly IConstructionOwnershipTransfer _construction;
         private readonly SignalBus _signals;
+
+        [InjectOptional] private IUnitService _units;
+        [InjectOptional] private IUnitOwnershipQuery _owners;
+        [InjectOptional] private ITurnService _turns;
+        [InjectOptional] private ITurnAuthorityPolicy _authority;
+        [InjectOptional] private IFogOwnerStateReader _fog;
+        [InjectOptional] private IConstructionBuildingCombatTargetQuery _targets;
+        [InjectOptional] private IBuildingRegistry _buildings;
+        [InjectOptional] private IHealthRegistry _health;
+
+        public string UnavailableReason => _units == null || _owners == null || _turns == null || _fog == null
+            || _targets == null || _buildings == null || _health == null || _settlements == null || _construction == null
+            || _authority == null ? "Capture gameplay services are unavailable." : null;
+
+        public bool TryEvaluateCapture(string ownerId, string unitId, string targetEntityId,
+            Vector2Int targetPosition, out ConstructionBuildingCombatTarget target, out string reason)
+        {
+            target = default;
+            reason = UnavailableReason;
+            if (reason != null) return false;
+            if (!_turns.CanOwnerAct(ownerId, out reason)) return false;
+            reason = "Only an existing owned unit can capture a settlement.";
+            if (string.IsNullOrWhiteSpace(unitId) || _owners.GetUnitOwnerId(unitId) != ownerId
+                || !_units.TryGetUnitPosition(unitId, out var position)) return false;
+            // Check visibility before resolving any enemy building or settlement state.
+            reason = "Target is outside your current vision.";
+            if (!_fog.IsVisible(ownerId, targetPosition)) return false;
+            reason = "Target building is not available for capture.";
+            if (!_targets.TryGetCombatTarget(targetEntityId, out target) || target.Position != targetPosition) return false;
+            reason = "You already control this settlement.";
+            if (target.OwnerId == ownerId) return false;
+            var definition = _buildings.GetById(target.BuildingId);
+            reason = "Only castles and town halls can be captured.";
+            if (!BuildingDefinitionCapabilities.IsCastle(definition) && !BuildingDefinitionCapabilities.IsTownHall(definition)) return false;
+            reason = "Unit must be adjacent to the settlement center.";
+            if (Math.Max(Math.Abs(position.x - targetPosition.x), Math.Abs(position.y - targetPosition.y)) > 1) return false;
+            reason = "Settlement defenses are unavailable.";
+            if (!_health.TryGet(target.EntityId, out var health) || health.IsDestroyed) return false;
+            int threshold = Math.Max(1, Mathf.CeilToInt(health.MaxHp * 0.25f));
+            reason = $"Reduce defenses to {threshold} HP or less before capture.";
+            if (health.CurrentHp > threshold) return false;
+            reason = "Settlement is missing, inactive, or its ownership has changed.";
+            if (!_settlements.TryGetSettlementByPosition(targetPosition, out var state)
+                || state == null || !state.IsActive || state.OwnerId != target.OwnerId) return false;
+            reason = null;
+            return true;
+        }
+
+        public SettlementCaptureResult CaptureWithUnit(string ownerId, string unitId,
+            string targetEntityId, Vector2Int targetPosition)
+        {
+            if (_authority == null || !_authority.IsAuthoritative)
+                return SettlementCaptureResult.Rejected(string.Empty, "Capture requires gameplay authority.");
+            if (!TryEvaluateCapture(ownerId, unitId, targetEntityId, targetPosition, out var target, out var reason))
+                return SettlementCaptureResult.Rejected(string.Empty, reason);
+            return CaptureSettlementAtPosition(target.Position, target.OwnerId, ownerId, "captured-by-unit");
+        }
 
         public SettlementCaptureService(
             ISettlementRegistry settlements,

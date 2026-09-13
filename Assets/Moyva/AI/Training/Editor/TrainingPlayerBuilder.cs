@@ -58,12 +58,15 @@ namespace Kruty1918.Moyva.AI.Training.Editor
             {
                 environment.BeginEpisode();
                 if (!environment.IsReady) throw new InvalidOperationException(environment.Diagnostics.LastError);
+                var report = TrainingReadinessValidator.Validate(factory, simulation, environment);
+                Debug.Log(report.ToString());
+                if (!report.IsReady) throw new InvalidOperationException(report.ToString());
                 var source = (ITrainingBotRuntimeSource)simulation;
                 var frame = environment.Bridge.Frame;
                 if (frame == null || frame.Candidates.Count < 2 || frame.Observations[BotObservationSchema.EconomyAvailable] != 1)
                     throw new InvalidOperationException("FullGame is missing real actions or economy.");
                 foreach (var id in new[] { BotCapabilityId.Turn, BotCapabilityId.Movement, BotCapabilityId.Combat,
-                    BotCapabilityId.Recruitment, BotCapabilityId.Construction })
+                    BotCapabilityId.Recruitment, BotCapabilityId.Construction, BotCapabilityId.Capture })
                 {
                     var capability = source.Capabilities.Get(id);
                     if (capability == null || capability.UnavailableReason(simulation.PlayerId) != null)
@@ -77,10 +80,6 @@ namespace Kruty1918.Moyva.AI.Training.Editor
                     }
                     Debug.Log($"MOYVA_FULLGAME_CANDIDATES episode={episode + 1} capability={id} legal={count}");
                 }
-                var report = TrainingReadinessValidator.Validate(factory, simulation, environment);
-                Debug.Log(report.ToString());
-                if (report.Mechanics["ECONOMY"] != TrainingMechanicStatus.Ready)
-                    throw new InvalidOperationException("Initial economy/settlements are invalid: " + report);
                 var recruitment = source.Capabilities.Get(BotCapabilityId.Recruitment);
                 BotCandidateAction recruit = null;
                 for (int round = 0; round < 12 && recruit == null; round++)
@@ -114,7 +113,7 @@ namespace Kruty1918.Moyva.AI.Training.Editor
                     throw new InvalidOperationException("FullGame turn participants failed: " + turnReason);
                 environment.EndEpisode(TrainingEpisodeResult.Timeout);
             }
-            Debug.Log("MOYVA_FULLGAME_SCOPE_SANITY_OK: two owned worlds, economy, legal queries and turn participants. Capture remains blocked.");
+            Debug.Log("MOYVA_FULLGAME_SCOPE_SANITY_OK: two owned worlds, economy, legal queries and turn participants. Complete FullGame readiness required.");
         }
         private static void AdvanceRound(ITrainingSimulation simulation)
         {

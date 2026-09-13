@@ -2,6 +2,10 @@
   "name": "Kruty1918.Moyva.Economy",
   "rootNamespace": "Kruty1918.Moyva.Economy",
   "references": [
+        "Kruty1918.Moyva.Units",
+        "Kruty1918.Moyva.Turns",
+        "Kruty1918.Moyva.FogOfWar",
+        "Kruty1918.Moyva.Combat",
     "Zenject",
     "Kruty1918.Moyva.Signals",
     "Kruty1918.Moyva.Calendar",

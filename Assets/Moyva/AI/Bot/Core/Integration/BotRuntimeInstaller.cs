@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
+using Kruty1918.Moyva.Economy.Runtime;
 using Zenject;
 
 namespace Kruty1918.Moyva.AI.Bot
@@ -54,13 +55,16 @@ namespace Kruty1918.Moyva.AI.Bot
                     container.TryResolve<IUnitRecruitmentService>(), fog),
                 new ConstructionBotCapability(gateway, container.TryResolve<IBuildingRegistry>(),
                     container.TryResolve<IConstructionPlacementQuery>(), container.TryResolve<IAuthoritativeConstructionPlacementExecutor>(),
-                    container.TryResolve<IConstructionSaveSnapshotSource>(), units, owners, fog));
+                    container.TryResolve<IConstructionSaveSnapshotSource>(), units, owners, fog),
+                new CaptureBotCapability(gateway, units, owners, fog,
+                    container.TryResolve<IConstructionSaveSnapshotSource>(), container.TryResolve<ISettlementCaptureQuery>(),
+                    container.TryResolve<ISettlementCaptureService>()));
             registry.Register(new MovementBotCapability(gateway, units, owners,
                 container.TryResolve<IUnitMovementQuery>(), container.TryResolve<IUnitMovementService>(), fog));
             return registry;
         }
         public static BotCapabilityRegistry CreateRegistry(IBotTurnGateway turns, IBotCapabilityProvider combat = null,
-            IBotCapabilityProvider recruitment = null, IBotCapabilityProvider construction = null)
+            IBotCapabilityProvider recruitment = null, IBotCapabilityProvider construction = null, IBotCapabilityProvider capture = null)
         {
             var registry = new BotCapabilityRegistry();
             registry.Register(new EndTurnBotCapability(turns));
@@ -70,8 +74,8 @@ namespace Kruty1918.Moyva.AI.Bot
                 "Recruitment query/command services are not installed."));
             registry.Register(construction ?? new UnavailableBotCapability(BotCapabilityId.Construction,
                 "IConstructionPlacementQuery exists; a player-scoped build catalog and bounded candidate-location gateway are not connected."));
-            registry.Register(new UnavailableBotCapability(BotCapabilityId.Capture,
-                "Explicit SettlementCaptureService exists, but has no authoritative player/unit eligibility query. Ownership transfer alone must not be exposed as a bot action."));
+            registry.Register(capture ?? new UnavailableBotCapability(BotCapabilityId.Capture,
+                "Authoritative capture query/command and player visibility are not connected."));
             return registry;
         }
     }

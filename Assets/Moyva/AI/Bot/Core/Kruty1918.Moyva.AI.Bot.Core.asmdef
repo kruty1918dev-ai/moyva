@@ -1,6 +1,7 @@
 {
     "name": "Kruty1918.Moyva.AI.Bot.Core",
     "references": [
+        "Kruty1918.Moyva.Economy",
         "Zenject",
         "Kruty1918.Moyva.Turns",
         "Kruty1918.Moyva.Units",

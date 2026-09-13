@@ -31,6 +31,15 @@ namespace Kruty1918.Moyva.Economy
             container.Bind<IEconomyTurnProcessor>().To<EconomyTurnProcessorService>().AsSingle();
             container.Bind<IEconomyInfoMediator>().To<EconomyInfoMediator>().AsSingle();
             container.Bind<IEconomyRuntimeApi>().To<EconomyRuntimeApi>().AsSingle();
+            InstallCaptureBindings(container);
+        }
+
+        private static void InstallCaptureBindings(DiContainer container)
+        {
+            if (!container.HasBinding<ISettlementCaptureService>())
+                container.Bind<ISettlementCaptureService>().To<SettlementCaptureService>().AsSingle();
+            if (!container.HasBinding<ISettlementCaptureQuery>())
+                container.Bind<ISettlementCaptureQuery>().FromMethod(context => context.Container.Resolve<ISettlementCaptureService>()).AsSingle();
         }
 
         [SerializeField]
@@ -85,12 +94,7 @@ namespace Kruty1918.Moyva.Economy
                     .AsSingle();
             }
 
-            if (!Container.HasBinding<ISettlementCaptureService>())
-            {
-                Container.Bind<ISettlementCaptureService>()
-                    .To<SettlementCaptureService>()
-                    .AsSingle();
-            }
+            InstallCaptureBindings(Container);
 
             if (!Container.HasBinding<IEconomyInfoMediator>())
             {

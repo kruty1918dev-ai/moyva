@@ -1,6 +1,10 @@
 {
   "name": "Kruty1918.Moyva.AI.Training.Tests",
   "references": [
+    "Kruty1918.Moyva.Economy",
+    "Kruty1918.Moyva.Units",
+    "Kruty1918.Moyva.Combat",
+    "Kruty1918.Moyva.Signals",
     "Kruty1918.Moyva.AI.Training",
     "Kruty1918.Moyva.Turns",
     "Unity.ML-Agents",

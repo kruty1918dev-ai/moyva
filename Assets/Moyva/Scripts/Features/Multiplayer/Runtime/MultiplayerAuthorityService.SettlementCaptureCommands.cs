@@ -155,11 +155,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 return;
             }
 
-            SettlementCaptureResult result = _settlementCaptureService.CaptureSettlementAtPosition(
-                target.Position,
-                target.OwnerId,
-                authorizedOwnerId,
-                "network-captured-by-unit");
+            SettlementCaptureResult result = _settlementCaptureService.CaptureWithUnit(
+                authorizedOwnerId, data.UnitId, target.EntityId, target.Position);
             if (!result.Succeeded)
             {
                 RejectSettlementCapture(senderId, data, result.Reason);
@@ -245,66 +242,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             out string reason)
         {
             target = default;
-            reason = string.Empty;
-
-            if (_unitOwnershipQuery == null
-                || !string.Equals(_unitOwnershipQuery.GetUnitOwnerId(unitId), ownerId, StringComparison.Ordinal))
-            {
-                reason = "Only the requester's own unit can capture a settlement.";
-                return false;
-            }
-
-            if (_unitService == null
-                || !_unitService.TryGetUnitPosition(unitId, out Vector2Int unitPosition))
-            {
-                reason = "Unit position is unavailable.";
-                return false;
-            }
-
-            if (_buildingTargetQuery == null
-                || !_buildingTargetQuery.TryGetCombatTarget(targetEntityId, out target)
-                || target.Position != targetPosition)
-            {
-                reason = "Target building is not available for capture.";
-                return false;
-            }
-
-            if (string.Equals(target.OwnerId, ownerId, StringComparison.Ordinal))
-            {
-                reason = "Requester already controls this settlement.";
-                return false;
-            }
-
-            BuildingDefinition definition = _buildingRegistry?.GetById(target.BuildingId);
-            if (!BuildingDefinitionCapabilities.IsCastle(definition)
-                && !BuildingDefinitionCapabilities.IsTownHall(definition))
-            {
-                reason = "Only castles and town halls can be captured.";
-                return false;
-            }
-
-            int dx = Math.Abs(unitPosition.x - target.Position.x);
-            int dy = Math.Abs(unitPosition.y - target.Position.y);
-            if (Math.Max(dx, dy) > 1)
-            {
-                reason = "Unit must be adjacent to the settlement center.";
-                return false;
-            }
-
-            if (_healthRegistry == null || !_healthRegistry.TryGet(target.EntityId, out IHealth health))
-            {
-                reason = "Target defenses are unavailable.";
-                return false;
-            }
-
-            int captureThreshold = Math.Max(1, Mathf.CeilToInt(health.MaxHp * 0.25f));
-            if (health.CurrentHp > captureThreshold)
-            {
-                reason = $"Reduce defenses to {captureThreshold} HP or less before capture.";
-                return false;
-            }
-
-            return true;
+            reason = "Settlement capture service is unavailable.";
+            return _settlementCaptureService != null && _settlementCaptureService.TryEvaluateCapture(
+                ownerId, unitId, targetEntityId, targetPosition, out target, out reason);
         }
 
         private void TrimSettlementCaptureCache()

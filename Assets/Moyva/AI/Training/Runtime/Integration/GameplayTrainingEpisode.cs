@@ -53,6 +53,14 @@ namespace Kruty1918.Moyva.AI.Training
         public IGridProjection Projection => _container.Resolve<IGridProjection>();
         public GameObject Root => _root;
         internal IConstructionSaveSnapshotSource Placements => _container.Resolve<IConstructionSaveSnapshotSource>();
+        internal IUnitMovementService Movement => _container.Resolve<IUnitMovementService>();
+        internal IUnitMovementQuery MovementQuery => _container.Resolve<IUnitMovementQuery>();
+        internal IUnitService Units => _container.Resolve<IUnitService>();
+        internal IUnitOwnershipQuery UnitOwners => _container.Resolve<IUnitOwnershipQuery>();
+        internal IUnitTraversalPolicy Traversal => _container.Resolve<IUnitTraversalPolicy>();
+        internal IHealthRegistry Health => _container.Resolve<IHealthRegistry>();
+        internal IEconomyRuntimeApi Economy => _container.Resolve<IEconomyRuntimeApi>();
+        internal SignalBus Signals => _signals;
         internal IConstructionPlacedBuildingDestruction Destruction => _container.Resolve<IConstructionPlacedBuildingDestruction>();
 
         public GameplayTrainingEpisode(TrainingConfig config, TrainingResetContext context)

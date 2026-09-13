@@ -66,7 +66,6 @@ namespace Kruty1918.Moyva.AI.Training
                 foreach (var unavailable in frame.Unavailable) report.Warn(unavailable.Key + ": " + unavailable.Value);
             }
             report.Warn("Gameplay rewards: authoritative terminal/combat events, first operational building and deployed recruit per type, settlement capture/loss. Shaping remains capped.");
-            report.Warn("Capture is an explicit gameplay operation, not NOT_APPLICABLE_BY_GAME_DESIGN. Its player/unit eligibility boundary is still missing.");
             report.Warn("Visual/headless share the Bot path; runtime parity has not been verified.");
             return report;
         }

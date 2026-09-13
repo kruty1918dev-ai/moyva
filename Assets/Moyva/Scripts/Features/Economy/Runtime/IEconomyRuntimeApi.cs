@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Kruty1918.Moyva.Construction.API;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
@@ -115,8 +116,20 @@ namespace Kruty1918.Moyva.Economy.Runtime
             => new(false, settlementId, string.Empty, string.Empty, reason);
     }
 
-    public interface ISettlementCaptureService
+    /// <summary>Side-effect-free player capture eligibility; shares validation with CaptureWithUnit.</summary>
+    public interface ISettlementCaptureQuery
     {
+        string UnavailableReason { get; }
+        bool TryEvaluateCapture(string ownerId, string unitId, string targetEntityId,
+            Vector2Int targetPosition, out ConstructionBuildingCombatTarget target, out string reason);
+    }
+
+    public interface ISettlementCaptureService : ISettlementCaptureQuery
+    {
+        SettlementCaptureResult CaptureWithUnit(string ownerId, string unitId,
+            string targetEntityId, Vector2Int targetPosition);
+
+        /// <summary>Trusted ownership transfer for confirmed replication and domain callers. Player actions use CaptureWithUnit.</summary>
         SettlementCaptureResult CaptureSettlement(
             string settlementId,
             string previousOwnerId,

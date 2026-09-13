@@ -362,11 +362,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_settlementCapture == null)
                 return SettlementCaptureResult.Rejected(string.Empty, "Settlement capture service is unavailable.");
 
-            return _settlementCapture.CaptureSettlementAtPosition(
-                target.Position,
-                target.OwnerId,
-                ownerId,
-                "captured-by-unit");
+            return _settlementCapture.CaptureWithUnit(ownerId, _commandUnitId, target.EntityId, target.Position);
         }
 
         private static string ResolveCombatTargetId(
@@ -398,71 +394,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return false;
             }
 
-            if (!string.Equals(_unitOwnership?.GetUnitOwnerId(_commandUnitId), ownerId, StringComparison.Ordinal))
+            if (_settlementCapture == null)
             {
-                reason = "Only your own unit can capture a settlement.";
+                reason = "Settlement capture service is unavailable.";
                 return false;
             }
-
-            if (_units == null || !_units.TryGetUnitPosition(_commandUnitId, out Vector2Int unitPosition))
-            {
-                reason = "Selected unit position is unavailable.";
-                return false;
-            }
-
-            string targetId = ResolveCombatTargetId(
-                _selectionKind,
-                _selectionId,
-                _selectionPosition);
-            if (_buildingTargets == null || !_buildingTargets.TryGetCombatTarget(targetId, out target))
-            {
-                reason = "Selected building cannot be captured.";
-                return false;
-            }
-
-            if (string.Equals(target.OwnerId, ownerId, StringComparison.Ordinal))
-            {
-                reason = "You already control this settlement.";
-                return false;
-            }
-
-            if (!CanInteractWithSelectionThroughFog(ownerId, out string fogReason))
-            {
-                reason = fogReason;
-                return false;
-            }
-
-            BuildingDefinition definition = _buildings?.GetById(target.BuildingId);
-            if (!BuildingDefinitionCapabilities.IsCastle(definition)
-                && !BuildingDefinitionCapabilities.IsTownHall(definition))
-            {
-                reason = "Only castles and town halls can be captured.";
-                return false;
-            }
-
-            int dx = Math.Abs(unitPosition.x - target.Position.x);
-            int dy = Math.Abs(unitPosition.y - target.Position.y);
-            if (Math.Max(dx, dy) > 1)
-            {
-                reason = "Move a unit next to the settlement center first.";
-                return false;
-            }
-
-            if (_health == null || !_health.TryGet(target.EntityId, out IHealth health))
-            {
-                reason = "Settlement defenses are unavailable.";
-                return false;
-            }
-
-            int captureThreshold = Math.Max(1, Mathf.CeilToInt(health.MaxHp * 0.25f));
-            if (health.CurrentHp > captureThreshold)
-            {
-                reason = $"Reduce defenses to {captureThreshold} HP or less before capture.";
-                return false;
-            }
-
-            reason = "Settlement center can be captured.";
-            return true;
+            return _settlementCapture.TryEvaluateCapture(ownerId, _commandUnitId,
+                ResolveCombatTargetId(_selectionKind, _selectionId, _selectionPosition),
+                _selectionPosition, out target, out reason);
         }
 
         private string ResolveOwnerId()
