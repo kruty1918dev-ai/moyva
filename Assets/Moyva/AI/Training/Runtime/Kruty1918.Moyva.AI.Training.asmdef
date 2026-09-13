@@ -19,7 +19,8 @@
                        "Kruty1918.Moyva.Jsonization",
                        "Kruty1918.Moyva.ObjectsMap",
                        "Kruty1918.Moyva.Pathfinding",
-                       "Kruty1918.Moyva.Shared"
+                       "Kruty1918.Moyva.Shared",
+                       "Kruty1918.Moyva.Combat"
                    ],
     "autoReferenced":  false
 }

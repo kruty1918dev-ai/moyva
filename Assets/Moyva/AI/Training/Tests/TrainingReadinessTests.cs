@@ -24,10 +24,10 @@ namespace Kruty1918.Moyva.AI.Training.Tests
             CollectionAssert.Contains(report.Blockers, "TERMINAL_OUTCOME_BLOCKED");
         }
         [Test]
-        public void BatchAutoSelectionOverridesVisualCliWithoutChangingContractSettings()
+        public void ExplicitVisualCliOverridesBatchDefaultWithoutChangingAuthoredConfig()
         {
             var config = new TrainingConfig();
-            Assert.AreEqual(TrainingPresentationMode.HeadlessFast,
+            Assert.AreEqual(TrainingPresentationMode.Visual,
                 TrainingPresentationModeResolver.Resolve(config, true, new[] { "-moyvaTrainingMode", "Visual" }));
             Assert.AreEqual(TrainingPresentationMode.Visual, config.presentationMode);
             Assert.IsFalse(config.allowScaffoldSimulation);

@@ -1,6 +1,7 @@
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.Combat.API;
 using UnityEngine;
 using Zenject;
 
@@ -27,7 +28,8 @@ namespace Kruty1918.Moyva.AI.Bot
             var units = container.TryResolve<IUnitService>();
             var owners = container.TryResolve<IUnitOwnershipQuery>();
             var fog = container.TryResolve<IFogOwnerStateReader>();
-            var registry = CreateRegistry(gateway);
+            var registry = CreateRegistry(gateway, new CombatBotCapability(gateway, units, owners,
+                container.TryResolve<IUnitCombatQuery>(), container.TryResolve<ICombatCommandService>(), fog));
             registry.Register(new MovementBotCapability(gateway, units, owners,
                 container.TryResolve<IUnitMovementQuery>(), container.TryResolve<IUnitMovementService>(), fog));
             var config = container.Resolve<BotRuntimeConfig>();
@@ -40,12 +42,12 @@ namespace Kruty1918.Moyva.AI.Bot
                 telemetry.FallbackReason = "No ML policy binding installed; using Heuristic.";
             return result;
         }
-        public static BotCapabilityRegistry CreateRegistry(IBotTurnGateway turns)
+        public static BotCapabilityRegistry CreateRegistry(IBotTurnGateway turns, IBotCapabilityProvider combat = null)
         {
             var registry = new BotCapabilityRegistry();
             registry.Register(new EndTurnBotCapability(turns));
-            registry.Register(new UnavailableBotCapability(BotCapabilityId.Combat,
-                "Combat requires a player-visible combat entity candidate gateway linking entity IDs to ICombatCommandService."));
+            registry.Register(combat ?? new UnavailableBotCapability(BotCapabilityId.Combat,
+                "Combat query/command and player-visible entity gateway are not connected."));
             registry.Register(new UnavailableBotCapability(BotCapabilityId.Recruitment,
                 "IUnitRecruitmentService has no non-mutating enqueue eligibility/options query for a player and source."));
             registry.Register(new UnavailableBotCapability(BotCapabilityId.Construction,

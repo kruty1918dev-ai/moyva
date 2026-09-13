@@ -28,7 +28,7 @@ namespace Kruty1918.Moyva.AI.Training
             try
             {
                 Config = TrainingConfig.Load(configuration);
-                Config.presentationMode = TrainingPresentationModeResolver.Resolve(Config, Application.isBatchMode, Environment.GetCommandLineArgs());
+                TrainingCommandLine.Apply(Config, Environment.GetCommandLineArgs(), Application.isBatchMode);
                 if (environmentManager == null) throw new InvalidOperationException("TrainingEnvironmentManager is missing.");
                 Performance = new TrainingPerformanceController(Config, Config.presentationMode);
                 var presentation = new GameObject("TrainingPresentation");
@@ -40,7 +40,11 @@ namespace Kruty1918.Moyva.AI.Training
                 environmentManager.Initialize(Config, container.Resolve<ITrainingSimulationFactory>());
                 Presentation.RefreshCameras();
                 _readiness = environmentManager.Readiness;
+                if (Array.IndexOf(Environment.GetCommandLineArgs(), "-moyvaRequireTrainer") >= 0
+                    && !Unity.MLAgents.Academy.Instance.IsCommunicatorOn)
+                    throw new InvalidOperationException("TRAINER_NOT_CONNECTED: no external ML-Agents trainer.");
                 Status = Config.allowScaffoldSimulation ? "SCAFFOLD / NOT REAL GAMEPLAY" : "Running / Real Gameplay";
+                Debug.Log(Readiness.Verdict + " | MoyvaStrategy | trainer=" + Unity.MLAgents.Academy.Instance.IsCommunicatorOn);
             }
             catch (Exception exception)
             {
@@ -51,6 +55,7 @@ namespace Kruty1918.Moyva.AI.Training
                 Debug.LogError(Readiness.ToString(), this);
                 environmentManager?.Shutdown();
                 RestoreSettings();
+                if (!Application.isEditor) Application.Quit(10);
             }
         }
 

@@ -10,6 +10,8 @@ namespace Kruty1918.Moyva.AI.Training
         private TrainingBootstrap _bootstrap;
         private int _observed;
         private bool _paused;
+        private TrainingWorldPresentation _worldView;
+        private GameplayTrainingEpisode _observedEpisode;
         public TrainingPresentationMode Mode => _bootstrap.Config.presentationMode;
         public bool OverlayEnabled { get; set; }
         public bool VisualizationPaused
@@ -62,6 +64,20 @@ namespace Kruty1918.Moyva.AI.Training
         {
             foreach (var entry in _cameras) if (entry.Key != null) entry.Key.enabled = entry.Value;
             _cameras.Clear();
+        }
+        private void Update()
+        {
+            if (_bootstrap == null || Mode != TrainingPresentationMode.Visual) return;
+            var episode = Selected?.GameplayEpisode;
+            if (episode == _observedEpisode) return;
+            _observedEpisode = episode;
+            if (_worldView != null) Destroy(_worldView.gameObject);
+            if (episode == null) return;
+            var view = new GameObject("ObservedTrainingWorld");
+            view.transform.SetParent(transform, false);
+            _worldView = view.AddComponent<TrainingWorldPresentation>();
+            _worldView.Build(episode.Grid, episode.Projection);
+            RefreshCameras();
         }
         private void OnDestroy() => RestoreCameras();
     }

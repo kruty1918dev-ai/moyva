@@ -35,6 +35,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             container.BindInterfacesAndSelfTo<UnitMovementRangeQuery>().AsSingle();
             container.Decorate<IUnitMovementService>().With<UnitTurnAuthorityMovementService>();
             container.BindInterfacesTo<UnitTurnParticipant>().AsSingle();
+            container.BindInterfacesAndSelfTo<UnitTurnActionStateService>().AsSingle();
+            container.Bind<ICombatCommandService>().To<UnitCombatCommandService>().AsSingle();
         }
 
         public override void InstallBindings()

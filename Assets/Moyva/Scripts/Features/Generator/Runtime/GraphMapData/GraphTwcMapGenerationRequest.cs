@@ -11,16 +11,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
             TileWorldCreatorManager manager,
             int width,
             int height,
-            IReadOnlyList<CompiledLayerMap> lastCompiledLayers)
+            IReadOnlyList<CompiledLayerMap> lastCompiledLayers,
+            int? seedOverride = null)
         {
             Graph = graph;
             Manager = manager;
             Width = width;
             Height = height;
             LastCompiledLayers = lastCompiledLayers;
+            SeedOverride = seedOverride;
         }
 
         public GraphAsset Graph { get; }
+        public int? SeedOverride { get; }
         public TileWorldCreatorManager Manager { get; }
         public int Width { get; }
         public int Height { get; }

@@ -36,9 +36,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public GraphTwcMapGenerationResult Generate(GraphTwcMapGenerationRequest request)
         {
-            int seed = GlobalSeed.InitializeDeterministic(_seedService.Resolve(request.Graph));
+            int seed = GlobalSeed.InitializeDeterministic(request.SeedOverride ?? _seedService.Resolve(request.Graph));
             _terrainHeightPublisher.Clear();
-            Vector2Int mapSize = _sizeResolver.Resolve(request.Graph, request.Width, request.Height);
+            Vector2Int mapSize = request.SeedOverride.HasValue ? new Vector2Int(request.Width, request.Height)
+                : _sizeResolver.Resolve(request.Graph, request.Width, request.Height);
 
             if (request.Manager == null || request.Manager.configuration == null)
             {

@@ -1,1 +1,11 @@
-{"name":"Kruty1918.Moyva.AI.Bot.Core","references":["Zenject","Kruty1918.Moyva.Turns","Kruty1918.Moyva.Units","Kruty1918.Moyva.FogOfWar"],"autoReferenced":false}
+{
+    "name":  "Kruty1918.Moyva.AI.Bot.Core",
+    "references":  [
+                       "Zenject",
+                       "Kruty1918.Moyva.Turns",
+                       "Kruty1918.Moyva.Units",
+                       "Kruty1918.Moyva.FogOfWar",
+                       "Kruty1918.Moyva.Combat"
+                   ],
+    "autoReferenced":  false
+}

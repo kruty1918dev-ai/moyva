@@ -29,6 +29,13 @@ namespace Kruty1918.Moyva.AI.Training
             var outcomes = (simulation as GameplayTrainingSimulation)?.Outcomes;
             if (outcomes == null || !outcomes.IsConnected) report.Block("TERMINAL_OUTCOME_BLOCKED");
             var frame = environment?.Bridge.Frame;
+            if (environment?.Stage == TrainingCurriculumStage.FullGame && source?.Capabilities != null)
+                foreach (var id in new[] { BotCapabilityId.Combat, BotCapabilityId.Recruitment, BotCapabilityId.Construction, BotCapabilityId.Capture })
+                {
+                    var capability = source.Capabilities.Get(id);
+                    if (capability == null || capability.UnavailableReason(simulation.PlayerId) != null)
+                        report.Block("FULLGAME_BLOCKED: " + id + " is not connected.");
+                }
             if (frame == null) report.Block("DECISION_FRAME_BLOCKED: episode cannot request a policy decision.");
             else
             {
@@ -43,7 +50,8 @@ namespace Kruty1918.Moyva.AI.Training
                 if (frame.Candidates.Count <= 1) report.Warn("REAL GAMEPLAY CANDIDATES NOT AVAILABLE: only one candidate; verify curriculum and real movement state.");
                 foreach (var unavailable in frame.Unavailable) report.Warn(unavailable.Key + ": " + unavailable.Value);
             }
-            report.Warn("Gameplay reward sources: terminal result adapter only; unit/building/objective rewards are disconnected.");
+            report.Warn("Gameplay reward sources: terminal results and confirmed combat losses; building/objective rewards are disconnected.");
+            report.Warn("Early curriculum uses episode timeouts. FullGame requires settlement/elimination and economic mechanics, which this scope does not yet install.");
             report.Warn("Visual/headless share the Bot path; runtime parity has not been verified.");
             return report;
         }

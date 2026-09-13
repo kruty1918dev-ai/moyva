@@ -4,6 +4,7 @@ using System.Linq;
 using Kruty1918.Moyva.AI.Bot;
 using Kruty1918.Moyva.Animations.Runtime;
 using Kruty1918.Moyva.Calendar.Runtime;
+using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
 using Kruty1918.Moyva.GameMode.API;
@@ -33,12 +34,16 @@ namespace Kruty1918.Moyva.AI.Training
         private readonly List<IDisposable> _disposables = new List<IDisposable>();
         private readonly List<GameObject> _units = new List<GameObject>();
         private BotDecisionOrchestrator _opponent;
+        private OwnedGameplayMap _world;
         private bool _disposed;
         public ITurnService Turns { get; private set; }
         public IBotTurnGateway Gateway { get; private set; }
         public BotCapabilityRegistry Capabilities { get; private set; }
         public IBotPerceptionSource Perception { get; private set; }
         public TrainingGameplayEventBridge Outcomes { get; private set; }
+        public IGridService Grid => _container.Resolve<IGridService>();
+        public IGridProjection Projection => _container.Resolve<IGridProjection>();
+        public GameObject Root => _root;
 
         public GameplayTrainingEpisode(TrainingConfig config, TrainingResetContext context)
         {
@@ -49,10 +54,11 @@ namespace Kruty1918.Moyva.AI.Training
                 UnityEngine.Random.InitState(context.Seed);
                 MoyvaJsonRuntime.EnsureLoaded();
                 var graph = MoyvaJsonRuntime.Get<GraphAsset>(config.generatorGraphId);
-                if (!MenuWorldPreviewGenerator.TryGenerate(graph, config.worldSize, config.worldSize, context.Seed,
-                    out var world, out var error)) throw new InvalidOperationException("Training world generation failed: " + error);
                 Install<Kruty1918.Moyva.Signals.SignalBusInstaller>();
-                GridInstaller.InstallPreviewBindings(_container, Required<TileRegistrySO>(), Required<MoyvaProjectSettingsSO>(), world.Width, world.Height);
+                var tiles = graph.TileRegistry ?? Required<TileRegistrySO>();
+                GridInstaller.InstallPreviewBindings(_container, tiles, Required<MoyvaProjectSettingsSO>(), config.worldSize, config.worldSize);
+                _world = new OwnedGameplayMap(_container, _root, graph, tiles, Required<MapObjectRegistrySO>(), config.worldSize, context.Seed);
+                var world = _world.Data;
                 Install<ObjectsMapInstaller>();
                 Install<AnimationsInstaller>();
                 Install<PathfinderInstaller>();
@@ -86,13 +92,15 @@ namespace Kruty1918.Moyva.AI.Training
 
                 var placement = _container.Resolve<IUnitPlacementValidator>();
                 var spawnCells = new List<Vector2Int>();
+                var spawnRejections = new HashSet<string>();
                 for (int y = 1; y < world.Height - 1; y++)
                     for (int x = 1; x < world.Width - 1; x++)
                     {
                         var cell = new Vector2Int(x, y);
-                        if (placement.CanDeployUnit(config.startingUnitTypeId, cell, out _)) spawnCells.Add(cell);
+                        if (placement.CanDeployUnit(config.startingUnitTypeId, cell, out var rejection)) spawnCells.Add(cell);
+                        else if (spawnRejections.Count < 4) spawnRejections.Add(grid.GetTileData(cell) + ": " + rejection);
                     }
-                if (spawnCells.Count < 2) throw new InvalidOperationException("Generated world has fewer than two legal unit spawns.");
+                if (spawnCells.Count < 2) throw new InvalidOperationException("Generated world has fewer than two legal unit spawns. " + string.Join("; ", spawnRejections));
                 var first = spawnCells[0];
                 var second = spawnCells.OrderByDescending(c => (c - first).sqrMagnitude).First();
                 Spawn(config.startingUnitTypeId, first, TrainingGameplayScope.LearnerId);
@@ -104,10 +112,12 @@ namespace Kruty1918.Moyva.AI.Training
                 signals.Fire(new WorldBuiltSignal());
 
                 Gateway = new MoyvaBotTurnAdapter(Turns, _container.Resolve<ITurnAuthorityPolicy>());
-                Capabilities = BotRuntimeInstaller.CreateRegistry(Gateway);
+                Capabilities = BotRuntimeInstaller.CreateRegistry(Gateway, new CombatBotCapability(Gateway, unitService, owners,
+                    _container.Resolve<IUnitCombatQuery>(), _container.Resolve<ICombatCommandService>(), fog));
                 Capabilities.Register(new MovementBotCapability(Gateway, unitService, owners, movementQuery, movement, fog));
                 Perception = new MoyvaBotPerceptionSource(Turns, unitService, owners, fog);
-                Outcomes = new TrainingGameplayEventBridge(signals, _container.Resolve<ITurnHistoryQuery>(), TrainingGameplayScope.LearnerId);
+                Outcomes = new TrainingGameplayEventBridge(signals, _container.Resolve<ITurnHistoryQuery>(), TrainingGameplayScope.LearnerId,
+                    _container.Resolve<IUnitCombatService>(), owners, context.EpisodeId);
                 _opponent = new BotDecisionOrchestrator(Gateway, Capabilities, Perception, new HeuristicBotPolicyDriver(),
                     new BotRuntimeConfig { curriculumStage = (int)context.CurriculumStage, visibleDelay = 0 }, new BotTelemetryHub(4));
                 if (!Turns.CanOwnerAct(TrainingGameplayScope.LearnerId, out var reason))
@@ -147,8 +157,10 @@ namespace Kruty1918.Moyva.AI.Training
             _opponent?.Dispose();
             Outcomes?.Dispose();
             for (int i = _disposables.Count - 1; i >= 0; i--) _disposables[i].Dispose();
+            _world?.Dispose();
             _root.SetActive(false);
-            UnityEngine.Object.Destroy(_root);
+            if (Application.isPlaying) UnityEngine.Object.Destroy(_root);
+            else UnityEngine.Object.DestroyImmediate(_root);
         }
         private sealed class TrainingTurnAuthority : ITurnAuthorityPolicy { public bool IsAuthoritative => true; }
     }

@@ -8,7 +8,7 @@ namespace Kruty1918.Moyva.AI.Training
     {
         public static TrainingPresentationMode Resolve(TrainingConfig config, bool batchMode, string[] arguments)
         {
-            var mode = config.presentationMode;
+            var mode = batchMode && config.autoHeadlessInBatchMode ? TrainingPresentationMode.HeadlessFast : config.presentationMode;
             for (int i = 0; i < arguments.Length; i++)
                 if (arguments[i] == "-moyvaTrainingMode")
                 {
@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.AI.Training
                         || !Enum.IsDefined(typeof(TrainingPresentationMode), mode))
                         throw new ArgumentException("-moyvaTrainingMode requires Visual, MetricsOnly or HeadlessFast.");
                 }
-            return batchMode && config.autoHeadlessInBatchMode ? TrainingPresentationMode.HeadlessFast : mode;
+            return mode;
         }
     }
 }

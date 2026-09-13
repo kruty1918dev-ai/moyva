@@ -14,6 +14,12 @@ namespace Kruty1918.Moyva.AI.Training
         public BotCapabilityRegistry Capabilities => _scope.Capabilities;
         public IBotPerceptionSource Perception => _scope.Perception;
         public ITrainingEpisodeOutcomeSource Outcomes => _scope.Outcomes;
+        public event System.Action<TrainingRewardEvent> GameplayReward
+        {
+            add => _scope.Reward += value;
+            remove => _scope.Reward -= value;
+        }
+        internal GameplayTrainingEpisode Episode => _scope.Episode;
         public bool IsReady { get; private set; }
         public string Limitation => Outcomes == null || !Outcomes.IsConnected
             ? "TERMINAL_OUTCOME_BLOCKED: connect authoritative match results in the owned gameplay scope." : null;

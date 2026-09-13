@@ -1,6 +1,9 @@
 {
   "environmentCount": 1,
   "baseSeed": 1918,
+  "worldSize": 24,
+  "generatorGraphId": "testgeneratorgraph",
+  "startingUnitTypeId": "warrior",
   "deterministicMode": true,
   "autoReset": true,
   "maxTurnsPerEpisode": 200,

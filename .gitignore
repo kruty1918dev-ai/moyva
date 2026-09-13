@@ -169,3 +169,7 @@ __pycache__/
 
 # Installed Continue MCP server dependencies
 /.continue/**/node_modules/
+# Dedicated training output (source and configuration stay tracked).
+/Results/MoyvaTraining/
+/Build/Training/
+/.venv-training/

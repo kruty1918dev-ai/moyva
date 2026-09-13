@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.AI.Training
         public int environmentCount = 1;
         public int baseSeed = 1918;
         public int worldSize = 24;
-        public string generatorGraphId = "generatorgraph";
+        public string generatorGraphId = "testgeneratorgraph";
         public string startingUnitTypeId = "warrior";
         public bool deterministicMode = true;
         public bool autoReset = true;

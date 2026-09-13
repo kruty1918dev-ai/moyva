@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.AI.Training
         private TrainingEpisodeResult _pendingOutcome;
         private readonly ITrainingEpisodeOutcomeSource _outcomes;
         public bool IsRealGameplay => _simulation is GameplayTrainingSimulation;
+        internal GameplayTrainingEpisode GameplayEpisode => (_simulation as GameplayTrainingSimulation)?.Episode;
         public double ElapsedSeconds => _timer.Elapsed.TotalSeconds;
         public BotCandidateAction LastCandidate { get; private set; }
         public int[] ActionCounts { get; } = new int[12];
@@ -48,6 +49,7 @@ namespace Kruty1918.Moyva.AI.Training
             Observations = new TrainingObservationProvider(Bridge);
             _outcomes = (simulation as GameplayTrainingSimulation)?.Outcomes;
             if (_outcomes != null) _outcomes.Completed += OnOutcome;
+            if (simulation is GameplayTrainingSimulation gameplay) gameplay.GameplayReward += OnGameplayReward;
         }
 
         public TrainingReadinessReport CheckReadiness(ITrainingSimulationFactory factory)
@@ -63,6 +65,7 @@ namespace Kruty1918.Moyva.AI.Training
             // completing the episode, so metrics include the actual terminal action.
             _pendingOutcome = result;
         }
+        private void OnGameplayReward(TrainingRewardEvent reward) { if (IsReady) Rewards.Record(reward); }
 
         private void CompletePendingOutcome()
         {
@@ -216,6 +219,7 @@ namespace Kruty1918.Moyva.AI.Training
             Bridge.Orchestrator?.Dispose();
             Rewards.EpisodeCompleted -= EndEpisode;
             if (_outcomes != null) _outcomes.Completed -= OnOutcome;
+            if (_simulation is GameplayTrainingSimulation gameplay) gameplay.GameplayReward -= OnGameplayReward;
             _simulation.Dispose();
         }
     }
