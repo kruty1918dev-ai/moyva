@@ -68,9 +68,7 @@ namespace Kruty1918.Moyva.AI.Training
 
         public InMemoryClient CreateInMemoryClient()
         {
-            var state = new ClientState(_queueCapacity, null);
-            lock (_gate) _clients.Add(state);
-            return new InMemoryClient(this, state);
+            return InMemoryClient.Create(this);
         }
 
         public void PublishDecision(AgentDecisionEvent source)
@@ -437,7 +435,18 @@ namespace Kruty1918.Moyva.AI.Training
         {
             private readonly TrainingObserverServer _server;
             private ClientState _state;
-            private InMemoryClient(TrainingObserverServer server, ClientState state) { _server = server; _state = state; }
+            private InMemoryClient(TrainingObserverServer server, ClientState state)
+            {
+                _server = server;
+                _state = state;
+            }
+
+            internal static InMemoryClient Create(TrainingObserverServer server)
+            {
+                var state = new ClientState(server._queueCapacity, null);
+                lock (server._gate) server._clients.Add(state);
+                return new InMemoryClient(server, state);
+            }
             public int QueuedCount => _state == null ? 0 : _state.Outgoing.Count;
             public void Send(ObserverCommand command) { if (_state != null) _server.HandleCommand(_state, command); }
             public bool ProcessRaw(byte[] body) { if (_state == null) return false; return _server.ProcessInbound(_state, body, out _); }

@@ -223,7 +223,6 @@ namespace Kruty1918.Moyva.AI.Training
                 Record(TrainingRewardEventType.InvalidAction, "invalid");
                 Diagnostics.LastError = "Selected slot was masked.";
                 UpdateDiagnostics();
-                AppendRejectedDecisionEvent(actionIndex, Diagnostics.LastError);
                 if (Diagnostics.InvalidActions >= _config.rewards.invalidActionLimit)
                     Fail("Invalid action limit reached.");
                 return false;
@@ -238,7 +237,6 @@ namespace Kruty1918.Moyva.AI.Training
                 Record(TrainingRewardEventType.InvalidAction, "scenario-capability");
                 Diagnostics.LastError = "Action is outside this scenario's availableCapabilities.";
                 UpdateDiagnostics();
-                AppendRejectedDecisionEvent(actionIndex, Diagnostics.LastError);
                 if (Diagnostics.InvalidActions >= _config.rewards.invalidActionLimit)
                     Fail("Invalid action limit reached.");
                 return false;
@@ -321,39 +319,6 @@ namespace Kruty1918.Moyva.AI.Training
             Diagnostics.ShapingReward = Rewards.ShapingReward;
             Diagnostics.ElapsedSeconds = _timer.Elapsed.TotalSeconds;
         }
-        private void AppendRejectedDecisionEvent(int actionIndex, string reason)
-        {
-            if (_decisionJournal == null) return;
-            var frame = Bridge.Frame;
-            var candidates = frame?.Candidates;
-            var candidate = candidates != null && actionIndex >= 0 && actionIndex < candidates.Count
-                ? candidates[actionIndex] : null;
-            string[] available = Array.Empty<string>();
-            if (candidates != null)
-            {
-                available = new string[candidates.Count];
-                for (int i = 0; i < candidates.Count; i++)
-                    available[i] = candidates[i]?.Id ?? string.Empty;
-            }
-            float rewardDelta = Rewards.TotalReward - _lastJournalReward;
-            _lastJournalReward = Rewards.TotalReward;
-            _decisionJournal.Append(new AgentDecisionEvent
-            {
-                sessionId = _observerSessionId ?? string.Empty,
-                arenaId = EnvironmentId,
-                episodeId = EpisodeId,
-                agentId = _simulation.PlayerId.ToString(),
-                scenarioId = _scenario?.id,
-                scenarioStep = _scenarioProgress?.StepIndex ?? -1,
-                availableActions = available,
-                actionId = candidate?.Id,
-                targetId = candidate?.TargetKey,
-                result = "Rejected",
-                rejectionReason = reason,
-                rewardDelta = rewardDelta
-            });
-        }
-
         private void AppendDecisionEvent(BotDecisionTrace trace)
         {
             if (_decisionJournal == null) return;

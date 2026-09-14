@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -u
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
+
+VERSION="$(sed -n 's/^m_EditorVersion: //p' ProjectSettings/ProjectVersion.txt | head -1)"
+UNITY="$HOME/Unity/Hub/Editor/$VERSION/Editor/Unity"
+
+if [ ! -x "$UNITY" ]; then
+    UNITY="$HOME/Unity/Editors/$VERSION/Editor/Unity"
+fi
+
+if [ ! -x "$UNITY" ]; then
+    echo "Unity $VERSION not found"
+    exit 2
+fi
+
+mkdir -p .moyva-local/logs
+LOG=".moyva-local/logs/compile-errors.log"
+
+echo "Compiling scripts with Unity..."
+
+"$UNITY" \
+  -batchmode \
+  -nographics \
+  -quit \
+  -projectPath "$ROOT" \
+  -logFile "$LOG"
+
+echo
+echo "========== COMPILER ERRORS =========="
+
+ERRORS="$(grep -E 'error CS[0-9]+:' "$LOG" | sort -u || true)"
+
+if [ -z "$ERRORS" ]; then
+    echo "0 errors"
+    echo "UNITY COMPILE: OK"
+    exit 0
+fi
+
+echo "$ERRORS"
+echo
+echo "Full log: $LOG"
+exit 1

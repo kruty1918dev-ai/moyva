@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+mkdir -p Temp/ai/compile-all
+
+STAMP="$(date +%Y%m%d-%H%M%S)"
+REPORT="Temp/ai/compile-all/errors-$STAMP.txt"
+SUMMARY="Temp/ai/compile-all/summary-$STAMP.txt"
+
+: > "$REPORT"
+: > "$SUMMARY"
+
+mapfile -t PROJECTS < <(
+    find "$ROOT" -maxdepth 1 -type f -name '*.csproj' -printf '%f\n' | sort
+)
+
+if (( ${#PROJECTS[@]} == 0 )); then
+    echo "No Unity-generated .csproj files found."
+    echo "Open the project in Unity once so project files are generated."
+    exit 2
+fi
+
+echo "Compile sweep: ${#PROJECTS[@]} projects"
+echo
+
+FAILED=0
+
+for project in "${PROJECTS[@]}"; do
+    safe="${project%.csproj}"
+    log="Temp/ai/compile-all/${safe}.log"
+
+    printf '%-55s ' "$project"
+
+    if dotnet build "$project" \
+        --no-restore \
+        --nologo \
+        --verbosity:minimal \
+        >"$log" 2>&1
+    then
+        echo "OK"
+        echo "OK     $project" >> "$SUMMARY"
+    else
+        echo "FAILED"
+        echo "FAILED $project" >> "$SUMMARY"
+        FAILED=$((FAILED + 1))
+
+        {
+            echo "===== $project ====="
+            grep -E \
+                '(^|[(: ])error (CS|NETSDK|MSB)[0-9]+:|Script Compilation Error|Unhandled exception|error:' \
+                "$log" || true
+            echo
+        } >> "$REPORT"
+    fi
+done
+
+# Remove exact duplicate compiler messages caused by Unity assemblies
+# while preserving useful file/line information.
+python3 - "$REPORT" <<'PY'
+from pathlib import Path
+import sys
+
+p = Path(sys.argv[1])
+lines = p.read_text(errors="replace").splitlines()
+
+seen = set()
+out = []
+
+for line in lines:
+    if line.startswith("=====") or not line.strip():
+        out.append(line)
+        continue
+
+    # Ignore the same compiler diagnostic repeated verbatim.
+    if line in seen:
+        continue
+
+    seen.add(line)
+    out.append(line)
+
+p.write_text("\n".join(out) + "\n")
+PY
+
+echo
+echo "================ SUMMARY ================"
+cat "$SUMMARY"
+
+echo
+if (( FAILED == 0 )); then
+    echo "C# SWEEP: OK — no project reported compiler errors."
+    rm -f "$REPORT"
+    exit 0
+fi
+
+echo "C# SWEEP: $FAILED project(s) failed."
+echo
+echo "================ ERRORS ================="
+cat "$REPORT"
+
+echo
+echo "Full error report:"
+echo "$ROOT/$REPORT"
+exit 1

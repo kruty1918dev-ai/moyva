@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+RUN_ID="${1:-}"
+
+if [[ -z "$RUN_ID" ]]; then
+    echo "Usage:"
+    echo "  ./pack-model <run-id>"
+    echo
+    echo "Available runs:"
+    find Results/MoyvaTraining -mindepth 1 -maxdepth 1 -type d -printf '  %f\n' 2>/dev/null | sort
+    exit 2
+fi
+
+RUN_DIR="$ROOT/Results/MoyvaTraining/$RUN_ID"
+
+if [[ ! -d "$RUN_DIR" ]]; then
+    echo "ERROR: run not found:"
+    echo "$RUN_DIR"
+    exit 2
+fi
+
+STAMP="$(date +%Y%m%d-%H%M%S)"
+EXPORT_DIR="$ROOT/Exports/Models"
+WORK_DIR="$(mktemp -d)"
+PACKAGE="$WORK_DIR/$RUN_ID"
+
+mkdir -p "$EXPORT_DIR"
+mkdir -p "$PACKAGE/run"
+mkdir -p "$PACKAGE/context"
+
+cleanup() {
+    rm -rf "$WORK_DIR"
+}
+trap cleanup EXIT
+
+echo "Packing model: $RUN_ID"
+
+# Повний training run.
+cp -a "$RUN_DIR/." "$PACKAGE/run/"
+
+# Контекст, потрібний для аналізу моделі іншою людиною/ChatGPT.
+if [[ -f Assets/Moyva/AI/Training/Config/moyva_ppo.yaml ]]; then
+    cp Assets/Moyva/AI/Training/Config/moyva_ppo.yaml \
+       "$PACKAGE/context/moyva_ppo.yaml"
+fi
+
+if [[ -f Assets/Moyva/Presets/AI/MoyvaTrainingConfig.json ]]; then
+    cp Assets/Moyva/Presets/AI/MoyvaTrainingConfig.json \
+       "$PACKAGE/context/MoyvaTrainingConfig.json"
+fi
+
+if [[ -f ProjectSettings/ProjectVersion.txt ]]; then
+    cp ProjectSettings/ProjectVersion.txt \
+       "$PACKAGE/context/ProjectVersion.txt"
+fi
+
+{
+    echo "run_id=$RUN_ID"
+    echo "exported=$(date --iso-8601=seconds)"
+    echo "git_branch=$(git branch --show-current 2>/dev/null || true)"
+    echo "git_commit=$(git rev-parse HEAD 2>/dev/null || true)"
+    echo "git_dirty=$(git status --porcelain 2>/dev/null | wc -l)"
+    echo "host=$(uname -a)"
+} > "$PACKAGE/context/export-info.txt"
+
+# Список усіх checkpoint/model files.
+find "$PACKAGE/run" -type f \
+    \( -name '*.pt' -o -name '*.onnx' -o -name '*.json' -o -name '*.jsonl' -o -name '*.yaml' -o -name '*.log' \) \
+    -printf '%P\n' \
+    | sort > "$PACKAGE/context/files.txt"
+
+ARCHIVE="$EXPORT_DIR/${RUN_ID}-${STAMP}.zip"
+
+(
+    cd "$WORK_DIR"
+    zip -qr "$ARCHIVE" "$RUN_ID"
+)
+
+sha256sum "$ARCHIVE" > "${ARCHIVE}.sha256"
+
+SIZE="$(du -h "$ARCHIVE" | cut -f1)"
+
+echo
+echo "=========================================="
+echo "MODEL PACKAGE READY"
+echo "=========================================="
+echo "Run:     $RUN_ID"
+echo "Size:    $SIZE"
+echo "Archive: $ARCHIVE"
+echo "SHA256:"
+cat "${ARCHIVE}.sha256"
+echo
+
+URI="file://$(python3 - "$ARCHIVE" <<'PY'
+from pathlib import Path
+from urllib.parse import quote
+import sys
+
+p = Path(sys.argv[1]).resolve()
+print(quote(str(p), safe="/"))
+PY
+)"
+
+COPIED=0
+
+# X11 — твій основний випадок.
+if command -v xclip >/dev/null 2>&1; then
+    printf '%s\r\n' "$URI" | \
+        xclip -selection clipboard -target text/uri-list
+    COPIED=1
+    echo "Clipboard: file copied via xclip."
+fi
+
+# Wayland fallback.
+if [[ "$COPIED" -eq 0 ]] && command -v wl-copy >/dev/null 2>&1; then
+    printf '%s\r\n' "$URI" | \
+        wl-copy --type text/uri-list
+    COPIED=1
+    echo "Clipboard: file copied via wl-copy."
+fi
+
+if [[ "$COPIED" -eq 0 ]]; then
+    echo "Clipboard utility not found."
+    echo
+    echo "Install on Ubuntu:"
+    echo "  sudo apt install xclip"
+    echo
+    echo "Archive itself was created successfully."
+fi
+
+echo
+echo "You can now try Ctrl+V in the target app."
+echo
+echo "If the browser does not accept a file from the Linux clipboard,"
+echo "open the archive location with:"
+echo "  xdg-open \"$EXPORT_DIR\""

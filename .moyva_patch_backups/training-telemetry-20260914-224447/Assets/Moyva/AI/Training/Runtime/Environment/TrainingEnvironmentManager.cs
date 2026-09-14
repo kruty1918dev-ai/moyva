@@ -31,8 +31,7 @@ namespace Kruty1918.Moyva.AI.Training
             Metrics = new TrainingMetricsHub(config.metricsHistoryCapacity);
             if (config.enableDecisionJournal || config.observerEnabled)
                 Decisions = new TrainingDecisionJournal(config.decisionJournalCapacity,
-                    config.enableDecisionJournal ? ResolveJournalPath(config) : null,
-                    256L * 1024L * 1024L);
+                    config.enableDecisionJournal ? ResolveJournalPath(config) : null);
             if (config.curriculum?.autonomous?.enabled == true)
                 _autonomy = new TrainingAutonomyCoordinator(config);
             if (config.environmentCount > 1 && !factory.SupportsIndependentEnvironments)

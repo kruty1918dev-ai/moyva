@@ -13,7 +13,6 @@ import signal
 import subprocess
 import sys
 import time
-from moyva_cli.telemetry import TrainingTelemetry
 
 ROOT = Path(__file__).resolve().parents[2]
 TRAINING = ROOT / "Assets/Moyva/AI/Training"
@@ -314,8 +313,6 @@ def train(args):
     if getattr(args, "summary_freq", None):
         if args.summary_freq < 1: raise LaunchError("Summary frequency must be positive.")
         behavior["summary_freq"] = args.summary_freq
-    elif int(behavior.get("summary_freq", 500) or 500) > 500:
-        behavior["summary_freq"] = 500
 
     effective_trainer = run_dir / "trainer.yaml"
     if resume and effective_trainer.exists():
@@ -344,23 +341,15 @@ def train(args):
         cli_log.write(json.dumps(dict(time=utc(),component="training",event="start",resume=resume)) + "\n")
 
     curriculum_state = run_dir / "curriculum-state.json"
-    telemetry_dir = run_dir / "telemetry"
-    detailed_telemetry = telemetry_dir / "decisions.jsonl"
-    compact_telemetry = telemetry_dir / "compact.log"
     old_state_env = os.environ.get("MOYVA_CURRICULUM_STATE_PATH")
     old_autonomous_env = os.environ.get("MOYVA_AUTONOMOUS_TRAINING")
-    old_journal_env = os.environ.get("MOYVA_DECISION_JOURNAL_PATH")
     os.environ["MOYVA_CURRICULUM_STATE_PATH"] = str(curriculum_state.resolve())
-    os.environ["MOYVA_DECISION_JOURNAL_PATH"] = str(detailed_telemetry.resolve())
     if autonomous["enabled"]:
         os.environ["MOYVA_AUTONOMOUS_TRAINING"] = "1"
     else:
         os.environ.pop("MOYVA_AUTONOMOUS_TRAINING", None)
-    telemetry = TrainingTelemetry(run_dir, run_id, BEHAVIOR, overall_max_steps,
-                                  detailed_telemetry, compact_telemetry)
     code = 0
     try:
-        telemetry.start(resume=resume)
         current_step = trainer_step(run_dir) if resume else 0
         # If a previous launch stopped during evaluation, retry that exact frozen checkpoint before any more PPO updates.
         latest_eval = EvaluationStore(run_dir).latest() if autonomous["enabled"] else {}
@@ -392,7 +381,6 @@ def train(args):
                 cli_log.write(json.dumps(dict(time=utc(),component="training",event="segment",from_step=current_step,
                                               target_step=segment_target,resume=segment_resume,command=command)) + "\n")
             log(f"Training segment {current_step} -> {segment_target}")
-            telemetry.note("SEGMENT", f"{current_step} -> {segment_target}")
             log("Live ML-Agents log: " + str(run_dir / "mlagents.log"))
             code = run_process(command, logfile=run_dir / "mlagents.log")
             segment_behavior = trainer["behaviors"][BEHAVIOR]
@@ -416,7 +404,6 @@ def train(args):
                 store = EvaluationStore(run_dir)
                 generation = store.next_generation(identity["checkpoint_id"], scenario)
                 log(f"Frozen evaluation: checkpoint={identity['checkpoint_id']} scenario={scenario} episodes={eval_episodes}")
-                telemetry.note("EVAL", f"checkpoint={identity['checkpoint_id']} scenario={scenario} episodes={eval_episodes}")
                 evaluation = run_frozen_evaluation(ROOT, unity, args.target, run_id, run_dir, identity, scenario, generation,
                                                    eval_episodes, float(autonomous["masteryThreshold"]), curriculum_state, run_process)
                 if evaluation["state"] != "COMPLETED":
@@ -425,7 +412,6 @@ def train(args):
                 # Evaluation had no trainer and must not have touched either frozen or resumable weights.
                 verify_resume_checkpoint(run_dir, identity)
                 log(f"Evaluation {evaluation['result']}: {evaluation['successes']}/{evaluation['episode_count']} ({evaluation['success_rate']:.3f})")
-                telemetry.note("EVAL", f"{evaluation['result']} successes={evaluation['successes']}/{evaluation['episode_count']} rate={evaluation['success_rate']:.3f}")
 
         # Restore the authored overall max_steps in the persisted effective config after segmented execution.
         _write_trainer(effective_trainer, authored_effective)
@@ -449,13 +435,10 @@ def train(args):
         log("Frozen evaluation failed: " + str(error))
         return 3
     finally:
-        telemetry.stop()
         if old_state_env is None: os.environ.pop("MOYVA_CURRICULUM_STATE_PATH", None)
         else: os.environ["MOYVA_CURRICULUM_STATE_PATH"] = old_state_env
         if old_autonomous_env is None: os.environ.pop("MOYVA_AUTONOMOUS_TRAINING", None)
         else: os.environ["MOYVA_AUTONOMOUS_TRAINING"] = old_autonomous_env
-        if old_journal_env is None: os.environ.pop("MOYVA_DECISION_JOURNAL_PATH", None)
-        else: os.environ["MOYVA_DECISION_JOURNAL_PATH"] = old_journal_env
 
 
 def trainer_step(run_dir):

@@ -95,13 +95,6 @@ namespace Kruty1918.Moyva.AI.Training
             if (Environment.GetEnvironmentVariable("MOYVA_AUTONOMOUS_TRAINING") == "1" && curriculum?.autonomous != null)
                 curriculum.autonomous.enabled = true;
 
-            string runtimeJournalPath = Environment.GetEnvironmentVariable("MOYVA_DECISION_JOURNAL_PATH");
-            if (!string.IsNullOrWhiteSpace(runtimeJournalPath))
-            {
-                enableDecisionJournal = true;
-                decisionJournalPath = runtimeJournalPath;
-            }
-
             if (Environment.GetEnvironmentVariable("MOYVA_EVALUATION") != "1") return;
             evaluationMode = true;
             evaluationRunId = RequiredEnvironment("MOYVA_EVAL_RUN_ID");
