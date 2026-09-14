@@ -7,6 +7,7 @@ namespace Kruty1918.Moyva.AI.Training
         { _bridge = ((TrainingActionMaskProvider)actions).Bridge; }
         public bool TryExecute(int actionIndex, out string reason)
         {
+            if (!_bridge.CanRequestDecision) _bridge.Tick(0);
             bool submitted = _bridge.Submit(actionIndex);
             reason = submitted ? null : "No shared decision is currently pending.";
             return submitted;

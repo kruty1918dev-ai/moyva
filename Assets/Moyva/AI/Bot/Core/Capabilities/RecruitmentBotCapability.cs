@@ -34,6 +34,10 @@ namespace Kruty1918.Moyva.AI.Bot
                     string key = "queue:" + ready.QueueId.ToString(CultureInfo.InvariantCulture);
                     var features = new float[BotDecisionContract.CandidateFeatureCount];
                     features[17] = 1; features[19] = 1;
+                    features[25] = Stable01(ready.UnitTypeId);
+                    features[26] = 0.65f;
+                    features[27] = tile.Position.x / 128f;
+                    features[28] = tile.Position.y / 128f;
                     yield return new BotCandidateAction(key + ":deploy:" + tile.Position.x + ":" + tile.Position.y,
                         Id, BotIntentType.Recruit, key, ready.UnitTypeId, tile.Position.x, tile.Position.y, features);
                 }
@@ -48,12 +52,27 @@ namespace Kruty1918.Moyva.AI.Bot
                 features[21] = Normalize(option.QueueSlots, 3);
                 features[22] = Normalize(option.AvailablePopulation, 20);
                 features[23] = 1; // authoritative affordability and eligibility passed
+                features[25] = Stable01(option.UnitTypeId);
+                features[26] = 0.6f;
+                features[27] = option.Source.x / 128f;
+                features[28] = option.Source.y / 128f;
+                features[29] = features[20];
                 yield return new BotCandidateAction("recruit:" + option.Source.x + ":" + option.Source.y + ":" + option.UnitTypeId,
                     Id, BotIntentType.Recruit, "enqueue", option.UnitTypeId, option.Source.x, option.Source.y, features);
             }
         }
         private static float Normalize(float value, float scale)
             => float.IsNaN(value) || float.IsInfinity(value) || value < 0 ? 0 : value / (value + scale);
+        private static float Stable01(string value)
+        {
+            unchecked
+            {
+                uint hash = 2166136261;
+                if (!string.IsNullOrEmpty(value))
+                    foreach (char c in value) hash = (hash ^ c) * 16777619;
+                return (hash & 0xffff) / 65535f;
+            }
+        }
         private bool FindReady(string player, string key, out UnitRecruitmentQueueItemSnapshot ready)
         {
             ready = default;

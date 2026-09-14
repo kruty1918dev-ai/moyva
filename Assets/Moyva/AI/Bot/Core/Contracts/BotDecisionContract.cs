@@ -8,18 +8,20 @@ namespace Kruty1918.Moyva.AI.Bot
     public enum BotCapabilityId { Turn = 0, Movement = 1, Combat = 2, Recruitment = 3, Construction = 4, Capture = 5, Economy = 6, Exploration = 7 }
     public static class BotDecisionContract
     {
-        public const int ContractVersion = 1, ObservationSchemaVersion = 1, CandidateSchemaVersion = 1, ActionSchemaVersion = 1;
-        public const int MaxCandidateSlots = 128, GlobalFeatureCount = 64, CandidateFeatureCount = 24;
-        public const int SpatialSize = 8, SpatialChannels = 8, SpatialFeatureCount = 512;
+        public const int ContractVersion = 2, ObservationSchemaVersion = 2, CandidateSchemaVersion = 2, ActionSchemaVersion = 1;
+        public const int MaxCandidateSlots = 128, GlobalFeatureCount = 96, CandidateFeatureCount = 32;
+        public const int SpatialSize = 8, SpatialChannels = 10, SpatialFeatureCount = 640;
         public const int ObservationCount = GlobalFeatureCount + SpatialFeatureCount + MaxCandidateSlots * CandidateFeatureCount;
         public static string Hash { get; } = ComputeHash();
         private static string ComputeHash()
         {
                 using var sha = SHA256.Create();
                 return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(
-                    "MoyvaBot:v1:o1:c1:a1:slots128:global64:spatial8x8x8:candidate24:"
-                    + "global=0active,1round,2phase,3ownUnits,4visibleOtherUnits,5unitsAvailable,6economyAvailable,7spatialAvailable,8visibilityAvailable,16capabilities8:"
-                    + "candidate=present,intentOneHot12,distance,cost,ownHp,targetHp,visible,path,complete,reserved4:"
+                    "MoyvaBot:v2:o2:c2:a1:slots128:global96:spatial8x8x10:candidate32:"
+                    + "global=0active,1round,2phase,3ownUnits,4visibleOtherUnits,5unitsAvailable,6economyAvailable,7spatialAvailable,8visibilityAvailable,"
+                    + "9scenarioGoal,10scenarioStep,11scenarioProgress,12ownSettlements,13visibleEnemySettlements,16capabilities8,"
+                    + "24ownResourcesTotal,25poolResourcesTotal,26resourceKinds,27food,28wood,29stone,30iron,31gold,32productionEstimate,33populationAvailable:"
+                    + "candidate=present,intentOneHot12,distance,cost,ownHp,targetHp,visible,path,complete,buildingType,unitType,purpose,x,y,duration,reserved:"
                     + "intents=None,EndTurn,Move,Attack,Capture,Recruit,Build,Explore,Defend,Economy,Reposition,Wait")))
                     .Replace("-", "").ToLowerInvariant();
         }
@@ -28,7 +30,13 @@ namespace Kruty1918.Moyva.AI.Bot
     {
         public const int Active = 0, Round = 1, Phase = 2, OwnUnits = 3, VisibleOtherUnits = 4;
         public const int UnitsAvailable = 5, EconomyAvailable = 6, SpatialAvailable = 7, VisibilityAvailable = 8;
-        public const int Capabilities = 16, SpatialOffset = 64, CandidateOffset = 576;
+        public const int ScenarioGoal = 9, ScenarioStep = 10, ScenarioProgress = 11;
+        public const int OwnSettlements = 12, VisibleEnemySettlements = 13;
+        public const int Capabilities = 16;
+        public const int OwnResourcesTotal = 24, PoolResourcesTotal = 25, ResourceKinds = 26;
+        public const int ResourceFood = 27, ResourceWood = 28, ResourceStone = 29, ResourceIron = 30, ResourceGold = 31;
+        public const int ProductionEstimate = 32, PopulationAvailable = 33;
+        public const int SpatialOffset = 96, CandidateOffset = 736;
         public const int Size = BotDecisionContract.ObservationCount;
     }
 }

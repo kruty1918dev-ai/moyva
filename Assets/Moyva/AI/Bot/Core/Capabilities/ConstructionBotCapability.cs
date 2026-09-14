@@ -75,6 +75,11 @@ namespace Kruty1918.Moyva.AI.Bot
                     features[14] = (float)(totalCost / (totalCost + 100));
                     features[20] = Math.Max(0, building.BuildTurns) / (float)(Math.Max(0, building.BuildTurns) + 10);
                     features[23] = 1;
+                    features[24] = Stable01(building.Id);
+                    features[26] = Purpose(building);
+                    features[27] = cell.x / 128f;
+                    features[28] = cell.y / 128f;
+                    features[29] = features[20];
                     yield return new BotCandidateAction("build:" + building.Id + ":" + cell.x + ":" + cell.y,
                         Id, BotIntentType.Build, player, building.Id, cell.x, cell.y, features);
                     if (++emitted >= 32) yield break;
@@ -100,6 +105,27 @@ namespace Kruty1918.Moyva.AI.Bot
                 player, ConstructionPlacementCommitIntent.None);
             return Task.FromResult(new BotExecutionResult(success ? BotExecutionStatus.Completed : BotExecutionStatus.Rejected,
                 candidate, success ? null : "Authoritative construction rejected placement."));
+        }
+
+        private static float Stable01(string value)
+        {
+            unchecked
+            {
+                uint hash = 2166136261;
+                if (!string.IsNullOrEmpty(value))
+                    foreach (char c in value) hash = (hash ^ c) * 16777619;
+                return (hash & 0xffff) / 65535f;
+            }
+        }
+
+        private static float Purpose(BuildingDefinitionAsset building)
+        {
+            if (BuildingDefinitionCapabilities.TryGetEnabledModule(building, out UnitRecruitmentBuildingModule _)) return 0.35f;
+            string id = building?.Id?.ToLowerInvariant() ?? string.Empty;
+            if (id.Contains("castle") || id.Contains("town")) return 0.15f;
+            if (id.Contains("wall") || id.Contains("tower")) return 0.75f;
+            if (id.Contains("farm") || id.Contains("mine") || id.Contains("mill") || id.Contains("quarry") || id.Contains("wood")) return 0.55f;
+            return 0.25f;
         }
     }
 }

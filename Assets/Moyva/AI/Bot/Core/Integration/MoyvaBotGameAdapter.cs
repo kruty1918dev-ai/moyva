@@ -2,6 +2,8 @@ using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Signals;
+using System;
+using System.Linq;
 
 namespace Kruty1918.Moyva.AI.Bot
 {
@@ -55,7 +57,6 @@ namespace Kruty1918.Moyva.AI.Bot
             result.Global[BotObservationSchema.EconomyAvailable] = _economy != null ? 1 : 0;
             if (_economy != null)
             {
-                // Reserved globals: own total resources, pool resources, resource kinds.
                 var resources = _economy.GetOwnerResourceTotals(player);
                 double total = 0, pool = 0;
                 if (resources != null) foreach (var value in resources.Values)
@@ -63,11 +64,39 @@ namespace Kruty1918.Moyva.AI.Bot
                 var poolResources = _economy.GetOwnerPoolResourceTotals(player);
                 if (poolResources != null) foreach (var value in poolResources.Values)
                     if (!float.IsNaN(value) && !float.IsInfinity(value)) pool += System.Math.Max(0, value);
-                result.Global[24] = (float)(total / (total + 1000));
-                result.Global[25] = (float)(pool / (pool + 1000));
-                result.Global[26] = (resources?.Count ?? 0) / (float)((resources?.Count ?? 0) + 32);
+                result.Global[BotObservationSchema.OwnResourcesTotal] = Normalize(total, 1000);
+                result.Global[BotObservationSchema.PoolResourcesTotal] = Normalize(pool, 1000);
+                result.Global[BotObservationSchema.ResourceKinds] = (resources?.Count ?? 0) / (float)((resources?.Count ?? 0) + 32);
+                result.Global[BotObservationSchema.ResourceFood] = Resource(resources, "food", "grain", "wheat");
+                result.Global[BotObservationSchema.ResourceWood] = Resource(resources, "wood", "lumber");
+                result.Global[BotObservationSchema.ResourceStone] = Resource(resources, "stone");
+                result.Global[BotObservationSchema.ResourceIron] = Resource(resources, "iron", "ore");
+                result.Global[BotObservationSchema.ResourceGold] = Resource(resources, "gold", "coin");
+                int settlements = 0;
+                foreach (var id in resources?.Keys ?? Array.Empty<string>())
+                    if (!string.IsNullOrWhiteSpace(id)) settlements++;
+                result.Global[BotObservationSchema.OwnSettlements] = Normalize(settlements, 8);
             }
             return result;
+        }
+
+        private static float Normalize(double value, double scale)
+        {
+            value = Math.Max(0, value);
+            return (float)(value / (value + Math.Max(1, scale)));
+        }
+
+        private static float Resource(System.Collections.Generic.IReadOnlyDictionary<string, float> resources, params string[] names)
+        {
+            if (resources == null || names == null) return 0;
+            foreach (var pair in resources)
+            {
+                if (string.IsNullOrWhiteSpace(pair.Key)) continue;
+                string key = pair.Key.ToLowerInvariant();
+                if (!names.Any(key.Contains)) continue;
+                return Normalize(pair.Value, 250);
+            }
+            return 0;
         }
     }
 }

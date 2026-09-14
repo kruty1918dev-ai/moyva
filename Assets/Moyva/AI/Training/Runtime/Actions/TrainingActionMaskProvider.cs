@@ -8,7 +8,11 @@ namespace Kruty1918.Moyva.AI.Training
         public const int BranchSize = BotDecisionContract.MaxCandidateSlots;
         public const int SafeActionIndex = 0;
         public TrainingBotBridge Bridge { get; }
-        public TrainingActionMaskProvider(ITrainingSimulation simulation) : this(new TrainingBotBridge(simulation)) { }
+        public TrainingActionMaskProvider(ITrainingSimulation simulation) : this(new TrainingBotBridge(simulation))
+        {
+            Bridge.Reset((int)TrainingCurriculumStage.FullGame);
+            Bridge.Tick(0);
+        }
         public TrainingActionMaskProvider(TrainingBotBridge bridge) { Bridge = bridge; }
         public int ActionCount => BranchSize;
         public TrainingAction Decode(int index)
@@ -31,8 +35,24 @@ namespace Kruty1918.Moyva.AI.Training
             };
             return new TrainingAction(type, candidate.ActorKey, candidate.TargetKey);
         }
-        public bool IsLegal(int index) => Bridge.Frame?.Candidates.IsLegal(index) ?? false;
-        public int FirstLegalAction() => 0;
+        public bool IsLegal(int index)
+        {
+            EnsureFrame();
+            return Bridge.Frame?.Candidates.IsLegal(index) ?? false;
+        }
+        public int FirstLegalAction()
+        {
+            EnsureFrame();
+            var candidates = Bridge.Frame?.Candidates;
+            if (candidates == null) return SafeActionIndex;
+            for (int i = 0; i < candidates.Count; i++)
+                if (candidates.IsLegal(i)) return i;
+            return SafeActionIndex;
+        }
         public void WriteMask(IDiscreteActionMask mask) => BotMlFrameWriter.Mask(Bridge.Frame, mask);
+        private void EnsureFrame()
+        {
+            if (Bridge.Frame == null) Bridge.Tick(0);
+        }
     }
 }

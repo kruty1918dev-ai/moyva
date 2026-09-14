@@ -37,6 +37,8 @@ namespace Kruty1918.Moyva.AI.Bot
                         var features = new float[BotDecisionContract.CandidateFeatureCount];
                         features[13] = Vector2Int.Distance(start, tile.Position) / (Vector2Int.Distance(start, tile.Position) + 10f);
                         features[14] = cost / (cost + 10f); features[17] = 1; features[18] = 1;
+                        features[27] = tile.Position.x / 128f;
+                        features[28] = tile.Position.y / 128f;
                         yield return new BotCandidateAction(id + ":" + tile.Position.x + ":" + tile.Position.y,
                             Id, BotIntentType.Move, id, x: tile.Position.x, y: tile.Position.y, features: features);
                     }
@@ -64,4 +66,3 @@ namespace Kruty1918.Moyva.AI.Bot
         }
     }
 }
-
