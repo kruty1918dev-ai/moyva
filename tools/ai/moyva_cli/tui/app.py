@@ -818,21 +818,30 @@ class ControlCenter(App):
                 unity_alive = any("unity" in name or "moyvatraining" in name for name in child_names)
                 summary_freq = int(effective.get("summary_freq") or 5000)
                 learning_confirmed = isinstance(active_step, int) and active_step > 0
+                status_line = _startup_message(phase, elapsed, summary_freq, learning_confirmed)
                 learning_line = (
-                    f"MODEL IS LEARNING — ML-Agents reported {active_step:,} steps."
+                    f"Learning confirmed: yes — ML-Agents reported {active_step:,} steps."
                     if learning_confirmed else
-                    f"STARTING — trainer is running; learning is confirmed after the first metric report (about every {summary_freq:,} steps)."
+                    f"Learning confirmed: not yet — the process is alive, but the first metric report has not arrived."
                 )
                 environment_line = "Unity environment: RUNNING" if unity_alive else "Unity environment: starting / not detected yet"
+                process_state = active.get("state", "UNKNOWN")
+                started_at = str(active.get("started", "—"))[:19]
+                metric_line = (
+                    f"Metrics: step {active_step:,} · reward {active_reward if active_reward is not None else '—'} "
+                    f"· episode length {active_episode if active_episode is not None else '—'} "
+                    f"· speed {f'{active_sps:.1f} steps/s' if isinstance(active_sps, (int, float)) else '—'}"
+                    if learning_confirmed else
+                    f"Metrics: waiting for first report. Until then the progress bar stays at 0%, especially in fast/headless mode."
+                )
                 if active_card is not None:
                     active_card.update(
+                        f"{status_line}\n"
                         f"{learning_line}\n"
-                        f"Run: {active_run}\n"
-                        f"{environment_line} · Stage: {stage_name} · {preview_text}{preview_target_line}\n"
-                        f"Step: {progress_text} · Reward: {active_reward if active_reward is not None else 'waiting'} "
-                        f"· Episode length: {active_episode if active_episode is not None else 'waiting'} "
-                        f"· Speed: {f'{active_sps:.1f} steps/s' if isinstance(active_sps, (int, float)) else 'waiting'}\n"
-                        f"Elapsed: {_duration(elapsed)} · ETA: {_duration(eta)}\n"
+                        f"Run: {active_run} · started {started_at} · process {process_state}\n"
+                        f"Phase: {phase} · {environment_line} · Stage: {stage_name} · {preview_text}{preview_target_line}\n"
+                        f"{metric_line}\n"
+                        f"Target: {progress_text} · ETA: {_duration(eta)}\n"
                         f"Saved models: {checkpoint_count} checkpoints · Final ONNX: {'yes' if final_onnx else 'not yet'}\n"
                         f"Results folder: {run_path}\n"
                         f"{resource_line}"
@@ -841,19 +850,20 @@ class ControlCenter(App):
                 if progress_label is not None:
                     if learning_confirmed and maximum:
                         percent = min(100.0, 100.0 * active_step / maximum)
-                        progress_label.update(f"Training progress: {percent:.1f}% — {active_step:,} / {maximum:,} steps")
+                        progress_label.update(f"{phase}: {percent:.1f}% — {active_step:,} / {maximum:,} steps · elapsed {_duration(elapsed)}")
                     else:
                         progress_label.update(
-                            f"Training process is alive. Waiting for the first ML-Agents metric report (~{summary_freq:,} steps). "
-                            "The bar stays at 0% until that report arrives."
+                            f"{phase}: process is alive for {_duration(elapsed)}. Waiting for first ML-Agents metric report "
+                            f"(~{summary_freq:,} steps). The bar stays at 0% until that report arrives."
                         )
                 if progress is not None:
                     progress.update(progress=min(100, 100 * (active_step or 0) / maximum) if maximum else 0)
                 home_card = self._widget("#home-training-card", Static)
                 if home_card is not None:
                     home_card.update(
-                        ("TRAINING NOW — confirmed learning\n" if learning_confirmed else "TRAINING STARTING — process is running\n")
-                        + f"{active_run} · {stage_name} · {preview_text}\n"
+                        ("TRAINING NOW — metrics confirmed\n" if learning_confirmed else "TRAINING STARTING — no metrics yet\n")
+                        + f"{active_run} · {phase} · elapsed {_duration(elapsed)}\n"
+                        + f"{stage_name} · {preview_text}\n"
                         + (f"{active_step:,} / {maximum:,} steps · reward {active_reward if active_reward is not None else '—'}" if learning_confirmed and maximum else "Waiting for first step metric…")
                     )
                 if training_log is not None:
@@ -868,7 +878,9 @@ class ControlCenter(App):
                 training_state = self._widget("#training-state", Static)
                 if training_state is not None:
                     training_state.update(
-                        "Closing the Control Center stops this training by default. Press Q if you want to explicitly keep it running in the background."
+                        f"{phase} · elapsed {_duration(elapsed)} · process {process_state}. "
+                        "Open Show live log to see build/preflight/Unity connection lines. "
+                        "Closing the Control Center stops this training by default; press Q to keep it running in the background."
                     )
             else:
                 if active_card is not None:

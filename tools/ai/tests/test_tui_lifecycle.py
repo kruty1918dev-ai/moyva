@@ -38,3 +38,10 @@ class TrainingUiHelpersTests(unittest.TestCase):
         class Project:
             results = None
         self.assertEqual("TRAINING", _phase(Project(), "run", {"log": ""}, {"step": 100}))
+
+    def test_startup_message_distinguishes_preparation_from_learning(self):
+        from moyva_cli.tui.app import _startup_message
+
+        self.assertIn("rebuilding", _startup_message("REBUILDING TRAINING PLAYER", 65, 500, False))
+        self.assertIn("TRAINING ACTIVE", _startup_message("TRAINING", 125, 500, True))
+        self.assertIn("first metric report", _startup_message("WAITING FOR FIRST METRICS", 10, 500, False))
