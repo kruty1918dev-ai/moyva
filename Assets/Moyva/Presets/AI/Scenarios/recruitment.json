@@ -1,0 +1,20 @@
+{
+  "scenario": {
+    "id": "recruitment",
+    "title": "Recruitment",
+    "legacyStage": 3,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "prerequisites": [
+      "stable-economy"
+    ],
+    "steps": [
+      {
+        "id": "unit-recruited",
+        "goal": 4,
+        "requiredCount": 1,
+        "threshold": 0
+      }
+    ]
+  }
+}

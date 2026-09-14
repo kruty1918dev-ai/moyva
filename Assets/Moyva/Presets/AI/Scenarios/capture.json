@@ -1,0 +1,20 @@
+{
+  "scenario": {
+    "id": "capture",
+    "title": "Capture",
+    "legacyStage": 6,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "prerequisites": [
+      "combat-defense"
+    ],
+    "steps": [
+      {
+        "id": "capture",
+        "goal": 7,
+        "requiredCount": 1,
+        "threshold": 0
+      }
+    ]
+  }
+}

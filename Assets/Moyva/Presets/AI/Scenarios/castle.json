@@ -1,0 +1,18 @@
+{
+  "scenario": {
+    "id": "castle",
+    "title": "First castle",
+    "legacyStage": 5,
+    "learnerBuildsInitialCastle": true,
+    "fullGame": false,
+    "prerequisites": [],
+    "steps": [
+      {
+        "id": "castle-operational",
+        "goal": 1,
+        "requiredCount": 1,
+        "threshold": 0
+      }
+    ]
+  }
+}

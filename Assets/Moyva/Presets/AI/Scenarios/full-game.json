@@ -1,0 +1,62 @@
+{
+  "scenario": {
+    "id": "full-game",
+    "title": "Full game",
+    "legacyStage": 8,
+    "learnerBuildsInitialCastle": true,
+    "fullGame": true,
+    "prerequisites": [
+      "capture"
+    ],
+    "steps": [
+      {
+        "id": "castle-operational",
+        "goal": 1,
+        "requiredCount": 1,
+        "threshold": 0
+      },
+      {
+        "id": "production-established",
+        "goal": 2,
+        "requiredCount": 1,
+        "threshold": 0
+      },
+      {
+        "id": "stable-economy",
+        "goal": 3,
+        "requiredCount": 2,
+        "threshold": 1
+      },
+      {
+        "id": "unit-recruited",
+        "goal": 4,
+        "requiredCount": 1,
+        "threshold": 0
+      },
+      {
+        "id": "movement",
+        "goal": 5,
+        "requiredCount": 2,
+        "threshold": 0
+      },
+      {
+        "id": "combat",
+        "goal": 6,
+        "requiredCount": 1,
+        "threshold": 0
+      },
+      {
+        "id": "capture",
+        "goal": 7,
+        "requiredCount": 1,
+        "threshold": 0
+      },
+      {
+        "id": "match-won",
+        "goal": 8,
+        "requiredCount": 1,
+        "threshold": 0
+      }
+    ]
+  }
+}

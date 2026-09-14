@@ -1,0 +1,20 @@
+{
+  "scenario": {
+    "id": "movement-scouting",
+    "title": "Movement and scouting",
+    "legacyStage": 7,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "prerequisites": [
+      "recruitment"
+    ],
+    "steps": [
+      {
+        "id": "movement",
+        "goal": 5,
+        "requiredCount": 2,
+        "threshold": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "scenario": {
+    "id": "combat-defense",
+    "title": "Combat and defense",
+    "legacyStage": 2,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "prerequisites": [
+      "movement-scouting"
+    ],
+    "steps": [
+      {
+        "id": "combat",
+        "goal": 6,
+        "requiredCount": 1,
+        "threshold": 0
+      }
+    ]
+  }
+}

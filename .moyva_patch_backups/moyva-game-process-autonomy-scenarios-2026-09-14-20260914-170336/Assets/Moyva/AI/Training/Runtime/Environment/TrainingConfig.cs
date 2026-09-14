@@ -53,14 +53,13 @@ namespace Kruty1918.Moyva.AI.Training
 
         public void Validate()
         {
-            if (curriculum == null || rewards == null)
-                throw new ArgumentException("Invalid training configuration: curriculum/rewards are required.");
             if (learnInitialCastle && (int)curriculum.stage < (int)TrainingCurriculumStage.Building)
                 throw new ArgumentException("Initial castle lesson requires Building or later curriculum.");
             if (environmentCount < 1 || maxTurnsPerEpisode < 1 || maxDecisionsPerEpisode < 1
                 || worldSize < 12 || worldSize > 128 || string.IsNullOrWhiteSpace(generatorGraphId)
                 || string.IsNullOrWhiteSpace(startingUnitTypeId)
                 || decisionInterval < 1 || !Finite(trainingTimeScale) || trainingTimeScale <= 0
+                || curriculum == null || rewards == null
                 || !Finite(visualTimeScale) || !Finite(headlessTimeScale)
                 || visualTimeScale <= 0 || headlessTimeScale <= 0
                 || metricsHistoryCapacity < 1 || metricsHistoryCapacity > 5000
@@ -70,7 +69,6 @@ namespace Kruty1918.Moyva.AI.Training
                 throw new ArgumentException("Invalid training configuration.");
             if (behaviorType == BehaviorType.InferenceOnly)
                 throw new ArgumentException("InferenceOnly requires a future model adapter; use Default or HeuristicOnly.");
-            curriculum.autonomous?.Validate();
             rewards.Validate();
             visualTimeScale = Mathf.Clamp(visualTimeScale, 0.1f, 20f);
             headlessTimeScale = Mathf.Clamp(headlessTimeScale, 0.1f, 20f);

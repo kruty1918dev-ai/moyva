@@ -151,7 +151,7 @@ namespace Kruty1918.Moyva.AI.Training
                         starter.TryGrant(null, owner);
                         // The learner must submit real construction actions in this lesson.
                         // The opponent retains its production starter settlement.
-                        if (context.LearnInitialCastle && owner == TrainingGameplayScope.LearnerId)
+                        if (config.learnInitialCastle && owner == TrainingGameplayScope.LearnerId)
                         {
                             if (!Turns.TryEndTurn(owner, out var lessonReason))
                                 throw new InvalidOperationException(lessonReason);
@@ -193,22 +193,6 @@ namespace Kruty1918.Moyva.AI.Training
             catch { Dispose(); throw; }
             finally { UnityEngine.Random.state = randomState; }
         }
-        internal TrainingScenarioFacts CaptureTrainingFacts()
-        {
-            int settlements = 0;
-            double resources = 0;
-            if (EconomyInstalled)
-            {
-                var ids = Economy.GetSettlementIdsForOwner(TrainingGameplayScope.LearnerId);
-                settlements = ids?.Count ?? 0;
-                var totals = Economy.GetOwnerResourceTotals(TrainingGameplayScope.LearnerId);
-                if (totals != null)
-                    foreach (var value in totals.Values)
-                        if (!float.IsNaN(value) && !float.IsInfinity(value)) resources += Math.Max(0, value);
-            }
-            return new TrainingScenarioFacts(settlements, 0, resources);
-        }
-
         private static T Required<T>() where T : class
             => MoyvaJsonRuntime.GetAll<T>().FirstOrDefault() ?? throw new InvalidOperationException("Missing JSON configuration: " + typeof(T).Name);
         private void Install<T>() where T : MonoInstaller

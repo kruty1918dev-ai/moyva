@@ -1,0 +1,20 @@
+{
+  "scenario": {
+    "id": "production",
+    "title": "Resource production",
+    "legacyStage": 4,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "prerequisites": [
+      "castle"
+    ],
+    "steps": [
+      {
+        "id": "production-established",
+        "goal": 2,
+        "requiredCount": 1,
+        "threshold": 0
+      }
+    ]
+  }
+}

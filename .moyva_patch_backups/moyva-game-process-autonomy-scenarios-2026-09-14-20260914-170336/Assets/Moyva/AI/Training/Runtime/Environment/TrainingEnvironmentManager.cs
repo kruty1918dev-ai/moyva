@@ -14,7 +14,6 @@ namespace Kruty1918.Moyva.AI.Training
         public IReadOnlyList<TrainingEnvironment> Environments => _environments.AsReadOnly();
         public TrainingMetricsHub Metrics { get; private set; }
         private TrainingReadinessReport _readiness;
-        private TrainingAutonomyCoordinator _autonomy;
         public TrainingReadinessReport Readiness => _environments.Count > 0 ? _environments[0].Readiness : _readiness;
 
         public void Initialize(TrainingConfig config, ITrainingSimulationFactory factory)
@@ -24,8 +23,6 @@ namespace Kruty1918.Moyva.AI.Training
             if (factory is ScaffoldSimulationFactory && !config.allowScaffoldSimulation)
                 throw new InvalidOperationException("Scaffold simulation requires allowScaffoldSimulation=true.");
             Metrics = new TrainingMetricsHub(config.metricsHistoryCapacity);
-            if (config.curriculum?.autonomous?.enabled == true)
-                _autonomy = new TrainingAutonomyCoordinator(config);
             if (config.environmentCount > 1 && !factory.SupportsIndependentEnvironments)
                 throw new InvalidOperationException("Simulation factory cannot isolate multiple gameplay environments. Use environmentCount=1.");
             for (int id = 0; id < config.environmentCount; id++)
@@ -35,7 +32,6 @@ namespace Kruty1918.Moyva.AI.Training
                 _environments.Add(environment);
                 Metrics.Attach(environment);
                 environment.CheckReadiness(factory);
-                _autonomy?.Attach(environment);
                 environment.BeginEpisode();
                 _readiness = environment.CheckReadiness(factory);
                 if (!config.allowScaffoldSimulation && !Readiness.IsReady)
@@ -63,8 +59,6 @@ namespace Kruty1918.Moyva.AI.Training
 
         public void Shutdown()
         {
-            _autonomy?.Dispose();
-            _autonomy = null;
             Metrics?.Dispose();
             foreach (var go in _agentObjects)
                 if (go != null) { go.SetActive(false); Destroy(go); }

@@ -3,8 +3,7 @@ using Kruty1918.Moyva.Turns.API;
 
 namespace Kruty1918.Moyva.AI.Training
 {
-    // ScenarioSuccess is a lesson success, deliberately distinct from winning the complete match.
-    public enum TrainingEpisodeResult { None, Victory, Defeat, Draw, Timeout, ScenarioSuccess, InvalidState }
+    public enum TrainingEpisodeResult { None, Victory, Defeat, Draw, Timeout, InvalidState }
 
     public interface ITrainingEnvironment
     {

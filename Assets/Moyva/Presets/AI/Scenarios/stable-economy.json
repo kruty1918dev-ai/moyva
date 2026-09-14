@@ -1,0 +1,20 @@
+{
+  "scenario": {
+    "id": "stable-economy",
+    "title": "Stable economy",
+    "legacyStage": 4,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "prerequisites": [
+      "production"
+    ],
+    "steps": [
+      {
+        "id": "stable-economy",
+        "goal": 3,
+        "requiredCount": 2,
+        "threshold": 1
+      }
+    ]
+  }
+}

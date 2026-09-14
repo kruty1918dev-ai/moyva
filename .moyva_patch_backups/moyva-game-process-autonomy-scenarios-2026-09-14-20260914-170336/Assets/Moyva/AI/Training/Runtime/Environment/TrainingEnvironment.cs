@@ -11,8 +11,6 @@ namespace Kruty1918.Moyva.AI.Training
         private readonly int _seedBase;
         private bool _pendingReset;
         private TrainingEpisodeResult _pendingOutcome;
-        private TrainingScenarioDefinition _scenario;
-        private TrainingScenarioProgressTracker _scenarioProgress;
         private readonly ITrainingEpisodeOutcomeSource _outcomes;
         public bool IsRealGameplay => _simulation is GameplayTrainingSimulation;
         internal GameplayTrainingEpisode GameplayEpisode => (_simulation as GameplayTrainingSimulation)?.Episode;
@@ -27,9 +25,7 @@ namespace Kruty1918.Moyva.AI.Training
         public bool IsReady { get; private set; }
         public bool CanRequestDecision => IsReady && Bridge.CanRequestDecision;
         public TrainingEpisodeResult Result { get; private set; }
-        public TrainingScenarioDefinition Scenario => _scenario;
-        public TrainingScenarioProgressTracker ScenarioProgress => _scenarioProgress;
-        public TrainingCurriculumStage Stage => _scenario?.legacyStage ?? _config.curriculum.stage;
+        public TrainingCurriculumStage Stage => _config.curriculum.stage;
         public string Limitation => _simulation.Limitation;
         public TrainingAction? PreviousAction { get; private set; }
         public TrainingRewardTracker Rewards { get; }
@@ -56,16 +52,6 @@ namespace Kruty1918.Moyva.AI.Training
             if (simulation is GameplayTrainingSimulation gameplay) gameplay.GameplayReward += OnGameplayReward;
         }
 
-        public void SetScenario(TrainingScenarioDefinition scenario)
-        {
-            if (IsReady) throw new InvalidOperationException("Cannot change training scenario while an episode is running.");
-            _scenario = scenario;
-            _scenarioProgress = scenario == null ? null : new TrainingScenarioProgressTracker(scenario);
-        }
-
-        private TrainingScenarioFacts CaptureScenarioFacts()
-            => GameplayEpisode?.CaptureTrainingFacts() ?? default;
-
         public TrainingReadinessReport CheckReadiness(ITrainingSimulationFactory factory)
         {
             _factory = factory;
@@ -75,17 +61,11 @@ namespace Kruty1918.Moyva.AI.Training
         private void OnOutcome(TrainingEpisodeResult result)
         {
             if (!IsReady) return;
-            _scenarioProgress?.ObserveMatch(result);
             // The signal can fire inside EndTurn. Let its decision trace finish before
             // completing the episode, so metrics include the actual terminal action.
             _pendingOutcome = result;
         }
-        private void OnGameplayReward(TrainingRewardEvent reward)
-        {
-            if (!IsReady) return;
-            Rewards.Record(reward);
-            _scenarioProgress?.ObserveReward(reward, CaptureScenarioFacts());
-        }
+        private void OnGameplayReward(TrainingRewardEvent reward) { if (IsReady) Rewards.Record(reward); }
 
         private void CompletePendingOutcome()
         {
@@ -110,8 +90,7 @@ namespace Kruty1918.Moyva.AI.Training
             LastCandidate = null;
             Array.Clear(ActionCounts, 0, ActionCounts.Length);
             var context = new TrainingResetContext(EnvironmentId, EpisodeId,
-                TrainingResetContext.DeriveSeed(_seedBase, EnvironmentId, EpisodeId), Stage,
-                _scenario?.id, _scenario?.learnerBuildsInitialCastle ?? _config.learnInitialCastle);
+                TrainingResetContext.DeriveSeed(_seedBase, EnvironmentId, EpisodeId), Stage);
             Rewards.Reset(EpisodeId);
             Diagnostics.Reset(context);
             _timer.Reset();
@@ -126,8 +105,7 @@ namespace Kruty1918.Moyva.AI.Training
                     if (!IsRealGameplay || source?.Perception == null || source.Perception is EmptyBotPerceptionSource)
                         throw new InvalidOperationException("REAL_SIMULATION/PERCEPTION_BLOCKED: scaffold and fallback perception are forbidden.");
                 }
-                _scenarioProgress?.Begin(EpisodeId, CaptureScenarioFacts());
-                Bridge.Reset((int)Stage, () => _scenarioProgress);
+                Bridge.Reset((int)Stage);
                 Bridge.Orchestrator.DecisionFinished += OnDecisionFinished;
             }
             catch (Exception exception) { Fail(exception.Message); }
@@ -190,14 +168,8 @@ namespace Kruty1918.Moyva.AI.Training
                     Record(TrainingRewardEventType.TurnCompleted, "turn");
                 }
             }
-            _scenarioProgress?.ObserveAction(trace.Intent, trace.Result, CaptureScenarioFacts());
             Diagnostics.LastError = trace.Reason;
             UpdateDiagnostics();
-            if (_scenario != null && !_scenario.fullGame && _scenarioProgress?.IsComplete == true)
-            {
-                EndEpisode(TrainingEpisodeResult.ScenarioSuccess);
-                return;
-            }
             if (_pendingOutcome != TrainingEpisodeResult.None)
             {
                 CompletePendingOutcome();
