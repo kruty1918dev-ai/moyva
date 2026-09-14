@@ -90,6 +90,17 @@ namespace Kruty1918.Moyva.AI.Training
                 roll -= _config.currentSkillWeight;
                 var mastered = ordered.Where(s => Skill(s.id).mastered && !s.fullGame).ToArray();
                 if (roll < _config.masteredReviewWeight && mastered.Length > 0) return Select(mastered[_random.Next(mastered.Length)]);
+
+                // The remaining initial-curriculum weight is reserved for combinations.
+                // A combination is eligible only when all of the skills it depends on are mastered.
+                var combinations = _catalog.Items
+                    .Where(s => s != null
+                        && s.id.StartsWith("combo-", StringComparison.Ordinal)
+                        && DependenciesMastered(s))
+                    .ToArray();
+                if (combinations.Length > 0)
+                    return Select(combinations[_random.Next(combinations.Length)]);
+
                 return Select(firstUnmastered ?? ordered.First());
             }
             int post = _random.Next(Math.Max(1, _config.fullGameWeightAfterBasics + _config.weakSkillWeightAfterBasics + _config.reviewWeightAfterBasics));

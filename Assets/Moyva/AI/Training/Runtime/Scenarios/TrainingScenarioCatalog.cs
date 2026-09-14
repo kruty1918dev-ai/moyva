@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -30,7 +31,15 @@ namespace Kruty1918.Moyva.AI.Training
         public TrainingScenarioDefinition Get(string id)
             => !string.IsNullOrWhiteSpace(id) && _items.TryGetValue(id, out var value) ? value : null;
 
-        public static TrainingScenarioCatalog BuiltIn() => new TrainingScenarioCatalog(new[]
+        public static TrainingScenarioCatalog BuiltIn()
+        {
+            var presets = TryLoadPresetDefinitions();
+            return presets != null
+                ? new TrainingScenarioCatalog(presets)
+                : new TrainingScenarioCatalog(FallbackDefinitions());
+        }
+
+        private static TrainingScenarioDefinition[] FallbackDefinitions() => new[]
         {
             Scenario("castle", "First castle", TrainingCurriculumStage.Building, true, false, Array.Empty<string>(),
                 Step("castle-operational", TrainingScenarioGoalKind.CastleOperational)),
@@ -46,6 +55,18 @@ namespace Kruty1918.Moyva.AI.Training
                 Step("combat", TrainingScenarioGoalKind.CombatSuccess)),
             Scenario("capture", "Capture", TrainingCurriculumStage.Objectives, false, false, new[] { "combat-defense" },
                 Step("capture", TrainingScenarioGoalKind.ObjectiveCaptured)),
+            Scenario("combo-foundation", "Castle + production review", TrainingCurriculumStage.Economy, true, false,
+                new[] { "castle", "production" },
+                Step("castle-operational", TrainingScenarioGoalKind.CastleOperational),
+                Step("production-established", TrainingScenarioGoalKind.ProductionEstablished)),
+            Scenario("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment, false, false,
+                new[] { "stable-economy", "recruitment" },
+                Step("stable-economy", TrainingScenarioGoalKind.StableEconomy, 2, 1f),
+                Step("unit-recruited", TrainingScenarioGoalKind.UnitRecruited)),
+            Scenario("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat, false, false,
+                new[] { "movement-scouting", "combat-defense" },
+                Step("movement", TrainingScenarioGoalKind.MovementOrExploration, 2),
+                Step("combat", TrainingScenarioGoalKind.CombatSuccess)),
             Scenario("full-game", "Full game", TrainingCurriculumStage.FullGame, true, true, new[] { "capture" },
                 Step("castle-operational", TrainingScenarioGoalKind.CastleOperational),
                 Step("production-established", TrainingScenarioGoalKind.ProductionEstablished),
@@ -55,7 +76,54 @@ namespace Kruty1918.Moyva.AI.Training
                 Step("combat", TrainingScenarioGoalKind.CombatSuccess),
                 Step("capture", TrainingScenarioGoalKind.ObjectiveCaptured),
                 Step("match-won", TrainingScenarioGoalKind.MatchWon))
-        });
+        };
+
+        private static TrainingScenarioDefinition[] TryLoadPresetDefinitions()
+        {
+            string configured = Environment.GetEnvironmentVariable("MOYVA_SCENARIO_DIR");
+            if (!string.IsNullOrWhiteSpace(configured))
+            {
+                string configuredPath = Path.GetFullPath(configured);
+                if (!Directory.Exists(configuredPath))
+                    throw new DirectoryNotFoundException("MOYVA_SCENARIO_DIR does not exist: " + configuredPath);
+                return LoadPresetDirectory(configuredPath);
+            }
+
+            if (!string.IsNullOrWhiteSpace(Application.dataPath))
+            {
+                string editorPath = Path.Combine(Application.dataPath, "Moyva", "Presets", "AI", "Scenarios");
+                if (Directory.Exists(editorPath))
+                    return LoadPresetDirectory(editorPath);
+            }
+
+            // Packaged players may not ship loose Assets. Keep a code fallback so training
+            // remains bootable; headless/Control Center can point at JSON with MOYVA_SCENARIO_DIR.
+            return null;
+        }
+
+        private static TrainingScenarioDefinition[] LoadPresetDirectory(string directory)
+        {
+            string[] files = Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly);
+            Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+            if (files.Length == 0)
+                throw new InvalidOperationException("No training scenario JSON files found in: " + directory);
+
+            var scenarios = files.Select(path => ParseJson(File.ReadAllText(path))).ToArray();
+            string[] required =
+            {
+                "castle", "production", "stable-economy", "recruitment",
+                "movement-scouting", "combat-defense", "capture", "full-game"
+            };
+            string[] missing = required
+                .Where(id => scenarios.All(s => !string.Equals(s.id, id, StringComparison.Ordinal)))
+                .ToArray();
+            if (missing.Length > 0)
+                throw new InvalidOperationException(
+                    "Training scenario preset directory is missing required scenarios: " + string.Join(", ", missing));
+
+            Debug.Log("MOYVA_SCENARIOS_LOADED path=" + directory + " count=" + scenarios.Length);
+            return scenarios;
+        }
 
         public static TrainingScenarioDefinition ParseJson(string json)
         {

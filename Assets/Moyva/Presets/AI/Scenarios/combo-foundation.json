@@ -1,0 +1,27 @@
+{
+  "scenario": {
+    "id": "combo-foundation",
+    "title": "Castle + production review",
+    "legacyStage": 4,
+    "learnerBuildsInitialCastle": true,
+    "fullGame": false,
+    "prerequisites": [
+      "castle",
+      "production"
+    ],
+    "steps": [
+      {
+        "id": "castle-operational",
+        "goal": 1,
+        "requiredCount": 1,
+        "threshold": 0
+      },
+      {
+        "id": "production-established",
+        "goal": 2,
+        "requiredCount": 1,
+        "threshold": 0
+      }
+    ]
+  }
+}

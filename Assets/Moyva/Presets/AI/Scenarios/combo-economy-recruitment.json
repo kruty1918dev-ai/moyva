@@ -1,0 +1,27 @@
+{
+  "scenario": {
+    "id": "combo-economy-recruitment",
+    "title": "Economy + recruitment review",
+    "legacyStage": 3,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "prerequisites": [
+      "stable-economy",
+      "recruitment"
+    ],
+    "steps": [
+      {
+        "id": "stable-economy",
+        "goal": 3,
+        "requiredCount": 2,
+        "threshold": 1
+      },
+      {
+        "id": "unit-recruited",
+        "goal": 4,
+        "requiredCount": 1,
+        "threshold": 0
+      }
+    ]
+  }
+}

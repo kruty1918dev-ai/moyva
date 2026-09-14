@@ -1,0 +1,27 @@
+{
+  "scenario": {
+    "id": "combo-field-ops",
+    "title": "Movement + combat review",
+    "legacyStage": 2,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "prerequisites": [
+      "movement-scouting",
+      "combat-defense"
+    ],
+    "steps": [
+      {
+        "id": "movement",
+        "goal": 5,
+        "requiredCount": 2,
+        "threshold": 0
+      },
+      {
+        "id": "combat",
+        "goal": 6,
+        "requiredCount": 1,
+        "threshold": 0
+      }
+    ]
+  }
+}

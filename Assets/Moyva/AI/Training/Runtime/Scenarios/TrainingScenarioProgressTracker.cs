@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.AI.Training
         private long _episodeId;
         private int _stepIndex, _count, _completedTurns;
         private bool _sawAgentBuilding;
+        private double _lastResources;
         private TrainingScenarioFacts _baseline;
         public TrainingScenarioDefinition Scenario => _scenario;
         public int StepIndex => _stepIndex;
@@ -31,7 +32,8 @@ namespace Kruty1918.Moyva.AI.Training
 
         public void Begin(long episodeId, TrainingScenarioFacts baseline)
         {
-            _episodeId = episodeId; _baseline = baseline; _stepIndex = _count = _completedTurns = 0; _sawAgentBuilding = false;
+            _episodeId = episodeId; _baseline = baseline; _lastResources = baseline.Resources;
+            _stepIndex = _count = _completedTurns = 0; _sawAgentBuilding = false;
         }
 
         public void ObserveReward(TrainingRewardEvent e, TrainingScenarioFacts facts)
@@ -45,7 +47,8 @@ namespace Kruty1918.Moyva.AI.Training
                     if (_sawAgentBuilding && facts.Settlements > _baseline.Settlements) Advance();
                     break;
                 case TrainingScenarioGoalKind.ProductionEstablished:
-                    if (e.Type == TrainingRewardEventType.BuildingCreated) Count();
+                    // A construction event alone is not evidence of production.
+                    // The authoritative economy total is checked after completed actions instead.
                     break;
                 case TrainingScenarioGoalKind.UnitRecruited:
                     if (e.Type == TrainingRewardEventType.UnitCreated) Count();
@@ -65,6 +68,17 @@ namespace Kruty1918.Moyva.AI.Training
             if (intent == BotIntentType.EndTurn) _completedTurns++;
             var step = CurrentStep;
             if (step == null) return;
+            if (step.goal == TrainingScenarioGoalKind.ProductionEstablished)
+            {
+                double previousResources = _lastResources;
+                _lastResources = facts.Resources;
+                if (intent == BotIntentType.EndTurn)
+                {
+                    double requiredIncrease = step.threshold > 0 ? step.threshold : 0.0001d;
+                    if (facts.Resources >= previousResources + requiredIncrease) Advance();
+                }
+                return;
+            }
             if (step.goal == TrainingScenarioGoalKind.MovementOrExploration
                 && (intent == BotIntentType.Move || intent == BotIntentType.Explore || intent == BotIntentType.Reposition)) Count();
             else if (step.goal == TrainingScenarioGoalKind.StableEconomy
