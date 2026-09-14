@@ -173,3 +173,6 @@ __pycache__/
 /Results/MoyvaTraining/
 /Build/Training/
 /.venv-training/
+
+# Machine-local Moyva Control Center settings, IPC and process records.
+/.moyva-local/

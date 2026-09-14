@@ -1,0 +1,33 @@
+Screen { background: #0b1120; color: #e2e8f0; }
+Header { background: #14213a; color: #67e8f9; }
+Footer { background: #14213a; }
+#shell { height: 1fr; }
+#sidebar { width: 25; background: #101a2d; padding: 1; border-right: solid #263954; }
+#brand { color: #67e8f9; text-style: bold; height: 4; padding-left: 1; }
+#navigation { height: 1fr; border: none; background: #101a2d; }
+#ownership-note { height: auto; color: #94a3b8; padding: 1; }
+#pages { width: 1fr; }
+.page { padding: 1 2; }
+.page-title { text-style: bold; color: #f8fafc; margin-bottom: 1; height: 2; }
+.section-title { text-style: bold; color: #67e8f9; margin-top: 1; }
+.card { background: #14213a; padding: 1 2; margin-bottom: 1; height: auto; border: round #263954; }
+.buttons { height: auto; min-height: 3; layout: grid; grid-size: 3; grid-columns: 1fr 1fr 1fr; grid-rows: 3; margin-bottom: 1; }
+Button { margin-right: 1; min-width: 9; }
+DataTable { height: 15; margin-bottom: 1; background: #101a2d; }
+#jobs-table { height: 8; }
+#reward-chart { height: 4; color: #34d399; background: #14213a; margin-bottom: 1; }
+#training-fields { layout: grid; grid-size: 4; grid-columns: 22 1fr 22 1fr; grid-rows: 3; height: auto; }
+#training-fields Label { padding-top: 1; }
+#training-fields Input, #training-fields Select { width: 1fr; }
+#training-progress { margin: 1 0; }
+RichLog { height: 1fr; min-height: 18; background: #101a2d; border: round #263954; }
+#settings-json { height: 20; margin-bottom: 1; }
+Prompt, Details { align: center middle; background: #050912 80%; }
+#dialog { width: 76; height: auto; padding: 2; background: #14213a; border: thick #22d3ee; }
+#prompt-title { height: auto; margin-bottom: 1; }
+#dialog Input { margin: 1 0; }
+#details-dialog { width: 90%; height: 85%; background: #14213a; border: thick #22d3ee; padding: 1 2; }
+#details-text { height: 1fr; margin-bottom: 1; }
+
+#secondary-charts { height: 3; margin-bottom: 1; }
+#secondary-charts Sparkline { width: 1fr; color: #a78bfa; margin-right: 1; }

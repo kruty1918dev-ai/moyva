@@ -1,0 +1,4 @@
+# Independent of the pinned ML-Agents/PyTorch training environment.
+textual>=0.89,<2
+psutil>=5.9,<7
+PyYAML>=6,<7

@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 PROJECT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PYTHON="${MOYVA_PYTHON:-python3}"
+if [[ -n "${MOYVA_PYTHON:-}" ]]; then
+  PYTHON="$MOYVA_PYTHON"
+elif [[ -x "$PROJECT/.venv-training/bin/python" ]] && "$PROJECT/.venv-training/bin/python" -c 'import sys' >/dev/null 2>&1; then
+  PYTHON="$PROJECT/.venv-training/bin/python"
+else
+  PYTHON="python3"
+fi
 if ! command -v "$PYTHON" >/dev/null 2>&1; then
   echo "Python not found. Set MOYVA_PYTHON to Python 3.10.1–3.10.12." >&2
   exit 2

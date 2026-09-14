@@ -65,9 +65,9 @@ def log(message):
     print(f"[MoyvaTrain] {message}", flush=True)
 
 
-def contract():
+def contract(root=None):
     # Read the canonical C# signature; never maintain a parallel neural schema.
-    source = (ROOT / "Assets/Moyva/AI/Bot/Core/Contracts/BotDecisionContract.cs").read_text()
+    source = ((Path(root) if root else ROOT) / "Assets/Moyva/AI/Bot/Core/Contracts/BotDecisionContract.cs").read_text()
     signature = source.split("Encoding.UTF8.GetBytes(", 1)[1].split(").Replace", 1)[0]
     signature = signature.split('.Replace', 1)[0]
     strings = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', signature)
@@ -108,7 +108,7 @@ def unity_path(explicit=None):
 def player_path(args):
     if args.env:
         return resolve(args.env)
-    suffix = ".exe" if args.target == "windows" else ".x86_64"
+    suffix = {"windows": ".exe", "linux": ".x86_64", "macos": ".app"}[args.target]
     return ROOT / ("Build/Training/MoyvaTraining" + suffix)
 
 
@@ -146,7 +146,7 @@ def prerequisite(args, trainer=True):
 
 def run_process(command, verbose=True, logfile=None):
     """One process group; termination never targets unrelated Unity/Python processes."""
-    stream = open(logfile, "w", encoding="utf-8") if logfile else None
+    stream = open(logfile, "a", encoding="utf-8") if logfile else None
     kwargs = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
     process = subprocess.Popen(command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT if stream else None, **kwargs)
     job = WindowsProcessJob(process) if os.name == "nt" else None
@@ -156,12 +156,19 @@ def run_process(command, verbose=True, logfile=None):
         interrupted = True
         if process.poll() is None:
             if os.name == "nt":
-                process.send_signal(signal.CTRL_BREAK_EVENT)
+                try:
+                    process.send_signal(signal.CTRL_BREAK_EVENT)
+                except OSError:
+                    # A native Editor launch may have no console. Its Job still owns cleanup.
+                    process.terminate()
             else:
                 os.killpg(process.pid, signal.SIGINT)
     old_handlers = {s: signal.signal(s, interrupt) for s in (signal.SIGINT, signal.SIGTERM)}
     try:
         while process.poll() is None:
+            stop_file = os.environ.get("MOYVA_CLI_STOP_FILE")
+            if stop_file and Path(stop_file).exists() and not interrupted:
+                interrupt(signal.SIGINT, None)
             if interrupted:
                 try:
                     process.wait(timeout=10)
@@ -193,18 +200,21 @@ def build(args, unity=None):
     unity = unity or unity_path(args.unity)
     player = player_path(args)
     player.parent.mkdir(parents=True, exist_ok=True)
-    build_log = ROOT / "Temp/ai/training-build.log"
+    build_log = ROOT / ".moyva-local/logs" / ("training-build-" + dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d-%H%M%S-%f") + ".log")
     build_log.parent.mkdir(parents=True, exist_ok=True)
-    target = "StandaloneWindows64" if args.target == "windows" else "StandaloneLinux64"
+    target = {"windows": "StandaloneWindows64", "linux": "StandaloneLinux64", "macos": "StandaloneOSX"}[args.target]
     command = [unity, "-batchmode", "-nographics", "-quit", "-projectPath", str(ROOT), "-logFile", str(build_log),
                "-executeMethod", "Kruty1918.Moyva.AI.Training.Editor.TrainingPlayerBuilder.Build",
                "-moyvaBuildTarget", target, "-moyvaBuildOutput", str(player)]
     log("Building dedicated training player; log=" + str(build_log))
     code = run_process(command)
-    if code or not player.is_file() or not Path(str(player) + ".contract.json").is_file():
+    if code or not player.exists() or not Path(str(player) + ".contract.json").is_file():
         tail = build_log.read_text(encoding="utf-8", errors="replace").splitlines() if build_log.exists() else []
         errors = [line for line in tail if "error" in line.lower() or "Exception" in line]
         raise LaunchError("Unity build failed (exit %s). %s\nLog: %s" % (code, "\n".join(errors[-8:]), build_log), code or 2)
+    latest = ROOT / "Temp/ai/training-build.log"
+    latest.parent.mkdir(parents=True, exist_ok=True)
+    if build_log.exists(): shutil.copy2(build_log, latest)
     log("Build complete: " + str(player))
     return player
 
@@ -242,7 +252,7 @@ def train(args):
     elif run_dir.exists() and not args.force:
         raise LaunchError("Run already exists. Use resume or choose a new --run-id.")
     player = player_path(args)
-    if not player.is_file():
+    if not player.exists():
         if args.no_build:
             raise LaunchError("Training player missing. Run moyva-train build or omit --no-build.")
         player = build(args, unity)
@@ -259,8 +269,15 @@ def train(args):
     run_dir.mkdir(parents=True, exist_ok=resume or args.force)
     if args.max_steps:
         trainer["behaviors"][BEHAVIOR]["max_steps"] = args.max_steps
+    if args.checkpoint_interval:
+        if args.checkpoint_interval < 1:
+            raise LaunchError("Checkpoint interval must be positive.")
+        trainer["behaviors"][BEHAVIOR]["checkpoint_interval"] = args.checkpoint_interval
     # Keep the exact effective YAML alongside metadata; never edit the authored preset.
     effective_trainer = run_dir / "trainer.yaml"
+    if resume and effective_trainer.exists():
+        stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d-%H%M%S")
+        shutil.copy2(effective_trainer, run_dir / ("trainer-" + stamp + ".yaml"))
     effective_trainer.write_text(yaml.safe_dump(trainer), encoding="utf-8")
     metadata = dict(run_id=run_id, started_utc=dt.datetime.now(dt.timezone.utc).isoformat(), commit=git_value("rev-parse", "HEAD"),
                     branch=git_value("branch", "--show-current"), contract=current, trainer_config=str(trainer_path),
@@ -270,7 +287,7 @@ def train(args):
     else:
         (run_dir / "resume.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     command = [sys.executable, "-m", "mlagents.trainers.learn", str(effective_trainer), "--run-id", run_id,
-               "--env", str(player), "--results-dir", str(results), "--num-envs", "1", "--seed", str(seed), "--time-scale", str(speed)]
+               "--env", str(player), "--results-dir", str(results), "--num-envs", "1", "--base-port", str(args.base_port), "--seed", str(seed), "--time-scale", str(speed)]
     if resume:
         command.append("--resume")
     else:
@@ -288,7 +305,22 @@ def train(args):
         command += ["-moyvaEpisodeDecisions", str(args.episode_decisions)]
     log(f"run={run_id} behavior={BEHAVIOR} contract=v{current['version']} {current['hash']}")
     log(f"mode={mode} stage={stage} player={player}\ntrainer={trainer_path}\nresults={run_dir}")
-    code = run_process(command)
+    from moyva_cli.config import atomic_json, utc
+    if resume:
+        stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d-%H%M%S")
+        if (run_dir / "unity.log").exists():
+            shutil.copy2(run_dir / "unity.log", run_dir / ("unity-" + stamp + ".log"))
+    process_record = os.environ.get("MOYVA_CLI_PROCESS_RECORD")
+    if process_record and Path(process_record).is_file():
+        atomic_json(run_dir / "cli-status.json", json.loads(Path(process_record).read_text()))
+    atomic_json(run_dir / "effective-config.json", dict(metadata, max_steps=trainer["behaviors"][BEHAVIOR]["max_steps"],
+        episode_decisions=args.episode_decisions, time_scale=speed, checkpoint_interval=trainer["behaviors"][BEHAVIOR].get("checkpoint_interval")))
+    with (run_dir / "cli.log").open("a", encoding="utf-8") as cli_log:
+        cli_log.write(json.dumps(dict(time=utc(),component="training",event="start",resume=resume,command=command)) + "\n")
+    log("Live ML-Agents log: " + str(run_dir / "mlagents.log"))
+    code = run_process(command, logfile=run_dir / "mlagents.log")
+    atomic_json(run_dir / "cli-status.json", dict(state="COMPLETED" if code == 0 else "INTERRUPTED" if code == 130 else "FAILED",
+        exit_code=code,finished=utc(),run_id=run_id))
     if code:
         unity_log = run_dir / "unity.log"
         if unity_log.exists():
@@ -305,7 +337,7 @@ def parser():
         p = commands.add_parser(name)
         p.add_argument("--unity")
         p.add_argument("--env")
-        p.add_argument("--target", choices=("linux", "windows"), default="windows" if os.name == "nt" else "linux")
+        p.add_argument("--target", choices=("linux", "windows", "macos"), default="windows" if os.name == "nt" else "macos" if sys.platform == "darwin" else "linux")
         p.add_argument("--trainer", "--config", default=str(TRAINING / "Config/moyva_ppo.yaml"))
         p.add_argument("--results", default=str(RESULTS))
         if name in ("train", "resume", "visual"):
@@ -318,6 +350,8 @@ def parser():
             p.add_argument("--world-size", type=int)
             p.add_argument("--stage", type=int)
             p.add_argument("--max-steps", type=int)
+            p.add_argument("--checkpoint-interval", type=int)
+            p.add_argument("--base-port", type=int, default=5005)
             p.add_argument("--episode-decisions", type=int)
             p.add_argument("--force", action="store_true")
             p.add_argument("--resume", action="store_true")
