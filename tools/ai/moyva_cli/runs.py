@@ -31,10 +31,14 @@ class RunStore:
             from .processes import same_process
             status = "RUNNING" if same_process(state) else "INTERRUPTED"
         if not compatible: status = "INCOMPATIBLE"
+        failure = read_json(path / "failure.json", {})
+        state_evidence = "cli-status.json" if state else "No exit record; files alone do not establish success."
+        if failure:
+            state_evidence = failure.get("repair") or failure.get("component") or state_evidence
         data = {**meta, "run_id":name, "resume":resume, "state":status, "compatible":compatible,
                 "resumable":can_resume, "path":str(path), "checkpoints":len(checkpoints),
                 "final_onnx":(path / "MoyvaStrategy.onnx").is_file(), "process":state,
-                "state_evidence":"cli-status.json" if state else "No exit record; files alone do not establish success."}
+                "failure":failure, "state_evidence":state_evidence}
         metric_cache = self.project.local / "run-metrics" / (simple_name(name) + ".json")
         if metrics:
             data["metrics"] = METRICS.read(path)

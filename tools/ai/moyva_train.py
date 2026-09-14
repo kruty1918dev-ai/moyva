@@ -257,8 +257,14 @@ def train(args):
             raise LaunchError("Training player missing. Run moyva-train build or omit --no-build.")
         player = build(args, unity)
     manifest_path = Path(str(player) + ".contract.json")
-    if not manifest_path.is_file() or json.loads(manifest_path.read_text())["hash"] != current["hash"]:
-        raise LaunchError("Player contract is missing or stale. Rebuild with moyva-train build.")
+    if not manifest_path.is_file() or json.loads(manifest_path.read_text()).get("hash") != current["hash"]:
+        if args.no_build:
+            raise LaunchError("Player contract is missing or stale. Rebuild with moyva-train build.")
+        log("Training player contract is stale; rebuilding before launch.")
+        player = build(args, unity)
+        manifest_path = Path(str(player) + ".contract.json")
+        if not manifest_path.is_file() or json.loads(manifest_path.read_text()).get("hash") != current["hash"]:
+            raise LaunchError("Built player contract still does not match the runtime contract.")
     mode = "Visual" if args.command == "visual" or args.visual else "HeadlessFast"
     seed = args.seed if args.seed is not None else config.get("baseSeed", 1918)
     size = args.world_size if args.world_size is not None else config.get("worldSize", 24)
@@ -356,8 +362,12 @@ def train(args):
         cli_log.write(json.dumps(dict(time=utc(),component="training",event="start",resume=resume,command=command)) + "\n")
     log("Live ML-Agents log: " + str(run_dir / "mlagents.log"))
     code = run_process(command, logfile=run_dir / "mlagents.log")
+    early_failure = early_stop_failure(run_dir, trainer["behaviors"][BEHAVIOR])
+    if code == 0 and early_failure:
+        code = 3
+        atomic_json(run_dir / "failure.json", early_failure)
     atomic_json(run_dir / "cli-status.json", dict(state="COMPLETED" if code == 0 else "INTERRUPTED" if code == 130 else "FAILED",
-        exit_code=code,finished=utc(),run_id=run_id))
+        exit_code=code,finished=utc(),run_id=run_id,result=early_failure))
     if code:
         unity_log = run_dir / "unity.log"
         if unity_log.exists():
@@ -365,6 +375,43 @@ def train(args):
             for line in errors[-6:]:
                 log(line)
     return code
+
+
+def trainer_step(run_dir):
+    log_path = Path(run_dir) / "mlagents.log"
+    steps = [int(value) for value in re.findall(r"MoyvaStrategy\. Step:\s*(\d+)", log_path.read_text(errors="replace") if log_path.is_file() else "")]
+    checkpoints = []
+    for path in (Path(run_dir) / "MoyvaStrategy").glob("MoyvaStrategy-*.pt"):
+        found = re.search(r"-(\d+)$", path.stem)
+        if found:
+            checkpoints.append(int(found.group(1)))
+    return max(steps + checkpoints + [0])
+
+
+def early_stop_failure(run_dir, behavior):
+    run_dir = Path(run_dir)
+    log_text = (run_dir / "mlagents.log").read_text(errors="replace") if (run_dir / "mlagents.log").is_file() else ""
+    unity_text = (run_dir / "unity.log").read_text(errors="replace") if (run_dir / "unity.log").is_file() else ""
+    actual = trainer_step(run_dir)
+    expected = int(behavior.get("max_steps", 0) or 0)
+    summary = int(behavior.get("summary_freq", 0) or 0)
+    if "Learning was interrupted" not in log_text and expected and actual >= min(expected, max(1, summary)):
+        return None
+    if expected and actual >= expected:
+        return None
+    if "READY_FOR_REAL_TRAINING" not in unity_text:
+        evidence = [line for line in unity_text.splitlines() if "Exception" in line or "BLOCKED" in line or "ERROR" in line][-6:]
+        return {"id": "unity-worker-exited", "component": "Unity worker",
+                "evidence": evidence or unity_text.splitlines()[-6:],
+                "repair": "Open unity.log; the worker exited before reporting READY_FOR_REAL_TRAINING.",
+                "step": actual, "expected_steps": expected}
+    if actual < max(1, summary):
+        evidence = [line for line in log_text.splitlines() if "Learning was interrupted" in line or "SubprocessEnvManager" in line or "ERROR" in line][-6:]
+        return {"id": "training-ended-before-first-metrics", "component": "ML-Agents trainer",
+                "evidence": evidence or log_text.splitlines()[-6:],
+                "repair": "The Unity worker connected but training stopped before the first metric report. Check stop requests, worker crash, and the preserved unity.log/mlagents.log.",
+                "step": actual, "expected_steps": expected, "summary_freq": summary}
+    return None
 
 
 def parser():

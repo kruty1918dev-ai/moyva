@@ -22,7 +22,7 @@ def legacy_arguments(project, preset, run_id, resume=False):
                "--episode-decisions",str(preset["episode_decisions"]),"--checkpoint-interval",str(preset["checkpoint_interval"]),
                "--summary-freq",str(preset.get("summary_freq",1000)),
                "--screen-width",str(preset.get("screen_width",1280)),"--screen-height",str(preset.get("screen_height",720)),
-               "--base-port",str(preset.get("base_port",5005)),"--no-build"]
+               "--base-port",str(preset.get("base_port",5005))]
     arguments += ["--arenas", str(preset.get("arenas", 1))]
     if preset.get("initialize_from"): arguments += ["--initialize-from", simple_name(preset["initialize_from"])]
     if preset.get("learn_initial_castle"): arguments.append("--learn-initial-castle")
@@ -152,7 +152,9 @@ def perform_task(project,task):
         code=moyva_train.train(args)
         if code:
             from .diagnostics import classify,tail
-            failure=classify(tail(run/"unity.log")+"\n"+tail(run/"mlagents.log"))
+            failure=read_json(run/"failure.json",{})
+            if not failure:
+                failure=classify(tail(run/"unity.log")+"\n"+tail(run/"mlagents.log"))
             atomic_json(run/"failure.json",failure)
             raise moyva_train.LaunchError(json.dumps(failure),code)
         return {"run_id":task["run_id"],"state":"COMPLETED"}

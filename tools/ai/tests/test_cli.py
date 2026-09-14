@@ -12,6 +12,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+import moyva_train
 from moyva_cli.config import ROOT,ControlError,Project,atomic_json,contained,simple_name
 from moyva_cli.environment import HostPlatform,choose_python,python_info
 from moyva_cli.diagnostics import classify,disk_state,repair_plan
@@ -46,6 +47,13 @@ class ProjectFixture(unittest.TestCase):
     def test_exit_record_is_evidence_of_completion(self):
         path=self.run_fixture();atomic_json(path/"cli-status.json",{"state":"COMPLETED","exit_code":0})
         self.assertEqual("COMPLETED",self.store.show("old-run",False)["state"])
+    def test_run_failure_details_are_visible(self):
+        path=self.run_fixture();atomic_json(path/"cli-status.json",{"state":"FAILED","exit_code":3})
+        atomic_json(path/"failure.json",{"id":"training-ended-before-first-metrics","component":"ML-Agents trainer","repair":"Trainer stopped before first metrics."})
+        run=self.store.show("old-run",False)
+        self.assertEqual("FAILED",run["state"])
+        self.assertEqual("training-ended-before-first-metrics",run["failure"]["id"])
+        self.assertEqual("Trainer stopped before first metrics.",run["state_evidence"])
     def test_incompatible_checkpoint_is_prominent_and_export_blocked(self):
         self.run_fixture(compatible=False)
         self.assertEqual("INCOMPATIBLE",self.store.show("old-run",False)["state"])
@@ -110,6 +118,18 @@ class ProjectFixture(unittest.TestCase):
     def test_failure_classification_preserves_evidence(self):
         result=classify("Earlier output\nPlayer contract is missing or stale. Rebuild.")
         self.assertEqual("contract",result["id"]);self.assertIn("stale",result["evidence"][0])
+    def test_early_stop_before_first_metrics_is_reported_as_failure(self):
+        run=self.root/"early";(run/"MoyvaStrategy").mkdir(parents=True)
+        (run/"mlagents.log").write_text("[INFO] Learning was interrupted. Please wait while the graph is generated.\\n[ERROR] SubprocessEnvManager had workers that didn't signal shutdown\\n")
+        (run/"unity.log").write_text("READY_FOR_REAL_TRAINING\\n")
+        failure=moyva_train.early_stop_failure(run,{"max_steps":10000,"summary_freq":500})
+        self.assertEqual("training-ended-before-first-metrics",failure["id"])
+        self.assertEqual(0,failure["step"])
+    def test_metric_step_is_not_reported_as_early_stop(self):
+        run=self.root/"healthy";run.mkdir()
+        (run/"mlagents.log").write_text("MoyvaStrategy. Step: 500. Time Elapsed: 1. Mean Reward: 0.1\\n")
+        (run/"unity.log").write_text("READY_FOR_REAL_TRAINING\\n")
+        self.assertIsNone(moyva_train.early_stop_failure(run,{"max_steps":10000,"summary_freq":500}))
     def test_repair_plan_never_auto_deletes_lock(self):
         report={"checks":[{"state":"WARNING","repair":"stale-lock","message":"stale"},{"state":"BLOCKED","repair":"setup","message":"missing"}]}
         self.assertEqual(["CONFIRMATION_REQUIRED","SAFE"],[r["category"] for r in repair_plan(report)])

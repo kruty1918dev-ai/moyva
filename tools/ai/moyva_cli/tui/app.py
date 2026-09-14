@@ -100,6 +100,21 @@ def _phase(project, run_id, active_record, metrics):
     return "PREFLIGHT / STARTING"
 
 
+def _startup_message(phase, elapsed, summary_freq, learning_confirmed):
+    elapsed_text = _duration(elapsed)
+    if learning_confirmed:
+        return f"STATUS: TRAINING ACTIVE · elapsed {elapsed_text} · ML-Agents metrics are updating."
+    if phase == "REBUILDING TRAINING PLAYER":
+        return f"STATUS: PREPARING · elapsed {elapsed_text} · rebuilding the Unity training player before learning can start."
+    if phase == "PREPARING TRAINING":
+        return f"STATUS: PREPARING · elapsed {elapsed_text} · build is ready; launching the trainer and Unity worker."
+    if phase == "STARTING ML-AGENTS":
+        return f"STATUS: STARTING · elapsed {elapsed_text} · ML-Agents is launching; waiting for Unity to connect."
+    if phase == "WAITING FOR FIRST METRICS":
+        return f"STATUS: CONNECTED · elapsed {elapsed_text} · waiting for the first metric report (~{summary_freq:,} steps)."
+    return f"STATUS: STARTING · elapsed {elapsed_text} · running preflight and startup checks."
+
+
 def _preset_hint(name):
     hints = {
         "castle-first": "Learn to place the first castle. The opponent has a settlement. Use Continue skills from run ID for later lessons.",
