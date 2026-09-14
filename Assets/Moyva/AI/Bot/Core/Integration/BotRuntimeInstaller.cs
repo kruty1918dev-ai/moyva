@@ -57,13 +57,16 @@ namespace Kruty1918.Moyva.AI.Bot
             var units = container.TryResolve<IUnitService>();
             var owners = container.TryResolve<IUnitOwnershipQuery>();
             var fog = container.TryResolve<IFogOwnerStateReader>();
+            var profiles = container.TryResolve<IUnitGameplayProfileService>();
+            var terrain = container.TryResolve<IGeneratedTerrainLevelQuery>();
             var registry = CreateGameplayRegistry(container, gateway);
             var config = container.Resolve<BotRuntimeConfig>();
             var telemetry = container.Resolve<BotTelemetryHub>();
             var factory = container.TryResolve<IBotPolicyDriverFactory>();
             var policy = factory?.Create(config, telemetry) ?? new HeuristicBotPolicyDriver();
             var result = new BotDecisionOrchestrator(gateway, registry,
-                new MoyvaBotPerceptionSource(turns, units, owners, fog, container.TryResolve<IEconomyInfoMediator>()), policy, config, telemetry);
+                new MoyvaBotPerceptionSource(turns, units, owners, fog, profiles, terrain,
+                    container.TryResolve<IEconomyInfoMediator>()), policy, config, telemetry);
             if (config.policyMode != BotPolicyMode.Heuristic && factory == null)
                 telemetry.FallbackReason = "No ML policy binding installed; using Heuristic.";
             return result;
@@ -73,10 +76,12 @@ namespace Kruty1918.Moyva.AI.Bot
             var units = container.TryResolve<IUnitService>();
             var owners = container.TryResolve<IUnitOwnershipQuery>();
             var fog = container.TryResolve<IFogOwnerStateReader>();
+            var profiles = container.TryResolve<IUnitGameplayProfileService>();
+            var terrain = container.TryResolve<IGeneratedTerrainLevelQuery>();
             var registry = CreateRegistry(gateway,
                 new CombatBotCapability(gateway, units, owners, container.TryResolve<IUnitCombatQuery>(),
                     container.TryResolve<ICombatCommandService>(), fog, container.TryResolve<IConstructionBuildingCombatTargetQuery>(),
-                    container.TryResolve<IHealthRegistry>()),
+                    container.TryResolve<IHealthRegistry>(), profiles, terrain),
                 new RecruitmentBotCapability(gateway, container.TryResolve<IUnitRecruitmentQuery>(),
                     container.TryResolve<IUnitRecruitmentService>(), fog),
                 new ConstructionBotCapability(gateway, container.TryResolve<IBuildingRegistry>(),
@@ -86,7 +91,7 @@ namespace Kruty1918.Moyva.AI.Bot
                     container.TryResolve<IConstructionSaveSnapshotSource>(), container.TryResolve<ISettlementCaptureQuery>(),
                     container.TryResolve<ISettlementCaptureService>()));
             registry.Register(new MovementBotCapability(gateway, units, owners,
-                container.TryResolve<IUnitMovementQuery>(), container.TryResolve<IUnitMovementService>(), fog));
+                container.TryResolve<IUnitMovementQuery>(), container.TryResolve<IUnitMovementService>(), fog, profiles, terrain));
             return registry;
         }
         public static BotCapabilityRegistry CreateRegistry(IBotTurnGateway turns, IBotCapabilityProvider combat = null,

@@ -1,6 +1,7 @@
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using System;
 using System.Linq;
@@ -32,10 +33,14 @@ namespace Kruty1918.Moyva.AI.Bot
         private readonly ITurnService _turns;
         private readonly IUnitService _units;
         private readonly IUnitOwnershipQuery _owners;
+        private readonly IUnitGameplayProfileService _profiles;
         private readonly IFogOwnerStateReader _fog;
+        private readonly IGeneratedTerrainLevelQuery _terrain;
         private readonly IEconomyInfoMediator _economy;
-        public MoyvaBotPerceptionSource(ITurnService turns, IUnitService units, IUnitOwnershipQuery owners, IFogOwnerStateReader fog, IEconomyInfoMediator economy = null)
-        { _turns = turns; _units = units; _owners = owners; _fog = fog; _economy = economy; }
+        public MoyvaBotPerceptionSource(ITurnService turns, IUnitService units, IUnitOwnershipQuery owners,
+            IFogOwnerStateReader fog, IUnitGameplayProfileService profiles = null,
+            IGeneratedTerrainLevelQuery terrain = null, IEconomyInfoMediator economy = null)
+        { _turns = turns; _units = units; _owners = owners; _fog = fog; _profiles = profiles; _terrain = terrain; _economy = economy; }
         public BotPerceptionSnapshot Capture(string player)
         {
             var result = new BotPerceptionSnapshot();
@@ -43,17 +48,31 @@ namespace Kruty1918.Moyva.AI.Bot
             result.Global[BotObservationSchema.Round] = _turns.Round / (float)(_turns.Round + 100);
             result.Global[BotObservationSchema.Phase] = (int)_turns.Phase / 5f;
             int own = 0, visibleOther = 0;
+            float visionTotal = 0f, attackTotal = 0f, heightTotal = 0f;
             result.Global[BotObservationSchema.UnitsAvailable] = _units != null && _owners != null ? 1 : 0;
             result.Global[BotObservationSchema.VisibilityAvailable] = _fog != null ? 1 : 0;
             if (_units != null && _owners != null)
                 foreach (string id in _units.GetAllUnitIds())
                 {
-                    if (_owners.GetUnitOwnerId(id) == player) own++;
+                    if (_owners.GetUnitOwnerId(id) == player)
+                    {
+                        own++;
+                        var profile = BotUnitTacticalFeatureEncoder.ResolveProfile(_units, _profiles, id);
+                        int terrainLevel = _units.TryGetUnitPosition(id, out var ownPosition)
+                            ? BotUnitTacticalFeatureEncoder.ResolveTerrainLevel(_terrain, ownPosition)
+                            : 0;
+                        visionTotal += profile.ResolveVisionRange(terrainLevel, 1, 128);
+                        attackTotal += profile.CuttingDamage + profile.PenetratingDamage + profile.CrushingDamage;
+                        heightTotal += terrainLevel;
+                    }
                     else if (_fog != null && _units.TryGetUnitPosition(id, out var position) && _fog.IsVisible(player, position))
                         visibleOther++;
                 }
             result.Global[BotObservationSchema.OwnUnits] = own / (float)(own + 100);
             result.Global[BotObservationSchema.VisibleOtherUnits] = visibleOther / (float)(visibleOther + 100);
+            result.Global[34] = Normalize(visionTotal, own * 12f);
+            result.Global[35] = Normalize(attackTotal, own * 30f);
+            result.Global[36] = Normalize(heightTotal, own * 4f);
             result.Global[BotObservationSchema.EconomyAvailable] = _economy != null ? 1 : 0;
             if (_economy != null)
             {

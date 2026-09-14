@@ -1,6 +1,7 @@
 using Kruty1918.Moyva.SaveSystem;
 using System;
 using System.Text;
+using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using Zenject;
@@ -16,6 +17,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IMapVisualWorldSignalPublisher _signals;
         private readonly ITileWorldCreatorWorldBuildBridge _tileWorldCreatorBridge;
         private readonly MapVisualFallbackPresenter _fallbackPresenter;
+        private readonly IGeneratorTerrainLevelService _terrainLevelService;
 
         public MapVisualWorldBuildOrchestrator(
             IMapVisualWorldState state,
@@ -24,7 +26,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IMapVisualGridWriter gridWriter,
             IMapVisualWorldSignalPublisher signals,
             [InjectOptional] ITileWorldCreatorWorldBuildBridge tileWorldCreatorBridge = null,
-            [InjectOptional] MapVisualFallbackPresenter fallbackPresenter = null)
+            [InjectOptional] MapVisualFallbackPresenter fallbackPresenter = null,
+            [InjectOptional] IGeneratorTerrainLevelService terrainLevelService = null)
         {
             _state = state;
             _dataFactory = dataFactory;
@@ -33,6 +36,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _signals = signals;
             _tileWorldCreatorBridge = tileWorldCreatorBridge;
             _fallbackPresenter = fallbackPresenter;
+            _terrainLevelService = terrainLevelService;
         }
 
         public void BuildWorld()
@@ -83,6 +87,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             _gridWriter.Write(worldData);
+            PublishTerrainData(worldData);
             _state.SetCurrentWorldData(worldData);
             _signals.Publish(worldData, source);
         }
@@ -104,6 +109,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (hasPendingWorld)
                 return "pending-save";
             return GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest ? "direct-test" : "new";
+        }
+
+        private void PublishTerrainData(GeneratedWorldData worldData)
+        {
+            if (_terrainLevelService == null || worldData == null)
+                return;
+
+            if (worldData.TerrainLevelMap != null)
+                _terrainLevelService.SetLevelMap(worldData.TerrainLevelMap);
+            if (worldData.HeightMap != null)
+                _terrainLevelService.SetSurfaceHeightMap(worldData.HeightMap);
         }
     }
 

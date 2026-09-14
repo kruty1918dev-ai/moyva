@@ -21,12 +21,15 @@ namespace Kruty1918.Moyva.AI.Bot
         private readonly IFogOwnerStateReader _fog;
         private readonly IConstructionBuildingCombatTargetQuery _buildings;
         private readonly IHealthRegistry _health;
+        private readonly IUnitGameplayProfileService _profiles;
+        private readonly IGeneratedTerrainLevelQuery _terrain;
         public bool SupportsBuildingTargets => _buildings != null && _health != null;
         public BotCapabilityId Id => BotCapabilityId.Combat;
         public CombatBotCapability(IBotTurnGateway turns, IUnitService units, IUnitOwnershipQuery owners,
             IUnitCombatQuery query, ICombatCommandService commands, IFogOwnerStateReader fog,
-            IConstructionBuildingCombatTargetQuery buildings = null, IHealthRegistry health = null)
-        { _turns = turns; _units = units; _owners = owners; _query = query; _commands = commands; _fog = fog; _buildings = buildings; _health = health; }
+            IConstructionBuildingCombatTargetQuery buildings = null, IHealthRegistry health = null,
+            IUnitGameplayProfileService profiles = null, IGeneratedTerrainLevelQuery terrain = null)
+        { _turns = turns; _units = units; _owners = owners; _query = query; _commands = commands; _fog = fog; _buildings = buildings; _health = health; _profiles = profiles; _terrain = terrain; }
         public string UnavailableReason(string player) => _units == null || _owners == null || _query == null || _commands == null || _fog == null
             ? "Combat requires authoritative combat query/command, units, ownership and owner visibility." : null;
         public IEnumerable<BotCandidateAction> Enumerate(string player)
@@ -43,6 +46,16 @@ namespace Kruty1918.Moyva.AI.Bot
                     if (_query.TryGetHealth(target, out var enemy)) features[16] = enemy.CurrentHp / (float)enemy.MaxHp;
                     if (_health != null && _health.TryGet(target, out var health)) features[16] = health.CurrentHp / (float)Math.Max(1, health.MaxHp);
                     features[17] = 1;
+                    int actorLevel = _units.TryGetUnitPosition(actor, out var actorPosition)
+                        ? BotUnitTacticalFeatureEncoder.ResolveTerrainLevel(_terrain, actorPosition)
+                        : 0;
+                    int targetLevel = BotUnitTacticalFeatureEncoder.ResolveTerrainLevel(_terrain, position);
+                    BotUnitTacticalFeatureEncoder.WriteActorFeatures(
+                        features,
+                        BotUnitTacticalFeatureEncoder.ResolveProfile(_units, _profiles, actor),
+                        actorLevel,
+                        targetLevel,
+                        BotIntentType.Attack);
                     var candidate = new BotCandidateAction(actor + ":attack:" + target, Id, BotIntentType.Attack,
                         actor, target, position.x, position.y, features: features);
                     if (Validate(player, candidate, out _)) yield return candidate;
