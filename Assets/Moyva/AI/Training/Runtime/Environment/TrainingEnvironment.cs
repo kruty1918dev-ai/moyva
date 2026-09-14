@@ -13,6 +13,8 @@ namespace Kruty1918.Moyva.AI.Training
         private TrainingEpisodeResult _pendingOutcome;
         private TrainingScenarioDefinition _scenario;
         private TrainingScenarioProgressTracker _scenarioProgress;
+        private TrainingDecisionJournal _decisionJournal;
+        private float _lastJournalReward;
         private readonly ITrainingEpisodeOutcomeSource _outcomes;
         public bool IsRealGameplay => _simulation is GameplayTrainingSimulation;
         internal GameplayTrainingEpisode GameplayEpisode => (_simulation as GameplayTrainingSimulation)?.Episode;
@@ -61,6 +63,12 @@ namespace Kruty1918.Moyva.AI.Training
             if (IsReady) throw new InvalidOperationException("Cannot change training scenario while an episode is running.");
             _scenario = scenario;
             _scenarioProgress = scenario == null ? null : new TrainingScenarioProgressTracker(scenario);
+        }
+
+        public void SetDecisionJournal(TrainingDecisionJournal journal)
+        {
+            if (IsReady) throw new InvalidOperationException("Cannot change decision journal while an episode is running.");
+            _decisionJournal = journal;
         }
 
         private TrainingScenarioFacts CaptureScenarioFacts()
@@ -113,6 +121,7 @@ namespace Kruty1918.Moyva.AI.Training
                 TrainingResetContext.DeriveSeed(_seedBase, EnvironmentId, EpisodeId), Stage,
                 _scenario?.id, _scenario?.learnerBuildsInitialCastle ?? _config.learnInitialCastle);
             Rewards.Reset(EpisodeId);
+            _lastJournalReward = 0;
             Diagnostics.Reset(context);
             _timer.Reset();
             _pendingReset = true;
@@ -164,6 +173,16 @@ namespace Kruty1918.Moyva.AI.Training
             if (!CanRequestDecision) return false;
             Diagnostics.Decisions++;
             Record(TrainingRewardEventType.Decision, "decision");
+            if (!Actions.IsLegal(actionIndex))
+            {
+                Diagnostics.InvalidActions++;
+                Record(TrainingRewardEventType.InvalidAction, "invalid");
+                Diagnostics.LastError = "Selected slot was masked.";
+                UpdateDiagnostics();
+                if (Diagnostics.InvalidActions >= _config.rewards.invalidActionLimit)
+                    Fail("Invalid action limit reached.");
+                return false;
+            }
             return Bridge.Submit(actionIndex);
         }
 
@@ -193,6 +212,7 @@ namespace Kruty1918.Moyva.AI.Training
             _scenarioProgress?.ObserveAction(trace.Intent, trace.Result, CaptureScenarioFacts());
             Diagnostics.LastError = trace.Reason;
             UpdateDiagnostics();
+            AppendDecisionEvent(trace);
             if (_scenario != null && !_scenario.fullGame && _scenarioProgress?.IsComplete == true)
             {
                 EndEpisode(TrainingEpisodeResult.ScenarioSuccess);
@@ -239,6 +259,37 @@ namespace Kruty1918.Moyva.AI.Training
             Diagnostics.TotalReward = Rewards.TotalReward;
             Diagnostics.ShapingReward = Rewards.ShapingReward;
             Diagnostics.ElapsedSeconds = _timer.Elapsed.TotalSeconds;
+        }
+        private void AppendDecisionEvent(BotDecisionTrace trace)
+        {
+            if (_decisionJournal == null) return;
+            var frame = Bridge.Frame;
+            var candidate = frame?.Candidates[trace.Slot];
+            var candidates = frame?.Candidates;
+            string[] available = Array.Empty<string>();
+            if (candidates != null)
+            {
+                available = new string[candidates.Count];
+                for (int i = 0; i < candidates.Count; i++)
+                    available[i] = candidates[i]?.Id ?? string.Empty;
+            }
+            float rewardDelta = Rewards.TotalReward - _lastJournalReward;
+            _lastJournalReward = Rewards.TotalReward;
+            _decisionJournal.Append(new AgentDecisionEvent
+            {
+                sessionId = trace.SessionId,
+                arenaId = EnvironmentId,
+                episodeId = EpisodeId,
+                agentId = trace.Player,
+                scenarioId = _scenario?.id,
+                scenarioStep = _scenarioProgress?.StepIndex ?? -1,
+                availableActions = available,
+                actionId = candidate?.Id,
+                targetId = candidate?.TargetKey,
+                result = trace.Result.ToString(),
+                rejectionReason = trace.Failure == BotDecisionFailure.None ? trace.Reason : trace.Failure + ": " + trace.Reason,
+                rewardDelta = rewardDelta
+            });
         }
         public void Dispose()
         {

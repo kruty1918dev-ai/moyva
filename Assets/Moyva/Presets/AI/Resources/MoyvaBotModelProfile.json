@@ -4,6 +4,6 @@
   "trainingRunId": "",
   "curriculumStage": 8,
   "notes": "Assign the matching ModelAsset to MoyvaBotPolicyBinding on the gameplay SceneContext.",
-  "contractVersion": 1,
-  "contractHash": "73f5caf137561bdd744c3ef2995b97a85dd57cdd134b5fdcfa1db80f5bf34fba"
+  "contractVersion": 2,
+  "contractHash": "5a00e6a1cb5ae597d108f32f94a4fc9ba41a93cfd4a2d491c0e1506fe21caadb"
 }

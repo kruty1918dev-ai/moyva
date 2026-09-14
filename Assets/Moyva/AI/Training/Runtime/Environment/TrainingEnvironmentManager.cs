@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.AI.Training
         private readonly List<GameObject> _agentObjects = new List<GameObject>();
         public IReadOnlyList<TrainingEnvironment> Environments => _environments.AsReadOnly();
         public TrainingMetricsHub Metrics { get; private set; }
+        public TrainingDecisionJournal Decisions { get; private set; }
         private TrainingReadinessReport _readiness;
         private TrainingAutonomyCoordinator _autonomy;
         public TrainingReadinessReport Readiness => _environments.Count > 0 ? _environments[0].Readiness : _readiness;
@@ -24,6 +25,8 @@ namespace Kruty1918.Moyva.AI.Training
             if (factory is ScaffoldSimulationFactory && !config.allowScaffoldSimulation)
                 throw new InvalidOperationException("Scaffold simulation requires allowScaffoldSimulation=true.");
             Metrics = new TrainingMetricsHub(config.metricsHistoryCapacity);
+            if (config.enableDecisionJournal)
+                Decisions = new TrainingDecisionJournal(config.decisionJournalCapacity, ResolveJournalPath(config));
             if (config.curriculum?.autonomous?.enabled == true)
                 _autonomy = new TrainingAutonomyCoordinator(config);
             if (config.environmentCount > 1 && !factory.SupportsIndependentEnvironments)
@@ -32,6 +35,7 @@ namespace Kruty1918.Moyva.AI.Training
             {
                 var simulation = factory.Create(id);
                 var environment = new TrainingEnvironment(id, config, simulation);
+                environment.SetDecisionJournal(Decisions);
                 _environments.Add(environment);
                 Metrics.Attach(environment);
                 environment.CheckReadiness(factory);
@@ -65,6 +69,7 @@ namespace Kruty1918.Moyva.AI.Training
         {
             _autonomy?.Dispose();
             _autonomy = null;
+            Decisions = null;
             Metrics?.Dispose();
             foreach (var go in _agentObjects)
                 if (go != null) { go.SetActive(false); Destroy(go); }
@@ -74,5 +79,12 @@ namespace Kruty1918.Moyva.AI.Training
         }
 
         private void OnDestroy() => Shutdown();
+
+        private static string ResolveJournalPath(TrainingConfig config)
+        {
+            if (!string.IsNullOrWhiteSpace(config.decisionJournalPath))
+                return config.decisionJournalPath;
+            return System.IO.Path.Combine(Application.persistentDataPath, "MoyvaTraining", "agent-decisions.jsonl");
+        }
     }
 }

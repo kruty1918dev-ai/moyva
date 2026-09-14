@@ -49,6 +49,7 @@ namespace Kruty1918.Moyva.AI.Training
             switch (result)
             {
                 case TrainingEpisodeResult.Victory: return _config.victory;
+                case TrainingEpisodeResult.ScenarioSuccess: return _config.victory;
                 case TrainingEpisodeResult.Defeat: return _config.defeat;
                 case TrainingEpisodeResult.Draw: return _config.draw;
                 case TrainingEpisodeResult.Timeout: return _config.timeout;

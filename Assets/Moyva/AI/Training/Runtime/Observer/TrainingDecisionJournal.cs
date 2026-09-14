@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using UnityEngine;
 
 namespace Kruty1918.Moyva.AI.Training
 {
@@ -8,9 +10,16 @@ namespace Kruty1918.Moyva.AI.Training
     {
         private readonly int _capacity;
         private readonly Queue<AgentDecisionEvent> _events;
+        private readonly string _jsonlPath;
+        private readonly long _maxBytes;
         private long _sequence;
-        public TrainingDecisionJournal(int capacity = 4096)
-        { _capacity = Math.Max(64, capacity); _events = new Queue<AgentDecisionEvent>(_capacity); }
+        public TrainingDecisionJournal(int capacity = 4096, string jsonlPath = null, long maxBytes = 8 * 1024 * 1024)
+        {
+            _capacity = Math.Max(64, capacity);
+            _events = new Queue<AgentDecisionEvent>(_capacity);
+            _jsonlPath = string.IsNullOrWhiteSpace(jsonlPath) ? null : Path.GetFullPath(jsonlPath);
+            _maxBytes = Math.Max(1024 * 1024, maxBytes);
+        }
 
         public long NextSequence() => ++_sequence;
         public void Append(AgentDecisionEvent entry)
@@ -20,6 +29,7 @@ namespace Kruty1918.Moyva.AI.Training
             else _sequence = Math.Max(_sequence, entry.sequence);
             while (_events.Count >= _capacity) _events.Dequeue();
             _events.Enqueue(entry);
+            AppendJsonl(entry);
         }
 
         public AgentDecisionEvent[] Query(int? arena = null, string agent = null, string action = null, bool errorsOnly = false, long afterSequence = 0)
@@ -31,5 +41,26 @@ namespace Kruty1918.Moyva.AI.Training
                 .ToArray();
 
         public void ResetSequence(long value = 0) => _sequence = Math.Max(0, value);
+
+        private void AppendJsonl(AgentDecisionEvent entry)
+        {
+            if (string.IsNullOrEmpty(_jsonlPath)) return;
+            try
+            {
+                string directory = Path.GetDirectoryName(_jsonlPath);
+                if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+                if (File.Exists(_jsonlPath) && new FileInfo(_jsonlPath).Length > _maxBytes)
+                {
+                    string rotated = _jsonlPath + "." + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + ".old";
+                    if (File.Exists(rotated)) File.Delete(rotated);
+                    File.Move(_jsonlPath, rotated);
+                }
+                File.AppendAllText(_jsonlPath, JsonUtility.ToJson(entry) + Environment.NewLine);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("Cannot append Moyva training decision journal: " + e.Message);
+            }
+        }
     }
 }

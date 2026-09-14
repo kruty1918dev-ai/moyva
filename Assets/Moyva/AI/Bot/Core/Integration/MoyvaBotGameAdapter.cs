@@ -72,10 +72,6 @@ namespace Kruty1918.Moyva.AI.Bot
                 result.Global[BotObservationSchema.ResourceStone] = Resource(resources, "stone");
                 result.Global[BotObservationSchema.ResourceIron] = Resource(resources, "iron", "ore");
                 result.Global[BotObservationSchema.ResourceGold] = Resource(resources, "gold", "coin");
-                int settlements = 0;
-                foreach (var id in resources?.Keys ?? Array.Empty<string>())
-                    if (!string.IsNullOrWhiteSpace(id)) settlements++;
-                result.Global[BotObservationSchema.OwnSettlements] = Normalize(settlements, 8);
             }
             return result;
         }

@@ -41,6 +41,9 @@
   "enableEditorTelemetry": true,
   "enableAudioInVisualMode": false,
   "metricsHistoryCapacity": 500,
+  "enableDecisionJournal": true,
+  "decisionJournalPath": "",
+  "decisionJournalCapacity": 4096,
   "trainingTimeScale": 1.0,
   "disableRenderingWhenPossible": false
 }

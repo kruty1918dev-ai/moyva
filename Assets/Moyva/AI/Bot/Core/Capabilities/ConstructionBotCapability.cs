@@ -118,7 +118,7 @@ namespace Kruty1918.Moyva.AI.Bot
             }
         }
 
-        private static float Purpose(BuildingDefinitionAsset building)
+        private static float Purpose(BuildingDefinition building)
         {
             if (BuildingDefinitionCapabilities.TryGetEnabledModule(building, out UnitRecruitmentBuildingModule _)) return 0.35f;
             string id = building?.Id?.ToLowerInvariant() ?? string.Empty;

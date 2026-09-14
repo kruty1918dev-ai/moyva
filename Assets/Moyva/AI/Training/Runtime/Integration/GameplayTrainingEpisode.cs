@@ -131,8 +131,10 @@ namespace Kruty1918.Moyva.AI.Training
                     }
                 if (spawnCells.Count < 2) throw new InvalidOperationException("Generated world has fewer than two legal unit spawns. " + string.Join("; ", spawnRejections));
                 var first = spawnCells[0];
-                var second = spawnCells.OrderByDescending(c => (c - first).sqrMagnitude).First();
-                Spawn(config.startingUnitTypeId, first, TrainingGameplayScope.LearnerId);
+                string learnerUnit = Spawn(config.startingUnitTypeId, first, TrainingGameplayScope.LearnerId);
+                var reachable = ReachableSpawnCells(learnerUnit, first, spawnCells);
+                if (reachable.Count < 2) throw new InvalidOperationException("Generated world has no connected legal opponent spawn.");
+                var second = reachable.Where(c => c != first).OrderByDescending(c => (c - first).sqrMagnitude).First();
                 Spawn(config.startingUnitTypeId, second, TrainingGameplayScope.OpponentId);
                 signals.Fire(new WorldSpawnPositionsSignal { Source = WorldSpawnPositionsSource.GeneratedHost,
                     Assignments = new[] {
@@ -218,12 +220,38 @@ namespace Kruty1918.Moyva.AI.Training
             installer.InstallBindings();
             installer.enabled = false;
         }
-        private void Spawn(string type, Vector2Int cell, string owner)
+        private List<Vector2Int> ReachableSpawnCells(string unitId, Vector2Int start, IReadOnlyCollection<Vector2Int> candidates)
+        {
+            var candidateSet = new HashSet<Vector2Int>(candidates);
+            var result = new List<Vector2Int>();
+            var seen = new HashSet<Vector2Int> { start };
+            var queue = new Queue<Vector2Int>();
+            queue.Enqueue(start);
+            while (queue.Count > 0 && seen.Count <= 4096)
+            {
+                var from = queue.Dequeue();
+                if (candidateSet.Contains(from)) result.Add(from);
+                for (int y = -1; y <= 1; y++)
+                    for (int x = -1; x <= 1; x++)
+                    {
+                        if (x == 0 && y == 0) continue;
+                        var next = from + new Vector2Int(x, y);
+                        if (!seen.Add(next)) continue;
+                        if (!Traversal.TryEvaluateStep(unitId, from, next, float.MaxValue,
+                            UnitTraversalMode.Pathfinding, out _, out _)) continue;
+                        queue.Enqueue(next);
+                    }
+            }
+            return result;
+        }
+
+        private string Spawn(string type, Vector2Int cell, string owner)
         {
             string id = _container.Resolve<IUnitFactory>().CreateUnit(type, cell, owner);
             if (string.IsNullOrEmpty(id)) throw new InvalidOperationException("UnitFactory failed for " + owner);
             var unit = _container.Resolve<IUnitService>().GetUnitObject(id);
             unit.transform.SetParent(_root.transform, true);
+            return id;
         }
         private void OwnUnitObject(UnitCreatedSignal signal)
         {

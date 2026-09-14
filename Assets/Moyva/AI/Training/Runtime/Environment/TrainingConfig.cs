@@ -32,6 +32,9 @@ namespace Kruty1918.Moyva.AI.Training
         public bool enableEditorTelemetry = true;
         public bool enableAudioInVisualMode = false;
         public int metricsHistoryCapacity = 500;
+        public bool enableDecisionJournal = true;
+        public string decisionJournalPath = "";
+        public int decisionJournalCapacity = 4096;
         // Retained for compatibility with existing serialized configurations.
         public float trainingTimeScale = 1;
         public bool disableRenderingWhenPossible = false;
@@ -64,6 +67,7 @@ namespace Kruty1918.Moyva.AI.Training
                 || !Finite(visualTimeScale) || !Finite(headlessTimeScale)
                 || visualTimeScale <= 0 || headlessTimeScale <= 0
                 || metricsHistoryCapacity < 1 || metricsHistoryCapacity > 5000
+                || decisionJournalCapacity < 64 || decisionJournalCapacity > 100000
                 || !Enum.IsDefined(typeof(TrainingPresentationMode), presentationMode)
                 || !Enum.IsDefined(typeof(TrainingCurriculumStage), curriculum.stage)
                 || !Enum.IsDefined(typeof(BehaviorType), behaviorType))
