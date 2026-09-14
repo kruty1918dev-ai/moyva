@@ -6,6 +6,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from moyva_cli.config import ControlError
+from moyva_train import _evaluation_is_overdue, _validated_segment_checkpoint_step
 from moyva_cli.evaluation import (
     EvaluationStore,
     checkpoint_identity,
@@ -124,6 +125,21 @@ class FrozenEvaluationTests(unittest.TestCase):
         self.assertEqual(self.identity["checkpoint_id"], stored["lastCheckpoint"])
         self.assertEqual("older", stored["bestVerifiedCheckpoint"])
         self.assertEqual(self.pt.resolve(), verify_resume_checkpoint(self.run, self.identity))
+
+    def test_segment_boundary_accepts_mlagents_checkpoint_overshoot(self):
+        self.assertEqual(10000, _validated_segment_checkpoint_step(10000, 10000, 20000))
+        self.assertEqual(10060, _validated_segment_checkpoint_step(10060, 10000, 20000))
+
+    def test_segment_boundary_rejects_early_or_skipped_checkpoint(self):
+        with self.assertRaises(ValueError):
+            _validated_segment_checkpoint_step(9999, 10000, 20000)
+        with self.assertRaises(ValueError):
+            _validated_segment_checkpoint_step(20000, 10000, 20000)
+
+    def test_old_failed_run_requires_overdue_evaluation_before_resume(self):
+        self.assertTrue(_evaluation_is_overdue(10060, {}, 10000))
+        self.assertFalse(_evaluation_is_overdue(10060, {"state": "COMPLETED", "checkpoint_step": 10060}, 10000))
+        self.assertTrue(_evaluation_is_overdue(20060, {"state": "COMPLETED", "checkpoint_step": 10060}, 10000))
 
 
 if __name__ == "__main__":

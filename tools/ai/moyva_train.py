@@ -235,13 +235,44 @@ def _archive_unity_log(run_dir):
         shutil.copy2(run_dir / "unity.log", run_dir / ("unity-" + stamp + ".log"))
 
 
+def _validated_segment_checkpoint_step(checkpoint_step, target_step, next_evaluation_boundary=None):
+    """Return the real serialized checkpoint at/after a requested segment threshold.
+
+    ML-Agents may finish the last trajectory before serializing, so a max_steps=10000
+    segment can legitimately produce e.g. MoyvaStrategy-10060.pt. Provenance must keep
+    the real checkpoint step; only stopping before the threshold or skipping an entire
+    evaluation boundary is invalid.
+    """
+    if checkpoint_step is None:
+        raise ValueError("ML-Agents finished the segment without a serialized training checkpoint.")
+    actual = int(checkpoint_step)
+    target = int(target_step)
+    if actual < target:
+        raise ValueError(f"Serialized checkpoint {actual} is before requested boundary {target}.")
+    if next_evaluation_boundary is not None and actual >= int(next_evaluation_boundary):
+        raise ValueError(
+            f"Serialized checkpoint {actual} skipped evaluation boundary {int(next_evaluation_boundary)}.")
+    return actual
+
+
+def _evaluation_is_overdue(current_step, latest_evaluation, eval_every):
+    """True when training crossed an evaluation bucket that has no completed frozen eval."""
+    current = int(current_step)
+    interval = int(eval_every)
+    if current < interval:
+        return False
+    latest = latest_evaluation or {}
+    completed_step = int(latest.get("checkpoint_step", 0) or 0) if latest.get("state") == "COMPLETED" else 0
+    return current // interval > completed_step // interval
+
+
 def train(args):
     unity, config = prerequisite(args)
     import yaml
     from moyva_cli.config import ControlError, atomic_json, utc
-    from moyva_cli.evaluation import (EvaluationStore, choose_evaluation_scenario, run_frozen_evaluation,
-                                      snapshot_frozen_checkpoint, update_curriculum_latest_checkpoint,
-                                      verify_resume_checkpoint)
+    from moyva_cli.evaluation import (EvaluationStore, choose_evaluation_scenario, newest_training_checkpoint,
+                                      run_frozen_evaluation, snapshot_frozen_checkpoint,
+                                      update_curriculum_latest_checkpoint, verify_resume_checkpoint)
 
     trainer_path = resolve(args.trainer)
     trainer = yaml.safe_load(trainer_path.read_text())
@@ -378,9 +409,40 @@ def train(args):
             else:
                 verify_resume_checkpoint(run_dir, identity)
 
+        # Recovery for runs produced by the old exact-boundary check: if a real checkpoint
+        # already crossed an evaluation threshold but no completed frozen evaluation exists,
+        # evaluate that exact checkpoint before any further PPO updates.
+        latest_eval = EvaluationStore(run_dir).latest() if autonomous["enabled"] else {}
+        if code == 0 and autonomous["enabled"] and _evaluation_is_overdue(current_step, latest_eval, eval_every):
+            newest = newest_training_checkpoint(run_dir)
+            actual_checkpoint = newest[0] if newest else None
+            try:
+                current_step = _validated_segment_checkpoint_step(
+                    actual_checkpoint, (current_step // eval_every) * eval_every,
+                    ((current_step // eval_every) + 1) * eval_every)
+            except ValueError as error:
+                raise ControlError(str(error)) from error
+            trigger_boundary = (current_step // eval_every) * eval_every
+            log(f"Recovering overdue frozen evaluation: boundary={trigger_boundary} checkpoint={current_step}")
+            telemetry.note("EVAL", f"recovery boundary={trigger_boundary} checkpoint={current_step}")
+            identity = snapshot_frozen_checkpoint(run_dir, current_step, current["hash"])
+            update_curriculum_latest_checkpoint(curriculum_state, identity, current_step)
+            scenario = choose_evaluation_scenario(curriculum_state)
+            store = EvaluationStore(run_dir)
+            generation = store.next_generation(identity["checkpoint_id"], scenario)
+            evaluation = run_frozen_evaluation(ROOT, unity, args.target, run_id, run_dir, identity, scenario, generation,
+                                               eval_episodes, float(autonomous["masteryThreshold"]), curriculum_state, run_process)
+            if evaluation["state"] != "COMPLETED":
+                code = 130
+            else:
+                verify_resume_checkpoint(run_dir, identity)
+                log(f"Evaluation {evaluation['result']}: {evaluation['successes']}/{evaluation['episode_count']} ({evaluation['success_rate']:.3f})")
+                telemetry.note("EVAL", f"{evaluation['result']} successes={evaluation['successes']}/{evaluation['episode_count']} rate={evaluation['success_rate']:.3f}")
+
         while code == 0 and current_step < overall_max_steps:
             next_due = ((current_step // eval_every) + 1) * eval_every if autonomous["enabled"] else overall_max_steps
             segment_target = min(overall_max_steps, next_due)
+            evaluation_due_after_segment = bool(autonomous["enabled"] and segment_target == next_due)
             trainer = json.loads(json.dumps(authored_effective))
             trainer["behaviors"][BEHAVIOR]["max_steps"] = segment_target
             _write_trainer(effective_trainer, trainer)
@@ -400,16 +462,26 @@ def train(args):
             if code == 0 and early_failure:
                 code = 3; atomic_json(run_dir / "failure.json", early_failure)
             if code: break
-            actual = trainer_step(run_dir)
-            if actual != segment_target:
+            newest = newest_training_checkpoint(run_dir)
+            actual_checkpoint = newest[0] if newest else None
+            next_boundary = ((segment_target // eval_every) + 1) * eval_every if autonomous["enabled"] else None
+            try:
+                current_step = _validated_segment_checkpoint_step(actual_checkpoint, segment_target, next_boundary)
+            except ValueError as error:
                 code = 3
-                atomic_json(run_dir / "failure.json", {"id":"training-segment-boundary-mismatch","component":"ML-Agents trainer",
-                    "repair":"Trainer did not stop on the exact frozen-evaluation checkpoint boundary.",
-                    "step":actual,"expected_steps":segment_target})
+                atomic_json(run_dir / "failure.json", {
+                    "id":"training-segment-boundary-mismatch",
+                    "component":"ML-Agents trainer",
+                    "repair":str(error),
+                    "step":actual_checkpoint,
+                    "expected_steps":segment_target,
+                    "next_evaluation_boundary":next_boundary})
                 break
-            current_step = segment_target
+            if current_step != segment_target:
+                log(f"ML-Agents serialized checkpoint {current_step} after requested boundary {segment_target}; preserving real checkpoint identity.")
+                telemetry.note("SEGMENT", f"boundary={segment_target} serialized_checkpoint={current_step}")
 
-            if autonomous["enabled"] and current_step % eval_every == 0:
+            if evaluation_due_after_segment:
                 identity = snapshot_frozen_checkpoint(run_dir, current_step, current["hash"])
                 update_curriculum_latest_checkpoint(curriculum_state, identity, current_step)
                 scenario = choose_evaluation_scenario(curriculum_state)

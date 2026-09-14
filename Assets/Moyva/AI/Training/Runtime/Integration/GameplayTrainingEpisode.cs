@@ -360,9 +360,12 @@ namespace Kruty1918.Moyva.AI.Training
             Outcomes?.Dispose();
             for (int i = _disposables.Count - 1; i >= 0; i--) _disposables[i].Dispose();
             _world?.Dispose();
-            _root.SetActive(false);
-            if (Application.isPlaying) UnityEngine.Object.Destroy(_root);
-            else UnityEngine.Object.DestroyImmediate(_root);
+            if (_root != null)
+            {
+                _root.SetActive(false);
+                if (Application.isPlaying) UnityEngine.Object.Destroy(_root);
+                else UnityEngine.Object.DestroyImmediate(_root);
+            }
         }
         private sealed class TrainingTurnAuthority : ITurnAuthorityPolicy { public bool IsAuthoritative => true; }
     }
