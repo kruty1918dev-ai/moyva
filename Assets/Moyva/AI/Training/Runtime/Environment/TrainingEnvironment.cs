@@ -14,7 +14,9 @@ namespace Kruty1918.Moyva.AI.Training
         private TrainingScenarioDefinition _scenario;
         private TrainingScenarioProgressTracker _scenarioProgress;
         private TrainingDecisionJournal _decisionJournal;
+        private string _observerSessionId;
         private float _lastJournalReward;
+        private int _scenarioGameplayRewardEventsThisTurn;
         private readonly ITrainingEpisodeOutcomeSource _outcomes;
         public bool IsRealGameplay => _simulation is GameplayTrainingSimulation;
         internal GameplayTrainingEpisode GameplayEpisode => (_simulation as GameplayTrainingSimulation)?.Episode;
@@ -24,6 +26,7 @@ namespace Kruty1918.Moyva.AI.Training
         public TrainingReadinessReport Readiness { get; private set; } = new TrainingReadinessReport();
         private ITrainingSimulationFactory _factory;
         public event Action<TrainingEpisodeResult> EpisodeEnded;
+        public event Action<int, long> EpisodeReset;
         public int EnvironmentId { get; }
         public long EpisodeId { get; private set; }
         public bool IsReady { get; private set; }
@@ -71,6 +74,31 @@ namespace Kruty1918.Moyva.AI.Training
             _decisionJournal = journal;
         }
 
+        public void SetObserverSessionId(string sessionId)
+        {
+            if (IsReady) throw new InvalidOperationException("Cannot change observer session while an episode is running.");
+            _observerSessionId = sessionId;
+        }
+
+        internal ArenaSnapshot CaptureObserverSnapshot(string sessionId, long sequence)
+        {
+            return new ArenaSnapshot
+            {
+                sessionId = sessionId ?? _observerSessionId ?? string.Empty,
+                arenaId = EnvironmentId,
+                episodeId = EpisodeId,
+                sequence = sequence,
+                width = _config.worldSize,
+                height = _config.worldSize,
+                scenarioId = _scenario?.id,
+                scenarioStep = _scenarioProgress?.StepIndex ?? -1,
+                isComplete = false,
+                status = IsRealGameplay
+                    ? "partial: training source exposes arena metadata, but generator-owned visual layers are not exported by this patch"
+                    : "partial: scaffold/non-gameplay training source has no authoritative visual map layers"
+            };
+        }
+
         private TrainingScenarioFacts CaptureScenarioFacts()
             => GameplayEpisode?.CaptureTrainingFacts() ?? default;
 
@@ -84,15 +112,26 @@ namespace Kruty1918.Moyva.AI.Training
         {
             if (!IsReady) return;
             _scenarioProgress?.ObserveMatch(result);
-            // The signal can fire inside EndTurn. Let its decision trace finish before
-            // completing the episode, so metrics include the actual terminal action.
             _pendingOutcome = result;
         }
         private void OnGameplayReward(TrainingRewardEvent reward)
         {
             if (!IsReady) return;
+            var facts = CaptureScenarioFacts();
+            if (facts?.IsSetup == true) return;
+
+            var rules = _scenario?.rewardRules;
+            if (rules != null)
+            {
+                if (!rules.Allows(reward)) return;
+                if (rules.maxGameplayRewardEventsPerTurn > 0
+                    && _scenarioGameplayRewardEventsThisTurn >= rules.maxGameplayRewardEventsPerTurn)
+                    return;
+            }
+
+            _scenarioGameplayRewardEventsThisTurn++;
             Rewards.Record(reward);
-            _scenarioProgress?.ObserveReward(reward, CaptureScenarioFacts());
+            _scenarioProgress?.ObserveReward(reward, facts);
         }
 
         private void CompletePendingOutcome()
@@ -119,9 +158,13 @@ namespace Kruty1918.Moyva.AI.Training
             Array.Clear(ActionCounts, 0, ActionCounts.Length);
             var context = new TrainingResetContext(EnvironmentId, EpisodeId,
                 TrainingResetContext.DeriveSeed(_seedBase, EnvironmentId, EpisodeId), Stage,
-                _scenario?.id, _scenario?.learnerBuildsInitialCastle ?? _config.learnInitialCastle);
+                _scenario?.id,
+                _scenario?.startingConditions?.learnerMustPlaceCastle
+                    ?? _scenario?.learnerBuildsInitialCastle
+                    ?? _config.learnInitialCastle);
             Rewards.Reset(EpisodeId);
             _lastJournalReward = 0;
+            _scenarioGameplayRewardEventsThisTurn = 0;
             Diagnostics.Reset(context);
             _timer.Reset();
             _pendingReset = true;
@@ -138,6 +181,7 @@ namespace Kruty1918.Moyva.AI.Training
                 _scenarioProgress?.Begin(EpisodeId, CaptureScenarioFacts());
                 Bridge.Reset((int)Stage, () => _scenarioProgress);
                 Bridge.Orchestrator.DecisionFinished += OnDecisionFinished;
+                EpisodeReset?.Invoke(EnvironmentId, EpisodeId);
             }
             catch (Exception exception) { Fail(exception.Message); }
         }
@@ -183,6 +227,20 @@ namespace Kruty1918.Moyva.AI.Training
                     Fail("Invalid action limit reached.");
                 return false;
             }
+
+            var scenarioCandidate = Bridge.Frame?.Candidates != null
+                && actionIndex >= 0 && actionIndex < Bridge.Frame.Candidates.Count
+                    ? Bridge.Frame.Candidates[actionIndex] : null;
+            if (_scenario != null && scenarioCandidate != null && !_scenario.AllowsIntent(scenarioCandidate.Intent))
+            {
+                Diagnostics.InvalidActions++;
+                Record(TrainingRewardEventType.InvalidAction, "scenario-capability");
+                Diagnostics.LastError = "Action is outside this scenario's availableCapabilities.";
+                UpdateDiagnostics();
+                if (Diagnostics.InvalidActions >= _config.rewards.invalidActionLimit)
+                    Fail("Invalid action limit reached.");
+                return false;
+            }
             return Bridge.Submit(actionIndex);
         }
 
@@ -207,6 +265,7 @@ namespace Kruty1918.Moyva.AI.Training
                 {
                     Diagnostics.Turns++;
                     Record(TrainingRewardEventType.TurnCompleted, "turn");
+                    _scenarioGameplayRewardEventsThisTurn = 0;
                 }
             }
             _scenarioProgress?.ObserveAction(trace.Intent, trace.Result, CaptureScenarioFacts());
@@ -277,7 +336,7 @@ namespace Kruty1918.Moyva.AI.Training
             _lastJournalReward = Rewards.TotalReward;
             _decisionJournal.Append(new AgentDecisionEvent
             {
-                sessionId = trace.SessionId,
+                sessionId = string.IsNullOrEmpty(_observerSessionId) ? trace.SessionId : _observerSessionId,
                 arenaId = EnvironmentId,
                 episodeId = EpisodeId,
                 agentId = trace.Player,

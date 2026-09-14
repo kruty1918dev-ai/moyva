@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Kruty1918.Moyva.Economy.API;
+using Kruty1918.Moyva.Jsonization;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.AI.Training
@@ -11,25 +13,49 @@ namespace Kruty1918.Moyva.AI.Training
 
     public sealed class TrainingScenarioCatalog
     {
+        private static readonly HashSet<string> ScenarioResourceFallback = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "walnut-wood-materials-resources"
+        };
+
         private readonly Dictionary<string, TrainingScenarioDefinition> _items;
         public IReadOnlyCollection<TrainingScenarioDefinition> Items => _items.Values;
 
         public TrainingScenarioCatalog(IEnumerable<TrainingScenarioDefinition> definitions)
         {
+            var all = (definitions ?? Array.Empty<TrainingScenarioDefinition>()).ToArray();
+            var ids = new HashSet<string>(all.Where(x => x != null && !string.IsNullOrWhiteSpace(x.id)).Select(x => x.id),
+                StringComparer.Ordinal);
             _items = new Dictionary<string, TrainingScenarioDefinition>(StringComparer.Ordinal);
-            foreach (var definition in definitions ?? Array.Empty<TrainingScenarioDefinition>())
+            foreach (var definition in all)
             {
-                definition.Validate();
+                Validate(definition, ids);
                 if (_items.ContainsKey(definition.id)) throw new ArgumentException("Duplicate scenario: " + definition.id);
                 _items.Add(definition.id, definition);
             }
-            foreach (var scenario in _items.Values)
-                foreach (var dependency in scenario.prerequisites ?? Array.Empty<string>())
-                    if (!_items.ContainsKey(dependency)) throw new ArgumentException($"Scenario {scenario.id} depends on missing {dependency}.");
         }
 
         public TrainingScenarioDefinition Get(string id)
             => !string.IsNullOrWhiteSpace(id) && _items.TryGetValue(id, out var value) ? value : null;
+
+        public static void Validate(TrainingScenarioDefinition scenario, IReadOnlyCollection<string> knownScenarioIds = null)
+        {
+            if (scenario == null) throw new ArgumentNullException(nameof(scenario));
+            scenario.Validate();
+
+            var knownResources = KnownResourceIds();
+            foreach (var resourceId in EnumerateResourceIds(scenario))
+                if (!knownResources.Contains(resourceId))
+                    throw new ArgumentException($"Scenario {scenario.id} references unknown resource '{resourceId}'.");
+
+            if (knownScenarioIds != null)
+                foreach (var prerequisite in scenario.prerequisites ?? Array.Empty<string>())
+                    if (string.IsNullOrWhiteSpace(prerequisite) || !knownScenarioIds.Contains(prerequisite))
+                        throw new ArgumentException($"Scenario {scenario.id} depends on missing {prerequisite}.");
+
+            if (scenario.fullGame)
+                ValidateFullGameSequence(scenario);
+        }
 
         public static TrainingScenarioCatalog BuiltIn()
         {
@@ -38,45 +64,6 @@ namespace Kruty1918.Moyva.AI.Training
                 ? new TrainingScenarioCatalog(presets)
                 : new TrainingScenarioCatalog(FallbackDefinitions());
         }
-
-        private static TrainingScenarioDefinition[] FallbackDefinitions() => new[]
-        {
-            Scenario("castle", "First castle", TrainingCurriculumStage.Building, true, false, Array.Empty<string>(),
-                Step("castle-operational", TrainingScenarioGoalKind.CastleOperational)),
-            Scenario("production", "Resource production", TrainingCurriculumStage.Economy, false, false, new[] { "castle" },
-                Step("production-established", TrainingScenarioGoalKind.ProductionEstablished)),
-            Scenario("stable-economy", "Stable economy", TrainingCurriculumStage.Economy, false, false, new[] { "production" },
-                Step("stable-economy", TrainingScenarioGoalKind.StableEconomy, 2, 1f)),
-            Scenario("recruitment", "Recruitment", TrainingCurriculumStage.Recruitment, false, false, new[] { "stable-economy" },
-                Step("unit-recruited", TrainingScenarioGoalKind.UnitRecruited)),
-            Scenario("movement-scouting", "Movement and scouting", TrainingCurriculumStage.FogOfWar, false, false, new[] { "recruitment" },
-                Step("movement", TrainingScenarioGoalKind.MovementOrExploration, 2)),
-            Scenario("combat-defense", "Combat and defense", TrainingCurriculumStage.Combat, false, false, new[] { "movement-scouting" },
-                Step("combat", TrainingScenarioGoalKind.CombatSuccess)),
-            Scenario("capture", "Capture", TrainingCurriculumStage.Objectives, false, false, new[] { "combat-defense" },
-                Step("capture", TrainingScenarioGoalKind.ObjectiveCaptured)),
-            Scenario("combo-foundation", "Castle + production review", TrainingCurriculumStage.Economy, true, false,
-                new[] { "castle", "production" },
-                Step("castle-operational", TrainingScenarioGoalKind.CastleOperational),
-                Step("production-established", TrainingScenarioGoalKind.ProductionEstablished)),
-            Scenario("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment, false, false,
-                new[] { "stable-economy", "recruitment" },
-                Step("stable-economy", TrainingScenarioGoalKind.StableEconomy, 2, 1f),
-                Step("unit-recruited", TrainingScenarioGoalKind.UnitRecruited)),
-            Scenario("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat, false, false,
-                new[] { "movement-scouting", "combat-defense" },
-                Step("movement", TrainingScenarioGoalKind.MovementOrExploration, 2),
-                Step("combat", TrainingScenarioGoalKind.CombatSuccess)),
-            Scenario("full-game", "Full game", TrainingCurriculumStage.FullGame, true, true, new[] { "capture" },
-                Step("castle-operational", TrainingScenarioGoalKind.CastleOperational),
-                Step("production-established", TrainingScenarioGoalKind.ProductionEstablished),
-                Step("stable-economy", TrainingScenarioGoalKind.StableEconomy, 2, 1f),
-                Step("unit-recruited", TrainingScenarioGoalKind.UnitRecruited),
-                Step("movement", TrainingScenarioGoalKind.MovementOrExploration, 2),
-                Step("combat", TrainingScenarioGoalKind.CombatSuccess),
-                Step("capture", TrainingScenarioGoalKind.ObjectiveCaptured),
-                Step("match-won", TrainingScenarioGoalKind.MatchWon))
-        };
 
         private static TrainingScenarioDefinition[] TryLoadPresetDefinitions()
         {
@@ -95,9 +82,6 @@ namespace Kruty1918.Moyva.AI.Training
                 if (Directory.Exists(editorPath))
                     return LoadPresetDirectory(editorPath);
             }
-
-            // Packaged players may not ship loose Assets. Keep a code fallback so training
-            // remains bootable; headless/Control Center can point at JSON with MOYVA_SCENARIO_DIR.
             return null;
         }
 
@@ -108,40 +92,178 @@ namespace Kruty1918.Moyva.AI.Training
             if (files.Length == 0)
                 throw new InvalidOperationException("No training scenario JSON files found in: " + directory);
 
-            var scenarios = files.Select(path => ParseJson(File.ReadAllText(path))).ToArray();
+            var scenarios = files.Select(path => ParseJson(File.ReadAllText(path), validateResources: false)).ToArray();
             string[] required =
             {
                 "castle", "production", "stable-economy", "recruitment",
-                "movement-scouting", "combat-defense", "capture", "full-game"
+                "movement-scouting", "combat-defense", "capture", "full-game",
+                "combo-foundation", "combo-economy-recruitment", "combo-field-ops"
             };
-            string[] missing = required
-                .Where(id => scenarios.All(s => !string.Equals(s.id, id, StringComparison.Ordinal)))
-                .ToArray();
+            string[] missing = required.Where(id => scenarios.All(s => !string.Equals(s.id, id, StringComparison.Ordinal))).ToArray();
             if (missing.Length > 0)
                 throw new InvalidOperationException(
                     "Training scenario preset directory is missing required scenarios: " + string.Join(", ", missing));
+
+            // Cross-scenario validation is intentionally done after all IDs are known.
+            var ids = new HashSet<string>(scenarios.Select(s => s.id), StringComparer.Ordinal);
+            foreach (var scenario in scenarios) Validate(scenario, ids);
 
             Debug.Log("MOYVA_SCENARIOS_LOADED path=" + directory + " count=" + scenarios.Length);
             return scenarios;
         }
 
         public static TrainingScenarioDefinition ParseJson(string json)
+            => ParseJson(json, validateResources: true);
+
+        private static TrainingScenarioDefinition ParseJson(string json, bool validateResources)
         {
             if (string.IsNullOrWhiteSpace(json)) throw new ArgumentException("Scenario JSON is empty.");
             var envelope = JsonUtility.FromJson<TrainingScenarioJsonEnvelope>(json);
             var result = envelope?.scenario;
             if (result == null) throw new ArgumentException("Scenario JSON must contain a 'scenario' object.");
-            result.Validate();
+            if (validateResources) Validate(result);
+            else result.Validate();
             return result;
         }
 
-        private static TrainingScenarioDefinition Scenario(string id, string title, TrainingCurriculumStage stage,
-            bool learnerBuildsCastle, bool fullGame, string[] prerequisites, params TrainingScenarioStepDefinition[] steps)
-            => new TrainingScenarioDefinition { id = id, title = title, legacyStage = stage,
-                learnerBuildsInitialCastle = learnerBuildsCastle, fullGame = fullGame,
-                prerequisites = prerequisites, steps = steps };
+        private static HashSet<string> KnownResourceIds()
+        {
+            var result = new HashSet<string>(ScenarioResourceFallback, StringComparer.Ordinal);
+            try
+            {
+                foreach (var resource in MoyvaJsonRuntime.GetAll<EconomyResourceDefinition>() ?? Array.Empty<EconomyResourceDefinition>())
+                    if (resource != null && !string.IsNullOrWhiteSpace(resource.Id)) result.Add(resource.Id);
+            }
+            catch
+            {
+                // ParseJson must remain deterministic in pure unit tests where the config runtime is not initialized.
+            }
+            return result;
+        }
 
-        private static TrainingScenarioStepDefinition Step(string id, TrainingScenarioGoalKind goal, int count = 1, float threshold = 0)
-            => new TrainingScenarioStepDefinition { id = id, goal = goal, requiredCount = count, threshold = threshold };
+        private static IEnumerable<string> EnumerateResourceIds(TrainingScenarioDefinition scenario)
+        {
+            if (scenario.startingConditions?.startingResources != null)
+                foreach (var resource in scenario.startingConditions.startingResources)
+                    if (resource != null && !string.IsNullOrWhiteSpace(resource.resourceId)) yield return resource.resourceId;
+            if (scenario.generationConstraints?.requiredResourceTypes != null)
+                foreach (var resource in scenario.generationConstraints.requiredResourceTypes)
+                    if (!string.IsNullOrWhiteSpace(resource)) yield return resource;
+            foreach (var step in scenario.steps ?? Array.Empty<TrainingScenarioStepDefinition>())
+            {
+                if (!string.IsNullOrWhiteSpace(step.resourceId)) yield return step.resourceId;
+                foreach (var resource in step.resources ?? Array.Empty<TrainingScenarioResourceCriterion>())
+                    if (resource != null && !string.IsNullOrWhiteSpace(resource.resourceId)) yield return resource.resourceId;
+            }
+        }
+
+        private static void ValidateFullGameSequence(TrainingScenarioDefinition scenario)
+        {
+            var required = new[]
+            {
+                TrainingScenarioCriterionKind.OperationalCastle,
+                TrainingScenarioCriterionKind.ResourceProduction,
+                TrainingScenarioCriterionKind.StableResources,
+                TrainingScenarioCriterionKind.DeployedUnit,
+                TrainingScenarioCriterionKind.Movement,
+                TrainingScenarioCriterionKind.Scouting,
+                TrainingScenarioCriterionKind.EnemyDestroyed,
+                TrainingScenarioCriterionKind.ObjectiveOwned,
+                TrainingScenarioCriterionKind.MatchVictory
+            };
+            int cursor = 0;
+            foreach (var step in scenario.steps)
+            {
+                if (cursor < required.Length && step.EffectiveCriterion == required[cursor]) cursor++;
+            }
+            if (cursor != required.Length)
+                throw new ArgumentException("Full-game scenario is missing or reorders the required authoritative sequence.");
+        }
+
+        private static TrainingScenarioDefinition[] FallbackDefinitions()
+        {
+            TrainingScenarioDefinition Make(string id, string title, TrainingCurriculumStage stage, bool castle, bool full,
+                string[] prerequisites, params TrainingScenarioStepDefinition[] steps)
+            {
+                return new TrainingScenarioDefinition
+                {
+                    id = id, title = title, legacyStage = stage, learnerBuildsInitialCastle = castle, fullGame = full,
+                    prerequisites = prerequisites,
+                    startingConditions = new TrainingScenarioStartingConditions
+                    {
+                        learnerStartsWithCastle = !castle,
+                        learnerMustPlaceCastle = castle,
+                        startingUnits = new[] { new TrainingScenarioUnitSetup { unitTypeId = "warrior", count = 1 } }
+                    },
+                    availableCapabilities = CapabilitiesFor(full),
+                    generationConstraints = new TrainingScenarioGenerationConstraints
+                    {
+                        minReachableArea = 2,
+                        requiredResourceTypes = new[] { "walnut-wood-materials-resources" },
+                        minOpponentDistance = 2,
+                        objectiveReachability = true
+                    },
+                    rewardRules = new TrainingScenarioRewardRules
+                    {
+                        rewardSetupActions = false,
+                        validatedGameplayEventsOnly = true,
+                        maxGameplayRewardEventsPerTurn = 16
+                    },
+                    steps = steps
+                };
+            }
+
+            TrainingScenarioStepDefinition Castle() => new TrainingScenarioStepDefinition
+                { id = "castle-operational", goal = TrainingScenarioGoalKind.CastleOperational,
+                  criterion = TrainingScenarioCriterionKind.OperationalCastle, buildingTypeId = "castle-01" };
+            TrainingScenarioStepDefinition Production() => new TrainingScenarioStepDefinition
+                { id = "wood-production", goal = TrainingScenarioGoalKind.ProductionEstablished,
+                  criterion = TrainingScenarioCriterionKind.ResourceProduction, buildingTypeId = "wood-camp",
+                  resourceId = "walnut-wood-materials-resources", minProductionPerTurn = 1f };
+            TrainingScenarioStepDefinition Stable() => new TrainingScenarioStepDefinition
+                { id = "stable-economy", goal = TrainingScenarioGoalKind.StableEconomy,
+                  criterion = TrainingScenarioCriterionKind.StableResources, requiredTurns = 3,
+                  resources = new[] { new TrainingScenarioResourceCriterion
+                    { resourceId = "walnut-wood-materials-resources", minStock = 1f, minProductionPerTurn = 1f } } };
+            TrainingScenarioStepDefinition Recruit() => new TrainingScenarioStepDefinition
+                { id = "unit-recruited", goal = TrainingScenarioGoalKind.UnitRecruited,
+                  criterion = TrainingScenarioCriterionKind.DeployedUnit, unitTypeId = "warrior" };
+            TrainingScenarioStepDefinition Move() => new TrainingScenarioStepDefinition
+                { id = "movement", goal = TrainingScenarioGoalKind.MovementOrExploration,
+                  criterion = TrainingScenarioCriterionKind.Movement };
+            TrainingScenarioStepDefinition Scout() => new TrainingScenarioStepDefinition
+                { id = "scouting", goal = TrainingScenarioGoalKind.MovementOrExploration,
+                  criterion = TrainingScenarioCriterionKind.Scouting };
+            TrainingScenarioStepDefinition Combat() => new TrainingScenarioStepDefinition
+                { id = "combat", goal = TrainingScenarioGoalKind.CombatSuccess,
+                  criterion = TrainingScenarioCriterionKind.EnemyDestroyed };
+            TrainingScenarioStepDefinition Capture() => new TrainingScenarioStepDefinition
+                { id = "capture", goal = TrainingScenarioGoalKind.ObjectiveCaptured,
+                  criterion = TrainingScenarioCriterionKind.ObjectiveOwned, objectiveType = "settlement" };
+            TrainingScenarioStepDefinition Win() => new TrainingScenarioStepDefinition
+                { id = "match-won", goal = TrainingScenarioGoalKind.MatchWon,
+                  criterion = TrainingScenarioCriterionKind.MatchVictory };
+
+            return new[]
+            {
+                Make("castle", "First castle", TrainingCurriculumStage.Building, true, false, Array.Empty<string>(), Castle()),
+                Make("production", "Resource production", TrainingCurriculumStage.Economy, false, false, new[] { "castle" }, Production()),
+                Make("stable-economy", "Stable economy", TrainingCurriculumStage.Economy, false, false, new[] { "production" }, Stable()),
+                Make("recruitment", "Recruitment", TrainingCurriculumStage.Recruitment, false, false, new[] { "stable-economy" }, Recruit()),
+                Make("movement-scouting", "Movement and scouting", TrainingCurriculumStage.FogOfWar, false, false, new[] { "recruitment" }, Move(), Scout()),
+                Make("combat-defense", "Combat and defense", TrainingCurriculumStage.Combat, false, false, new[] { "movement-scouting" }, Combat()),
+                Make("capture", "Capture", TrainingCurriculumStage.Objectives, false, false, new[] { "combat-defense" }, Capture()),
+                Make("combo-foundation", "Castle + production review", TrainingCurriculumStage.Economy, true, false, new[] { "castle", "production" }, Castle(), Production()),
+                Make("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment, false, false, new[] { "stable-economy", "recruitment" }, Stable(), Recruit()),
+                Make("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat, false, false, new[] { "movement-scouting", "combat-defense" }, Move(), Scout(), Combat()),
+                Make("full-game", "Full game", TrainingCurriculumStage.FullGame, true, true, new[] { "capture" },
+                    Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat(), Capture(), Win())
+            };
+        }
+
+        private static string[] CapabilitiesFor(bool full)
+            => full
+                ? new[] { "construction", "economy", "recruitment", "movement", "scouting", "combat", "capture", "end-turn" }
+                : new[] { "construction", "economy", "recruitment", "movement", "scouting", "combat", "capture", "end-turn" };
     }
 }

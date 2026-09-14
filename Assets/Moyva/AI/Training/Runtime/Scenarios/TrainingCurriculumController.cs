@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.AI.Training
     [Serializable]
     public sealed class AutonomousTrainingConfig
     {
-        public bool enabled;
+        public bool enabled = true;
         public int evaluationEverySteps = 10000;
         public int evaluationEpisodes = 50;
         public float masteryThreshold = 0.80f;
@@ -47,12 +47,19 @@ namespace Kruty1918.Moyva.AI.Training
 
     [Serializable] public sealed class TrainingCurriculumSessionState
     {
-        public int version = 1;
+        public int version = 2;
         public long totalDecisions;
         public long nextEvaluationStep;
         public string activeScenarioId;
         public string lastCheckpoint;
+        public long lastCheckpointStep;
         public string bestVerifiedCheckpoint;
+        public long bestVerifiedCheckpointStep;
+        public float bestVerifiedRate = -1f;
+        public string lastEvaluationId;
+        public int lastEvaluationEpisodes;
+        public int lastEvaluationSuccesses;
+        public bool lastEvaluationMasteryChanged;
         public string[] opponentPool = Array.Empty<string>();
         public List<TrainingSkillState> skills = new List<TrainingSkillState>();
     }
@@ -65,6 +72,7 @@ namespace Kruty1918.Moyva.AI.Training
         private readonly System.Random _random;
         private readonly string _statePath;
         public TrainingCurriculumSessionState State => _state;
+        public int EvaluationEpisodes => _config.evaluationEpisodes;
 
         public TrainingCurriculumController(AutonomousTrainingConfig config, int seed)
         {
@@ -72,6 +80,8 @@ namespace Kruty1918.Moyva.AI.Training
             _catalog = TrainingScenarioCatalog.BuiltIn();
             _statePath = ResolveStatePath(config.statePath);
             _state = Load(_statePath) ?? new TrainingCurriculumSessionState();
+            if (_state.skills == null) _state.skills = new List<TrainingSkillState>();
+            if (_state.opponentPool == null) _state.opponentPool = Array.Empty<string>();
             if (_state.nextEvaluationStep <= 0) _state.nextEvaluationStep = config.evaluationEverySteps;
             foreach (var scenario in _catalog.Items)
                 if (_state.skills.All(s => s.scenarioId != scenario.id)) _state.skills.Add(new TrainingSkillState { scenarioId = scenario.id });
@@ -91,8 +101,6 @@ namespace Kruty1918.Moyva.AI.Training
                 var mastered = ordered.Where(s => Skill(s.id).mastered && !s.fullGame).ToArray();
                 if (roll < _config.masteredReviewWeight && mastered.Length > 0) return Select(mastered[_random.Next(mastered.Length)]);
 
-                // The remaining initial-curriculum weight is reserved for combinations.
-                // A combination is eligible only when all of the skills it depends on are mastered.
                 var combinations = _catalog.Items
                     .Where(s => s != null
                         && s.id.StartsWith("combo-", StringComparison.Ordinal)
@@ -113,6 +121,9 @@ namespace Kruty1918.Moyva.AI.Training
             return Select(review.Length == 0 ? full : review[_random.Next(review.Length)]);
         }
 
+        public TrainingScenarioDefinition GetScenario(string scenarioId) => _catalog.Get(scenarioId);
+        public TrainingSkillState GetSkill(string scenarioId) => Skill(scenarioId);
+
         public void RecordTrainingEpisode(string scenarioId, bool success, int decisions)
         {
             var skill = Skill(scenarioId); if (skill == null) return;
@@ -122,10 +133,24 @@ namespace Kruty1918.Moyva.AI.Training
         }
 
         public bool EvaluationDue => _state.totalDecisions >= _state.nextEvaluationStep;
-        public void RecordEvaluation(string scenarioId, int successes, int episodes)
+
+        // Returns true only when the mastered flag changed. A partial evaluation is
+        // rejected without touching any mastery/evaluation state.
+        public bool RecordEvaluation(string scenarioId, int successes, int episodes, long checkpointStep = -1,
+            string verifiedCheckpoint = null, string evaluationId = null)
         {
-            var skill = Skill(scenarioId); if (skill == null || episodes <= 0) return;
-            skill.evaluationEpisodes = episodes; skill.evaluationSuccesses = Math.Max(0, Math.Min(episodes, successes));
+            var skill = Skill(scenarioId);
+            if (skill == null || episodes != _config.evaluationEpisodes) return false;
+            int boundedSuccesses = Math.Max(0, Math.Min(episodes, successes));
+            if (!string.IsNullOrWhiteSpace(evaluationId) && _state.lastEvaluationId == evaluationId)
+            {
+                if (_state.lastEvaluationEpisodes != episodes || _state.lastEvaluationSuccesses != boundedSuccesses)
+                    throw new InvalidOperationException("Duplicate frozen evaluation id produced a different result.");
+                return _state.lastEvaluationMasteryChanged;
+            }
+            bool wasMastered = skill.mastered;
+            skill.evaluationEpisodes = episodes;
+            skill.evaluationSuccesses = boundedSuccesses;
             float rate = skill.LastEvaluationRate;
             if (rate >= _config.masteryThreshold)
             {
@@ -137,12 +162,48 @@ namespace Kruty1918.Moyva.AI.Training
                 skill.consecutivePasses = 0;
                 if (rate < _config.regressionThreshold) skill.mastered = false;
             }
-            _state.nextEvaluationStep = _state.totalDecisions + _config.evaluationEverySteps;
+            long verifiedStep = checkpointStep >= 0 ? checkpointStep : _state.totalDecisions;
+            _state.nextEvaluationStep = Math.Max(_state.totalDecisions, verifiedStep) + _config.evaluationEverySteps;
+            bool masteryChanged = wasMastered != skill.mastered;
+            ConsiderBestVerifiedCheckpoint(verifiedCheckpoint, verifiedStep, rate);
+            if (!string.IsNullOrWhiteSpace(evaluationId))
+            {
+                _state.lastEvaluationId = evaluationId;
+                _state.lastEvaluationEpisodes = episodes;
+                _state.lastEvaluationSuccesses = boundedSuccesses;
+                _state.lastEvaluationMasteryChanged = masteryChanged;
+            }
+            Save();
+            return masteryChanged;
+        }
+
+        public void SetLatestCheckpoint(string checkpoint, long step)
+        {
+            _state.lastCheckpoint = checkpoint;
+            _state.lastCheckpointStep = Math.Max(0, step);
             Save();
         }
 
+        private void ConsiderBestVerifiedCheckpoint(string checkpoint, long step, float successRate)
+        {
+            if (string.IsNullOrWhiteSpace(checkpoint) || float.IsNaN(successRate) || float.IsInfinity(successRate)) return;
+            if (_state.bestVerifiedCheckpoint == null || successRate > _state.bestVerifiedRate
+                || (Math.Abs(successRate - _state.bestVerifiedRate) < 0.000001f && step > _state.bestVerifiedCheckpointStep))
+            {
+                _state.bestVerifiedCheckpoint = checkpoint;
+                _state.bestVerifiedCheckpointStep = Math.Max(0, step);
+                _state.bestVerifiedRate = Mathf.Clamp01(successRate);
+                Save();
+            }
+        }
+
+        // Kept for source compatibility. A training checkpoint is never promoted to
+        // bestVerified here; only a completed RecordEvaluation + Consider... may do it.
         public void SetCheckpoints(string latest, string bestVerified)
-        { _state.lastCheckpoint = latest; _state.bestVerifiedCheckpoint = bestVerified; Save(); }
+        {
+            SetLatestCheckpoint(latest, _state.totalDecisions);
+        }
+
         public void SetOpponentPool(IEnumerable<string> checkpoints)
         { _state.opponentPool = (checkpoints ?? Array.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToArray(); Save(); }
         public void Dispose() => Save();

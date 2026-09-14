@@ -42,6 +42,7 @@ namespace Kruty1918.Moyva.AI.Training
         private BotDecisionOrchestrator _opponent;
         private OwnedGameplayMap _world;
         private bool _disposed;
+        private bool _setupPhase = true;
         public bool EconomyInstalled { get; private set; }
         public string FullGameSetupError { get; private set; }
         public ITurnService Turns { get; private set; }
@@ -184,6 +185,7 @@ namespace Kruty1918.Moyva.AI.Training
                             throw new InvalidOperationException("Initial settlement turn could not finish: " + turnReason);
                     }
                 }
+                _setupPhase = false;
                 Outcomes = new TrainingGameplayEventBridge(signals, _container.Resolve<ITurnHistoryQuery>(), TrainingGameplayScope.LearnerId,
                     _container.Resolve<IUnitCombatService>(), owners, context.EpisodeId, _container.TryResolve<IBuildingRegistry>());
                 _opponent = new BotDecisionOrchestrator(Gateway, Capabilities, Perception, new HeuristicBotPolicyDriver(),
@@ -197,18 +199,104 @@ namespace Kruty1918.Moyva.AI.Training
         }
         internal TrainingScenarioFacts CaptureTrainingFacts()
         {
-            int settlements = 0;
-            double resources = 0;
+            const string learner = TrainingGameplayScope.LearnerId;
+            var stocks = new Dictionary<string, float>(StringComparer.Ordinal);
+            var production = new Dictionary<string, float>(StringComparer.Ordinal);
+            var deployedByType = new Dictionary<string, int>(StringComparer.Ordinal);
+            var operationalByType = new Dictionary<string, int>(StringComparer.Ordinal);
+            var unitCells = new Dictionary<string, Vector2Int>(StringComparer.Ordinal);
+            var ownedSettlementIds = new List<string>();
+
+            int ownedSettlements = 0;
+            int operationalCastles = 0;
             if (EconomyInstalled)
             {
-                var ids = Economy.GetSettlementIdsForOwner(TrainingGameplayScope.LearnerId);
-                settlements = ids?.Count ?? 0;
-                var totals = Economy.GetOwnerResourceTotals(TrainingGameplayScope.LearnerId);
+                var ids = Economy.GetSettlementIdsForOwner(learner);
+                if (ids != null)
+                {
+                    ownedSettlements = ids.Count;
+                    ownedSettlementIds.AddRange(ids);
+                }
+
+                var totals = Economy.GetOwnerResourceTotals(learner);
                 if (totals != null)
-                    foreach (var value in totals.Values)
-                        if (!float.IsNaN(value) && !float.IsInfinity(value)) resources += Math.Max(0, value);
+                    foreach (var pair in totals)
+                        if (!float.IsNaN(pair.Value) && !float.IsInfinity(pair.Value))
+                            stocks[pair.Key] = pair.Value;
+
+                var productionSnapshot = EconomyProductionReadModel.Capture(_container, learner);
+                foreach (var pair in productionSnapshot.ProductionPerTurn)
+                    production[pair.Key] = pair.Value;
+                foreach (var pair in productionSnapshot.ActiveProducerBuildingsByType)
+                    operationalByType[pair.Key] = pair.Value;
+
+                if (ownedSettlements > 0)
+                {
+                    foreach (var placement in Placements.GetSavedPlacements())
+                    {
+                        if (!string.Equals(placement.OwnerId, learner, StringComparison.Ordinal)
+                            || !string.Equals(placement.BuildingId, "castle-01", StringComparison.Ordinal))
+                            continue;
+                        operationalCastles++;
+                    }
+                }
+                if (operationalCastles > 0)
+                    operationalByType["castle-01"] = operationalCastles;
             }
-            return new TrainingScenarioFacts(settlements, 0, resources);
+
+            int ownedUnits = 0;
+            int deployedUnits = 0;
+            int visibleEnemies = 0;
+            var fog = _container.TryResolve<IFogOwnerStateReader>();
+            foreach (string unitId in Units.GetAllUnitIds())
+            {
+                string owner = UnitOwners.GetUnitOwnerId(unitId);
+                bool positioned = Units.TryGetUnitPosition(unitId, out var cell);
+                if (string.Equals(owner, learner, StringComparison.Ordinal))
+                {
+                    ownedUnits++;
+                    if (!positioned) continue;
+                    deployedUnits++;
+                    unitCells[unitId] = cell;
+                    string type = Units.GetUnitTypeId(unitId);
+                    if (!string.IsNullOrWhiteSpace(type))
+                        deployedByType[type] = deployedByType.TryGetValue(type, out var count) ? count + 1 : 1;
+                }
+                else if (positioned && fog != null && fog.IsVisible(learner, cell))
+                {
+                    visibleEnemies++;
+                }
+            }
+
+            int exploredCells = 0;
+            var exploration = _container.TryResolve<IFogOwnerExplorationSnapshotStore>();
+            var explored = exploration?.GetExploredSnapshot(learner);
+            if (explored != null)
+                for (int y = 0; y < explored.GetLength(1); y++)
+                    for (int x = 0; x < explored.GetLength(0); x++)
+                        if (explored[x, y]) exploredCells++;
+
+            int currentTurn = Turns == null ? 0
+                : Turns.GlobalTurn > int.MaxValue ? int.MaxValue
+                : Turns.GlobalTurn < int.MinValue ? int.MinValue
+                : (int)Turns.GlobalTurn;
+
+            return new TrainingScenarioFacts(
+                isSetup: _setupPhase,
+                ownedSettlements: ownedSettlements,
+                operationalCastles: operationalCastles,
+                ownedUnits: ownedUnits,
+                deployedUnits: deployedUnits,
+                resourceStock: stocks,
+                productionPerTurn: production,
+                visibleEnemyUnitCount: visibleEnemies,
+                capturedObjectiveIds: ownedSettlementIds,
+                currentTurn: currentTurn,
+                exploredCells: exploredCells,
+                deployedUnitsByType: deployedByType,
+                operationalBuildingsByType: operationalByType,
+                unitCells: unitCells,
+                ownedSettlementIds: ownedSettlementIds);
         }
 
         private static T Required<T>() where T : class

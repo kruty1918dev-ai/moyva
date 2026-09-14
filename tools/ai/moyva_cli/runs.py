@@ -22,23 +22,62 @@ class RunStore:
         meta = read_json(path / "run.json", {})
         resume = read_json(path / "resume.json", {})
         state = read_json(path / "cli-status.json", {})
+        evaluation = read_json(path / "evaluations/latest.json", {})
+        curriculum = read_json(path / "curriculum-state.json", {})
         contract = meta.get("contract", {})
         compatible = contract.get("hash") == self.project.contract()["hash"]
         checkpoints = self.checkpoints(name)
         can_resume = compatible and any(c["kind"] == "pt" for c in checkpoints)
-        status = state.get("state", "RESUMABLE" if can_resume else "INTERRUPTED")
-        if state.get("state") == "RUNNING":
+        raw_state = state.get("state")
+        if raw_state == "RUNNING":
             from .processes import same_process
-            status = "RUNNING" if same_process(state) else "INTERRUPTED"
+            status = "TRAINING" if same_process(state) else "INTERRUPTED"
+        elif raw_state in ("COMPLETED", "FAILED", "INTERRUPTED"):
+            status = raw_state
+        else:
+            status = "INTERRUPTED" if can_resume else "FAILED"
+        if evaluation.get("state") == "EVALUATING":
+            status = "EVALUATING"
+        elif evaluation.get("state") == "INTERRUPTED" and status not in ("FAILED", "COMPLETED"):
+            status = "INTERRUPTED"
         if not compatible: status = "INCOMPATIBLE"
         failure = read_json(path / "failure.json", {})
         state_evidence = "cli-status.json" if state else "No exit record; files alone do not establish success."
+        if evaluation.get("state") in ("EVALUATING", "INTERRUPTED"):
+            state_evidence = "evaluations/latest.json"
         if failure:
             state_evidence = failure.get("repair") or failure.get("component") or state_evidence
+        pt_checkpoints = [c for c in checkpoints if c["kind"] == "pt"]
+        latest_checkpoint = max(pt_checkpoints, key=lambda c:(c.get("step") or -1, c.get("created") or 0), default=None)
+        best_verified = evaluation.get("best_verified_checkpoint")
+        if best_verified is None and curriculum.get("bestVerifiedCheckpoint"):
+            best_verified = {
+                "checkpoint_id": curriculum.get("bestVerifiedCheckpoint"),
+                "checkpoint_step": curriculum.get("bestVerifiedCheckpointStep"),
+                "success_rate": curriculum.get("bestVerifiedRate"),
+            }
+        eval_count = evaluation.get("episode_count")
+        eval_completed = evaluation.get("completed_episodes")
+        evaluation_view = {
+            "state": evaluation.get("state"),
+            "result": evaluation.get("result"),
+            "scenario": evaluation.get("scenario_id"),
+            "progress": f"{eval_completed or 0} / {eval_count}" if eval_count else None,
+            "completed": eval_completed,
+            "episodes": eval_count,
+            "success_rate": evaluation.get("success_rate") if evaluation.get("state") == "COMPLETED" else None,
+            "checkpoint": evaluation.get("checkpoint_id"),
+        } if evaluation else {}
         data = {**meta, "run_id":name, "resume":resume, "state":status, "compatible":compatible,
                 "resumable":can_resume, "path":str(path), "checkpoints":len(checkpoints),
                 "final_onnx":(path / "MoyvaStrategy.onnx").is_file(), "process":state,
-                "failure":failure, "state_evidence":state_evidence}
+                "failure":failure, "state_evidence":state_evidence,
+                "latest_checkpoint":latest_checkpoint,
+                "best_verified_checkpoint":best_verified,
+                "evaluation":evaluation_view,
+                "evaluation_progress":evaluation_view.get("progress"),
+                "evaluation_scenario":evaluation_view.get("scenario"),
+                "evaluation_success_rate":evaluation_view.get("success_rate")}
         metric_cache = self.project.local / "run-metrics" / (simple_name(name) + ".json")
         if metrics:
             data["metrics"] = METRICS.read(path)
@@ -63,6 +102,8 @@ class RunStore:
             for path in sorted(root.rglob("*")):
                 if path.suffix not in (".pt", ".onnx") or not path.is_file() or path.is_symlink(): continue
                 if not path.resolve().is_relative_to(root.resolve()): continue
+                # Frozen evaluation copies are provenance artifacts, not resumable trainer checkpoints.
+                if "evaluations" in path.relative_to(root).parts: continue
                 relative = str(path.relative_to(self.project.results))
                 numbers = re.findall(r"(?:-|_)(\d+)(?=\D|$)", path.stem)
                 stat = path.stat()

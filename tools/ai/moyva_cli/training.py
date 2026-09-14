@@ -81,6 +81,15 @@ def validate_unity(project, kind):
     return result
 
 
+def _autonomous_settings(project):
+    config=read_json(project.root/"Assets/Moyva/Presets/AI/MoyvaTrainingConfig.json",{})
+    authored=((config.get("curriculum") or {}).get("autonomous") or {})
+    defaults={"enabled":True,"evaluationEverySteps":10000,"evaluationEpisodes":50,
+              "masteryThreshold":0.80,"regressionThreshold":0.65,"masteryChecksRequired":3}
+    defaults.update(authored)
+    return defaults
+
+
 def preflight(project,preset,profile="standard",repair=False):
     from .diagnostics import doctor
     report=doctor(project)
@@ -90,6 +99,9 @@ def preflight(project,preset,profile="standard",repair=False):
         with socket.socket() as sock:
             try:sock.bind(("127.0.0.1",worker_port))
             except OSError:blockers.append({"name":"Worker port","message":f"Port {worker_port} is occupied."})
+    autonomous=_autonomous_settings(project)
+    if autonomous.get("enabled") and int(preset.get("arenas",1))!=1:
+        blockers.append({"name":"Frozen evaluation","message":"Autonomous frozen evaluation requires arenas=1 so one exact training-step/checkpoint stream owns curriculum state."})
     if blockers:raise ControlError("PRE-FLIGHT BLOCKED: "+"; ".join(c["name"]+": "+c["message"] for c in blockers))
     Presets(project).validate(preset)
     if preset.get("initialize_from"):

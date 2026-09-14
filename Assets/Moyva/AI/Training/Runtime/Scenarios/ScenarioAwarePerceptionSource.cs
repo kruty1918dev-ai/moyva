@@ -7,18 +7,25 @@ namespace Kruty1918.Moyva.AI.Training
     {
         private readonly IBotPerceptionSource _inner;
         private readonly Func<TrainingScenarioProgressTracker> _progress;
+
         public ScenarioAwarePerceptionSource(IBotPerceptionSource inner, Func<TrainingScenarioProgressTracker> progress)
-        { _inner = inner ?? new EmptyBotPerceptionSource(); _progress = progress; }
+        {
+            _inner = inner ?? new EmptyBotPerceptionSource();
+            _progress = progress;
+        }
+
         public BotPerceptionSnapshot Capture(string player)
         {
             var snapshot = _inner.Capture(player) ?? new BotPerceptionSnapshot();
-            var p = _progress?.Invoke();
-            if (p?.Scenario != null)
-            {
-                snapshot.Global[BotObservationSchema.ScenarioGoal] = p.Scenario.GoalCode;
-                snapshot.Global[BotObservationSchema.ScenarioStep] = p.StepCount <= 1 ? 0 : p.StepIndex / (float)(p.StepCount - 1);
-                snapshot.Global[BotObservationSchema.ScenarioProgress] = p.Progress;
-            }
+            var progress = _progress?.Invoke();
+            if (progress?.Scenario == null) return snapshot;
+
+            snapshot.Global[BotObservationSchema.ScenarioGoal] = progress.Scenario.GoalCode;
+            snapshot.Global[BotObservationSchema.ScenarioStep] = progress.StepCount <= 1
+                ? 0f : progress.StepIndex / (float)(progress.StepCount - 1);
+            // Setup/scaffolding is never exposed as learner progress.
+            snapshot.Global[BotObservationSchema.ScenarioProgress] =
+                progress.IsScoringActive ? progress.Progress : 0f;
             return snapshot;
         }
     }

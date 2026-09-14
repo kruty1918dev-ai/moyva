@@ -10,11 +10,63 @@
     ],
     "steps": [
       {
-        "id": "production-established",
-        "goal": 2,
+        "criterion": 2,
         "requiredCount": 1,
-        "threshold": 0
+        "threshold": 0,
+        "id": "wood-production",
+        "goal": 2,
+        "resourceId": "walnut-wood-materials-resources",
+        "buildingTypeId": "wood-camp",
+        "minProductionPerTurn": 1.0
       }
-    ]
+    ],
+    "startingConditions": {
+      "learnerStartsWithCastle": true,
+      "learnerMustPlaceCastle": false,
+      "startingResources": [],
+      "startingUnits": [
+        {
+          "unitTypeId": "warrior",
+          "count": 1,
+          "owner": "learner",
+          "deployed": true
+        }
+      ],
+      "opponent": {
+        "enabled": true,
+        "startingUnits": 1,
+        "startingCastle": true
+      },
+      "objectives": [
+        {
+          "objectiveId": "",
+          "objectiveType": "settlement",
+          "owner": "opponent"
+        }
+      ]
+    },
+    "availableCapabilities": [
+      "construction",
+      "economy",
+      "movement",
+      "end-turn"
+    ],
+    "generationConstraints": {
+      "minReachableArea": 2,
+      "requiredResourceTypes": [
+        "walnut-wood-materials-resources"
+      ],
+      "minOpponentDistance": 2,
+      "maxOpponentDistance": 0,
+      "objectiveReachability": true,
+      "requiredTerrainCompatibility": []
+    },
+    "rewardRules": {
+      "validatedGameplayEventsOnly": true,
+      "rewardSetupActions": false,
+      "requireMeaningfulEvent": true,
+      "maxGameplayRewardEventsPerTurn": 12,
+      "allowedGameplayEvents": []
+    }
   }
 }

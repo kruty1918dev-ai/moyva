@@ -43,10 +43,27 @@ class ProjectFixture(unittest.TestCase):
         return path
     def test_existing_run_is_resumable_not_assumed_completed(self):
         self.run_fixture();run=self.store.show("old-run",False)
-        self.assertEqual("RESUMABLE",run["state"]);self.assertTrue(run["resumable"]);self.assertTrue(run["final_onnx"])
+        self.assertEqual("INTERRUPTED",run["state"]);self.assertTrue(run["resumable"]);self.assertTrue(run["final_onnx"])
     def test_exit_record_is_evidence_of_completion(self):
         path=self.run_fixture();atomic_json(path/"cli-status.json",{"state":"COMPLETED","exit_code":0})
         self.assertEqual("COMPLETED",self.store.show("old-run",False)["state"])
+    def test_evaluation_status_and_verified_checkpoint_are_visible(self):
+        path=self.run_fixture();(path/"evaluations").mkdir()
+        atomic_json(path/"evaluations/latest.json",{
+            "state":"EVALUATING","result":None,"scenario_id":"castle","episode_count":50,"completed_episodes":17,
+            "checkpoint_id":"contract:100:hash","checkpoint_step":100,"success_rate":None})
+        run=self.store.show("old-run",False)
+        self.assertEqual("EVALUATING",run["state"]);self.assertEqual("17 / 50",run["evaluation_progress"])
+        self.assertEqual("castle",run["evaluation_scenario"]);self.assertIsNone(run["evaluation_success_rate"])
+        atomic_json(path/"evaluations/latest.json",{
+            "state":"COMPLETED","result":"PASSED","scenario_id":"castle","episode_count":50,"completed_episodes":50,
+            "checkpoint_id":"contract:100:hash","checkpoint_step":100,"success_rate":0.84,
+            "best_verified_checkpoint":{"checkpoint_id":"contract:100:hash","checkpoint_step":100,"success_rate":0.84}})
+        atomic_json(path/"cli-status.json",{"state":"COMPLETED","exit_code":0})
+        run=self.store.show("old-run",False)
+        self.assertEqual("COMPLETED",run["state"]);self.assertEqual(0.84,run["evaluation_success_rate"])
+        self.assertEqual("contract:100:hash",run["best_verified_checkpoint"]["checkpoint_id"])
+        self.assertEqual(100,run["latest_checkpoint"]["step"])
     def test_run_failure_details_are_visible(self):
         path=self.run_fixture();atomic_json(path/"cli-status.json",{"state":"FAILED","exit_code":3})
         atomic_json(path/"failure.json",{"id":"training-ended-before-first-metrics","component":"ML-Agents trainer","repair":"Trainer stopped before first metrics."})
@@ -157,7 +174,6 @@ class TerminalTests(unittest.IsolatedAsyncioTestCase):
         from textual.widgets import ContentSwitcher,Select,Input
         from unittest.mock import AsyncMock
         app=ControlCenter(Project())
-        # Deterministic presentation test; external probing has independent service tests.
         with patch.object(ControlCenter,"refresh_data",lambda self:None):
             async with app.run_test(size=(140,46)) as pilot:
                 await pilot.press("2");await pilot.pause()

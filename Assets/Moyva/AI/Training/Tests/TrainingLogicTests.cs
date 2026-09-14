@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Turns.API;
+using Kruty1918.Moyva.AI.Bot;
+using UnityEngine;
 using NUnit.Framework;
 
 namespace Kruty1918.Moyva.AI.Training.Tests
@@ -207,6 +209,159 @@ namespace Kruty1918.Moyva.AI.Training.Tests
             Assert.AreEqual(TrainingEpisodeResult.InvalidState, environment.Result);
             Assert.AreEqual(0, environment.Rewards.TotalReward);
             Assert.IsFalse(environment.IsReady);
+        }
+
+        private static TrainingScenarioDefinition AuthoritativeScenario(params TrainingScenarioStepDefinition[] steps)
+        {
+            return new TrainingScenarioDefinition
+            {
+                id = "test",
+                title = "test",
+                learnerBuildsInitialCastle = false,
+                startingConditions = new TrainingScenarioStartingConditions(),
+                availableCapabilities = new[] { "construction", "economy", "recruitment", "movement", "scouting", "combat", "capture", "end-turn" },
+                generationConstraints = new TrainingScenarioGenerationConstraints(),
+                rewardRules = new TrainingScenarioRewardRules(),
+                steps = steps
+            };
+        }
+
+        private static TrainingScenarioFacts AuthoritativeFacts(
+            bool setup = false, int settlements = 0, int castles = 0, int ownedUnits = 0, int deployed = 0,
+            float woodStock = 0f, float woodProduction = 0f, int turn = 0, int explored = 0,
+            int warriors = 0, int castleBuildings = 0, string objective = null,
+            string unitId = null, Vector2Int? cell = null)
+        {
+            var stock = new Dictionary<string, float> { ["walnut-wood-materials-resources"] = woodStock };
+            var production = new Dictionary<string, float> { ["walnut-wood-materials-resources"] = woodProduction };
+            var units = new Dictionary<string, int> { ["warrior"] = warriors };
+            var buildings = new Dictionary<string, int> { ["castle-01"] = castleBuildings, ["wood-camp"] = woodProduction > 0 ? 1 : 0 };
+            var cells = new Dictionary<string, Vector2Int>();
+            if (unitId != null && cell.HasValue) cells[unitId] = cell.Value;
+            var objectives = objective == null ? Array.Empty<string>() : new[] { objective };
+            return new TrainingScenarioFacts(setup, settlements, castles, ownedUnits, deployed, stock, production, 0,
+                objectives, turn, explored, units, buildings, cells, objectives);
+        }
+
+        [Test]
+        public void SetupCastleDoesNotCompleteCastleLesson()
+        {
+            var step = new TrainingScenarioStepDefinition { id = "castle", criterion = TrainingScenarioCriterionKind.OperationalCastle, buildingTypeId = "castle-01" };
+            var tracker = new TrainingScenarioProgressTracker(AuthoritativeScenario(step));
+            tracker.Begin(7, AuthoritativeFacts(setup: true, settlements: 1, castles: 1, castleBuildings: 1));
+            tracker.ObserveReward(new TrainingRewardEvent(7, "setup", TrainingRewardEventType.BuildingCreated,
+                "building-type:castle-01", validated: true, meaningful: true), AuthoritativeFacts(setup: true, settlements: 1, castles: 1, castleBuildings: 1));
+            Assert.IsFalse(tracker.IsComplete);
+            Assert.AreEqual(0f, tracker.Progress);
+        }
+
+        [Test]
+        public void LearnerCastleRequiresOperationalState()
+        {
+            var step = new TrainingScenarioStepDefinition { id = "castle", criterion = TrainingScenarioCriterionKind.OperationalCastle, buildingTypeId = "castle-01" };
+            var tracker = new TrainingScenarioProgressTracker(AuthoritativeScenario(step));
+            tracker.Begin(8, AuthoritativeFacts());
+            tracker.ObserveReward(new TrainingRewardEvent(8, "placed", TrainingRewardEventType.BuildingCreated,
+                "building-type:castle-01", validated: true, meaningful: true), AuthoritativeFacts());
+            Assert.IsFalse(tracker.IsComplete);
+            tracker.ObserveAction(BotIntentType.EndTurn, BotExecutionStatus.Completed,
+                AuthoritativeFacts(settlements: 1, castles: 1, castleBuildings: 1));
+            Assert.IsTrue(tracker.IsComplete);
+        }
+
+        [Test]
+        public void GoldGainDoesNotSatisfyWoodProduction()
+        {
+            var step = new TrainingScenarioStepDefinition { id = "wood", criterion = TrainingScenarioCriterionKind.ResourceProduction,
+                resourceId = "walnut-wood-materials-resources", buildingTypeId = "wood-camp", minProductionPerTurn = 1f };
+            var tracker = new TrainingScenarioProgressTracker(AuthoritativeScenario(step));
+            tracker.Begin(9, AuthoritativeFacts(woodStock: 5));
+            tracker.ObserveAction(BotIntentType.EndTurn, BotExecutionStatus.Completed, AuthoritativeFacts(woodStock: 5, woodProduction: 0, turn: 1));
+            Assert.IsFalse(tracker.IsComplete);
+        }
+
+        [Test]
+        public void OneTimeStockInjectionDoesNotSatisfyStableEconomy()
+        {
+            var step = new TrainingScenarioStepDefinition { id = "stable", criterion = TrainingScenarioCriterionKind.StableResources,
+                requiredTurns = 2, resources = new[] { new TrainingScenarioResourceCriterion {
+                    resourceId = "walnut-wood-materials-resources", minStock = 10, minProductionPerTurn = 1 } } };
+            var tracker = new TrainingScenarioProgressTracker(AuthoritativeScenario(step));
+            tracker.Begin(10, AuthoritativeFacts());
+            tracker.ObserveAction(BotIntentType.EndTurn, BotExecutionStatus.Completed, AuthoritativeFacts(woodStock: 100, woodProduction: 0, turn: 1));
+            tracker.ObserveAction(BotIntentType.EndTurn, BotExecutionStatus.Completed, AuthoritativeFacts(woodStock: 100, woodProduction: 0, turn: 2));
+            Assert.IsFalse(tracker.IsComplete);
+        }
+
+        [Test]
+        public void DeployedLearnerUnitCompletesRecruitment()
+        {
+            var step = new TrainingScenarioStepDefinition { id = "recruit", criterion = TrainingScenarioCriterionKind.DeployedUnit, unitTypeId = "warrior" };
+            var tracker = new TrainingScenarioProgressTracker(AuthoritativeScenario(step));
+            tracker.Begin(11, AuthoritativeFacts(ownedUnits: 1, deployed: 1, warriors: 1));
+            tracker.ObserveReward(new TrainingRewardEvent(11, "recruit", TrainingRewardEventType.UnitCreated,
+                "unit-type:warrior", validated: true, meaningful: true), AuthoritativeFacts(ownedUnits: 2, deployed: 2, warriors: 2));
+            Assert.IsTrue(tracker.IsComplete);
+        }
+
+        [Test]
+        public void OpponentOrSetupUnitDoesNotCompleteRecruitment()
+        {
+            var step = new TrainingScenarioStepDefinition { id = "recruit", criterion = TrainingScenarioCriterionKind.DeployedUnit, unitTypeId = "warrior" };
+            var tracker = new TrainingScenarioProgressTracker(AuthoritativeScenario(step));
+            tracker.Begin(12, AuthoritativeFacts(ownedUnits: 1, deployed: 1, warriors: 1));
+            tracker.ObserveReward(new TrainingRewardEvent(12, "opponent", TrainingRewardEventType.UnitCreated,
+                "unit-type:warrior", validated: true, meaningful: true), AuthoritativeFacts(ownedUnits: 1, deployed: 1, warriors: 1));
+            Assert.IsFalse(tracker.IsComplete);
+        }
+
+        [Test]
+        public void RejectedMoveDoesNotIncreaseMovementProgress()
+        {
+            var step = new TrainingScenarioStepDefinition { id = "move", criterion = TrainingScenarioCriterionKind.Movement };
+            var tracker = new TrainingScenarioProgressTracker(AuthoritativeScenario(step));
+            tracker.Begin(13, AuthoritativeFacts(unitId: "u", cell: Vector2Int.zero));
+            tracker.ObserveAction(BotIntentType.Move, BotExecutionStatus.Rejected, AuthoritativeFacts(unitId: "u", cell: Vector2Int.right));
+            Assert.AreEqual(0f, tracker.Progress);
+        }
+
+        [Test]
+        public void SuccessfulMoveWithoutScoutingOnlyCompletesMovementCriterion()
+        {
+            var move = new TrainingScenarioStepDefinition { id = "move", criterion = TrainingScenarioCriterionKind.Movement };
+            var scout = new TrainingScenarioStepDefinition { id = "scout", criterion = TrainingScenarioCriterionKind.Scouting };
+            var tracker = new TrainingScenarioProgressTracker(AuthoritativeScenario(move, scout));
+            tracker.Begin(14, AuthoritativeFacts(explored: 5, unitId: "u", cell: Vector2Int.zero));
+            tracker.ObserveAction(BotIntentType.Move, BotExecutionStatus.Completed,
+                AuthoritativeFacts(explored: 5, unitId: "u", cell: Vector2Int.right));
+            Assert.AreEqual(1, tracker.StepIndex);
+            Assert.IsFalse(tracker.IsComplete);
+        }
+
+        [Test]
+        public void CaptureRewardRequiresAuthoritativeOwnership()
+        {
+            var step = new TrainingScenarioStepDefinition { id = "capture", criterion = TrainingScenarioCriterionKind.ObjectiveOwned, objectiveType = "settlement" };
+            var tracker = new TrainingScenarioProgressTracker(AuthoritativeScenario(step));
+            tracker.Begin(15, AuthoritativeFacts());
+            tracker.ObserveReward(new TrainingRewardEvent(15, "capture", TrainingRewardEventType.ObjectiveCaptured,
+                "settlement-x", validated: true, meaningful: true), AuthoritativeFacts());
+            Assert.IsFalse(tracker.IsComplete);
+            tracker.ObserveReward(new TrainingRewardEvent(15, "capture2", TrainingRewardEventType.ObjectiveCaptured,
+                "settlement-x", validated: true, meaningful: true), AuthoritativeFacts(objective: "settlement-x"));
+            Assert.IsTrue(tracker.IsComplete);
+        }
+
+        [Test]
+        public void SetupActionsHaveZeroScenarioProgress()
+        {
+            var step = new TrainingScenarioStepDefinition { id = "move", criterion = TrainingScenarioCriterionKind.Movement };
+            var tracker = new TrainingScenarioProgressTracker(AuthoritativeScenario(step));
+            tracker.Begin(16, AuthoritativeFacts(setup: true, unitId: "u", cell: Vector2Int.zero));
+            tracker.ObserveAction(BotIntentType.Move, BotExecutionStatus.Completed,
+                AuthoritativeFacts(setup: true, unitId: "u", cell: Vector2Int.right));
+            Assert.AreEqual(0f, tracker.Progress);
+            Assert.IsFalse(tracker.IsScoringActive);
         }
     }
 }

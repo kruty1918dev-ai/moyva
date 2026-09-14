@@ -8,11 +8,61 @@
     "prerequisites": [],
     "steps": [
       {
+        "criterion": 1,
+        "requiredCount": 1,
+        "threshold": 0,
         "id": "castle-operational",
         "goal": 1,
-        "requiredCount": 1,
-        "threshold": 0
+        "buildingTypeId": "castle-01"
       }
-    ]
+    ],
+    "startingConditions": {
+      "learnerStartsWithCastle": false,
+      "learnerMustPlaceCastle": true,
+      "startingResources": [],
+      "startingUnits": [
+        {
+          "unitTypeId": "warrior",
+          "count": 1,
+          "owner": "learner",
+          "deployed": true
+        }
+      ],
+      "opponent": {
+        "enabled": true,
+        "startingUnits": 1,
+        "startingCastle": true
+      },
+      "objectives": [
+        {
+          "objectiveId": "",
+          "objectiveType": "settlement",
+          "owner": "opponent"
+        }
+      ]
+    },
+    "availableCapabilities": [
+      "construction",
+      "movement",
+      "scouting",
+      "end-turn"
+    ],
+    "generationConstraints": {
+      "minReachableArea": 2,
+      "requiredResourceTypes": [
+        "walnut-wood-materials-resources"
+      ],
+      "minOpponentDistance": 2,
+      "maxOpponentDistance": 0,
+      "objectiveReachability": true,
+      "requiredTerrainCompatibility": []
+    },
+    "rewardRules": {
+      "validatedGameplayEventsOnly": true,
+      "rewardSetupActions": false,
+      "requireMeaningfulEvent": true,
+      "maxGameplayRewardEventsPerTurn": 12,
+      "allowedGameplayEvents": []
+    }
   }
 }

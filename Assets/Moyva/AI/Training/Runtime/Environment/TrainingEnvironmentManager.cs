@@ -16,6 +16,9 @@ namespace Kruty1918.Moyva.AI.Training
         public TrainingDecisionJournal Decisions { get; private set; }
         private TrainingReadinessReport _readiness;
         private TrainingAutonomyCoordinator _autonomy;
+        private TrainingObserverServer _observerServer;
+        private TrainingArenaSnapshotPublisher _snapshotPublisher;
+        private string _sessionId;
         public TrainingReadinessReport Readiness => _environments.Count > 0 ? _environments[0].Readiness : _readiness;
 
         public void Initialize(TrainingConfig config, ITrainingSimulationFactory factory)
@@ -24,9 +27,11 @@ namespace Kruty1918.Moyva.AI.Training
             config.Validate();
             if (factory is ScaffoldSimulationFactory && !config.allowScaffoldSimulation)
                 throw new InvalidOperationException("Scaffold simulation requires allowScaffoldSimulation=true.");
+            _sessionId = Guid.NewGuid().ToString("N");
             Metrics = new TrainingMetricsHub(config.metricsHistoryCapacity);
-            if (config.enableDecisionJournal)
-                Decisions = new TrainingDecisionJournal(config.decisionJournalCapacity, ResolveJournalPath(config));
+            if (config.enableDecisionJournal || config.observerEnabled)
+                Decisions = new TrainingDecisionJournal(config.decisionJournalCapacity,
+                    config.enableDecisionJournal ? ResolveJournalPath(config) : null);
             if (config.curriculum?.autonomous?.enabled == true)
                 _autonomy = new TrainingAutonomyCoordinator(config);
             if (config.environmentCount > 1 && !factory.SupportsIndependentEnvironments)
@@ -35,7 +40,9 @@ namespace Kruty1918.Moyva.AI.Training
             {
                 var simulation = factory.Create(id);
                 var environment = new TrainingEnvironment(id, config, simulation);
+                environment.SetObserverSessionId(_sessionId);
                 environment.SetDecisionJournal(Decisions);
+                environment.EpisodeReset += OnEpisodeReset;
                 _environments.Add(environment);
                 Metrics.Attach(environment);
                 environment.CheckReadiness(factory);
@@ -63,19 +70,48 @@ namespace Kruty1918.Moyva.AI.Training
                 if (id == 0 && !string.IsNullOrEmpty(environment.Limitation))
                     Debug.LogWarning(environment.Limitation, this);
             }
+
+            if (config.observerEnabled)
+            {
+                _observerServer = new TrainingObserverServer(_sessionId, config.observerEndpoint,
+                    config.observerQueueCapacity, config.observerMaxMessageBytes);
+                if (Decisions != null) Decisions.Appended += _observerServer.PublishDecision;
+                _snapshotPublisher = new TrainingArenaSnapshotPublisher(() => Environments, _observerServer,
+                    Decisions, config.observerSnapshotHz);
+                _observerServer.Start();
+                Debug.Log("Moyva training observer IPC: " + _observerServer.ResolvedEndpoint, this);
+            }
+        }
+
+        private void Update()
+        {
+            _snapshotPublisher?.Tick(Time.realtimeSinceStartup);
+        }
+
+        private void OnEpisodeReset(int arenaId, long episodeId)
+        {
+            _observerServer?.MarkEpisodeReset(arenaId, episodeId, Decisions?.CurrentSequence ?? 0);
         }
 
         public void Shutdown()
         {
             _autonomy?.Dispose();
             _autonomy = null;
-            Decisions = null;
+            if (Decisions != null && _observerServer != null) Decisions.Appended -= _observerServer.PublishDecision;
+            _snapshotPublisher = null;
+            _observerServer?.Dispose();
+            _observerServer = null;
             Metrics?.Dispose();
             foreach (var go in _agentObjects)
                 if (go != null) { go.SetActive(false); Destroy(go); }
             _agentObjects.Clear();
-            foreach (var environment in _environments) environment.Dispose();
+            foreach (var environment in _environments)
+            {
+                environment.EpisodeReset -= OnEpisodeReset;
+                environment.Dispose();
+            }
             _environments.Clear();
+            Decisions = null;
         }
 
         private void OnDestroy() => Shutdown();

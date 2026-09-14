@@ -310,5 +310,70 @@ namespace Kruty1918.Moyva.AI.Training.Tests
             finally { Time.timeScale = previousScale; }
             yield return new ExitPlayMode();
         }
+
+        [UnityTest]
+        public IEnumerator FullGameCastleToEconomyKeepsEpisodeAndWorldInstance()
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            yield return new EnterPlayMode();
+            var config = TrainingConfig.Load(AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Moyva/Presets/AI/MoyvaTrainingConfig.json"));
+            config.curriculum.stage = TrainingCurriculumStage.FullGame;
+            var container = new DiContainer();
+            new TrainingInstaller().Install(container, config);
+            using (var simulation = (GameplayTrainingSimulation)container.Resolve<ITrainingSimulationFactory>().Create(0))
+            using (var environment = new TrainingEnvironment(0, config, simulation))
+            {
+                environment.SetScenario(TrainingScenarioCatalog.BuiltIn().Get("full-game"));
+                environment.BeginEpisode();
+                Assert.IsTrue(environment.IsReady, environment.Diagnostics.LastError);
+                long episode = environment.EpisodeId;
+                GameObject world = simulation.Episode.Root;
+                var tracker = environment.ScenarioProgress;
+                tracker.SetSetupPhase(false, new TrainingScenarioFacts());
+                tracker.ObserveReward(new TrainingRewardEvent(episode, "castle", TrainingRewardEventType.BuildingCreated,
+                    "building-type:castle-01", validated: true, meaningful: true),
+                    new TrainingScenarioFacts(ownedSettlements: 1, operationalCastles: 1,
+                        operationalBuildingsByType: new Dictionary<string, int> { ["castle-01"] = 1 }));
+                Assert.AreEqual(1, tracker.StepIndex);
+                tracker.ObserveAction(BotIntentType.EndTurn, BotExecutionStatus.Completed,
+                    new TrainingScenarioFacts(ownedSettlements: 1, operationalCastles: 1,
+                        productionPerTurn: new Dictionary<string, float> { ["walnut-wood-materials-resources"] = 6 },
+                        operationalBuildingsByType: new Dictionary<string, int> { ["castle-01"] = 1, ["wood-camp"] = 1 }));
+                Assert.AreEqual(2, tracker.StepIndex);
+                Assert.AreEqual(episode, environment.EpisodeId);
+                Assert.AreSame(world, simulation.Episode.Root);
+            }
+            yield return new ExitPlayMode();
+        }
+
+        [UnityTest]
+        public IEnumerator ComboScenarioKeepsOneWorldAcrossStepTransition()
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            yield return new EnterPlayMode();
+            var config = TrainingConfig.Load(AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Moyva/Presets/AI/MoyvaTrainingConfig.json"));
+            config.curriculum.stage = TrainingCurriculumStage.Economy;
+            var container = new DiContainer();
+            new TrainingInstaller().Install(container, config);
+            using (var simulation = (GameplayTrainingSimulation)container.Resolve<ITrainingSimulationFactory>().Create(0))
+            using (var environment = new TrainingEnvironment(0, config, simulation))
+            {
+                environment.SetScenario(TrainingScenarioCatalog.BuiltIn().Get("combo-foundation"));
+                environment.BeginEpisode();
+                Assert.IsTrue(environment.IsReady, environment.Diagnostics.LastError);
+                var world = simulation.Episode.Root;
+                long episode = environment.EpisodeId;
+                environment.ScenarioProgress.SetSetupPhase(false, new TrainingScenarioFacts());
+                environment.ScenarioProgress.ObserveReward(
+                    new TrainingRewardEvent(episode, "castle", TrainingRewardEventType.BuildingCreated,
+                        "building-type:castle-01", validated: true, meaningful: true),
+                    new TrainingScenarioFacts(ownedSettlements: 1, operationalCastles: 1,
+                        operationalBuildingsByType: new Dictionary<string, int> { ["castle-01"] = 1 }));
+                Assert.AreEqual(1, environment.ScenarioProgress.StepIndex);
+                Assert.AreEqual(episode, environment.EpisodeId);
+                Assert.AreSame(world, simulation.Episode.Root);
+            }
+            yield return new ExitPlayMode();
+        }
     }
 }

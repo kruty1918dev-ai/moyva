@@ -11,17 +11,74 @@
     ],
     "steps": [
       {
+        "criterion": 5,
+        "requiredCount": 1,
+        "threshold": 0,
         "id": "movement",
-        "goal": 5,
-        "requiredCount": 2,
-        "threshold": 0
+        "goal": 5
       },
       {
-        "id": "combat",
-        "goal": 6,
+        "criterion": 6,
         "requiredCount": 1,
-        "threshold": 0
+        "threshold": 0,
+        "id": "scouting",
+        "goal": 5
+      },
+      {
+        "criterion": 7,
+        "requiredCount": 1,
+        "threshold": 0,
+        "id": "combat",
+        "goal": 6
       }
-    ]
+    ],
+    "startingConditions": {
+      "learnerStartsWithCastle": true,
+      "learnerMustPlaceCastle": false,
+      "startingResources": [],
+      "startingUnits": [
+        {
+          "unitTypeId": "warrior",
+          "count": 1,
+          "owner": "learner",
+          "deployed": true
+        }
+      ],
+      "opponent": {
+        "enabled": true,
+        "startingUnits": 1,
+        "startingCastle": true
+      },
+      "objectives": [
+        {
+          "objectiveId": "",
+          "objectiveType": "settlement",
+          "owner": "opponent"
+        }
+      ]
+    },
+    "availableCapabilities": [
+      "movement",
+      "scouting",
+      "combat",
+      "end-turn"
+    ],
+    "generationConstraints": {
+      "minReachableArea": 2,
+      "requiredResourceTypes": [
+        "walnut-wood-materials-resources"
+      ],
+      "minOpponentDistance": 2,
+      "maxOpponentDistance": 0,
+      "objectiveReachability": true,
+      "requiredTerrainCompatibility": []
+    },
+    "rewardRules": {
+      "validatedGameplayEventsOnly": true,
+      "rewardSetupActions": false,
+      "requireMeaningfulEvent": true,
+      "maxGameplayRewardEventsPerTurn": 12,
+      "allowedGameplayEvents": []
+    }
   }
 }

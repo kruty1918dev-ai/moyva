@@ -14,6 +14,8 @@ namespace Kruty1918.Moyva.AI.Training
         public int width, height;
         public string scenarioId;
         public int scenarioStep;
+        public bool isComplete;
+        public string status;
         public string[] cellLayers = Array.Empty<string>();
         public float[] heights = Array.Empty<float>();
         public string[] surfaces = Array.Empty<string>();
