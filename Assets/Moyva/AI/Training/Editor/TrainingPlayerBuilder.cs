@@ -127,9 +127,38 @@ namespace Kruty1918.Moyva.AI.Training.Editor
                 throw new InvalidOperationException("Install Unity build support for " + target + " in Unity Hub.");
             if (!File.Exists(Scene)) throw new FileNotFoundException("Training scene is missing", Scene);
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output)));
-            var result = BuildPipeline.BuildPlayer(new BuildPlayerOptions {
-                scenes = new[] { Scene }, locationPathName = output, target = target,
-                options = BuildOptions.DetailedBuildReport });
+            // MOYVA_TRAINING_PREVIEW_WINDOW_SETTINGS
+            // Training preview must behave like a normal desktop window: resizable/minimizable
+            // and still running when the Control Center has focus. Runtime launch arguments decide
+            // the actual monitor size; Control Center moves/maximizes it after startup.
+            bool oldResizableWindow = PlayerSettings.resizableWindow;
+            bool oldRunInBackground = PlayerSettings.runInBackground;
+            bool oldAllowFullscreenSwitch = PlayerSettings.allowFullscreenSwitch;
+            var oldFullScreenMode = PlayerSettings.fullScreenMode;
+            int oldDefaultWidth = PlayerSettings.defaultScreenWidth;
+            int oldDefaultHeight = PlayerSettings.defaultScreenHeight;
+            BuildReport result;
+            try
+            {
+                PlayerSettings.resizableWindow = true;
+                PlayerSettings.runInBackground = true;
+                PlayerSettings.allowFullscreenSwitch = true;
+                PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
+                PlayerSettings.defaultScreenWidth = 1280;
+                PlayerSettings.defaultScreenHeight = 720;
+                result = BuildPipeline.BuildPlayer(new BuildPlayerOptions {
+                    scenes = new[] { Scene }, locationPathName = output, target = target,
+                    options = BuildOptions.DetailedBuildReport });
+            }
+            finally
+            {
+                PlayerSettings.resizableWindow = oldResizableWindow;
+                PlayerSettings.runInBackground = oldRunInBackground;
+                PlayerSettings.allowFullscreenSwitch = oldAllowFullscreenSwitch;
+                PlayerSettings.fullScreenMode = oldFullScreenMode;
+                PlayerSettings.defaultScreenWidth = oldDefaultWidth;
+                PlayerSettings.defaultScreenHeight = oldDefaultHeight;
+            }
             if (result.summary.result != BuildResult.Succeeded)
                 throw new InvalidOperationException("Training player build failed: " + result.summary.result + "; errors=" + result.summary.totalErrors);
             File.WriteAllText(output + ".contract.json", JsonUtility.ToJson(new ContractManifest(), true));

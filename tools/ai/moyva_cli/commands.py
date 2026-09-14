@@ -84,6 +84,7 @@ def parser():
         t.add_argument("--preset",default="smoke");t.add_argument("--run-id");t.add_argument("--resume",action="store_true")
         t.add_argument("--profile",choices=["fast","standard","strict"],default="standard")
         t.add_argument("--max-steps",type=int);t.add_argument("--stage",type=int);t.add_argument("--seed",type=int);t.add_argument("--world-size",type=int)
+        t.add_argument("--arenas",type=int);t.add_argument("--initialize-from");t.add_argument("--learn-initial-castle",action="store_true",default=None)
         t.add_argument("--episode-decisions",type=int);t.add_argument("--time-scale",type=float);t.add_argument("--checkpoint-interval",type=int)
         t.add_argument("--base-port",type=int);t.add_argument("--trainer");t.add_argument("--results");t.add_argument("--visual",action="store_true",default=None)
         t.add_argument("--dry-run",action="store_true");t.add_argument("--wait",action="store_true");t.add_argument("--fix",action="store_true")
@@ -181,7 +182,7 @@ def dispatch(project,args):
         return Supervisor(project).launch({"kind":"test","test":args.suite}) if args.background else validate_unity(project,args.suite)
     if cmd in ("train","preflight"):
         preset=Presets(project).get(args.preset)
-        for key in ("max_steps","stage","seed","world_size","episode_decisions","time_scale","checkpoint_interval","base_port","trainer","results","visual"):
+        for key in ("arenas","initialize_from","learn_initial_castle","max_steps","stage","seed","world_size","episode_decisions","time_scale","checkpoint_interval","base_port","trainer","results","visual"):
             value=getattr(args,key,None)
             if value is not None:preset[key]=value
         Presets(project).validate(preset)
@@ -215,6 +216,7 @@ def dispatch(project,args):
             effective=read_json(store.path(args.run_id)/"effective-config.json",run)
             for key in preset:
                 if key in effective:preset[key]=effective[key]
+            preset["initialize_from"]=""  # Resume this run, not its historical parent.
             preset.update(trainer=str(store.path(args.run_id)/"trainer.yaml"),visual=run.get("mode")=="Visual")
             # Preserve the prior max_steps from its effective YAML, rather than resetting to the smoke preset.
             import yaml

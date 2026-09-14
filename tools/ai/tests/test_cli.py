@@ -145,7 +145,29 @@ class TerminalTests(unittest.IsolatedAsyncioTestCase):
                 app.query_one("#preset",Select).value="fullgame"
                 await pilot.pause();self.assertEqual(8,app.form()["stage"])
                 app.query_one("#field-run_id",Input).value="review-only"
-                await pilot.click("#review");await pilot.pause()
+                app.query_one("#review").press()
+                await pilot.pause()
                 self.assertGreater(len(app.screen_stack),1)
                 await pilot.click("#details-close");await pilot.press("3");await pilot.pause()
                 self.assertEqual("runs",app.query_one("#pages",ContentSwitcher).current)
+
+class CurriculumPreviewTests(unittest.TestCase):
+    setUp = ProjectFixture.setUp
+    def test_castle_and_parallel_presets_reach_canonical_launcher(self):
+        presets=Presets(self.project)
+        preset=presets.get("castle-first")
+        preset.update(arenas=4,initialize_from="castle-lesson")
+        args=legacy_arguments(self.project,preset,"next-lesson")
+        self.assertEqual(4,args.arenas)
+        self.assertEqual("castle-lesson",args.initialize_from)
+        self.assertTrue(args.learn_initial_castle)
+        self.assertEqual(5,args.stage)
+        preset["stage"]=1
+        with self.assertRaises(ControlError):presets.validate(preset)
+
+    def test_mosaic_has_non_overlapping_cells(self):
+        from moyva_cli.preview_window import arena_rectangles
+        rects=arena_rectangles(dict(x=100,y=20,width=1920,height=1080),4)
+        self.assertEqual(4,len(rects))
+        self.assertEqual(4,len({(r["x"],r["y"]) for r in rects}))
+        self.assertTrue(all(r["width"]==960 and r["height"]==540 for r in rects))

@@ -20,7 +20,12 @@ def legacy_arguments(project, preset, run_id, resume=False):
                "--seed",str(preset["seed"]),"--stage",str(preset["stage"]),"--world-size",str(preset["world_size"]),
                "--max-steps",str(preset["max_steps"]),"--time-scale",str(preset["time_scale"]),
                "--episode-decisions",str(preset["episode_decisions"]),"--checkpoint-interval",str(preset["checkpoint_interval"]),
+               "--summary-freq",str(preset.get("summary_freq",1000)),
+               "--screen-width",str(preset.get("screen_width",1280)),"--screen-height",str(preset.get("screen_height",720)),
                "--base-port",str(preset.get("base_port",5005)),"--no-build"]
+    arguments += ["--arenas", str(preset.get("arenas", 1))]
+    if preset.get("initialize_from"): arguments += ["--initialize-from", simple_name(preset["initialize_from"])]
+    if preset.get("learn_initial_castle"): arguments.append("--learn-initial-castle")
     if preset["visual"]:arguments.append("--visual")
     if project.settings.get("unity"):arguments += ["--unity",project.settings["unity"]]
     return moyva_train.parser().parse_args(arguments)
@@ -81,11 +86,17 @@ def preflight(project,preset,profile="standard",repair=False):
     report=doctor(project)
     blockers=[c for c in report["checks"] if c["state"]=="BLOCKED" and not (repair and c["name"]=="Contract")]
     port=int(preset.get("base_port",5005))
-    with socket.socket() as sock:
-        try:sock.bind(("127.0.0.1",port))
-        except OSError:blockers.append({"name":"Worker port","message":f"Port {port} is occupied."})
+    for worker_port in range(port, port + int(preset.get("arenas", 1))):
+        with socket.socket() as sock:
+            try:sock.bind(("127.0.0.1",worker_port))
+            except OSError:blockers.append({"name":"Worker port","message":f"Port {worker_port} is occupied."})
     if blockers:raise ControlError("PRE-FLIGHT BLOCKED: "+"; ".join(c["name"]+": "+c["message"] for c in blockers))
     Presets(project).validate(preset)
+    if preset.get("initialize_from"):
+        source=project.path(preset["results"])/simple_name(preset["initialize_from"])
+        metadata=read_json(source/"run.json",{})
+        if metadata.get("contract",{}).get("hash")!=project.contract()["hash"] or not list(source.glob("MoyvaStrategy/*.pt")):
+            raise ControlError("Initialize-from requires a compatible checkpoint in the selected results directory.")
     import yaml
     trainer=yaml.safe_load(project.path(preset["trainer"]).read_text())
     if set(trainer.get("behaviors",{}))!={"MoyvaStrategy"}:raise ControlError("Trainer must contain exactly MoyvaStrategy.")
@@ -110,7 +121,6 @@ def start_training(project,preset,run_id,resume=False,profile="standard"):
     Presets(project).validate(preset)
     run_id=simple_name(run_id)
     if project.path(preset["results"])!=project.results:
-        # Keep supervision and run lookup scoped to the explicitly selected results root.
         project.save_settings({"results":preset["results"]})
         project.results=project.path(preset["results"])
     run=RunStore(project)
@@ -135,11 +145,9 @@ def perform_task(project,task):
         return {"port":task["port"]}
     if kind=="train":
         preset=task["preset"]
-        # The only automatic retry is a pre-launch rebuild. Training failures never overwrite a run.
         preflight(project,preset,task.get("profile","standard"),repair=True)
         args=legacy_arguments(project,preset,task["run_id"],task.get("resume",False))
         run=project.results/task["run_id"]
-        # Legacy launcher reserves the new directory; do not pre-create it here.
         os.environ["MOYVA_CLI_PROCESS_RECORD"]=str(project.local/"processes"/(task["token"]+".json"))
         code=moyva_train.train(args)
         if code:

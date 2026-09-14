@@ -11,6 +11,7 @@ namespace Kruty1918.Moyva.AI.Training
             for (int i = 0; i < args.Length; i++)
             {
                 string flag = args[i];
+                if (flag == "-moyvaLearnInitialCastle") { config.learnInitialCastle = true; continue; }
                 if (flag != "-moyvaSeed" && flag != "-moyvaWorldSize" && flag != "-moyvaCurriculumStage"
                     && flag != "-moyvaTrainingTimeScale" && flag != "-moyvaEpisodeDecisions") continue;
                 if (++i == args.Length) throw new ArgumentException("Missing value for " + flag);
@@ -25,6 +26,12 @@ namespace Kruty1918.Moyva.AI.Training
                     else config.curriculum.stage = (TrainingCurriculumStage)value;
                 }
             }
+            // Separate ML-Agents player workers need distinct, reproducible maps.
+            int workerPort = Array.IndexOf(args, "--mlagents-port");
+            int basePort = Array.IndexOf(args, "-moyvaBasePort");
+            if (workerPort >= 0 && basePort >= 0 && workerPort + 1 < args.Length && basePort + 1 < args.Length)
+                config.baseSeed = unchecked(config.baseSeed + int.Parse(args[workerPort + 1], CultureInfo.InvariantCulture)
+                    - int.Parse(args[basePort + 1], CultureInfo.InvariantCulture));
             config.Validate();
         }
     }

@@ -25,6 +25,31 @@ namespace Kruty1918.Moyva.AI.Training.Tests
         }
 
         [UnityTest]
+        public IEnumerator CastleLessonStartsWithoutLearnerBuildingsAndOffersRealPlacement()
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            yield return new EnterPlayMode();
+            var config = TrainingConfig.Load(AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Moyva/Presets/AI/MoyvaTrainingConfig.json"));
+            config.curriculum.stage = TrainingCurriculumStage.Building;
+            config.learnInitialCastle = true;
+            var container = new DiContainer();
+            new TrainingInstaller().Install(container, config);
+            using (var simulation = (GameplayTrainingSimulation)container.Resolve<ITrainingSimulationFactory>().Create(0))
+            using (var environment = new TrainingEnvironment(0, config, simulation))
+            {
+                environment.BeginEpisode();
+                Assert.IsTrue(environment.IsReady, environment.Diagnostics.LastError);
+                var world = simulation.Episode;
+                Assert.IsEmpty(world.Placements.GetSavedPlacements().Where(p => p.OwnerId == simulation.PlayerId));
+                Assert.IsTrue(world.Placements.GetSavedPlacements().Any(p => p.OwnerId == TrainingGameplayScope.OpponentId));
+                var construction = simulation.Capabilities.Get(BotCapabilityId.Construction);
+                Assert.IsTrue(construction.Enumerate(simulation.PlayerId).Any(c => c.TargetKey == "castle-01"));
+                Assert.IsTrue(world.Turns.CanOwnerAct(simulation.PlayerId, out _));
+            }
+            yield return new ExitPlayMode();
+        }
+
+        [UnityTest]
         public IEnumerator RealUnitsCaptureDefendedSettlementsAndRewardsResetForBothOwners()
         {
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);

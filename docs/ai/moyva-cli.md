@@ -140,3 +140,37 @@ There is no automatic Library, system-cache or external-directory deletion. Free
 ```
 
 Ordinary Python tests use temporary run directories and mocked process boundaries; they do not launch Unity. Textual's headless pilot tests navigation, preset selection and settings review. Unity tests, builds, bridge commands and smoke training are separately executed workflows with explicit results; a unit-test pass does not imply those external workflows passed.
+
+### Gameplay preview and sequential lessons
+
+`castle-first` starts the learner without buildings, grants the normal starter
+resources, and exposes production construction actions (Building stage). The
+heuristic opponent keeps its starter settlement. Other stage presets keep their
+existing setup; stages unlock capabilities cumulatively, rather than isolating
+one action or guaranteeing mastery. Rewards and the neural contract are unchanged.
+
+```bash
+./moyva train --preset castle-first --run-id lesson-castle
+./moyva train --preset recruitment --initialize-from lesson-castle --run-id lesson-recruitment --visual
+./moyva train --preset fullgame --initialize-from lesson-recruitment --run-id lesson-fullgame --visual
+./moyva train --preset arenas-preview --run-id four-arenas
+```
+
+Wait for a checkpoint before using a run as a source. `--initialize-from` initializes
+a **new** run from compatible saved weights in the same results directory; it does
+not merge independently trained models. `run resume` continues the same run.
+Fine-tuning can forget previous skills: inspect performance again in FullGame.
+In the TUI, Advanced settings exposes **Parallel arenas** and **Continue skills
+from run ID**. Choose `castle-first` to enable the first-castle setup.
+
+The Unity spectator overlay provides speed 0.1–20×, zoom, fit-map, arrow-key pan,
+side-colored unit/building labels, current action, turn and reward. Building meshes
+come from the production registry and follow authoritative placement snapshots;
+no prefab behaviours or colliders are instantiated by the spectator. This is a
+training spectator, not the full interactive gameplay HUD or terrain renderer.
+
+`--arenas 1..16` uses independent Unity processes with one shared ML-Agents trainer.
+Worker seeds are deterministic and distinct. Visual TUI launches tile their native
+windows on Linux/X11 when wmctrl/xdotool is available; other platforms use ordinary
+Unity windows. This is a window mosaic, not several worlds inside one Unity scene.
+Multi-worker logs use ML-Agents' separate Player-N.log files.

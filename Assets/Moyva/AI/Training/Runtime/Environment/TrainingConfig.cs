@@ -8,6 +8,7 @@ namespace Kruty1918.Moyva.AI.Training
     public sealed class TrainingConfig
     {
         public int environmentCount = 1;
+        public bool learnInitialCastle = false;
         public int baseSeed = 1918;
         public int worldSize = 24;
         public string generatorGraphId = "testgeneratorgraph";
@@ -52,6 +53,8 @@ namespace Kruty1918.Moyva.AI.Training
 
         public void Validate()
         {
+            if (learnInitialCastle && (int)curriculum.stage < (int)TrainingCurriculumStage.Building)
+                throw new ArgumentException("Initial castle lesson requires Building or later curriculum.");
             if (environmentCount < 1 || maxTurnsPerEpisode < 1 || maxDecisionsPerEpisode < 1
                 || worldSize < 12 || worldSize > 128 || string.IsNullOrWhiteSpace(generatorGraphId)
                 || string.IsNullOrWhiteSpace(startingUnitTypeId)

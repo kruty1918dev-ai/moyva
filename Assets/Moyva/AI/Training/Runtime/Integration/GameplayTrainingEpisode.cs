@@ -52,6 +52,7 @@ namespace Kruty1918.Moyva.AI.Training
         public IGridService Grid => _container.Resolve<IGridService>();
         public IGridProjection Projection => _container.Resolve<IGridProjection>();
         public GameObject Root => _root;
+        internal IBuildingRegistry Buildings => _container.TryResolve<IBuildingRegistry>();
         internal IConstructionSaveSnapshotSource Placements => _container.Resolve<IConstructionSaveSnapshotSource>();
         internal IUnitMovementService Movement => _container.Resolve<IUnitMovementService>();
         internal IUnitMovementQuery MovementQuery => _container.Resolve<IUnitMovementQuery>();
@@ -148,6 +149,14 @@ namespace Kruty1918.Moyva.AI.Training
                     foreach (string owner in new[] { TrainingGameplayScope.LearnerId, TrainingGameplayScope.OpponentId })
                     {
                         starter.TryGrant(null, owner);
+                        // The learner must submit real construction actions in this lesson.
+                        // The opponent retains its production starter settlement.
+                        if (config.learnInitialCastle && owner == TrainingGameplayScope.LearnerId)
+                        {
+                            if (!Turns.TryEndTurn(owner, out var lessonReason))
+                                throw new InvalidOperationException(lessonReason);
+                            continue;
+                        }
                         var bootstrap = _container.Resolve<IConstructionBootstrapQuery>();
                         if (!bootstrap.RequiresInitialCastle(owner, out string castle))
                             FullGameSetupError = "No required initial castle was found in the production registry.";

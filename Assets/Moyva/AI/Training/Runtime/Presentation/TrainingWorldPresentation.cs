@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
@@ -8,6 +9,100 @@ namespace Kruty1918.Moyva.AI.Training
     public sealed class TrainingWorldPresentation : MonoBehaviour
     {
         private readonly List<Object> _assets = new List<Object>();
+        private GameplayTrainingEpisode _episode;
+        private UnityEngine.Camera _camera;
+        private float _fitSize;
+        private Vector3 _fitPosition;
+        private float _nextRefresh;
+        private readonly Dictionary<Vector2Int, GameObject> _buildings = new Dictionary<Vector2Int, GameObject>();
+        internal void Observe(GameplayTrainingEpisode episode) { _episode = episode; RefreshBuildings(); }
+        public void Zoom(float factor)
+        {
+            if (_camera == null) return;
+            _camera.orthographicSize = factor == 0 ? _fitSize : Mathf.Clamp(_camera.orthographicSize * factor, 2, _fitSize * 2);
+            if (factor == 0) _camera.transform.position = _fitPosition;
+        }
+        private static void CopyRenderTree(Transform source, Transform parent)
+        {
+            // Copy only render data: prefab behaviours/colliders must never become a second simulation.
+            var copy = new GameObject(source.name);
+            copy.transform.SetParent(parent, false);
+            copy.transform.localPosition = source.localPosition;
+            copy.transform.localRotation = source.localRotation;
+            copy.transform.localScale = source.localScale;
+            var filter = source.GetComponent<MeshFilter>();
+            var renderer = source.GetComponent<MeshRenderer>();
+            if (filter != null && renderer != null)
+            {
+                copy.AddComponent<MeshFilter>().sharedMesh = filter.sharedMesh;
+                copy.AddComponent<MeshRenderer>().sharedMaterials = renderer.sharedMaterials;
+            }
+            foreach (Transform child in source) CopyRenderTree(child, copy.transform);
+        }
+        private void RefreshBuildings()
+        {
+            if (_episode == null || _episode.Root == null || !_episode.EconomyInstalled) return;
+            var placements = _episode.Placements.GetSavedPlacements();
+            var cells = new HashSet<Vector2Int>(placements.Select(p => p.Position));
+            foreach (var cell in _buildings.Keys.Where(c => !cells.Contains(c)).ToArray())
+            { Destroy(_buildings[cell]); _buildings.Remove(cell); }
+            foreach (var placement in placements)
+            {
+                var definition = _episode.Buildings.GetById(placement.BuildingId);
+                string identity = placement.BuildingId + ":" + placement.Rotation;
+                if (_buildings.TryGetValue(placement.Position, out var previous))
+                {
+                    if (previous.name == identity) continue;
+                    Destroy(previous); _buildings.Remove(placement.Position);
+                }
+                var building = new GameObject(identity);
+                building.transform.SetParent(transform, false);
+                building.transform.position = _episode.Projection.GridToWorld(placement.Position)
+                    + Vector3.up * (definition?.ResolveVisualYOffset() ?? 0);
+                building.transform.rotation = Quaternion.Euler(0, (int)placement.Rotation * 90, 0);
+                if (definition?.Prefab != null) CopyRenderTree(definition.Prefab.transform, building.transform);
+                _buildings.Add(placement.Position, building);
+            }
+        }
+        private void Update()
+        {
+            if (Time.unscaledTime < _nextRefresh) return;
+            _nextRefresh = Time.unscaledTime + 0.25f;
+            RefreshBuildings();
+        }
+        private void Label(Vector3 point, string text, bool learner)
+        {
+            var screen = _camera.WorldToScreenPoint(point);
+            if (screen.z <= 0) return;
+            var old = GUI.color;
+            GUI.color = learner ? new Color(0.45f, 0.8f, 1) : new Color(1, 0.5f, 0.4f);
+            GUI.Box(new Rect(screen.x - 65, Screen.height - screen.y - 20, 130, 22), text);
+            GUI.color = old;
+        }
+        private void OnGUI()
+        {
+            if (_camera == null || !_camera.enabled || _episode?.Root == null) return;
+            var input = Event.current;
+            if (input.type == EventType.ScrollWheel && input.mousePosition.y > 320)
+            { Zoom(Mathf.Pow(1.1f, input.delta.y)); input.Use(); }
+            if (input.type == EventType.KeyDown)
+            {
+                Vector3 direction = input.keyCode == KeyCode.LeftArrow ? -_camera.transform.right
+                    : input.keyCode == KeyCode.RightArrow ? _camera.transform.right
+                    : input.keyCode == KeyCode.UpArrow ? _camera.transform.up
+                    : input.keyCode == KeyCode.DownArrow ? -_camera.transform.up : Vector3.zero;
+                _camera.transform.position += direction * _camera.orthographicSize * 0.1f;
+            }
+            foreach (var id in _episode.Units.GetAllUnitIds())
+                if (_episode.Units.TryGetUnitPosition(id, out var cell))
+                    Label(_episode.Projection.GridToWorld(cell), _episode.Units.GetUnitTypeId(id),
+                        _episode.UnitOwners.GetUnitOwnerId(id) == TrainingGameplayScope.LearnerId);
+            if (_episode.EconomyInstalled)
+                foreach (var placement in _episode.Placements.GetSavedPlacements())
+                    Label(_episode.Projection.GridToWorld(placement.Position),
+                        _episode.Buildings.GetById(placement.BuildingId)?.DisplayName ?? placement.BuildingId,
+                        placement.OwnerId == TrainingGameplayScope.LearnerId);
+        }
         public void Build(IGridService grid, IGridProjection projection)
         {
             Vector3 origin = projection.GridToWorld(Vector2Int.zero);
@@ -58,6 +153,8 @@ namespace Kruty1918.Moyva.AI.Training
             camera.transform.position = centerPoint + normal * 100;
             camera.transform.rotation = Quaternion.LookRotation(-normal, v.normalized);
             camera.farClipPlane = 300;
+            camera.backgroundColor = new Color(0.08f, 0.12f, 0.16f);
+            _camera = camera; _fitSize = camera.orthographicSize; _fitPosition = camera.transform.position;
             var lightObject = new GameObject("TrainingLight");
             lightObject.transform.SetParent(transform, false);
             lightObject.transform.rotation = camera.transform.rotation;

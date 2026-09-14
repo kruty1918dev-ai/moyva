@@ -6,6 +6,17 @@ namespace Kruty1918.Moyva.AI.Training.Tests
     public sealed class TrainingReadinessTests
     {
         [Test]
+        public void ArenaWorkerSeedAndCastleLessonAreExplicitCliOverrides()
+        {
+            var config = new TrainingConfig();
+            TrainingCommandLine.Apply(config, new[] { "-moyvaCurriculumStage", "5", "-moyvaLearnInitialCastle",
+                "-moyvaSeed", "1918", "-moyvaBasePort", "5005", "--mlagents-port", "5008" }, false);
+            Assert.AreEqual(1921, config.baseSeed);
+            Assert.IsTrue(config.learnInitialCastle);
+            Assert.AreEqual(TrainingCurriculumStage.Building, config.curriculum.stage);
+        }
+
+        [Test]
         public void MissingGameplayScopeFailsInsteadOfReturningScaffold()
         {
             var factory = new GameplayTrainingSimulationFactory();

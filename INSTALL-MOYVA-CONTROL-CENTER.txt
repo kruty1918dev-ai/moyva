@@ -1,0 +1,27 @@
+MOYVA CONTROL CENTER V3 — SIMPLIFIED TRAINING UI
+
+IMPORTANT: Stop any currently running Moyva training before installing this update.
+
+Install over the Moyva project root:
+
+  cd ~/Документи/Projects/Moyva/Game-Project/moyva
+  unzip -o ~/Завантаження/moyva-control-center-simple-v3-2026-09-14.zip -d .
+  python3 INSTALL-MOYVA-CONTROL-CENTER-V3.py
+  chmod +x moyva moyva-train
+  ./moyva test quick
+  ./moyva
+
+Main workflow:
+
+  Training -> choose Quick FullGame check -> Start fast
+
+or, to see the game:
+
+  Training -> choose training type -> Start & watch
+
+Visual preview is launched windowed at 1280x720 by default. The Focus preview button
+tries to bring/maximize it on Linux when wmctrl or xdotool is already installed.
+No system package is installed automatically.
+
+Press Q while a training run is active. The UI will ask whether to keep training in
+the background or stop training safely before closing. Normal close defaults to stopping the run.

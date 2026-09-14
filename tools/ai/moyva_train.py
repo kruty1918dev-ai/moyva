@@ -266,6 +266,22 @@ def train(args):
     speed = args.time_scale if args.time_scale is not None else config.get("visualTimeScale" if mode == "Visual" else "headlessTimeScale", 1)
     if not 0.1 <= speed <= 20 or not 12 <= size <= 128 or not 0 <= stage <= 8:
         raise LaunchError("Allowed ranges: time-scale 0.1–20; world-size 12–128; stage 0–8.")
+    arenas = getattr(args, "arenas", 1)
+    if not 1 <= arenas <= 16:
+        raise LaunchError("Arenas must be between 1 and 16.")
+    initialize = getattr(args, "initialize_from", None)
+    if initialize:
+        from moyva_cli.config import simple_name
+        simple_name(initialize)
+        if resume or initialize == run_id:
+            raise LaunchError("Initialize-from needs a new run, not resume or the source run.")
+        source = results / initialize
+        if not (source / "run.json").is_file() or not list(source.glob("MoyvaStrategy/*.pt")):
+            raise LaunchError("Initialize-from requires an existing training checkpoint in this results directory.")
+        if json.loads((source / "run.json").read_text())["contract"]["hash"] != current["hash"]:
+            raise LaunchError("Initialize-from checkpoint contract mismatch.")
+    if getattr(args, "learn_initial_castle", False) and stage < 5:
+        raise LaunchError("The initial castle lesson requires Building or later curriculum.")
     run_dir.mkdir(parents=True, exist_ok=resume or args.force)
     if args.max_steps:
         trainer["behaviors"][BEHAVIOR]["max_steps"] = args.max_steps
@@ -273,6 +289,10 @@ def train(args):
         if args.checkpoint_interval < 1:
             raise LaunchError("Checkpoint interval must be positive.")
         trainer["behaviors"][BEHAVIOR]["checkpoint_interval"] = args.checkpoint_interval
+    if getattr(args, "summary_freq", None):
+        if args.summary_freq < 1:
+            raise LaunchError("Summary frequency must be positive.")
+        trainer["behaviors"][BEHAVIOR]["summary_freq"] = args.summary_freq
     # Keep the exact effective YAML alongside metadata; never edit the authored preset.
     effective_trainer = run_dir / "trainer.yaml"
     if resume and effective_trainer.exists():
@@ -281,26 +301,39 @@ def train(args):
     effective_trainer.write_text(yaml.safe_dump(trainer), encoding="utf-8")
     metadata = dict(run_id=run_id, started_utc=dt.datetime.now(dt.timezone.utc).isoformat(), commit=git_value("rev-parse", "HEAD"),
                     branch=git_value("branch", "--show-current"), contract=current, trainer_config=str(trainer_path),
-                    seed=seed, world_size=size, stage=stage, mode=mode, executable=str(player))
+                    seed=seed, world_size=size, stage=stage, mode=mode, executable=str(player),
+                    arenas=arenas, initialize_from=initialize, learn_initial_castle=getattr(args, "learn_initial_castle", False))
     if not resume:
         (run_dir / "run.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     else:
         (run_dir / "resume.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     command = [sys.executable, "-m", "mlagents.trainers.learn", str(effective_trainer), "--run-id", run_id,
-               "--env", str(player), "--results-dir", str(results), "--num-envs", "1", "--base-port", str(args.base_port), "--seed", str(seed), "--time-scale", str(speed)]
+               "--env", str(player), "--results-dir", str(results), "--num-envs", str(arenas), "--base-port", str(args.base_port), "--seed", str(seed), "--time-scale", str(speed)]
     if resume:
         command.append("--resume")
     else:
         # We reserve the directory above for metadata. Existing runs were rejected
         # before this point unless the user explicitly requested --force.
         command.append("--force")
+    if initialize:
+        command += ["--initialize-from", initialize]
     if mode == "HeadlessFast":
         command.append("--no-graphics")
     if args.verbose:
         command.append("--debug")
     command += ["--env-args", "-moyvaRequireTrainer", "-moyvaTrainingMode", mode, "-moyvaSeed", str(seed),
                 "-moyvaWorldSize", str(size), "-moyvaCurriculumStage", str(stage), "-moyvaTrainingTimeScale", str(speed),
-                "-logFile", str(run_dir / "unity.log")]
+                "-moyvaBasePort", str(args.base_port)]
+    if arenas == 1:
+        command += ["-logFile", str(run_dir / "unity.log")]
+    if getattr(args, "learn_initial_castle", False):
+        command.append("-moyvaLearnInitialCastle")
+    if mode == "Visual":
+        command += [
+            "-screen-fullscreen", "0",
+            "-screen-width", str(getattr(args, "screen_width", 1280) or 1280),
+            "-screen-height", str(getattr(args, "screen_height", 720) or 720),
+        ]
     if args.episode_decisions:
         command += ["-moyvaEpisodeDecisions", str(args.episode_decisions)]
     log(f"run={run_id} behavior={BEHAVIOR} contract=v{current['version']} {current['hash']}")
@@ -313,8 +346,12 @@ def train(args):
     process_record = os.environ.get("MOYVA_CLI_PROCESS_RECORD")
     if process_record and Path(process_record).is_file():
         atomic_json(run_dir / "cli-status.json", json.loads(Path(process_record).read_text()))
-    atomic_json(run_dir / "effective-config.json", dict(metadata, max_steps=trainer["behaviors"][BEHAVIOR]["max_steps"],
-        episode_decisions=args.episode_decisions, time_scale=speed, checkpoint_interval=trainer["behaviors"][BEHAVIOR].get("checkpoint_interval")))
+    atomic_json(run_dir / "effective-config.json", dict(
+        metadata, max_steps=trainer["behaviors"][BEHAVIOR]["max_steps"],
+        episode_decisions=args.episode_decisions, time_scale=speed,
+        checkpoint_interval=trainer["behaviors"][BEHAVIOR].get("checkpoint_interval"),
+        summary_freq=trainer["behaviors"][BEHAVIOR].get("summary_freq"),
+        screen_width=getattr(args, "screen_width", None), screen_height=getattr(args, "screen_height", None)))
     with (run_dir / "cli.log").open("a", encoding="utf-8") as cli_log:
         cli_log.write(json.dumps(dict(time=utc(),component="training",event="start",resume=resume,command=command)) + "\n")
     log("Live ML-Agents log: " + str(run_dir / "mlagents.log"))
@@ -349,8 +386,14 @@ def parser():
             p.add_argument("--seed", type=int)
             p.add_argument("--world-size", type=int)
             p.add_argument("--stage", type=int)
+            p.add_argument("--arenas", type=int, default=1)
+            p.add_argument("--initialize-from")
+            p.add_argument("--learn-initial-castle", action="store_true")
             p.add_argument("--max-steps", type=int)
             p.add_argument("--checkpoint-interval", type=int)
+            p.add_argument("--summary-freq", type=int)
+            p.add_argument("--screen-width", type=int, default=1280)
+            p.add_argument("--screen-height", type=int, default=720)
             p.add_argument("--base-port", type=int, default=5005)
             p.add_argument("--episode-decisions", type=int)
             p.add_argument("--force", action="store_true")

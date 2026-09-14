@@ -77,8 +77,10 @@ namespace Kruty1918.Moyva.AI.Training
             view.transform.SetParent(transform, false);
             _worldView = view.AddComponent<TrainingWorldPresentation>();
             _worldView.Build(episode.Grid, episode.Projection);
+            _worldView.Observe(episode);
             RefreshCameras();
         }
+        public void Zoom(float factor) { if (_worldView != null) _worldView.Zoom(factor); }
         private void OnDestroy() => RestoreCameras();
     }
 }
