@@ -75,6 +75,9 @@ namespace Kruty1918.Moyva.Bootstrap
                 .NonLazy();
             Container.BindExecutionOrder<GameplayProgressClockConfigurator>(91);
             Container.BindInterfacesTo<BotController>().AsSingle().NonLazy();
+            Container.Bind<Kruty1918.Moyva.AI.Bot.IBotPolicyDriverFactory>()
+                .To<Kruty1918.Moyva.AI.Bot.MoyvaMlAgentsPolicyDriverFactory>()
+                .AsSingle();
             Kruty1918.Moyva.AI.Bot.BotRuntimeInstaller.Install(Container);
 
             Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();

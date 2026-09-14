@@ -110,7 +110,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     CompactControlButton(sb, "RANDOMIZE SEED", "Globals.moyvaMenu.RandomSeed()");
                     Select(sb, "World size", WorldSizeOptions, (int)view.Size, "Globals.moyvaMenu.SetWorldSizeValue(event)");
                     Select(sb, "Map type", MapTypeOptions, (int)view.MapType, "Globals.moyvaMenu.SetMapTypeValue(event)");
-                    Select(sb, "Difficulty", DifficultyOptions, (int)view.Difficulty, "Globals.moyvaMenu.SetDifficultyValue(event)");
+                    if (state.PlayFlow == HomeMenuPlayFlow.HumanVsBot)
+                        Select(sb, "Bot difficulty", view.BotDifficultyOptions, view.SelectedBotDifficultyIndex, "Globals.moyvaMenu.SetBotDifficultyValue(event)");
+                    else
+                        Select(sb, "Difficulty", DifficultyOptions, (int)view.Difficulty, "Globals.moyvaMenu.SetDifficultyValue(event)");
                     sb.Append("</view>");
                     ActionButton(
                         sb,

@@ -1,0 +1,77 @@
+{
+  "defaultId": "normal",
+  "difficulties": [
+    {
+      "id": "easy",
+      "displayName": "Легко",
+      "description": "Простий бот. Використовує вказану легку модель, якщо вона додана в Resources; інакше fallback у heuristic.",
+      "policyMode": 0,
+      "visibleDelay": 0.35,
+      "modelProfile": {
+        "enabled": false,
+        "modelName": "Легко",
+        "modelResourcePath": "AI/Models/MoyvaStrategy_Easy",
+        "trainingRunId": "",
+        "curriculumStage": 8,
+        "notes": "Поклади легку .onnx ModelAsset у Resources/AI/Models/MoyvaStrategy_Easy або зміни шлях тут.",
+        "contractVersion": 2,
+        "contractHash": "5a00e6a1cb5ae597d108f32f94a4fc9ba41a93cfd4a2d491c0e1506fe21caadb"
+      },
+      "policyModeName": "Heuristic"
+    },
+    {
+      "id": "normal",
+      "displayName": "Нормально",
+      "description": "Стандартний бот. За замовчуванням heuristic, поки не призначена сумісна модель.",
+      "policyMode": 0,
+      "visibleDelay": 0.35,
+      "modelProfile": {
+        "enabled": false,
+        "modelName": "Нормально",
+        "modelResourcePath": "AI/Models/MoyvaStrategy_Normal",
+        "trainingRunId": "",
+        "curriculumStage": 8,
+        "notes": "Для ML inference зміни policyMode на 2, enabled на true і додай сумісну модель у Resources.",
+        "contractVersion": 2,
+        "contractHash": "5a00e6a1cb5ae597d108f32f94a4fc9ba41a93cfd4a2d491c0e1506fe21caadb"
+      },
+      "policyModeName": "Heuristic"
+    },
+    {
+      "id": "hard",
+      "displayName": "Важко",
+      "description": "Сильніший бот. Може посилатись на окрему hard-модель.",
+      "policyMode": 0,
+      "visibleDelay": 0.25,
+      "modelProfile": {
+        "enabled": false,
+        "modelName": "Важко",
+        "modelResourcePath": "AI/Models/MoyvaStrategy_Hard",
+        "trainingRunId": "",
+        "curriculumStage": 8,
+        "notes": "Для hard-моделі додай відповідний ModelAsset і ввімкни MLAgentsInference.",
+        "contractVersion": 2,
+        "contractHash": "5a00e6a1cb5ae597d108f32f94a4fc9ba41a93cfd4a2d491c0e1506fe21caadb"
+      },
+      "policyModeName": "Heuristic"
+    },
+    {
+      "id": "insane",
+      "displayName": "Неможливо",
+      "description": "Найсильніший бот. Може посилатись на окрему insane-модель.",
+      "policyMode": 0,
+      "visibleDelay": 0.15,
+      "modelProfile": {
+        "enabled": false,
+        "modelName": "Неможливо",
+        "modelResourcePath": "AI/Models/MoyvaStrategy_Insane",
+        "trainingRunId": "",
+        "curriculumStage": 8,
+        "notes": "Для insane-моделі додай відповідний ModelAsset і ввімкни MLAgentsInference.",
+        "contractVersion": 2,
+        "contractHash": "5a00e6a1cb5ae597d108f32f94a4fc9ba41a93cfd4a2d491c0e1506fe21caadb"
+      },
+      "policyModeName": "Heuristic"
+    }
+  ]
+}

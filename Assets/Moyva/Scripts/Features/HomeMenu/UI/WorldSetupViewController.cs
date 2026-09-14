@@ -84,6 +84,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             }
         }
 
+        public string SelectedBotDifficultyId => Difficulty.ToString().ToLowerInvariant();
+
         public Button CreateWorldButton => _nextButton;
 
         public event Action OnButtonNextClicked;

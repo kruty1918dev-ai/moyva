@@ -57,14 +57,16 @@ namespace Kruty1918.Moyva.SaveSystem
         public static bool IsLocalPlayerHost { get; private set; }
         public static string LocalPlayerId { get; private set; } = string.Empty;
         public static string BotPlayerId { get; private set; } = string.Empty;
+        public static string BotDifficultyId { get; private set; } = string.Empty;
         public static bool HasBotOpponent => Mode == GameLaunchMode.MenuBotGame && !string.IsNullOrEmpty(BotPlayerId);
 
-        public static void ConfigureBotOpponent(string playerId)
+        public static void ConfigureBotOpponent(string playerId, string difficultyId = null)
         {
             if (Mode != GameLaunchMode.MenuNewGame || MaxPlayers != 2
                 || string.IsNullOrWhiteSpace(playerId) || playerId == LocalPlayerId)
                 throw new InvalidOperationException("A bot opponent requires a two-player local new game.");
             BotPlayerId = playerId.Trim();
+            BotDifficultyId = string.IsNullOrWhiteSpace(difficultyId) ? string.Empty : difficultyId.Trim();
             Mode = GameLaunchMode.MenuBotGame;
             _autoLoadOverride = false;
         }
@@ -307,6 +309,7 @@ namespace Kruty1918.Moyva.SaveSystem
         private static void ClearWorldSettings()
         {
             BotPlayerId = string.Empty;
+            BotDifficultyId = string.Empty;
             HasWorldSettings = false;
             WorldName = string.Empty;
             Seed = 0;
@@ -322,6 +325,7 @@ namespace Kruty1918.Moyva.SaveSystem
         private static void SetLocalPlayerRole(bool? isLocalPlayerHost, string localPlayerId)
         {
             BotPlayerId = string.Empty;
+            BotDifficultyId = string.Empty;
             HasLocalPlayerRole = isLocalPlayerHost.HasValue || !string.IsNullOrWhiteSpace(localPlayerId);
             IsLocalPlayerHost = isLocalPlayerHost ?? false;
             LocalPlayerId = string.IsNullOrWhiteSpace(localPlayerId) ? string.Empty : localPlayerId.Trim();

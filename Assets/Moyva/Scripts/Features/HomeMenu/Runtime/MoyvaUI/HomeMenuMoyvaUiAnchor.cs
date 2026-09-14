@@ -404,6 +404,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void SetWorldSizeValue(object value) { }
             public void SetMapTypeValue(object value) { }
             public void SetDifficultyValue(object value) { }
+            public void SetBotDifficultyValue(object value) { }
             public void StartGame() { }
             public void LeaveLobby() { }
             public void RefreshRooms() { }

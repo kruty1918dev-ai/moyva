@@ -26,6 +26,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         /// <summary>Рівень складності.</summary>
         Difficulty Difficulty { get; set; }
 
+        /// <summary>Ідентифікатор JSON-профілю бота для Human vs Bot матчу.</summary>
+        string SelectedBotDifficultyId { get; }
+
         /// <summary>Подія натискання кнопки створення світу.</summary>
         event Action OnButtonNextClicked;
 

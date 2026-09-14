@@ -7,6 +7,8 @@ using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Kruty1918.Moyva.Economy.Runtime;
 using Zenject;
+using System;
+using System.Reflection;
 
 namespace Kruty1918.Moyva.AI.Bot
 {
@@ -18,11 +20,35 @@ namespace Kruty1918.Moyva.AI.Bot
             var config = asset != null ? JsonUtility.FromJson<BotRuntimeConfig>(asset.text) : new BotRuntimeConfig();
             var profile = Resources.Load<TextAsset>(config.modelProfileResourceId);
             if (profile != null) config.modelProfile = JsonUtility.FromJson<BotModelProfile>(profile.text);
+            ApplyLaunchDifficulty(config);
             config.Validate();
             container.Bind<BotRuntimeConfig>().FromInstance(config.Snapshot()).AsSingle();
             container.Bind<BotTelemetryHub>().FromInstance(new BotTelemetryHub(config.telemetryCapacity, config.telemetryEnabled)).AsSingle();
             container.Bind<IBotDecisionOrchestrator>().FromMethod(context => Create(context.Container)).AsSingle();
             container.Bind<BotTelemetryView>().FromNewComponentOnNewGameObject().AsSingle().NonLazy();
+        }
+
+        private static void ApplyLaunchDifficulty(BotRuntimeConfig config)
+        {
+            if (config == null)
+                return;
+
+            var registry = BotDifficultyRegistry.Load(config.difficultyRegistryResourceId);
+            var selected = registry.Select(ReadLaunchBotDifficultyId());
+            config.selectedDifficultyId = selected.id;
+            config.selectedDifficultyName = selected.displayName;
+            config.policyMode = selected.policyMode;
+            config.modelProfile = selected.modelProfile ?? new BotModelProfile();
+            config.curriculumStage = config.modelProfile.curriculumStage;
+            if (selected.visibleDelay >= 0f)
+                config.visibleDelay = selected.visibleDelay;
+        }
+
+        private static string ReadLaunchBotDifficultyId()
+        {
+            var type = Type.GetType("Kruty1918.Moyva.SaveSystem.GameLaunchContext, Kruty1918.Moyva.SaveSystem");
+            var property = type?.GetProperty("BotDifficultyId", BindingFlags.Public | BindingFlags.Static);
+            return property?.GetValue(null) as string;
         }
         private static IBotDecisionOrchestrator Create(DiContainer container)
         {

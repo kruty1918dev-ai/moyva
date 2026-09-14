@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Kruty1918.Moyva.AI.Bot;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Networking;
@@ -36,6 +38,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly List<RoomInfo> _rooms = new();
         private readonly List<LobbyUserInfo> _lobbyUsers = new();
         private readonly List<KickPlayerInfo> _kickPlayers = new();
+        private readonly BotDifficultyRegistry _botDifficulties;
 
         private readonly Button _createRoomNextButton;
         private readonly Button _worldCreateButton;
@@ -55,6 +58,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             _state = state;
             Controls = new HomeMenuControlsEditor(state, this, hotkeys, controlSettings, devices);
+            _botDifficulties = BotDifficultyRegistry.Load();
             _createRoomNextButton = CreateHiddenButton("MoyvaUI_CreateRoom_Next");
             _worldCreateButton = CreateHiddenButton("MoyvaUI_World_Create");
             _lobbyStartButton = CreateHiddenButton("MoyvaUI_Lobby_Start");
@@ -70,6 +74,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Size = WorldSize.Medium;
             MapType = MapType.Continents;
             Difficulty = Difficulty.Normal;
+            SelectedBotDifficultyId = _botDifficulties.Select(null).id;
             SelectedMode = NetworkProviderType.Relay;
             SetDefaultGraphics();
         }
@@ -111,6 +116,18 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public WorldSize Size { get; set; }
         public MapType MapType { get; set; }
         public Difficulty Difficulty { get; set; }
+        public string SelectedBotDifficultyId { get; private set; }
+        public int SelectedBotDifficultyIndex
+        {
+            get
+            {
+                for (var i = 0; i < _botDifficulties.difficulties.Length; i++)
+                    if (string.Equals(_botDifficulties.difficulties[i].id, SelectedBotDifficultyId, StringComparison.OrdinalIgnoreCase))
+                        return i;
+                return 0;
+            }
+        }
+        public string BotDifficultyOptions => string.Join("|", _botDifficulties.difficulties.Select(d => d.displayName));
         public Button CreateWorldButton => _worldCreateButton;
 
         public string PlayerName { get; set; }
@@ -622,6 +639,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetDifficulty(Difficulty difficulty)
         {
             Difficulty = difficulty;
+            OnSettingsChanged?.Invoke();
+            _state.MarkDirty();
+        }
+
+        public void SetBotDifficultyIndex(int index)
+        {
+            if (_botDifficulties.difficulties == null || _botDifficulties.difficulties.Length == 0)
+                return;
+
+            index = Mathf.Clamp(index, 0, _botDifficulties.difficulties.Length - 1);
+            SelectedBotDifficultyId = _botDifficulties.difficulties[index].id;
             OnSettingsChanged?.Invoke();
             _state.MarkDirty();
         }

@@ -196,7 +196,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     isLocalPlayerHost: true,
                     localPlayerId: localId);
                 if (botMatch)
-                    GameLaunchContext.ConfigureBotOpponent(players[1].PlayerId);
+                    GameLaunchContext.ConfigureBotOpponent(players[1].PlayerId, _viewController.SelectedBotDifficultyId);
             }
             else
             {

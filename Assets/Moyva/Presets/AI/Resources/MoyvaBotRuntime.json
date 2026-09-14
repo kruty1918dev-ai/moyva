@@ -11,5 +11,8 @@
   "telemetryEnabled": true,
   "detailedTelemetry": false,
   "telemetryCapacity": 128,
-  "curriculumStage": 8
+  "curriculumStage": 8,
+  "difficultyRegistryResourceId": "MoyvaBotDifficultyRegistry",
+  "selectedDifficultyId": "normal",
+  "selectedDifficultyName": "Normal"
 }
