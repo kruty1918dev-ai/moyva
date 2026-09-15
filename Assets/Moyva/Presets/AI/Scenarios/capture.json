@@ -3,12 +3,74 @@
     "id": "capture",
     "title": "Capture",
     "legacyStage": 6,
-    "learnerBuildsInitialCastle": false,
+    "learnerBuildsInitialCastle": true,
     "fullGame": false,
     "prerequisites": [
       "combat-defense"
     ],
     "steps": [
+      {
+        "criterion": 1,
+        "requiredCount": 1,
+        "threshold": 0,
+        "id": "castle-operational",
+        "goal": 1,
+        "buildingTypeId": "castle-01"
+      },
+      {
+        "criterion": 2,
+        "requiredCount": 1,
+        "threshold": 0,
+        "id": "wood-production",
+        "goal": 2,
+        "resourceId": "walnut-wood-materials-resources",
+        "buildingTypeId": "wood-camp",
+        "minProductionPerTurn": 1.0
+      },
+      {
+        "criterion": 3,
+        "requiredCount": 1,
+        "threshold": 0,
+        "id": "stable-economy",
+        "goal": 3,
+        "requiredTurns": 3,
+        "resources": [
+          {
+            "resourceId": "walnut-wood-materials-resources",
+            "minStock": 1.0,
+            "minProductionPerTurn": 1.0
+          }
+        ]
+      },
+      {
+        "criterion": 4,
+        "requiredCount": 1,
+        "threshold": 0,
+        "id": "unit-recruited",
+        "goal": 4,
+        "unitTypeId": "warrior"
+      },
+      {
+        "criterion": 5,
+        "requiredCount": 1,
+        "threshold": 0,
+        "id": "movement",
+        "goal": 5
+      },
+      {
+        "criterion": 6,
+        "requiredCount": 1,
+        "threshold": 0,
+        "id": "scouting",
+        "goal": 5
+      },
+      {
+        "criterion": 7,
+        "requiredCount": 1,
+        "threshold": 0,
+        "id": "combat",
+        "goal": 6
+      },
       {
         "criterion": 8,
         "requiredCount": 1,
@@ -19,21 +81,14 @@
       }
     ],
     "startingConditions": {
-      "learnerStartsWithCastle": true,
-      "learnerMustPlaceCastle": false,
+      "learnerStartsWithCastle": false,
+      "learnerMustPlaceCastle": true,
       "startingResources": [],
-      "startingUnits": [
-        {
-          "unitTypeId": "warrior",
-          "count": 1,
-          "owner": "learner",
-          "deployed": true
-        }
-      ],
+      "startingUnits": [],
       "opponent": {
-        "enabled": true,
-        "startingUnits": 1,
-        "startingCastle": true
+        "enabled": false,
+        "startingUnits": 0,
+        "startingCastle": false
       },
       "objectives": [
         {

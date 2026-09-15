@@ -112,7 +112,7 @@ namespace Kruty1918.Moyva.AI.Training
                 return Select(firstUnmastered ?? ordered.First());
             }
             int post = _random.Next(Math.Max(1, _config.fullGameWeightAfterBasics + _config.weakSkillWeightAfterBasics + _config.reviewWeightAfterBasics));
-            var full = _catalog.Get("full-game");
+            var full = _catalog.Get("full-game-autonomous");
             if (post < _config.fullGameWeightAfterBasics && full != null) return Select(full);
             post -= _config.fullGameWeightAfterBasics;
             var weak = ordered.Where(s => !s.fullGame).OrderBy(s => Skill(s.id).LastEvaluationRate).FirstOrDefault();
@@ -242,4 +242,3 @@ namespace Kruty1918.Moyva.AI.Training
         }
     }
 }
-

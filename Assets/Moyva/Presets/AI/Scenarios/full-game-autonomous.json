@@ -1,13 +1,12 @@
 {
   "scenario": {
-    "id": "combo-field-ops",
-    "title": "Movement + combat review",
-    "legacyStage": 2,
+    "id": "full-game-autonomous",
+    "title": "Full game autonomous",
+    "legacyStage": 8,
     "learnerBuildsInitialCastle": true,
-    "fullGame": false,
+    "fullGame": true,
     "prerequisites": [
-      "movement-scouting",
-      "combat-defense"
+      "capture"
     ],
     "steps": [
       {
@@ -71,6 +70,21 @@
         "threshold": 0,
         "id": "combat",
         "goal": 6
+      },
+      {
+        "criterion": 8,
+        "requiredCount": 1,
+        "threshold": 0,
+        "id": "capture",
+        "goal": 7,
+        "objectiveType": "settlement"
+      },
+      {
+        "criterion": 9,
+        "requiredCount": 1,
+        "threshold": 0,
+        "id": "match-won",
+        "goal": 8
       }
     ],
     "startingConditions": {
@@ -92,9 +106,13 @@
       ]
     },
     "availableCapabilities": [
+      "construction",
+      "economy",
+      "recruitment",
       "movement",
       "scouting",
       "combat",
+      "capture",
       "end-turn"
     ],
     "generationConstraints": {
@@ -111,7 +129,7 @@
       "validatedGameplayEventsOnly": true,
       "rewardSetupActions": false,
       "requireMeaningfulEvent": true,
-      "maxGameplayRewardEventsPerTurn": 12,
+      "maxGameplayRewardEventsPerTurn": 24,
       "allowedGameplayEvents": []
     }
   }

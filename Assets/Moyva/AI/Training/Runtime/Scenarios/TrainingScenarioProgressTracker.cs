@@ -165,6 +165,7 @@ namespace Kruty1918.Moyva.AI.Training
             _sawLearnerCastle = _sawLearnerRecruit = false;
             _stepBaseline = _lastFacts = baseline ?? new TrainingScenarioFacts();
             IsScoringActive = !(_lastFacts?.IsSetup ?? true);
+            CompleteLegalInitialStateIfSatisfied(_lastFacts);
         }
 
         public void SetSetupPhase(bool setup, TrainingScenarioFacts facts)
@@ -175,6 +176,7 @@ namespace Kruty1918.Moyva.AI.Training
             _count = _stableTurns = 0;
             _lastStableTurn = int.MinValue;
             _sawLearnerCastle = _sawLearnerRecruit = false;
+            CompleteLegalInitialStateIfSatisfied(_lastFacts);
         }
 
         public void ObserveReward(TrainingRewardEvent e, TrainingScenarioFacts facts)
@@ -320,7 +322,23 @@ namespace Kruty1918.Moyva.AI.Training
             return _sawLearnerRecruit
                 && facts.OwnedUnits > _stepBaseline.OwnedUnits
                 && facts.DeployedUnits > _stepBaseline.DeployedUnits
-                && facts.DeployedCount(step.unitTypeId) > _stepBaseline.DeployedCount(step.unitTypeId);
+                && facts.RecruitedCount(step.unitTypeId) > _stepBaseline.RecruitedCount(step.unitTypeId);
+        }
+
+        private void CompleteLegalInitialStateIfSatisfied(TrainingScenarioFacts facts)
+        {
+            if (!IsScoringActive || IsComplete || CurrentStep?.EffectiveCriterion != TrainingScenarioCriterionKind.LegalInitialState)
+                return;
+            if (facts == null || facts.IsSetup || facts.OwnedSettlements != 0 || facts.OperationalCastles != 0
+                || facts.OwnedUnits != 0 || facts.DeployedUnits != 0)
+                return;
+            foreach (var pair in facts.ResourceStock)
+                if (pair.Value > 0.00001f) return;
+            foreach (var pair in facts.ProductionPerTurn)
+                if (pair.Value > 0.00001f) return;
+            foreach (var pair in facts.OperationalBuildingsByType)
+                if (pair.Value > 0) return;
+            Advance(facts);
         }
 
         private static bool AnyLearnerUnitMoved(TrainingScenarioFacts before, TrainingScenarioFacts after)
@@ -371,4 +389,3 @@ namespace Kruty1918.Moyva.AI.Training
         }
     }
 }
-

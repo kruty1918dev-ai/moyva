@@ -52,6 +52,7 @@ namespace Kruty1918.Moyva.AI.Training
         private void OnRecruitDeployed(UnitRecruitmentDeployedSignal signal)
         {
             if (signal.OwnerId != _player || string.IsNullOrEmpty(signal.UnitId)) return;
+            if (signal.QueueId <= 0 || string.IsNullOrWhiteSpace(signal.UnitTypeId)) return;
             // One milestone per unit type per episode; deleting and recruiting again cannot farm reward.
             Reward?.Invoke(new TrainingRewardEvent(_episodeId, "recruit:" + signal.UnitTypeId,
                 TrainingRewardEventType.UnitCreated, "unit-type:" + signal.UnitTypeId, signal.OwnerId,

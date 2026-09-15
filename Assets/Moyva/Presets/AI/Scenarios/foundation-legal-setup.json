@@ -1,24 +1,23 @@
 {
   "scenario": {
-    "id": "castle",
-    "title": "First castle",
-    "legacyStage": 5,
-    "learnerBuildsInitialCastle": true,
+    "id": "foundation-legal-setup",
+    "title": "Legal initial state",
+    "legacyStage": 1,
+    "learnerBuildsInitialCastle": false,
     "fullGame": false,
     "prerequisites": [],
     "steps": [
       {
-        "criterion": 1,
+        "criterion": 10,
         "requiredCount": 1,
         "threshold": 0,
-        "id": "castle-operational",
-        "goal": 1,
-        "buildingTypeId": "castle-01"
+        "id": "legal-setup-verified",
+        "goal": 0
       }
     ],
     "startingConditions": {
       "learnerStartsWithCastle": false,
-      "learnerMustPlaceCastle": true,
+      "learnerMustPlaceCastle": false,
       "startingResources": [],
       "startingUnits": [],
       "opponent": {
@@ -26,18 +25,16 @@
         "startingUnits": 0,
         "startingCastle": false
       },
-      "objectives": [
-        {
-          "objectiveId": "",
-          "objectiveType": "settlement",
-          "owner": "opponent"
-        }
-      ]
+      "objectives": []
     },
     "availableCapabilities": [
       "construction",
+      "economy",
+      "recruitment",
       "movement",
       "scouting",
+      "combat",
+      "capture",
       "end-turn"
     ],
     "generationConstraints": {

@@ -28,7 +28,8 @@ namespace Kruty1918.Moyva.AI.Training
         Scouting = 6,
         EnemyDestroyed = 7,
         ObjectiveOwned = 8,
-        MatchVictory = 9
+        MatchVictory = 9,
+        LegalInitialState = 10
     }
 
     [Serializable]
@@ -286,6 +287,12 @@ namespace Kruty1918.Moyva.AI.Training
                 throw new ArgumentException("learnerBuildsInitialCastle must match startingConditions.learnerMustPlaceCastle: " + id);
             if (startingConditions.learnerStartsWithCastle && startingConditions.learnerMustPlaceCastle)
                 throw new ArgumentException("Learner cannot both start with and be required to place the castle: " + id);
+            if (startingConditions.learnerStartsWithCastle)
+                throw new ArgumentException("Scenarios cannot give the learner a free castle: " + id);
+            if (HasStartingResources(startingConditions.startingResources))
+                throw new ArgumentException("Scenarios cannot grant starter resources directly: " + id);
+            if (HasStartingUnits(startingConditions.startingUnits))
+                throw new ArgumentException("Scenarios cannot provide starting units; units must be recruited: " + id);
         }
 
         public bool AllowsIntent(BotIntentType intent)
@@ -318,6 +325,24 @@ namespace Kruty1918.Moyva.AI.Training
                 if (!string.IsNullOrEmpty(value)) foreach (char c in value) hash = (hash ^ c) * 16777619;
                 return (hash & 0xffff) / 65535f;
             }
+        }
+
+        private static bool HasStartingResources(TrainingScenarioResourceAmount[] resources)
+        {
+            if (resources == null) return false;
+            for (int i = 0; i < resources.Length; i++)
+                if (resources[i] != null && !string.IsNullOrWhiteSpace(resources[i].resourceId) && resources[i].amount > 0f)
+                    return true;
+            return false;
+        }
+
+        private static bool HasStartingUnits(TrainingScenarioUnitSetup[] units)
+        {
+            if (units == null) return false;
+            for (int i = 0; i < units.Length; i++)
+                if (units[i] != null && !string.IsNullOrWhiteSpace(units[i].unitTypeId) && units[i].count > 0)
+                    return true;
+            return false;
         }
     }
 }

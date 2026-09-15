@@ -10,7 +10,6 @@ using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Economy;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Runtime;
-using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
 using Kruty1918.Moyva.GameMode.API;
@@ -41,6 +40,7 @@ namespace Kruty1918.Moyva.AI.Training
         private SignalBus _signals;
         private BotDecisionOrchestrator _opponent;
         private OwnedGameplayMap _world;
+        private readonly HashSet<string> _legitimatelyRecruitedUnitIds = new HashSet<string>(StringComparer.Ordinal);
         private bool _disposed;
         private bool _setupPhase = true;
         public bool EconomyInstalled { get; private set; }
@@ -92,14 +92,11 @@ namespace Kruty1918.Moyva.AI.Training
                 UnitsInstaller.InstallSimulationBindings(_container, Required<UnitRegistrySO>());
                 FogOfWarInstaller.InstallSimulationBindings(_container);
                 GameModeInstaller.InstallSimulationBindings(_container);
-                if ((int)context.CurriculumStage >= 3)
-                {
-                    var economy = Required<EconomyDatabaseSO>();
-                    EconomyInstaller.InstallSimulationBindings(_container, economy);
-                    ConstructionInstaller.InstallSimulationBindings(_container, Required<BuildingRegistrySO>(),
-                        economy.RulesConfig.Settlement.MinTownHallDistance);
-                    EconomyInstalled = true;
-                }
+                var economy = Required<EconomyDatabaseSO>();
+                EconomyInstaller.InstallSimulationBindings(_container, economy);
+                ConstructionInstaller.InstallSimulationBindings(_container, Required<BuildingRegistrySO>(),
+                    economy.RulesConfig.Settlement.MinTownHallDistance);
+                EconomyInstalled = true;
 
                 var signals = _container.Resolve<SignalBus>();
                 var grid = _container.Resolve<IGridService>();
@@ -119,6 +116,7 @@ namespace Kruty1918.Moyva.AI.Training
                 foreach (var initializer in initializers) initializer.Initialize();
                 _signals = signals;
                 _signals.Subscribe<UnitCreatedSignal>(OwnUnitObject);
+                _signals.Subscribe<UnitRecruitmentDeployedSignal>(TrackRecruitmentDeployment);
                 _container.Resolve<IGameStateService>().StartGame();
                 signals.Fire(new WorldGeneratedDataSignal { Width = world.Width, Height = world.Height,
                     TileMap = world.BiomeMap, ObjectMap = world.ObjectMap, HeightMap = world.HeightMap,
@@ -136,25 +134,16 @@ namespace Kruty1918.Moyva.AI.Training
                     }
                 if (spawnCells.Count < 2) throw new InvalidOperationException("Generated world has fewer than two legal unit spawns. " + string.Join("; ", spawnRejections));
                 var first = SelectLearnerSpawn(world, spawnCells);
-                string learnerUnit = Spawn(config.startingUnitTypeId, first, TrainingGameplayScope.LearnerId);
-                var reachable = ReachableSpawnCells(learnerUnit, first, spawnCells);
+                var reachable = ReachableLandSpawnCells(world, first, spawnCells);
                 if (reachable.Count < 2) throw new InvalidOperationException("Generated world has no connected legal opponent spawn.");
                 var second = reachable.Where(c => c != first)
                     .OrderByDescending(c => (c - first).sqrMagnitude + ResourcePotentialScore(world, c) * 8)
                     .First();
-                Spawn(config.startingUnitTypeId, second, TrainingGameplayScope.OpponentId);
                 var assignments = new List<SpawnPositionAssignment>
                 {
                     new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = TrainingGameplayScope.LearnerId, Position = first },
                     new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = TrainingGameplayScope.OpponentId, Position = second }
                 };
-                if (config.spawnTrainingBoats)
-                {
-                    if (TrySpawnBoat(config.trainingBoatTypeId, first, TrainingGameplayScope.LearnerId, placement, world, out var learnerBoat))
-                        assignments.Add(new SpawnPositionAssignment { SlotIndex = assignments.Count, ParticipantId = TrainingGameplayScope.LearnerId, Position = learnerBoat });
-                    if (TrySpawnBoat(config.trainingBoatTypeId, second, TrainingGameplayScope.OpponentId, placement, world, out var opponentBoat))
-                        assignments.Add(new SpawnPositionAssignment { SlotIndex = assignments.Count, ParticipantId = TrainingGameplayScope.OpponentId, Position = opponentBoat });
-                }
                 signals.Fire(new WorldSpawnPositionsSignal { Source = WorldSpawnPositionsSource.GeneratedHost,
                     Assignments = assignments.ToArray() });
                 signals.Fire(new WorldBuiltSignal());
@@ -165,45 +154,6 @@ namespace Kruty1918.Moyva.AI.Training
                     profiles: _container.TryResolve<IUnitGameplayProfileService>(),
                     terrain: _container.TryResolve<IGeneratedTerrainLevelQuery>(),
                     economy: _container.TryResolve<IEconomyInfoMediator>());
-                if (EconomyInstalled)
-                {
-                    var starter = new BootstrapStarterPackGrantService(Required<BootstrapInstallerConfigSO>().GameSettings, signals);
-                    foreach (string owner in new[] { TrainingGameplayScope.LearnerId, TrainingGameplayScope.OpponentId })
-                    {
-                        starter.TryGrant(null, owner);
-                        // The learner must submit real construction actions in this lesson.
-                        // The opponent retains its production starter settlement.
-                        if (context.LearnInitialCastle && owner == TrainingGameplayScope.LearnerId)
-                        {
-                            if (!Turns.TryEndTurn(owner, out var lessonReason))
-                                throw new InvalidOperationException(lessonReason);
-                            continue;
-                        }
-                        var bootstrap = _container.Resolve<IConstructionBootstrapQuery>();
-                        if (!bootstrap.RequiresInitialCastle(owner, out string castle))
-                            FullGameSetupError = "No required initial castle was found in the production registry.";
-                        else
-                        {
-                            var action = Capabilities.Get(BotCapabilityId.Construction).Enumerate(owner)
-                                .FirstOrDefault(c => c.TargetKey == castle);
-                            if (action == null || !_container.Resolve<IAuthoritativeConstructionPlacementExecutor>()
-                                .TryPlaceAuthoritatively(castle, new Vector2Int(action.X, action.Y), owner, ConstructionPlacementCommitIntent.None))
-                                FullGameSetupError = "No legal initial castle placement for " + owner + ".";
-                        }
-                        var registry = _container.Resolve<IBuildingRegistry>();
-                        var recruitmentSource = Capabilities.Get(BotCapabilityId.Construction).Enumerate(owner)
-                            .FirstOrDefault(c => BuildingDefinitionCapabilities.TryGetEnabledModule(
-                                registry.GetById(c.TargetKey), out UnitRecruitmentBuildingModule _));
-                        if (recruitmentSource == null || !_container.Resolve<IAuthoritativeConstructionPlacementExecutor>()
-                            .TryPlaceAuthoritatively(recruitmentSource.TargetKey, new Vector2Int(recruitmentSource.X, recruitmentSource.Y),
-                                owner, ConstructionPlacementCommitIntent.None))
-                            FullGameSetupError = "No affordable legal recruitment source can be constructed for " + owner + ".";
-                        if (_container.Resolve<IEconomyRuntimeApi>().GetSettlementIdsForOwner(owner).Count == 0)
-                            FullGameSetupError = "Initial castle did not create an active economic settlement for " + owner + ".";
-                        if (!Turns.TryEndTurn(owner, out string turnReason))
-                            throw new InvalidOperationException("Initial settlement turn could not finish: " + turnReason);
-                    }
-                }
                 _setupPhase = false;
                 Outcomes = new TrainingGameplayEventBridge(signals, _container.Resolve<ITurnHistoryQuery>(), TrainingGameplayScope.LearnerId,
                     _container.Resolve<IUnitCombatService>(), owners, context.EpisodeId, _container.TryResolve<IBuildingRegistry>());
@@ -226,7 +176,6 @@ namespace Kruty1918.Moyva.AI.Training
             var unitCells = new Dictionary<string, Vector2Int>(StringComparer.Ordinal);
             var ownedSettlementIds = new List<string>();
 
-            // NEW: Recruitment tracking
             var recruitedByType = new Dictionary<string, int>(StringComparer.Ordinal);
             var setupByType = new Dictionary<string, int>(StringComparer.Ordinal);
             var legitimateRecruitmentSources = new List<string>();
@@ -267,18 +216,18 @@ namespace Kruty1918.Moyva.AI.Training
                 if (operationalCastles > 0)
                     operationalByType["castle-01"] = operationalCastles;
 
-                // NEW: Collect legitimate recruitment sources (operational buildings with recruitment modules)
                 var buildingRegistry = _container.TryResolve<IBuildingRegistry>();
                 var recruitmentQuery = _container.TryResolve<IUnitRecruitmentQuery>();
                 if (buildingRegistry != null && recruitmentQuery != null)
                 {
-            foreach (var placement in Placements.GetSavedPlacements())
-        {
+                    foreach (var placement in Placements.GetSavedPlacements())
+                    {
                         if (!string.Equals(placement.OwnerId, learner, StringComparison.Ordinal)) continue;
                         var buildingDef = buildingRegistry.GetById(placement.BuildingId);
                         if (buildingDef != null && BuildingDefinitionCapabilities.TryGetEnabledModule(buildingDef, out UnitRecruitmentBuildingModule _))
-            {
-                            legitimateRecruitmentSources.Add(placement.BuildingId);
+                        {
+                            string key = placement.BuildingId + "@" + placement.Position.x + "," + placement.Position.y;
+                            legitimateRecruitmentSources.Add(key);
                         }
                     }
                 }
@@ -289,27 +238,8 @@ namespace Kruty1918.Moyva.AI.Training
             int visibleEnemies = 0;
             var fog = _container.TryResolve<IFogOwnerStateReader>();
 
-            // NEW: Get recruitment queue info to distinguish recruited vs setup units
-            var recruitmentQuery = _container.TryResolve<IUnitRecruitmentQuery>();
-            var readyItems = recruitmentQuery != null ? recruitmentQuery.GetReadyItems(learner) : Array.Empty<UnitRecruitmentQueueItemSnapshot>();
-            var readyQueueIds = new HashSet<long>();
-            foreach (var item in readyItems) readyQueueIds.Add(item.QueueId);
-
-            // Also get all queued items (including completed ones) to track historically recruited units
-            var allQueuedItems = new List<UnitRecruitmentQueueItemSnapshot>();
-            if (recruitmentQuery != null)
+            foreach (string unitId in Units.GetAllUnitIds())
             {
-                foreach (var source in legitimateRecruitmentSources)
-        {
-                    var queue = recruitmentQuery.GetQueue(learner, Placements.GetSavedPlacements()
-                        .FirstOrDefault(p => p.BuildingId == source && string.Equals(p.OwnerId, learner, StringComparison.Ordinal))?.Position ?? default);
-                    if (queue != null) allQueuedItems.AddRange(queue);
-                }
-            }
-            var allQueueIds = new HashSet<long>();
-            foreach (var item in allQueuedItems) allQueueIds.Add(item.QueueId);
-                foreach (string unitId in Units.GetAllUnitIds())
-                {
                 string owner = UnitOwners.GetUnitOwnerId(unitId);
                 bool positioned = Units.TryGetUnitPosition(unitId, out var cell);
                 if (string.Equals(owner, learner, StringComparison.Ordinal))
@@ -323,20 +253,12 @@ namespace Kruty1918.Moyva.AI.Training
                     {
                         deployedByType[type] = deployedByType.TryGetValue(type, out var count) ? count + 1 : 1;
 
-                        // NEW: Determine if this unit was legitimately recruited or is a setup unit
-                        // We can't directly know from the unit itself, but we can infer:
-                        // If there are legitimate recruitment sources and the unit type matches what they can produce,
-                        // and we have queue history, we count it as recruited. Otherwise it's setup.
-                        // For now, we use a heuristic: if we have any legitimate recruitment sources and the unit
-                        // type is one that can be recruited from them, and we have queue history, count as recruited.
-                        // This is a best-effort approximation; the authoritative source is the recruitment queue.
-                        bool isLikelyRecruited = legitimateRecruitmentSources.Count > 0 && allQueueIds.Count > 0;
-                        if (isLikelyRecruited)
+                        if (_legitimatelyRecruitedUnitIds.Contains(unitId))
                             recruitedByType[type] = recruitedByType.TryGetValue(type, out var rc) ? rc + 1 : 1;
                         else
                             setupByType[type] = setupByType.TryGetValue(type, out var sc) ? sc + 1 : 1;
-            }
-        }
+                    }
+                }
                 else if (positioned && fog != null && fog.IsVisible(learner, cell))
                 {
                     visibleEnemies++;
@@ -375,7 +297,6 @@ namespace Kruty1918.Moyva.AI.Training
                 reachableLandCellsFromLearner: CountReachableLandFromLearner(world),
                 totalLandCells: CountLandCells(world),
                 learnerResourcePotential: CountLearnerResourcePotential(world),
-                // NEW: Recruitment tracking fields
                 recruitedUnitsByType: recruitedByType,
                 setupUnitsByType: setupByType,
                 legitimateRecruitmentSources: legitimateRecruitmentSources);
@@ -457,22 +378,29 @@ namespace Kruty1918.Moyva.AI.Training
             }
         }
 
-        private bool TrySpawnBoat(string boatTypeId, Vector2Int landStart, string owner, IUnitPlacementValidator placement,
-            MenuWorldPreviewData world, out Vector2Int boatCell)
+        private static List<Vector2Int> ReachableLandSpawnCells(
+            MenuWorldPreviewData world,
+            Vector2Int start,
+            IReadOnlyCollection<Vector2Int> candidates)
         {
-            boatCell = default;
-            if (string.IsNullOrWhiteSpace(boatTypeId) || world?.BiomeMap == null || placement == null) return false;
-            int radius = Mathf.Max(world.Width, world.Height);
-            foreach (var candidate in NearbyCells(landStart, radius).OrderBy(c => Vector2Int.Distance(c, landStart)))
+            var candidateSet = new HashSet<Vector2Int>(candidates);
+            var result = new List<Vector2Int>();
+            var seen = new HashSet<Vector2Int> { start };
+            var queue = new Queue<Vector2Int>();
+            queue.Enqueue(start);
+            while (queue.Count > 0 && seen.Count <= 4096)
             {
-                if (!InBounds(world, candidate) || !IsWater(world.BiomeMap[candidate.x, candidate.y])) continue;
-                if (!HasAdjacentLand(world, candidate)) continue;
-                if (!placement.CanDeployUnit(boatTypeId, candidate, out _)) continue;
-                Spawn(boatTypeId, candidate, owner);
-                boatCell = candidate;
-                return true;
+                var from = queue.Dequeue();
+                if (candidateSet.Contains(from)) result.Add(from);
+                for (int i = 0; i < 4; i++)
+                {
+                    var next = from + (i == 0 ? Vector2Int.right : i == 1 ? Vector2Int.left : i == 2 ? Vector2Int.up : Vector2Int.down);
+                    if (!InBounds(world, next) || !seen.Add(next) || IsWater(world.BiomeMap[next.x, next.y]))
+                        continue;
+                    queue.Enqueue(next);
+                }
             }
-            return false;
+            return result;
         }
 
         private int CountLearnerResourcePotential(MenuWorldPreviewData world)
@@ -619,42 +547,16 @@ namespace Kruty1918.Moyva.AI.Training
             installer.InstallBindings();
             installer.enabled = false;
         }
-        private List<Vector2Int> ReachableSpawnCells(string unitId, Vector2Int start, IReadOnlyCollection<Vector2Int> candidates)
-        {
-            var candidateSet = new HashSet<Vector2Int>(candidates);
-            var result = new List<Vector2Int>();
-            var seen = new HashSet<Vector2Int> { start };
-            var queue = new Queue<Vector2Int>();
-            queue.Enqueue(start);
-            while (queue.Count > 0 && seen.Count <= 4096)
-            {
-                var from = queue.Dequeue();
-                if (candidateSet.Contains(from)) result.Add(from);
-                for (int y = -1; y <= 1; y++)
-                    for (int x = -1; x <= 1; x++)
-                    {
-                        if (x == 0 && y == 0) continue;
-                        var next = from + new Vector2Int(x, y);
-                        if (!seen.Add(next)) continue;
-                        if (!Traversal.TryEvaluateStep(unitId, from, next, float.MaxValue,
-                            UnitTraversalMode.Pathfinding, out _, out _)) continue;
-                        queue.Enqueue(next);
-                    }
-            }
-            return result;
-        }
-
-        private string Spawn(string type, Vector2Int cell, string owner)
-        {
-            string id = _container.Resolve<IUnitFactory>().CreateUnit(type, cell, owner);
-            if (string.IsNullOrEmpty(id)) throw new InvalidOperationException("UnitFactory failed for " + owner);
-            var unit = _container.Resolve<IUnitService>().GetUnitObject(id);
-            unit.transform.SetParent(_root.transform, true);
-            return id;
-        }
         private void OwnUnitObject(UnitCreatedSignal signal)
         {
             if (signal.UnitObject != null) signal.UnitObject.transform.SetParent(_root.transform, true);
+        }
+        private void TrackRecruitmentDeployment(UnitRecruitmentDeployedSignal signal)
+        {
+            if (signal.QueueId > 0
+                && string.Equals(signal.OwnerId, TrainingGameplayScope.LearnerId, StringComparison.Ordinal)
+                && !string.IsNullOrWhiteSpace(signal.UnitId))
+                _legitimatelyRecruitedUnitIds.Add(signal.UnitId);
         }
         public void Tick(float seconds)
         {
@@ -667,6 +569,7 @@ namespace Kruty1918.Moyva.AI.Training
             if (_disposed) return;
             _disposed = true;
             _signals?.TryUnsubscribe<UnitCreatedSignal>(OwnUnitObject);
+            _signals?.TryUnsubscribe<UnitRecruitmentDeployedSignal>(TrackRecruitmentDeployment);
             _opponent?.Dispose();
             Outcomes?.Dispose();
             for (int i = _disposables.Count - 1; i >= 0; i--) _disposables[i].Dispose();
@@ -681,4 +584,3 @@ namespace Kruty1918.Moyva.AI.Training
         private sealed class TrainingTurnAuthority : ITurnAuthorityPolicy { public bool IsAuthoritative => true; }
     }
 }
-

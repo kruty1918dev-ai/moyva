@@ -33,6 +33,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public bool TryGrant(string settlementId, string ownerId)
         {
+            if (string.IsNullOrWhiteSpace(settlementId))
+            {
+                Debug.LogWarning($"{StarterPackLogTag} Starter resources require a settlement target; owner-pool grants are rejected.");
+                return false;
+            }
+
             var entries = _settings.InitialResources;
             if (entries == null || entries.Count == 0)
             {

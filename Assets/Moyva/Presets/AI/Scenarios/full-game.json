@@ -91,18 +91,11 @@
       "learnerStartsWithCastle": false,
       "learnerMustPlaceCastle": true,
       "startingResources": [],
-      "startingUnits": [
-        {
-          "unitTypeId": "warrior",
-          "count": 1,
-          "owner": "learner",
-          "deployed": true
-        }
-      ],
+      "startingUnits": [],
       "opponent": {
-        "enabled": true,
-        "startingUnits": 1,
-        "startingCastle": true
+        "enabled": false,
+        "startingUnits": 0,
+        "startingCastle": false
       },
       "objectives": [
         {

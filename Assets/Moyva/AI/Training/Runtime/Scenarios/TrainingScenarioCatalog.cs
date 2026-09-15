@@ -191,9 +191,8 @@ namespace Kruty1918.Moyva.AI.Training
                     prerequisites = prerequisites,
                     startingConditions = new TrainingScenarioStartingConditions
                     {
-                        learnerStartsWithCastle = !castle,
+                        learnerStartsWithCastle = false,
                         learnerMustPlaceCastle = castle,
-                        // REMOVED: startingUnits - no scenario should provide units; all units must be recruited
                         startingUnits = Array.Empty<TrainingScenarioUnitSetup>()
                     },
                     availableCapabilities = CapabilitiesFor(full),
@@ -247,8 +246,8 @@ namespace Kruty1918.Moyva.AI.Training
 
             // NEW: S0 - Foundation legal setup (no units, no buildings, no resources, economy installed)
             TrainingScenarioStepDefinition LegalSetup() => new TrainingScenarioStepDefinition
-                { id = "legal-setup-verified", goal = TrainingScenarioGoalKind.CastleOperational,
-                  criterion = TrainingScenarioCriterionKind.OperationalCastle, buildingTypeId = "castle-01" };
+                { id = "legal-setup-verified", goal = TrainingScenarioGoalKind.None,
+                  criterion = TrainingScenarioCriterionKind.LegalInitialState };
 
             return new[]
             {
@@ -259,28 +258,36 @@ namespace Kruty1918.Moyva.AI.Training
                 Make("castle", "First castle", TrainingCurriculumStage.Building, true, false, new[] { "foundation-legal-setup" }, Castle()),
 
                 // S2: Initial economy - castle operational -> settlement -> starter resources to settlement
-                Make("production", "Resource production", TrainingCurriculumStage.Economy, false, false, new[] { "castle" }, Production()),
+                Make("production", "Resource production", TrainingCurriculumStage.Economy, true, false,
+                    new[] { "castle" }, Castle(), Production()),
 
                 // S3: Production establishment - build first production building
-                Make("stable-economy", "Stable economy", TrainingCurriculumStage.Economy, false, false, new[] { "production" }, Stable()),
+                Make("stable-economy", "Stable economy", TrainingCurriculumStage.Economy, true, false,
+                    new[] { "production" }, Castle(), Production(), Stable()),
 
                 // S4: Military infrastructure - build recruitment building
-                Make("recruitment", "Recruitment", TrainingCurriculumStage.Recruitment, false, false, new[] { "stable-economy" }, Recruit()),
+                Make("recruitment", "Recruitment", TrainingCurriculumStage.Recruitment, true, false,
+                    new[] { "stable-economy" }, Castle(), Production(), Stable(), Recruit()),
 
                 // S5: Movement & exploration
-                Make("movement-scouting", "Movement and scouting", TrainingCurriculumStage.FogOfWar, false, false, new[] { "recruitment" }, Move(), Scout()),
+                Make("movement-scouting", "Movement and scouting", TrainingCurriculumStage.FogOfWar, true, false,
+                    new[] { "recruitment" }, Castle(), Production(), Stable(), Recruit(), Move(), Scout()),
 
                 // S6: Combat engagement
-                Make("combat-defense", "Combat and defense", TrainingCurriculumStage.Combat, false, false, new[] { "movement-scouting" }, Combat()),
+                Make("combat-defense", "Combat and defense", TrainingCurriculumStage.Combat, true, false,
+                    new[] { "movement-scouting" }, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat()),
 
                 // S7: Capture expansion
-                Make("capture", "Capture", TrainingCurriculumStage.Objectives, false, false, new[] { "combat-defense" }, Capture()),
+                Make("capture", "Capture", TrainingCurriculumStage.Objectives, true, false,
+                    new[] { "combat-defense" }, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat(), Capture()),
 
                 // S8: Combined economy + military
-                Make("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment, false, false, new[] { "stable-economy", "recruitment" }, Stable(), Recruit()),
+                Make("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment, true, false,
+                    new[] { "stable-economy", "recruitment" }, Castle(), Production(), Stable(), Recruit()),
 
                 // S9: Combined field operations
-                Make("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat, false, false, new[] { "movement-scouting", "combat-defense" }, Move(), Scout(), Combat()),
+                Make("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat, true, false,
+                    new[] { "movement-scouting", "combat-defense" }, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat()),
 
                 // S10: Full game autonomous - both sides start from S0
                 Make("full-game-autonomous", "Full game autonomous", TrainingCurriculumStage.FullGame, true, true, new[] { "capture" },
@@ -294,4 +301,3 @@ namespace Kruty1918.Moyva.AI.Training
                 : new[] { "construction", "economy", "recruitment", "movement", "scouting", "combat", "capture", "end-turn" };
     }
 }
-
