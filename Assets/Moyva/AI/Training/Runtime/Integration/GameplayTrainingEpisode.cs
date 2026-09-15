@@ -32,7 +32,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.AI.Training
 {
-    internal sealed class GameplayTrainingEpisode : IDisposable
+    internal sealed class GameplayTrainingEpisode : IDisposable, IBotOpeningPlacementAnchorSource
     {
         private readonly DiContainer _container = new DiContainer();
         private readonly GameObject _root;
@@ -41,6 +41,7 @@ namespace Kruty1918.Moyva.AI.Training
         private BotDecisionOrchestrator _opponent;
         private OwnedGameplayMap _world;
         private readonly HashSet<string> _legitimatelyRecruitedUnitIds = new HashSet<string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, Vector2Int> _openingAnchors = new Dictionary<string, Vector2Int>(StringComparer.Ordinal);
         private bool _disposed;
         private bool _setupPhase = true;
         public bool EconomyInstalled { get; private set; }
@@ -144,11 +145,16 @@ namespace Kruty1918.Moyva.AI.Training
                     new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = TrainingGameplayScope.LearnerId, Position = first },
                     new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = TrainingGameplayScope.OpponentId, Position = second }
                 };
+                _openingAnchors[TrainingGameplayScope.LearnerId] = first;
+                _openingAnchors[TrainingGameplayScope.OpponentId] = second;
                 signals.Fire(new WorldSpawnPositionsSignal { Source = WorldSpawnPositionsSource.GeneratedHost,
                     Assignments = assignments.ToArray() });
                 signals.Fire(new WorldBuiltSignal());
+                RevealOpeningArea(TrainingGameplayScope.LearnerId, first);
+                RevealOpeningArea(TrainingGameplayScope.OpponentId, second);
 
                 Gateway = new MoyvaBotTurnAdapter(Turns, _container.Resolve<ITurnAuthorityPolicy>());
+                _container.Bind<IBotOpeningPlacementAnchorSource>().FromInstance(this).AsSingle();
                 Capabilities = BotRuntimeInstaller.CreateGameplayRegistry(_container, Gateway);
                 Perception = new MoyvaBotPerceptionSource(Turns, unitService, owners, fog,
                     profiles: _container.TryResolve<IUnitGameplayProfileService>(),
@@ -166,6 +172,12 @@ namespace Kruty1918.Moyva.AI.Training
             catch { Dispose(); throw; }
             finally { UnityEngine.Random.state = randomState; }
         }
+        public IEnumerable<Vector2Int> GetOpeningAnchors(string player)
+        {
+            if (!string.IsNullOrWhiteSpace(player) && _openingAnchors.TryGetValue(player, out var anchor))
+                yield return anchor;
+        }
+
         internal TrainingScenarioFacts CaptureTrainingFacts()
         {
             const string learner = TrainingGameplayScope.LearnerId;
@@ -536,6 +548,12 @@ namespace Kruty1918.Moyva.AI.Training
         {
             string key = (tile ?? string.Empty).ToLowerInvariant();
             return key.Contains("water") || key.Contains("ocean") || key.Contains("river") || key.Contains("lake");
+        }
+
+        private void RevealOpeningArea(string ownerId, Vector2Int center)
+        {
+            var registry = _container.TryResolve<IFogOwnerVisionSourceRegistry>();
+            registry?.RevealArea(ownerId, center, 6, FogRevealShape.Square, true, "training-opening-spawn:" + ownerId);
         }
 
         private static T Required<T>() where T : class

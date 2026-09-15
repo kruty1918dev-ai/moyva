@@ -88,7 +88,8 @@ namespace Kruty1918.Moyva.AI.Bot
                     container.TryResolve<IUnitRecruitmentService>(), fog),
                 new ConstructionBotCapability(gateway, container.TryResolve<IBuildingRegistry>(),
                     container.TryResolve<IConstructionPlacementQuery>(), container.TryResolve<IAuthoritativeConstructionPlacementExecutor>(),
-                    container.TryResolve<IConstructionSaveSnapshotSource>(), units, owners, fog),
+                    container.TryResolve<IConstructionSaveSnapshotSource>(), units, owners, fog,
+                    container.TryResolve<IBotOpeningPlacementAnchorSource>()),
                 new CaptureBotCapability(gateway, units, owners, fog,
                     container.TryResolve<IConstructionSaveSnapshotSource>(), container.TryResolve<ISettlementCaptureQuery>(),
                     container.TryResolve<ISettlementCaptureService>()));

@@ -89,8 +89,8 @@ def parser():
         t.add_argument("--base-port",type=int);t.add_argument("--trainer");t.add_argument("--results");t.add_argument("--visual",action="store_true",default=None)
         t.add_argument("--dry-run",action="store_true");t.add_argument("--wait",action="store_true");t.add_argument("--fix",action="store_true")
     sub.add_parser("runs",help="Discover existing Results/MoyvaTraining runs")
-    r=sub.add_parser("run",help="Show, resume, clone, compare, reveal or explicitly delete a run")
-    r.add_argument("action",choices=["show","resume","clone","compare","reveal","delete","logs"]);r.add_argument("run_id");r.add_argument("other",nargs="?");r.add_argument("--confirm")
+    r=sub.add_parser("run",help="Show, resume, clone, compare, reveal, diagnostics or explicitly delete a run")
+    r.add_argument("action",choices=["show","resume","clone","compare","reveal","delete","logs","diagnostics"]);r.add_argument("run_id");r.add_argument("other",nargs="?");r.add_argument("--confirm")
     c=sub.add_parser("checkpoints",help="Discover PT and ONNX checkpoints, with contract compatibility")
     c.add_argument("--run-id")
     c=sub.add_parser("checkpoint",help="Label, compare, export, resume, evaluate or explicitly delete a checkpoint")
@@ -206,6 +206,7 @@ def dispatch(project,args):
         store=RunStore(project)
         if args.action=="show":return store.show(args.run_id)
         if args.action=="logs":return logs(project,args.run_id)
+        if args.action=="diagnostics":return store.diagnostics_zip(args.run_id,args.other)
         if args.action=="reveal":HostPlatform().reveal(store.path(args.run_id));return {"revealed":args.run_id}
         if args.action=="delete":return store.delete(args.run_id,confirmation=args.confirm)
         if args.action=="compare":return {"left":store.show(args.run_id),"right":store.show(args.other)}

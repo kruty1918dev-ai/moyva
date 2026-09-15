@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.AI.Bot;
 using UnityEngine;
@@ -42,6 +43,26 @@ namespace Kruty1918.Moyva.AI.Training.Tests
             Assert.AreEqual(TrainingEpisodeResult.Victory, environment.Result);
             Assert.IsFalse(environment.IsReady);
             Assert.AreEqual(1, environment.Diagnostics.TotalReward);
+        }
+
+        [Test]
+        public void BootstrapLegalSetupMasteryAdvancesFreshCurriculumToCastle()
+        {
+            string path = Path.Combine(Path.GetTempPath(), "moyva-curriculum-bootstrap-" + Guid.NewGuid().ToString("N") + ".json");
+            try
+            {
+                var config = new AutonomousTrainingConfig { statePath = path };
+                using var controller = new TrainingCurriculumController(config, 1918);
+                var first = controller.ChooseNext();
+                Assert.AreEqual("foundation-legal-setup", first.id);
+                controller.RecordTrainingEpisode(first.id, success: true, decisions: 1);
+                Assert.IsTrue(controller.GetSkill("foundation-legal-setup").mastered);
+                Assert.AreEqual("castle", controller.ChooseNext().id);
+            }
+            finally
+            {
+                if (File.Exists(path)) File.Delete(path);
+            }
         }
 
         private sealed class TurnAdapter : ITrainingSimulation
@@ -230,7 +251,7 @@ namespace Kruty1918.Moyva.AI.Training.Tests
             bool setup = false, int settlements = 0, int castles = 0, int ownedUnits = 0, int deployed = 0,
             float woodStock = 0f, float woodProduction = 0f, int turn = 0, int explored = 0,
             int warriors = 0, int castleBuildings = 0, string objective = null,
-            string unitId = null, Vector2Int? cell = null)
+            string unitId = null, Vector2Int? cell = null, int recruitedWarriors = 0)
         {
             var stock = new Dictionary<string, float> { ["walnut-wood-materials-resources"] = woodStock };
             var production = new Dictionary<string, float> { ["walnut-wood-materials-resources"] = woodProduction };
@@ -239,8 +260,10 @@ namespace Kruty1918.Moyva.AI.Training.Tests
             var cells = new Dictionary<string, Vector2Int>();
             if (unitId != null && cell.HasValue) cells[unitId] = cell.Value;
             var objectives = objective == null ? Array.Empty<string>() : new[] { objective };
+            var recruited = new Dictionary<string, int> { ["warrior"] = recruitedWarriors };
             return new TrainingScenarioFacts(setup, settlements, castles, ownedUnits, deployed, stock, production, 0,
-                objectives, turn, explored, units, buildings, cells, objectives);
+                objectives, turn, explored, units, buildings, cells, objectives,
+                recruitedUnitsByType: recruited);
         }
 
         [Test]
@@ -300,7 +323,7 @@ namespace Kruty1918.Moyva.AI.Training.Tests
             var tracker = new TrainingScenarioProgressTracker(AuthoritativeScenario(step));
             tracker.Begin(11, AuthoritativeFacts(ownedUnits: 1, deployed: 1, warriors: 1));
             tracker.ObserveReward(new TrainingRewardEvent(11, "recruit", TrainingRewardEventType.UnitCreated,
-                "unit-type:warrior", validated: true, meaningful: true), AuthoritativeFacts(ownedUnits: 2, deployed: 2, warriors: 2));
+                "unit-type:warrior", validated: true, meaningful: true), AuthoritativeFacts(ownedUnits: 2, deployed: 2, warriors: 2, recruitedWarriors: 1));
             Assert.IsTrue(tracker.IsComplete);
         }
 

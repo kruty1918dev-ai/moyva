@@ -201,8 +201,13 @@ namespace Kruty1918.Moyva.AI.Training
             Field(b, "arenaId", d.arenaId); b.Append(','); Field(b, "episodeId", d.episodeId); b.Append(',');
             Field(b, "sequence", d.sequence); b.Append(','); Field(b, "agentId", d.agentId); b.Append(',');
             Field(b, "scenarioId", d.scenarioId); b.Append(','); Field(b, "scenarioStep", d.scenarioStep); b.Append(',');
+            Field(b, "scenarioProgress", d.scenarioProgress); b.Append(','); Field(b, "candidateCount", d.candidateCount); b.Append(',');
+            b.Append("\"availableIntents\":").Append(StringArray(d.availableIntents)).Append(',');
             b.Append("\"availableActions\":").Append(StringArray(d.availableActions)).Append(',');
-            Field(b, "actionId", d.actionId); b.Append(','); Field(b, "targetId", d.targetId); b.Append(',');
+            Field(b, "chosenSlot", d.chosenSlot); b.Append(','); Field(b, "chosenIntent", d.chosenIntent); b.Append(',');
+            Field(b, "actorId", d.actorId); b.Append(','); Field(b, "actionId", d.actionId); b.Append(',');
+            Field(b, "targetId", d.targetId); b.Append(','); Field(b, "targetX", d.targetX); b.Append(',');
+            Field(b, "targetY", d.targetY); b.Append(',');
             Field(b, "result", d.result); b.Append(','); Field(b, "rejectionReason", d.rejectionReason); b.Append(',');
             Field(b, "rewardDelta", d.rewardDelta); return b.Append('}').ToString();
         }

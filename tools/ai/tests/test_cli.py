@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import unittest
+import zipfile
 from unittest.mock import patch
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
@@ -108,6 +109,24 @@ class ProjectFixture(unittest.TestCase):
         self.run_fixture();destination=self.root/"model.onnx";destination.write_bytes(b"original")
         with self.assertRaises(ControlError):self.store.export("old-run/MoyvaStrategy.onnx",str(destination))
         self.assertEqual(b"original",destination.read_bytes())
+    def test_diagnostics_zip_uses_run_state_and_manifest(self):
+        path=self.run_fixture()
+        atomic_json(path/"curriculum-state.json",{"activeScenarioId":"castle","totalDecisions":7,"nextEvaluationStep":100,
+            "skills":[{"scenarioId":"castle","trainingEpisodes":2,"trainingSuccesses":1}]})
+        (path/"telemetry").mkdir();(path/"telemetry/decisions.jsonl").write_text("{}\n")
+        destination=self.root/"diag.zip"
+        result=self.store.diagnostics_zip("old-run",str(destination))
+        self.assertTrue(destination.exists())
+        with zipfile.ZipFile(destination) as archive:
+            names=set(archive.namelist())
+            self.assertIn("context/training-summary.json",names)
+            self.assertIn("context/files.txt",names)
+            self.assertIn("state/curriculum-state.json",names)
+            self.assertIn("state/agent-decisions.jsonl",names)
+            summary=json.loads(archive.read("context/training-summary.json"))
+            self.assertEqual("castle",summary["activeScenarioId"])
+            self.assertEqual(0.5,summary["currentScenario"]["successRate"])
+        self.assertIn("context/MoyvaTrainingConfig.json",result["files"])
     def test_favorites_are_logical_not_file_renames(self):
         path=self.run_fixture();self.store.label("old-run/MoyvaStrategy.onnx",label="candidate",favorite=True)
         self.assertTrue((path/"MoyvaStrategy.onnx").exists());self.assertTrue(self.store.checkpoint("old-run/MoyvaStrategy.onnx")["favorite"])

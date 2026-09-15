@@ -402,8 +402,12 @@ namespace Kruty1918.Moyva.AI.Training
         {
             version = e.version, sessionId = e.sessionId, arenaId = e.arenaId, episodeId = e.episodeId, sequence = e.sequence,
             agentId = e.agentId, scenarioId = e.scenarioId, scenarioStep = e.scenarioStep,
+            scenarioProgress = e.scenarioProgress, candidateCount = e.candidateCount,
+            availableIntents = e.availableIntents == null ? Array.Empty<string>() : (string[])e.availableIntents.Clone(),
             availableActions = e.availableActions == null ? Array.Empty<string>() : (string[])e.availableActions.Clone(),
-            actionId = e.actionId, targetId = e.targetId, result = e.result, rejectionReason = e.rejectionReason, rewardDelta = e.rewardDelta
+            chosenSlot = e.chosenSlot, chosenIntent = e.chosenIntent, actorId = e.actorId,
+            actionId = e.actionId, targetId = e.targetId, targetX = e.targetX, targetY = e.targetY,
+            result = e.result, rejectionReason = e.rejectionReason, rewardDelta = e.rewardDelta
         };
 
         private static ArenaSnapshot CloneSnapshot(ArenaSnapshot s, bool visuals) => new ArenaSnapshot

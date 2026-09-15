@@ -5,7 +5,9 @@
     "legacyStage": 5,
     "learnerBuildsInitialCastle": true,
     "fullGame": false,
-    "prerequisites": [],
+    "prerequisites": [
+      "foundation-legal-setup"
+    ],
     "steps": [
       {
         "criterion": 1,

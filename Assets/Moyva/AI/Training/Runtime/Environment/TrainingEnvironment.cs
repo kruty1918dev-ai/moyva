@@ -231,6 +231,8 @@ namespace Kruty1918.Moyva.AI.Training
             _timer.Start();
             Record(TrainingRewardEventType.EpisodeStarted, "start");
             Bridge.Tick(0);
+            RefreshCandidateDiagnostics();
+            if (!ValidateCurrentScenarioCandidates()) return;
             if (_factory != null && !_config.allowScaffoldSimulation && !CheckReadiness(_factory).IsReady)
                 Fail(Readiness.ToString());
         }
@@ -311,6 +313,8 @@ namespace Kruty1918.Moyva.AI.Training
             Diagnostics.LastError = trace.Reason;
             UpdateDiagnostics();
             AppendDecisionEvent(trace);
+            RefreshCandidateDiagnostics();
+            if (!ValidateCurrentScenarioCandidates()) return;
             if (_scenario != null && !_scenario.fullGame && _scenarioProgress?.IsComplete == true)
             {
                 EndEpisode(TrainingEpisodeResult.ScenarioSuccess);
@@ -413,6 +417,84 @@ namespace Kruty1918.Moyva.AI.Training
             Diagnostics.ShapingReward = Rewards.ShapingReward;
             Diagnostics.ElapsedSeconds = _timer.Elapsed.TotalSeconds;
         }
+
+        private void RefreshCandidateDiagnostics()
+        {
+            Array.Clear(Diagnostics.CandidateCountsByIntent, 0, Diagnostics.CandidateCountsByIntent.Length);
+            var candidates = Bridge.Frame?.Candidates;
+            Diagnostics.CandidateCount = candidates?.Count ?? 0;
+            if (candidates == null) return;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                var candidate = candidates[i];
+                if (candidate == null) continue;
+                int index = (int)candidate.Intent;
+                if (index >= 0 && index < Diagnostics.CandidateCountsByIntent.Length)
+                    Diagnostics.CandidateCountsByIntent[index]++;
+            }
+        }
+
+        private bool ValidateCurrentScenarioCandidates()
+        {
+            if (!IsReady || _scenarioProgress == null || _scenarioProgress.IsComplete) return true;
+            var required = RequiredIntentsFor(_scenarioProgress.CurrentStep?.EffectiveCriterion);
+            if (required.Length == 0) return true;
+            for (int i = 0; i < required.Length; i++)
+            {
+                int index = (int)required[i];
+                int count = index >= 0 && index < Diagnostics.CandidateCountsByIntent.Length
+                    ? Diagnostics.CandidateCountsByIntent[index]
+                    : 0;
+                if (count > 0) return true;
+            }
+            string reason = "SCENARIO_UNREACHABLE: scenario=" + (_scenario?.id ?? "<none>")
+                + " step=" + (_scenarioProgress.CurrentStep?.id ?? "<none>")
+                + " requiredIntent=" + string.Join("|", required)
+                + " candidateCount=" + Diagnostics.CandidateCount
+                + " counts=" + FormatCandidateCounts()
+                + " unavailable=" + FormatUnavailable();
+            Fail(reason);
+            return false;
+        }
+
+        private static BotIntentType[] RequiredIntentsFor(TrainingScenarioCriterionKind? criterion)
+        {
+            switch (criterion)
+            {
+                case TrainingScenarioCriterionKind.LegalInitialState: return new[] { BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.OperationalCastle: return new[] { BotIntentType.Build };
+                case TrainingScenarioCriterionKind.ResourceProduction: return new[] { BotIntentType.Build, BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.StableResources: return new[] { BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.DeployedUnit: return new[] { BotIntentType.Recruit, BotIntentType.Build, BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.Movement: return new[] { BotIntentType.Move, BotIntentType.Explore, BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.Scouting: return new[] { BotIntentType.Move, BotIntentType.Explore, BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.EnemyDestroyed: return new[] { BotIntentType.Attack, BotIntentType.Move, BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.ObjectiveOwned: return new[] { BotIntentType.Capture, BotIntentType.Attack, BotIntentType.Move, BotIntentType.EndTurn };
+                default: return Array.Empty<BotIntentType>();
+            }
+        }
+
+        private string FormatCandidateCounts()
+        {
+            var parts = new System.Collections.Generic.List<string>();
+            for (int i = 0; i < Diagnostics.CandidateCountsByIntent.Length; i++)
+            {
+                int count = Diagnostics.CandidateCountsByIntent[i];
+                if (count <= 0) continue;
+                parts.Add(((BotIntentType)i) + "=" + count);
+            }
+            return parts.Count == 0 ? "<empty>" : string.Join(",", parts);
+        }
+
+        private string FormatUnavailable()
+        {
+            var unavailable = Bridge.Frame?.Unavailable;
+            if (unavailable == null || unavailable.Count == 0) return "<none>";
+            var parts = new System.Collections.Generic.List<string>();
+            foreach (var pair in unavailable)
+                parts.Add(pair.Key + ":" + pair.Value);
+            return string.Join("|", parts);
+        }
         private void AppendRejectedDecisionEvent(int actionIndex, string reason)
         {
             if (_decisionJournal == null) return;
@@ -421,11 +503,16 @@ namespace Kruty1918.Moyva.AI.Training
             var candidate = candidates != null && actionIndex >= 0 && actionIndex < candidates.Count
                 ? candidates[actionIndex] : null;
             string[] available = Array.Empty<string>();
+            string[] intents = Array.Empty<string>();
             if (candidates != null)
             {
                 available = new string[candidates.Count];
+                intents = new string[candidates.Count];
                 for (int i = 0; i < candidates.Count; i++)
+                {
                     available[i] = candidates[i]?.Id ?? string.Empty;
+                    intents[i] = candidates[i]?.Intent.ToString() ?? string.Empty;
+                }
             }
             float rewardDelta = Rewards.TotalReward - _lastJournalReward;
             _lastJournalReward = Rewards.TotalReward;
@@ -437,9 +524,17 @@ namespace Kruty1918.Moyva.AI.Training
                 agentId = _simulation.PlayerId.ToString(),
                 scenarioId = _scenario?.id,
                 scenarioStep = _scenarioProgress?.StepIndex ?? -1,
+                scenarioProgress = _scenarioProgress?.Progress ?? 0f,
+                candidateCount = candidates?.Count ?? 0,
+                availableIntents = intents,
                 availableActions = available,
+                chosenSlot = actionIndex,
+                chosenIntent = candidate?.Intent.ToString(),
+                actorId = candidate?.ActorKey,
                 actionId = candidate?.Id,
                 targetId = candidate?.TargetKey,
+                targetX = candidate?.X ?? 0,
+                targetY = candidate?.Y ?? 0,
                 result = "Rejected",
                 rejectionReason = reason,
                 rewardDelta = rewardDelta
@@ -453,11 +548,16 @@ namespace Kruty1918.Moyva.AI.Training
             var candidate = frame?.Candidates[trace.Slot];
             var candidates = frame?.Candidates;
             string[] available = Array.Empty<string>();
+            string[] intents = Array.Empty<string>();
             if (candidates != null)
             {
                 available = new string[candidates.Count];
+                intents = new string[candidates.Count];
                 for (int i = 0; i < candidates.Count; i++)
+                {
                     available[i] = candidates[i]?.Id ?? string.Empty;
+                    intents[i] = candidates[i]?.Intent.ToString() ?? string.Empty;
+                }
             }
             float rewardDelta = Rewards.TotalReward - _lastJournalReward;
             _lastJournalReward = Rewards.TotalReward;
@@ -469,9 +569,17 @@ namespace Kruty1918.Moyva.AI.Training
                 agentId = trace.Player,
                 scenarioId = _scenario?.id,
                 scenarioStep = _scenarioProgress?.StepIndex ?? -1,
+                scenarioProgress = _scenarioProgress?.Progress ?? 0f,
+                candidateCount = candidates?.Count ?? 0,
+                availableIntents = intents,
                 availableActions = available,
+                chosenSlot = trace.Slot,
+                chosenIntent = trace.Intent.ToString(),
+                actorId = candidate?.ActorKey,
                 actionId = candidate?.Id,
                 targetId = candidate?.TargetKey,
+                targetX = candidate?.X ?? 0,
+                targetY = candidate?.Y ?? 0,
                 result = trace.Result.ToString(),
                 rejectionReason = trace.Failure == BotDecisionFailure.None ? trace.Reason : trace.Failure + ": " + trace.Reason,
                 rewardDelta = rewardDelta

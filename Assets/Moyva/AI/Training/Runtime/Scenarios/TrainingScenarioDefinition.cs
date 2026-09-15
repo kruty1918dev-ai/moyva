@@ -32,6 +32,12 @@ namespace Kruty1918.Moyva.AI.Training
         LegalInitialState = 10
     }
 
+    public enum TrainingScenarioMasteryKind
+    {
+        Evaluation = 0,
+        BootstrapQualification = 1
+    }
+
     [Serializable]
     public sealed class TrainingScenarioResourceAmount
     {
@@ -150,6 +156,24 @@ namespace Kruty1918.Moyva.AI.Training
     }
 
     [Serializable]
+    public sealed class TrainingScenarioMasteryPolicy
+    {
+        public TrainingScenarioMasteryKind kind = TrainingScenarioMasteryKind.Evaluation;
+        public int successEpisodesRequired = 1;
+        public int maxDecisionsPerSuccessfulEpisode;
+
+        public void Validate(string scenarioId)
+        {
+            if (!Enum.IsDefined(typeof(TrainingScenarioMasteryKind), kind))
+                throw new ArgumentException("Scenario mastery policy kind is invalid: " + scenarioId);
+            if (successEpisodesRequired < 1)
+                throw new ArgumentException("Scenario mastery policy requires successEpisodesRequired >= 1: " + scenarioId);
+            if (maxDecisionsPerSuccessfulEpisode < 0)
+                throw new ArgumentException("Scenario mastery policy maxDecisionsPerSuccessfulEpisode is invalid: " + scenarioId);
+        }
+    }
+
+    [Serializable]
     public sealed class TrainingScenarioStepDefinition
     {
         public string id;
@@ -252,6 +276,7 @@ namespace Kruty1918.Moyva.AI.Training
         public string[] availableCapabilities = Array.Empty<string>();
         public TrainingScenarioGenerationConstraints generationConstraints = new TrainingScenarioGenerationConstraints();
         public TrainingScenarioRewardRules rewardRules = new TrainingScenarioRewardRules();
+        public TrainingScenarioMasteryPolicy masteryPolicy = new TrainingScenarioMasteryPolicy();
         public TrainingScenarioStepDefinition[] steps = Array.Empty<TrainingScenarioStepDefinition>();
 
         public void Validate()
@@ -273,6 +298,8 @@ namespace Kruty1918.Moyva.AI.Training
             generationConstraints.Validate(id);
             if (rewardRules == null) throw new ArgumentException("Scenario rewardRules are required: " + id);
             rewardRules.Validate(id);
+            if (masteryPolicy == null) masteryPolicy = new TrainingScenarioMasteryPolicy();
+            masteryPolicy.Validate(id);
             if (steps == null || steps.Length == 0) throw new ArgumentException("Scenario must have at least one step: " + id);
 
             var seen = new HashSet<string>(StringComparer.Ordinal);

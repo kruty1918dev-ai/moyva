@@ -1,6 +1,8 @@
 from __future__ import annotations
+import json
 import re
 import shutil
+import zipfile
 from pathlib import Path
 from .config import ControlError, atomic_json, contained, read_json, simple_name, utc
 from .metrics import METRICS
@@ -147,3 +149,80 @@ class RunStore:
         shutil.copy2(entry["path"], destination)
         atomic_json(Path(str(destination) + ".contract.json"), self.project.contract())
         return {"exported":str(destination), "inference":"Model copied. Assign it through the existing production model binding; runtime binding was not changed."}
+
+    def diagnostics_zip(self, name, destination=None):
+        path = self.path(name)
+        if not path.is_dir(): raise ControlError("Run not found: " + name)
+        if destination:
+            target = self.project.path(destination)
+        else:
+            target = self.project.root / "Exports" / "Models" / (simple_name(name) + "-diagnostics.zip")
+        if target.exists(): raise ControlError("Destination exists; choose a new diagnostics ZIP path.")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        added = []
+        def allowed(source):
+            resolved = Path(source).resolve()
+            trash = Path.home() / ".local" / "share" / "Trash"
+            if resolved.is_relative_to(trash.resolve()): return False
+            return resolved.is_relative_to(path.resolve()) or resolved.is_relative_to(self.project.root.resolve())
+        def add_file(archive, source, arcname):
+            source = Path(source)
+            if source.is_file() and not source.is_symlink() and allowed(source):
+                archive.write(source, arcname)
+                added.append(arcname)
+        summary = self._training_summary(name)
+        info = {
+            "runId": name,
+            "exportedUtc": utc(),
+            "source": str(path),
+            "commit": self.project.git("rev-parse", "HEAD"),
+            "branch": self.project.git("branch", "--show-current"),
+        }
+        with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("context/export-info.txt", "\n".join(f"{key}: {value}" for key, value in info.items()) + "\n")
+            archive.writestr("context/training-summary.json", json.dumps(summary, indent=2))
+            for source, arcname in (
+                (self.project.root / "Assets/Moyva/Presets/AI/MoyvaTrainingConfig.json", "context/MoyvaTrainingConfig.json"),
+                (self.project.root / "Assets/Moyva/AI/Training/Config/moyva_ppo.yaml", "context/moyva_ppo.yaml"),
+                (self.project.root / "ProjectSettings/ProjectVersion.txt", "context/ProjectVersion.txt"),
+                (path / "curriculum-state.json", "state/curriculum-state.json"),
+                (path / "telemetry/decisions.jsonl", "state/agent-decisions.jsonl"),
+                (path / "trainer.yaml", "run/configuration.yaml"),
+                (path / "run_logs/training_status.json", "run/run_logs/training_status.json"),
+                (path / "run_logs/timers.json", "run/run_logs/timers.json"),
+                (path / "Player.log", "runtime/Player.log"),
+                (path / "unity.log", "runtime/unity.log"),
+            ):
+                add_file(archive, source, arcname)
+            for pattern in ("MoyvaStrategy/checkpoint.pt", "MoyvaStrategy/*.onnx", "MoyvaStrategy/*.pt", "MoyvaStrategy/events.out.tfevents.*"):
+                for source in sorted(path.glob(pattern)):
+                    add_file(archive, source, "run/" + str(source.relative_to(path)))
+            archive.writestr("context/files.txt", "\n".join(sorted(added)) + "\n")
+        return {"exported": str(target), "files": sorted(added)}
+
+    def _training_summary(self, name):
+        path = self.path(name)
+        state = read_json(path / "curriculum-state.json", {}) or {}
+        active = state.get("activeScenarioId") or ""
+        skills = state.get("skills") or []
+        current = next((skill for skill in skills if skill.get("scenarioId") == active), {})
+        return {
+            "runId": name,
+            "activeScenarioId": active,
+            "totalDecisions": int(state.get("totalDecisions") or 0),
+            "nextEvaluationStep": int(state.get("nextEvaluationStep") or 0),
+            "currentScenario": {
+                "id": active,
+                "trainingEpisodes": int(current.get("trainingEpisodes") or 0),
+                "trainingSuccesses": int(current.get("trainingSuccesses") or 0),
+                "successRate": (float(current.get("trainingSuccesses") or 0) / float(current.get("trainingEpisodes") or 1))
+                    if int(current.get("trainingEpisodes") or 0) > 0 else 0.0,
+            },
+            "skills": skills,
+            "latestEpisode": {
+                "result": "",
+                "decisions": 0,
+                "turns": 0,
+                "reason": "",
+            },
+        }

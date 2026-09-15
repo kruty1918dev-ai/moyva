@@ -35,9 +35,17 @@ namespace Kruty1918.Moyva.AI.Training
         public string agentId;
         public string scenarioId;
         public int scenarioStep;
+        public float scenarioProgress;
+        public int candidateCount;
+        public string[] availableIntents = Array.Empty<string>();
         public string[] availableActions = Array.Empty<string>();
+        public int chosenSlot = -1;
+        public string chosenIntent;
+        public string actorId;
         public string actionId;
         public string targetId;
+        public int targetX;
+        public int targetY;
         public string result;
         public string rejectionReason;
         public float rewardDelta;

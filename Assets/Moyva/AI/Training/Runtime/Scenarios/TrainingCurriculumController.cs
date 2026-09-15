@@ -128,6 +128,8 @@ namespace Kruty1918.Moyva.AI.Training
         {
             var skill = Skill(scenarioId); if (skill == null) return;
             skill.trainingEpisodes++; if (success) skill.trainingSuccesses++;
+            var scenario = _catalog.Get(scenarioId);
+            ApplyBootstrapQualification(scenario, skill, success, decisions);
             _state.totalDecisions += Math.Max(0, decisions);
             Save();
         }
@@ -211,6 +213,24 @@ namespace Kruty1918.Moyva.AI.Training
         private TrainingScenarioDefinition Select(TrainingScenarioDefinition scenario)
         { _state.activeScenarioId = scenario.id; Save(); return scenario; }
         private TrainingSkillState Skill(string id) => _state.skills.FirstOrDefault(s => s.scenarioId == id);
+        private static void ApplyBootstrapQualification(TrainingScenarioDefinition scenario, TrainingSkillState skill,
+            bool success, int decisions)
+        {
+            var policy = scenario?.masteryPolicy;
+            if (policy == null || policy.kind != TrainingScenarioMasteryKind.BootstrapQualification) return;
+            if (!success)
+            {
+                skill.consecutivePasses = 0;
+                return;
+            }
+            if (policy.maxDecisionsPerSuccessfulEpisode > 0 && decisions > policy.maxDecisionsPerSuccessfulEpisode)
+            {
+                skill.consecutivePasses = 0;
+                return;
+            }
+            skill.consecutivePasses++;
+            if (skill.consecutivePasses >= policy.successEpisodesRequired) skill.mastered = true;
+        }
         private bool DependenciesMastered(TrainingScenarioDefinition scenario)
             => (scenario.prerequisites ?? Array.Empty<string>()).All(id => Skill(id)?.mastered == true);
         private TrainingScenarioDefinition[] Ordered()

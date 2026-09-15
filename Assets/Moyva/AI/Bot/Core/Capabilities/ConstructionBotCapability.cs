@@ -10,6 +10,11 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.AI.Bot
 {
+    public interface IBotOpeningPlacementAnchorSource
+    {
+        IEnumerable<Vector2Int> GetOpeningAnchors(string player);
+    }
+
     public sealed class ConstructionBotCapability : IBotCapabilityProvider
     {
         private readonly IBotTurnGateway _turns;
@@ -20,12 +25,14 @@ namespace Kruty1918.Moyva.AI.Bot
         private readonly IUnitService _units;
         private readonly IUnitOwnershipQuery _owners;
         private readonly IFogOwnerStateReader _fog;
+        private readonly IBotOpeningPlacementAnchorSource _openingAnchors;
         public BotCapabilityId Id => BotCapabilityId.Construction;
         public ConstructionBotCapability(IBotTurnGateway turns, IBuildingRegistry catalog, IConstructionPlacementQuery query,
             IAuthoritativeConstructionPlacementExecutor commands, IConstructionSaveSnapshotSource placements,
-            IUnitService units, IUnitOwnershipQuery owners, IFogOwnerStateReader fog)
+            IUnitService units, IUnitOwnershipQuery owners, IFogOwnerStateReader fog,
+            IBotOpeningPlacementAnchorSource openingAnchors = null)
         { _turns = turns; _catalog = catalog; _query = query; _commands = commands; _placements = placements;
-            _units = units; _owners = owners; _fog = fog; }
+            _units = units; _owners = owners; _fog = fog; _openingAnchors = openingAnchors; }
         public string UnavailableReason(string player) => _catalog == null || _query == null || _commands == null
             || _placements == null || _units == null || _owners == null || _fog == null
             ? "Construction requires catalog, placement query/command, owned anchors and player visibility." : null;
@@ -34,6 +41,8 @@ namespace Kruty1918.Moyva.AI.Bot
             var anchors = _placements.GetSavedPlacements().Where(p => p.OwnerId == player).Select(p => p.Position).ToList();
             foreach (string unit in _units.GetAllUnitIds().OrderBy(x => x, StringComparer.Ordinal))
                 if (_owners.GetUnitOwnerId(unit) == player && _units.TryGetUnitPosition(unit, out var position)) anchors.Add(position);
+            if (anchors.Count == 0 && _openingAnchors != null)
+                anchors.AddRange(_openingAnchors.GetOpeningAnchors(player) ?? Enumerable.Empty<Vector2Int>());
             anchors = anchors.Distinct().OrderBy(p => p.y).ThenBy(p => p.x).Take(16).ToList();
             var seen = new HashSet<Vector2Int>();
             int count = 0;
