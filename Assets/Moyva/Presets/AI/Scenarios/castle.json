@@ -58,6 +58,11 @@
       "requireMeaningfulEvent": true,
       "maxGameplayRewardEventsPerTurn": 12,
       "allowedGameplayEvents": []
+    },
+    "masteryPolicy": {
+      "kind": 1,
+      "successEpisodesRequired": 3,
+      "maxDecisionsPerSuccessfulEpisode": 50
     }
   }
 }

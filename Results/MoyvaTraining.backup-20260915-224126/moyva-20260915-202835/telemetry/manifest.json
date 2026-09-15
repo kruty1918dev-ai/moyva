@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "run_id": "moyva-20260915-202835",
+  "model": "MoyvaStrategy",
+  "max_steps": 1000000,
+  "detailed": "/home/oleksiy/Документи/Projects/Moyva/Game-Project/moyva/Results/MoyvaTraining/moyva-20260915-202835/telemetry/decisions.jsonl",
+  "compact": "/home/oleksiy/Документи/Projects/Moyva/Game-Project/moyva/Results/MoyvaTraining/moyva-20260915-202835/telemetry/compact.log",
+  "console_policy": {
+    "progress": "every ML-Agents summary; default launcher cap is 500 steps",
+    "decisions": "all reward/penalty/rejection/lesson changes plus every 20th neutral decision"
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "environmentCount": 1,
+  "environmentCount": 8,
   "learnInitialCastle": false,
   "baseSeed": 1918,
   "worldSize": 24,
@@ -11,7 +11,24 @@
   "maxDecisionsPerEpisode": 1000,
   "decisionInterval": 5,
   "behaviorType": 0,
-  "curriculum": { "stage": 1 },
+  "curriculum": {
+    "stage": 1,
+    "autonomous": {
+      "enabled": true,
+      "evaluationEverySteps": 10000,
+      "evaluationEpisodes": 50,
+      "masteryThreshold": 0.80,
+      "regressionThreshold": 0.65,
+      "masteryChecksRequired": 3,
+      "currentSkillWeight": 60,
+      "masteredReviewWeight": 25,
+      "combinationWeight": 15,
+      "fullGameWeightAfterBasics": 50,
+      "weakSkillWeightAfterBasics": 30,
+      "reviewWeightAfterBasics": 20,
+      "statePath": ""
+    }
+  },
   "rewards": {
     "victory": 1.0,
     "defeat": -1.0,
@@ -33,17 +50,17 @@
   "enableStats": true,
   "verboseLogging": false,
   "allowScaffoldSimulation": false,
-  "presentationMode": 0,
+  "presentationMode": 1,
   "autoHeadlessInBatchMode": true,
   "visualTimeScale": 1.0,
-  "headlessTimeScale": 10.0,
-  "enableSceneOverlay": true,
-  "enableEditorTelemetry": true,
+  "headlessTimeScale": 20.0,
+  "enableSceneOverlay": false,
+  "enableEditorTelemetry": false,
   "enableAudioInVisualMode": false,
   "metricsHistoryCapacity": 500,
-  "enableDecisionJournal": true,
+  "enableDecisionJournal": false,
   "decisionJournalPath": "",
   "decisionJournalCapacity": 4096,
-  "trainingTimeScale": 1.0,
-  "disableRenderingWhenPossible": false
+  "trainingTimeScale": 5.0,
+  "disableRenderingWhenPossible": true
 }

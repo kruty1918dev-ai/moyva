@@ -49,8 +49,8 @@
     },
     "masteryPolicy": {
       "kind": 1,
-      "successEpisodesRequired": 1,
-      "maxDecisionsPerSuccessfulEpisode": 1
+      "successEpisodesRequired": 100,
+      "maxDecisionsPerSuccessfulEpisode": 0
     }
   }
 }

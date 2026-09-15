@@ -183,11 +183,11 @@ namespace Kruty1918.Moyva.AI.Training
         private static TrainingScenarioDefinition[] FallbackDefinitions()
         {
             TrainingScenarioDefinition MakeDefault(string id, string title, TrainingCurriculumStage stage, bool castle, bool full,
-                string[] prerequisites, params TrainingScenarioStepDefinition[] steps)
-                => MakeWithCapabilities(id, title, stage, castle, full, prerequisites, CapabilitiesFor(full), steps);
+                string[] prerequisites, int maxDecisions = 100, params TrainingScenarioStepDefinition[] steps)
+                => MakeWithCapabilities(id, title, stage, castle, full, prerequisites, CapabilitiesFor(full), maxDecisions, steps);
 
             TrainingScenarioDefinition MakeWithCapabilities(string id, string title, TrainingCurriculumStage stage, bool castle, bool full,
-                string[] prerequisites, string[] capabilities, params TrainingScenarioStepDefinition[] steps)
+                string[] prerequisites, string[] capabilities, int maxDecisions = 100, params TrainingScenarioStepDefinition[] steps)
             {
                 return new TrainingScenarioDefinition
                 {
@@ -212,6 +212,12 @@ namespace Kruty1918.Moyva.AI.Training
                         rewardSetupActions = false,
                         validatedGameplayEventsOnly = true,
                         maxGameplayRewardEventsPerTurn = 16
+                    },
+                    masteryPolicy = new TrainingScenarioMasteryPolicy
+                    {
+                        kind = TrainingScenarioMasteryKind.BootstrapQualification,
+                        successEpisodesRequired = 3,
+                        maxDecisionsPerSuccessfulEpisode = maxDecisions
                     },
                     steps = steps
                 };
@@ -257,45 +263,45 @@ namespace Kruty1918.Moyva.AI.Training
             {
                 // S0: Foundation - legal initial state (no scaffolding for learner)
                 MakeWithCapabilities("foundation-legal-setup", "Legal initial state", TrainingCurriculumStage.BasicLifecycle, false, false,
-                    Array.Empty<string>(), new[] { "end-turn" }, LegalSetup()),
+                    Array.Empty<string>(), new[] { "end-turn" }, 0, LegalSetup()),
 
                 // S1: Castle foundation - learner places first castle
-                MakeDefault("castle", "First castle", TrainingCurriculumStage.Building, true, false, new[] { "foundation-legal-setup" }, Castle()),
+                MakeDefault("castle", "First castle", TrainingCurriculumStage.Building, true, false, new[] { "foundation-legal-setup" }, 50, Castle()),
 
                 // S2: Initial economy - castle operational -> settlement -> starter resources to settlement
                 MakeDefault("production", "Resource production", TrainingCurriculumStage.Economy, true, false,
-                    new[] { "castle" }, Castle(), Production()),
+                    new[] { "castle" }, 100, Castle(), Production()),
 
                 // S3: Production establishment - build first production building
                 MakeDefault("stable-economy", "Stable economy", TrainingCurriculumStage.Economy, true, false,
-                    new[] { "production" }, Castle(), Production(), Stable()),
+                    new[] { "production" }, 150, Castle(), Production(), Stable()),
 
                 // S4: Military infrastructure - build recruitment building
                 MakeDefault("recruitment", "Recruitment", TrainingCurriculumStage.Recruitment, true, false,
-                    new[] { "stable-economy" }, Castle(), Production(), Stable(), Recruit()),
+                    new[] { "stable-economy" }, 150, Castle(), Production(), Stable(), Recruit()),
 
                 // S5: Movement & exploration
                 MakeDefault("movement-scouting", "Movement and scouting", TrainingCurriculumStage.FogOfWar, true, false,
-                    new[] { "recruitment" }, Castle(), Production(), Stable(), Recruit(), Move(), Scout()),
+                    new[] { "recruitment" }, 200, Castle(), Production(), Stable(), Recruit(), Move(), Scout()),
 
                 // S6: Combat engagement
                 MakeDefault("combat-defense", "Combat and defense", TrainingCurriculumStage.Combat, true, false,
-                    new[] { "movement-scouting" }, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat()),
+                    new[] { "movement-scouting" }, 200, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat()),
 
                 // S7: Capture expansion
                 MakeDefault("capture", "Capture", TrainingCurriculumStage.Objectives, true, false,
-                    new[] { "combat-defense" }, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat(), Capture()),
+                    new[] { "combat-defense" }, 250, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat(), Capture()),
 
                 // S8: Combined economy + military
                 MakeDefault("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment, true, false,
-                    new[] { "stable-economy", "recruitment" }, Castle(), Production(), Stable(), Recruit()),
+                    new[] { "stable-economy", "recruitment" }, 150, Castle(), Production(), Stable(), Recruit()),
 
                 // S9: Combined field operations
                 MakeDefault("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat, true, false,
-                    new[] { "movement-scouting", "combat-defense" }, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat()),
+                    new[] { "movement-scouting", "combat-defense" }, 200, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat()),
 
                 // S10: Full game autonomous - both sides start from S0
-                MakeDefault("full-game-autonomous", "Full game autonomous", TrainingCurriculumStage.FullGame, true, true, new[] { "capture" },
+                MakeDefault("full-game-autonomous", "Full game autonomous", TrainingCurriculumStage.FullGame, true, true, new[] { "capture" }, 500,
                     Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat(), Capture(), Win())
             };
         }

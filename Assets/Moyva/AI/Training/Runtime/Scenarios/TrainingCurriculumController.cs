@@ -85,6 +85,7 @@ namespace Kruty1918.Moyva.AI.Training
             if (_state.nextEvaluationStep <= 0) _state.nextEvaluationStep = config.evaluationEverySteps;
             foreach (var scenario in _catalog.Items)
                 if (_state.skills.All(s => s.scenarioId != scenario.id)) _state.skills.Add(new TrainingSkillState { scenarioId = scenario.id });
+            if (RepairBootstrapQualifications()) Save();
             _random = new System.Random(unchecked(seed ^ (int)_state.totalDecisions));
         }
 
@@ -213,6 +214,29 @@ namespace Kruty1918.Moyva.AI.Training
         private TrainingScenarioDefinition Select(TrainingScenarioDefinition scenario)
         { _state.activeScenarioId = scenario.id; Save(); return scenario; }
         private TrainingSkillState Skill(string id) => _state.skills.FirstOrDefault(s => s.scenarioId == id);
+        private bool RepairBootstrapQualifications()
+        {
+            bool changed = false;
+            foreach (var scenario in _catalog.Items)
+            {
+                var skill = Skill(scenario.id);
+                var policy = scenario.masteryPolicy;
+                if (skill == null || skill.mastered || policy == null
+                    || policy.kind != TrainingScenarioMasteryKind.BootstrapQualification)
+                    continue;
+                if (skill.trainingEpisodes < policy.successEpisodesRequired
+                    || skill.trainingSuccesses < policy.successEpisodesRequired
+                    || skill.trainingEpisodes != skill.trainingSuccesses)
+                    continue;
+
+                skill.consecutivePasses = Math.Max(skill.consecutivePasses, policy.successEpisodesRequired);
+                skill.mastered = true;
+                changed = true;
+            }
+
+            return changed;
+        }
+
         private static void ApplyBootstrapQualification(TrainingScenarioDefinition scenario, TrainingSkillState skill,
             bool success, int decisions)
         {

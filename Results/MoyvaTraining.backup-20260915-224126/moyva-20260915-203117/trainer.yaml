@@ -1,0 +1,25 @@
+behaviors:
+  MoyvaStrategy:
+    checkpoint_interval: 50000
+    hyperparameters:
+      batch_size: 128
+      beta: 0.005
+      buffer_size: 2048
+      epsilon: 0.2
+      lambd: 0.95
+      learning_rate: 0.0003
+      learning_rate_schedule: linear
+      num_epoch: 3
+    keep_checkpoints: 5
+    max_steps: 10000
+    network_settings:
+      hidden_units: 128
+      normalize: false
+      num_layers: 2
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    summary_freq: 500
+    time_horizon: 64
+    trainer_type: ppo

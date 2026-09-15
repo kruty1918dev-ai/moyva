@@ -116,8 +116,8 @@ def prerequisite(args, trainer=True):
     config = json.loads(CONFIG.read_text(encoding="utf-8-sig"))
     if config.get("allowScaffoldSimulation", False):
         raise LaunchError("Training rejects allowScaffoldSimulation=true. Set it to false in MoyvaTrainingConfig.json.")
-    if config.get("environmentCount", 1) != 1 or config.get("behaviorType", 0) != 0:
-        raise LaunchError("Training requires environmentCount=1 and behaviorType=0 (Default).")
+    if config.get("behaviorType", 0) != 0:
+        raise LaunchError("Training requires behaviorType=0 (Default).")
     if trainer:
         try: version = importlib.metadata.version("mlagents")
         except importlib.metadata.PackageNotFoundError:
@@ -315,8 +315,6 @@ def train(args):
     arenas = getattr(args, "arenas", 1)
     if not 1 <= arenas <= 16: raise LaunchError("Arenas must be between 1 and 16.")
     autonomous = _autonomous(config)
-    if autonomous["enabled"] and arenas != 1:
-        raise LaunchError("Autonomous frozen evaluation requires --arenas 1.")
     eval_every = int(autonomous["evaluationEverySteps"])
     eval_episodes = int(autonomous["evaluationEpisodes"])
     if eval_every < 1 or eval_episodes < 1: raise LaunchError("Autonomous evaluation interval/episode count must be positive.")

@@ -65,6 +65,33 @@ namespace Kruty1918.Moyva.AI.Training.Tests
             }
         }
 
+        [Test]
+        public void BootstrapLegalSetupMasteryRepairsPersistedAllSuccessState()
+        {
+            string path = Path.Combine(Path.GetTempPath(), "moyva-curriculum-bootstrap-repair-" + Guid.NewGuid().ToString("N") + ".json");
+            try
+            {
+                File.WriteAllText(path,
+                    "{\"version\":2,\"totalDecisions\":545,\"nextEvaluationStep\":10000,"
+                    + "\"activeScenarioId\":\"foundation-legal-setup\",\"skills\":["
+                    + "{\"scenarioId\":\"foundation-legal-setup\",\"mastered\":false,"
+                    + "\"consecutivePasses\":0,\"trainingEpisodes\":545,\"trainingSuccesses\":545},"
+                    + "{\"scenarioId\":\"castle\",\"mastered\":false,\"consecutivePasses\":0,"
+                    + "\"trainingEpisodes\":0,\"trainingSuccesses\":0}]}");
+
+                using var controller = new TrainingCurriculumController(
+                    new AutonomousTrainingConfig { statePath = path }, 1918);
+
+                Assert.IsTrue(controller.GetSkill("foundation-legal-setup").mastered);
+                Assert.That(controller.GetSkill("foundation-legal-setup").consecutivePasses, Is.GreaterThanOrEqualTo(100));
+                Assert.AreEqual("castle", controller.ChooseNext().id);
+            }
+            finally
+            {
+                if (File.Exists(path)) File.Delete(path);
+            }
+        }
+
         private sealed class TurnAdapter : ITrainingSimulation
         {
             public readonly RecordingTurns Service = new RecordingTurns();
