@@ -1,0 +1,20 @@
+{
+    "name": "Kruty1918.Moyva.Generator.Tests.Runtime",
+    "references": [
+        "Kruty1918.Moyva.Generator.Runtime",
+        "Kruty1918.Moyva.Generator.API",
+        "Kruty1918.Moyva.Jsonization",
+        "Kruty1918.Moyva.Grid.API",
+        "UnityEngine.TestRunner",
+        "NUnit"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

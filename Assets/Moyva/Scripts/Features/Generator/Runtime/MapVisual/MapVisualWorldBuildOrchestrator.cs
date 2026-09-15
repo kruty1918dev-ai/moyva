@@ -18,6 +18,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly ITileWorldCreatorWorldBuildBridge _tileWorldCreatorBridge;
         private readonly MapVisualFallbackPresenter _fallbackPresenter;
         private readonly IGeneratorTerrainLevelService _terrainLevelService;
+        private readonly EnvironmentDecorationGenerator _decorationGenerator;
+        private readonly EnvironmentDecorationSpawner _decorationSpawner;
 
         public MapVisualWorldBuildOrchestrator(
             IMapVisualWorldState state,
@@ -27,7 +29,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IMapVisualWorldSignalPublisher signals,
             [InjectOptional] ITileWorldCreatorWorldBuildBridge tileWorldCreatorBridge = null,
             [InjectOptional] MapVisualFallbackPresenter fallbackPresenter = null,
-            [InjectOptional] IGeneratorTerrainLevelService terrainLevelService = null)
+            [InjectOptional] IGeneratorTerrainLevelService terrainLevelService = null,
+            [InjectOptional] EnvironmentDecorationGenerator decorationGenerator = null,
+            [InjectOptional] EnvironmentDecorationSpawner decorationSpawner = null)
         {
             _state = state;
             _dataFactory = dataFactory;
@@ -37,6 +41,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _tileWorldCreatorBridge = tileWorldCreatorBridge;
             _fallbackPresenter = fallbackPresenter;
             _terrainLevelService = terrainLevelService;
+            _decorationGenerator = decorationGenerator;
+            _decorationSpawner = decorationSpawner;
         }
 
         public void BuildWorld()
@@ -88,8 +94,25 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             _gridWriter.Write(worldData);
             PublishTerrainData(worldData);
+            GenerateEnvironmentDecorations(worldData);
             _state.SetCurrentWorldData(worldData);
             _signals.Publish(worldData, source);
+        }
+
+        private void GenerateEnvironmentDecorations(GeneratedWorldData worldData)
+        {
+            if (_decorationGenerator == null || _decorationSpawner == null)
+                return;
+
+            try
+            {
+                var placementResult = _decorationGenerator.Generate(worldData);
+                _decorationSpawner.Spawn(placementResult);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[EnvironmentDecorations] Failed to generate decorations: {ex.Message}");
+            }
         }
 
         private static void ApplyVisualBounds(

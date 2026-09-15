@@ -1,3 +1,5 @@
 {
-  "json.schemas": []
+  "json.schemas": [],
+  "devin.defaultModel": "swe-1-7-medium",
+  "devin.implicitContext.enabled": false
 }

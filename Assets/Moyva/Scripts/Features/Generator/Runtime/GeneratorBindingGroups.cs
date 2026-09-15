@@ -132,9 +132,33 @@ namespace Kruty1918.Moyva.Generator
                     .AsSingle();
             }
 
+            // Bind environment decoration system
+            BindEnvironmentDecorationSystem(container);
+
             container.BindInterfacesAndSelfTo<MapVisualInstantiator>()
                 .AsSingle()
                 .NonLazy();
+        }
+
+        private static void BindEnvironmentDecorationSystem(DiContainer container)
+        {
+            // Load decoration config from JSON
+            EnvironmentDecorationConfig decorationConfig = null;
+            try
+            {
+                decorationConfig = Kruty1918.Moyva.Jsonization.MoyvaJsonRuntime.Get<EnvironmentDecorationConfig>("environment-decoration-config");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[GeneratorBindings] Failed to load environment decoration config: {ex.Message}");
+            }
+
+            if (decorationConfig != null && decorationConfig.Enabled)
+            {
+                container.BindInstance(decorationConfig).AsSingle();
+                container.BindInterfacesAndSelfTo<EnvironmentDecorationGenerator>().AsSingle();
+                container.BindInterfacesAndSelfTo<EnvironmentDecorationSpawner>().AsSingle();
+            }
         }
 
         public static void InstallStartup(DiContainer container)
