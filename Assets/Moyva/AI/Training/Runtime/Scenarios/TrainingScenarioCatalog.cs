@@ -182,11 +182,11 @@ namespace Kruty1918.Moyva.AI.Training
 
         private static TrainingScenarioDefinition[] FallbackDefinitions()
         {
-            TrainingScenarioDefinition Make(string id, string title, TrainingCurriculumStage stage, bool castle, bool full,
+            TrainingScenarioDefinition MakeDefault(string id, string title, TrainingCurriculumStage stage, bool castle, bool full,
                 string[] prerequisites, params TrainingScenarioStepDefinition[] steps)
-                => Make(id, title, stage, castle, full, prerequisites, CapabilitiesFor(full), steps);
+                => MakeWithCapabilities(id, title, stage, castle, full, prerequisites, CapabilitiesFor(full), steps);
 
-            TrainingScenarioDefinition Make(string id, string title, TrainingCurriculumStage stage, bool castle, bool full,
+            TrainingScenarioDefinition MakeWithCapabilities(string id, string title, TrainingCurriculumStage stage, bool castle, bool full,
                 string[] prerequisites, string[] capabilities, params TrainingScenarioStepDefinition[] steps)
             {
                 return new TrainingScenarioDefinition
@@ -256,46 +256,46 @@ namespace Kruty1918.Moyva.AI.Training
             return new[]
             {
                 // S0: Foundation - legal initial state (no scaffolding for learner)
-                Make("foundation-legal-setup", "Legal initial state", TrainingCurriculumStage.BasicLifecycle, false, false,
+                MakeWithCapabilities("foundation-legal-setup", "Legal initial state", TrainingCurriculumStage.BasicLifecycle, false, false,
                     Array.Empty<string>(), new[] { "end-turn" }, LegalSetup()),
 
                 // S1: Castle foundation - learner places first castle
-                Make("castle", "First castle", TrainingCurriculumStage.Building, true, false, new[] { "foundation-legal-setup" }, Castle()),
+                MakeDefault("castle", "First castle", TrainingCurriculumStage.Building, true, false, new[] { "foundation-legal-setup" }, Castle()),
 
                 // S2: Initial economy - castle operational -> settlement -> starter resources to settlement
-                Make("production", "Resource production", TrainingCurriculumStage.Economy, true, false,
+                MakeDefault("production", "Resource production", TrainingCurriculumStage.Economy, true, false,
                     new[] { "castle" }, Castle(), Production()),
 
                 // S3: Production establishment - build first production building
-                Make("stable-economy", "Stable economy", TrainingCurriculumStage.Economy, true, false,
+                MakeDefault("stable-economy", "Stable economy", TrainingCurriculumStage.Economy, true, false,
                     new[] { "production" }, Castle(), Production(), Stable()),
 
                 // S4: Military infrastructure - build recruitment building
-                Make("recruitment", "Recruitment", TrainingCurriculumStage.Recruitment, true, false,
+                MakeDefault("recruitment", "Recruitment", TrainingCurriculumStage.Recruitment, true, false,
                     new[] { "stable-economy" }, Castle(), Production(), Stable(), Recruit()),
 
                 // S5: Movement & exploration
-                Make("movement-scouting", "Movement and scouting", TrainingCurriculumStage.FogOfWar, true, false,
+                MakeDefault("movement-scouting", "Movement and scouting", TrainingCurriculumStage.FogOfWar, true, false,
                     new[] { "recruitment" }, Castle(), Production(), Stable(), Recruit(), Move(), Scout()),
 
                 // S6: Combat engagement
-                Make("combat-defense", "Combat and defense", TrainingCurriculumStage.Combat, true, false,
+                MakeDefault("combat-defense", "Combat and defense", TrainingCurriculumStage.Combat, true, false,
                     new[] { "movement-scouting" }, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat()),
 
                 // S7: Capture expansion
-                Make("capture", "Capture", TrainingCurriculumStage.Objectives, true, false,
+                MakeDefault("capture", "Capture", TrainingCurriculumStage.Objectives, true, false,
                     new[] { "combat-defense" }, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat(), Capture()),
 
                 // S8: Combined economy + military
-                Make("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment, true, false,
+                MakeDefault("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment, true, false,
                     new[] { "stable-economy", "recruitment" }, Castle(), Production(), Stable(), Recruit()),
 
                 // S9: Combined field operations
-                Make("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat, true, false,
+                MakeDefault("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat, true, false,
                     new[] { "movement-scouting", "combat-defense" }, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat()),
 
                 // S10: Full game autonomous - both sides start from S0
-                Make("full-game-autonomous", "Full game autonomous", TrainingCurriculumStage.FullGame, true, true, new[] { "capture" },
+                MakeDefault("full-game-autonomous", "Full game autonomous", TrainingCurriculumStage.FullGame, true, true, new[] { "capture" },
                     Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat(), Capture(), Win())
             };
         }
