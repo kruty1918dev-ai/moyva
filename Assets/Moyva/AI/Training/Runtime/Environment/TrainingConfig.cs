@@ -16,9 +16,7 @@ namespace Kruty1918.Moyva.AI.Training
         public int minWorldSize = 20;
         public int maxWorldSize = 40;
         public string generatorGraphId = "testgeneratorgraph";
-        public string startingUnitTypeId = "warrior";
-        public bool spawnTrainingBoats = true;
-        public string trainingBoatTypeId = "boat";
+        public string spawnValidationUnitTypeId = "warrior";
         public bool deterministicMode = true;
         public bool autoReset = true;
         public int maxTurnsPerEpisode = 200;
@@ -222,8 +220,7 @@ namespace Kruty1918.Moyva.AI.Training
             if (environmentCount < 1 || maxTurnsPerEpisode < 1 || maxDecisionsPerEpisode < 1
                 || worldSize < 12 || worldSize > 128 || string.IsNullOrWhiteSpace(generatorGraphId)
                 || minWorldSize < 12 || maxWorldSize > 128 || minWorldSize > maxWorldSize
-                || string.IsNullOrWhiteSpace(startingUnitTypeId)
-                || (spawnTrainingBoats && string.IsNullOrWhiteSpace(trainingBoatTypeId))
+                || string.IsNullOrWhiteSpace(spawnValidationUnitTypeId)
                 || decisionInterval < 1 || !Finite(trainingTimeScale) || trainingTimeScale <= 0
                 || !Finite(visualTimeScale) || !Finite(headlessTimeScale)
                 || !Finite(visualCameraZoomSensitivity) || !Finite(visualCameraPanSpeed)

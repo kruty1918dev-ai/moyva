@@ -129,7 +129,7 @@ namespace Kruty1918.Moyva.AI.Training
                     for (int x = 1; x < world.Width - 1; x++)
                     {
                         var cell = new Vector2Int(x, y);
-                        if (placement.CanDeployUnit(config.startingUnitTypeId, cell, out var rejection)) spawnCells.Add(cell);
+                        if (placement.CanDeployUnit(config.spawnValidationUnitTypeId, cell, out var rejection)) spawnCells.Add(cell);
                         else if (spawnRejections.Count < 4) spawnRejections.Add(grid.GetTileData(cell) + ": " + rejection);
                     }
                 if (spawnCells.Count < 2) throw new InvalidOperationException("Generated world has fewer than two legal unit spawns. " + string.Join("; ", spawnRejections));
