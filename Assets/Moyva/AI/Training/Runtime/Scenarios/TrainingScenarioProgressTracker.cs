@@ -33,6 +33,12 @@ namespace Kruty1918.Moyva.AI.Training
         public int ReachableLandCellsFromLearner { get; }
         public int TotalLandCells { get; }
         public int LearnerResourcePotential { get; }
+
+        // NEW: Recruitment tracking fields for invariant I1
+        public IReadOnlyDictionary<string, int> RecruitedUnitsByType { get; }
+        public IReadOnlyDictionary<string, int> SetupUnitsByType { get; }
+        public IReadOnlyCollection<string> LegitimateRecruitmentSources { get; }
+
         public float LearnerReachableLandRatio => TotalLandCells <= 0
             ? 0f
             : Mathf.Clamp01((float)ReachableLandCellsFromLearner / TotalLandCells);
@@ -55,7 +61,11 @@ namespace Kruty1918.Moyva.AI.Training
             IReadOnlyCollection<string> ownedSettlementIds = null,
             int reachableLandCellsFromLearner = 0,
             int totalLandCells = 0,
-            int learnerResourcePotential = 0)
+            int learnerResourcePotential = 0,
+            // NEW: Recruitment tracking parameters
+            IReadOnlyDictionary<string, int> recruitedUnitsByType = null,
+            IReadOnlyDictionary<string, int> setupUnitsByType = null,
+            IReadOnlyCollection<string> legitimateRecruitmentSources = null)
         {
             IsSetup = isSetup;
             OwnedSettlements = ownedSettlements;
@@ -75,6 +85,10 @@ namespace Kruty1918.Moyva.AI.Training
             ReachableLandCellsFromLearner = reachableLandCellsFromLearner;
             TotalLandCells = totalLandCells;
             LearnerResourcePotential = learnerResourcePotential;
+            // NEW: Initialize recruitment tracking fields
+            RecruitedUnitsByType = recruitedUnitsByType ?? EmptyInt;
+            SetupUnitsByType = setupUnitsByType ?? EmptyInt;
+            LegitimateRecruitmentSources = legitimateRecruitmentSources ?? EmptyStrings;
         }
 
         public float Stock(string resourceId)
@@ -88,6 +102,21 @@ namespace Kruty1918.Moyva.AI.Training
 
         public int OperationalBuildingCount(string buildingTypeId)
             => buildingTypeId != null && OperationalBuildingsByType.TryGetValue(buildingTypeId, out var value) ? value : 0;
+
+        // NEW: Recruitment tracking accessors
+        public int RecruitedCount(string unitTypeId)
+            => unitTypeId != null && RecruitedUnitsByType.TryGetValue(unitTypeId, out var value) ? value : 0;
+
+        public int SetupCount(string unitTypeId)
+            => unitTypeId != null && SetupUnitsByType.TryGetValue(unitTypeId, out var value) ? value : 0;
+
+        public bool HasLegitimateRecruitmentSource(string buildingId)
+        {
+            if (string.IsNullOrWhiteSpace(buildingId)) return false;
+            foreach (var source in LegitimateRecruitmentSources)
+                if (string.Equals(source, buildingId, StringComparison.Ordinal)) return true;
+            return false;
+        }
 
         public bool OwnsObjective(string objectiveId)
         {
@@ -342,3 +371,4 @@ namespace Kruty1918.Moyva.AI.Training
         }
     }
 }
+

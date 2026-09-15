@@ -226,6 +226,11 @@ namespace Kruty1918.Moyva.AI.Training
             var unitCells = new Dictionary<string, Vector2Int>(StringComparer.Ordinal);
             var ownedSettlementIds = new List<string>();
 
+            // NEW: Recruitment tracking
+            var recruitedByType = new Dictionary<string, int>(StringComparer.Ordinal);
+            var setupByType = new Dictionary<string, int>(StringComparer.Ordinal);
+            var legitimateRecruitmentSources = new List<string>();
+
             int ownedSettlements = 0;
             int operationalCastles = 0;
             if (EconomyInstalled)
@@ -261,14 +266,50 @@ namespace Kruty1918.Moyva.AI.Training
                 }
                 if (operationalCastles > 0)
                     operationalByType["castle-01"] = operationalCastles;
+
+                // NEW: Collect legitimate recruitment sources (operational buildings with recruitment modules)
+                var buildingRegistry = _container.TryResolve<IBuildingRegistry>();
+                var recruitmentQuery = _container.TryResolve<IUnitRecruitmentQuery>();
+                if (buildingRegistry != null && recruitmentQuery != null)
+                {
+            foreach (var placement in Placements.GetSavedPlacements())
+        {
+                        if (!string.Equals(placement.OwnerId, learner, StringComparison.Ordinal)) continue;
+                        var buildingDef = buildingRegistry.GetById(placement.BuildingId);
+                        if (buildingDef != null && BuildingDefinitionCapabilities.TryGetEnabledModule(buildingDef, out UnitRecruitmentBuildingModule _))
+            {
+                            legitimateRecruitmentSources.Add(placement.BuildingId);
+                        }
+                    }
+                }
             }
 
             int ownedUnits = 0;
             int deployedUnits = 0;
             int visibleEnemies = 0;
             var fog = _container.TryResolve<IFogOwnerStateReader>();
-            foreach (string unitId in Units.GetAllUnitIds())
+
+            // NEW: Get recruitment queue info to distinguish recruited vs setup units
+            var recruitmentQuery = _container.TryResolve<IUnitRecruitmentQuery>();
+            var readyItems = recruitmentQuery != null ? recruitmentQuery.GetReadyItems(learner) : Array.Empty<UnitRecruitmentQueueItemSnapshot>();
+            var readyQueueIds = new HashSet<long>();
+            foreach (var item in readyItems) readyQueueIds.Add(item.QueueId);
+
+            // Also get all queued items (including completed ones) to track historically recruited units
+            var allQueuedItems = new List<UnitRecruitmentQueueItemSnapshot>();
+            if (recruitmentQuery != null)
             {
+                foreach (var source in legitimateRecruitmentSources)
+        {
+                    var queue = recruitmentQuery.GetQueue(learner, Placements.GetSavedPlacements()
+                        .FirstOrDefault(p => p.BuildingId == source && string.Equals(p.OwnerId, learner, StringComparison.Ordinal))?.Position ?? default);
+                    if (queue != null) allQueuedItems.AddRange(queue);
+                }
+            }
+            var allQueueIds = new HashSet<long>();
+            foreach (var item in allQueuedItems) allQueueIds.Add(item.QueueId);
+                foreach (string unitId in Units.GetAllUnitIds())
+                {
                 string owner = UnitOwners.GetUnitOwnerId(unitId);
                 bool positioned = Units.TryGetUnitPosition(unitId, out var cell);
                 if (string.Equals(owner, learner, StringComparison.Ordinal))
@@ -279,14 +320,28 @@ namespace Kruty1918.Moyva.AI.Training
                     unitCells[unitId] = cell;
                     string type = Units.GetUnitTypeId(unitId);
                     if (!string.IsNullOrWhiteSpace(type))
+                    {
                         deployedByType[type] = deployedByType.TryGetValue(type, out var count) ? count + 1 : 1;
-                }
+
+                        // NEW: Determine if this unit was legitimately recruited or is a setup unit
+                        // We can't directly know from the unit itself, but we can infer:
+                        // If there are legitimate recruitment sources and the unit type matches what they can produce,
+                        // and we have queue history, we count it as recruited. Otherwise it's setup.
+                        // For now, we use a heuristic: if we have any legitimate recruitment sources and the unit
+                        // type is one that can be recruited from them, and we have queue history, count as recruited.
+                        // This is a best-effort approximation; the authoritative source is the recruitment queue.
+                        bool isLikelyRecruited = legitimateRecruitmentSources.Count > 0 && allQueueIds.Count > 0;
+                        if (isLikelyRecruited)
+                            recruitedByType[type] = recruitedByType.TryGetValue(type, out var rc) ? rc + 1 : 1;
+                        else
+                            setupByType[type] = setupByType.TryGetValue(type, out var sc) ? sc + 1 : 1;
+            }
+        }
                 else if (positioned && fog != null && fog.IsVisible(learner, cell))
                 {
                     visibleEnemies++;
                 }
             }
-
             int exploredCells = 0;
             var exploration = _container.TryResolve<IFogOwnerExplorationSnapshotStore>();
             var explored = exploration?.GetExploredSnapshot(learner);
@@ -319,7 +374,11 @@ namespace Kruty1918.Moyva.AI.Training
                 ownedSettlementIds: ownedSettlementIds,
                 reachableLandCellsFromLearner: CountReachableLandFromLearner(world),
                 totalLandCells: CountLandCells(world),
-                learnerResourcePotential: CountLearnerResourcePotential(world));
+                learnerResourcePotential: CountLearnerResourcePotential(world),
+                // NEW: Recruitment tracking fields
+                recruitedUnitsByType: recruitedByType,
+                setupUnitsByType: setupByType,
+                legitimateRecruitmentSources: legitimateRecruitmentSources);
         }
 
         private Vector2Int SelectLearnerSpawn(MenuWorldPreviewData world, IReadOnlyCollection<Vector2Int> spawnCells)
@@ -356,7 +415,7 @@ namespace Kruty1918.Moyva.AI.Training
                         world.BiomeMap[x, y] = "lowland";
                     else
                         world.BiomeMap[x, y] = "grass";
-                }
+        }
         }
 
         private static Vector2 ResolveHeightRange(MenuWorldPreviewData world)
@@ -385,9 +444,9 @@ namespace Kruty1918.Moyva.AI.Training
         }
 
         private static float Hash01(int seed, int x, int y)
-        {
-            unchecked
             {
+            unchecked
+                    {
                 uint h = 2166136261;
                 h = (h ^ (uint)seed) * 16777619;
                 h = (h ^ (uint)x) * 16777619;
@@ -622,3 +681,4 @@ namespace Kruty1918.Moyva.AI.Training
         private sealed class TrainingTurnAuthority : ITurnAuthorityPolicy { public bool IsAuthoritative => true; }
     }
 }
+

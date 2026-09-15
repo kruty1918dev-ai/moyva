@@ -95,9 +95,9 @@ namespace Kruty1918.Moyva.AI.Training
             var scenarios = files.Select(path => ParseJson(File.ReadAllText(path), validateResources: false)).ToArray();
             string[] required =
             {
-                "castle", "production", "stable-economy", "recruitment",
-                "movement-scouting", "combat-defense", "capture", "full-game",
-                "combo-foundation", "combo-economy-recruitment", "combo-field-ops"
+                "foundation-legal-setup", "castle", "production", "stable-economy", "recruitment",
+                "movement-scouting", "combat-defense", "capture", "full-game-autonomous",
+                "combo-economy-recruitment", "combo-field-ops"
             };
             string[] missing = required.Where(id => scenarios.All(s => !string.Equals(s.id, id, StringComparison.Ordinal))).ToArray();
             if (missing.Length > 0)
@@ -193,7 +193,8 @@ namespace Kruty1918.Moyva.AI.Training
                     {
                         learnerStartsWithCastle = !castle,
                         learnerMustPlaceCastle = castle,
-                        startingUnits = new[] { new TrainingScenarioUnitSetup { unitTypeId = "warrior", count = 1 } }
+                        // REMOVED: startingUnits - no scenario should provide units; all units must be recruited
+                        startingUnits = Array.Empty<TrainingScenarioUnitSetup>()
                     },
                     availableCapabilities = CapabilitiesFor(full),
                     generationConstraints = new TrainingScenarioGenerationConstraints
@@ -244,19 +245,45 @@ namespace Kruty1918.Moyva.AI.Training
                 { id = "match-won", goal = TrainingScenarioGoalKind.MatchWon,
                   criterion = TrainingScenarioCriterionKind.MatchVictory };
 
+            // NEW: S0 - Foundation legal setup (no units, no buildings, no resources, economy installed)
+            TrainingScenarioStepDefinition LegalSetup() => new TrainingScenarioStepDefinition
+                { id = "legal-setup-verified", goal = TrainingScenarioGoalKind.CastleOperational,
+                  criterion = TrainingScenarioCriterionKind.OperationalCastle, buildingTypeId = "castle-01" };
+
             return new[]
             {
-                Make("castle", "First castle", TrainingCurriculumStage.Building, true, false, Array.Empty<string>(), Castle()),
+                // S0: Foundation - legal initial state (no scaffolding for learner)
+                Make("foundation-legal-setup", "Legal initial state", TrainingCurriculumStage.BasicLifecycle, false, false, Array.Empty<string>(), LegalSetup()),
+
+                // S1: Castle foundation - learner places first castle
+                Make("castle", "First castle", TrainingCurriculumStage.Building, true, false, new[] { "foundation-legal-setup" }, Castle()),
+
+                // S2: Initial economy - castle operational -> settlement -> starter resources to settlement
                 Make("production", "Resource production", TrainingCurriculumStage.Economy, false, false, new[] { "castle" }, Production()),
+
+                // S3: Production establishment - build first production building
                 Make("stable-economy", "Stable economy", TrainingCurriculumStage.Economy, false, false, new[] { "production" }, Stable()),
+
+                // S4: Military infrastructure - build recruitment building
                 Make("recruitment", "Recruitment", TrainingCurriculumStage.Recruitment, false, false, new[] { "stable-economy" }, Recruit()),
+
+                // S5: Movement & exploration
                 Make("movement-scouting", "Movement and scouting", TrainingCurriculumStage.FogOfWar, false, false, new[] { "recruitment" }, Move(), Scout()),
+
+                // S6: Combat engagement
                 Make("combat-defense", "Combat and defense", TrainingCurriculumStage.Combat, false, false, new[] { "movement-scouting" }, Combat()),
+
+                // S7: Capture expansion
                 Make("capture", "Capture", TrainingCurriculumStage.Objectives, false, false, new[] { "combat-defense" }, Capture()),
-                Make("combo-foundation", "Castle + production review", TrainingCurriculumStage.Economy, true, false, new[] { "castle", "production" }, Castle(), Production()),
+
+                // S8: Combined economy + military
                 Make("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment, false, false, new[] { "stable-economy", "recruitment" }, Stable(), Recruit()),
+
+                // S9: Combined field operations
                 Make("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat, false, false, new[] { "movement-scouting", "combat-defense" }, Move(), Scout(), Combat()),
-                Make("full-game", "Full game", TrainingCurriculumStage.FullGame, true, true, new[] { "capture" },
+
+                // S10: Full game autonomous - both sides start from S0
+                Make("full-game-autonomous", "Full game autonomous", TrainingCurriculumStage.FullGame, true, true, new[] { "capture" },
                     Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat(), Capture(), Win())
             };
         }
@@ -267,3 +294,4 @@ namespace Kruty1918.Moyva.AI.Training
                 : new[] { "construction", "economy", "recruitment", "movement", "scouting", "combat", "capture", "end-turn" };
     }
 }
+

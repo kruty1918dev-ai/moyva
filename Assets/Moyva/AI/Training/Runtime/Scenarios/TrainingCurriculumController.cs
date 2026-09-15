@@ -215,7 +215,7 @@ namespace Kruty1918.Moyva.AI.Training
             => (scenario.prerequisites ?? Array.Empty<string>()).All(id => Skill(id)?.mastered == true);
         private TrainingScenarioDefinition[] Ordered()
         {
-            string[] ids = { "castle", "production", "stable-economy", "recruitment", "movement-scouting", "combat-defense", "capture", "full-game" };
+            string[] ids = { "foundation-legal-setup", "castle", "production", "stable-economy", "recruitment", "movement-scouting", "combat-defense", "capture", "full-game-autonomous" };
             return ids.Select(_catalog.Get).Where(x => x != null).ToArray();
         }
         private static string ResolveStatePath(string configured)
@@ -242,3 +242,4 @@ namespace Kruty1918.Moyva.AI.Training
         }
     }
 }
+

@@ -5,61 +5,6 @@ import { z } from "zod";
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
-import os from "node:os";
-
-
-
-async function loadMoyvaLocalEnv() {
-  const envFile = path.join(
-    os.homedir(),
-    ".config",
-    "moyva",
-    "openrouter.env"
-  );
-
-  try {
-    const text = await fs.readFile(envFile, "utf8");
-
-    for (const raw of text.split(/\r?\n/)) {
-      const line = raw.trim();
-
-      if (!line || line.startsWith("#")) {
-        continue;
-      }
-
-      const match = line.match(
-        /^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$/
-      );
-
-      if (!match) {
-        continue;
-      }
-
-      const key = match[1];
-      let value = match[2].trim();
-
-      if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-      ) {
-        value = value.slice(1, -1);
-      }
-
-      if (process.env[key] === undefined) {
-        process.env[key] = value;
-      }
-    }
-  }
-  catch (error) {
-    if (error?.code !== "ENOENT") {
-      console.error(
-        `[Moyva Council] env load failed: ${error.message}`
-      );
-    }
-  }
-}
-
-await loadMoyvaLocalEnv();
 
 
 const ROOT = path.resolve(
@@ -69,36 +14,6 @@ const ROOT = path.resolve(
 const OLLAMA =
   process.env.OLLAMA_BASE_URL ||
   "http://127.0.0.1:11434";
-
-
-const PROVIDER =
-  (process.env.COUNCIL_PROVIDER || "ollama").toLowerCase();
-
-const OPENROUTER =
-  process.env.OPENROUTER_BASE_URL ||
-  "https://openrouter.ai/api/v1";
-
-const OPENROUTER_API_KEY =
-  process.env.OPENROUTER_API_KEY || "";
-
-const OPENROUTER_MODELS = {
-  scout:
-    process.env.COUNCIL_OR_SCOUT ||
-    "openrouter/free",
-
-  reasoner:
-    process.env.COUNCIL_OR_REASONER ||
-    "openrouter/free",
-
-  engineer:
-    process.env.COUNCIL_OR_ENGINEER ||
-    "openrouter/free",
-
-  architect:
-    process.env.COUNCIL_OR_ARCHITECT ||
-    "openrouter/free"
-};
-
 
 const CACHE_DIR = path.join(
   ROOT,
@@ -679,189 +594,6 @@ async function ollamaRequest({
 }
 
 
-
-async function openRouterRequest({
-  role,
-  model,
-  system,
-  prompt,
-  refresh = false
-}) {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error(
-      "OPENROUTER_API_KEY is not configured"
-    );
-  }
-
-  const cfg =
-    MODEL_CONFIG[role] ||
-    MODEL_CONFIG.reasoner;
-
-  const cacheKey =
-    hash(
-      JSON.stringify({
-        provider: "openrouter",
-        model,
-        system,
-        prompt,
-        cfg
-      })
-    );
-
-  const cacheFile =
-    path.join(
-      CACHE_DIR,
-      cacheKey + ".json"
-    );
-
-  if (!refresh) {
-    try {
-      const cached =
-        JSON.parse(
-          await fs.readFile(
-            cacheFile,
-            "utf8"
-          )
-        );
-
-      return {
-        ...cached,
-        cached: true
-      };
-    }
-    catch {
-      // cache miss
-    }
-  }
-
-  const controller =
-    new AbortController();
-
-  const timer =
-    setTimeout(
-      () => controller.abort(),
-      cfg.timeout
-    );
-
-  const started =
-    Date.now();
-
-  try {
-    console.error(
-      `[Moyva Council] OpenRouter → ${model}`
-    );
-
-    const response =
-      await fetch(
-        `${OPENROUTER}/chat/completions`,
-        {
-          method: "POST",
-
-          headers: {
-            "Authorization":
-              `Bearer ${OPENROUTER_API_KEY}`,
-
-            "Content-Type":
-              "application/json",
-
-            "X-Title":
-              "Moyva AI Council"
-          },
-
-          signal:
-            controller.signal,
-
-          body:
-            JSON.stringify({
-              model,
-
-              messages: [
-                {
-                  role: "system",
-                  content: system
-                },
-                {
-                  role: "user",
-                  content: prompt
-                }
-              ],
-
-              stream: false,
-              temperature: 0.12,
-              top_p: 0.9,
-              max_tokens: cfg.num_predict
-            })
-        }
-      );
-
-    if (!response.ok) {
-      throw new Error(
-        `OpenRouter HTTP ${response.status}: ${await response.text()}`
-      );
-    }
-
-    const data =
-      await response.json();
-
-    const result = {
-      model:
-        data?.model ||
-        model,
-
-      text:
-        data?.choices?.[0]?.message?.content?.trim() ||
-        "[Model returned no normal response content]",
-
-      durationSeconds:
-        Math.round(
-          (Date.now() - started) / 1000
-        ),
-
-      promptTokens:
-        data?.usage?.prompt_tokens ??
-        null,
-
-      outputTokens:
-        data?.usage?.completion_tokens ??
-        null,
-
-      cached:
-        false
-    };
-
-    await fs.writeFile(
-      cacheFile,
-      JSON.stringify(
-        result,
-        null,
-        2
-      ),
-      "utf8"
-    );
-
-    return result;
-  }
-  finally {
-    clearTimeout(timer);
-  }
-}
-
-
-async function modelRequest(args) {
-  if (PROVIDER === "openrouter") {
-    return openRouterRequest({
-      ...args,
-
-      model:
-        OPENROUTER_MODELS[args.role] ||
-        "openrouter/free"
-    });
-  }
-
-  return ollamaRequest(args);
-}
-
-
 async function makePrompt({
   task,
   files,
@@ -1160,7 +892,7 @@ function registerConsultTool(
 
 
         const result =
-          await modelRequest({
+          await ollamaRequest({
 
             role,
 
@@ -1354,7 +1086,7 @@ server.registerTool(
         try {
 
           const result =
-            await modelRequest({
+            await ollamaRequest({
 
               role,
 
@@ -1448,7 +1180,7 @@ server.registerTool(
 
 
       const result =
-        await modelRequest({
+        await ollamaRequest({
 
           role:
             "reasoner",
