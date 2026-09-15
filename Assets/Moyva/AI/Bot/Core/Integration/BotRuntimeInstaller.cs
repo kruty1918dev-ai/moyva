@@ -65,8 +65,10 @@ namespace Kruty1918.Moyva.AI.Bot
             var factory = container.TryResolve<IBotPolicyDriverFactory>();
             var policy = factory?.Create(config, telemetry) ?? new HeuristicBotPolicyDriver();
             var result = new BotDecisionOrchestrator(gateway, registry,
-                new MoyvaBotPerceptionSource(turns, units, owners, fog, profiles, terrain,
-                    container.TryResolve<IEconomyInfoMediator>()), policy, config, telemetry);
+                new MoyvaBotPerceptionSource(turns, units, owners, fog,
+                    profiles: profiles,
+                    terrain: terrain,
+                    economy: container.TryResolve<IEconomyInfoMediator>()), policy, config, telemetry);
             if (config.policyMode != BotPolicyMode.Heuristic && factory == null)
                 telemetry.FallbackReason = "No ML policy binding installed; using Heuristic.";
             return result;

@@ -530,131 +530,6 @@ def train(args):
         else: os.environ["MOYVA_DECISION_JOURNAL_PATH"] = old_journal_env
 
 
-
-def watch_model(args):
-    # Launch a frozen checkpoint in the visual Model Inspector. Never starts PPO.
-    from moyva_cli.config import simple_name
-    from moyva_cli.evaluation import (
-        build_frozen_player,
-        checkpoint_pair,
-        newest_training_checkpoint,
-        patched_environment,
-        snapshot_frozen_checkpoint,
-    )
-
-    unity, config = prerequisite(args, trainer=False)
-    simple_name(args.run_id)
-    results = resolve(args.results)
-    run_dir = results / args.run_id
-    metadata_path = run_dir / "run.json"
-    if not metadata_path.is_file():
-        raise LaunchError("Model Inspector requires an existing run.json: " + str(run_dir))
-    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-    current = contract()
-    trained_contract = ((metadata.get("contract") or {}).get("hash"))
-    if trained_contract != current["hash"] and not args.force_contract_mismatch:
-        raise LaunchError(
-            "MODEL CONTRACT MISMATCH\n"
-            + "checkpoint: " + str(trained_contract) + "\n"
-            + "runtime: " + current["hash"] + "\n"
-            + "Use --force-contract-mismatch only if you intentionally accept incompatible observations/actions."
-        )
-
-    if args.checkpoint == "latest":
-        newest = newest_training_checkpoint(run_dir)
-        if newest is None:
-            raise LaunchError("No MoyvaStrategy checkpoint exists in " + str(run_dir))
-        step = int(newest[0])
-    else:
-        try:
-            step = int(args.checkpoint)
-        except ValueError as error:
-            raise LaunchError("--checkpoint must be an integer step or 'latest'.") from error
-        if step < 0:
-            raise LaunchError("--checkpoint must be non-negative.")
-
-    checkpoint_pair(run_dir, step)
-    identity = snapshot_frozen_checkpoint(run_dir, step, trained_contract or current["hash"])
-
-    scenario = args.scenario
-    seed = args.seed if args.seed is not None else int(metadata.get("seed", config.get("baseSeed", 1918)))
-    world_size = args.world_size if args.world_size is not None else int(metadata.get("world_size", config.get("worldSize", 24)))
-    stage = args.stage if args.stage is not None else int(metadata.get("stage", config["curriculum"]["stage"]))
-    speed = args.time_scale if args.time_scale is not None else 1.0
-    if not 0.1 <= speed <= 20:
-        raise LaunchError("--time-scale must be between 0.1 and 20.")
-    if not 12 <= world_size <= 128 or not 0 <= stage <= 8:
-        raise LaunchError("Allowed ranges: world-size 12-128; stage 0-8.")
-
-    suffix = {"windows": ".exe", "linux": ".x86_64", "macos": ".app"}[args.target]
-    player = run_dir / "inspector" / "players" / str(step) / ("MoyvaInspector" + suffix)
-    build_log = player.parent / "build.log"
-
-    if not args.no_build or not player.exists():
-        log("Building frozen Model Inspector player for checkpoint " + str(step))
-        try:
-            build_frozen_player(ROOT, unity, args.target, identity, player, run_process)
-        except Exception:
-            if build_log.is_file():
-                lines = build_log.read_text(encoding="utf-8", errors="replace").splitlines()
-                compile_errors = [
-                    line for line in lines
-                    if "error CS" in line or ": error " in line or "Scripts have compiler errors" in line
-                ]
-                if compile_errors:
-                    log("Unity compiler errors:")
-                    for line in compile_errors[-20:]:
-                        log(line)
-            raise
-
-    if not player.exists():
-        raise LaunchError("Model Inspector player was not produced: " + str(player))
-
-    stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d-%H%M%S")
-    session = run_dir / "inspector" / "sessions" / (str(step) + "-" + scenario + "-" + stamp)
-    session.mkdir(parents=True, exist_ok=False)
-    journal = session / "decisions.jsonl"
-    inspector_state = session / "curriculum-state.json"
-    unity_log = session / "unity.log"
-
-    env = {
-        "MOYVA_MODEL_INSPECTOR": "1",
-        "MOYVA_INSPECT_RUN_ID": args.run_id,
-        "MOYVA_INSPECT_SCENARIO": scenario,
-        "MOYVA_INSPECT_CHECKPOINT": identity["checkpoint_id"],
-        "MOYVA_INSPECT_CHECKPOINT_STEP": str(step),
-        "MOYVA_INSPECT_CONTRACT_HASH": identity["contract_hash"],
-        "MOYVA_INSPECT_MODEL_SHA256": identity["frozen_onnx_sha256"],
-        "MOYVA_INSPECT_SEED": str(seed),
-        "MOYVA_INSPECT_SESSION_PATH": str(session.resolve()),
-        "MOYVA_INSPECT_JOURNAL_PATH": str(journal.resolve()),
-        "MOYVA_INSPECT_STATE_PATH": str(inspector_state.resolve()),
-        "MOYVA_INSPECT_AUTOPLAY": "1" if args.command == "watch" else "0",
-    }
-
-    command = [
-        str(player),
-        "-moyvaTrainingMode", "Visual",
-        "-moyvaSeed", str(seed),
-        "-moyvaWorldSize", str(world_size),
-        "-moyvaCurriculumStage", str(stage),
-        "-moyvaTrainingTimeScale", str(speed),
-        "-screen-fullscreen", "0",
-        "-screen-width", str(args.screen_width),
-        "-screen-height", str(args.screen_height),
-        "-logFile", str(unity_log),
-    ]
-
-    log("MODEL INSPECTOR (frozen inference; weights cannot update)")
-    log("run=" + args.run_id + " checkpoint=" + str(step) + " scenario=" + scenario + " seed=" + str(seed))
-    log("player=" + str(player))
-    log("session=" + str(session))
-    log("Controls: Space play/pause | Right step/next | Left previous | Home first | End live | R restart seed")
-    with patched_environment(env):
-        return run_process(command)
-
-
-
 def trainer_step(run_dir):
     log_path = Path(run_dir) / "mlagents.log"
     steps = [int(value) for value in re.findall(r"MoyvaStrategy\. Step:\s*(\d+)", log_path.read_text(errors="replace") if log_path.is_file() else "")]
@@ -687,23 +562,10 @@ def early_stop_failure(run_dir, behavior):
 def parser():
     result = argparse.ArgumentParser(description="Train one MoyvaStrategy policy against real Moyva gameplay.")
     commands = result.add_subparsers(dest="command", required=True)
-    for name in ("doctor", "build", "train", "resume", "visual", "watch", "inspect", "tensorboard", "info"):
+    for name in ("doctor", "build", "train", "resume", "visual", "tensorboard", "info"):
         p = commands.add_parser(name); p.add_argument("--unity"); p.add_argument("--env")
         p.add_argument("--target", choices=("linux", "windows", "macos"), default="windows" if os.name == "nt" else "macos" if sys.platform == "darwin" else "linux")
         p.add_argument("--trainer", "--config", default=str(TRAINING / "Config/moyva_ppo.yaml")); p.add_argument("--results", default=str(RESULTS))
-        if name in ("watch", "inspect"):
-            p.add_argument("--run-id", required=True)
-            p.add_argument("--checkpoint", default="latest")
-            p.add_argument("--scenario", default="castle")
-            p.add_argument("--time-scale", "--speed", dest="time_scale", type=float, default=1.0)
-            p.add_argument("--seed", type=int)
-            p.add_argument("--episode", type=int)
-            p.add_argument("--world-size", type=int)
-            p.add_argument("--stage", type=int)
-            p.add_argument("--screen-width", type=int, default=1440)
-            p.add_argument("--screen-height", type=int, default=900)
-            p.add_argument("--no-build", action="store_true")
-            p.add_argument("--force-contract-mismatch", action="store_true")
         if name in ("train", "resume", "visual"):
             p.add_argument("--run-id", required=name == "resume"); modes = p.add_mutually_exclusive_group()
             modes.add_argument("--visual", action="store_true"); modes.add_argument("--headless", action="store_true")
@@ -728,7 +590,6 @@ def main(argv=None):
             print("MOYVA TRAINING DOCTOR\nPython: OK\nML-Agents: OK\nUnity: OK " + unity + "\nTraining config: OK\nTrainer config: OK")
             print("Training player: " + ("OK" if player_path(args).is_file() else "MISSING (build required)")); print("Contract: v%s %s" % (contract()["version"], contract()["hash"]))
         elif args.command == "build": build(args)
-        elif args.command in ("watch", "inspect"): return watch_model(args)
         elif args.command == "tensorboard":
             try: importlib.metadata.version("tensorboard")
             except importlib.metadata.PackageNotFoundError: raise LaunchError("TensorBoard missing. Install with: python -m pip install tensorboard")

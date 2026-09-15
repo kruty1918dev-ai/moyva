@@ -145,31 +145,19 @@ namespace Kruty1918.Moyva.AI.Training
             Record(type, "game-result");
         }
 
-        public void ResetEnvironment() => ResetEnvironmentCore(true, null);
-
-        internal void ResetForInspectorReplay(int seed)
-        {
-            if (!_config.inspectorMode)
-                throw new InvalidOperationException("Inspector replay reset is available only in Model Inspector mode.");
-            _pendingReset = false;
-            ResetEnvironmentCore(false, seed);
-        }
-
-        private void ResetEnvironmentCore(bool advanceEpisode, int? seedOverride)
+        public void ResetEnvironment()
         {
             if (_pendingReset) return;
             IsReady = false;
             Bridge.Orchestrator?.Dispose();
-            if (advanceEpisode || EpisodeId == 0) EpisodeId++;
+            EpisodeId++;
             Result = TrainingEpisodeResult.None;
             PreviousAction = null;
             _pendingOutcome = TrainingEpisodeResult.None;
             LastCandidate = null;
             Array.Clear(ActionCounts, 0, ActionCounts.Length);
-            int resolvedSeed = seedOverride
-                ?? TrainingResetContext.DeriveSeed(_seedBase, EnvironmentId, EpisodeId);
             var context = new TrainingResetContext(EnvironmentId, EpisodeId,
-                resolvedSeed, Stage,
+                TrainingResetContext.DeriveSeed(_seedBase, EnvironmentId, EpisodeId), Stage,
                 _scenario?.id,
                 _scenario?.startingConditions?.learnerMustPlaceCastle
                     ?? _scenario?.learnerBuildsInitialCastle

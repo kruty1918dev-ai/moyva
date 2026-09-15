@@ -39,18 +39,11 @@ namespace Kruty1918.Moyva.AI.Training
                 new TrainingInstaller().Install(container, Config);
                 environmentManager.Initialize(Config, container.Resolve<ITrainingSimulationFactory>());
                 Presentation.RefreshCameras();
-                if (Config.inspectorMode)
-                {
-                    var inspector = presentation.AddComponent<TrainingModelInspectorController>();
-                    inspector.Initialize(this);
-                }
                 _readiness = environmentManager.Readiness;
                 if (Array.IndexOf(Environment.GetCommandLineArgs(), "-moyvaRequireTrainer") >= 0
                     && !Unity.MLAgents.Academy.Instance.IsCommunicatorOn)
                     throw new InvalidOperationException("TRAINER_NOT_CONNECTED: no external ML-Agents trainer.");
-                Status = Config.inspectorMode
-                    ? "Model Inspector / Frozen Inference"
-                    : Config.allowScaffoldSimulation ? "SCAFFOLD / NOT REAL GAMEPLAY" : "Running / Real Gameplay";
+                Status = Config.allowScaffoldSimulation ? "SCAFFOLD / NOT REAL GAMEPLAY" : "Running / Real Gameplay";
                 Debug.Log(Readiness.Verdict + " | MoyvaStrategy | trainer=" + Unity.MLAgents.Academy.Instance.IsCommunicatorOn);
             }
             catch (Exception exception)

@@ -58,20 +58,6 @@ namespace Kruty1918.Moyva.AI.Training
         [NonSerialized] public string evaluationSeedSetVersion;
         [NonSerialized] public string evaluationProgressPath;
 
-        // Runtime-only frozen Model Inspector contract.
-        [NonSerialized] public bool inspectorMode;
-        [NonSerialized] public string inspectorRunId;
-        [NonSerialized] public string inspectorScenarioId;
-        [NonSerialized] public string inspectorCheckpoint;
-        [NonSerialized] public long inspectorCheckpointStep;
-        [NonSerialized] public string inspectorContractHash;
-        [NonSerialized] public string inspectorModelSha256;
-        [NonSerialized] public int inspectorSeed;
-        [NonSerialized] public bool inspectorAutoPlay;
-        [NonSerialized] public string inspectorSessionPath;
-        [NonSerialized] public string inspectorJournalPath;
-        [NonSerialized] public string inspectorStatePath;
-
         public static TrainingConfig Load(TextAsset json)
         {
             if (json == null) throw new ArgumentNullException(nameof(json));
@@ -97,18 +83,6 @@ namespace Kruty1918.Moyva.AI.Training
             copy.evaluationSeedBase = evaluationSeedBase;
             copy.evaluationSeedSetVersion = evaluationSeedSetVersion;
             copy.evaluationProgressPath = evaluationProgressPath;
-            copy.inspectorMode = inspectorMode;
-            copy.inspectorRunId = inspectorRunId;
-            copy.inspectorScenarioId = inspectorScenarioId;
-            copy.inspectorCheckpoint = inspectorCheckpoint;
-            copy.inspectorCheckpointStep = inspectorCheckpointStep;
-            copy.inspectorContractHash = inspectorContractHash;
-            copy.inspectorModelSha256 = inspectorModelSha256;
-            copy.inspectorSeed = inspectorSeed;
-            copy.inspectorAutoPlay = inspectorAutoPlay;
-            copy.inspectorSessionPath = inspectorSessionPath;
-            copy.inspectorJournalPath = inspectorJournalPath;
-            copy.inspectorStatePath = inspectorStatePath;
             copy.Validate();
             return copy;
         }
@@ -126,41 +100,6 @@ namespace Kruty1918.Moyva.AI.Training
             {
                 enableDecisionJournal = true;
                 decisionJournalPath = runtimeJournalPath;
-            }
-
-            if (Environment.GetEnvironmentVariable("MOYVA_MODEL_INSPECTOR") == "1")
-            {
-                inspectorMode = true;
-                inspectorRunId = RequiredEnvironment("MOYVA_INSPECT_RUN_ID");
-                inspectorScenarioId = RequiredEnvironment("MOYVA_INSPECT_SCENARIO");
-                inspectorCheckpoint = RequiredEnvironment("MOYVA_INSPECT_CHECKPOINT");
-                inspectorContractHash = RequiredEnvironment("MOYVA_INSPECT_CONTRACT_HASH");
-                inspectorModelSha256 = RequiredEnvironment("MOYVA_INSPECT_MODEL_SHA256");
-                inspectorSessionPath = RequiredEnvironment("MOYVA_INSPECT_SESSION_PATH");
-                inspectorJournalPath = RequiredEnvironment("MOYVA_INSPECT_JOURNAL_PATH");
-                inspectorStatePath = RequiredEnvironment("MOYVA_INSPECT_STATE_PATH");
-                inspectorCheckpointStep = ParseLongEnvironment("MOYVA_INSPECT_CHECKPOINT_STEP");
-                inspectorSeed = ParseIntEnvironment("MOYVA_INSPECT_SEED");
-                inspectorAutoPlay = Environment.GetEnvironmentVariable("MOYVA_INSPECT_AUTOPLAY") == "1";
-
-                // Bootstrap HeuristicOnly; TrainingAutonomyCoordinator swaps the
-                // embedded frozen ONNX to InferenceOnly before the first decision.
-                behaviorType = BehaviorType.HeuristicOnly;
-                deterministicMode = true;
-                environmentCount = 1;
-                baseSeed = inspectorSeed;
-                autoReset = false;
-                enableStats = false;
-                enableDecisionJournal = false;
-                observerEnabled = false;
-                enableEditorTelemetry = false;
-                presentationMode = TrainingPresentationMode.Visual;
-                enableSceneOverlay = false;
-                if (curriculum?.autonomous == null)
-                    throw new ArgumentException("Model Inspector requires autonomous curriculum configuration.");
-                curriculum.autonomous.enabled = true;
-                curriculum.autonomous.statePath = inspectorStatePath;
-                return;
             }
 
             if (Environment.GetEnvironmentVariable("MOYVA_EVALUATION") != "1") return;
@@ -228,20 +167,10 @@ namespace Kruty1918.Moyva.AI.Training
                 || !Enum.IsDefined(typeof(TrainingCurriculumStage), curriculum.stage)
                 || !Enum.IsDefined(typeof(BehaviorType), behaviorType))
                 throw new ArgumentException("Invalid training configuration.");
-            if (behaviorType == BehaviorType.InferenceOnly && !evaluationMode && !inspectorMode)
-                throw new ArgumentException("InferenceOnly is reserved for frozen evaluation/model inspection.");
-            if ((evaluationMode || inspectorMode) && behaviorType != BehaviorType.HeuristicOnly)
-                throw new ArgumentException("Frozen inference must bootstrap HeuristicOnly before first-step model binding.");
-            if (inspectorMode && (inspectorCheckpointStep < 0
-                || string.IsNullOrWhiteSpace(inspectorRunId)
-                || string.IsNullOrWhiteSpace(inspectorScenarioId)
-                || string.IsNullOrWhiteSpace(inspectorCheckpoint)
-                || string.IsNullOrWhiteSpace(inspectorContractHash)
-                || string.IsNullOrWhiteSpace(inspectorModelSha256)
-                || string.IsNullOrWhiteSpace(inspectorSessionPath)
-                || string.IsNullOrWhiteSpace(inspectorJournalPath)
-                || string.IsNullOrWhiteSpace(inspectorStatePath)))
-                throw new ArgumentException("Model Inspector metadata is incomplete.");
+            if (behaviorType == BehaviorType.InferenceOnly && !evaluationMode)
+                throw new ArgumentException("InferenceOnly is reserved for frozen evaluation.");
+            if (evaluationMode && behaviorType != BehaviorType.HeuristicOnly)
+                throw new ArgumentException("Frozen evaluation must bootstrap HeuristicOnly before first-step model binding.");
             if (evaluationMode && (evaluationEpisodes < 1 || evaluationGeneration < 1 || evaluationCheckpointStep < 0
                 || string.IsNullOrWhiteSpace(evaluationRunId) || string.IsNullOrWhiteSpace(evaluationScenarioId)
                 || string.IsNullOrWhiteSpace(evaluationCheckpoint) || string.IsNullOrWhiteSpace(evaluationContractHash)

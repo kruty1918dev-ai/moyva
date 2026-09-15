@@ -57,29 +57,26 @@ namespace Kruty1918.Moyva.AI.Training
             _config = config.Snapshot();
             _controller = new TrainingCurriculumController(_config.curriculum.autonomous, _config.baseSeed);
             _evaluationStartedUtc = DateTime.UtcNow.ToString("O");
-            if (_config.evaluationMode || _config.inspectorMode)
+            if (_config.evaluationMode)
             {
                 if (Academy.Instance.IsCommunicatorOn)
-                    throw new InvalidOperationException("Frozen inference must not connect to an ML-Agents trainer.");
+                    throw new InvalidOperationException("Frozen evaluation must not connect to an ML-Agents trainer.");
                 _modelBindingHandler = _ => BindFrozenModelBeforeDecision();
                 Academy.Instance.AgentPreStep += _modelBindingHandler;
-                if (_config.evaluationMode)
-                    WriteEvaluationProgress("EVALUATING", null, false, null);
+                WriteEvaluationProgress("EVALUATING", null, false, null);
             }
         }
 
         public void Attach(TrainingEnvironment environment)
         {
             if (environment == null || _environments.Contains(environment)) return;
-            if ((_config.evaluationMode || _config.inspectorMode) && _environments.Count != 0)
-                throw new InvalidOperationException("Frozen inference supports exactly one deterministic environment.");
+            if (_config.evaluationMode && _environments.Count != 0)
+                throw new InvalidOperationException("Frozen evaluation supports exactly one deterministic environment.");
             _environments.Add(environment);
-            if (_config.evaluationMode || _config.inspectorMode)
+            if (_config.evaluationMode)
             {
-                string scenarioId = _config.evaluationMode
-                    ? _config.evaluationScenarioId : _config.inspectorScenarioId;
-                var scenario = _controller.GetScenario(scenarioId);
-                if (scenario == null) throw new InvalidOperationException("Unknown frozen-inference scenario: " + scenarioId);
+                var scenario = _controller.GetScenario(_config.evaluationScenarioId);
+                if (scenario == null) throw new InvalidOperationException("Unknown evaluation scenario: " + _config.evaluationScenarioId);
                 environment.SetScenario(scenario);
             }
             else
@@ -94,7 +91,7 @@ namespace Kruty1918.Moyva.AI.Training
 
         private void BindFrozenModelBeforeDecision()
         {
-            if ((!_config.evaluationMode && !_config.inspectorMode) || _frozenModelBound) return;
+            if (!_config.evaluationMode || _frozenModelBound) return;
             try
             {
                 if (Academy.Instance.IsCommunicatorOn)
@@ -136,12 +133,6 @@ namespace Kruty1918.Moyva.AI.Training
 
         private void OnEpisodeEnded(TrainingEnvironment environment, TrainingEpisodeResult result)
         {
-            if (_config.inspectorMode)
-            {
-                // Inspector episodes never count as training/evaluation and never
-                // mutate mastery/curriculum state.
-                return;
-            }
             if (_config.evaluationMode)
             {
                 OnEvaluationEpisodeEnded(environment, result);

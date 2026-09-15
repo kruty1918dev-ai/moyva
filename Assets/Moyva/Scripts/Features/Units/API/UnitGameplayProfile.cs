@@ -22,6 +22,7 @@ namespace Kruty1918.Moyva.Units.API
             float silhouettePenalty,
             int hitPoints,
             int baseLevel,
+            int attackRange,
             int cuttingDamage,
             int penetratingDamage,
             int crushingDamage,
@@ -43,6 +44,7 @@ namespace Kruty1918.Moyva.Units.API
             SilhouettePenalty = Mathf.Clamp01(silhouettePenalty);
             HitPoints = Mathf.Max(1, hitPoints);
             BaseLevel = Mathf.Max(1, baseLevel);
+            AttackRange = Mathf.Max(1, attackRange);
             CuttingDamage = Mathf.Max(0, cuttingDamage);
             PenetratingDamage = Mathf.Max(0, penetratingDamage);
             CrushingDamage = Mathf.Max(0, crushingDamage);
@@ -65,6 +67,7 @@ namespace Kruty1918.Moyva.Units.API
         public float SilhouettePenalty { get; }
         public int HitPoints { get; }
         public int BaseLevel { get; }
+        public int AttackRange { get; }
         public int CuttingDamage { get; }
         public int PenetratingDamage { get; }
         public int CrushingDamage { get; }

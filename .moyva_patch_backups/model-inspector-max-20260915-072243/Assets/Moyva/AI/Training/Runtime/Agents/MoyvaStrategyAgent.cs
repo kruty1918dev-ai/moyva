@@ -42,13 +42,9 @@ namespace Kruty1918.Moyva.AI.Training
             if (_environment == null) return;
             _environment.Tick(Time.fixedDeltaTime);
             if (!_environment.CanRequestDecision || _pendingDecision) return;
-            if (_config.inspectorMode
-                && !TrainingModelInspectorController.ShouldRequestModelDecision(_environment)) return;
             if (++_ticks < _config.decisionInterval) return;
             _ticks = 0;
             _pendingDecision = true;
-            if (_config.inspectorMode)
-                TrainingModelInspectorController.NotifyDecisionRequested(_environment);
             RequestDecision();
         }
 
@@ -58,10 +54,7 @@ namespace Kruty1918.Moyva.AI.Training
         public override void OnActionReceived(ActionBuffers actions)
         {
             _pendingDecision = false;
-            int slot = actions.DiscreteActions[0];
-            if (_config.inspectorMode)
-                TrainingModelInspectorController.NotifyModelAction(_environment, slot);
-            if (_environment.IsReady) _environment.Step(slot);
+            if (_environment.IsReady) _environment.Step(actions.DiscreteActions[0]);
         }
 
         public override void Heuristic(in ActionBuffers actionsOut)

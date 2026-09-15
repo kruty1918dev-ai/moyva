@@ -36,7 +36,7 @@ namespace Kruty1918.Moyva.AI.Training
         {
             _bootstrap = bootstrap;
             OverlayEnabled = bootstrap.Config.enableSceneOverlay;
-            if (Mode == TrainingPresentationMode.Visual && !bootstrap.Config.inspectorMode)
+            if (Mode == TrainingPresentationMode.Visual)
                 gameObject.AddComponent<TrainingSceneOverlay>().Configure(this, bootstrap);
             RefreshCameras();
         }

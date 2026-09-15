@@ -145,7 +145,10 @@ namespace Kruty1918.Moyva.AI.Training
 
                 Gateway = new MoyvaBotTurnAdapter(Turns, _container.Resolve<ITurnAuthorityPolicy>());
                 Capabilities = BotRuntimeInstaller.CreateGameplayRegistry(_container, Gateway);
-                Perception = new MoyvaBotPerceptionSource(Turns, unitService, owners, fog, _container.TryResolve<IEconomyInfoMediator>());
+                Perception = new MoyvaBotPerceptionSource(Turns, unitService, owners, fog,
+                    profiles: _container.TryResolve<IUnitGameplayProfileService>(),
+                    terrain: _container.TryResolve<IGeneratedTerrainLevelQuery>(),
+                    economy: _container.TryResolve<IEconomyInfoMediator>());
                 if (EconomyInstalled)
                 {
                     var starter = new BootstrapStarterPackGrantService(Required<BootstrapInstallerConfigSO>().GameSettings, signals);

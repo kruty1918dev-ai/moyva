@@ -58,7 +58,7 @@ namespace Kruty1918.Moyva.AI.Bot
             features[TerrainHeight] = Normalize(actorTerrainLevel, 6f);
             features[EffectiveVision] = Normalize(effectiveVision, 16f);
             features[HeightAdvantage] = Mathf.Clamp((actorTerrainLevel - targetTerrainLevel) / 6f, -1f, 1f);
-            features[RangedCombat] = profile.CombatType == UnitCombatType.Ranged ? 1f : 0f;
+            features[RangedCombat] = profile.AttackRange > 1 ? 1f : 0f;
         }
 
         private static float Normalize(float value, float scale)
