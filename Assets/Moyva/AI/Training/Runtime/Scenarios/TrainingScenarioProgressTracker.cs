@@ -165,7 +165,6 @@ namespace Kruty1918.Moyva.AI.Training
             _sawLearnerCastle = _sawLearnerRecruit = false;
             _stepBaseline = _lastFacts = baseline ?? new TrainingScenarioFacts();
             IsScoringActive = !(_lastFacts?.IsSetup ?? true);
-            CompleteLegalInitialStateIfSatisfied(_lastFacts);
         }
 
         public void SetSetupPhase(bool setup, TrainingScenarioFacts facts)
@@ -176,7 +175,6 @@ namespace Kruty1918.Moyva.AI.Training
             _count = _stableTurns = 0;
             _lastStableTurn = int.MinValue;
             _sawLearnerCastle = _sawLearnerRecruit = false;
-            CompleteLegalInitialStateIfSatisfied(_lastFacts);
         }
 
         public void ObserveReward(TrainingRewardEvent e, TrainingScenarioFacts facts)
@@ -238,6 +236,10 @@ namespace Kruty1918.Moyva.AI.Training
 
             switch (step.EffectiveCriterion)
             {
+                case TrainingScenarioCriterionKind.LegalInitialState:
+                    if (intent == BotIntentType.EndTurn) CompleteLegalInitialStateIfSatisfied(facts);
+                    break;
+
                 case TrainingScenarioCriterionKind.OperationalCastle:
                     if (_sawLearnerCastle && CastleAuthoritative(step, facts)) Advance(facts);
                     break;

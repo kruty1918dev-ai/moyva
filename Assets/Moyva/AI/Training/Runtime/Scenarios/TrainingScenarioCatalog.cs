@@ -184,6 +184,10 @@ namespace Kruty1918.Moyva.AI.Training
         {
             TrainingScenarioDefinition Make(string id, string title, TrainingCurriculumStage stage, bool castle, bool full,
                 string[] prerequisites, params TrainingScenarioStepDefinition[] steps)
+                => Make(id, title, stage, castle, full, prerequisites, CapabilitiesFor(full), steps);
+
+            TrainingScenarioDefinition Make(string id, string title, TrainingCurriculumStage stage, bool castle, bool full,
+                string[] prerequisites, string[] capabilities, params TrainingScenarioStepDefinition[] steps)
             {
                 return new TrainingScenarioDefinition
                 {
@@ -195,7 +199,7 @@ namespace Kruty1918.Moyva.AI.Training
                         learnerMustPlaceCastle = castle,
                         startingUnits = Array.Empty<TrainingScenarioUnitSetup>()
                     },
-                    availableCapabilities = CapabilitiesFor(full),
+                    availableCapabilities = capabilities,
                     generationConstraints = new TrainingScenarioGenerationConstraints
                     {
                         minReachableArea = 2,
@@ -252,7 +256,8 @@ namespace Kruty1918.Moyva.AI.Training
             return new[]
             {
                 // S0: Foundation - legal initial state (no scaffolding for learner)
-                Make("foundation-legal-setup", "Legal initial state", TrainingCurriculumStage.BasicLifecycle, false, false, Array.Empty<string>(), LegalSetup()),
+                Make("foundation-legal-setup", "Legal initial state", TrainingCurriculumStage.BasicLifecycle, false, false,
+                    Array.Empty<string>(), new[] { "end-turn" }, LegalSetup()),
 
                 // S1: Castle foundation - learner places first castle
                 Make("castle", "First castle", TrainingCurriculumStage.Building, true, false, new[] { "foundation-legal-setup" }, Castle()),

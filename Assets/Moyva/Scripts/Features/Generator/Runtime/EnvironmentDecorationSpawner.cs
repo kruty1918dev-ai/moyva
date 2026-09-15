@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.MapChunks.API;
@@ -59,9 +60,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 for (int i = pair.Value.childCount - 1; i >= 0; i--)
                 {
                     if (Application.isPlaying)
-                        Object.Destroy(pair.Value.GetChild(i).gameObject);
+                        UnityEngine.Object.Destroy(pair.Value.GetChild(i).gameObject);
                     else
-                        Object.DestroyImmediate(pair.Value.GetChild(i).gameObject);
+                        UnityEngine.Object.DestroyImmediate(pair.Value.GetChild(i).gameObject);
                 }
             }
 
@@ -81,7 +82,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return false;
 
             Transform root = GetDecorationRoot(coord);
-            var instance = Object.Instantiate(definition.VisualPrefab, root, false);
+            var instance = UnityEngine.Object.Instantiate(definition.VisualPrefab, root, false);
             instance.name = $"{definition.Id}_{placement.TileX}_{placement.TileY}";
             instance.transform.localPosition = placement.Position;
             instance.transform.localRotation = placement.Rotation;
@@ -97,7 +98,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             var collider = instance.GetComponent<Collider>();
             if (collider != null)
-                Object.Destroy(collider);
+                UnityEngine.Object.Destroy(collider);
 
             return true;
         }

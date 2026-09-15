@@ -28,13 +28,6 @@
       "objectives": []
     },
     "availableCapabilities": [
-      "construction",
-      "economy",
-      "recruitment",
-      "movement",
-      "scouting",
-      "combat",
-      "capture",
       "end-turn"
     ],
     "generationConstraints": {
