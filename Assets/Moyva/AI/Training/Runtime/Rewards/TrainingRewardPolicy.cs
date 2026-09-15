@@ -21,6 +21,12 @@ namespace Kruty1918.Moyva.AI.Training
                     return _config.penalizePerDecision ? _config.perDecision : 0;
                 case TrainingRewardEventType.TurnCompleted:
                     return _config.penalizePerDecision ? 0 : _config.perTurn;
+                case TrainingRewardEventType.StagnantDecision:
+                    return _config.stagnantDecision;
+                case TrainingRewardEventType.IsolatedSettlement:
+                    return _config.isolatedSettlement;
+                case TrainingRewardEventType.ResourcePotential:
+                    return _config.resourcePotential;
             }
             if (!e.Meaningful || string.IsNullOrEmpty(e.SubjectId) || string.IsNullOrEmpty(playerId))
                 return 0;

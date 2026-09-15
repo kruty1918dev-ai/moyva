@@ -89,6 +89,7 @@ namespace Kruty1918.Moyva.AI.Training
                 context.EpisodeId,
                 retrySeed,
                 context.CurriculumStage,
+                context.WorldSize,
                 context.ScenarioId,
                 context.LearnInitialCastle);
         }

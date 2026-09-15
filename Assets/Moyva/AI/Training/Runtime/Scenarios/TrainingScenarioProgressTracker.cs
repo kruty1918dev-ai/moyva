@@ -30,6 +30,12 @@ namespace Kruty1918.Moyva.AI.Training
         public IReadOnlyDictionary<string, int> OperationalBuildingsByType { get; }
         public IReadOnlyDictionary<string, Vector2Int> UnitCells { get; }
         public IReadOnlyCollection<string> OwnedSettlementIds { get; }
+        public int ReachableLandCellsFromLearner { get; }
+        public int TotalLandCells { get; }
+        public int LearnerResourcePotential { get; }
+        public float LearnerReachableLandRatio => TotalLandCells <= 0
+            ? 0f
+            : Mathf.Clamp01((float)ReachableLandCellsFromLearner / TotalLandCells);
 
         public TrainingScenarioFacts(
             bool isSetup = false,
@@ -46,7 +52,10 @@ namespace Kruty1918.Moyva.AI.Training
             IReadOnlyDictionary<string, int> deployedUnitsByType = null,
             IReadOnlyDictionary<string, int> operationalBuildingsByType = null,
             IReadOnlyDictionary<string, Vector2Int> unitCells = null,
-            IReadOnlyCollection<string> ownedSettlementIds = null)
+            IReadOnlyCollection<string> ownedSettlementIds = null,
+            int reachableLandCellsFromLearner = 0,
+            int totalLandCells = 0,
+            int learnerResourcePotential = 0)
         {
             IsSetup = isSetup;
             OwnedSettlements = ownedSettlements;
@@ -63,6 +72,9 @@ namespace Kruty1918.Moyva.AI.Training
             OperationalBuildingsByType = operationalBuildingsByType ?? EmptyInt;
             UnitCells = unitCells ?? EmptyCells;
             OwnedSettlementIds = ownedSettlementIds ?? EmptyStrings;
+            ReachableLandCellsFromLearner = reachableLandCellsFromLearner;
+            TotalLandCells = totalLandCells;
+            LearnerResourcePotential = learnerResourcePotential;
         }
 
         public float Stock(string resourceId)

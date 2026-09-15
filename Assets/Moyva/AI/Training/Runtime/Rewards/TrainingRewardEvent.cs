@@ -5,7 +5,8 @@ namespace Kruty1918.Moyva.AI.Training
         EpisodeStarted, EpisodeWon, EpisodeLost, EpisodeDraw, EpisodeTimeout,
         Decision, TurnCompleted, ValidAction, InvalidAction, UnitCreated,
         EnemyUnitDestroyed, OwnUnitLost, BuildingCreated, OwnBuildingLost,
-        ObjectiveCaptured, ObjectiveLost, ResourceMilestone
+        ObjectiveCaptured, ObjectiveLost, ResourceMilestone, StagnantDecision,
+        IsolatedSettlement, ResourcePotential
     }
 
     public readonly struct TrainingRewardEvent

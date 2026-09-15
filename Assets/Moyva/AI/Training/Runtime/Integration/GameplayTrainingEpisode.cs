@@ -50,6 +50,7 @@ namespace Kruty1918.Moyva.AI.Training
         public BotCapabilityRegistry Capabilities { get; private set; }
         public IBotPerceptionSource Perception { get; private set; }
         public TrainingGameplayEventBridge Outcomes { get; private set; }
+        internal MenuWorldPreviewData GeneratedWorld => _world?.Data;
         public IGridService Grid => _container.Resolve<IGridService>();
         public IGridProjection Projection => _container.Resolve<IGridProjection>();
         public GameObject Root => _root;
@@ -62,6 +63,7 @@ namespace Kruty1918.Moyva.AI.Training
         internal IUnitTraversalPolicy Traversal => _container.Resolve<IUnitTraversalPolicy>();
         internal IHealthRegistry Health => _container.Resolve<IHealthRegistry>();
         internal IEconomyRuntimeApi Economy => _container.Resolve<IEconomyRuntimeApi>();
+        internal IFogOwnerStateReader Fog => _container.TryResolve<IFogOwnerStateReader>();
         internal SignalBus Signals => _signals;
         internal IConstructionPlacedBuildingDestruction Destruction => _container.Resolve<IConstructionPlacedBuildingDestruction>();
 
@@ -76,9 +78,11 @@ namespace Kruty1918.Moyva.AI.Training
                 var graph = MoyvaJsonRuntime.Get<GraphAsset>(config.generatorGraphId);
                 Install<Kruty1918.Moyva.Signals.SignalBusInstaller>();
                 var tiles = graph.TileRegistry ?? Required<TileRegistrySO>();
-                GridInstaller.InstallPreviewBindings(_container, tiles, Required<MoyvaProjectSettingsSO>(), config.worldSize, config.worldSize);
-                _world = new OwnedGameplayMap(_container, _root, graph, tiles, Required<MapObjectRegistrySO>(), config.worldSize, context.Seed);
+                int worldSize = context.WorldSize > 0 ? context.WorldSize : config.worldSize;
+                GridInstaller.InstallPreviewBindings(_container, tiles, Required<MoyvaProjectSettingsSO>(), worldSize, worldSize);
+                _world = new OwnedGameplayMap(_container, _root, graph, tiles, Required<MapObjectRegistrySO>(), worldSize, context.Seed);
                 var world = _world.Data;
+                EnrichTrainingBiomes(world, context.Seed);
                 Install<ObjectsMapInstaller>();
                 Install<AnimationsInstaller>();
                 Install<PathfinderInstaller>();
@@ -131,16 +135,28 @@ namespace Kruty1918.Moyva.AI.Training
                         else if (spawnRejections.Count < 4) spawnRejections.Add(grid.GetTileData(cell) + ": " + rejection);
                     }
                 if (spawnCells.Count < 2) throw new InvalidOperationException("Generated world has fewer than two legal unit spawns. " + string.Join("; ", spawnRejections));
-                var first = spawnCells[0];
+                var first = SelectLearnerSpawn(world, spawnCells);
                 string learnerUnit = Spawn(config.startingUnitTypeId, first, TrainingGameplayScope.LearnerId);
                 var reachable = ReachableSpawnCells(learnerUnit, first, spawnCells);
                 if (reachable.Count < 2) throw new InvalidOperationException("Generated world has no connected legal opponent spawn.");
-                var second = reachable.Where(c => c != first).OrderByDescending(c => (c - first).sqrMagnitude).First();
+                var second = reachable.Where(c => c != first)
+                    .OrderByDescending(c => (c - first).sqrMagnitude + ResourcePotentialScore(world, c) * 8)
+                    .First();
                 Spawn(config.startingUnitTypeId, second, TrainingGameplayScope.OpponentId);
+                var assignments = new List<SpawnPositionAssignment>
+                {
+                    new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = TrainingGameplayScope.LearnerId, Position = first },
+                    new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = TrainingGameplayScope.OpponentId, Position = second }
+                };
+                if (config.spawnTrainingBoats)
+                {
+                    if (TrySpawnBoat(config.trainingBoatTypeId, first, TrainingGameplayScope.LearnerId, placement, world, out var learnerBoat))
+                        assignments.Add(new SpawnPositionAssignment { SlotIndex = assignments.Count, ParticipantId = TrainingGameplayScope.LearnerId, Position = learnerBoat });
+                    if (TrySpawnBoat(config.trainingBoatTypeId, second, TrainingGameplayScope.OpponentId, placement, world, out var opponentBoat))
+                        assignments.Add(new SpawnPositionAssignment { SlotIndex = assignments.Count, ParticipantId = TrainingGameplayScope.OpponentId, Position = opponentBoat });
+                }
                 signals.Fire(new WorldSpawnPositionsSignal { Source = WorldSpawnPositionsSource.GeneratedHost,
-                    Assignments = new[] {
-                        new SpawnPositionAssignment { SlotIndex = 0, ParticipantId = TrainingGameplayScope.LearnerId, Position = first },
-                        new SpawnPositionAssignment { SlotIndex = 1, ParticipantId = TrainingGameplayScope.OpponentId, Position = second } } });
+                    Assignments = assignments.ToArray() });
                 signals.Fire(new WorldBuiltSignal());
 
                 Gateway = new MoyvaBotTurnAdapter(Turns, _container.Resolve<ITurnAuthorityPolicy>());
@@ -283,6 +299,7 @@ namespace Kruty1918.Moyva.AI.Training
                 : Turns.GlobalTurn > int.MaxValue ? int.MaxValue
                 : Turns.GlobalTurn < int.MinValue ? int.MinValue
                 : (int)Turns.GlobalTurn;
+            var world = _world?.Data;
 
             return new TrainingScenarioFacts(
                 isSetup: _setupPhase,
@@ -299,7 +316,239 @@ namespace Kruty1918.Moyva.AI.Training
                 deployedUnitsByType: deployedByType,
                 operationalBuildingsByType: operationalByType,
                 unitCells: unitCells,
-                ownedSettlementIds: ownedSettlementIds);
+                ownedSettlementIds: ownedSettlementIds,
+                reachableLandCellsFromLearner: CountReachableLandFromLearner(world),
+                totalLandCells: CountLandCells(world),
+                learnerResourcePotential: CountLearnerResourcePotential(world));
+        }
+
+        private Vector2Int SelectLearnerSpawn(MenuWorldPreviewData world, IReadOnlyCollection<Vector2Int> spawnCells)
+        {
+            return spawnCells
+                .OrderByDescending(c => FloodLand(world, c) + ResourcePotentialScore(world, c) * 12 + CoastalScore(world, c) * 4)
+                .ThenBy(c => c.y)
+                .ThenBy(c => c.x)
+                .First();
+        }
+
+        private static void EnrichTrainingBiomes(MenuWorldPreviewData world, int seed)
+        {
+            if (world?.BiomeMap == null) return;
+            var range = ResolveHeightRange(world);
+            for (int y = 0; y < world.Height; y++)
+                for (int x = 0; x < world.Width; x++)
+                {
+                    string current = world.BiomeMap[x, y] ?? string.Empty;
+                    if (IsWater(current)) continue;
+                    var cell = new Vector2Int(x, y);
+                    float height = Height01(world, cell, range);
+                    float noise = Hash01(seed, x, y);
+                    bool coast = AdjacentToWater(world, cell);
+                    if (coast && height < 0.62f)
+                        world.BiomeMap[x, y] = "sand";
+                    else if (height > 0.82f)
+                        world.BiomeMap[x, y] = "mountain";
+                    else if (height > 0.68f || noise > 0.86f)
+                        world.BiomeMap[x, y] = "hill";
+                    else if (noise > 0.58f)
+                        world.BiomeMap[x, y] = "forest-sparse";
+                    else if (height < 0.42f && noise > 0.30f)
+                        world.BiomeMap[x, y] = "lowland";
+                    else
+                        world.BiomeMap[x, y] = "grass";
+                }
+        }
+
+        private static Vector2 ResolveHeightRange(MenuWorldPreviewData world)
+        {
+            if (world?.HeightMap == null) return new Vector2(0f, 1f);
+            float min = float.PositiveInfinity;
+            float max = float.NegativeInfinity;
+            for (int y = 0; y < world.Height; y++)
+                for (int x = 0; x < world.Width; x++)
+                {
+                    float value = world.HeightMap[x, y];
+                    if (float.IsNaN(value) || float.IsInfinity(value)) continue;
+                    min = Mathf.Min(min, value);
+                    max = Mathf.Max(max, value);
+                }
+            return max > min ? new Vector2(min, max) : new Vector2(0f, 1f);
+        }
+
+        private static float Height01(MenuWorldPreviewData world, Vector2Int cell, Vector2 range)
+        {
+            if (world?.HeightMap == null || !InBounds(world, cell)) return 0.5f;
+            float raw = world.HeightMap[cell.x, cell.y];
+            return Mathf.Approximately(range.x, range.y)
+                ? Mathf.Clamp01(raw)
+                : Mathf.Clamp01((raw - range.x) / (range.y - range.x));
+        }
+
+        private static float Hash01(int seed, int x, int y)
+        {
+            unchecked
+            {
+                uint h = 2166136261;
+                h = (h ^ (uint)seed) * 16777619;
+                h = (h ^ (uint)x) * 16777619;
+                h = (h ^ (uint)y) * 16777619;
+                h ^= h >> 13;
+                h *= 1274126177;
+                return (h & 0x00FFFFFF) / 16777215f;
+            }
+        }
+
+        private bool TrySpawnBoat(string boatTypeId, Vector2Int landStart, string owner, IUnitPlacementValidator placement,
+            MenuWorldPreviewData world, out Vector2Int boatCell)
+        {
+            boatCell = default;
+            if (string.IsNullOrWhiteSpace(boatTypeId) || world?.BiomeMap == null || placement == null) return false;
+            int radius = Mathf.Max(world.Width, world.Height);
+            foreach (var candidate in NearbyCells(landStart, radius).OrderBy(c => Vector2Int.Distance(c, landStart)))
+            {
+                if (!InBounds(world, candidate) || !IsWater(world.BiomeMap[candidate.x, candidate.y])) continue;
+                if (!HasAdjacentLand(world, candidate)) continue;
+                if (!placement.CanDeployUnit(boatTypeId, candidate, out _)) continue;
+                Spawn(boatTypeId, candidate, owner);
+                boatCell = candidate;
+                return true;
+            }
+            return false;
+        }
+
+        private int CountLearnerResourcePotential(MenuWorldPreviewData world)
+        {
+            if (world == null || !EconomyInstalled) return 0;
+            int score = 0;
+            foreach (var placement in Placements.GetSavedPlacements())
+                if (string.Equals(placement.OwnerId, TrainingGameplayScope.LearnerId, StringComparison.Ordinal))
+                    score = Math.Max(score, ResourcePotentialScore(world, placement.Position) + CoastalScore(world, placement.Position));
+            return score;
+        }
+
+        private static int ResourcePotentialScore(MenuWorldPreviewData world, Vector2Int center)
+        {
+            if (world?.BiomeMap == null) return 0;
+            int score = 0;
+            foreach (var cell in NearbyCells(center, 5))
+            {
+                if (!InBounds(world, cell)) continue;
+                string tile = world.BiomeMap[cell.x, cell.y] ?? string.Empty;
+                string key = tile.ToLowerInvariant();
+                if (key.Contains("forest") || key.Contains("wood")) score += 3;
+                else if (key.Contains("mountain") || key.Contains("hill") || key.Contains("rock")) score += 3;
+                else if (key.Contains("grass") || key.Contains("lowland")) score += 1;
+            }
+            return Math.Min(score, 64);
+        }
+
+        private static int CoastalScore(MenuWorldPreviewData world, Vector2Int center)
+        {
+            if (world?.BiomeMap == null) return 0;
+            int score = 0;
+            foreach (var cell in NearbyCells(center, 4))
+            {
+                if (!InBounds(world, cell) || !IsWater(world.BiomeMap[cell.x, cell.y])) continue;
+                if (HasAdjacentLand(world, cell)) score += 2;
+            }
+            return Math.Min(score, 24);
+        }
+
+        private int CountReachableLandFromLearner(MenuWorldPreviewData world)
+        {
+            if (world == null) return 0;
+            Vector2Int? start = null;
+            foreach (var placement in Placements.GetSavedPlacements())
+                if (string.Equals(placement.OwnerId, TrainingGameplayScope.LearnerId, StringComparison.Ordinal))
+                {
+                    start = placement.Position;
+                    break;
+                }
+            if (!start.HasValue)
+            {
+                foreach (string unitId in Units.GetAllUnitIds())
+                {
+                    if (!string.Equals(UnitOwners.GetUnitOwnerId(unitId), TrainingGameplayScope.LearnerId, StringComparison.Ordinal))
+                        continue;
+                    if (Units.TryGetUnitPosition(unitId, out var position))
+                    {
+                        start = position;
+                        break;
+                    }
+                }
+            }
+            return start.HasValue ? FloodLand(world, start.Value) : 0;
+        }
+
+        private static int CountLandCells(MenuWorldPreviewData world)
+        {
+            if (world?.BiomeMap == null) return 0;
+            int count = 0;
+            for (int y = 0; y < world.Height; y++)
+                for (int x = 0; x < world.Width; x++)
+                    if (!IsWater(world.BiomeMap[x, y])) count++;
+            return count;
+        }
+
+        private static int FloodLand(MenuWorldPreviewData world, Vector2Int start)
+        {
+            if (world?.BiomeMap == null || !InBounds(world, start) || IsWater(world.BiomeMap[start.x, start.y]))
+                return 0;
+            var seen = new HashSet<Vector2Int> { start };
+            var queue = new Queue<Vector2Int>();
+            queue.Enqueue(start);
+            while (queue.Count > 0)
+            {
+                var from = queue.Dequeue();
+                for (int i = 0; i < 4; i++)
+                {
+                    var next = from + (i == 0 ? Vector2Int.right : i == 1 ? Vector2Int.left : i == 2 ? Vector2Int.up : Vector2Int.down);
+                    if (!InBounds(world, next) || !seen.Add(next) || IsWater(world.BiomeMap[next.x, next.y]))
+                        continue;
+                    queue.Enqueue(next);
+                }
+            }
+            return seen.Count;
+        }
+
+        private static bool InBounds(MenuWorldPreviewData world, Vector2Int cell)
+            => cell.x >= 0 && cell.y >= 0 && cell.x < world.Width && cell.y < world.Height;
+
+        private static bool HasAdjacentLand(MenuWorldPreviewData world, Vector2Int cell)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                var next = cell + (i == 0 ? Vector2Int.right : i == 1 ? Vector2Int.left : i == 2 ? Vector2Int.up : Vector2Int.down);
+                if (InBounds(world, next) && !IsWater(world.BiomeMap[next.x, next.y])) return true;
+            }
+            return false;
+        }
+
+        private static bool AdjacentToWater(MenuWorldPreviewData world, Vector2Int cell)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                var next = cell + (i == 0 ? Vector2Int.right : i == 1 ? Vector2Int.left : i == 2 ? Vector2Int.up : Vector2Int.down);
+                if (InBounds(world, next) && IsWater(world.BiomeMap[next.x, next.y])) return true;
+            }
+            return false;
+        }
+
+        private static IEnumerable<Vector2Int> NearbyCells(Vector2Int center, int radius)
+        {
+            for (int y = center.y - radius; y <= center.y + radius; y++)
+                for (int x = center.x - radius; x <= center.x + radius; x++)
+                {
+                    var cell = new Vector2Int(x, y);
+                    if (Mathf.Abs(cell.x - center.x) + Mathf.Abs(cell.y - center.y) <= radius)
+                        yield return cell;
+                }
+        }
+
+        private static bool IsWater(string tile)
+        {
+            string key = (tile ?? string.Empty).ToLowerInvariant();
+            return key.Contains("water") || key.Contains("ocean") || key.Contains("river") || key.Contains("lake");
         }
 
         private static T Required<T>() where T : class

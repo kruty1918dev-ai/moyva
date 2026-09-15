@@ -17,6 +17,9 @@ namespace Kruty1918.Moyva.AI.Training
         public float buildOrRecruit = 0.002f;
         public float perDecision = -0.0002f;
         public float perTurn = -0.001f;
+        public float stagnantDecision = -0.002f;
+        public float isolatedSettlement = -0.01f;
+        public float resourcePotential = 0.004f;
         public bool penalizePerDecision = true;
         public float invalidAction = -0.005f;
         public int invalidActionLimit = 20;
@@ -26,13 +29,17 @@ namespace Kruty1918.Moyva.AI.Training
         {
             float[] values = { victory, defeat, draw, timeout, objectiveCaptured, objectiveLost,
                 enemyUnitDestroyed, ownUnitLost, resourceMilestone, buildOrRecruit, perDecision,
-                perTurn, invalidAction, shapingCap };
+                perTurn, stagnantDecision, isolatedSettlement, resourcePotential, invalidAction, shapingCap };
             foreach (float value in values)
                 if (!TrainingConfig.Finite(value)) throw new ArgumentException("Non-finite reward.");
             if (victory < 1 || defeat > -1 || draw > 0 || timeout > 0
                 || shapingCap < 0 || shapingCap > 0.25f || resourceMilestone < 0 || resourceMilestone > 0.005f
                 || buildOrRecruit < 0 || buildOrRecruit > 0.002f || invalidAction < -0.005f || invalidAction > 0
-                || perDecision > 0 || perTurn > 0 || invalidActionLimit < 1
+                || perDecision > 0 || perTurn > 0
+                || stagnantDecision > 0 || stagnantDecision < -0.01f
+                || isolatedSettlement > 0 || isolatedSettlement < -0.05f
+                || resourcePotential < 0 || resourcePotential > 0.01f
+                || invalidActionLimit < 1
                 || objectiveCaptured < 0 || objectiveLost > 0 || enemyUnitDestroyed < 0 || ownUnitLost > 0)
                 throw new ArgumentException("Unsafe training reward configuration.");
         }

@@ -28,7 +28,7 @@ namespace Kruty1918.Moyva.AI.Training
             if (GUILayout.Button("Zoom +")) _presentation.Zoom(0.8f);
             if (GUILayout.Button("Zoom −")) _presentation.Zoom(1.25f);
             if (GUILayout.Button("Fit map")) _presentation.Zoom(0);
-            GUILayout.Label("Arrow keys: pan • wheel: zoom");
+            GUILayout.Label("Wheel: zoom • WASD/arrows: pan • right/middle drag: pan • Q/E: rotate");
             GUILayout.EndHorizontal();
             var environment = _presentation.Selected;
             if (_details && environment != null)
@@ -36,7 +36,9 @@ namespace Kruty1918.Moyva.AI.Training
                 var d = environment.Diagnostics;
                 var last = environment.Bridge.Telemetry.Last;
                 GUILayout.Label($"{environment.Stage} | {(_bootstrap.Config.learnInitialCastle ? "Goal: place your first castle, then develop your settlement" : "Practice unlocked game capabilities")}");
-                GUILayout.Label($"Episode {environment.EpisodeId} • Seed {d.LastSeed} • Turn {d.Turns} • Decisions {d.Decisions}");
+                var generated = environment.GameplayEpisode?.GeneratedWorld;
+                string map = generated == null ? "map ?" : $"map {generated.Width}×{generated.Height}";
+                GUILayout.Label($"Episode {environment.EpisodeId} • Seed {d.LastSeed} • {map} • Turn {d.Turns} • Decisions {d.Decisions}");
                 GUILayout.Label($"Reward {environment.Rewards.TotalReward:F3} • Legal candidates {environment.Bridge.Frame?.Candidates.Count ?? 0}");
                 GUILayout.Label($"Action: {last?.Intent} / {last?.Capability} / {last?.Result}");
                 var candidate = environment.LastCandidate;

@@ -1,0 +1,61 @@
+{
+  "$schema": "../Schemas/unit.schema.json",
+  "schema": "moyva.unit",
+  "version": 1,
+  "id": "boat",
+  "model": "unit-class",
+  "typeId": "boat",
+  "displayName": "Човен",
+  "role": "Worker",
+  "combatType": "SiegeMachine",
+  "baseStamina": 18.0,
+  "cargoCapacity": 80.0,
+  "visionRange": 3,
+  "visionHeightBoostPerLevel": 0.0,
+  "canSeeCrest": true,
+  "crestVisibilityFactor": 1.0,
+  "downSlopeVisionBonus": 0.0,
+  "silhouettePenalty": 0.1,
+  "hitPoints": 80,
+  "baseLevel": 1,
+  "cuttingDamage": 0,
+  "penetratingDamage": 0,
+  "crushingDamage": 1,
+  "cuttingDefense": 0,
+  "penetratingDefense": 0,
+  "crushingDefense": 1,
+  "prefab": {
+    "$asset": "asset.game-object.cart-blue-full.c2a3c9da",
+    "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/units/blue/cart_blue_full.prefab",
+    "required": false
+  },
+  "staminaRandomRange": {
+    "x": -1.0,
+    "y": 1.0
+  },
+  "animationSettings": {
+    "moveDurationPerTile": 0.22,
+    "delayOnTile": 0.03,
+    "onStepCompleted": null,
+    "canPerformStep": null,
+    "resolveWorldPosition": null
+  },
+  "customSprite": {
+    "$asset": "asset.sprite.light-cavalry.0929e1c0",
+    "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Units/light-cavalry.png",
+    "required": false
+  },
+  "animationClips": [],
+  "migration": {
+    "sourceRegistry": "Assets/Moyva/Presets/Units/boat.json",
+    "sourceHash": "runtime-json-added-boat-2026-09-15"
+  },
+  "attackRange": 1,
+  "movementPointsPerTurn": 8.0,
+  "movementProfile": {
+    "$config": {
+      "model": "movement-profile",
+      "id": "naval"
+    }
+  }
+}

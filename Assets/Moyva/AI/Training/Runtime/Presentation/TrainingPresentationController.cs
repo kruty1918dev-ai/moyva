@@ -76,7 +76,9 @@ namespace Kruty1918.Moyva.AI.Training
             var view = new GameObject("ObservedTrainingWorld");
             view.transform.SetParent(transform, false);
             _worldView = view.AddComponent<TrainingWorldPresentation>();
-            _worldView.Build(episode.Grid, episode.Projection);
+            _worldView.Build(episode.Grid, episode.Projection, episode.GeneratedWorld,
+                _bootstrap.Config.visualCameraZoomSensitivity,
+                _bootstrap.Config.visualCameraPanSpeed);
             _worldView.Observe(episode);
             RefreshCameras();
         }

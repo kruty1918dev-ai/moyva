@@ -91,7 +91,7 @@
     "requiredNeighborOffsets": [],
     "requiresWaterNearby": false,
     "requiresForestNearby": false,
-    "requiresMountainNearby": false,
+    "requiresMountainNearby": true,
     "requiresRoadNearby": false,
     "nearbyTileRequirements": []
   },

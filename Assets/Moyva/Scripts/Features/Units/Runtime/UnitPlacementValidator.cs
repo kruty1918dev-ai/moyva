@@ -88,8 +88,11 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
             }
 
-            if (!IsTerrainAllowed(position, out reason))
+            if (_grid == null || !_grid.ContainsCell(position))
+            {
+                reason = "Тайл знаходиться за межами карти.";
                 return false;
+            }
 
             if (!_grid.TryGetTileTypeId(position, out string tileTypeId))
             {
@@ -107,6 +110,17 @@ namespace Kruty1918.Moyva.Units.Runtime
                     out _,
                     out reason))
             {
+                return false;
+            }
+
+            if (_terrainLevelQuery != null
+                && _terrainLevelQuery.TryGetTerrainLevel(position, out int terrainLevel)
+                && terrainLevel > 0
+                && IsTerrainLevelBlocked(
+                    _worldDefaults?.BlockedUnitHillLevelRanges,
+                    terrainLevel))
+            {
+                reason = $"Рівень висоти {terrainLevel} заборонений для юнітів.";
                 return false;
             }
 

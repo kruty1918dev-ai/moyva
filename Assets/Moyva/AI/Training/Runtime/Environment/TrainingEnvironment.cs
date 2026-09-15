@@ -17,6 +17,8 @@ namespace Kruty1918.Moyva.AI.Training
         private string _observerSessionId;
         private float _lastJournalReward;
         private int _scenarioGameplayRewardEventsThisTurn;
+        private int _stagnantDecisions;
+        private TrainingScenarioFacts _lastDevelopmentFacts;
         private readonly ITrainingEpisodeOutcomeSource _outcomes;
         public bool IsRealGameplay => _simulation is GameplayTrainingSimulation;
         internal GameplayTrainingEpisode GameplayEpisode => (_simulation as GameplayTrainingSimulation)?.Episode;
@@ -82,14 +84,15 @@ namespace Kruty1918.Moyva.AI.Training
 
         internal ArenaSnapshot CaptureObserverSnapshot(string sessionId, long sequence)
         {
+            var generated = GameplayEpisode?.GeneratedWorld;
             return new ArenaSnapshot
             {
                 sessionId = sessionId ?? _observerSessionId ?? string.Empty,
                 arenaId = EnvironmentId,
                 episodeId = EpisodeId,
                 sequence = sequence,
-                width = _config.worldSize,
-                height = _config.worldSize,
+                width = generated?.Width ?? _config.worldSize,
+                height = generated?.Height ?? _config.worldSize,
                 scenarioId = _scenario?.id,
                 scenarioStep = _scenarioProgress?.StepIndex ?? -1,
                 isComplete = false,
@@ -101,6 +104,20 @@ namespace Kruty1918.Moyva.AI.Training
 
         private TrainingScenarioFacts CaptureScenarioFacts()
             => GameplayEpisode?.CaptureTrainingFacts() ?? default;
+
+        private int ResolveEpisodeWorldSize(int seed)
+        {
+            if (!_config.randomizeWorldSize) return _config.worldSize;
+            int min = Math.Max(12, _config.minWorldSize);
+            int max = Math.Min(128, _config.maxWorldSize);
+            if (max < min) return _config.worldSize;
+            unchecked
+            {
+                int mixed = seed ^ (EnvironmentId * 73856093) ^ ((int)EpisodeId * 19349663);
+                var random = new Random(mixed);
+                return random.Next(min, max + 1);
+            }
+        }
 
         public TrainingReadinessReport CheckReadiness(ITrainingSimulationFactory factory)
         {
@@ -168,8 +185,10 @@ namespace Kruty1918.Moyva.AI.Training
             Array.Clear(ActionCounts, 0, ActionCounts.Length);
             int resolvedSeed = seedOverride
                 ?? TrainingResetContext.DeriveSeed(_seedBase, EnvironmentId, EpisodeId);
+            int resolvedWorldSize = ResolveEpisodeWorldSize(resolvedSeed);
             var context = new TrainingResetContext(EnvironmentId, EpisodeId,
                 resolvedSeed, Stage,
+                resolvedWorldSize,
                 _scenario?.id,
                 _scenario?.startingConditions?.learnerMustPlaceCastle
                     ?? _scenario?.learnerBuildsInitialCastle
@@ -177,6 +196,8 @@ namespace Kruty1918.Moyva.AI.Training
             Rewards.Reset(EpisodeId);
             _lastJournalReward = 0;
             _scenarioGameplayRewardEventsThisTurn = 0;
+            _stagnantDecisions = 0;
+            _lastDevelopmentFacts = null;
             Diagnostics.Reset(context);
             _timer.Reset();
             _pendingReset = true;
@@ -190,7 +211,9 @@ namespace Kruty1918.Moyva.AI.Training
                     if (!IsRealGameplay || source?.Perception == null || source.Perception is EmptyBotPerceptionSource)
                         throw new InvalidOperationException("REAL_SIMULATION/PERCEPTION_BLOCKED: scaffold and fallback perception are forbidden.");
                 }
-                _scenarioProgress?.Begin(EpisodeId, CaptureScenarioFacts());
+                var baselineFacts = CaptureScenarioFacts();
+                _scenarioProgress?.Begin(EpisodeId, baselineFacts);
+                _lastDevelopmentFacts = baselineFacts;
                 Bridge.Reset((int)Stage, () => _scenarioProgress);
                 Bridge.Orchestrator.DecisionFinished += OnDecisionFinished;
                 EpisodeReset?.Invoke(EnvironmentId, EpisodeId);
@@ -282,7 +305,9 @@ namespace Kruty1918.Moyva.AI.Training
                     _scenarioGameplayRewardEventsThisTurn = 0;
                 }
             }
-            _scenarioProgress?.ObserveAction(trace.Intent, trace.Result, CaptureScenarioFacts());
+            var facts = CaptureScenarioFacts();
+            _scenarioProgress?.ObserveAction(trace.Intent, trace.Result, facts);
+            ObserveDevelopmentShaping(trace, facts);
             Diagnostics.LastError = trace.Reason;
             UpdateDiagnostics();
             AppendDecisionEvent(trace);
@@ -327,6 +352,61 @@ namespace Kruty1918.Moyva.AI.Training
         }
         private void Record(TrainingRewardEventType type, string prefix)
             => Rewards.Record(new TrainingRewardEvent(EpisodeId, prefix + ":" + Diagnostics.Decisions, type, validated: true));
+
+        private void ObserveDevelopmentShaping(BotDecisionTrace trace, TrainingScenarioFacts facts)
+        {
+            if (facts == null || facts.IsSetup || trace.Result != BotExecutionStatus.Completed) return;
+            if (_lastDevelopmentFacts == null)
+            {
+                _lastDevelopmentFacts = facts;
+                return;
+            }
+
+            bool developed = facts.OwnedSettlements > _lastDevelopmentFacts.OwnedSettlements
+                || facts.OperationalCastles > _lastDevelopmentFacts.OperationalCastles
+                || facts.OwnedUnits > _lastDevelopmentFacts.OwnedUnits
+                || facts.ExploredCells > _lastDevelopmentFacts.ExploredCells
+                || facts.LearnerResourcePotential > _lastDevelopmentFacts.LearnerResourcePotential
+                || TotalProduction(facts) > TotalProduction(_lastDevelopmentFacts)
+                || TotalStock(facts) > TotalStock(_lastDevelopmentFacts) + 0.1f;
+
+            _stagnantDecisions = developed ? 0 : _stagnantDecisions + 1;
+            if (!developed && _stagnantDecisions >= 3)
+                Rewards.Record(new TrainingRewardEvent(EpisodeId, "stagnant:" + Diagnostics.Decisions,
+                    TrainingRewardEventType.StagnantDecision, validated: true, meaningful: true));
+
+            if (facts.OwnedSettlements > 0
+                && facts.TotalLandCells > 0
+                && facts.ReachableLandCellsFromLearner < Math.Min(16, facts.TotalLandCells)
+                && facts.LearnerReachableLandRatio < 0.12f)
+                Rewards.Record(new TrainingRewardEvent(EpisodeId, "isolated:" + Diagnostics.Decisions,
+                    TrainingRewardEventType.IsolatedSettlement, validated: true, meaningful: true));
+
+            if (facts.OwnedSettlements > 0 && facts.LearnerResourcePotential > 0)
+                Rewards.Record(new TrainingRewardEvent(EpisodeId, "resource-potential:" + facts.LearnerResourcePotential,
+                    TrainingRewardEventType.ResourcePotential,
+                    subjectId: "resource-potential:" + facts.LearnerResourcePotential,
+                    actorOwnerId: _simulation.PlayerId,
+                    validated: true,
+                    meaningful: true));
+
+            _lastDevelopmentFacts = facts;
+        }
+
+        private static float TotalStock(TrainingScenarioFacts facts)
+        {
+            float total = 0;
+            foreach (var pair in facts.ResourceStock) total += pair.Value;
+            return total;
+        }
+
+        private static float TotalProduction(TrainingScenarioFacts facts)
+        {
+            float total = 0;
+            foreach (var pair in facts.ProductionPerTurn) total += pair.Value;
+            return total;
+        }
+
         private void UpdateDiagnostics()
         {
             Diagnostics.TotalReward = Rewards.TotalReward;

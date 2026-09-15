@@ -5,16 +5,18 @@ namespace Kruty1918.Moyva.AI.Training
         public readonly int EnvironmentId;
         public readonly long EpisodeId;
         public readonly int Seed;
+        public readonly int WorldSize;
         public readonly TrainingCurriculumStage CurriculumStage;
         public readonly string ScenarioId;
         public readonly bool LearnInitialCastle;
 
         public TrainingResetContext(int environmentId, long episodeId, int seed, TrainingCurriculumStage stage,
-            string scenarioId = null, bool learnInitialCastle = false)
+            int worldSize = 0, string scenarioId = null, bool learnInitialCastle = false)
         {
             EnvironmentId = environmentId;
             EpisodeId = episodeId;
             Seed = seed;
+            WorldSize = worldSize;
             CurriculumStage = stage;
             ScenarioId = scenarioId;
             LearnInitialCastle = learnInitialCastle;
