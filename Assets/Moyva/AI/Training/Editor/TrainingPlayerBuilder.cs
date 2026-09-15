@@ -58,6 +58,7 @@ namespace Kruty1918.Moyva.AI.Training.Editor
             {
                 environment.BeginEpisode();
                 if (!environment.IsReady) throw new InvalidOperationException(environment.Diagnostics.LastError);
+                AdvanceLegalSetupIfNeeded(environment, simulation);
                 var report = TrainingReadinessValidator.Validate(factory, simulation, environment);
                 Debug.Log(report.ToString());
                 if (!report.IsReady) throw new InvalidOperationException(report.ToString());
@@ -121,6 +122,31 @@ namespace Kruty1918.Moyva.AI.Training.Editor
                 if (!simulation.Turns.TryEndTurn(simulation.Turns.ActiveOwnerId, out var reason))
                     throw new InvalidOperationException("Turn progression failed: " + reason);
         }
+
+        private static void AdvanceLegalSetupIfNeeded(TrainingEnvironment environment, ITrainingSimulation simulation)
+        {
+            var frame = environment.Bridge.Frame;
+            if (frame == null || frame.Candidates.Count != 1 || frame.Candidates[0].Intent != BotIntentType.EndTurn)
+                return;
+
+            if (!environment.Step(0))
+                throw new InvalidOperationException("Legal setup EndTurn was not accepted.");
+
+            for (int i = 0; i < 60 && environment.LastCandidate == null; i++)
+                environment.Tick(0.02f);
+
+            if (!environment.IsReady)
+                throw new InvalidOperationException(environment.Diagnostics.LastError ?? "Legal setup ended the episode.");
+
+            if (!string.Equals(simulation.Turns.ActiveOwnerId, simulation.PlayerId, StringComparison.Ordinal)
+                && !simulation.Turns.TryEndTurn(simulation.Turns.ActiveOwnerId, out var reason))
+                throw new InvalidOperationException("Opponent legal setup turn failed: " + reason);
+
+            environment.Tick(0.02f);
+
+            Debug.Log("MOYVA_FULLGAME_LEGAL_SETUP_OK: initial legal-only frame advanced through EndTurn.");
+        }
+
         public static void BuildPlayer(BuildTarget target, string output)
         {
             if (!BuildPipeline.IsBuildTargetSupported(BuildPipeline.GetBuildTargetGroup(target), target))
