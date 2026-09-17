@@ -8,7 +8,7 @@
     "prerequisites": ["combat-defense"],
     "minMeaningfulCandidates": 2,
     "maxForcedActionRatio": 0.85,
-    "requiredIntents": ["Move", "EndTurn"],
+    "requiredIntents": ["Move", "Capture", "EndTurn"],
     "steps": [
       {
         "id": "capture",

@@ -36,10 +36,15 @@ namespace Kruty1918.Moyva.AI.Training
         public string scenarioId;
         public int scenarioStep;
         public float scenarioProgress;
+        // Real legal candidate count on the decided frame; never counts the
+        // synthetic no-legal-action fallback.
         public int candidateCount;
         // True when the engine executed the only legal candidate without a
         // policy decision — the event is journal evidence, not a trainable step.
         public bool forcedAction;
+        // True when the frame had zero real candidates and only held the
+        // synthetic "wait" placeholder.
+        public bool syntheticFallback;
         public string[] availableIntents = Array.Empty<string>();
         public string[] availableActions = Array.Empty<string>();
         public int chosenSlot = -1;

@@ -58,11 +58,10 @@ namespace Kruty1918.Moyva.AI.Training
                     report.Block("SHARED_BOT_CONTRACT_BLOCKED");
                 foreach (float value in frame.Observations)
                     if (float.IsNaN(value) || float.IsInfinity(value)) { report.Block("NONFINITE_OBSERVATIONS"); break; }
-                bool legalGameplay = false;
-                for (int slot = 0; slot < frame.Candidates.Count; slot++)
-                    if (frame.Candidates.IsLegal(slot) && frame.Candidates[slot].Intent != BotIntentType.Wait) legalGameplay = true;
-                if (!legalGameplay) report.Block("REAL GAMEPLAY CANDIDATES NOT AVAILABLE");
-                if (frame.Candidates.Count <= 1) report.Warn("REAL GAMEPLAY CANDIDATES NOT AVAILABLE: only one candidate; verify curriculum and real movement state.");
+                // Synthetic fallbacks (the "wait" placeholder) are not real
+                // gameplay candidates and cannot satisfy readiness.
+                if (!frame.HasRealLegalCandidates) report.Block("REAL GAMEPLAY CANDIDATES NOT AVAILABLE");
+                if (frame.RealCandidateCount <= 1) report.Warn("REAL GAMEPLAY CANDIDATES NOT AVAILABLE: only one candidate; verify curriculum and real movement state.");
                 foreach (var unavailable in frame.Unavailable) report.Warn(unavailable.Key + ": " + unavailable.Value);
             }
             report.Warn("Gameplay rewards: authoritative terminal/combat events, first operational building and deployed recruit per type, settlement capture/loss. Shaping remains capped.");

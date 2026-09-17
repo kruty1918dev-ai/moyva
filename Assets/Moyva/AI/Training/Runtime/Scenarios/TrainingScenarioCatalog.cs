@@ -193,11 +193,18 @@ namespace Kruty1918.Moyva.AI.Training
                 { id = "wood-production", goal = TrainingScenarioGoalKind.ProductionEstablished,
                   criterion = TrainingScenarioCriterionKind.ResourceProduction, buildingTypeId = "wood-camp",
                   resourceId = Walnut, minProductionPerTurn = 1f };
-            TrainingScenarioStepDefinition Stable(int turns = 3) => new TrainingScenarioStepDefinition
+            TrainingScenarioStepDefinition Stable(int turns = 3, bool expandProduction = false) => new TrainingScenarioStepDefinition
                 { id = "stable-economy", goal = TrainingScenarioGoalKind.StableEconomy,
                   criterion = TrainingScenarioCriterionKind.StableResources, requiredTurns = turns,
-                  resources = new[] { new TrainingScenarioResourceCriterion
-                    { resourceId = Walnut, minStock = 1f, minProductionPerTurn = 1f } } };
+                  // expandProduction adds a hardwood criterion the scaffolded state cannot
+                  // satisfy — the learner must build a sawmill, not just survive three turns.
+                  resources = expandProduction
+                    ? new[] { new TrainingScenarioResourceCriterion
+                        { resourceId = Walnut, minStock = 1f, minProductionPerTurn = 1f },
+                        new TrainingScenarioResourceCriterion
+                        { resourceId = Hardwood, minStock = 1f, minProductionPerTurn = 1f } }
+                    : new[] { new TrainingScenarioResourceCriterion
+                        { resourceId = Walnut, minStock = 1f, minProductionPerTurn = 1f } } };
             TrainingScenarioStepDefinition Recruit() => new TrainingScenarioStepDefinition
                 { id = "unit-recruited", goal = TrainingScenarioGoalKind.UnitRecruited,
                   criterion = TrainingScenarioCriterionKind.DeployedUnit, unitTypeId = "warrior" };
@@ -301,6 +308,18 @@ namespace Kruty1918.Moyva.AI.Training
                 LegalSetup());
             foundation.masteryPolicy.successEpisodesRequired = 1;
 
+            // Per-step candidate contracts: the watchdog evaluates required intents
+            // against the step a submission belonged to, so combo steps declare the
+            // intents that must be legal while that step is active.
+            var comboStable = Stable(2, expandProduction: true);
+            comboStable.requiredIntents = new[] { "Build", "EndTurn" };
+            var comboRecruit = Recruit();
+            comboRecruit.requiredIntents = new[] { "Recruit", "EndTurn" };
+            var fieldMove = Move();
+            fieldMove.requiredIntents = new[] { "Move", "EndTurn" };
+            var fieldCombat = Combat();
+            fieldCombat.requiredIntents = new[] { "Move", "Attack", "EndTurn" };
+
             return new[]
             {
                 foundation,
@@ -318,13 +337,15 @@ namespace Kruty1918.Moyva.AI.Training
                         resources: new[] { Res(Walnut, 40), Res(Hardwood, 20), Res(Steak, 40) }),
                     2, 0.9f, new[] { "Build", "EndTurn" }, 100, false, TrainingScenarioMasteryKind.Evaluation, Production()),
 
-                // S3 — stable economy: production already runs; sustain it.
+                // S3 — stable economy: the scaffolded wood-camp sustains walnut;
+                // the learner must expand (sawmill → hardwood) then hold 3 turns.
                 Make("stable-economy", "Stable economy", TrainingCurriculumStage.Economy,
                     new[] { "production" }, new[] { "construction", "economy", "end-turn" },
                     Base(true, false, Opponent(false), residents: 8,
                         resources: new[] { Res(Walnut, 30), Res(Hardwood, 20), Res(Steak, 40) },
                         buildings: new[] { LearnerBuilding("wood-camp") }),
-                    2, 0.9f, new[] { "EndTurn" }, 150, false, TrainingScenarioMasteryKind.Evaluation, Stable()),
+                    2, 0.9f, new[] { "Build", "EndTurn" }, 150, false, TrainingScenarioMasteryKind.Evaluation,
+                    Stable(3, expandProduction: true)),
 
                 // S4 — recruitment: barrack + resources ready, agent recruits.
                 Make("recruitment", "Recruitment", TrainingCurriculumStage.Recruitment,
@@ -355,7 +376,7 @@ namespace Kruty1918.Moyva.AI.Training
                         units: new[] { LearnerUnits(2) },
                         objectives: new[] { new TrainingScenarioObjectiveSetup
                             { objectiveType = "settlement", owner = "opponent", healthFraction = 0.2f } }),
-                    2, 0.85f, new[] { "Move", "EndTurn" }, 250, false, TrainingScenarioMasteryKind.Evaluation, Capture()),
+                    2, 0.85f, new[] { "Move", "Capture", "EndTurn" }, 250, false, TrainingScenarioMasteryKind.Evaluation, Capture()),
 
                 // C1 — economy + recruitment run together from a ready base.
                 Make("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment,
@@ -364,7 +385,8 @@ namespace Kruty1918.Moyva.AI.Training
                     Base(true, false, Opponent(false), residents: 10,
                         resources: new[] { Res(Steak, 60), Res(Hardwood, 40), Res(Walnut, 40) },
                         buildings: new[] { LearnerBuilding("wood-camp"), LearnerBuilding("barrack") }),
-                    2, 0.9f, new[] { "Recruit", "EndTurn" }, 150, false, TrainingScenarioMasteryKind.Evaluation, Stable(2), Recruit()),
+                    2, 0.9f, new[] { "Build", "Recruit", "EndTurn" }, 150, false, TrainingScenarioMasteryKind.Evaluation,
+                    comboStable, comboRecruit),
 
                 // C2 — field operations: maneuver then destroy a passive target.
                 Make("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat,
@@ -372,7 +394,8 @@ namespace Kruty1918.Moyva.AI.Training
                     new[] { "movement", "combat", "scouting", "end-turn" },
                     Base(true, false, Opponent(true, units: 1, castle: false, archetype: "passive"),
                         units: new[] { LearnerUnits(2) }),
-                    2, 0.85f, new[] { "Move", "EndTurn" }, 200, false, TrainingScenarioMasteryKind.Evaluation, Move(), Combat()),
+                    2, 0.85f, new[] { "Move", "Attack", "EndTurn" }, 200, false, TrainingScenarioMasteryKind.Evaluation,
+                    fieldMove, fieldCombat),
 
                 // S10 — full game: real opening, heuristic opponent, real victory.
                 Make("full-game-autonomous", "Full game autonomous", TrainingCurriculumStage.FullGame,

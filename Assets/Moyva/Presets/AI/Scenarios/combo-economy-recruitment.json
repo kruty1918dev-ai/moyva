@@ -8,7 +8,7 @@
     "prerequisites": ["stable-economy", "recruitment"],
     "minMeaningfulCandidates": 2,
     "maxForcedActionRatio": 0.9,
-    "requiredIntents": ["Recruit", "EndTurn"],
+    "requiredIntents": ["Build", "Recruit", "EndTurn"],
     "steps": [
       {
         "id": "stable-economy",
@@ -17,9 +17,15 @@
         "requiredCount": 1,
         "threshold": 0,
         "requiredTurns": 2,
+        "requiredIntents": ["Build", "EndTurn"],
         "resources": [
           {
             "resourceId": "walnut-wood-materials-resources",
+            "minStock": 1.0,
+            "minProductionPerTurn": 1.0
+          },
+          {
+            "resourceId": "hardwood-materials-resources",
             "minStock": 1.0,
             "minProductionPerTurn": 1.0
           }
@@ -31,7 +37,8 @@
         "criterion": 4,
         "requiredCount": 1,
         "threshold": 0,
-        "unitTypeId": "warrior"
+        "unitTypeId": "warrior",
+        "requiredIntents": ["Recruit", "EndTurn"]
       }
     ],
     "startingConditions": {

@@ -8,7 +8,7 @@
     "prerequisites": ["production"],
     "minMeaningfulCandidates": 2,
     "maxForcedActionRatio": 0.9,
-    "requiredIntents": ["EndTurn"],
+    "requiredIntents": ["Build", "EndTurn"],
     "steps": [
       {
         "id": "stable-economy",
@@ -20,6 +20,11 @@
         "resources": [
           {
             "resourceId": "walnut-wood-materials-resources",
+            "minStock": 1.0,
+            "minProductionPerTurn": 1.0
+          },
+          {
+            "resourceId": "hardwood-materials-resources",
             "minStock": 1.0,
             "minProductionPerTurn": 1.0
           }

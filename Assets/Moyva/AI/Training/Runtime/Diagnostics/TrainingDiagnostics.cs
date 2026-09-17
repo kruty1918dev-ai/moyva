@@ -10,10 +10,20 @@ namespace Kruty1918.Moyva.AI.Training
         public int ValidActions { get; internal set; }
         public int InvalidActions { get; internal set; }
         public int StaleActions { get; internal set; }
+        // Real legal candidates on the current frame; synthetic fallbacks excluded.
         public int CandidateCount { get; internal set; }
-        // Sum of legal candidate counts over trainable decision frames.
+        // Sum of real legal candidate counts over trainable decision frames.
         public long CandidateSum { get; internal set; }
         public float MeanCandidates => Decisions <= 0 ? 0f : CandidateSum / (float)Decisions;
+        // forced / (forced + trainable decisions); 0 when nothing was submitted.
+        public float ForcedActionRate
+        {
+            get
+            {
+                int total = ForcedActions + Decisions;
+                return total <= 0 ? 0f : ForcedActions / (float)total;
+            }
+        }
         public int[] CandidateCountsByIntent { get; } = new int[12];
         public float TotalReward { get; internal set; }
         public float ShapingReward { get; internal set; }

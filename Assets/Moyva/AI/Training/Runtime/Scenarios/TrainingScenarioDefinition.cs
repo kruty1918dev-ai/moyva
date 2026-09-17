@@ -223,6 +223,9 @@ namespace Kruty1918.Moyva.AI.Training
         public string objectiveId;
         public string objectiveType;
         public TrainingScenarioResourceCriterion[] resources = Array.Empty<TrainingScenarioResourceCriterion>();
+        // Per-step candidate contract; empty/0 inherits the scenario-level watchdog gates.
+        public string[] requiredIntents = Array.Empty<string>();
+        public int minMeaningfulCandidates;
 
         public TrainingScenarioCriterionKind EffectiveCriterion
         {
@@ -256,6 +259,14 @@ namespace Kruty1918.Moyva.AI.Training
             TrainingScenarioResourceCriterion.ValidateFiniteNonNegative(minProductionPerTurn, "minProductionPerTurn", id);
             if (requiredTurns < 0) throw new ArgumentException("Scenario step requiredTurns is invalid: " + id);
             if (resources == null) throw new ArgumentException("Scenario step resources cannot be null: " + id);
+            if (requiredIntents == null)
+                throw new ArgumentException("Scenario step requiredIntents cannot be null: " + id);
+            foreach (var intent in requiredIntents)
+                if (string.IsNullOrWhiteSpace(intent)
+                    || !Enum.TryParse(intent, true, out BotIntentType _))
+                    throw new ArgumentException($"Scenario step {id} has unknown requiredIntent '{intent}'.");
+            if (minMeaningfulCandidates < 0)
+                throw new ArgumentException("Scenario step minMeaningfulCandidates is invalid: " + id);
 
             switch (EffectiveCriterion)
             {

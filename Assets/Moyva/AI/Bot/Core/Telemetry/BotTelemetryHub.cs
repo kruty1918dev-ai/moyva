@@ -8,7 +8,7 @@ namespace Kruty1918.Moyva.AI.Bot
     {
         public string SessionId, Player, Reason, ContractHash, ObservationHash;
         public long Turn, Sequence;
-        public int CandidateCount, Slot;
+        public int CandidateCount, RealCandidateCount, Slot;
         public BotIntentType Intent;
         public BotCapabilityId Capability;
         public BotPolicyMode Mode;
@@ -19,7 +19,8 @@ namespace Kruty1918.Moyva.AI.Bot
             BotExecutionResult result, BotDecisionFailure failure, float latency)
         {
             SessionId = session.Id; Player = session.Owner; Turn = session.Turn; Sequence = frame?.Sequence ?? 0;
-            CandidateCount = frame?.Candidates.Count ?? 0; Slot = slot; Mode = mode; Result = result.Status;
+            CandidateCount = frame?.Candidates.Count ?? 0; RealCandidateCount = frame?.RealCandidateCount ?? 0;
+            Slot = slot; Mode = mode; Result = result.Status;
             Intent = result.Candidate?.Intent ?? BotIntentType.None;
             Capability = result.Candidate?.Capability ?? BotCapabilityId.Turn;
             Reason = result.Reason; Failure = failure; Latency = latency; ContractHash = BotDecisionContract.Hash;
@@ -61,7 +62,7 @@ namespace Kruty1918.Moyva.AI.Bot
         public IReadOnlyList<BotEpisodeMetrics> Episodes => _episodes.ToArray();
         public void Record(BotDecisionTrace trace)
         {
-            Decisions++; CandidateTotal += trace.CandidateCount;
+            Decisions++; CandidateTotal += trace.RealCandidateCount;
             if (trace.Failure == BotDecisionFailure.ModelInvalid) Invalid++;
             if (trace.Failure == BotDecisionFailure.StaleState) Stale++;
             IntentCounts[(int)trace.Intent]++;

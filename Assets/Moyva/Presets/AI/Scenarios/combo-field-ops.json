@@ -8,21 +8,23 @@
     "prerequisites": ["movement-scouting", "combat-defense"],
     "minMeaningfulCandidates": 2,
     "maxForcedActionRatio": 0.85,
-    "requiredIntents": ["Move", "EndTurn"],
+    "requiredIntents": ["Move", "Attack", "EndTurn"],
     "steps": [
       {
         "id": "movement",
         "goal": 5,
         "criterion": 5,
         "requiredCount": 1,
-        "threshold": 0
+        "threshold": 0,
+        "requiredIntents": ["Move", "EndTurn"]
       },
       {
         "id": "combat",
         "goal": 6,
         "criterion": 7,
         "requiredCount": 1,
-        "threshold": 0
+        "threshold": 0,
+        "requiredIntents": ["Move", "Attack", "EndTurn"]
       }
     ],
     "startingConditions": {

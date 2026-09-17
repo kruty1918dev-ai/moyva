@@ -62,5 +62,6 @@
   "decisionJournalPath": "",
   "decisionJournalCapacity": 4096,
   "trainingTimeScale": 5.0,
-  "disableRenderingWhenPossible": true
+  "disableRenderingWhenPossible": true,
+  "scenarioHintDropout": 0.30
 }

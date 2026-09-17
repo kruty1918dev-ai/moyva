@@ -48,9 +48,10 @@ namespace Kruty1918.Moyva.AI.Training
         public float observerSnapshotHz = 5f;
         public float trainingTimeScale = 1;
         public bool disableRenderingWhenPossible = false;
-        // Fraction of training episodes where training-only scenario hints are
-        // zeroed so the policy cannot key on them. Frozen evaluation never drops.
-        public float scenarioHintDropout = 0f;
+        // Fraction of training episodes where training-only opaque scenario hints
+        // (ScenarioGoal/Step/Progress) are zeroed so the policy cannot key on the
+        // scenario id hash. Frozen evaluation always suppresses them instead.
+        public float scenarioHintDropout = 0.30f;
         public bool watchdogEnabled = true;
         // Submissions per watchdog evaluation window (forced + trainable).
         public int watchdogWindow = 200;

@@ -55,7 +55,7 @@ namespace Kruty1918.Moyva.AI.Bot
             }
             if (all.Count == 0)
             {
-                all.Add(new BotCandidateAction("wait", BotCapabilityId.Turn, BotIntentType.Wait));
+                all.Add(new BotCandidateAction("wait", BotCapabilityId.Turn, BotIntentType.Wait, synthetic: true));
                 _telemetry.NoLegalActionFallbackCount++;
             }
             var set = new BotCandidateSet(new BotCandidateReducer().Reduce(all));

@@ -41,7 +41,9 @@ namespace Kruty1918.Moyva.AI.Training
         {
             if (_environment == null) return;
             _environment.Tick(Time.fixedDeltaTime);
-            if (!_environment.CanRequestDecision || _pendingDecision) return;
+            // Single-candidate frames are engine-forced inside Tick and must never
+            // produce an ML-Agents step; only >=2 real candidates is a decision.
+            if (!_environment.HasTrainableDecision || _pendingDecision) return;
             if (_config.inspectorMode
                 && !TrainingModelInspectorController.ShouldRequestModelDecision(_environment)) return;
             if (++_ticks < _config.decisionInterval) return;
@@ -86,9 +88,16 @@ namespace Kruty1918.Moyva.AI.Training
                 stats.Add("MoyvaAI/StaleRate", d.StaleActions / (float)System.Math.Max(1, d.Decisions));
                 stats.Add("MoyvaAI/WinRate", result == TrainingEpisodeResult.Victory ? 1 : 0);
                 stats.Add("MoyvaAI/TimeoutRate", result == TrainingEpisodeResult.Timeout ? 1 : 0);
-                int candidates = _environment.Bridge.Frame?.Candidates.Count ?? 0;
-                stats.Add("MoyvaAI/Candidates", candidates);
-                stats.Add("MoyvaAI/MaskedRatio", 1 - candidates / (float)BotDecisionContract.MaxCandidateSlots);
+                // Candidate metrics aggregate real candidates over trainable
+                // decisions; the final frame alone would misreport the episode.
+                stats.Add("MoyvaAI/MeanCandidates", d.MeanCandidates);
+                stats.Add("MoyvaAI/TrainableDecisions", d.Decisions);
+                stats.Add("MoyvaAI/ForcedActions", d.ForcedActions);
+                stats.Add("MoyvaAI/ForcedActionRate", d.ForcedActionRate);
+                int finalCandidates = _environment.Bridge.Frame?.RealCandidateCount ?? 0;
+                stats.Add("MoyvaAI/FinalFrameCandidates", finalCandidates);
+                stats.Add("MoyvaAI/FinalFrameMaskedRatio",
+                    1 - finalCandidates / (float)BotDecisionContract.MaxCandidateSlots);
             }
             if ((_config.verboseLogging && _config.presentationMode != TrainingPresentationMode.HeadlessFast)
                 || result == TrainingEpisodeResult.InvalidState)
