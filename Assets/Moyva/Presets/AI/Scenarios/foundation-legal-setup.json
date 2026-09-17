@@ -2,17 +2,20 @@
   "scenario": {
     "id": "foundation-legal-setup",
     "title": "Legal initial state",
-    "legacyStage": 1,
+    "legacyStage": 0,
     "learnerBuildsInitialCastle": false,
     "fullGame": false,
     "prerequisites": [],
+    "minMeaningfulCandidates": 0,
+    "maxForcedActionRatio": 1.0,
+    "requiredIntents": [],
     "steps": [
       {
+        "id": "legal-setup-verified",
+        "goal": 0,
         "criterion": 10,
         "requiredCount": 1,
-        "threshold": 0,
-        "id": "legal-setup-verified",
-        "goal": 0
+        "threshold": 0
       }
     ],
     "startingConditions": {
@@ -20,21 +23,23 @@
       "learnerMustPlaceCastle": false,
       "startingResources": [],
       "startingUnits": [],
+      "startingBuildings": [],
       "opponent": {
         "enabled": false,
         "startingUnits": 0,
-        "startingCastle": false
+        "startingCastle": false,
+        "unitTypeId": "warrior",
+        "archetype": "passive",
+        "residents": 0
       },
-      "objectives": []
+      "objectives": [],
+      "residents": 0,
+      "openingRevealRadius": -1
     },
-    "availableCapabilities": [
-      "end-turn"
-    ],
+    "availableCapabilities": ["end-turn"],
     "generationConstraints": {
       "minReachableArea": 2,
-      "requiredResourceTypes": [
-        "walnut-wood-materials-resources"
-      ],
+      "requiredResourceTypes": ["walnut-wood-materials-resources"],
       "minOpponentDistance": 2,
       "maxOpponentDistance": 0,
       "objectiveReachability": true,
@@ -44,13 +49,13 @@
       "validatedGameplayEventsOnly": true,
       "rewardSetupActions": false,
       "requireMeaningfulEvent": true,
-      "maxGameplayRewardEventsPerTurn": 12,
+      "maxGameplayRewardEventsPerTurn": 16,
       "allowedGameplayEvents": []
     },
     "masteryPolicy": {
       "kind": 1,
-      "successEpisodesRequired": 100,
-      "maxDecisionsPerSuccessfulEpisode": 0
+      "successEpisodesRequired": 1,
+      "maxDecisionsPerSuccessfulEpisode": 10
     }
   }
 }

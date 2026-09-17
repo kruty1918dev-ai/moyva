@@ -91,7 +91,8 @@ namespace Kruty1918.Moyva.AI.Training
                 context.CurriculumStage,
                 context.WorldSize,
                 context.ScenarioId,
-                context.LearnInitialCastle);
+                context.LearnInitialCastle,
+                context.Scenario);
         }
 
         private static bool IsRetryableGenerationFailure(
@@ -105,6 +106,9 @@ namespace Kruty1918.Moyva.AI.Training
                    || string.Equals(
                        message,
                        "Generated world has no connected legal opponent spawn.",
+                       StringComparison.Ordinal)
+                   || message.StartsWith(
+                       TrainingScenarioScaffolder.PlacementFailurePrefix,
                        StringComparison.Ordinal);
         }
 

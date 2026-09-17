@@ -150,8 +150,13 @@ namespace Kruty1918.Moyva.AI.Training
                 signals.Fire(new WorldSpawnPositionsSignal { Source = WorldSpawnPositionsSource.GeneratedHost,
                     Assignments = assignments.ToArray() });
                 signals.Fire(new WorldBuiltSignal());
-                RevealOpeningArea(TrainingGameplayScope.LearnerId, first);
-                RevealOpeningArea(TrainingGameplayScope.OpponentId, second);
+
+                // Authoritative scenario setup: reveal, settlements, buildings,
+                // resources, units and weakening are all committed through real
+                // gameplay services while _setupPhase is still true, so nothing
+                // here can produce rewards, progress or mastery.
+                TrainingScenarioScaffolder.Apply(_container, world, _openingAnchors,
+                    context.Scenario, context.LearnInitialCastle);
 
                 Gateway = new MoyvaBotTurnAdapter(Turns, _container.Resolve<ITurnAuthorityPolicy>());
                 _container.Bind<IBotOpeningPlacementAnchorSource>().FromInstance(this).AsSingle();
@@ -163,11 +168,12 @@ namespace Kruty1918.Moyva.AI.Training
                 _setupPhase = false;
                 Outcomes = new TrainingGameplayEventBridge(signals, _container.Resolve<ITurnHistoryQuery>(), TrainingGameplayScope.LearnerId,
                     _container.Resolve<IUnitCombatService>(), owners, context.EpisodeId, _container.TryResolve<IBuildingRegistry>());
-                _opponent = new BotDecisionOrchestrator(Gateway, Capabilities, Perception, new HeuristicBotPolicyDriver(),
-                    new BotRuntimeConfig { curriculumStage = (int)context.CurriculumStage, visibleDelay = 0 }, new BotTelemetryHub(4));
+                _opponent = new BotDecisionOrchestrator(Gateway, Capabilities, Perception,
+                    TrainingOpponentPolicy.Create(context.Scenario?.startingConditions?.opponent?.archetype),
+                    new BotRuntimeConfig { curriculumStage = (int)TrainingCurriculumStage.FullGame, visibleDelay = 0 },
+                    new BotTelemetryHub(4));
                 if (!Turns.CanOwnerAct(TrainingGameplayScope.LearnerId, out var reason))
                     throw new InvalidOperationException("Training world did not enter the learner turn: " + reason);
-                Debug.Log($"MOYVA_EPISODE_BEGIN episode={context.EpisodeId} seed={context.Seed} units={unitService.GetAllUnitIds().Count} turn={Turns.GlobalTurn}");
             }
             catch { Dispose(); throw; }
             finally { UnityEngine.Random.state = randomState; }
@@ -548,12 +554,6 @@ namespace Kruty1918.Moyva.AI.Training
         {
             string key = (tile ?? string.Empty).ToLowerInvariant();
             return key.Contains("water") || key.Contains("ocean") || key.Contains("river") || key.Contains("lake");
-        }
-
-        private void RevealOpeningArea(string ownerId, Vector2Int center)
-        {
-            var registry = _container.TryResolve<IFogOwnerVisionSourceRegistry>();
-            registry?.RevealArea(ownerId, center, 6, FogRevealShape.Square, true, "training-opening-spawn:" + ownerId);
         }
 
         private static T Required<T>() where T : class

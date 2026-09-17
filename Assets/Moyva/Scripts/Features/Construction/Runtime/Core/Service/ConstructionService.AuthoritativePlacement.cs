@@ -117,6 +117,35 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 consumeResources: false);
         }
 
+        public bool TryApplySetupPlacement(
+            string buildingId,
+            Vector2Int position,
+            string ownerId)
+        {
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                LogPlacementCommitRejected(
+                    buildingId,
+                    position,
+                    "Setup placement owner is empty.");
+                return false;
+            }
+
+            // Trusted setup runs outside the turn cycle (scenario scaffolding,
+            // deterministic world restore): legality is still enforced by
+            // EvaluatePlacement inside the commit, but the owning faction does
+            // not have to hold the active turn, and no turn action is recorded.
+            return TryCommitAuthoritativePlacement(
+                buildingId,
+                position,
+                ownerId.Trim(),
+                ConstructionPlacementCommitIntent.None,
+                ConstructionPlacementAttemptSource.DirectPlace,
+                includePendingPlacements: false,
+                consumeResources: false,
+                recordTurnAction: false);
+        }
+
         private bool TryCommitAuthoritativePlacement(
             string buildingId,
             Vector2Int position,
@@ -124,7 +153,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ConstructionPlacementCommitIntent intent,
             ConstructionPlacementAttemptSource attemptSource,
             bool includePendingPlacements,
-            bool consumeResources = true)
+            bool consumeResources = true,
+            bool recordTurnAction = true)
         {
             if (string.IsNullOrWhiteSpace(buildingId))
             {
@@ -335,9 +365,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 buildingId,
                 position,
                 ownerId);
-            RecordConstructionAction(
-                ownerId,
-                isRelocation ? "building-relocate" : "building-place");
+            if (recordTurnAction)
+            {
+                RecordConstructionAction(
+                    ownerId,
+                    isRelocation ? "building-relocate" : "building-place");
+            }
             return true;
         }
     }

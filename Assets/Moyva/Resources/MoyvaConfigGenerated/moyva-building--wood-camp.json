@@ -90,7 +90,7 @@
     "requiredTerrainIds": [],
     "requiredNeighborOffsets": [],
     "requiresWaterNearby": false,
-    "requiresForestNearby": false,
+    "requiresForestNearby": true,
     "requiresMountainNearby": false,
     "requiresRoadNearby": false,
     "nearbyTileRequirements": []

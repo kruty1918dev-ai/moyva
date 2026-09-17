@@ -182,46 +182,9 @@ namespace Kruty1918.Moyva.AI.Training
 
         private static TrainingScenarioDefinition[] FallbackDefinitions()
         {
-            TrainingScenarioDefinition MakeDefault(string id, string title, TrainingCurriculumStage stage, bool castle, bool full,
-                string[] prerequisites, int maxDecisions = 100, params TrainingScenarioStepDefinition[] steps)
-                => MakeWithCapabilities(id, title, stage, castle, full, prerequisites, CapabilitiesFor(full), maxDecisions, steps);
-
-            TrainingScenarioDefinition MakeWithCapabilities(string id, string title, TrainingCurriculumStage stage, bool castle, bool full,
-                string[] prerequisites, string[] capabilities, int maxDecisions = 100, params TrainingScenarioStepDefinition[] steps)
-            {
-                return new TrainingScenarioDefinition
-                {
-                    id = id, title = title, legacyStage = stage, learnerBuildsInitialCastle = castle, fullGame = full,
-                    prerequisites = prerequisites,
-                    startingConditions = new TrainingScenarioStartingConditions
-                    {
-                        learnerStartsWithCastle = false,
-                        learnerMustPlaceCastle = castle,
-                        startingUnits = Array.Empty<TrainingScenarioUnitSetup>()
-                    },
-                    availableCapabilities = capabilities,
-                    generationConstraints = new TrainingScenarioGenerationConstraints
-                    {
-                        minReachableArea = 2,
-                        requiredResourceTypes = new[] { "walnut-wood-materials-resources" },
-                        minOpponentDistance = 2,
-                        objectiveReachability = true
-                    },
-                    rewardRules = new TrainingScenarioRewardRules
-                    {
-                        rewardSetupActions = false,
-                        validatedGameplayEventsOnly = true,
-                        maxGameplayRewardEventsPerTurn = 16
-                    },
-                    masteryPolicy = new TrainingScenarioMasteryPolicy
-                    {
-                        kind = TrainingScenarioMasteryKind.BootstrapQualification,
-                        successEpisodesRequired = 3,
-                        maxDecisionsPerSuccessfulEpisode = maxDecisions
-                    },
-                    steps = steps
-                };
-            }
+            const string Walnut = "walnut-wood-materials-resources";
+            const string Hardwood = "hardwood-materials-resources";
+            const string Steak = "steak-food-resources";
 
             TrainingScenarioStepDefinition Castle() => new TrainingScenarioStepDefinition
                 { id = "castle-operational", goal = TrainingScenarioGoalKind.CastleOperational,
@@ -229,12 +192,12 @@ namespace Kruty1918.Moyva.AI.Training
             TrainingScenarioStepDefinition Production() => new TrainingScenarioStepDefinition
                 { id = "wood-production", goal = TrainingScenarioGoalKind.ProductionEstablished,
                   criterion = TrainingScenarioCriterionKind.ResourceProduction, buildingTypeId = "wood-camp",
-                  resourceId = "walnut-wood-materials-resources", minProductionPerTurn = 1f };
-            TrainingScenarioStepDefinition Stable() => new TrainingScenarioStepDefinition
+                  resourceId = Walnut, minProductionPerTurn = 1f };
+            TrainingScenarioStepDefinition Stable(int turns = 3) => new TrainingScenarioStepDefinition
                 { id = "stable-economy", goal = TrainingScenarioGoalKind.StableEconomy,
-                  criterion = TrainingScenarioCriterionKind.StableResources, requiredTurns = 3,
+                  criterion = TrainingScenarioCriterionKind.StableResources, requiredTurns = turns,
                   resources = new[] { new TrainingScenarioResourceCriterion
-                    { resourceId = "walnut-wood-materials-resources", minStock = 1f, minProductionPerTurn = 1f } } };
+                    { resourceId = Walnut, minStock = 1f, minProductionPerTurn = 1f } } };
             TrainingScenarioStepDefinition Recruit() => new TrainingScenarioStepDefinition
                 { id = "unit-recruited", goal = TrainingScenarioGoalKind.UnitRecruited,
                   criterion = TrainingScenarioCriterionKind.DeployedUnit, unitTypeId = "warrior" };
@@ -253,62 +216,174 @@ namespace Kruty1918.Moyva.AI.Training
             TrainingScenarioStepDefinition Win() => new TrainingScenarioStepDefinition
                 { id = "match-won", goal = TrainingScenarioGoalKind.MatchWon,
                   criterion = TrainingScenarioCriterionKind.MatchVictory };
-
-            // NEW: S0 - Foundation legal setup (no units, no buildings, no resources, economy installed)
             TrainingScenarioStepDefinition LegalSetup() => new TrainingScenarioStepDefinition
                 { id = "legal-setup-verified", goal = TrainingScenarioGoalKind.None,
                   criterion = TrainingScenarioCriterionKind.LegalInitialState };
 
+            TrainingScenarioResourceAmount Res(string id, float amount, string owner = "learner")
+                => new TrainingScenarioResourceAmount { resourceId = id, amount = amount, owner = owner };
+            TrainingScenarioUnitSetup LearnerUnits(int count, string near = "anchor")
+                => new TrainingScenarioUnitSetup { unitTypeId = "warrior", count = count, owner = "learner", near = near };
+            TrainingScenarioBuildingSetup LearnerBuilding(string id)
+                => new TrainingScenarioBuildingSetup { buildingTypeId = id, owner = "learner", operational = true };
+            TrainingScenarioOpponentSetup Opponent(bool enabled, int units = 0, bool castle = false,
+                string archetype = "passive", int residents = 0)
+                => new TrainingScenarioOpponentSetup
+                { enabled = enabled, startingUnits = units, startingCastle = castle,
+                  archetype = archetype, residents = residents };
+
+            TrainingScenarioDefinition Make(string id, string title, TrainingCurriculumStage stage,
+                string[] prerequisites, string[] capabilities,
+                TrainingScenarioStartingConditions conditions,
+                int minMeaningful, float maxForcedRatio, string[] requiredIntents,
+                int maxDecisions, bool full = false,
+                TrainingScenarioMasteryKind mastery = TrainingScenarioMasteryKind.Evaluation,
+                params TrainingScenarioStepDefinition[] steps)
+            {
+                bool mustPlace = conditions?.learnerMustPlaceCastle ?? false;
+                return new TrainingScenarioDefinition
+                {
+                    id = id, title = title, legacyStage = stage, learnerBuildsInitialCastle = mustPlace,
+                    fullGame = full, prerequisites = prerequisites,
+                    startingConditions = conditions ?? new TrainingScenarioStartingConditions(),
+                    availableCapabilities = capabilities,
+                    minMeaningfulCandidates = minMeaningful,
+                    maxForcedActionRatio = maxForcedRatio,
+                    requiredIntents = requiredIntents ?? Array.Empty<string>(),
+                    generationConstraints = new TrainingScenarioGenerationConstraints
+                    {
+                        minReachableArea = 2,
+                        requiredResourceTypes = new[] { Walnut },
+                        minOpponentDistance = 2,
+                        objectiveReachability = true
+                    },
+                    rewardRules = new TrainingScenarioRewardRules
+                    {
+                        rewardSetupActions = false,
+                        validatedGameplayEventsOnly = true,
+                        maxGameplayRewardEventsPerTurn = 16
+                    },
+                    masteryPolicy = new TrainingScenarioMasteryPolicy
+                    {
+                        kind = mastery,
+                        successEpisodesRequired = 3,
+                        maxDecisionsPerSuccessfulEpisode = maxDecisions
+                    },
+                    steps = steps
+                };
+            }
+
+            TrainingScenarioStartingConditions Base(bool startsWithCastle, bool mustPlace,
+                TrainingScenarioOpponentSetup opponent, int residents = 0, int reveal = -1,
+                TrainingScenarioResourceAmount[] resources = null,
+                TrainingScenarioUnitSetup[] units = null,
+                TrainingScenarioBuildingSetup[] buildings = null,
+                TrainingScenarioObjectiveSetup[] objectives = null)
+                => new TrainingScenarioStartingConditions
+                {
+                    learnerStartsWithCastle = startsWithCastle,
+                    learnerMustPlaceCastle = mustPlace,
+                    startingResources = resources ?? Array.Empty<TrainingScenarioResourceAmount>(),
+                    startingUnits = units ?? Array.Empty<TrainingScenarioUnitSetup>(),
+                    startingBuildings = buildings ?? Array.Empty<TrainingScenarioBuildingSetup>(),
+                    opponent = opponent ?? Opponent(false),
+                    objectives = objectives ?? Array.Empty<TrainingScenarioObjectiveSetup>(),
+                    residents = residents,
+                    openingRevealRadius = reveal
+                };
+
+            // S0 — infrastructure validation. The only bootstrap-qualified
+            // scenario; one clean legal-setup episode is enough to qualify.
+            var foundation = Make("foundation-legal-setup", "Legal initial state", TrainingCurriculumStage.BasicLifecycle,
+                Array.Empty<string>(), new[] { "end-turn" },
+                Base(false, false, Opponent(false)),
+                0, 1f, Array.Empty<string>(), 10, false, TrainingScenarioMasteryKind.BootstrapQualification,
+                LegalSetup());
+            foundation.masteryPolicy.successEpisodesRequired = 1;
+
             return new[]
             {
-                // S0: Foundation - legal initial state (no scaffolding for learner)
-                MakeWithCapabilities("foundation-legal-setup", "Legal initial state", TrainingCurriculumStage.BasicLifecycle, false, false,
-                    Array.Empty<string>(), new[] { "end-turn" }, 0, LegalSetup()),
+                foundation,
 
-                // S1: Castle foundation - learner places first castle
-                MakeDefault("castle", "First castle", TrainingCurriculumStage.Building, true, false, new[] { "foundation-legal-setup" }, 50, Castle()),
+                // S1 — castle placement: resources ready, many legal cells.
+                Make("castle", "First castle", TrainingCurriculumStage.Building,
+                    new[] { "foundation-legal-setup" }, new[] { "construction", "end-turn" },
+                    Base(false, true, Opponent(false), resources: new[] { Res(Walnut, 40), Res(Hardwood, 20) }),
+                    2, 0.9f, new[] { "Build", "EndTurn" }, 50, false, TrainingScenarioMasteryKind.Evaluation, Castle()),
 
-                // S2: Initial economy - castle operational -> settlement -> starter resources to settlement
-                MakeDefault("production", "Resource production", TrainingCurriculumStage.Economy, true, false,
-                    new[] { "castle" }, 100, Castle(), Production()),
+                // S2 — production: castle + workforce ready, agent builds output.
+                Make("production", "Resource production", TrainingCurriculumStage.Economy,
+                    new[] { "castle" }, new[] { "construction", "economy", "end-turn" },
+                    Base(true, false, Opponent(false), residents: 6,
+                        resources: new[] { Res(Walnut, 40), Res(Hardwood, 20), Res(Steak, 40) }),
+                    2, 0.9f, new[] { "Build", "EndTurn" }, 100, false, TrainingScenarioMasteryKind.Evaluation, Production()),
 
-                // S3: Production establishment - build first production building
-                MakeDefault("stable-economy", "Stable economy", TrainingCurriculumStage.Economy, true, false,
-                    new[] { "production" }, 150, Castle(), Production(), Stable()),
+                // S3 — stable economy: production already runs; sustain it.
+                Make("stable-economy", "Stable economy", TrainingCurriculumStage.Economy,
+                    new[] { "production" }, new[] { "construction", "economy", "end-turn" },
+                    Base(true, false, Opponent(false), residents: 8,
+                        resources: new[] { Res(Walnut, 30), Res(Hardwood, 20), Res(Steak, 40) },
+                        buildings: new[] { LearnerBuilding("wood-camp") }),
+                    2, 0.9f, new[] { "EndTurn" }, 150, false, TrainingScenarioMasteryKind.Evaluation, Stable()),
 
-                // S4: Military infrastructure - build recruitment building
-                MakeDefault("recruitment", "Recruitment", TrainingCurriculumStage.Recruitment, true, false,
-                    new[] { "stable-economy" }, 150, Castle(), Production(), Stable(), Recruit()),
+                // S4 — recruitment: barrack + resources ready, agent recruits.
+                Make("recruitment", "Recruitment", TrainingCurriculumStage.Recruitment,
+                    new[] { "stable-economy" }, new[] { "recruitment", "economy", "end-turn" },
+                    Base(true, false, Opponent(false), residents: 8,
+                        resources: new[] { Res(Steak, 60), Res(Hardwood, 40), Res(Walnut, 30) },
+                        buildings: new[] { LearnerBuilding("barrack") }),
+                    2, 0.9f, new[] { "Recruit", "EndTurn" }, 100, false, TrainingScenarioMasteryKind.Evaluation, Recruit()),
 
-                // S5: Movement & exploration
-                MakeDefault("movement-scouting", "Movement and scouting", TrainingCurriculumStage.FogOfWar, true, false,
-                    new[] { "recruitment" }, 200, Castle(), Production(), Stable(), Recruit(), Move(), Scout()),
+                // S5/S6 — movement & scouting: deployed unit, tight reveal radius.
+                Make("movement-scouting", "Movement and scouting", TrainingCurriculumStage.FogOfWar,
+                    new[] { "recruitment" }, new[] { "movement", "scouting", "end-turn" },
+                    Base(true, false, Opponent(false), reveal: 3,
+                        units: new[] { LearnerUnits(1) }),
+                    2, 0.9f, new[] { "Move", "EndTurn" }, 150, false, TrainingScenarioMasteryKind.Evaluation, Move(), Scout()),
 
-                // S6: Combat engagement
-                MakeDefault("combat-defense", "Combat and defense", TrainingCurriculumStage.Combat, true, false,
-                    new[] { "movement-scouting" }, 200, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat()),
+                // S7 — combat: learner squad vs passive static target.
+                Make("combat-defense", "Combat and defense", TrainingCurriculumStage.Combat,
+                    new[] { "movement-scouting" }, new[] { "movement", "combat", "scouting", "end-turn" },
+                    Base(true, false, Opponent(true, units: 1, castle: false, archetype: "passive"),
+                        units: new[] { LearnerUnits(2) }),
+                    2, 0.85f, new[] { "Attack", "Move", "EndTurn" }, 200, false, TrainingScenarioMasteryKind.Evaluation, Combat()),
 
-                // S7: Capture expansion
-                MakeDefault("capture", "Capture", TrainingCurriculumStage.Objectives, true, false,
-                    new[] { "combat-defense" }, 250, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat(), Capture()),
+                // S8 — capture: weakened opponent settlement objective.
+                Make("capture", "Capture", TrainingCurriculumStage.Objectives,
+                    new[] { "combat-defense" }, new[] { "movement", "combat", "capture", "scouting", "end-turn" },
+                    Base(true, false, Opponent(true, units: 0, castle: true, archetype: "passive"),
+                        units: new[] { LearnerUnits(2) },
+                        objectives: new[] { new TrainingScenarioObjectiveSetup
+                            { objectiveType = "settlement", owner = "opponent", healthFraction = 0.2f } }),
+                    2, 0.85f, new[] { "Move", "EndTurn" }, 250, false, TrainingScenarioMasteryKind.Evaluation, Capture()),
 
-                // S8: Combined economy + military
-                MakeDefault("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment, true, false,
-                    new[] { "stable-economy", "recruitment" }, 150, Castle(), Production(), Stable(), Recruit()),
+                // C1 — economy + recruitment run together from a ready base.
+                Make("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment,
+                    new[] { "stable-economy", "recruitment" },
+                    new[] { "construction", "economy", "recruitment", "end-turn" },
+                    Base(true, false, Opponent(false), residents: 10,
+                        resources: new[] { Res(Steak, 60), Res(Hardwood, 40), Res(Walnut, 40) },
+                        buildings: new[] { LearnerBuilding("wood-camp"), LearnerBuilding("barrack") }),
+                    2, 0.9f, new[] { "Recruit", "EndTurn" }, 150, false, TrainingScenarioMasteryKind.Evaluation, Stable(2), Recruit()),
 
-                // S9: Combined field operations
-                MakeDefault("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat, true, false,
-                    new[] { "movement-scouting", "combat-defense" }, 200, Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat()),
+                // C2 — field operations: maneuver then destroy a passive target.
+                Make("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat,
+                    new[] { "movement-scouting", "combat-defense" },
+                    new[] { "movement", "combat", "scouting", "end-turn" },
+                    Base(true, false, Opponent(true, units: 1, castle: false, archetype: "passive"),
+                        units: new[] { LearnerUnits(2) }),
+                    2, 0.85f, new[] { "Move", "EndTurn" }, 200, false, TrainingScenarioMasteryKind.Evaluation, Move(), Combat()),
 
-                // S10: Full game autonomous - both sides start from S0
-                MakeDefault("full-game-autonomous", "Full game autonomous", TrainingCurriculumStage.FullGame, true, true, new[] { "capture" }, 500,
+                // S10 — full game: real opening, heuristic opponent, real victory.
+                Make("full-game-autonomous", "Full game autonomous", TrainingCurriculumStage.FullGame,
+                    new[] { "capture" },
+                    new[] { "construction", "economy", "recruitment", "movement", "scouting", "combat", "capture", "end-turn" },
+                    Base(false, true, Opponent(true, units: 1, castle: true, archetype: "heuristic", residents: 10),
+                        residents: 15,
+                        resources: new[] { Res(Walnut, 80), Res(Hardwood, 80), Res(Steak, 100) }),
+                    0, 1f, Array.Empty<string>(), 500, true, TrainingScenarioMasteryKind.Evaluation,
                     Castle(), Production(), Stable(), Recruit(), Move(), Scout(), Combat(), Capture(), Win())
             };
         }
-
-        private static string[] CapabilitiesFor(bool full)
-            => full
-                ? new[] { "construction", "economy", "recruitment", "movement", "scouting", "combat", "capture", "end-turn" }
-                : new[] { "construction", "economy", "recruitment", "movement", "scouting", "combat", "capture", "end-turn" };
     }
 }

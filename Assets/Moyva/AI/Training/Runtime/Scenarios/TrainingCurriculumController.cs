@@ -229,7 +229,8 @@ namespace Kruty1918.Moyva.AI.Training
                     || skill.trainingEpisodes != skill.trainingSuccesses)
                     continue;
 
-                skill.consecutivePasses = Math.Max(skill.consecutivePasses, policy.successEpisodesRequired);
+                skill.consecutivePasses = Math.Max(skill.consecutivePasses,
+                    Math.Max(policy.successEpisodesRequired, skill.trainingSuccesses));
                 skill.mastered = true;
                 changed = true;
             }

@@ -5,121 +5,55 @@
     "legacyStage": 8,
     "learnerBuildsInitialCastle": true,
     "fullGame": true,
-    "prerequisites": [
-      "capture"
-    ],
+    "prerequisites": ["capture"],
+    "minMeaningfulCandidates": 0,
+    "maxForcedActionRatio": 1.0,
+    "requiredIntents": [],
     "steps": [
-      {
-        "criterion": 1,
-        "requiredCount": 1,
-        "threshold": 0,
-        "id": "castle-operational",
-        "goal": 1,
-        "buildingTypeId": "castle-01"
-      },
-      {
-        "criterion": 2,
-        "requiredCount": 1,
-        "threshold": 0,
-        "id": "wood-production",
-        "goal": 2,
-        "resourceId": "walnut-wood-materials-resources",
-        "buildingTypeId": "wood-camp",
-        "minProductionPerTurn": 1.0
-      },
-      {
-        "criterion": 3,
-        "requiredCount": 1,
-        "threshold": 0,
-        "id": "stable-economy",
-        "goal": 3,
-        "requiredTurns": 3,
-        "resources": [
-          {
-            "resourceId": "walnut-wood-materials-resources",
-            "minStock": 1.0,
-            "minProductionPerTurn": 1.0
-          }
-        ]
-      },
-      {
-        "criterion": 4,
-        "requiredCount": 1,
-        "threshold": 0,
-        "id": "unit-recruited",
-        "goal": 4,
-        "unitTypeId": "warrior"
-      },
-      {
-        "criterion": 5,
-        "requiredCount": 1,
-        "threshold": 0,
-        "id": "movement",
-        "goal": 5
-      },
-      {
-        "criterion": 6,
-        "requiredCount": 1,
-        "threshold": 0,
-        "id": "scouting",
-        "goal": 5
-      },
-      {
-        "criterion": 7,
-        "requiredCount": 1,
-        "threshold": 0,
-        "id": "combat",
-        "goal": 6
-      },
-      {
-        "criterion": 8,
-        "requiredCount": 1,
-        "threshold": 0,
-        "id": "capture",
-        "goal": 7,
-        "objectiveType": "settlement"
-      },
-      {
-        "criterion": 9,
-        "requiredCount": 1,
-        "threshold": 0,
-        "id": "match-won",
-        "goal": 8
-      }
+      { "id": "castle-operational", "goal": 1, "criterion": 1, "requiredCount": 1, "threshold": 0, "buildingTypeId": "castle-01" },
+      { "id": "wood-production", "goal": 2, "criterion": 2, "requiredCount": 1, "threshold": 0, "resourceId": "walnut-wood-materials-resources", "buildingTypeId": "wood-camp", "minProductionPerTurn": 1.0 },
+      { "id": "stable-economy", "goal": 3, "criterion": 3, "requiredCount": 1, "threshold": 0, "requiredTurns": 3, "resources": [ { "resourceId": "walnut-wood-materials-resources", "minStock": 1.0, "minProductionPerTurn": 1.0 } ] },
+      { "id": "unit-recruited", "goal": 4, "criterion": 4, "requiredCount": 1, "threshold": 0, "unitTypeId": "warrior" },
+      { "id": "movement", "goal": 5, "criterion": 5, "requiredCount": 1, "threshold": 0 },
+      { "id": "scouting", "goal": 5, "criterion": 6, "requiredCount": 1, "threshold": 0 },
+      { "id": "combat", "goal": 6, "criterion": 7, "requiredCount": 1, "threshold": 0 },
+      { "id": "capture", "goal": 7, "criterion": 8, "requiredCount": 1, "threshold": 0, "objectiveType": "settlement" },
+      { "id": "match-won", "goal": 8, "criterion": 9, "requiredCount": 1, "threshold": 0 }
     ],
     "startingConditions": {
       "learnerStartsWithCastle": false,
       "learnerMustPlaceCastle": true,
-      "startingResources": [],
+      "startingResources": [
+        { "resourceId": "walnut-wood-materials-resources", "amount": 80, "owner": "learner" },
+        { "resourceId": "hardwood-materials-resources", "amount": 80, "owner": "learner" },
+        { "resourceId": "steak-food-resources", "amount": 100, "owner": "learner" }
+      ],
       "startingUnits": [],
+      "startingBuildings": [],
       "opponent": {
-        "enabled": false,
-        "startingUnits": 0,
-        "startingCastle": false
+        "enabled": true,
+        "startingUnits": 1,
+        "startingCastle": true,
+        "unitTypeId": "warrior",
+        "archetype": "heuristic",
+        "residents": 10
       },
       "objectives": [
         {
           "objectiveId": "",
           "objectiveType": "settlement",
-          "owner": "opponent"
+          "owner": "opponent",
+          "buildingTypeId": "castle-01",
+          "healthFraction": 1.0
         }
-      ]
+      ],
+      "residents": 15,
+      "openingRevealRadius": -1
     },
-    "availableCapabilities": [
-      "construction",
-      "economy",
-      "recruitment",
-      "movement",
-      "scouting",
-      "combat",
-      "capture",
-      "end-turn"
-    ],
+    "availableCapabilities": ["construction", "economy", "recruitment", "movement", "scouting", "combat", "capture", "end-turn"],
     "generationConstraints": {
       "minReachableArea": 2,
-      "requiredResourceTypes": [
-        "walnut-wood-materials-resources"
-      ],
+      "requiredResourceTypes": ["walnut-wood-materials-resources"],
       "minOpponentDistance": 2,
       "maxOpponentDistance": 0,
       "objectiveReachability": true,
@@ -131,6 +65,11 @@
       "requireMeaningfulEvent": true,
       "maxGameplayRewardEventsPerTurn": 24,
       "allowedGameplayEvents": []
+    },
+    "masteryPolicy": {
+      "kind": 0,
+      "successEpisodesRequired": 3,
+      "maxDecisionsPerSuccessfulEpisode": 500
     }
   }
 }

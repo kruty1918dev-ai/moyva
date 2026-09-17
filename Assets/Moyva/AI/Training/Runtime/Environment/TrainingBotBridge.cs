@@ -43,7 +43,8 @@ namespace Kruty1918.Moyva.AI.Training
         public bool CanRequestDecision => Orchestrator?.Session?.State == BotOrchestratorState.AwaitingPolicy;
         public TrainingBotBridge(ITrainingSimulation simulation, int environmentId = -1, int telemetryCapacity = 128)
         { _simulation = simulation; Telemetry = new BotTelemetryHub(telemetryCapacity) { EnvironmentId = environmentId }; }
-        public void Reset(int stage, System.Func<TrainingScenarioProgressTracker> progress = null)
+        public void Reset(int stage, System.Func<TrainingScenarioProgressTracker> progress = null,
+            int capabilityMask = -1, System.Func<bool> suppressHints = null)
         {
             Orchestrator?.Dispose();
             var source = _simulation as ITrainingBotRuntimeSource;
@@ -53,9 +54,9 @@ namespace Kruty1918.Moyva.AI.Training
                 registry.Register(new UnavailableBotCapability(BotCapabilityId.Movement, "Training simulation has no shared movement gateway."));
             _policy = new ManualBotPolicyDriver();
             IBotPerceptionSource perception = source?.Perception ?? new EmptyBotPerceptionSource();
-            if (progress != null) perception = new ScenarioAwarePerceptionSource(perception, progress);
+            if (progress != null) perception = new ScenarioAwarePerceptionSource(perception, progress, suppressHints);
             Orchestrator = new BotDecisionOrchestrator(turns, registry, perception,
-                _policy, new BotRuntimeConfig { curriculumStage = stage, visibleDelay = 0 }, Telemetry);
+                _policy, new BotRuntimeConfig { curriculumStage = stage, visibleDelay = 0, capabilityMask = capabilityMask }, Telemetry);
             Orchestrator.SetPolicy(_policy, "Training");
         }
         public void Tick(float seconds)

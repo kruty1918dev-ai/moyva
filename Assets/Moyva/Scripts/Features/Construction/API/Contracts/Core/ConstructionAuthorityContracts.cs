@@ -65,6 +65,22 @@ namespace Kruty1918.Moyva.Construction.API
             string ownerId);
     }
 
+    /// <summary>
+    /// Trusted world-setup seam (scenario scaffolding, deterministic restore
+    /// flows). Placement legality is still evaluated through the canonical
+    /// query inside the commit path, but the commit intentionally bypasses
+    /// turn-owner authority — setup runs before/around the turn cycle for
+    /// owners who cannot act yet. It never consumes resources and never
+    /// records a turn action.
+    /// </summary>
+    public interface IConstructionSetupPlacementApplier
+    {
+        bool TryApplySetupPlacement(
+            string buildingId,
+            Vector2Int position,
+            string ownerId);
+    }
+
     public interface IConfirmedConstructionDemolitionApplier
     {
         bool TryApplyConfirmedDemolition(

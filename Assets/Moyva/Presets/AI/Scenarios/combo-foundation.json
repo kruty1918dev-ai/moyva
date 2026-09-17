@@ -5,25 +5,25 @@
     "legacyStage": 4,
     "learnerBuildsInitialCastle": true,
     "fullGame": false,
-    "prerequisites": [
-      "castle",
-      "production"
-    ],
+    "prerequisites": ["castle", "production"],
+    "minMeaningfulCandidates": 2,
+    "maxForcedActionRatio": 0.9,
+    "requiredIntents": ["Build", "EndTurn"],
     "steps": [
       {
+        "id": "castle-operational",
+        "goal": 1,
         "criterion": 1,
         "requiredCount": 1,
         "threshold": 0,
-        "id": "castle-operational",
-        "goal": 1,
         "buildingTypeId": "castle-01"
       },
       {
+        "id": "wood-production",
+        "goal": 2,
         "criterion": 2,
         "requiredCount": 1,
         "threshold": 0,
-        "id": "wood-production",
-        "goal": 2,
         "resourceId": "walnut-wood-materials-resources",
         "buildingTypeId": "wood-camp",
         "minProductionPerTurn": 1.0
@@ -32,32 +32,29 @@
     "startingConditions": {
       "learnerStartsWithCastle": false,
       "learnerMustPlaceCastle": true,
-      "startingResources": [],
+      "startingResources": [
+        { "resourceId": "walnut-wood-materials-resources", "amount": 60, "owner": "learner" },
+        { "resourceId": "hardwood-materials-resources", "amount": 30, "owner": "learner" },
+        { "resourceId": "steak-food-resources", "amount": 40, "owner": "learner" }
+      ],
       "startingUnits": [],
+      "startingBuildings": [],
       "opponent": {
         "enabled": false,
         "startingUnits": 0,
-        "startingCastle": false
+        "startingCastle": false,
+        "unitTypeId": "warrior",
+        "archetype": "passive",
+        "residents": 0
       },
-      "objectives": [
-        {
-          "objectiveId": "",
-          "objectiveType": "settlement",
-          "owner": "opponent"
-        }
-      ]
+      "objectives": [],
+      "residents": 8,
+      "openingRevealRadius": -1
     },
-    "availableCapabilities": [
-      "construction",
-      "economy",
-      "movement",
-      "end-turn"
-    ],
+    "availableCapabilities": ["construction", "economy", "end-turn"],
     "generationConstraints": {
       "minReachableArea": 2,
-      "requiredResourceTypes": [
-        "walnut-wood-materials-resources"
-      ],
+      "requiredResourceTypes": ["walnut-wood-materials-resources"],
       "minOpponentDistance": 2,
       "maxOpponentDistance": 0,
       "objectiveReachability": true,
@@ -71,9 +68,9 @@
       "allowedGameplayEvents": []
     },
     "masteryPolicy": {
-      "kind": 1,
+      "kind": 0,
       "successEpisodesRequired": 3,
-      "maxDecisionsPerSuccessfulEpisode": 100
+      "maxDecisionsPerSuccessfulEpisode": 150
     }
   }
 }

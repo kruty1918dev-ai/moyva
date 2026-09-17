@@ -20,7 +20,8 @@ namespace Kruty1918.Moyva.AI.Bot
                     "MoyvaBot:v2:o2:c2:a1:slots128:global96:spatial8x8x10:candidate32:"
                     + "global=0active,1round,2phase,3ownUnits,4visibleOtherUnits,5unitsAvailable,6economyAvailable,7spatialAvailable,8visibilityAvailable,"
                     + "9scenarioGoal,10scenarioStep,11scenarioProgress,12ownSettlements,13visibleEnemySettlements,16capabilities8,"
-                    + "24ownResourcesTotal,25poolResourcesTotal,26resourceKinds,27food,28wood,29stone,30iron,31gold,32productionEstimate,33populationAvailable:"
+                    + "24ownResourcesTotal,25poolResourcesTotal,26resourceKinds,27food,28wood,29stone,30iron,31gold,32productionEstimate,33populationAvailable,"
+                    + "34goalCastle,35goalProduction,36goalEconomy,37goalRecruit,38goalMove,39goalScout,40goalCombat,41goalCapture,42goalWin:"
                     + "candidate=present,intentOneHot12,distance,cost,ownHp,targetHp,visible,path,complete,buildingType,unitType,purpose,x,y,duration,reserved:"
                     + "intents=None,EndTurn,Move,Attack,Capture,Recruit,Build,Explore,Defend,Economy,Reposition,Wait")))
                     .Replace("-", "").ToLowerInvariant();
@@ -36,6 +37,11 @@ namespace Kruty1918.Moyva.AI.Bot
         public const int OwnResourcesTotal = 24, PoolResourcesTotal = 25, ResourceKinds = 26;
         public const int ResourceFood = 27, ResourceWood = 28, ResourceStone = 29, ResourceIron = 30, ResourceGold = 31;
         public const int ProductionEstimate = 32, PopulationAvailable = 33;
+        // Semantic scenario goal vector. Replaces reliance on the opaque
+        // scenario id hash at slot 9 as the primary goal signal.
+        public const int GoalCastle = 34, GoalProduction = 35, GoalEconomy = 36;
+        public const int GoalRecruit = 37, GoalMove = 38, GoalScout = 39;
+        public const int GoalCombat = 40, GoalCapture = 41, GoalWin = 42;
         public const int SpatialOffset = 96, CandidateOffset = 736;
         public const int Size = BotDecisionContract.ObservationCount;
     }

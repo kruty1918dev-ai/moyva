@@ -1,6 +1,6 @@
 {
   "json.schemas": [],
-  "devin.defaultModel": "swe-1-7-medium",
+  "devin.defaultModel": "swe-2-max",
   "devin.implicitContext.enabled": false,
   "devin.defaultMode": "bypass"
 }

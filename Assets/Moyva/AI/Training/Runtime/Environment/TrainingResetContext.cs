@@ -9,9 +9,13 @@ namespace Kruty1918.Moyva.AI.Training
         public readonly TrainingCurriculumStage CurriculumStage;
         public readonly string ScenarioId;
         public readonly bool LearnInitialCastle;
+        // Full scenario definition for authoritative setup; null keeps the
+        // canonical two-sided start (castle + unit + resources per side).
+        public readonly TrainingScenarioDefinition Scenario;
 
         public TrainingResetContext(int environmentId, long episodeId, int seed, TrainingCurriculumStage stage,
-            int worldSize = 0, string scenarioId = null, bool learnInitialCastle = false)
+            int worldSize = 0, string scenarioId = null, bool learnInitialCastle = false,
+            TrainingScenarioDefinition scenario = null)
         {
             EnvironmentId = environmentId;
             EpisodeId = episodeId;
@@ -20,6 +24,7 @@ namespace Kruty1918.Moyva.AI.Training
             CurriculumStage = stage;
             ScenarioId = scenarioId;
             LearnInitialCastle = learnInitialCastle;
+            Scenario = scenario;
         }
 
         public static int DeriveSeed(int baseSeed, int environmentId, long episodeId)

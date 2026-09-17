@@ -19,6 +19,17 @@ namespace Kruty1918.Moyva.AI.Training
         private int _scenarioGameplayRewardEventsThisTurn;
         private int _stagnantDecisions;
         private TrainingScenarioFacts _lastDevelopmentFacts;
+        // Set immediately before an engine-forced single-candidate submission;
+        // consumed by the synchronous DecisionFinished callback.
+        private bool _pendingForcedSubmission;
+        private bool _suppressScenarioHints;
+        // Watchdog window state (submissions = forced + trainable).
+        private int _wdSubmissions;
+        private int _wdForced;
+        private long _wdCandidateSum;
+        private long _wdIntentMask;
+        private float _wdProgressMark;
+        private int _wdStagnant;
         private readonly ITrainingEpisodeOutcomeSource _outcomes;
         public bool IsRealGameplay => _simulation is GameplayTrainingSimulation;
         internal GameplayTrainingEpisode GameplayEpisode => (_simulation as GameplayTrainingSimulation)?.Episode;
@@ -192,12 +203,21 @@ namespace Kruty1918.Moyva.AI.Training
                 _scenario?.id,
                 _scenario?.startingConditions?.learnerMustPlaceCastle
                     ?? _scenario?.learnerBuildsInitialCastle
-                    ?? _config.learnInitialCastle);
+                    ?? _config.learnInitialCastle,
+                _scenario);
             Rewards.Reset(EpisodeId);
             _lastJournalReward = 0;
             _scenarioGameplayRewardEventsThisTurn = 0;
             _stagnantDecisions = 0;
             _lastDevelopmentFacts = null;
+            _pendingForcedSubmission = false;
+            _wdSubmissions = _wdForced = _wdStagnant = 0;
+            _wdCandidateSum = _wdIntentMask = 0;
+            _wdProgressMark = -1f;
+            _suppressScenarioHints = _scenario != null && !_scenario.fullGame
+                && !_config.evaluationMode && !_config.inspectorMode
+                && _config.scenarioHintDropout > 0f
+                && new Random(resolvedSeed ^ 0x51D10F).NextDouble() < _config.scenarioHintDropout;
             Diagnostics.Reset(context);
             _timer.Reset();
             _pendingReset = true;
@@ -214,7 +234,11 @@ namespace Kruty1918.Moyva.AI.Training
                 var baselineFacts = CaptureScenarioFacts();
                 _scenarioProgress?.Begin(EpisodeId, baselineFacts);
                 _lastDevelopmentFacts = baselineFacts;
-                Bridge.Reset((int)Stage, () => _scenarioProgress);
+                // Scenarios gate via their capability mask, so the legacy stage
+                // gate stays at FullGame whenever a scenario is active.
+                int bridgeStage = _scenario == null ? (int)Stage : (int)TrainingCurriculumStage.FullGame;
+                Bridge.Reset(bridgeStage, () => _scenarioProgress,
+                    ScenarioCapabilityMask(), () => _suppressScenarioHints);
                 Bridge.Orchestrator.DecisionFinished += OnDecisionFinished;
                 EpisodeReset?.Invoke(EnvironmentId, EpisodeId);
             }
@@ -243,16 +267,57 @@ namespace Kruty1918.Moyva.AI.Training
             if (!IsReady) return;
             (_simulation as GameplayTrainingSimulation)?.Tick(seconds);
             Bridge.Tick(seconds);
+            TrySubmitForcedDecision();
             CompletePendingOutcome();
             if (IsReady && Bridge.Orchestrator.Session?.State == BotOrchestratorState.Cancelled
                 && !string.IsNullOrEmpty(Bridge.Telemetry.LastError))
                 Fail(Bridge.Telemetry.LastError ?? "Bot session cancelled.");
         }
 
+        // A frame with exactly one legal candidate is not a decision: the engine
+        // executes it without RequestDecision, a training step or policy gradient.
+        private void TrySubmitForcedDecision()
+        {
+            if (!CanRequestDecision) return;
+            var candidates = Bridge.Frame?.Candidates;
+            int count = candidates?.Count ?? 0;
+            if (count <= 0)
+            {
+                Fail("TRAINING_ABORTED reason=no_legal_candidates scenario=" + (_scenario?.id ?? "<none>")
+                    + " episode=" + EpisodeId);
+                return;
+            }
+            if (count != 1) return;
+            _pendingForcedSubmission = true;
+            Diagnostics.ForcedActions++;
+            Bridge.Submit(0);
+        }
+
+        private int ScenarioCapabilityMask()
+        {
+            var caps = _scenario?.availableCapabilities;
+            if (caps == null || caps.Length == 0) return -1;
+            int mask = 1; // Turn/EndTurn always remains legal.
+            foreach (var cap in caps)
+            {
+                if (string.Equals(cap, "turn", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(cap, "end-turn", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Turn;
+                else if (string.Equals(cap, "movement", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Movement;
+                else if (string.Equals(cap, "combat", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Combat;
+                else if (string.Equals(cap, "recruitment", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Recruitment;
+                else if (string.Equals(cap, "construction", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Construction;
+                else if (string.Equals(cap, "capture", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Capture;
+                else if (string.Equals(cap, "economy", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Economy;
+                else if (string.Equals(cap, "scouting", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Exploration;
+            }
+            return mask;
+        }
+
         public bool Step(int actionIndex)
         {
             if (!CanRequestDecision) return false;
             Diagnostics.Decisions++;
+            Diagnostics.CandidateSum += Diagnostics.CandidateCount;
             Record(TrainingRewardEventType.Decision, "decision");
             if (!Actions.IsLegal(actionIndex))
             {
@@ -285,6 +350,8 @@ namespace Kruty1918.Moyva.AI.Training
 
         private void OnDecisionFinished(BotDecisionTrace trace)
         {
+            bool forced = _pendingForcedSubmission;
+            _pendingForcedSubmission = false;
             if (!IsReady) return;
             var candidate = Bridge.Frame?.Candidates[trace.Slot];
             LastCandidate = candidate;
@@ -312,7 +379,9 @@ namespace Kruty1918.Moyva.AI.Training
             ObserveDevelopmentShaping(trace, facts);
             Diagnostics.LastError = trace.Reason;
             UpdateDiagnostics();
-            AppendDecisionEvent(trace);
+            AppendDecisionEvent(trace, forced);
+            RunWatchdogChecks(forced, trace);
+            if (!IsReady) return;
             RefreshCandidateDiagnostics();
             if (!ValidateCurrentScenarioCandidates()) return;
             if (_scenario != null && !_scenario.fullGame && _scenarioProgress?.IsComplete == true)
@@ -541,7 +610,72 @@ namespace Kruty1918.Moyva.AI.Training
             });
         }
 
-        private void AppendDecisionEvent(BotDecisionTrace trace)
+        // Sliding-window learnability gates. A window that collapses to forced
+        // submissions or a single candidate means the scenario is not trainable.
+        private void RunWatchdogChecks(bool forced, BotDecisionTrace trace)
+        {
+            if (!_config.watchdogEnabled || _scenario == null) return;
+            _wdSubmissions++;
+            if (forced) _wdForced++;
+            _wdCandidateSum += Diagnostics.CandidateCount;
+            var counts = Diagnostics.CandidateCountsByIntent;
+            for (int i = 0; i < counts.Length; i++)
+                if (counts[i] > 0) _wdIntentMask |= 1L << i;
+
+            float progress = _scenarioProgress?.Progress ?? 0f;
+            if (_wdProgressMark < 0f) _wdProgressMark = progress;
+            if (progress > _wdProgressMark + 0.0001f) { _wdProgressMark = progress; _wdStagnant = 0; }
+            else _wdStagnant++;
+            // FullGame progress is sparse by design; its episodes end on the
+            // match outcome, not on step completion.
+            if (!_scenario.fullGame && _scenarioProgress?.IsComplete != true
+                && _wdStagnant >= _config.watchdogMaxStagnantSubmissions)
+            {
+                Fail("TRAINING_ABORTED reason=no_scenario_progress scenario=" + _scenario.id
+                    + " stagnantSubmissions=" + _wdStagnant + " progress=" + progress.ToString("0.###"));
+                return;
+            }
+
+            if (_wdSubmissions < _config.watchdogWindow) return;
+            EvaluateWatchdogWindow();
+            _wdSubmissions = _wdForced = 0;
+            _wdCandidateSum = _wdIntentMask = 0;
+        }
+
+        private void EvaluateWatchdogWindow()
+        {
+            float forcedRatio = _wdForced / (float)Math.Max(1, _wdSubmissions);
+            float cap = Math.Min(_config.watchdogMaxForcedRatio,
+                _scenario.maxForcedActionRatio >= 0f ? _scenario.maxForcedActionRatio : 1f);
+            if (forcedRatio > cap)
+            {
+                Fail("TRAINING_ABORTED reason=forced_action_ratio_too_high scenario=" + _scenario.id
+                    + " window=" + _wdSubmissions + " forcedRatio=" + forcedRatio.ToString("0.###")
+                    + " cap=" + cap.ToString("0.###"));
+                return;
+            }
+            float meanCandidates = _wdCandidateSum / (float)Math.Max(1, _wdSubmissions);
+            if (_scenario.minMeaningfulCandidates > 0 && meanCandidates < _scenario.minMeaningfulCandidates)
+            {
+                Fail("TRAINING_ABORTED reason=candidate_diversity_collapse scenario=" + _scenario.id
+                    + " window=" + _wdSubmissions + " meanCandidates=" + meanCandidates.ToString("0.###")
+                    + " required=" + _scenario.minMeaningfulCandidates);
+                return;
+            }
+            var required = _scenario.requiredIntents;
+            if (required == null) return;
+            foreach (var name in required)
+            {
+                if (!Enum.TryParse(name, true, out BotIntentType intent) || intent == BotIntentType.None) continue;
+                int bit = (int)intent;
+                if (bit < 0 || bit >= 64 || (_wdIntentMask & (1L << bit)) != 0) continue;
+                Fail("TRAINING_ABORTED reason=required_intent_missing scenario=" + _scenario.id
+                    + " window=" + _wdSubmissions + " missingIntent=" + intent);
+                return;
+            }
+        }
+
+        private void AppendDecisionEvent(BotDecisionTrace trace, bool forced = false)
         {
             if (_decisionJournal == null) return;
             var frame = Bridge.Frame;
@@ -571,6 +705,7 @@ namespace Kruty1918.Moyva.AI.Training
                 scenarioStep = _scenarioProgress?.StepIndex ?? -1,
                 scenarioProgress = _scenarioProgress?.Progress ?? 0f,
                 candidateCount = candidates?.Count ?? 0,
+                forcedAction = forced,
                 availableIntents = intents,
                 availableActions = available,
                 chosenSlot = trace.Slot,

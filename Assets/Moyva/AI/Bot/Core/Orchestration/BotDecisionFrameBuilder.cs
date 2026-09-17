@@ -44,7 +44,10 @@ namespace Kruty1918.Moyva.AI.Bot
             {
                 snapshot.Global[BotObservationSchema.Capabilities + (int)provider.Id] = 0;
                 int stage = provider.Id switch { BotCapabilityId.Construction => 5, BotCapabilityId.Capture => 6, _ => (int)provider.Id };
-                string reason = stage > _config.curriculumStage ? "Disabled by curriculum." : provider.UnavailableReason(player);
+                string reason = stage > _config.curriculumStage ? "Disabled by curriculum."
+                    : provider.Id != BotCapabilityId.Turn && ((_config.capabilityMask >> (int)provider.Id) & 1) == 0
+                        ? "Disabled by scenario."
+                        : provider.UnavailableReason(player);
                 if (reason != null) { unavailable[provider.Id] = reason; continue; }
                 snapshot.Global[BotObservationSchema.Capabilities + (int)provider.Id] = 1;
                 foreach (var candidate in provider.Enumerate(player))

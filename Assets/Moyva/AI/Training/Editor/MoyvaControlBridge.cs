@@ -66,8 +66,24 @@ namespace Kruty1918.Moyva.AI.Training.Editor
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             string temp = path + ".tmp";
             File.WriteAllText(temp, JsonUtility.ToJson(value, true));
-            if (File.Exists(path)) File.Replace(temp, path, null);
-            else File.Move(temp, path);
+            try
+            {
+                if (File.Exists(path)) File.Replace(temp, path, null);
+                else File.Move(temp, path);
+            }
+            catch (IOException)
+            {
+                // A file watcher may hold the destination transiently; heartbeat
+                // files are best-effort, so fall back to an in-place overwrite
+                // and otherwise let the next beat retry.
+                try { File.Copy(temp, path, true); File.Delete(temp); }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                try { File.Delete(temp); } catch (IOException) { }
+            }
         }
 
         private static void Update()

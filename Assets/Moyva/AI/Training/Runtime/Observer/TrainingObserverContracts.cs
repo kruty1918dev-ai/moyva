@@ -37,6 +37,9 @@ namespace Kruty1918.Moyva.AI.Training
         public int scenarioStep;
         public float scenarioProgress;
         public int candidateCount;
+        // True when the engine executed the only legal candidate without a
+        // policy decision — the event is journal evidence, not a trainable step.
+        public bool forcedAction;
         public string[] availableIntents = Array.Empty<string>();
         public string[] availableActions = Array.Empty<string>();
         public int chosenSlot = -1;

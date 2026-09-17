@@ -48,6 +48,16 @@ namespace Kruty1918.Moyva.AI.Training
         public float observerSnapshotHz = 5f;
         public float trainingTimeScale = 1;
         public bool disableRenderingWhenPossible = false;
+        // Fraction of training episodes where training-only scenario hints are
+        // zeroed so the policy cannot key on them. Frozen evaluation never drops.
+        public float scenarioHintDropout = 0f;
+        public bool watchdogEnabled = true;
+        // Submissions per watchdog evaluation window (forced + trainable).
+        public int watchdogWindow = 200;
+        // Global ceiling; a scenario may tighten it via maxForcedActionRatio.
+        public float watchdogMaxForcedRatio = 0.95f;
+        // Trainable+forced submissions without any scenario progress before abort.
+        public int watchdogMaxStagnantSubmissions = 400;
 
         // Runtime-only frozen evaluation contract. These values are injected from
         // the launcher environment and are never authored into the training preset.
@@ -232,6 +242,9 @@ namespace Kruty1918.Moyva.AI.Training
                 || observerMaxMessageBytes < TrainingObserverProtocol.MinimumMessageBytes || observerMaxMessageBytes > 16 * 1024 * 1024
                 || !Finite(observerSnapshotHz) || observerSnapshotHz < 0.1f || observerSnapshotHz > 60f
                 || (observerEnabled && string.IsNullOrWhiteSpace(observerEndpoint))
+                || !Finite(scenarioHintDropout) || scenarioHintDropout < 0f || scenarioHintDropout > 1f
+                || watchdogWindow < 1 || watchdogMaxStagnantSubmissions < 1
+                || !Finite(watchdogMaxForcedRatio) || watchdogMaxForcedRatio < 0f || watchdogMaxForcedRatio > 1f
                 || !Enum.IsDefined(typeof(TrainingPresentationMode), presentationMode)
                 || !Enum.IsDefined(typeof(TrainingCurriculumStage), curriculum.stage)
                 || !Enum.IsDefined(typeof(BehaviorType), behaviorType))

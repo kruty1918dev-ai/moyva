@@ -15,6 +15,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         IConstructionService,
         IConfirmedConstructionPlacementApplier,
         IConfirmedConstructionPlacementIntentApplier,
+        IConstructionSetupPlacementApplier,
         IConstructionPendingPlacementIntentSource,
         IAuthoritativeConstructionPlacementExecutor,
         IConstructionPrepaidPlacementExecutor,

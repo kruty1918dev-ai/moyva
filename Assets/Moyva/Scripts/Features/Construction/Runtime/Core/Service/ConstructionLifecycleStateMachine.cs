@@ -228,6 +228,30 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public bool Remove(Vector2Int position)
             => _states.Remove(position);
 
+        /// <summary>
+        /// Trusted restore: completes a tracked placement and reports the
+        /// operational transition once. Unknown or already-published positions
+        /// are a no-op.
+        /// </summary>
+        public bool TryRestoreOperational(
+            Vector2Int position,
+            out OperationalTransition transition)
+        {
+            transition = default;
+            if (!_states.TryGetValue(position, out State state)
+                || string.IsNullOrWhiteSpace(state.BuildingId)
+                || state.OperationalPublished)
+            {
+                return false;
+            }
+
+            state.Completed = Math.Max(state.Completed, state.Required);
+            state.PartialWork = 0f;
+            state.OperationalPublished = true;
+            transition = ToOperational(position, state);
+            return true;
+        }
+
         public bool TryTransferOwner(
             Vector2Int position,
             string previousOwnerId,

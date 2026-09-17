@@ -12,6 +12,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class ConstructionLifecycleService :
         IConstructionLifecycle,
+        IConstructionOperationalRestore,
         IConstructionRealtimeProgress,
         ITickable,
         ITurnParticipant,
@@ -78,6 +79,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 position,
                 out completedTurns,
                 out requiredTurns);
+
+        public bool TryRestoreOperational(Vector2Int position)
+        {
+            if (!_state.TryRestoreOperational(position, out var transition))
+                return false;
+            PublishOperational(transition);
+            return true;
+        }
 
         public void OnTurnStarted(TurnContext context)
         {

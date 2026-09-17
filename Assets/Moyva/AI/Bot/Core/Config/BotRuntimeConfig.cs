@@ -117,6 +117,9 @@ namespace Kruty1918.Moyva.AI.Bot
         public bool autoEndTurn = true, telemetryEnabled = true, detailedTelemetry;
         public int telemetryCapacity = 128;
         public int curriculumStage = 8;
+        // Bitmask over BotCapabilityId; -1 enables every capability.
+        // Bit 0 (Turn) is always treated as enabled: EndTurn must remain legal.
+        public int capabilityMask = -1;
         public BotRuntimeConfig Snapshot()
         {
             var copy = JsonUtility.FromJson<BotRuntimeConfig>(JsonUtility.ToJson(this));

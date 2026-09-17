@@ -43,6 +43,8 @@ namespace Kruty1918.Moyva.AI.Training
     {
         public string resourceId;
         public float amount;
+        // Which side receives the resources: "learner" or "opponent".
+        public string owner = "learner";
     }
 
     [Serializable]
@@ -52,6 +54,22 @@ namespace Kruty1918.Moyva.AI.Training
         public int count = 1;
         public string owner = "learner";
         public bool deployed = true;
+        // Placement anchor: "anchor" (own spawn), "enemy" (opposing spawn), "objective".
+        public string near = "anchor";
+        // Trusted setup weakening, applied through the authoritative health component.
+        public float healthFraction = 1f;
+    }
+
+    [Serializable]
+    public sealed class TrainingScenarioBuildingSetup
+    {
+        public string buildingTypeId;
+        public int count = 1;
+        public string owner = "learner";
+        // When true, timed buildings are completed through the trusted
+        // lifecycle restore seam so economy/recruitment see operational state.
+        public bool operational = true;
+        public float healthFraction = 1f;
     }
 
     [Serializable]
@@ -60,6 +78,11 @@ namespace Kruty1918.Moyva.AI.Training
         public bool enabled = true;
         public int startingUnits = 1;
         public bool startingCastle = true;
+        public string unitTypeId = "warrior";
+        // Scripted policy: "heuristic" (greedy reactive), "passive"/"none" (ends turns).
+        public string archetype = "heuristic";
+        // Adult civilian residents seeded into each opponent settlement.
+        public int residents;
     }
 
     [Serializable]
@@ -68,6 +91,10 @@ namespace Kruty1918.Moyva.AI.Training
         public string objectiveId;
         public string objectiveType;
         public string owner = "opponent";
+        // Settlement objectives spawn this building when the owner lacks one.
+        public string buildingTypeId = "castle-01";
+        // Trusted setup weakening so capture/combat scenarios can start near the goal.
+        public float healthFraction = 1f;
     }
 
     [Serializable]
@@ -77,8 +104,13 @@ namespace Kruty1918.Moyva.AI.Training
         public bool learnerMustPlaceCastle;
         public TrainingScenarioResourceAmount[] startingResources = Array.Empty<TrainingScenarioResourceAmount>();
         public TrainingScenarioUnitSetup[] startingUnits = Array.Empty<TrainingScenarioUnitSetup>();
+        public TrainingScenarioBuildingSetup[] startingBuildings = Array.Empty<TrainingScenarioBuildingSetup>();
         public TrainingScenarioOpponentSetup opponent = new TrainingScenarioOpponentSetup();
         public TrainingScenarioObjectiveSetup[] objectives = Array.Empty<TrainingScenarioObjectiveSetup>();
+        // Adult civilian residents seeded into each learner settlement (workforce).
+        public int residents;
+        // -1 keeps the default opening reveal radius; >=0 overrides it per episode.
+        public int openingRevealRadius = -1;
     }
 
     [Serializable]
@@ -277,6 +309,11 @@ namespace Kruty1918.Moyva.AI.Training
         public TrainingScenarioGenerationConstraints generationConstraints = new TrainingScenarioGenerationConstraints();
         public TrainingScenarioRewardRules rewardRules = new TrainingScenarioRewardRules();
         public TrainingScenarioMasteryPolicy masteryPolicy = new TrainingScenarioMasteryPolicy();
+        // Candidate-diversity contract: 0 disables the check.
+        public int minMeaningfulCandidates;
+        // Fraction of engine-forced (single-candidate) submissions tolerated before abort.
+        public float maxForcedActionRatio = 1f;
+        public string[] requiredIntents = Array.Empty<string>();
         public TrainingScenarioStepDefinition[] steps = Array.Empty<TrainingScenarioStepDefinition>();
 
         public void Validate()
@@ -314,12 +351,120 @@ namespace Kruty1918.Moyva.AI.Training
                 throw new ArgumentException("learnerBuildsInitialCastle must match startingConditions.learnerMustPlaceCastle: " + id);
             if (startingConditions.learnerStartsWithCastle && startingConditions.learnerMustPlaceCastle)
                 throw new ArgumentException("Learner cannot both start with and be required to place the castle: " + id);
-            if (startingConditions.learnerStartsWithCastle)
-                throw new ArgumentException("Scenarios cannot give the learner a free castle: " + id);
-            if (HasStartingResources(startingConditions.startingResources))
-                throw new ArgumentException("Scenarios cannot grant starter resources directly: " + id);
-            if (HasStartingUnits(startingConditions.startingUnits))
-                throw new ArgumentException("Scenarios cannot provide starting units; units must be recruited: " + id);
+            if (minMeaningfulCandidates < 0)
+                throw new ArgumentException("Scenario minMeaningfulCandidates is invalid: " + id);
+            if (float.IsNaN(maxForcedActionRatio) || float.IsInfinity(maxForcedActionRatio)
+                || maxForcedActionRatio < 0f || maxForcedActionRatio > 1f)
+                throw new ArgumentException("Scenario maxForcedActionRatio must be in 0..1: " + id);
+            if (requiredIntents == null)
+                throw new ArgumentException("Scenario requiredIntents cannot be null: " + id);
+            foreach (var intent in requiredIntents)
+                if (string.IsNullOrWhiteSpace(intent)
+                    || !Enum.TryParse(intent, true, out BotIntentType _))
+                    throw new ArgumentException($"Scenario {id} has unknown requiredIntent '{intent}'.");
+            ValidateStartingConditions();
+            ValidateSetupDoesNotSatisfySteps();
+        }
+
+        private void ValidateStartingConditions()
+        {
+            var conditions = startingConditions;
+            if (conditions.startingResources != null)
+                foreach (var resource in conditions.startingResources)
+                {
+                    if (resource == null || string.IsNullOrWhiteSpace(resource.resourceId))
+                        throw new ArgumentException("Scenario starting resource requires resourceId: " + id);
+                    if (float.IsNaN(resource.amount) || float.IsInfinity(resource.amount) || resource.amount <= 0f)
+                        throw new ArgumentException("Scenario starting resource amount must be positive: " + id);
+                    ValidateOwner(resource.owner, "startingResources.owner");
+                }
+            if (conditions.startingUnits != null)
+                foreach (var unit in conditions.startingUnits)
+                {
+                    if (unit == null || string.IsNullOrWhiteSpace(unit.unitTypeId))
+                        throw new ArgumentException("Scenario starting unit requires unitTypeId: " + id);
+                    if (unit.count < 1)
+                        throw new ArgumentException("Scenario starting unit count must be positive: " + id);
+                    ValidateOwner(unit.owner, "startingUnits.owner");
+                    ValidateNear(unit.near);
+                    ValidateFraction(unit.healthFraction, "startingUnits.healthFraction");
+                }
+            if (conditions.startingBuildings != null)
+                foreach (var building in conditions.startingBuildings)
+                {
+                    if (building == null || string.IsNullOrWhiteSpace(building.buildingTypeId))
+                        throw new ArgumentException("Scenario starting building requires buildingTypeId: " + id);
+                    if (building.count < 1)
+                        throw new ArgumentException("Scenario starting building count must be positive: " + id);
+                    ValidateOwner(building.owner, "startingBuildings.owner");
+                    ValidateFraction(building.healthFraction, "startingBuildings.healthFraction");
+                }
+            var opponent = conditions.opponent;
+            if (opponent != null)
+            {
+                if (opponent.startingUnits < 0 || opponent.residents < 0)
+                    throw new ArgumentException("Scenario opponent setup counts must be non-negative: " + id);
+                if (string.IsNullOrWhiteSpace(opponent.archetype))
+                    throw new ArgumentException("Scenario opponent archetype is required: " + id);
+                if (opponent.enabled && opponent.startingUnits > 0
+                    && string.IsNullOrWhiteSpace(opponent.unitTypeId))
+                    throw new ArgumentException("Scenario opponent unitTypeId is required: " + id);
+            }
+            if (conditions.objectives != null)
+                foreach (var objective in conditions.objectives)
+                {
+                    if (objective == null || string.IsNullOrWhiteSpace(objective.objectiveType))
+                        throw new ArgumentException("Scenario objective requires objectiveType: " + id);
+                    ValidateFraction(objective.healthFraction, "objectives.healthFraction");
+                }
+            if (conditions.residents < 0)
+                throw new ArgumentException("Scenario residents must be non-negative: " + id);
+            if (conditions.openingRevealRadius < -1)
+                throw new ArgumentException("Scenario openingRevealRadius is invalid: " + id);
+        }
+
+        // Setup must never silently satisfy the step being trained: a scenario that
+        // asks the learner to produce an operational castle cannot start with one.
+        private void ValidateSetupDoesNotSatisfySteps()
+        {
+            foreach (var step in steps)
+            {
+                if (step == null) continue;
+                if (step.EffectiveCriterion == TrainingScenarioCriterionKind.OperationalCastle)
+                {
+                    if (startingConditions.learnerStartsWithCastle)
+                        throw new ArgumentException("OperationalCastle scenario cannot start with a learner castle: " + id);
+                    if (startingConditions.startingBuildings != null)
+                        foreach (var building in startingConditions.startingBuildings)
+                            if (building != null
+                                && string.Equals(building.owner, "learner", StringComparison.OrdinalIgnoreCase)
+                                && string.Equals(building.buildingTypeId, step.buildingTypeId, StringComparison.Ordinal))
+                                throw new ArgumentException(
+                                    "OperationalCastle scenario cannot scaffold the target building for the learner: " + id);
+                }
+            }
+        }
+
+        private void ValidateOwner(string owner, string field)
+        {
+            if (!string.Equals(owner, "learner", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(owner, "opponent", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(owner, "neutral", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException($"Scenario {id} has invalid {field} '{owner}'.");
+        }
+
+        private void ValidateNear(string near)
+        {
+            if (!string.Equals(near, "anchor", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(near, "enemy", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(near, "objective", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException($"Scenario {id} has invalid starting unit near '{near}'.");
+        }
+
+        private void ValidateFraction(float value, string field)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value) || value <= 0f || value > 1f)
+                throw new ArgumentException($"Scenario {id} {field} must be in (0,1].");
         }
 
         public bool AllowsIntent(BotIntentType intent)
@@ -352,24 +497,6 @@ namespace Kruty1918.Moyva.AI.Training
                 if (!string.IsNullOrEmpty(value)) foreach (char c in value) hash = (hash ^ c) * 16777619;
                 return (hash & 0xffff) / 65535f;
             }
-        }
-
-        private static bool HasStartingResources(TrainingScenarioResourceAmount[] resources)
-        {
-            if (resources == null) return false;
-            for (int i = 0; i < resources.Length; i++)
-                if (resources[i] != null && !string.IsNullOrWhiteSpace(resources[i].resourceId) && resources[i].amount > 0f)
-                    return true;
-            return false;
-        }
-
-        private static bool HasStartingUnits(TrainingScenarioUnitSetup[] units)
-        {
-            if (units == null) return false;
-            for (int i = 0; i < units.Length; i++)
-                if (units[i] != null && !string.IsNullOrWhiteSpace(units[i].unitTypeId) && units[i].count > 0)
-                    return true;
-            return false;
         }
     }
 }
