@@ -85,15 +85,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 _lobbyFlowContext?.Set(provider, LobbyFlowKind.Join);
 
+                // Open the panel first: the room list shows its own fetching/empty/error
+                // state instead of blocking navigation behind an invisible operation.
+                _navigation.Open(_joinRoomPanelName);
+
                 if (_modeSelector != null)
                     await _modeSelector.SetModeAsync(provider);
                 else if (_multiplayerMenuModeService != null)
                     await _multiplayerMenuModeService.ApplyModeForNavigationAsync(_joinRoomPanelName, _navigation.CurrentMenu);
 
-                if (_joinRoomPanelService != null && !await _joinRoomPanelService.PrepareForOpenAsync())
-                    return;
-
-                MainThreadDispatcher.Enqueue(() => _navigation.Open(_joinRoomPanelName));
+                if (_joinRoomPanelService != null)
+                    await _joinRoomPanelService.PrepareForOpenAsync();
             }
             finally
             {

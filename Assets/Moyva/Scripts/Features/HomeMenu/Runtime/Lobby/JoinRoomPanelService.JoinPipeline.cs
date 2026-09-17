@@ -137,19 +137,28 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _joinCts = new CancellationTokenSource();
             _joinCts.CancelAfter(MultiplayerReliabilityPolicy.GetJoinTimeout(joinProviderType));
             var ct = _joinCts.Token;
-            MainThreadDispatcher.Enqueue(() => OnJoinCodeChanged(_viewController.JoinCode));
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                (_viewController as IRoomListStatusView)?.SetRoomListStatus(RoomListStatus.Joining, "Joining room...");
+                OnJoinCodeChanged(_viewController.JoinCode);
+            });
 
             var overlay = _loader?.LoadOverlay(0f, 100f, "%");
             try
             {
                 _joinState = JoinPipelineState.ResolvingTarget;
+                overlay?.SetStatus("Switching network mode...");
                 await ApplySelectedProviderAsync(ct);
 
                 // LAN discovery and transport do not depend on Unity cloud authentication.
                 if (GetCurrentProviderType() == NetworkProviderType.Relay && _multiplayerState != null)
+                {
+                    overlay?.SetStatus("Connecting to online services...");
                     await _multiplayerState.WaitUntilReadyAsync(ct);
+                }
 
                 _joinState = JoinPipelineState.JoiningLobby;
+                overlay?.SetStatus("Joining the lobby...");
                 var joinResult = await TryJoinWithPasswordLoopResultAsync(target, ct);
                 if (joinResult.IsFailure)
                 {
@@ -197,6 +206,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     }
 
                     _joinState = JoinPipelineState.ConnectingTransport;
+                    overlay?.SetStatus("Establishing the connection...");
                     var transportResult = await TransportAdapter.JoinNetworkSessionAsync(room, traceId, ct);
                     if (transportResult.IsFailure)
                     {

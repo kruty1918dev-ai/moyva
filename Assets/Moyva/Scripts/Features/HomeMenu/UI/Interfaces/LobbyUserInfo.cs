@@ -10,5 +10,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         /// <summary>Числовий ідентифікатор користувача.</summary>
         public int UserId;
+
+        /// <summary>True, якщо цей користувач є хостом лобі.</summary>
+        public bool IsHost;
+
+        /// <summary>True, якщо цей запис описує локального гравця.</summary>
+        public bool IsLocal;
     }
 }

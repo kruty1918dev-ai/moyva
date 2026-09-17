@@ -1215,3 +1215,192 @@
   width: 100%;
   padding: 16px;
 }
+
+/* Profile chip, lobby dashboard, list status and overlay additions. */
+.profile-chip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 56px;
+  margin-bottom: 14px;
+  padding: 9px 13px;
+  color: rgb(238, 235, 226);
+  text-align: left;
+  background-color: rgba(24, 27, 38, 0.98);
+  border-width: 1px;
+  border-color: rgba(229, 220, 198, 0.34);
+  border-radius: 2px;
+}
+
+.profile-chip:hover,
+.profile-chip:focus {
+  background-color: rgba(47, 44, 40, 0.99);
+  border-color: rgb(216, 177, 79);
+}
+
+.profile-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  margin-right: 12px;
+  background-color: rgba(82, 64, 31, 0.99);
+  border-width: 1px;
+  border-color: rgb(226, 185, 83);
+  border-radius: 19px;
+}
+
+.profile-initial {
+  color: rgb(247, 241, 226);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1em;
+  text-align: center;
+}
+
+.lobby-meta,
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.summary-card {
+  padding: 4px 0;
+}
+
+.summary-card .section-label {
+  margin: 2px 2px 6px;
+}
+
+.player-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 40px;
+  margin-bottom: 5px;
+  padding: 7px 11px;
+  background-color: rgba(19, 21, 32, 0.88);
+  border-left-width: 2px;
+  border-left-color: rgba(216, 177, 79, 0.65);
+}
+
+.player-row.local {
+  background-color: rgba(43, 38, 28, 0.92);
+  border-left-color: rgb(226, 185, 83);
+}
+
+.player-index {
+  flex-shrink: 0;
+  width: 36px;
+  color: rgb(190, 159, 86);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2em;
+}
+
+.player-name {
+  flex-grow: 1;
+  min-width: 0;
+  color: rgb(240, 236, 226);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2em;
+}
+
+.badge {
+  flex-shrink: 0;
+  margin-left: 8px;
+  padding: 3px 7px;
+  color: rgb(190, 192, 198);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2em;
+  background-color: rgba(31, 35, 48, 0.98);
+  border-width: 1px;
+  border-color: rgba(229, 220, 198, 0.3);
+  border-radius: 2px;
+}
+
+.badge-host {
+  color: rgb(244, 214, 157);
+  border-color: rgb(226, 185, 83);
+}
+
+.badge-you {
+  color: rgb(155, 227, 208);
+  border-color: rgb(121, 206, 181);
+}
+
+.list-status {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 40px;
+  margin-bottom: 8px;
+  padding: 8px 11px;
+  background-color: rgba(19, 21, 32, 0.88);
+  border-left-width: 2px;
+  border-left-color: rgba(216, 177, 79, 0.65);
+}
+
+.list-status.error {
+  border-left-color: rgba(213, 101, 91, 0.9);
+}
+
+.list-status-text {
+  flex-grow: 1;
+  min-width: 0;
+  color: rgb(210, 208, 202);
+  font-size: 13px;
+  line-height: 1.3em;
+}
+
+.list-status.error .list-status-text {
+  color: rgb(236, 158, 148);
+}
+
+.inline-spinner {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  margin-right: 10px;
+  background-color: rgb(226, 185, 83);
+  border-radius: 6px;
+}
+
+.overlay-card {
+  align-items: center;
+  width: 360px;
+  max-width: 100%;
+}
+
+.overlay-spinner {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 14px;
+  background-color: transparent;
+  border-width: 3px;
+  border-color: rgba(216, 177, 79, 0.28);
+  border-top-color: rgb(235, 194, 91);
+  border-radius: 15px;
+}
+
+.overlay-progress {
+  margin-top: 10px;
+  color: rgb(190, 192, 198);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2em;
+}

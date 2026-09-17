@@ -100,7 +100,10 @@ namespace UnityHTML.Runtime
                     _stale.Add(id);
             }
             for (int index = 0; index < _stale.Count; index++)
+            {
                 _declared.Remove(_stale[index]);
+                Stop(_stale[index]);
+            }
         }
 
         internal void Detach()
@@ -147,6 +150,14 @@ namespace UnityHTML.Runtime
                     group.alpha = 0f;
                     sequence.Append(Fade(group, motion.Alpha, duration, ease));
                     break;
+                case "fade-out":
+                    if (group == null)
+                    {
+                        sequence.Kill(false);
+                        return;
+                    }
+                    sequence.Append(Fade(group, 0f, duration, ease));
+                    break;
                 case "slide-left":
                     target.anchoredPosition = motion.Position + Vector2.right * distance;
                     AppendMoveAndFade(sequence, motion, duration, ease);
@@ -175,6 +186,20 @@ namespace UnityHTML.Runtime
                 case "pulse":
                     sequence.Append(Scale(target, motion.Scale * 1.035f, duration * 0.45f, Ease.OutQuad))
                         .Append(Scale(target, motion.Scale, duration * 0.55f, Ease.InOutQuad));
+                    break;
+                case "spin":
+                    sequence.Append(target.DORotate(new Vector3(0f, 0f, -360f), duration, RotateMode.FastBeyond360)
+                        .SetEase(Ease.Linear)
+                        .SetLoops(-1, LoopType.Restart));
+                    break;
+                case "pulse-loop":
+                    if (group == null)
+                    {
+                        sequence.Kill(false);
+                        return;
+                    }
+                    sequence.Append(Fade(group, Mathf.Max(0.1f, motion.Alpha * 0.35f), duration, Ease.InOutQuad)
+                        .SetLoops(-1, LoopType.Yoyo));
                     break;
                 default:
                     motion.Restore();
@@ -216,11 +241,13 @@ namespace UnityHTML.Runtime
         private static bool RequiresAlpha(string preset)
         {
             return preset == "fade"
+                || preset == "fade-out"
                 || preset == "slide-left"
                 || preset == "slide-right"
                 || preset == "slide-up"
                 || preset == "slide-down"
-                || preset == "scale";
+                || preset == "scale"
+                || preset == "pulse-loop";
         }
 
         private static CanvasGroup TryEnsureCanvasGroup(RectTransform target)
@@ -308,6 +335,7 @@ namespace UnityHTML.Runtime
                 Group = group;
                 Position = target.anchoredPosition;
                 Scale = target.localScale;
+                Rotation = target.localEulerAngles;
                 Alpha = group != null ? group.alpha : 1f;
             }
 
@@ -315,6 +343,7 @@ namespace UnityHTML.Runtime
             public CanvasGroup Group { get; }
             public Vector2 Position { get; }
             public Vector3 Scale { get; }
+            public Vector3 Rotation { get; }
             public float Alpha { get; }
             public Tween Tween { get; set; }
 
@@ -324,6 +353,7 @@ namespace UnityHTML.Runtime
                 {
                     Target.anchoredPosition = Position;
                     Target.localScale = Scale;
+                    Target.localEulerAngles = Rotation;
                 }
                 if (Group != null)
                     Group.alpha = Alpha;

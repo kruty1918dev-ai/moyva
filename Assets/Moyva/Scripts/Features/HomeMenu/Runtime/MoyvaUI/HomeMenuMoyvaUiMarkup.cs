@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Text;
 using Kruty1918.Moyva.HomeMenu.API;
+using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.WorldCreation.API;
@@ -29,11 +30,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             sb.Append("\">");
             sb.Append("<view className=\"background-veil\"></view><view className=\"shell-content\">");
             AppendBrand(sb, view);
-            sb.Append("<view className=\"navigation-panel\">");
+            sb.Append("<view id=\"route-root\" className=\"navigation-panel\">");
             AppendRoute(sb, state, route, view, showBack);
             sb.Append("</scroll></view></view>");
             AppendFooter(sb);
-            AppendModals(sb, view);
+            AppendModals(sb, state, view);
             sb.Append("</view>");
             return sb.ToString();
         }
@@ -84,26 +85,43 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     if (!view.IsPublic)
                         Input(sb, "Password", view.Password, "Optional password", "Globals.moyvaMenu.PreviewRoomPassword(event)", "Globals.moyvaMenu.CommitRoomPassword(event)", 48, true, "Password", "full");
                     sb.Append("</view>");
-                    ActionButton(sb, view.CreateRoomNextText, "Continue to world setup", "Globals.moyvaMenu.CreateRoom()", view.NextButton == null || view.NextButton.interactable);
+                    ActionButton(sb, view.CreateRoomNextText,
+                        string.IsNullOrWhiteSpace(view.CreateRoomBlockReason) ? "Continue to world setup" : view.CreateRoomBlockReason,
+                        "Globals.moyvaMenu.CreateRoom()", view.NextButton == null || view.NextButton.interactable);
                     break;
                 case "JoinRoomPanel":
                     Header(sb, "JOIN", "Available rooms", showBack);
                     Input(sb, "Invite code", view.JoinCode, "Lobby code or room id", "Globals.moyvaMenu.PreviewJoinCode(event)", "Globals.moyvaMenu.CommitJoinCode(event)", 64, true, "Standard", "full");
                     sb.Append("<view className=\"inline-actions\">");
-                    CompactButton(sb, "REFRESH", "Globals.moyvaMenu.RefreshRooms()");
-                    CompactButton(sb, "JOIN BY CODE", "Globals.moyvaMenu.JoinTypedRoom()", true, view.JoinInteractable);
-                    sb.Append("</view><view className=\"room-list\">");
-                    if (view.Rooms.Count == 0)
-                        Empty(sb, "No public rooms available.");
+                    CompactButton(sb, "REFRESH", "Globals.moyvaMenu.RefreshRooms()", false, view.RoomListState != RoomListStatus.Loading && view.RoomListState != RoomListStatus.Joining);
+                    CompactButton(sb, "JOIN BY CODE", "Globals.moyvaMenu.JoinTypedRoom()", true, view.JoinInteractable && view.RoomListState != RoomListStatus.Joining);
+                    sb.Append("</view>");
+                    AppendRoomListStatus(sb, state, view);
+                    sb.Append("<view className=\"room-list\">");
                     for (var i = 0; i < view.Rooms.Count; i++)
                     {
                         var room = view.Rooms[i];
-                        Button(sb, room.ProviderLabel, room.HostOrRoomDisplayName, $"{room.CurrentPlayers}/{room.MaxPlayers} - {room.DisplayIdentifier}", $"Globals.moyvaMenu.SelectRoom({i})");
+                        var lockLabel = room.HasPassword ? " · Private" : string.Empty;
+                        Button(sb, room.ProviderLabel, room.HostOrRoomDisplayName,
+                            $"{room.CurrentPlayers}/{room.MaxPlayers} - {room.DisplayIdentifier}{lockLabel}",
+                            $"Globals.moyvaMenu.SelectRoom({i})",
+                            id: $"room-{i}",
+                            motion: i < 8 && !state.ReducedMotion,
+                            delay: Math.Min(i, 8) * 0.03f,
+                            enabled: view.RoomListState != RoomListStatus.Joining);
                     }
                     sb.Append("</view>");
                     break;
                 case "WorldSetupPanel":
                     Header(sb, "WORLD SETUP", state.PlayFlow == HomeMenuPlayFlow.HumanVsBot ? "Match Setup — Human vs Bot" : state.PlayFlow == HomeMenuPlayFlow.Solo ? "Create a sandbox" : "Shape the campaign", showBack);
+                    if (state.PlayFlow == HomeMenuPlayFlow.Multiplayer && view.FlowContext != null && view.FlowContext.HasRoomDraft)
+                    {
+                        var draft = view.FlowContext;
+                        sb.Append("<view className=\"summary-card\"><text className=\"section-label\">LOBBY DRAFT</text><view className=\"stat-row\"><text className=\"stat-label\">ROOM</text><text className=\"stat-value\">")
+                            .Append(E(draft.RoomName)).Append("</text></view><view className=\"stat-row\"><text className=\"stat-label\">PLAYERS</text><text className=\"stat-value\">")
+                            .Append(draft.MaxPlayers.ToString(CultureInfo.InvariantCulture)).Append("</text></view><view className=\"stat-row\"><text className=\"stat-label\">PRIVACY</text><text className=\"stat-value\">")
+                            .Append(draft.IsPublic ? "Public" : "Private — password required").Append("</text></view></view>");
+                    }
                     sb.Append("<view className=\"form-grid\">");
                     Input(sb, "World name", view.WorldName, "New World", "Globals.moyvaMenu.PreviewWorldName(event)", "Globals.moyvaMenu.CommitWorldName(event)", 48, true, "Standard", "full");
                     Input(sb, "Seed", view.Seed.ToString(CultureInfo.InvariantCulture), "World seed", string.Empty, "Globals.moyvaMenu.CommitSeed(event)", 12, true, "IntegerNumber");
@@ -124,15 +142,42 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     break;
                 case "LobbyPanel":
                     Header(sb, "LOBBY", view.LobbyDisplayName, showBack);
-                    Stat(sb, "Invite", view.InviteCodeText);
-                    sb.Append("<view className=\"player-list\">");
-                    if (view.LobbyUsers.Count == 0)
-                        Empty(sb, "Waiting for players.");
-                    for (var i = 0; i < view.LobbyUsers.Count; i++)
-                        Stat(sb, $"P{i + 1}", view.LobbyUsers[i].UserName);
-                    sb.Append("</view>");
-                    ActionButton(sb, "START GAME", "Lock the lobby and launch gameplay.", "Globals.moyvaMenu.StartGame()", view.StartGameButton == null || view.StartGameButton.interactable);
-                    CompactButton(sb, "LEAVE LOBBY", "Globals.moyvaMenu.LeaveLobby()");
+                    {
+                        var status = view.LobbyStatus;
+                        sb.Append("<view className=\"lobby-meta\">");
+                        Stat(sb, "Invite", string.IsNullOrWhiteSpace(view.InviteCodeValue) ? view.InviteCodeText : view.InviteCodeValue);
+                        if (!string.IsNullOrWhiteSpace(status.NetworkLabel))
+                            Stat(sb, "Network", status.NetworkLabel);
+                        if (!string.IsNullOrWhiteSpace(status.PrivacyLabel))
+                            Stat(sb, "Privacy", status.PrivacyLabel);
+                        if (status.MaxPlayers > 0)
+                            Stat(sb, "Players", $"{status.PlayerCount}/{status.MaxPlayers}");
+                        if (!string.IsNullOrWhiteSpace(status.WorldSummary))
+                            Stat(sb, "World", status.WorldSummary);
+                        sb.Append("</view>");
+                        SectionIntro(sb, "PLAYERS", status.CanManagePlayers ? "You are the host — manage the room below." : "Waiting for the host to manage the room.");
+                        sb.Append("<view className=\"player-list\">");
+                        if (view.LobbyUsers.Count == 0)
+                            Empty(sb, "Waiting for players.");
+                        for (var i = 0; i < view.LobbyUsers.Count; i++)
+                        {
+                            var user = view.LobbyUsers[i];
+                            AppendPlayerRow(sb, state, user, i);
+                        }
+                        sb.Append("</view>");
+                        if (status.CanManagePlayers)
+                            CompactButton(sb, "MANAGE PLAYERS", "Globals.moyvaMenu.OpenKickPlayers()");
+                        var startEnabled = view.StartGameButton == null || (view.StartGameButton.interactable && status.CanStart);
+                        var startCopy = !string.IsNullOrWhiteSpace(status.StartReason)
+                            ? status.StartReason
+                            : "Lock the lobby and launch gameplay.";
+                        ActionButton(sb, "START GAME", startCopy, "Globals.moyvaMenu.StartGame()", startEnabled);
+                        sb.Append("<view className=\"inline-actions\">");
+                        if (!string.IsNullOrWhiteSpace(view.InviteCodeValue))
+                            CompactButton(sb, view.InviteCopied ? "INVITE COPIED" : "COPY INVITE", "Globals.moyvaMenu.CopyInviteCode()", false, !view.InviteCopied);
+                        CompactButton(sb, "LEAVE LOBBY", "Globals.moyvaMenu.LeaveLobby()", false, true, "danger");
+                        sb.Append("</view>");
+                    }
                     break;
                 case "KickPlayerPanel":
                     Header(sb, "MANAGE PLAYERS", "Lobby players", showBack);
@@ -141,11 +186,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     for (var i = 0; i < view.KickPlayers.Count; i++)
                     {
                         var player = view.KickPlayers[i];
-                        Button(sb, player.CanKick ? "KICK" : "HOST", player.DisplayName, player.StatusLabel, $"Globals.moyvaMenu.KickPlayer({i})", false, view.KickInteractable && player.CanKick);
+                        var badge = player.IsHost ? "HOST" : player.IsLocalPlayer ? "YOU" : player.CanKick ? "KICK" : "···";
+                        Button(sb, badge, player.DisplayName, player.StatusLabel, $"Globals.moyvaMenu.KickPlayer({i})", false, view.KickInteractable && player.CanKick, id: $"kick-{i}", motion: !state.ReducedMotion, delay: Math.Min(i, 8) * 0.03f);
                     }
                     sb.Append("<view className=\"inline-actions\">");
                     CompactButton(sb, "REFRESH", "Globals.moyvaMenu.RefreshKickPlayers()");
-                    CompactButton(sb, "CLOSE", "Globals.moyvaMenu.CloseKickPlayers()");
+                    CompactButton(sb, "BACK TO LOBBY", "Globals.moyvaMenu.CloseKickPlayers()", true);
                     sb.Append("</view>");
                     break;
                 case "SettingsPanel":
@@ -155,9 +201,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     break;
                 default:
                     Header(sb, "MAIN MENU", "A realm awaits", false);
-                    Button(sb, "01", "PLAY", "Choose a mode and start a realm.", "Globals.moyvaMenu.Play()", true);
-                    Button(sb, "02", "SETTINGS", "Audio, graphics and player profile.", "Globals.moyvaMenu.Settings()");
-                    Button(sb, "03", "QUIT", "Close Moyva.", "Globals.moyvaMenu.Exit()");
+                    sb.Append("<button id=\"profile-chip\" className=\"profile-chip\" onClick=\"Globals.moyvaMenu.OpenPlayerSettings()\"><view className=\"profile-avatar\"><text className=\"profile-initial\">")
+                        .Append(E(ProfileInitial(view.PlayerName))).Append("</text></view><view className=\"button-content\"><text className=\"button-title\">")
+                        .Append(E(view.PlayerName)).Append("</text><text className=\"button-copy\">Signed in — tap to change your display name.</text></view><text className=\"button-arrow\">></text></button>");
+                    Button(sb, "01", "PLAY", "Choose a mode and start a realm.", "Globals.moyvaMenu.Play()", true, id: "main-1", motion: !state.ReducedMotion, delay: 0f);
+                    Button(sb, "02", "SETTINGS", "Audio, graphics and player profile.", "Globals.moyvaMenu.Settings()", id: "main-2", motion: !state.ReducedMotion, delay: 0.04f);
+                    Button(sb, "03", "QUIT", "Close Moyva.", "Globals.moyvaMenu.Exit()", id: "main-3", motion: !state.ReducedMotion, delay: 0.08f);
                     break;
             }
         }
@@ -206,6 +255,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     SectionIntro(sb, "GENERAL", "Player identity and local data.");
                     sb.Append("<view className=\"settings-grid\">");
                     Input(sb, "Player name", view.PlayerName, "Player", "Globals.moyvaMenu.PreviewPlayerName(event)", "Globals.moyvaMenu.CommitPlayerName(event)", 32, view.SettingsInteractable, "Standard", "full");
+                    Toggle(sb, "Reduced motion", "Disable menu transitions and animated indicators.", view.ReducedMotion, "Globals.moyvaMenu.SetReducedMotion(event)", null, view.SettingsInteractable);
                     sb.Append("<view className=\"danger-zone full\"><view className=\"control-copy\"><text className=\"control-label\">LOCAL SAVES</text><text className=\"control-help\">Permanently remove all saved realms from this device.</text></view>");
                     CompactButton(sb, "DELETE SAVES", "Globals.moyvaMenu.DeleteSaves()", false, view.SettingsInteractable, "danger");
                     sb.Append("</view></view>");
@@ -223,30 +273,57 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 .Append(E(view.WorldName)).Append(" - seed ").Append(view.Seed.ToString(CultureInfo.InvariantCulture)).Append("</text></view></view></view>");
         }
 
-        private static void AppendModals(StringBuilder sb, HomeMenuMoyvaUiViewController view)
+        private static void AppendModals(StringBuilder sb, HomeMenuMoyvaUiState state, HomeMenuMoyvaUiViewController view)
         {
+            var motion = !state.ReducedMotion;
             if (view.OverlayVisible)
-                sb.Append("<view className=\"modal-scrim\"><view className=\"modal-card\"><text className=\"modal-title\">LOADING</text><text className=\"modal-copy\">")
+            {
+                sb.Append("<view id=\"overlay-scrim\" className=\"modal-scrim\"");
+                if (motion) sb.Append(" data-motion=\"fade\" data-motion-duration=\"0.14\"");
+                sb.Append("><view id=\"overlay-card\" className=\"modal-card overlay-card\"");
+                if (motion) sb.Append(" data-motion=\"scale\" data-motion-duration=\"0.18\" data-motion-ease=\"out-back\"");
+                sb.Append("><view id=\"overlay-spinner\" className=\"overlay-spinner\"");
+                if (motion) sb.Append(" data-motion=\"spin\" data-motion-duration=\"0.9\"");
+                sb.Append("></view><text className=\"modal-title\">PLEASE WAIT</text><text className=\"modal-copy\">")
+                    .Append(E(string.IsNullOrWhiteSpace(view.OverlayStatus) ? "Working..." : view.OverlayStatus))
+                    .Append("</text><text className=\"overlay-progress\">")
                     .Append(Math.Round(view.OverlayProgress)).Append(E(view.OverlaySuffix)).Append("</text></view></view>");
+            }
 
             if (view.InfoVisible)
-                sb.Append("<view className=\"modal-scrim\"><view className=\"modal-card\"><text className=\"modal-title\">").Append(E(view.CurrentInfo.Title)).Append("</text><text className=\"modal-copy\">")
+            {
+                sb.Append("<view id=\"info-scrim\" className=\"modal-scrim\"");
+                if (motion) sb.Append(" data-motion=\"fade\" data-motion-duration=\"0.14\"");
+                sb.Append("><view id=\"info-card\" className=\"modal-card\"");
+                if (motion) sb.Append(" data-motion=\"scale\" data-motion-duration=\"0.18\" data-motion-ease=\"out-back\"");
+                sb.Append("><text className=\"modal-title\">").Append(E(view.CurrentInfo.Title)).Append("</text><text className=\"modal-copy\">")
                     .Append(E(view.CurrentInfo.Message)).Append("</text>").Append(ModalButton("OK", "Globals.moyvaMenu.AcknowledgeInfo()"))
                     .Append("</view></view>");
+            }
 
             if (view.PasswordVisible)
-                sb.Append("<view className=\"modal-scrim\"><view className=\"modal-card\"><text className=\"modal-title\">PASSWORD</text><text className=\"modal-copy\">")
+            {
+                sb.Append("<view id=\"password-scrim\" className=\"modal-scrim\"");
+                if (motion) sb.Append(" data-motion=\"fade\" data-motion-duration=\"0.14\"");
+                sb.Append("><view id=\"password-card\" className=\"modal-card\"");
+                if (motion) sb.Append(" data-motion=\"scale\" data-motion-duration=\"0.18\" data-motion-ease=\"out-back\"");
+                sb.Append("><text className=\"modal-title\">PASSWORD</text><text className=\"modal-copy\">")
                     .Append(E(view.PasswordRoomDisplayName)).Append("</text>")
                     .Append(InputMarkup("Password", view.PasswordValue, "Password", "Globals.moyvaMenu.PreviewPasswordValue(event)", "Globals.moyvaMenu.CommitPasswordValue(event)", 48, true, "Password", "full"))
                     .Append("<text className=\"modal-copy error\">").Append(E(view.PasswordErrorText)).Append("</text><view className=\"modal-actions\">")
                     .Append(ModalButton("JOIN", "Globals.moyvaMenu.ConfirmPassword()"))
                     .Append(ModalButton("CANCEL", "Globals.moyvaMenu.CancelPassword()"))
                     .Append("</view></view></view>");
+            }
 
             if (view.ConfirmationVisible && view.CurrentConfirmation.HasValue)
             {
                 var request = view.CurrentConfirmation.Value;
-                sb.Append("<view className=\"modal-scrim\"><view className=\"modal-card\"><text className=\"modal-title\">")
+                sb.Append("<view id=\"confirm-scrim\" className=\"modal-scrim\"");
+                if (motion) sb.Append(" data-motion=\"fade\" data-motion-duration=\"0.14\"");
+                sb.Append("><view id=\"confirm-card\" className=\"modal-card\"");
+                if (motion) sb.Append(" data-motion=\"scale\" data-motion-duration=\"0.16\" data-motion-ease=\"out-back\"");
+                sb.Append("><text className=\"modal-title\">")
                     .Append(E(request.LabelText)).Append("</text><text className=\"modal-copy\">")
                     .Append(E(request.MessageText)).Append("</text><view className=\"modal-actions\">")
                     .Append(ModalButton("YES", "Globals.moyvaMenu.Confirm()"))
@@ -273,12 +350,24 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             string click,
             bool primary = false,
             bool enabled = true,
-            string status = null)
+            string status = null,
+            string id = null,
+            bool motion = false,
+            float delay = 0f)
         {
-            sb.Append("<button className=\"menu-button");
+            sb.Append("<button");
+            if (!string.IsNullOrWhiteSpace(id))
+                sb.Append(" id=\"").Append(E(id)).Append('"');
+            sb.Append(" className=\"menu-button");
             if (primary) sb.Append(" primary");
             if (!enabled) sb.Append(" disabled");
             sb.Append('"');
+            if (motion)
+            {
+                sb.Append(" data-motion=\"slide-up\" data-motion-duration=\"0.18\" data-motion-distance=\"14\"");
+                if (delay > 0f)
+                    sb.Append(" data-motion-delay=\"").Append(delay.ToString("0.##", CultureInfo.InvariantCulture)).Append('"');
+            }
             if (enabled)
                 sb.Append(" onClick=\"").Append(click).Append('"');
             else
@@ -290,6 +379,66 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             else
                 sb.Append("<text className=\"button-arrow\">></text>");
             sb.Append("</button>");
+        }
+
+        private static void AppendPlayerRow(StringBuilder sb, HomeMenuMoyvaUiState state, LobbyUserInfo user, int index)
+        {
+            sb.Append("<view id=\"player-").Append(index.ToString(CultureInfo.InvariantCulture)).Append("\" className=\"player-row");
+            if (user.IsLocal) sb.Append(" local");
+            sb.Append('"');
+            if (!state.ReducedMotion)
+            {
+                sb.Append(" data-motion=\"slide-up\" data-motion-duration=\"0.16\" data-motion-distance=\"10\"");
+                var delay = Math.Min(index, 8) * 0.03f;
+                if (delay > 0f)
+                    sb.Append(" data-motion-delay=\"").Append(delay.ToString("0.##", CultureInfo.InvariantCulture)).Append('"');
+            }
+            sb.Append("><text className=\"player-index\">").Append((index + 1).ToString("D2", CultureInfo.InvariantCulture))
+                .Append("</text><text className=\"player-name\">").Append(E(user.UserName)).Append("</text>");
+            if (user.IsHost) sb.Append("<text className=\"badge badge-host\">HOST</text>");
+            if (user.IsLocal) sb.Append("<text className=\"badge badge-you\">YOU</text>");
+            sb.Append("</view>");
+        }
+
+        private static void AppendRoomListStatus(StringBuilder sb, HomeMenuMoyvaUiState state, HomeMenuMoyvaUiViewController view)
+        {
+            if (view.RoomListState == RoomListStatus.Ready && view.Rooms.Count > 0)
+                return;
+
+            var css = "list-status";
+            var showSpinner = false;
+            var message = view.RoomListMessage;
+            switch (view.RoomListState)
+            {
+                case RoomListStatus.Loading:
+                    css += " busy";
+                    showSpinner = !state.ReducedMotion;
+                    if (string.IsNullOrWhiteSpace(message)) message = "Fetching rooms...";
+                    break;
+                case RoomListStatus.Joining:
+                    css += " busy";
+                    showSpinner = !state.ReducedMotion;
+                    if (string.IsNullOrWhiteSpace(message)) message = "Joining room...";
+                    break;
+                case RoomListStatus.Error:
+                    css += " error";
+                    if (string.IsNullOrWhiteSpace(message)) message = "Could not load rooms. Try Refresh.";
+                    break;
+                default:
+                    if (string.IsNullOrWhiteSpace(message)) message = "No public rooms available.";
+                    break;
+            }
+
+            sb.Append("<view id=\"room-list-status\" className=\"").Append(css).Append("\">");
+            if (showSpinner)
+                sb.Append("<view className=\"inline-spinner\" data-motion=\"pulse-loop\" data-motion-duration=\"0.55\"></view>");
+            sb.Append("<text className=\"list-status-text\">").Append(E(message)).Append("</text></view>");
+        }
+
+        private static string ProfileInitial(string playerName)
+        {
+            var trimmed = (playerName ?? string.Empty).Trim();
+            return trimmed.Length == 0 ? "P" : trimmed.Substring(0, 1).ToUpperInvariant();
         }
 
         private static void ActionButton(StringBuilder sb, string title, string copy, string click, bool enabled)

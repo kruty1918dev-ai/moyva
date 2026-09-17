@@ -205,6 +205,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             float progressValue = state.ConnectionProgress * 100f;
             LogVerbose($"Multiplayer services are not ready yet. Showing overlay and waiting for Unity services + authentication. Progress: {progressValue:0.##}%.");
             var overlayResult = _overlayLoader?.LoadOverlay(progressValue, 100f, "%");
+            overlayResult?.SetStatus("Connecting to multiplayer services...");
             WaitForMultiplayerReadyAsync(prefix, overlayResult, ct);
         }
 
