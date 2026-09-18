@@ -290,6 +290,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             SetResult(result, "Settlement captured.");
         }
 
+        public void GroupMergeToggle()
+        {
+            UiActionResult result = Execute(UiActionIds.UnitGroup.ToggleMerge, "GameplayHTML/Units");
+            if (result.Status != UiActionStatus.Performed)
+                SetResult(result, "Group merge toggled.");
+            else
+                _state.MarkDirty();
+        }
+
+        public void GroupDisband()
+        {
+            UiActionResult result = Execute(UiActionIds.UnitGroup.Disband, "GameplayHTML/Units");
+            SetResult(result, "Group disbanded.");
+        }
+
         public void Recruit(object value)
         {
             string unitTypeId = value?.ToString()?.Trim();

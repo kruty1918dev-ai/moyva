@@ -52,6 +52,15 @@ namespace Kruty1918.Moyva.UIActions.API
                 new("ui.combat.capture-selection");
         }
 
+        public static class UnitGroup
+        {
+            public static readonly UiActionId ToggleMerge =
+                new("ui.unit-group.toggle-merge");
+
+            public static readonly UiActionId Disband =
+                new("ui.unit-group.disband");
+        }
+
         public static class Deployment
         {
             public static readonly UiActionId Confirm =

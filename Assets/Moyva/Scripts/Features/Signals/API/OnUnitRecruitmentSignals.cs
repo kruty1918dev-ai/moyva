@@ -56,4 +56,13 @@ namespace Kruty1918.Moyva.Signals
         public string RecruitingBuildingId;
         public Vector2Int RecruitingBuildingPosition;
     }
+
+    /// <summary>
+    /// Fired when a recruitment command is rejected by the authoritative side
+    /// (locally or by the multiplayer host). UI surfaces Reason to the player.
+    /// </summary>
+    public struct UnitRecruitmentCommandRejectedSignal
+    {
+        public string Reason;
+    }
 }

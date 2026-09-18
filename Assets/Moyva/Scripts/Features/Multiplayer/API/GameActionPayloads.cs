@@ -461,6 +461,355 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         }
     }
 
+    public enum UnitGroupCommandAction : byte
+    {
+        Create = 0,
+        Disband = 1,
+        AddUnit = 2,
+        RemoveUnit = 3,
+        Move = 4,
+    }
+
+    /// <summary>
+    /// Payload для команд груп юнітів (UnitGroupCommand).
+    /// Request: клієнт просить хоста виконати операцію над групою.
+    /// Rejected: хост відхиляє запит із причиною для автора.
+    /// </summary>
+    public readonly struct UnitGroupCommandPayload
+    {
+        public readonly GameActionMessageKind Kind;
+        public readonly UnitGroupCommandAction Action;
+        public readonly string RequesterOwnerId;
+        public readonly string GroupId;
+        public readonly Vector2Int TargetPosition;
+        public readonly string[] UnitIds;
+        public readonly string RejectionReason;
+
+        public UnitGroupCommandPayload(
+            GameActionMessageKind kind,
+            UnitGroupCommandAction action,
+            string requesterOwnerId,
+            string groupId,
+            Vector2Int targetPosition,
+            string[] unitIds,
+            string rejectionReason = null)
+        {
+            Kind = kind;
+            Action = action;
+            RequesterOwnerId = requesterOwnerId ?? string.Empty;
+            GroupId = groupId ?? string.Empty;
+            TargetPosition = targetPosition;
+            UnitIds = unitIds;
+            RejectionReason = rejectionReason ?? string.Empty;
+        }
+
+        public byte[] ToBytes()
+        {
+            using var ms = new MemoryStream();
+            using var w = new BinaryWriter(ms);
+            w.Write((byte)Kind);
+            w.Write((byte)Action);
+            w.Write(RequesterOwnerId);
+            w.Write(GroupId);
+            w.Write(TargetPosition.x);
+            w.Write(TargetPosition.y);
+            int count = UnitIds?.Length ?? 0;
+            w.Write(count);
+            for (int index = 0; index < count; index++)
+                w.Write(UnitIds[index] ?? string.Empty);
+            w.Write(RejectionReason);
+            return ms.ToArray();
+        }
+
+        public static UnitGroupCommandPayload FromBytes(byte[] data)
+        {
+            using var ms = new MemoryStream(data ?? System.Array.Empty<byte>());
+            using var r = new BinaryReader(ms);
+            var kind = (GameActionMessageKind)r.ReadByte();
+            var action = (UnitGroupCommandAction)r.ReadByte();
+            string requesterOwnerId = r.ReadString();
+            string groupId = r.ReadString();
+            var target = new Vector2Int(r.ReadInt32(), r.ReadInt32());
+            int count = r.ReadInt32();
+            if (count < 0 || count > 1024)
+                throw new InvalidDataException("Invalid unit group command member count.");
+            var unitIds = new string[count];
+            for (int index = 0; index < count; index++)
+                unitIds[index] = r.ReadString();
+            string rejectionReason = ms.Position < ms.Length ? r.ReadString() : string.Empty;
+            if (ms.Position != ms.Length)
+                throw new InvalidDataException("Unexpected trailing unit group payload data.");
+            return new UnitGroupCommandPayload(
+                kind, action, requesterOwnerId, groupId, target, unitIds, rejectionReason);
+        }
+    }
+
+    /// <summary>
+    /// Confirmed-only authoritative snapshot of the whole unit-group table
+    /// (UnitGroupSync). Groups are few and small; full-table sync keeps client
+    /// state convergent without delta bookkeeping.
+    /// </summary>
+    public readonly struct UnitGroupSyncPayload
+    {
+        public readonly string[] GroupIds;
+        public readonly string[] OwnerIds;
+        public readonly string[][] MemberUnitIds;
+
+        public UnitGroupSyncPayload(
+            string[] groupIds,
+            string[] ownerIds,
+            string[][] memberUnitIds)
+        {
+            GroupIds = groupIds ?? System.Array.Empty<string>();
+            OwnerIds = ownerIds ?? System.Array.Empty<string>();
+            MemberUnitIds = memberUnitIds ?? System.Array.Empty<string[]>();
+        }
+
+        public byte[] ToBytes()
+        {
+            using var ms = new MemoryStream();
+            using var w = new BinaryWriter(ms);
+            w.Write(GroupIds.Length);
+            for (int index = 0; index < GroupIds.Length; index++)
+            {
+                w.Write(GroupIds[index] ?? string.Empty);
+                w.Write(index < OwnerIds.Length ? OwnerIds[index] ?? string.Empty : string.Empty);
+                string[] members = index < MemberUnitIds.Length ? MemberUnitIds[index] : null;
+                w.Write(members?.Length ?? 0);
+                if (members == null)
+                    continue;
+                for (int memberIndex = 0; memberIndex < members.Length; memberIndex++)
+                    w.Write(members[memberIndex] ?? string.Empty);
+            }
+            return ms.ToArray();
+        }
+
+        public static UnitGroupSyncPayload FromBytes(byte[] data)
+        {
+            using var ms = new MemoryStream(data ?? System.Array.Empty<byte>());
+            using var r = new BinaryReader(ms);
+            int groupCount = r.ReadInt32();
+            if (groupCount < 0 || groupCount > 4096)
+                throw new InvalidDataException("Invalid unit group sync count.");
+            var groupIds = new string[groupCount];
+            var ownerIds = new string[groupCount];
+            var memberUnitIds = new string[groupCount][];
+            for (int index = 0; index < groupCount; index++)
+            {
+                groupIds[index] = r.ReadString();
+                ownerIds[index] = r.ReadString();
+                int memberCount = r.ReadInt32();
+                if (memberCount < 0 || memberCount > 4096)
+                    throw new InvalidDataException("Invalid unit group member count.");
+                var members = new string[memberCount];
+                for (int memberIndex = 0; memberIndex < memberCount; memberIndex++)
+                    members[memberIndex] = r.ReadString();
+                memberUnitIds[index] = members;
+            }
+            return new UnitGroupSyncPayload(groupIds, ownerIds, memberUnitIds);
+        }
+    }
+
+    public enum UnitRecruitmentCommandAction : byte
+    {
+        Enqueue = 0,
+        Cancel = 1,
+        Deploy = 2,
+    }
+
+    /// <summary>
+    /// Payload для команд найму (UnitRecruitmentCommand).
+    /// Request: клієнт просить хоста виконати операцію з чергою найму.
+    /// Rejected: хост відхиляє запит із причиною для автора.
+    /// Результат виконання реплікується через UnitRecruitmentSync.
+    /// </summary>
+    public readonly struct UnitRecruitmentCommandPayload
+    {
+        public readonly GameActionMessageKind Kind;
+        public readonly UnitRecruitmentCommandAction Action;
+        public readonly string RequesterOwnerId;
+        public readonly Vector2Int BuildingPosition;
+        public readonly long QueueId;
+        public readonly string UnitTypeId;
+        public readonly Vector2Int TargetPosition;
+        public readonly string RejectionReason;
+
+        public UnitRecruitmentCommandPayload(
+            GameActionMessageKind kind,
+            UnitRecruitmentCommandAction action,
+            string requesterOwnerId,
+            Vector2Int buildingPosition,
+            long queueId,
+            string unitTypeId,
+            Vector2Int targetPosition,
+            string rejectionReason = null)
+        {
+            Kind = kind;
+            Action = action;
+            RequesterOwnerId = requesterOwnerId ?? string.Empty;
+            BuildingPosition = buildingPosition;
+            QueueId = queueId;
+            UnitTypeId = unitTypeId ?? string.Empty;
+            TargetPosition = targetPosition;
+            RejectionReason = rejectionReason ?? string.Empty;
+        }
+
+        public byte[] ToBytes()
+        {
+            using var ms = new MemoryStream();
+            using var w = new BinaryWriter(ms);
+            w.Write((byte)Kind);
+            w.Write((byte)Action);
+            w.Write(RequesterOwnerId);
+            w.Write(BuildingPosition.x);
+            w.Write(BuildingPosition.y);
+            w.Write(QueueId);
+            w.Write(UnitTypeId);
+            w.Write(TargetPosition.x);
+            w.Write(TargetPosition.y);
+            w.Write(RejectionReason);
+            return ms.ToArray();
+        }
+
+        public static UnitRecruitmentCommandPayload FromBytes(byte[] data)
+        {
+            using var ms = new MemoryStream(data ?? System.Array.Empty<byte>());
+            using var r = new BinaryReader(ms);
+            var kind = (GameActionMessageKind)r.ReadByte();
+            var action = (UnitRecruitmentCommandAction)r.ReadByte();
+            string requesterOwnerId = r.ReadString();
+            var buildingPosition = new Vector2Int(r.ReadInt32(), r.ReadInt32());
+            long queueId = r.ReadInt64();
+            string unitTypeId = r.ReadString();
+            var targetPosition = new Vector2Int(r.ReadInt32(), r.ReadInt32());
+            string rejectionReason = ms.Position < ms.Length ? r.ReadString() : string.Empty;
+            if (ms.Position != ms.Length)
+                throw new InvalidDataException("Unexpected trailing recruitment payload data.");
+            return new UnitRecruitmentCommandPayload(
+                kind, action, requesterOwnerId, buildingPosition,
+                queueId, unitTypeId, targetPosition, rejectionReason);
+        }
+    }
+
+    /// <summary>
+    /// Confirmed-only authoritative snapshot of all recruitment queues
+    /// (UnitRecruitmentSync). Queues are small; full-table sync keeps client
+    /// state convergent without delta bookkeeping.
+    /// </summary>
+    public readonly struct UnitRecruitmentSyncPayload
+    {
+        public readonly long[] QueueIds;
+        public readonly string[] OwnerIds;
+        public readonly Vector2Int[] BuildingPositions;
+        public readonly string[] BuildingIds;
+        public readonly string[] UnitTypeIds;
+        public readonly int[] CompletedTurns;
+        public readonly int[] TrainingTurns;
+        public readonly long[] EnqueuedGlobalTurns;
+        public readonly long[] LastProgressGlobalTurns;
+        public readonly byte[] Statuses;
+        public readonly string[] FundingSettlementIds;
+        public readonly float[] TrainingSeconds;
+        public readonly float[] CompletedSeconds;
+
+        public UnitRecruitmentSyncPayload(
+            long[] queueIds,
+            string[] ownerIds,
+            Vector2Int[] buildingPositions,
+            string[] buildingIds,
+            string[] unitTypeIds,
+            int[] completedTurns,
+            int[] trainingTurns,
+            long[] enqueuedGlobalTurns,
+            long[] lastProgressGlobalTurns,
+            byte[] statuses,
+            string[] fundingSettlementIds,
+            float[] trainingSeconds,
+            float[] completedSeconds)
+        {
+            QueueIds = queueIds ?? System.Array.Empty<long>();
+            OwnerIds = ownerIds ?? System.Array.Empty<string>();
+            BuildingPositions = buildingPositions ?? System.Array.Empty<Vector2Int>();
+            BuildingIds = buildingIds ?? System.Array.Empty<string>();
+            UnitTypeIds = unitTypeIds ?? System.Array.Empty<string>();
+            CompletedTurns = completedTurns ?? System.Array.Empty<int>();
+            TrainingTurns = trainingTurns ?? System.Array.Empty<int>();
+            EnqueuedGlobalTurns = enqueuedGlobalTurns ?? System.Array.Empty<long>();
+            LastProgressGlobalTurns = lastProgressGlobalTurns ?? System.Array.Empty<long>();
+            Statuses = statuses ?? System.Array.Empty<byte>();
+            FundingSettlementIds = fundingSettlementIds ?? System.Array.Empty<string>();
+            TrainingSeconds = trainingSeconds ?? System.Array.Empty<float>();
+            CompletedSeconds = completedSeconds ?? System.Array.Empty<float>();
+        }
+
+        public int Count => QueueIds.Length;
+
+        public byte[] ToBytes()
+        {
+            using var ms = new MemoryStream();
+            using var w = new BinaryWriter(ms);
+            w.Write(QueueIds.Length);
+            for (int index = 0; index < QueueIds.Length; index++)
+            {
+                w.Write(QueueIds[index]);
+                w.Write(OwnerIds[index] ?? string.Empty);
+                w.Write(BuildingPositions[index].x);
+                w.Write(BuildingPositions[index].y);
+                w.Write(BuildingIds[index] ?? string.Empty);
+                w.Write(UnitTypeIds[index] ?? string.Empty);
+                w.Write(CompletedTurns[index]);
+                w.Write(TrainingTurns[index]);
+                w.Write(EnqueuedGlobalTurns[index]);
+                w.Write(LastProgressGlobalTurns[index]);
+                w.Write(Statuses[index]);
+                w.Write(FundingSettlementIds[index] ?? string.Empty);
+                w.Write(TrainingSeconds[index]);
+                w.Write(CompletedSeconds[index]);
+            }
+            return ms.ToArray();
+        }
+
+        public static UnitRecruitmentSyncPayload FromBytes(byte[] data)
+        {
+            using var ms = new MemoryStream(data ?? System.Array.Empty<byte>());
+            using var r = new BinaryReader(ms);
+            int count = r.ReadInt32();
+            if (count < 0 || count > 4096)
+                throw new InvalidDataException("Invalid recruitment sync count.");
+            var payload = new UnitRecruitmentSyncPayload(
+                new long[count],
+                new string[count],
+                new Vector2Int[count],
+                new string[count],
+                new string[count],
+                new int[count],
+                new int[count],
+                new long[count],
+                new long[count],
+                new byte[count],
+                new string[count],
+                new float[count],
+                new float[count]);
+            for (int index = 0; index < count; index++)
+            {
+                payload.QueueIds[index] = r.ReadInt64();
+                payload.OwnerIds[index] = r.ReadString();
+                payload.BuildingPositions[index] = new Vector2Int(r.ReadInt32(), r.ReadInt32());
+                payload.BuildingIds[index] = r.ReadString();
+                payload.UnitTypeIds[index] = r.ReadString();
+                payload.CompletedTurns[index] = r.ReadInt32();
+                payload.TrainingTurns[index] = r.ReadInt32();
+                payload.EnqueuedGlobalTurns[index] = r.ReadInt64();
+                payload.LastProgressGlobalTurns[index] = r.ReadInt64();
+                payload.Statuses[index] = r.ReadByte();
+                payload.FundingSettlementIds[index] = r.ReadString();
+                payload.TrainingSeconds[index] = r.ReadSingle();
+                payload.CompletedSeconds[index] = r.ReadSingle();
+            }
+            return payload;
+        }
+    }
+
     public readonly struct SettlementCaptureCommandPayload
     {
         public readonly GameActionMessageKind Kind;

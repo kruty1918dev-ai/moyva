@@ -1,0 +1,13 @@
+{
+  "name": "Kruty1918.Moyva.Tests.Multiplayer",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Multiplayer",
+  "references": [
+    "Zenject",
+    "Kruty1918.Moyva.Multiplayer",
+    "Kruty1918.Moyva.Units",
+    "Kruty1918.Moyva.Signals"
+  ],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

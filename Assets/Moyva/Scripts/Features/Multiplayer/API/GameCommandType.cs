@@ -19,5 +19,9 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         CaravanCommand = 14,
         CombatCommand = 15,
         SettlementCaptureCommand = 16,
+        UnitGroupCommand = 17,
+        UnitGroupSync = 18,
+        UnitRecruitmentCommand = 19,
+        UnitRecruitmentSync = 20,
     }
 }

@@ -14,7 +14,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     internal sealed class UnitsSaveModule : ISaveModule, IInitializable, IDisposable
     {
         private const int SaveMagic = unchecked((int)0x554E4954);
-        private const int SaveVersion = 5;
+        private const int SaveVersion = 6;
         private const int MaxRecordCount = 100000;
 
         private readonly struct UnitRecord
@@ -55,9 +55,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly SignalBus _signalBus;
         private readonly IUnitRecruitmentStateStore _recruitmentState;
         private readonly IHealthRegistry _healthRegistry;
+        private readonly IUnitGroupStateStore _groupState;
         private readonly List<UnitRecord> _pendingRecords = new();
         private readonly List<UnitRecruitmentQueueItemSnapshot> _pendingRecruitment = new();
+        private readonly List<UnitGroupSnapshot> _pendingGroups = new();
         private bool _hasPendingRecruitmentState;
+        private bool _hasPendingGroupState;
         private bool _worldBuilt;
 
         public UnitsSaveModule(
@@ -66,7 +69,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IUnitOwnershipQuery ownership,
             SignalBus signalBus,
             [InjectOptional] IUnitRecruitmentStateStore recruitmentState = null,
-            [InjectOptional] IHealthRegistry healthRegistry = null)
+            [InjectOptional] IHealthRegistry healthRegistry = null,
+            [InjectOptional] IUnitGroupStateStore groupState = null)
         {
             _unitService = unitService;
             _unitFactory = unitFactory;
@@ -74,6 +78,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signalBus = signalBus;
             _recruitmentState = recruitmentState;
             _healthRegistry = healthRegistry;
+            _groupState = groupState;
         }
 
         public void Initialize() => _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
@@ -113,6 +118,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             context.Writer.Write(queue.Count);
             for (int index = 0; index < queue.Count; index++)
                 WriteRecruitmentRecord(context.Writer, queue[index]);
+
+            IReadOnlyList<UnitGroupSnapshot> groups =
+                _groupState?.CaptureState() ?? Array.Empty<UnitGroupSnapshot>();
+            context.Writer.Write(groups.Count);
+            for (int index = 0; index < groups.Count; index++)
+            {
+                UnitGroupSnapshot group = groups[index];
+                context.Writer.Write(group.GroupId ?? string.Empty);
+                context.Writer.Write(group.OwnerId ?? string.Empty);
+                int memberCount = group.UnitIds?.Count ?? 0;
+                context.Writer.Write(memberCount);
+                for (int memberIndex = 0; memberIndex < memberCount; memberIndex++)
+                    context.Writer.Write(group.UnitIds[memberIndex] ?? string.Empty);
+            }
         }
 
         public void OnLoad(ISaveContext context)
@@ -121,7 +140,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (markerOrCount == SaveMagic)
             {
                 int version = context.Reader.ReadInt32();
-                if (version != 2 && version != 3 && version != SaveVersion)
+                if (version != 2 && version != 3 && version != 4 && version != 5 && version != SaveVersion)
                     throw new InvalidDataException($"Unsupported units save version {version}.");
 
                 int count = ReadBoundedCount(context.Reader, "unit");
@@ -163,7 +182,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     queue = new List<UnitRecruitmentQueueItemSnapshot>();
                 }
 
-                QueueOrSpawn(records, queue);
+                var groups = new List<UnitGroupSnapshot>();
+                if (version >= 6)
+                {
+                    int groupCount = ReadBoundedCount(context.Reader, "unit group");
+                    for (int index = 0; index < groupCount; index++)
+                    {
+                        string groupId = context.Reader.ReadString();
+                        string groupOwnerId = context.Reader.ReadString();
+                        int memberCount = ReadBoundedCount(context.Reader, "unit group member");
+                        var memberIds = new List<string>(memberCount);
+                        for (int memberIndex = 0; memberIndex < memberCount; memberIndex++)
+                            memberIds.Add(context.Reader.ReadString());
+                        groups.Add(new UnitGroupSnapshot(groupId, groupOwnerId, memberIds));
+                    }
+                }
+
+                QueueOrSpawn(records, queue, groups);
                 return;
             }
 
@@ -180,7 +215,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     return;
                 }
             }
-            QueueOrSpawn(legacyRecords, Array.Empty<UnitRecruitmentQueueItemSnapshot>());
+            QueueOrSpawn(legacyRecords, Array.Empty<UnitRecruitmentQueueItemSnapshot>(), null);
         }
 
         private static void WriteRecruitmentRecord(BinaryWriter writer, UnitRecruitmentQueueItemSnapshot item)
@@ -289,7 +324,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void QueueOrSpawn(
             List<UnitRecord> records,
-            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> recruitment)
+            IReadOnlyList<UnitRecruitmentQueueItemSnapshot> recruitment,
+            IReadOnlyList<UnitGroupSnapshot> groups)
         {
             if (!_worldBuilt)
             {
@@ -299,6 +335,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (recruitment != null)
                     _pendingRecruitment.AddRange(recruitment);
                 _hasPendingRecruitmentState = true;
+                _pendingGroups.Clear();
+                if (groups != null)
+                    _pendingGroups.AddRange(groups);
+                _hasPendingGroupState = groups != null;
                 return;
             }
 
@@ -308,6 +348,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             SpawnRecords(records);
             _recruitmentState?.RestoreState(
                 recruitment ?? Array.Empty<UnitRecruitmentQueueItemSnapshot>());
+            if (groups != null)
+                _groupState?.RestoreState(groups);
         }
 
         private void OnWorldBuilt(WorldBuiltSignal _)
@@ -326,6 +368,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _pendingRecruitment.Clear();
                 _hasPendingRecruitmentState = false;
                 _recruitmentState?.RestoreState(queue);
+            }
+
+            if (_hasPendingGroupState)
+            {
+                var groups = new List<UnitGroupSnapshot>(_pendingGroups);
+                _pendingGroups.Clear();
+                _hasPendingGroupState = false;
+                _groupState?.RestoreState(groups);
             }
         }
 

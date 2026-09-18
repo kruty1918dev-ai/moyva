@@ -38,7 +38,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         IUnitCommandAuthorityEndpointRegistry,
         ICaravanRemoteCommandRequester,
         ICombatRemoteCommandRequester,
-        ISettlementCaptureRemoteCommandRequester
+        ISettlementCaptureRemoteCommandRequester,
+        IUnitGroupRemoteCommandRequester,
+        IUnitRecruitmentRemoteCommandRequester
     {
         private readonly IGameCommandSyncService _syncService;
         private readonly ISessionManager         _sessionManager;
@@ -56,6 +58,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private readonly IConstructionBuildingCombatTargetQuery _buildingTargetQuery;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IFogOwnerStateReader _ownerFog;
+        private readonly IUnitGroupService _unitGroupService;
+        private readonly IUnitGroupStateStore _unitGroupStateStore;
+        private readonly IUnitRecruitmentService _recruitmentService;
+        private readonly IUnitRecruitmentStateStore _recruitmentStateStore;
         private readonly Dictionary<string, HashSet<string>> _knownUnitsByPeer =
             new(StringComparer.Ordinal);
         private readonly Dictionary<string, Vector2Int> _replicatedUnitPositions =
@@ -82,7 +88,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             [InjectOptional] IConstructionBuildingCombatTargetQuery buildingTargetQuery = null,
             [InjectOptional] IBuildingRegistry buildingRegistry = null,
             [InjectOptional] IFogOwnerStateReader ownerFog = null,
-            [InjectOptional] IConstructionService constructionService = null)
+            [InjectOptional] IConstructionService constructionService = null,
+            [InjectOptional] IUnitGroupService unitGroupService = null,
+            [InjectOptional] IUnitGroupStateStore unitGroupStateStore = null,
+            [InjectOptional] IUnitRecruitmentService recruitmentService = null,
+            [InjectOptional] IUnitRecruitmentStateStore recruitmentStateStore = null)
         {
             _syncService         = syncService;
             _sessionManager      = sessionManager;
@@ -100,6 +110,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _buildingRegistry = buildingRegistry;
             _ownerFog = ownerFog;
             _constructionService = constructionService;
+            _unitGroupService = unitGroupService;
+            _unitGroupStateStore = unitGroupStateStore;
+            _recruitmentService = recruitmentService;
+            _recruitmentStateStore = recruitmentStateStore;
         }
 
         // ─── Lifecycle ───────────────────────────────────────────────────────────
@@ -163,6 +177,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 throw new InvalidOperationException("Multiplayer gameplay authority must be installed in the Gameplay scene with its gameplay services.");
             // Локальні дії гравця: перехоплення перед виконанням
             _signalBus.Subscribe<MoveUnitRequestSignal>(OnLocalMoveUnitRequest);
+            _signalBus.Subscribe<MoveGroupRequestSignal>(OnLocalMoveGroupRequest);
 
             // Хост: слухає локальні результати і транслює іншим клієнтам
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlacedLocally);
@@ -170,6 +185,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _signalBus.Subscribe<UnitMovedSignal>(OnUnitMovedLocally);
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreatedLocally);
             _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyedLocally);
+            _signalBus.Subscribe<UnitGroupChangedSignal>(OnUnitGroupChangedBroadcast);
+            _signalBus.Subscribe<UnitRecruitmentQueueChangedSignal>(OnRecruitmentQueueChangedBroadcast);
             if (_caravanService != null)
                 _caravanService.RouteTransferCommitted += OnRouteTransferCommittedLocally;
 
@@ -181,6 +198,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _syncService.RegisterHandler(GameCommandType.CaravanCommand,   OnNetworkCaravanCommand);
             _syncService.RegisterHandler(GameCommandType.CombatCommand,    OnNetworkCombatCommand);
             _syncService.RegisterHandler(GameCommandType.SettlementCaptureCommand, OnNetworkSettlementCaptureCommand);
+            _syncService.RegisterHandler(GameCommandType.UnitGroupCommand, OnNetworkUnitGroupCommand);
+            _syncService.RegisterHandler(GameCommandType.UnitGroupSync,    OnNetworkUnitGroupSync);
+            _syncService.RegisterHandler(GameCommandType.UnitRecruitmentCommand, OnNetworkUnitRecruitmentCommand);
+            _syncService.RegisterHandler(GameCommandType.UnitRecruitmentSync,    OnNetworkUnitRecruitmentSync);
         }
 
         public void Dispose()
@@ -196,12 +217,19 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _syncService.RegisterHandler(GameCommandType.CaravanCommand, null);
             _syncService.RegisterHandler(GameCommandType.CombatCommand, null);
             _syncService.RegisterHandler(GameCommandType.SettlementCaptureCommand, null);
+            _syncService.RegisterHandler(GameCommandType.UnitGroupCommand, null);
+            _syncService.RegisterHandler(GameCommandType.UnitGroupSync, null);
+            _syncService.RegisterHandler(GameCommandType.UnitRecruitmentCommand, null);
+            _syncService.RegisterHandler(GameCommandType.UnitRecruitmentSync, null);
             _signalBus.TryUnsubscribe<MoveUnitRequestSignal>(OnLocalMoveUnitRequest);
+            _signalBus.TryUnsubscribe<MoveGroupRequestSignal>(OnLocalMoveGroupRequest);
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlacedLocally);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolishedLocally);
             _signalBus.TryUnsubscribe<UnitMovedSignal>(OnUnitMovedLocally);
             _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreatedLocally);
             _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyedLocally);
+            _signalBus.TryUnsubscribe<UnitGroupChangedSignal>(OnUnitGroupChangedBroadcast);
+            _signalBus.TryUnsubscribe<UnitRecruitmentQueueChangedSignal>(OnRecruitmentQueueChangedBroadcast);
             if (_caravanService != null)
                 _caravanService.RouteTransferCommitted -= OnRouteTransferCommittedLocally;
             _lifetime.Dispose();

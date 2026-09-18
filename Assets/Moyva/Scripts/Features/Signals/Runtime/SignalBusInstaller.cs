@@ -51,6 +51,11 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<ShowWallHandlesSignal>();
             Container.DeclareSignal<PlaceBuildingConfirmRequestSignal>().OptionalSubscriber();
             Container.DeclareSignal<MoveUnitRequestSignal>().OptionalSubscriber();
+            Container.DeclareSignal<MoveGroupRequestSignal>().OptionalSubscriber();
+            Container.DeclareSignal<UnitMoveRejectedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<UnitGroupChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<UnitGroupCommandRejectedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<UnitRecruitmentCommandRejectedSignal>().OptionalSubscriber();
 
             // Unit recruitment
             Container.DeclareSignal<UnitRecruitmentQueueChangedSignal>().OptionalSubscriber();

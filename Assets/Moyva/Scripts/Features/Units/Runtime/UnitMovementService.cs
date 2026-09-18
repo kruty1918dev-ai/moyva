@@ -668,13 +668,19 @@ private bool CanMakeStep(string unitId, Vector2Int stepPos)
 			return false;
 		}
 
-		private static void LogMoveRejected(
+		private void LogMoveRejected(
 			string unitId,
 			Vector2Int targetPosition,
 			string reason)
 		{
 			Debug.LogWarning(
 				$"[MOYVA_MOVE][EXECUTE] Move rejected. unit='{unitId}' target={targetPosition}. reason={reason ?? "Unknown"}.");
+			_signalBus?.Fire(new UnitMoveRejectedSignal
+			{
+				UnitId = unitId,
+				TargetPosition = targetPosition,
+				Reason = reason ?? "Unknown",
+			});
 		}
 
 		private static Vector2Int PopLowestCost(

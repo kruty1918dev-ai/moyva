@@ -561,6 +561,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public bool CanCaptureSelection;
         public string CapturePreview = string.Empty;
         public string CaptureUnavailableReason = string.Empty;
+        public string SelectedUnitGroupId = string.Empty;
+        public int SelectedUnitGroupSize;
+        public string SelectedUnitGroupMembers = string.Empty;
+        public bool GroupMergeArmed;
         public bool SupportsRecruitment;
         public GameplayCargoSnapshot Cargo;
         public int RecruitmentQueueCapacity;
