@@ -35,6 +35,20 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return true;
         }
 
+        public IReadOnlyList<CaravanRouteSnapshot> GetRoutes(string ownerId)
+        {
+            var result = new List<CaravanRouteSnapshot>();
+            foreach (var pair in _routes)
+            {
+                var route = pair.Value;
+                if (!string.Equals(route.Request.OwnerId, ownerId, StringComparison.Ordinal)) continue;
+                result.Add(new CaravanRouteSnapshot(route.Request, route.Phase, route.Status,
+                    route.Cancellation != null));
+            }
+            result.Sort((a, b) => string.CompareOrdinal(a.Request.UnitId, b.Request.UnitId));
+            return result;
+        }
+
         public CaravanTransferResult CanSetRoute(CaravanRouteRequest request)
         {
             if (_executing || _disposed) return CaravanTransferResult.Rejected("Logistics is busy.");

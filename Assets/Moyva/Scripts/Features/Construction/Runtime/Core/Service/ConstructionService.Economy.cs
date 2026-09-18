@@ -78,6 +78,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return _lastActionMessage;
         }
 
+        public IReadOnlyDictionary<string, float> GetBuildingResourceCosts(string buildingId)
+        {
+            return BuildConstructionCostMap(buildingId);
+        }
+
         private bool TryValidateConstructionResources(
             Vector2Int position,
             string buildingId,
@@ -137,6 +142,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 reason = "Не знайдено поселення/замок для списання ресурсів у цій зоні будівництва.";
                 return false;
             }
+
+            // Prove affordability against pool − other reservations + this
+            // placement's own delivered stock BEFORE touching reservations, so
+            // a failed commit never destroys an in-flight supply order.
+            var spendable = _economyInfoMediator.GetSettlementResourcesForPlacement(
+                settlement.SettlementId, position);
+            foreach (var pair in costs)
+            {
+                float have = spendable != null && spendable.TryGetValue(pair.Key, out var v) ? v : 0f;
+                if (have + 0.0001f < pair.Value)
+                {
+                    reason = $"Недостатньо ресурсу '{pair.Key}': потрібно {pair.Value:0.#}, доступно {have:0.#}.";
+                    return false;
+                }
+            }
+
+            // Supply deliveries reserved for this placement are released so the
+            // placement can spend its own delivered stock.
+            _economyInfoMediator.ReleaseConstructionSupplyReservations(position);
 
             if (!_economyInfoMediator.TryConsumeSettlementResources(settlement.SettlementId, costs, out reason))
                 return false;
@@ -232,7 +256,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     balances: new List<ConstructionResourceBalance>());
             }
 
-            var available = _economyInfoMediator.GetSettlementResourceTotals(settlement.SettlementId);
+            var available = _economyInfoMediator.GetSettlementResourcesForPlacement(
+                settlement.SettlementId, position);
             var reserved = includePendingPlacements
                 ? BuildReservedConstructionCosts(settlement.SettlementId, ownerId, ignoredPendingPosition)
                 : new Dictionary<string, float>(StringComparer.Ordinal);

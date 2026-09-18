@@ -20,6 +20,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly IBuildingRegistry _buildings;
         private readonly IConstructionPlacementQuery _placementQuery;
         private readonly IConstructionPrepaidPlacementExecutor _prepaidPlacement;
+        private readonly LazyInject<ConstructionSupplyService> _constructionSupply;
         private readonly Dictionary<string, CargoState> _cargo = new(StringComparer.Ordinal);
         private readonly Dictionary<Vector2Int, Dictionary<string, float>> _loot = new();
         private bool _executing;
@@ -35,7 +36,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
             LazyInject<ICaravanGameplayAccess> gameplay,
             [InjectOptional] IBuildingRegistry buildings = null,
             [InjectOptional] IConstructionPlacementQuery placementQuery = null,
-            [InjectOptional] IConstructionPrepaidPlacementExecutor prepaidPlacement = null)
+            [InjectOptional] IConstructionPrepaidPlacementExecutor prepaidPlacement = null,
+            [InjectOptional] LazyInject<ConstructionSupplyService> constructionSupply = null)
         {
             _settlements = settlements;
             _signals = signals;
@@ -43,6 +45,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _buildings = buildings;
             _placementQuery = placementQuery;
             _prepaidPlacement = prepaidPlacement;
+            _constructionSupply = constructionSupply;
         }
 
         public event Action Changed;
@@ -78,6 +81,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (!fromRoute && HasActiveRoute(request.UnitId))
                 return CaravanTransferResult.Rejected("Stop the route before handling cargo manually.");
             if (_executing) return CaravanTransferResult.Rejected("A cargo operation is already in progress.");
+            // Route loads release the dispatching order's source reservation so the
+            // wagon can take stock that was held for it at dispatch time.
+            if (fromRoute && request.Operation == CaravanCargoOperation.Load)
+                _constructionSupply?.Value?.ReleaseRouteLoadReservations(request);
             var result = Validate(request, out var unit, out var settlement, out var warehouse, requireAuthority);
             if (!result.Succeeded) return result;
             // Freeze the batch before mutation; notify only after both inventories commit.
@@ -173,9 +180,19 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (requireAuthority && !_gameplay.Value.CanAccessWarehouse(request.UnitId, position, out reason))
                 return CaravanTransferResult.Rejected(reason);
             if (request.Operation == CaravanCargoOperation.Load)
-                return ContainsAll(warehouse, request.Resources) && ContainsAll(settlement.ResourcePool, request.Resources)
-                    ? CaravanTransferResult.Success()
-                    : CaravanTransferResult.Rejected("This warehouse does not contain the selected cargo.");
+            {
+                foreach (var pair in request.Resources)
+                {
+                    float freeInWarehouse = warehouse.TryGetValue(pair.Key, out var stored)
+                        ? stored - settlement.GetReservedResourceAt(request.WarehouseKey, pair.Key)
+                        : 0f;
+                    float freeInSettlement = settlement.GetAvailableResource(pair.Key);
+                    if (freeInWarehouse + Epsilon < pair.Value || freeInSettlement + Epsilon < pair.Value)
+                        return CaravanTransferResult.Rejected(
+                            "This warehouse does not contain the selected cargo (some stock is reserved).");
+                }
+                return CaravanTransferResult.Success();
+            }
 
             if (!ContainsAll(cargo?.Resources, request.Resources))
                 return CaravanTransferResult.Rejected("The wagon does not contain the selected cargo.");

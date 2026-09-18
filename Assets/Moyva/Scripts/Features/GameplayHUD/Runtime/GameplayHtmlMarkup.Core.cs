@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private static void AppendTopBar(StringBuilder html, GameplayHtmlSnapshot snapshot, GameplayHtmlState state)
         {
             html.Append("<view className=\"top-section kingdom-summary\"><view className=\"brand-mark\"></view><view className=\"stack\"><text className=\"eyebrow\">KINGDOM</text><text className=\"title\">")
-                .Append(E(snapshot.KingdomName)).Append("</text></view><view className=\"resources\">");
+                .Append(E(snapshot.KingdomName)).Append("</text></view><view className=\"resources\" data-tooltip=\"Kingdom-wide totals — construction spends local settlement stock\">");
             int resourceCount = Math.Min(4, snapshot.Resources.Length);
             for (int index = 0; index < resourceCount; index++)
             {
@@ -140,6 +140,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 html.Append("</view></scroll>");
                 AppendConstructionPager(html, pageIndex, pageCount, visibleCount, firstIndex, lastExclusive);
                 html.Append("</view></view>");
+                return;
+            }
+
+            if (state.OpenPanelId == GameplayHtmlPanel.Supply)
+            {
+                AppendSupplyPanel(html, snapshot, state);
                 return;
             }
 
@@ -328,6 +334,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 html.Append(Button("ROTATE", "Globals.gameplay.RotatePlacement()", "button", "Rotate placement"))
                     .Append(Button("UNDO", "Globals.gameplay.UndoPlacement()", "button", "Undo placement"))
                     .Append(Button("CONFIRM", "Globals.gameplay.ConfirmPlacement()", "button positive", "Confirm placement"));
+                if (snapshot.HasPendingSupplyDeficit)
+                    html.Append(Button("SUPPLY",
+                        $"Globals.gameplay.OpenSupply({snapshot.PendingSupplyPosition.x},{snapshot.PendingSupplyPosition.y},'{J(snapshot.PendingSupplyBuildingId)}')",
+                        "button primary",
+                        "Send missing resources to this settlement by wagon"));
                 if (!snapshot.RequiresFirstCastle)
                     html.Append(Button("CANCEL", "Globals.gameplay.CancelPlacement()", "button danger", "Cancel placement"));
             }
@@ -361,6 +372,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Tab(html, state, KingdomDashboardTab.Units, "UNITS", "ShowUnits");
             if (snapshot.TurnUiEnabled)
                 Tab(html, state, KingdomDashboardTab.Turns, "TURNS", "ShowTurns");
+            Tab(html, state, KingdomDashboardTab.Logistics, "LOGISTICS", "ShowLogistics");
             html.Append("</view><view className=\"dashboard-body\"><scroll className=\"dashboard-scroll\">");
             switch (state.DashboardTab)
             {
@@ -381,6 +393,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         AppendTurns(html, snapshot);
                     else
                         AppendOverview(html, snapshot);
+                    break;
+                case KingdomDashboardTab.Logistics:
+                    AppendLogistics(html, snapshot);
                     break;
                 default:
                     AppendOverview(html, snapshot);

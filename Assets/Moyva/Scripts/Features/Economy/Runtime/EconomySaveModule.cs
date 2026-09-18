@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
     [SaveModuleId("Kruty1918.Moyva.Economy.Runtime.EconomySaveModule")]
     internal sealed class EconomySaveModule : ISaveModule
     {
-        private const int SchemaVersion = 4;
+        private const int SchemaVersion = 5;
         private const string ModuleLogTag =
             "[MoyvaConstructionModules]";
         private const string PerfLogTag =
@@ -93,6 +93,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (version != 1
                 && version != 2
                 && version != 3
+                && version != 4
                 && version != SchemaVersion)
             {
                 return;
@@ -231,6 +232,19 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 }
 
                 context.Writer.Write(
+                    settlement.ReservedWarehouses.Count);
+                foreach (var reservedPair
+                         in settlement.ReservedWarehouses)
+                {
+                    context.Writer.Write(
+                        reservedPair.Key
+                        ?? string.Empty);
+                    WriteFloatMap(
+                        context,
+                        reservedPair.Value);
+                }
+
+                context.Writer.Write(
                     settlement.WorkerAssignments.Count);
                 foreach (var assignment
                          in settlement.WorkerAssignments)
@@ -347,6 +361,27 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     ReadFloatMap(context, pool);
                     settlement.Warehouses[
                         warehouseKey] = pool;
+                }
+
+                if (version >= 5)
+                {
+                    int reservedCount =
+                        Math.Max(
+                            0,
+                            context.Reader.ReadInt32());
+                    for (int reservedIndex = 0;
+                         reservedIndex < reservedCount;
+                         reservedIndex++)
+                    {
+                        string warehouseKey =
+                            context.Reader.ReadString();
+                        var pool =
+                            new Dictionary<string, float>(
+                                StringComparer.Ordinal);
+                        ReadFloatMap(context, pool);
+                        settlement.ReservedWarehouses[
+                            warehouseKey] = pool;
+                    }
                 }
 
                 int assignmentCount =
@@ -487,6 +522,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
             string,
             Dictionary<string, float>>
             Warehouses =
+                new(StringComparer.Ordinal);
+        public readonly Dictionary<
+            string,
+            Dictionary<string, float>>
+            ReservedWarehouses =
                 new(StringComparer.Ordinal);
         public readonly Dictionary<string, int>
             WorkerAssignments =

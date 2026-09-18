@@ -27,6 +27,12 @@ namespace Kruty1918.Moyva.Economy.Runtime
         public Dictionary<string, Dictionary<string, float>> WarehouseResourcePools =
             new Dictionary<string, Dictionary<string, float>>(StringComparer.Ordinal);
 
+        // Reserved resources per warehouse instance. Reserved stock stays inside
+        // the settlement pool but is only spendable by its owning consumer
+        // (e.g. construction supply deliveries); released on confirm/cancel.
+        public Dictionary<string, Dictionary<string, float>> WarehouseReservedPools =
+            new Dictionary<string, Dictionary<string, float>>(StringComparer.Ordinal);
+
         public Dictionary<string, EconomyBuildingWarehousePolicy> WarehousePolicies =
             new Dictionary<string, EconomyBuildingWarehousePolicy>(StringComparer.Ordinal);
 
@@ -76,7 +82,12 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         public bool ConsumeResource(string resourceId, float amount)
         {
-            if (!ResourcePool.TryGetValue(resourceId, out var current) || current < amount)
+            if (!ResourcePool.TryGetValue(resourceId, out var current))
+                return false;
+
+            // Reserved stock is spendable only by its owning consumer; callers
+            // releasing a reservation do so before consuming.
+            if (GetAvailableResource(resourceId) + 0.0001f < amount)
                 return false;
 
             ResourcePool[resourceId] = current - amount;
@@ -92,7 +103,14 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 if (!warehouse.Value.TryGetValue(resourceId, out var warehouseAmount) || warehouseAmount <= 0f)
                     continue;
 
-                float consumed = Math.Min(warehouseAmount, remaining);
+                // Reserved stock belongs to its owning consumer (construction
+                // supply) and is not spendable by generic consumption.
+                float freeAmount = Math.Max(0f,
+                    warehouseAmount - GetReservedResourceAt(warehouse.Key, resourceId));
+                if (freeAmount <= 0f)
+                    continue;
+
+                float consumed = Math.Min(freeAmount, remaining);
                 warehouse.Value[resourceId] = warehouseAmount - consumed;
                 if (warehouse.Value[resourceId] <= 0.0001f)
                     warehouse.Value.Remove(resourceId);
@@ -121,6 +139,81 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             WarehouseResourcePools.Remove(warehouseKey);
             WarehousePolicies.Remove(warehouseKey);
+            WarehouseReservedPools.Remove(warehouseKey);
+        }
+
+        public float GetReservedResourceAt(string warehouseKey, string resourceId)
+        {
+            if (string.IsNullOrWhiteSpace(warehouseKey) || string.IsNullOrWhiteSpace(resourceId)
+                || !WarehouseReservedPools.TryGetValue(warehouseKey, out var reserved)
+                || reserved == null)
+                return 0f;
+            return reserved.TryGetValue(resourceId, out var amount) ? amount : 0f;
+        }
+
+        public float GetTotalReservedResource(string resourceId)
+        {
+            if (string.IsNullOrWhiteSpace(resourceId))
+                return 0f;
+
+            float total = 0f;
+            foreach (var reserved in WarehouseReservedPools.Values)
+            {
+                if (reserved != null && reserved.TryGetValue(resourceId, out var amount))
+                    total += amount;
+            }
+            return total;
+        }
+
+        public Dictionary<string, float> GetReservedSnapshot()
+        {
+            var result = new Dictionary<string, float>(StringComparer.Ordinal);
+            foreach (var reserved in WarehouseReservedPools.Values)
+            {
+                if (reserved == null)
+                    continue;
+                foreach (var pair in reserved)
+                {
+                    if (result.ContainsKey(pair.Key))
+                        result[pair.Key] += pair.Value;
+                    else
+                        result[pair.Key] = pair.Value;
+                }
+            }
+            return result;
+        }
+
+        public float GetAvailableResource(string resourceId)
+        {
+            return Math.Max(0f, GetResource(resourceId) - GetTotalReservedResource(resourceId));
+        }
+
+        public void ReserveResourceAt(string warehouseKey, string resourceId, float amount)
+        {
+            if (string.IsNullOrWhiteSpace(warehouseKey) || string.IsNullOrWhiteSpace(resourceId)
+                || !(amount > 0f))
+                return;
+            if (!WarehouseReservedPools.TryGetValue(warehouseKey, out var reserved) || reserved == null)
+            {
+                reserved = new Dictionary<string, float>(StringComparer.Ordinal);
+                WarehouseReservedPools[warehouseKey] = reserved;
+            }
+            reserved.TryGetValue(resourceId, out var current);
+            reserved[resourceId] = current + amount;
+        }
+
+        public void ReleaseResourceAt(string warehouseKey, string resourceId, float amount)
+        {
+            if (string.IsNullOrWhiteSpace(warehouseKey) || string.IsNullOrWhiteSpace(resourceId)
+                || !(amount > 0f)
+                || !WarehouseReservedPools.TryGetValue(warehouseKey, out var reserved)
+                || reserved == null)
+                return;
+            reserved.TryGetValue(resourceId, out var current);
+            float next = current - amount;
+            if (next > 0.0001f) reserved[resourceId] = next;
+            else reserved.Remove(resourceId);
+            if (reserved.Count == 0) WarehouseReservedPools.Remove(warehouseKey);
         }
 
         public void ConfigureWarehousePolicy(

@@ -81,7 +81,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (string.IsNullOrWhiteSpace(unitId) || !_units.TryGetUnitPosition(unitId, out var position))
                 return false;
             var config = _configs.GetConfig(_units.GetUnitTypeId(unitId));
-            if (config == null || float.IsNaN(config.CargoCapacity)
+            if (config == null || !config.CanTransportCargo || float.IsNaN(config.CargoCapacity)
                 || float.IsInfinity(config.CargoCapacity) || config.CargoCapacity <= 0) return false;
             unit = new CaravanUnitSnapshot(_ownership.GetUnitOwnerId(unitId), position, config.CargoCapacity);
             return true;

@@ -50,6 +50,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private IUnitOwnershipQuery _unitOwnershipQuery;
         private readonly IUnitFactory            _unitFactory;
         private readonly ICaravanService _caravanService;
+        private readonly IConstructionSupplyService _constructionSupply;
         private readonly ICombatCommandService _combatCommandService;
         private readonly IHealthRegistry _healthRegistry;
         private readonly ISettlementCaptureService _settlementCaptureService;
@@ -82,6 +83,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery = null,
             [InjectOptional] IUnitFactory unitFactory = null,
             [InjectOptional] ICaravanService caravanService = null,
+            [InjectOptional] IConstructionSupplyService constructionSupply = null,
             [InjectOptional] ICombatCommandService combatCommandService = null,
             [InjectOptional] IHealthRegistry healthRegistry = null,
             [InjectOptional] ISettlementCaptureService settlementCaptureService = null,
@@ -103,6 +105,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _unitOwnershipQuery = unitOwnershipQuery;
             _unitFactory         = unitFactory;
             _caravanService = caravanService;
+            _constructionSupply = constructionSupply;
             _combatCommandService = combatCommandService;
             _healthRegistry = healthRegistry;
             _settlementCaptureService = settlementCaptureService;
@@ -184,6 +187,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _signalBus.Subscribe<UnitMovedSignal>(OnUnitMovedLocally);
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreatedLocally);
             _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyedLocally);
+            _signalBus.Subscribe<ConstructionSupplyOrderClosedSignal>(OnConstructionSupplyOrderClosed);
             if (_caravanService != null)
                 _caravanService.RouteTransferCommitted += OnRouteTransferCommittedLocally;
 
@@ -222,6 +226,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _signalBus.TryUnsubscribe<UnitMovedSignal>(OnUnitMovedLocally);
             _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreatedLocally);
             _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyedLocally);
+            _signalBus.TryUnsubscribe<ConstructionSupplyOrderClosedSignal>(OnConstructionSupplyOrderClosed);
             if (_caravanService != null)
                 _caravanService.RouteTransferCommitted -= OnRouteTransferCommittedLocally;
             _lifetime.Dispose();

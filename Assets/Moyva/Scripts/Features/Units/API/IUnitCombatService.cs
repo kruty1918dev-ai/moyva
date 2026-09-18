@@ -16,6 +16,7 @@ namespace Kruty1918.Moyva.Units.API
         TargetNotVisible,
         TargetNotAttackable,
         AttackUnavailable,
+        AttackerNotCombatCapable,
     }
 
     public readonly struct UnitHealthSnapshot

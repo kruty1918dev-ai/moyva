@@ -12,6 +12,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         Construction,
         Kingdom,
         Notifications,
+        Supply,
     }
 
     internal enum KingdomDashboardTab
@@ -22,6 +23,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         Buildings,
         Units,
         Turns,
+        Logistics,
     }
 
     internal enum GameplaySelectionTab
@@ -49,6 +51,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public string ConstructionCategory { get; private set; } = string.Empty;
         public string ConstructionSearch { get; private set; } = string.Empty;
         public int ConstructionPageIndex { get; private set; }
+        public Vector2Int? SupplyPosition { get; private set; }
+        public string SupplyBuildingId { get; private set; } = string.Empty;
         public IReadOnlyList<GameplayNotificationViewSnapshot> Notifications => _notifications;
         public int UnreadNotifications { get; private set; }
         public bool Dirty { get; private set; } = true;
@@ -71,6 +75,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (OpenPanelId == GameplayHtmlPanel.None)
                 return;
             OpenPanelId = GameplayHtmlPanel.None;
+            SupplyPosition = null;
+            SupplyBuildingId = string.Empty;
+            MarkDirty();
+        }
+
+        public void OpenSupplyPanel(Vector2Int position, string buildingId)
+        {
+            SupplyPosition = position;
+            SupplyBuildingId = buildingId?.Trim() ?? string.Empty;
+            OpenPanelId = GameplayHtmlPanel.Supply;
             MarkDirty();
         }
 
@@ -486,6 +500,25 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         }
     }
 
+    internal readonly struct GameplayLogisticsEntrySnapshot
+    {
+        public GameplayLogisticsEntrySnapshot(string kind, string id, string title, string detail,
+            Vector2Int? focusPosition)
+        {
+            Kind = kind ?? string.Empty;
+            Id = id ?? string.Empty;
+            Title = title ?? string.Empty;
+            Detail = detail ?? string.Empty;
+            FocusPosition = focusPosition;
+        }
+
+        public string Kind { get; }
+        public string Id { get; }
+        public string Title { get; }
+        public string Detail { get; }
+        public Vector2Int? FocusPosition { get; }
+    }
+
     internal readonly struct GameplayRecruitmentQueueSnapshot
     {
         public GameplayRecruitmentQueueSnapshot(
@@ -573,6 +606,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public GameplayWarehouseViewSnapshot[] Warehouses = Array.Empty<GameplayWarehouseViewSnapshot>();
         public GameplaySettlementViewSnapshot[] Settlements = Array.Empty<GameplaySettlementViewSnapshot>();
         public GameplayTurnHistoryViewSnapshot[] TurnHistory = Array.Empty<GameplayTurnHistoryViewSnapshot>();
+        public GameplaySupplySnapshot Supply;
+        public GameplayLogisticsEntrySnapshot[] Logistics = Array.Empty<GameplayLogisticsEntrySnapshot>();
+        public bool HasPendingSupplyDeficit;
+        public Vector2Int PendingSupplyPosition;
+        public string PendingSupplyBuildingId = string.Empty;
 
         internal static GameplayHtmlSnapshot CreatePreview(GameplayHtmlAnchor.PreviewScreen screen)
         {

@@ -52,6 +52,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly ILocalGameplayRoleResolver _roleResolver;
         private readonly IGameplayProgressClock _progressClock;
         private readonly GameplayCargoPanel _cargoPanel;
+        private readonly GameplaySupplyPanel _supplyPanel;
+        private readonly IConstructionSupplyService _supply;
+        private readonly ICaravanService _caravans;
         private readonly Dictionary<int, Sprite> _prefabSpriteCache = new();
         private readonly Dictionary<string, Sprite> _icons = new(StringComparer.Ordinal);
         private readonly HashSet<string> _reportedMissingIcons = new(StringComparer.Ordinal);
@@ -89,6 +92,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] EconomyDatabaseSO economyDatabase = null,
             [InjectOptional] GameplayCargoPanel cargoPanel = null,
+            [InjectOptional] GameplaySupplyPanel supplyPanel = null,
+            [InjectOptional] IConstructionSupplyService supply = null,
+            [InjectOptional] ICaravanService caravans = null,
             [InjectOptional] IConstructionLifecycle lifecycle = null,
             [InjectOptional] IEconomyInfoMediator population = null)
         {
@@ -116,6 +122,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _roleResolver = roleResolver;
             _progressClock = progressClock;
             _cargoPanel = cargoPanel;
+            _supplyPanel = supplyPanel;
+            _supply = supply;
+            _caravans = caravans;
 
             foreach (var resource in MoyvaJsonRuntime.GetAll<EconomyResourceDefinition>())
                 if (resource != null && resource.Icon != null)
@@ -148,7 +157,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 BuildingPreviewState.Valid => "Valid location. Ready to confirm.",
                 BuildingPreviewState.Blocked => "This location is blocked.",
-                BuildingPreviewState.Unaffordable => "The kingdom cannot afford this placement.",
+                BuildingPreviewState.Unaffordable => "The local settlement cannot afford this placement.",
                 _ => "Choose a location on the map.",
             };
             return previousState != _lastPreviewState
@@ -194,8 +203,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 snapshot.CastleBuildingId = castleId;
 
             snapshot.Resources = CaptureResources(ownerId);
+            CapturePendingSupply(snapshot, pending, ownerId);
             if (state?.OpenPanelId == GameplayHtmlPanel.Construction)
                 snapshot.BuildingOptions = CaptureBuildingOptions(ownerId);
+            if (state?.OpenPanelId == GameplayHtmlPanel.Supply)
+                snapshot.Supply = _supplyPanel?.Capture();
             if (state?.OpenPanelId == GameplayHtmlPanel.Kingdom)
             {
                 snapshot.BuildingGroups = CaptureBuildingGroups(ownerId, out int buildingCount);
@@ -207,6 +219,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 snapshot.SettlementCount = settlements;
                 snapshot.Population = population;
                 snapshot.TurnHistory = CaptureTurnHistory();
+                snapshot.Logistics = CaptureLogistics(ownerId);
             }
             CaptureRecruitment(snapshot, ownerId);
             CaptureSelectionDetails(snapshot, ownerId);
@@ -427,7 +440,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         if (!string.IsNullOrWhiteSpace(status.ErrorMessage))
                             return status.ErrorMessage;
                         if (!status.IsAffordable)
-                            return "The kingdom cannot afford this placement.";
+                            return string.IsNullOrWhiteSpace(status.SettlementName)
+                                || status.SettlementName == "Unknown"
+                                ? "The local settlement cannot afford this placement."
+                                : $"{status.SettlementName} cannot afford this placement — supply it by wagon.";
                         return "Valid location. Ready to confirm.";
                     }
                 }
@@ -439,6 +455,61 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return string.IsNullOrWhiteSpace(_lastPreviewMessage)
                 ? "Choose a location on the map."
                 : _lastPreviewMessage;
+        }
+
+        private void CapturePendingSupply(GameplayHtmlSnapshot snapshot,
+            IReadOnlyDictionary<Vector2Int, string> pending, string ownerId)
+        {
+            if (pending == null || _construction == null || _supply == null)
+                return;
+            foreach (var pair in pending)
+            {
+                if (!_construction.TryGetPendingPlacementStatus(pair.Key, out var status)
+                    || status.IsAffordable || !status.HasSettlement)
+                    continue;
+                snapshot.HasPendingSupplyDeficit = true;
+                snapshot.PendingSupplyPosition = pair.Key;
+                snapshot.PendingSupplyBuildingId = pair.Value;
+                return;
+            }
+        }
+
+        private GameplayLogisticsEntrySnapshot[] CaptureLogistics(string ownerId)
+        {
+            var entries = new List<GameplayLogisticsEntrySnapshot>();
+            if (_caravans != null)
+            {
+                foreach (var route in _caravans.GetRoutes(ownerId))
+                {
+                    var parts = new List<string>();
+                    if (route.Request.Resources != null)
+                        foreach (var pair in route.Request.Resources)
+                            parts.Add($"{DisplayResource(pair.Key)} {Amount(pair.Value)}");
+                    entries.Add(new GameplayLogisticsEntrySnapshot(
+                        "route",
+                        route.Request.UnitId,
+                        $"{route.Request.UnitId} — {route.Phase}",
+                        $"{route.Status} Cargo: {string.Join(", ", parts)}",
+                        null));
+                }
+            }
+            if (_supply != null)
+            {
+                foreach (var order in _supply.GetOrders(ownerId))
+                {
+                    var parts = new List<string>();
+                    if (order.Delivered != null)
+                        foreach (var pair in order.Delivered)
+                            parts.Add($"{DisplayResource(pair.Key)} {Amount(pair.Value)}");
+                    entries.Add(new GameplayLogisticsEntrySnapshot(
+                        "order",
+                        order.OrderId,
+                        $"Supply: {ResolveBuildingDisplayName(order.BuildingId)} → {order.SettlementName}",
+                        $"{order.Status} · {order.WagonIds?.Count ?? 0} wagon(s) · delivered {string.Join(", ", parts)}",
+                        order.Position));
+                }
+            }
+            return entries.ToArray();
         }
 
         private GameplayResourceSnapshot[] CaptureResources(string ownerId)
@@ -714,6 +785,33 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         facts.Add(new GameplayFactSnapshot("Construction workforce", $"{residents.ConstructionSpeed:P0}",
                             "Speed updates with available adult population"));
                     }
+                    if (_population != null
+                        && _population.TryGetSettlementContext(_selectionPosition, out var settlementContext))
+                    {
+                        facts.Add(new GameplayFactSnapshot(
+                            "Settlement",
+                            settlementContext.SettlementName,
+                            string.Equals(settlementContext.OwnerId, ownerId, StringComparison.Ordinal)
+                                ? "Funds local construction"
+                                : "Foreign settlement stock"));
+                        if (string.Equals(settlementContext.OwnerId, ownerId, StringComparison.Ordinal))
+                        {
+                            var local = _population.GetSettlementResourceTotals(settlementContext.SettlementId);
+                            var reserved = _population.GetSettlementReservedResourceTotals(settlementContext.SettlementId);
+                            var parts = new List<string>();
+                            foreach (var pair in local)
+                            {
+                                float heldBack = reserved != null && reserved.TryGetValue(pair.Key, out var held) ? held : 0f;
+                                parts.Add(heldBack > 0.0001f
+                                    ? $"{DisplayResource(pair.Key)} {Amount(pair.Value)} ({Amount(heldBack)} reserved)"
+                                    : $"{DisplayResource(pair.Key)} {Amount(pair.Value)}");
+                            }
+                            facts.Add(new GameplayFactSnapshot(
+                                "Local stock",
+                                parts.Count > 0 ? string.Join(", ", parts) : "Empty",
+                                "Only local stock funds construction here"));
+                        }
+                    }
                     break;
                 }
                 case WorldInfoSelectionKind.Unit:
@@ -734,9 +832,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         StringComparison.Ordinal);
                     if (snapshot.SelectionOwnedByLocalPlayer)
                         _commandUnitId = _selectionId;
+                    bool isTransport = config?.CanTransportCargo == true;
                     snapshot.SelectionSubtitle = config == null
                         ? "Selected unit"
-                        : $"{config.Role} / {config.CombatType}";
+                        : isTransport
+                            ? "Transport / Logistics"
+                            : $"{config.Role} / {config.CombatType}";
                     facts.Add(new GameplayFactSnapshot(
                         "Ownership",
                         snapshot.SelectionOwnedByLocalPlayer ? "Your kingdom" : "Another kingdom",
@@ -752,7 +853,54 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     {
                         facts.Add(new GameplayFactSnapshot("Hit points", config.HitPoints.ToString(CultureInfo.InvariantCulture), "Base unit profile"));
                         facts.Add(new GameplayFactSnapshot("Movement", config.MovementPointsPerTurn.ToString("0.#", CultureInfo.InvariantCulture), "Points per turn"));
-                        facts.Add(new GameplayFactSnapshot("Attack range", config.AttackRange.ToString(CultureInfo.InvariantCulture), "Grid tiles"));
+                        if (isTransport)
+                        {
+                            float cargoUsed = 0f;
+                            if (_caravans != null
+                                && _caravans.TryGetCargo(unitOwner, _selectionId, out var cargo)
+                                && cargo.Resources != null)
+                                foreach (var pair in cargo.Resources) cargoUsed += pair.Value;
+                            facts.Add(new GameplayFactSnapshot(
+                                "Cargo",
+                                $"{Amount(cargoUsed)} / {Amount(config.CargoCapacity)}",
+                                "Transport capacity — this unit cannot fight or capture"));
+                        }
+                        else
+                        {
+                            facts.Add(new GameplayFactSnapshot("Attack range", config.AttackRange.ToString(CultureInfo.InvariantCulture), "Grid tiles"));
+                        }
+                    }
+                    break;
+                }
+                case WorldInfoSelectionKind.MapObject:
+                {
+                    snapshot.SelectionTitle = Display(_selectionId);
+                    snapshot.SelectionSubtitle = "Selected map object";
+                    facts.Add(new GameplayFactSnapshot(
+                        "Ownership",
+                        snapshot.SelectionOwnedByLocalPlayer ? "Your kingdom" : "Another kingdom",
+                        "Command authority"));
+                    if (_population != null
+                        && _population.TryGetSettlementContext(_selectionPosition, out var settlementContext))
+                    {
+                        snapshot.SelectionTitle = settlementContext.SettlementName;
+                        snapshot.SelectionSubtitle = string.Equals(settlementContext.OwnerId, ownerId, StringComparison.Ordinal)
+                            ? "Your settlement"
+                            : "Foreign settlement";
+                        var local = _population.GetSettlementResourceTotals(settlementContext.SettlementId);
+                        var reserved = _population.GetSettlementReservedResourceTotals(settlementContext.SettlementId);
+                        var parts = new List<string>();
+                        foreach (var pair in local)
+                        {
+                            float heldBack = reserved != null && reserved.TryGetValue(pair.Key, out var held) ? held : 0f;
+                            parts.Add(heldBack > 0.0001f
+                                ? $"{DisplayResource(pair.Key)} {Amount(pair.Value)} ({Amount(heldBack)} reserved)"
+                                : $"{DisplayResource(pair.Key)} {Amount(pair.Value)}");
+                        }
+                        facts.Add(new GameplayFactSnapshot(
+                            "Local stock",
+                            parts.Count > 0 ? string.Join(", ", parts) : "Empty",
+                            "Only local stock funds construction here"));
                     }
                     break;
                 }
@@ -1146,6 +1294,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             => string.Equals(ownerId, "player_0", StringComparison.OrdinalIgnoreCase)
                 ? "Your Kingdom"
                 : Display(ownerId);
+
+        private static string Amount(float value)
+            => value.ToString("0.#", CultureInfo.InvariantCulture);
 
         private static string Display(string value)
         {

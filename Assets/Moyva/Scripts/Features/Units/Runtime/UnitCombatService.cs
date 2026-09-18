@@ -103,6 +103,9 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (!TryGetConfig(attackerUnitId, out attacker) || !TryGetConfig(targetUnitId, out ignored))
             { reason = UnitAttackRejectReason.TargetNotAttackable; return false; }
 
+            if (attacker.CanTransportCargo)
+            { reason = UnitAttackRejectReason.AttackerNotCombatCapable; return false; }
+
             if (GridDistance(attackerPosition, targetPosition) > Mathf.Max(1, attacker.AttackRange))
             { reason = UnitAttackRejectReason.TargetOutOfRange; return false; }
 

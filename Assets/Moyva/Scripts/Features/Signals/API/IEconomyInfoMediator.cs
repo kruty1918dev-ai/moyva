@@ -46,6 +46,24 @@ namespace Kruty1918.Moyva.Signals
         public string SettlementId;
     }
 
+    public struct ConstructionSupplyReadySignal
+    {
+        public string OwnerId;
+        public string SettlementId;
+        public string SettlementName;
+        public string BuildingId;
+        public Vector2Int Position;
+    }
+
+    /// <summary>Fired after a supply order closes (cancel/confirm) so peers can
+    /// mirror the order teardown and stop replicated wagon routes.</summary>
+    public struct ConstructionSupplyOrderClosedSignal
+    {
+        public string OwnerId;
+        public Vector2Int Position;
+        public IReadOnlyList<string> WagonIds;
+    }
+
     public interface IEconomyInfoMediator
     {
         RecruitmentPopulationSnapshot GetRecruitmentPopulation(string ownerId, Vector2Int position);
@@ -64,6 +82,11 @@ namespace Kruty1918.Moyva.Signals
         IReadOnlyDictionary<string, float> GetWarehouseResourceTotals(Vector2Int warehousePosition);
         IReadOnlyDictionary<string, float> GetSettlementWarehousesTotal(string settlementId);
         IReadOnlyDictionary<string, float> GetSettlementResourceTotals(string settlementId);
+        IReadOnlyDictionary<string, float> GetSettlementReservedResourceTotals(string settlementId);
+        IReadOnlyDictionary<string, float> GetSettlementAvailableResourceTotals(string settlementId);
+        void ReleaseConstructionSupplyReservations(Vector2Int placementPosition);
+        IReadOnlyDictionary<string, float> GetSettlementResourcesForPlacement(
+            string settlementId, Vector2Int placementPosition);
         IReadOnlyDictionary<string, float> GetOwnerPoolResourceTotals(string ownerId);
         IReadOnlyDictionary<string, float> GetOwnerResourceTotals(string ownerId);
         string GetResourceDisplayName(string resourceId);
