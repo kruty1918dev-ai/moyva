@@ -1,0 +1,23 @@
+{
+  "name": "Kruty1918.Moyva.Tests.Performance.PlayMode",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Performance.PlayMode",
+  "references": [
+    "Zenject",
+    "Kruty1918.Moyva.Bootstrap",
+    "Kruty1918.Moyva.HomeMenu",
+    "Kruty1918.Moyva.Generator",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.Grid",
+    "UnityHTML.Runtime",
+    "Unity.InputSystem"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "autoReferenced": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
