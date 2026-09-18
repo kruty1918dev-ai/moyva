@@ -23,19 +23,19 @@
       "id": "normal",
       "displayName": "Нормально",
       "description": "Стандартний бот. За замовчуванням heuristic, поки не призначена сумісна модель.",
-      "policyMode": 0,
+      "policyMode": 2,
       "visibleDelay": 0.35,
       "modelProfile": {
-        "enabled": false,
-        "modelName": "Нормально",
+        "enabled": true,
+        "modelName": "smoke-10k-v2",
         "modelResourcePath": "AI/Models/MoyvaStrategy_Normal",
-        "trainingRunId": "",
+        "trainingRunId": "smoke-10k-v2",
         "curriculumStage": 8,
-        "notes": "Для ML inference зміни policyMode на 2, enabled на true і додай сумісну модель у Resources.",
+        "notes": "Deployed by moyva deploy from smoke-10k-v2.",
         "contractVersion": 2,
-        "contractHash": "5a00e6a1cb5ae597d108f32f94a4fc9ba41a93cfd4a2d491c0e1506fe21caadb"
+        "contractHash": "459f56a85539648b64fb8b71b29b286df862952c7204a22660943dacde78f964"
       },
-      "policyModeName": "Heuristic"
+      "policyModeName": "MLAgentsInference"
     },
     {
       "id": "hard",

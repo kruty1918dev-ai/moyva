@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Kruty1918.Moyva.AI.Bot;
 using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.InputRouting.API;
 using Kruty1918.Moyva.SaveSystem;
@@ -72,7 +73,7 @@ namespace Kruty1918.Moyva.Tests.Startup
             Assert.That(turns.BotRequests, Is.Zero);
             turns.TryEndTurn("human", out _);
             Assert.That(input.Blocked, Is.True);
-            Advance();
+            AdvanceUntil(() => turns.ActiveOwnerId == "human");
             Assert.That(turns.BotRequests, Is.EqualTo(1));
             Assert.That(turns.ActiveOwnerId, Is.EqualTo("human"));
             Assert.That(input.Blocked, Is.False);
@@ -86,11 +87,11 @@ namespace Kruty1918.Moyva.Tests.Startup
             var turns = new Turns { RejectBot = true };
             var input = CreateController(turns);
             turns.TryEndTurn("human", out _);
-            Advance();
+            AdvanceUntil(() => turns.BotRequests > 0);
             Assert.That(turns.ActiveOwnerId, Is.EqualTo("bot"));
             Assert.That(input.Blocked, Is.True);
             turns.RejectBot = false;
-            Advance();
+            AdvanceUntil(() => turns.ActiveOwnerId == "human");
             Assert.That(turns.ActiveOwnerId, Is.EqualTo("human"));
             turns.TryEndTurn("human", out _);
             ((IDisposable)_controller).Dispose();
@@ -111,13 +112,24 @@ namespace Kruty1918.Moyva.Tests.Startup
         {
             var input = new Input();
             var type = RuntimeType("BotController");
-            _controller = Activator.CreateInstance(type, new object[] { turns, input, null });
+            var gateway = new MoyvaBotTurnAdapter(turns);
+            var registry = new BotCapabilityRegistry();
+            registry.Register(new EndTurnBotCapability(gateway));
+            var config = new BotRuntimeConfig { visibleDelay = 0f, maxInvalidDecisions = 64 };
+            var orchestrator = new BotDecisionOrchestrator(gateway, registry, new EmptyBotPerceptionSource(),
+                new HeuristicBotPolicyDriver(), config, new BotTelemetryHub());
+            _controller = Activator.CreateInstance(type, new object[] { turns, input, null, orchestrator, config });
             type.GetMethod("Initialize").Invoke(_controller, null);
             return input;
         }
 
         private void Advance() => _controller.GetType().GetMethod("Advance",
             BindingFlags.Instance | BindingFlags.NonPublic).Invoke(_controller, new object[] { 0.5f });
+
+        private void AdvanceUntil(Func<bool> done, int maxTicks = 12)
+        {
+            for (int i = 0; i < maxTicks && !done(); i++) Advance();
+        }
 
         private static Type RuntimeType(string name) => typeof(StartingPositionInitializerSettings)
             .Assembly.GetType("Kruty1918.Moyva.Bootstrap.Runtime." + name, true);
@@ -133,7 +145,7 @@ namespace Kruty1918.Moyva.Tests.Startup
             public void EndPointerCapture(GameplayInputKind kind, int pointerId = -1) { }
         }
 
-        private sealed class Turns : ITurnService
+        private sealed class Turns : ITurnService, ITurnEndQuery
         {
             public event Action StateChanged;
             public TurnPhase Phase => TurnPhase.AwaitingInput;
@@ -147,6 +159,7 @@ namespace Kruty1918.Moyva.Tests.Startup
             public bool RejectBot;
             public bool IsOwnerActive(string ownerId) => ownerId == ActiveOwnerId;
             public bool CanOwnerAct(string ownerId, out string reason) { reason = null; return IsOwnerActive(ownerId); }
+            public bool CanEndTurn(string ownerId, out string reason) { reason = null; return IsOwnerActive(ownerId); }
             public bool TryRecordAction(string ownerId, string actionId) => IsOwnerActive(ownerId);
             public bool TryEndTurn(string ownerId, out string reason)
             {

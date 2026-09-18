@@ -97,6 +97,10 @@ def parser():
     c.add_argument("action",choices=["show","label","favorite","export","compare","reveal","delete","resume","test"]);c.add_argument("path");c.add_argument("value",nargs="?");c.add_argument("--confirm")
     e=sub.add_parser("evaluate",help="Report current inference support; never pretend training is evaluation")
     e.add_argument("model");e.add_argument("--seed",type=int,default=1918);e.add_argument("--episodes",type=int,default=10);e.add_argument("--visual",action="store_true")
+    d=sub.add_parser("deploy",help="Attach a trained ONNX to a gameplay bot difficulty (one command model setup)")
+    d.add_argument("model",nargs="?",help="run id (uses its exported MoyvaStrategy.onnx) or path to an .onnx checkpoint")
+    d.add_argument("--difficulty",help="Bot difficulty id to arm (default: registry defaultId)")
+    d.add_argument("--off",action="store_true",help="Detach the model and return the difficulty to the heuristic bot")
     pr=sub.add_parser("preset",help="Manage reusable local presets without changing source YAML")
     pr.add_argument("action",choices=["list","show","save","duplicate","reset"]);pr.add_argument("name",nargs="?");pr.add_argument("value",nargs="?",help="JSON object for save; destination name for duplicate")
     tb=sub.add_parser("tensorboard",help="Start/stop only CLI-owned TensorBoard on localhost")
@@ -113,6 +117,86 @@ def parser():
     s.add_argument("--set",metavar="JSON")
     w=sub.add_parser("_worker",help=argparse.SUPPRESS);w.add_argument("request")
     return p
+
+
+BOT_REGISTRY = "Assets/Moyva/Presets/AI/Resources/MoyvaBotDifficultyRegistry.json"
+BOT_MODELS_DIR = "Assets/Moyva/Presets/AI/Resources"
+
+
+def _deploy_contract(project, run_meta, source):
+    contract = (run_meta or {}).get("contract") or {}
+    if contract.get("hash") != project.contract()["hash"]:
+        raise ControlError("Model contract mismatch for " + source + ": checkpoint "
+                           + str(contract.get("hash") or "<unknown>") + " != runtime "
+                           + project.contract()["hash"] + ". Train a fresh checkpoint on this contract.")
+    return contract
+
+
+def _deploy_model_source(project, model):
+    onnx = Path(model)
+    if onnx.is_file():
+        if onnx.suffix.lower() != ".onnx":
+            raise ControlError("Deploy expects an exported .onnx model: " + model)
+        for candidate in (onnx.parent / "run.json", onnx.parent.parent / "run.json",
+                          onnx.parent / "checkpoint.json"):
+            meta = read_json(candidate, None)
+            if meta is not None:
+                return onnx, meta
+        raise ControlError("Cannot verify the contract of " + str(onnx)
+                           + ": no run.json/checkpoint.json next to it. Pass a run id instead.")
+    from .runs import RunStore
+    run_dir = RunStore(project).path(model)
+    if not run_dir.is_dir():
+        raise ControlError("Run not found: " + model)
+    onnx = run_dir / "MoyvaStrategy.onnx"
+    if not onnx.is_file():
+        raise ControlError("Run " + model + " has no exported MoyvaStrategy.onnx yet.")
+    return onnx, read_json(run_dir / "run.json", {})
+
+
+def deploy(project, model, difficulty_id, off):
+    registry_path = project.root / BOT_REGISTRY
+    registry = read_json(registry_path, None)
+    if registry is None or not isinstance(registry.get("difficulties"), list) or not registry["difficulties"]:
+        raise ControlError("Cannot read bot difficulty registry: " + str(registry_path))
+    difficulties = registry["difficulties"]
+    wanted = difficulty_id or registry.get("defaultId") or "normal"
+    entry = next((d for d in difficulties
+                  if isinstance(d, dict) and str(d.get("id", "")).lower() == str(wanted).lower()), None)
+    if entry is None:
+        raise ControlError("Unknown bot difficulty '" + str(wanted) + "'. Known: "
+                           + ", ".join(str(d.get("id")) for d in difficulties))
+    profile = entry.setdefault("modelProfile", {})
+    if off:
+        entry["policyMode"] = 0
+        entry["policyModeName"] = "Heuristic"
+        profile["enabled"] = False
+        atomic_json(registry_path, registry)
+        return {"difficulty": entry["id"], "policyMode": "Heuristic",
+                "note": "Model detached; the " + entry["id"] + " bot is heuristic again."}
+    if not model:
+        raise ControlError("deploy needs a run id or .onnx path (or --off to detach).")
+    onnx, meta = _deploy_model_source(project, model)
+    contract = _deploy_contract(project, meta, model)
+    resource = (profile.get("modelResourcePath") or "").strip() \
+        or "AI/Models/MoyvaStrategy_" + entry["id"][:1].upper() + entry["id"][1:]
+    target = contained(project.root, BOT_MODELS_DIR + "/" + resource + ".onnx")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(onnx, target)
+    run_id = meta.get("run_id") or Path(model).stem
+    entry["policyMode"] = 2
+    entry["policyModeName"] = "MLAgentsInference"
+    profile.update(enabled=True, modelName=run_id, modelResourcePath=resource,
+                   trainingRunId=str(run_id), contractVersion=contract.get("version", 2),
+                   contractHash=contract["hash"],
+                   notes="Deployed by moyva deploy from " + str(run_id) + ".")
+    atomic_json(registry_path, registry)
+    return {"difficulty": entry["id"], "policyMode": "MLAgentsInference", "model": str(target),
+            "resource": "Resources.Load<ModelAsset>(\"" + resource + "\")",
+            "contractHash": contract["hash"], "run": run_id,
+            "note": "Bot matches on difficulty '" + entry["id"] + "' now run this model; "
+                    "Unity will import the .onnx as a ModelAsset on next refresh. "
+                    "Detach with: moyva deploy --difficulty " + entry["id"] + " --off"}
 
 
 def logs(project,run_id=None,source="all"):
@@ -238,6 +322,7 @@ def dispatch(project,args):
             raise ControlError("ML-Agents resumes a run's latest persisted trainer state, not an arbitrary selected file. Use: ./moyva run resume "+item["run_id"])
         if args.action=="test":raise ControlError("Checkpoint evaluation is unavailable: MoyvaBotPolicyBinding requires a serialized ModelAsset. No runtime checkpoint-loader/evaluation endpoint exists.")
     if cmd=="evaluate":raise ControlError("Evaluation is unavailable: production inference uses a serialized ModelAsset, with no external model/episode evaluation command. Export an ONNX and assign it through MoyvaBotPolicyBinding; no strength result was fabricated.")
+    if cmd=="deploy":return deploy(project,args.model,args.difficulty,args.off)
     if cmd=="preset":
         presets=Presets(project)
         if args.action=="list":return presets.list()
