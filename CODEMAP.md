@@ -45,6 +45,18 @@ Base: `Features/`
 | Clouds | `Clouds/API/ICloudsService.cs`; `Clouds/Runtime/CloudsInstaller.cs`; `Clouds/Runtime/CloudsService.cs` |
 | Day/night visuals | `Visuals/Runtime/VisualInstaller.cs`; `Visuals/Runtime/DayNightShaderController.cs` |
 
+## Marketing Content Studio (tooling branch)
+
+Base: `Features/Marketing/` + `Assets/Moyva/Editor/MarketingStudio/`
+
+| Task | Files |
+|---|---|
+| Recipes / platforms / shots / manifest | `Contracts/` (plain DTOs, Newtonsoft JSON) |
+| Content index snapshot / preset store | `Content/`; editor `MarketingContentIndexBuilder.cs` |
+| Shot planning / beats / golden frames | `Planning/` |
+| Scene runtime / capture | `Runtime/MarketingStudioController.cs` + directors |
+| Studio window / Recorder / CLI | `Assets/Moyva/Editor/MarketingStudio/` |
+
 ## Bootstrap / launch
 
 Base: `Bootstrap/Runtime/`

@@ -1,0 +1,20 @@
+{
+  "schema": "moyva.marketing-platform",
+  "version": 1,
+  "id": "tiktok-9x16",
+  "displayName": "TikTok / Reels",
+  "aspectRatio": 0.5625,
+  "resolutionWidth": 1080,
+  "resolutionHeight": 1920,
+  "safeAreaMargin": 0.10,
+  "textAllowed": true,
+  "gameplayOnly": false,
+  "logoAllowed": true,
+  "uiRecommended": false,
+  "preRenderedAllowed": true,
+  "imageFormat": "png",
+  "videoFormat": "mp4",
+  "preferredDurationSec": 21.0,
+  "maxDurationSec": 60.0,
+  "notes": "Extra bottom safe margin for platform UI overlays."
+}

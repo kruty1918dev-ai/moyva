@@ -1,0 +1,20 @@
+{
+  "schema": "moyva.marketing-platform",
+  "version": 1,
+  "id": "instagram-reel-9x16",
+  "displayName": "Instagram Reel",
+  "aspectRatio": 0.5625,
+  "resolutionWidth": 1080,
+  "resolutionHeight": 1920,
+  "safeAreaMargin": 0.10,
+  "textAllowed": true,
+  "gameplayOnly": false,
+  "logoAllowed": true,
+  "uiRecommended": false,
+  "preRenderedAllowed": true,
+  "imageFormat": "png",
+  "videoFormat": "mp4",
+  "preferredDurationSec": 30.0,
+  "maxDurationSec": 90.0,
+  "notes": "Vertical reel; larger safe margins for UI chrome."
+}

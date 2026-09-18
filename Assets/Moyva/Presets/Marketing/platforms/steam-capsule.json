@@ -1,0 +1,18 @@
+{
+  "schema": "moyva.marketing-platform",
+  "version": 1,
+  "id": "steam-capsule",
+  "displayName": "Steam Marketing Capsule",
+  "aspectRatio": 1.7778,
+  "resolutionWidth": 1920,
+  "resolutionHeight": 1080,
+  "safeAreaMargin": 0.06,
+  "textAllowed": true,
+  "gameplayOnly": false,
+  "logoAllowed": true,
+  "uiRecommended": false,
+  "preRenderedAllowed": true,
+  "imageFormat": "png",
+  "videoFormat": "mp4",
+  "notes": "Marketing art allowed; compose with logo/text zones."
+}

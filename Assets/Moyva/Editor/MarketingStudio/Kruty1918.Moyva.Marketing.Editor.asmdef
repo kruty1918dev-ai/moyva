@@ -1,0 +1,21 @@
+{
+  "name": "Kruty1918.Moyva.Marketing.Editor",
+  "rootNamespace": "Kruty1918.Moyva.Marketing.EditorTools",
+  "references": [
+    "Kruty1918.Moyva.Marketing",
+    "Unity.Recorder",
+    "Unity.Recorder.Editor",
+    "Unity.Newtonsoft.Json"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

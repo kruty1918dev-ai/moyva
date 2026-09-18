@@ -1,0 +1,24 @@
+{
+  "name": "Kruty1918.Moyva.Marketing.Tests",
+  "references": [
+    "Kruty1918.Moyva.Marketing",
+    "Kruty1918.Moyva.Grid",
+    "Kruty1918.Moyva.Units",
+    "Kruty1918.Moyva.Shared",
+    "Kruty1918.Moyva.SaveSystem"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

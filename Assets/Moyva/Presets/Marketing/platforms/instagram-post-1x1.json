@@ -1,0 +1,18 @@
+{
+  "schema": "moyva.marketing-platform",
+  "version": 1,
+  "id": "instagram-post-1x1",
+  "displayName": "Instagram Post (Square)",
+  "aspectRatio": 1.0,
+  "resolutionWidth": 1080,
+  "resolutionHeight": 1080,
+  "safeAreaMargin": 0.06,
+  "textAllowed": true,
+  "gameplayOnly": false,
+  "logoAllowed": true,
+  "uiRecommended": false,
+  "preRenderedAllowed": true,
+  "imageFormat": "png",
+  "videoFormat": "mp4",
+  "notes": "Square feed post."
+}
