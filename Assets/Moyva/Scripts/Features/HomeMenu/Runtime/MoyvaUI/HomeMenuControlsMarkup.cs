@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public static void Append(StringBuilder sb, HomeMenuMoyvaUiViewController view)
         {
             var editor = view.Controls;
-            sb.Append("<view className=\"controls-intro\"><view><text className=\"section-label\">CONTROLS</text><text className=\"controls-title\">Make yourself comfortable.</text></view><text className=\"controls-badge\">")
+            sb.Append("<view className=\"controls-intro\"><view className=\"controls-intro-copy\"><text className=\"section-label\">CONTROLS</text><text className=\"controls-title\">Make yourself comfortable.</text></view><text className=\"controls-badge\">")
                 .Append(E(HomeMenuControlsEditor.ProfileLabel(editor.ActiveProfile))).Append("</text></view>");
             sb.Append("<view className=\"device-toolbar\"><text>Input profile</text>");
             sb.Append("<select className=\"menu-select device-profile-select\" options=\"Auto|Keyboard + Mouse|Keyboard + Touchpad|Gamepad|Touch / Phone\" value=\"")
@@ -29,6 +29,26 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Choice(sb, editor.IsTesting ? "Exit test" : "Test Controls", "TestControls()", editor.IsTesting);
             Choice(sb, "Reset this profile", "ResetControlProfile()", false);
             sb.Append("</view>");
+            sb.Append("<text className=\"keyboard-hint\">").Append(E(editor.IsTesting
+                ? editor.TestReadout
+                : "Pick a camera action, then choose or record a shortcut for it.")).Append("</text>");
+
+            // Primary task first: the camera-action list drives the editor below.
+            sb.Append("<view className=\"controls-section-heading\"><text className=\"section-label\">CAMERA BINDINGS</text><text className=\"control-help\">Select an action to see and edit its shortcut</text></view><view className=\"binding-cards\">");
+            foreach (PlayerControlAction action in Enum.GetValues(typeof(PlayerControlAction)))
+            {
+                editor.Bindings.TryGetValue(action, out var path);
+                var label = PlayerControlBinding.TryParse(path, out var binding) ? binding.DisplayName : "UNBOUND";
+                sb.Append("<button className=\"binding-card ").Append(HomeMenuControlsEditor.ActionGroup(action));
+                if (action == editor.SelectedAction) sb.Append(" active");
+                sb.Append("\" onClick=\"Globals.moyvaMenu.EditControlAction(").Append((int)action).Append(")\"><text className=\"binding-card-title\">")
+                    .Append(E(HomeMenuControlsEditor.ActionLabel(action))).Append("</text><text className=\"binding-card-key\">").Append(E(label)).Append("</text></button>");
+            }
+            sb.Append("</view>");
+
+            // Secondary: the device-specific editor with the inspector alongside.
+            sb.Append("<view className=\"controls-section-heading\"><text className=\"section-label\">DEVICE LAYOUT</text><text className=\"control-help\">Pick a key or control on the diagram to inspect it</text></view>");
+            sb.Append("<view className=\"controls-workspace adaptive-workspace\"><view className=\"keyboard-panel\">");
             if (editor.DeviceTab < 3)
             {
                 sb.Append("<view className=\"device-toolbar\"><text>Generic pointer</text>");
@@ -37,10 +57,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 Choice(sb, "Use as Touchpad", "SelectControlPointerMode(2)", editor.PointerMode == PointerInterpretation.Touchpad);
                 sb.Append("</view>");
             }
-            sb.Append("<text className=\"keyboard-hint\">").Append(E(editor.IsTesting
-                ? editor.TestReadout
-                : "Select a control to see its action. Choose an action, then Apply to rebind.")).Append("</text>");
-            sb.Append("<view className=\"controls-workspace adaptive-workspace\"><view className=\"keyboard-panel\">");
             if (editor.DeviceTab < 2) sb.Append("<view className=\"desktop-device-row\">");
             if (editor.DeviceTab < 3)
             {
@@ -58,16 +74,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             AppendDeviceOptions(sb, editor);
             sb.Append("</view>");
             AppendInspector(sb, view);
-            sb.Append("</view><view className=\"controls-section-heading\"><text className=\"section-label\">CAMERA BINDINGS</text><text className=\"control-help\">Select an action to edit its shortcut</text></view><view className=\"binding-cards\">");
-            foreach (PlayerControlAction action in Enum.GetValues(typeof(PlayerControlAction)))
-            {
-                editor.Bindings.TryGetValue(action, out var path);
-                var label = PlayerControlBinding.TryParse(path, out var binding) ? binding.DisplayName : "UNBOUND";
-                sb.Append("<button className=\"binding-card ").Append(HomeMenuControlsEditor.ActionGroup(action));
-                if (action == editor.SelectedAction) sb.Append(" active");
-                sb.Append("\" onClick=\"Globals.moyvaMenu.EditControlAction(").Append((int)action).Append(")\"><text className=\"binding-card-title\">")
-                    .Append(E(HomeMenuControlsEditor.ActionLabel(action))).Append("</text><text className=\"binding-card-key\">").Append(E(label)).Append("</text></button>");
-            }
             sb.Append("</view><view className=\"controls-section-heading\"><text className=\"section-label\">CAMERA FEEL</text><text className=\"control-help\">Fine-tune movement and sensitivity</text></view>");
         }
 

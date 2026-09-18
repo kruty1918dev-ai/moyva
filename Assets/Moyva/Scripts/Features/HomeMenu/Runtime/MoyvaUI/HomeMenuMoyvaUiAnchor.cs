@@ -407,6 +407,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             public void SetBotDifficultyValue(object value) { }
             public void StartGame() { }
             public void LeaveLobby() { }
+            public void OpenKickPlayers() { }
+            public void CopyInviteCode() { }
+            public void OpenPlayerSettings() { }
+            public void SetReducedMotion(object value) { }
+            public void ToggleReducedMotion() { }
             public void RefreshRooms() { }
             public void JoinTypedRoom() { }
             public void SetJoinCode(string value) { }

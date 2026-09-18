@@ -26,6 +26,9 @@ namespace Kruty1918.Moyva.HomeMenu.API
         /// <summary>Поточний прогрес завантаження у діапазоні 0..1.</summary>
         public float Progress { get; private set; }
 
+        /// <summary>Людинозрозумілий опис поточного етапу операції (наприклад "Creating lobby...").</summary>
+        public string Status { get; private set; } = string.Empty;
+
         /// <summary>Колбек успішного завершення операції.</summary>
         public Action OnSuccess { get; set; }
 
@@ -84,15 +87,32 @@ namespace Kruty1918.Moyva.HomeMenu.API
         /// <param name="progress">Поточний прогрес.</param>
         internal void SetLoading(bool isLoading, float progress)
         {
+            SetLoading(isLoading, progress, Status);
+        }
+
+        /// <summary>
+        /// Оновлює стан, прогрес і текст етапу завантаження, потім нотифікує підписників.
+        /// </summary>
+        internal void SetLoading(bool isLoading, float progress, string status)
+        {
             // 1: Фіксуємо нові значення стану.
             IsLoading = isLoading;
             Progress = progress;
+            Status = status ?? string.Empty;
 
             // 2: Публікуємо цей екземпляр як поточний глобальний стан.
             Current = this;
 
             // 3: Сповіщаємо всіх слухачів про зміну прогресу/стану.
             CurrentChanged?.Invoke(this);
+        }
+
+        /// <summary>
+        /// Оновлює лише текст етапу без зміни прогресу.
+        /// </summary>
+        public void SetStatus(string status)
+        {
+            SetLoading(IsLoading, Progress, status);
         }
     }
 }

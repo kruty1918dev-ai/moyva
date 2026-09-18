@@ -88,7 +88,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
                 try
                 {
-                    _overlayLoader?.LoadOverlay(0f, 100f, "%");
+                    _overlayLoader?.LoadOverlay(0f, 100f, "%")?.SetStatus("Creating the room...");
                     var room = await CreateMultiplayerLobbyAsync(_startCts.Token);
                     if (room == null)
                         return;

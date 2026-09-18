@@ -8,6 +8,7 @@ using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.Graphics;
+using Kruty1918.Moyva.Shared.UI;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
 using UnityEngine.UI;
@@ -30,9 +31,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         IPasswordPanelViewController,
         IWorldSetupViewController,
         IConfiremationPanel,
-        IOverlayLoader
+        IOverlayLoader,
+        IRoomListStatusView,
+        ILobbyStatusView
     {
         private readonly HomeMenuMoyvaUiState _state;
+        private readonly IUiMotionService _uiMotion;
         private readonly List<GameObject> _ownedObjects = new();
         private readonly List<GameSlotInfo> _slots = new();
         private readonly List<RoomInfo> _rooms = new();
@@ -54,9 +58,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public HomeMenuMoyvaUiViewController(HomeMenuMoyvaUiState state,
             [Zenject.InjectOptional] Kruty1918.Moyva.UIActions.API.IUiHotkeyService hotkeys = null,
             [Zenject.InjectOptional] IPlayerControlSettingsService controlSettings = null,
-            [Zenject.InjectOptional] IInputDeviceContext devices = null)
+            [Zenject.InjectOptional] IInputDeviceContext devices = null,
+            [Zenject.InjectOptional] IUiMotionService uiMotion = null,
+            [Zenject.InjectOptional] ILobbyFlowContext lobbyFlowContext = null)
         {
             _state = state;
+            _uiMotion = uiMotion;
+            FlowContext = lobbyFlowContext;
             Controls = new HomeMenuControlsEditor(state, this, hotkeys, controlSettings, devices);
             _botDifficulties = BotDifficultyRegistry.Load();
             _createRoomNextButton = CreateHiddenButton("MoyvaUI_CreateRoom_Next");
@@ -96,6 +104,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public bool OverlayVisible => _overlayResult != null && _overlayResult.IsLoading;
         public float OverlayProgress => _overlayResult?.Progress ?? 0f;
         public string OverlaySuffix { get; private set; } = "%";
+        public string OverlayStatus => _overlayResult?.Status ?? string.Empty;
+        public ILobbyFlowContext FlowContext { get; }
+        public LobbyStatusInfo LobbyStatus { get; private set; }
+        public RoomListStatus RoomListState { get; private set; } = RoomListStatus.Empty;
+        public string RoomListMessage { get; private set; } = "Open this panel to browse available rooms.";
+        public string InviteCodeValue { get; private set; } = string.Empty;
+        public bool InviteCopied { get; private set; }
+        public string CreateRoomBlockReason { get; private set; } = string.Empty;
+        public bool ReducedMotion => _uiMotion?.ReducedMotion ?? false;
         public bool ConfirmationVisible { get; private set; }
         public ConfirmationRequest? CurrentConfirmation { get; private set; }
         public bool InfoVisible { get; private set; }
@@ -223,10 +240,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public Action OnConfirme { get; set; }
         public Action OnCancled { get; set; }
 
-        public void Initialize() => _state.MarkDirty();
+        public void Initialize()
+        {
+            _state.SetReducedMotion(ReducedMotion);
+            OverlayLoaderResult.CurrentChanged += HandleOverlayChanged;
+            _state.MarkDirty();
+        }
 
         public void Dispose()
         {
+            OverlayLoaderResult.CurrentChanged -= HandleOverlayChanged;
             StopOverlay(true);
             for (int i = 0; i < _ownedObjects.Count; i++)
             {
@@ -240,6 +263,42 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             _ownedObjects.Clear();
+        }
+
+        private void HandleOverlayChanged(OverlayLoaderResult _)
+        {
+            MainThreadDispatcher.Enqueue(() => _state.MarkDirty());
+        }
+
+        public void SetRoomListStatus(RoomListStatus status, string message)
+        {
+            RoomListState = status;
+            RoomListMessage = message ?? string.Empty;
+            _state.MarkDirty();
+        }
+
+        public void SetLobbyStatus(LobbyStatusInfo status)
+        {
+            LobbyStatus = status;
+            _state.MarkDirty();
+        }
+
+        public void SetReducedMotion(bool reduced)
+        {
+            if (_uiMotion != null)
+                _uiMotion.ReducedMotion = reduced;
+            _state.SetReducedMotion(reduced);
+            _state.MarkDirty();
+        }
+
+        public void CopyInviteCode()
+        {
+            if (string.IsNullOrWhiteSpace(InviteCodeValue))
+                return;
+
+            GUIUtility.systemCopyBuffer = InviteCodeValue;
+            InviteCopied = true;
+            _state.MarkDirty();
         }
 
         private static bool ShouldDestroyDeferred()
@@ -408,6 +467,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetInviteCode(LobbyInviteCodePresentation presentation)
         {
             InviteCodeText = presentation.DisplayText;
+            InviteCodeValue = presentation.Code;
+            InviteCopied = false;
             if (!string.IsNullOrWhiteSpace(presentation.RoomName))
                 LobbyDisplayName = presentation.RoomName;
             _state.MarkDirty();
@@ -416,6 +477,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void ClearLobbyInvateCode()
         {
             InviteCodeText = "Invite Code: N/A";
+            InviteCodeValue = string.Empty;
+            InviteCopied = false;
             LobbyDisplayName = "Lobby";
             _state.MarkDirty();
         }
@@ -1018,9 +1081,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private void RefreshCreateRoomInteractable()
         {
+            if (string.IsNullOrWhiteSpace(RoomName))
+                CreateRoomBlockReason = "Enter a room name to continue.";
+            else if (!IsPublic && string.IsNullOrEmpty(Password))
+                CreateRoomBlockReason = "Private rooms need a password. Set one or make the room public.";
+            else
+                CreateRoomBlockReason = string.Empty;
+
             if (_createRoomNextButton != null)
-                _createRoomNextButton.interactable = !string.IsNullOrWhiteSpace(RoomName) &&
-                    (IsPublic || !string.IsNullOrEmpty(Password));
+                _createRoomNextButton.interactable = CreateRoomBlockReason.Length == 0;
         }
 
         private static string NormalizeText(string value, string fallback)

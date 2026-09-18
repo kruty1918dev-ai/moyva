@@ -27,13 +27,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _roomsCts?.Dispose();
             _roomsCts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
             _roomsCts.CancelAfter(TimeSpan.FromSeconds(5));
-            var ct = _roomsCts.Token;
+            var myCts = _roomsCts;
+            var ct = myCts.Token;
 
-            OverlayLoaderResult overlay = null;
+            var statusView = _viewController as IRoomListStatusView;
             await MainThreadDispatcher.EnqueueAsync(() =>
             {
                 _viewController.ClearRoomList();
-                overlay = _loader?.LoadOverlay(0f, 100f, "%");
+                statusView?.SetRoomListStatus(RoomListStatus.Loading, "Fetching rooms...");
             });
 
             try
@@ -41,6 +42,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 if (_lobbyService == null)
                 {
                     Debug.LogError("[JoinRoomPanelService] ILobbyService not available; clearing room list.");
+                    await MainThreadDispatcher.EnqueueAsync(() =>
+                        statusView?.SetRoomListStatus(RoomListStatus.Error, "Lobby service is unavailable."));
                     return false;
                 }
 
@@ -62,17 +65,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
                     _viewController.ClearRoomList();
                     foreach (var roomInfo in roomInfos)
-                    {
-                        if (string.IsNullOrEmpty(roomInfo.JoinCode) && !string.IsNullOrEmpty(roomInfo.LobbyId))
-                        {
-                        }
-                        else if (string.IsNullOrEmpty(roomInfo.JoinCode) && string.IsNullOrEmpty(roomInfo.LobbyId))
-                        {
-                        }
-
                         _viewController.AddRoomToList(roomInfo);
-                    }
 
+                    statusView?.SetRoomListStatus(
+                        roomInfos.Count == 0 ? RoomListStatus.Empty : RoomListStatus.Ready,
+                        roomInfos.Count == 0 ? "No public rooms found. Try Refresh or join by invite code." : string.Empty);
                     populated = true;
                 });
 
@@ -80,28 +77,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (OperationCanceledException)
             {
-                // request was canceled/timeout
+                // Superseded by a newer refresh — that request owns the status now.
+                if (!ReferenceEquals(_roomsCts, myCts))
+                    return false;
+
+                // The 5s timeout fired while this request was still current.
+                await MainThreadDispatcher.EnqueueAsync(() =>
+                    statusView?.SetRoomListStatus(RoomListStatus.Error, "Room search timed out. Check the connection and try Refresh."));
                 return false;
             }
             catch (Exception e)
             {
                 Debug.LogError($"[JoinRoomPanelService] RefreshRoomListAsync failed: {e}");
+                await MainThreadDispatcher.EnqueueAsync(() =>
+                    statusView?.SetRoomListStatus(RoomListStatus.Error, "Could not load rooms. Check the connection and try Refresh."));
                 return false;
-            }
-            finally
-            {
-                try
-                {
-                    await MainThreadDispatcher.EnqueueAsync(() =>
-                    {
-                        float progress = overlay != null ? overlay.Progress : 100f;
-                        overlay?.SetLoading(false, progress);
-                        _loader?.StopOverlay(true);
-                    });
-                }
-                catch (Exception)
-                {
-                }
             }
         }
 

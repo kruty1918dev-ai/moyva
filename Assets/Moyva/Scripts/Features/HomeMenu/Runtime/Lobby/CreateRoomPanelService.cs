@@ -108,6 +108,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 UnityEngine.Debug.LogError($"CreateRoomPanelService: failed to switch multiplayer mode: {e.Message}");
                 UnityEngine.Debug.LogException(e);
+                _infoPanelService?.Show(new InfoMessage("Network Mode",
+                    "Could not switch to the selected network mode. It will be retried when the lobby is created."));
             }
         }
 
