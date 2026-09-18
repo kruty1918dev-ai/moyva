@@ -59,12 +59,14 @@ namespace Kruty1918.Moyva.Jsonization
                 }
                 catch (Exception ex)
                 {
+                    // Continue with remaining bindings: a single broken optional asset
+                    // must not leave later scene components unconfigured (e.g. a stale
+                    // preview graph would otherwise disable the Home Menu config binding).
                     Debug.LogError(
                         "[MoyvaJson] Binding failed " +
                         $"{binding.Target.GetType().FullName}.{binding.PropertyPath} " +
                         $"id={binding.ConfigId}: {ex.GetType().Name}: {ex.Message}",
                         this);
-                    throw;
                 }
             }
         }

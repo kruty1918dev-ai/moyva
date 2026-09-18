@@ -22,7 +22,9 @@
   flex-shrink: 0;
   gap: 12px;
 }
-.controls-intro { margin: 6px 0 12px; }
+.controls-intro { margin: 6px 0 12px; flex-wrap: wrap; }
+.controls-intro-copy { flex-shrink: 1; min-width: 0; }
+.controls-badge { flex-shrink: 0; }
 .controls-title { font-size: 23px; color: rgb(244, 240, 230); margin: 3px 0; }
 .controls-badge, .keyboard-layer {
   font-size: 10px;
@@ -145,8 +147,9 @@
 .binding-notice { font-size: 11px; line-height: 1.25em; color: rgb(178, 205, 190); margin-top: 2px; }
 .binding-notice.conflict { color: rgb(238, 161, 140); }
 .binding-notice.listening { color: rgb(242, 212, 150); }
-.controls-section-heading { margin: 12px 0 8px; }
-.binding-cards { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 6px; flex-shrink: 0; }
+.controls-section-heading { margin: 12px 0 8px; width: 100%; }
+.controls-section-heading .section-label { flex-shrink: 0; }
+.binding-cards { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 6px; flex-shrink: 0; width: 100%; }
 .binding-card {
   display: flex;
   flex-direction: row;
@@ -475,6 +478,8 @@
 
 .navigation-title {
   margin-top: 5px;
+  flex-shrink: 1;
+  min-width: 0;
   color: rgb(244, 240, 230);
   font-size: 24px;
   font-weight: 800;
@@ -515,7 +520,18 @@
   min-height: 0;
   max-height: 100%;
   margin-top: 12px;
+  padding-right: 18px;
   overflow: hidden;
+}
+
+.navigation-list::scrollbar {
+  width: 9px;
+  background-color: rgba(16, 20, 30, 0.55);
+}
+
+.navigation-list::scrollbar-thumb {
+  background-color: rgba(216, 177, 79, 0.38);
+  border-radius: 4px;
 }
 
 .menu-button,
@@ -687,6 +703,8 @@
 
 .control-help {
   margin-top: 4px;
+  flex-shrink: 1;
+  min-width: 0;
   color: rgb(184, 186, 192);
   font-size: 11px;
   line-height: 1.25em;
@@ -846,6 +864,7 @@
   display: flex;
   flex-direction: row;
   justify-content: flex-end;
+  flex-wrap: wrap;
   flex-shrink: 0;
   width: 100%;
   margin-bottom: 10px;
@@ -947,6 +966,8 @@
 
 .stat-value {
   flex-grow: 1;
+  flex-shrink: 1;
+  min-width: 0;
   color: rgb(235, 232, 224);
   font-size: 13px;
   line-height: 1.25em;
@@ -1309,6 +1330,7 @@
 
 .player-name {
   flex-grow: 1;
+  flex-shrink: 1;
   min-width: 0;
   color: rgb(240, 236, 226);
   font-size: 14px;
@@ -1318,6 +1340,8 @@
 
 .badge {
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   margin-left: 8px;
   padding: 3px 7px;
   color: rgb(190, 192, 198);

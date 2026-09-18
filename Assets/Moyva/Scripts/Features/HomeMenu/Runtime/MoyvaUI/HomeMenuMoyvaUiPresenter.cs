@@ -35,6 +35,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private string _lastRenderedRoute = string.Empty;
         private float _pendingRenderAt = -1f;
 
+        /// <summary>Тестовий seam: місток, який отримує всі callbacks з markup (Globals.moyvaMenu).</summary>
+        internal HomeMenuMoyvaUiBridge Bridge => _bridge;
+
         public HomeMenuMoyvaUiPresenter(
             HomeMenuConfigSO config,
             INavigation navigation,
@@ -58,10 +61,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void Initialize()
         {
             _initialized = true;
-            var anchor = FindAnchor();
-            anchor?.SetLegacyUiVisible(false);
             if (_config == null || !_config.useUnityHtmlShell)
                 return;
+
+            var anchor = FindAnchor();
 
             if (!CanMount(anchor))
                 return;

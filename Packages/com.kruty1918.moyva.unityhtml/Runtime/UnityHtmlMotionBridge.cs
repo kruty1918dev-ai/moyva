@@ -189,8 +189,8 @@ namespace UnityHTML.Runtime
                     break;
                 case "spin":
                     sequence.Append(target.DORotate(new Vector3(0f, 0f, -360f), duration, RotateMode.FastBeyond360)
-                        .SetEase(Ease.Linear)
-                        .SetLoops(-1, LoopType.Restart));
+                        .SetEase(Ease.Linear));
+                    sequence.SetLoops(-1, LoopType.Restart);
                     break;
                 case "pulse-loop":
                     if (group == null)
@@ -198,8 +198,8 @@ namespace UnityHTML.Runtime
                         sequence.Kill(false);
                         return;
                     }
-                    sequence.Append(Fade(group, Mathf.Max(0.1f, motion.Alpha * 0.35f), duration, Ease.InOutQuad)
-                        .SetLoops(-1, LoopType.Yoyo));
+                    sequence.Append(Fade(group, Mathf.Max(0.1f, motion.Alpha * 0.35f), duration, Ease.InOutQuad));
+                    sequence.SetLoops(-1, LoopType.Yoyo);
                     break;
                 default:
                     motion.Restore();

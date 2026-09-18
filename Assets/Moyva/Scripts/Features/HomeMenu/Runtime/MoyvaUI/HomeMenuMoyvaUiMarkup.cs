@@ -338,7 +338,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 .Append(E(kicker)).Append("</text><text className=\"navigation-title\">").Append(E(title)).Append("</text></view>");
             if (showBack)
                 sb.Append("<button className=\"top-back-button\" onClick=\"Globals.moyvaMenu.Back()\"><text className=\"top-back-label\">BACK</text></button>");
-            sb.Append("</view></view><scroll className=\"navigation-list\" data-key=\"scroll-")
+            sb.Append("</view></view><scroll className=\"navigation-list\" direction=\"vertical\" data-key=\"scroll-")
                 .Append(E(kicker)).Append('-').Append(E(title)).Append("\" sensitivity=\"24\">");
         }
 
@@ -395,8 +395,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             sb.Append("><text className=\"player-index\">").Append((index + 1).ToString("D2", CultureInfo.InvariantCulture))
                 .Append("</text><text className=\"player-name\">").Append(E(user.UserName)).Append("</text>");
-            if (user.IsHost) sb.Append("<text className=\"badge badge-host\">HOST</text>");
-            if (user.IsLocal) sb.Append("<text className=\"badge badge-you\">YOU</text>");
+            if (user.IsHost) sb.Append("<view className=\"badge badge-host\"><text>HOST</text></view>");
+            if (user.IsLocal) sb.Append("<view className=\"badge badge-you\"><text>YOU</text></view>");
             sb.Append("</view>");
         }
 

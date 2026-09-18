@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public static void Append(StringBuilder sb, HomeMenuMoyvaUiViewController view)
         {
             var editor = view.Controls;
-            sb.Append("<view className=\"controls-intro\"><view><text className=\"section-label\">CONTROLS</text><text className=\"controls-title\">Make yourself comfortable.</text></view><text className=\"controls-badge\">")
+            sb.Append("<view className=\"controls-intro\"><view className=\"controls-intro-copy\"><text className=\"section-label\">CONTROLS</text><text className=\"controls-title\">Make yourself comfortable.</text></view><text className=\"controls-badge\">")
                 .Append(E(HomeMenuControlsEditor.ProfileLabel(editor.ActiveProfile))).Append("</text></view>");
             sb.Append("<view className=\"device-toolbar\"><text>Input profile</text>");
             sb.Append("<select className=\"menu-select device-profile-select\" options=\"Auto|Keyboard + Mouse|Keyboard + Touchpad|Gamepad|Touch / Phone\" value=\"")
