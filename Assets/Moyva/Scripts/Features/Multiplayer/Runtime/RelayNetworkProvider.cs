@@ -830,7 +830,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             body = new byte[len];
             if (len > 0)
             {
-                var buffer = new NativeArray<byte>(len, Allocator.Temp);
+                var buffer = new NativeArray<byte>(len, Allocator.TempJob);
                 stream.ReadBytes(buffer);
                 buffer.CopyTo(body);
                 buffer.Dispose();

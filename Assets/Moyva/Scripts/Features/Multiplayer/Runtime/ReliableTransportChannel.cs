@@ -217,7 +217,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             if (result != 0)
                 return result;
 
-            using (var buffer = new NativeArray<byte>(bytes, Allocator.Temp))
+            using (var buffer = new NativeArray<byte>(bytes, Allocator.TempJob))
                 writer.WriteBytes(buffer);
             if (writer.HasFailedWrites)
             {
