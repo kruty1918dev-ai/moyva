@@ -12,7 +12,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime.SettingsValidation
             FogVisionSettingsValidator.Normalize(settings);
             FogTerrainLosSettingsValidator.Normalize(settings);
             FogVolumeSettingsValidator.Normalize(settings);
-            FogLegacyOverlaySettingsValidator.Normalize(settings);
             FogStartupRevealSettingsValidator.Normalize(settings);
             FogRendererCullingSettingsValidator.Normalize(settings);
         }

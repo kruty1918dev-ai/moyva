@@ -1,4 +1,3 @@
-using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.FogOfWar.Runtime.SettingsValidation;
 using UnityEngine;
 
@@ -12,11 +11,14 @@ namespace Kruty1918.Moyva.FogOfWar.API
 public partial class FogOfWarSettings : MoyvaJsonConfigObject
     {
         /// <summary>
-        /// Backward-compatible wrapper for older call sites.
-        /// Prefer <see cref="FogTilePresetUtility.HasUsableDualGridPreset"/> in new code.
+        /// Tint used for remembered entities rendered by the ghost presenter.
         /// </summary>
-        public static bool HasUsableDualGridPreset(TilePreset preset)
-            => FogTilePresetUtility.HasUsableDualGridPreset(preset);
+        public Color ExploredColor = new Color(0f, 0f, 0f, 0.5f);
+
+        /// <summary>
+        /// Optional icon sprite set; the first entry is used for remembered ghost entities.
+        /// </summary>
+        public Sprite[] FogIconSprites;
 
         private void OnValidate()
         {
