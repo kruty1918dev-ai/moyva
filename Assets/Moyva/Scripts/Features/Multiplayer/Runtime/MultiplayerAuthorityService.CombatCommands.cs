@@ -153,7 +153,16 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 result = await _combatCommandService.ExecuteAsync(
                     authorizedOwnerId, data.AttackerEntityId, data.TargetEntityId, _lifetime.Token);
             }
-            catch (OperationCanceledException) when (_disposed) { return; }
+            catch (OperationCanceledException) { return; }
+            catch (Exception ex)
+            {
+                // async void-обробник мережевого входу: необроблений exception вб'є процес.
+                // Логуємо й відповідаємо відправнику відмовою, щоб peer не чекав даремно.
+                Debug.LogError($"[MultiplayerAuthority] Combat command '{data.RequestId}' failed: {ex}");
+                try { RejectCombat(senderId, data, "Combat execution failed."); }
+                catch (Exception sendEx) { Debug.LogWarning($"[MultiplayerAuthority] Could not send rejection: {sendEx.Message}"); }
+                return;
+            }
             if (_disposed) return;
             if (!result.Succeeded)
             {

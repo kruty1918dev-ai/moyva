@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
@@ -93,10 +92,11 @@ public sealed class WorldCreationDefaultsSO : MoyvaJsonConfigObject
 		public bool DefaultApplyWFC = true;
 
 		[Header("Обмеження розміщення (через редактор світу)")]
-		[Tooltip("Граф генерації (GraphAsset), який використовується для читання TileRegistry та параметрів HillGenerator у World Defaults Editor.")]
-		public GraphAsset PlacementRulesGraph;
+		[Tooltip("Рецепт генерації (GeneratorMapRecipe), який використовується для читання TileRegistry та параметрів рельєфу у World Defaults Editor.")]
+		[SerializeReference]
+		public MoyvaJsonConfigObject PlacementRulesRecipe;
 
-		[Tooltip("Реєстр тайлів для обмежень розміщення. Якщо задано — перекриває TileRegistry з GraphAsset.")]
+		[Tooltip("Реєстр тайлів для обмежень розміщення. Якщо задано — перекриває TileRegistry з рецепту.")]
 		public TileRegistrySO TileRegistry;
 
 		[Tooltip("Tile ID, на яких не можна будувати.")]

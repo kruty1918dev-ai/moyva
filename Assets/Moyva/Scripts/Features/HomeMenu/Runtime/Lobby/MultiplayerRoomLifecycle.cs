@@ -70,9 +70,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
                 if (!string.Equals(NormalizeName(record.DisplayName), normalizedName, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                long playerElapsed = Math.Max(0, nowLocalTicks - record.PlayerLocalTicksAtDisconnect);
-                long hostElapsed = Math.Max(0, nowHostTicks - record.HostUtcTicksAtDisconnect);
-                if (Math.Abs(playerElapsed - hostElapsed) <= toleranceTicks)
+                // Reconnect дозволено лише протягом tolerance після дисконекту. Обидві
+                // міри мають показувати свіжий дисконект: playerElapsed вимірюється в
+                // годинниках самого гравця (той самий домен часу на цій машині), а
+                // hostElapsed — через UTC-хоста. Попереднє порівняння різниці elapsed-ів
+                // фактично перевіряло синхронність годинників і дозволяло reconnect назавжди.
+                long playerElapsed = nowLocalTicks - record.PlayerLocalTicksAtDisconnect;
+                long hostElapsed = nowHostTicks - record.HostUtcTicksAtDisconnect;
+                if (playerElapsed >= 0 && playerElapsed <= toleranceTicks
+                    && hostElapsed >= 0 && hostElapsed <= toleranceTicks)
                     return true;
             }
 

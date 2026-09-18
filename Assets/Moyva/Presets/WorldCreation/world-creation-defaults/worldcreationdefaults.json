@@ -34,12 +34,7 @@
   "defaultGenerateRivers": true,
   "defaultGenerateBiomes": true,
   "defaultApplyWFC": true,
-  "placementRulesGraph": {
-    "$config": {
-      "model": "graph",
-      "id": "testgeneratorgraph"
-    }
-  },
+  "placementRulesRecipe": null,
   "tileRegistry": null,
   "blockedBuildingTileIds": [],
   "blockedBuildingHillLevelRanges": [],

@@ -109,31 +109,37 @@ namespace Kruty1918.Moyva.Jsonization
 
             string key = MakeKey(type.FullName, id);
 
-            // Frozen-екземпляри спільні: кожен consumer того самого type/id отримує
-            // той самий матеріалізований config-об'єкт.
-            if (_frozen.TryGetValue(key, out var cached))
-                return cached;
-
-            if (!_rawByTypeAndId.TryGetValue(key, out var raw))
+            // _frozen доповнюється ледачо під час resolve, а Populate може рекурсивно
+            // викликати Get для cyclic-референсів — усі звернення до спільних словників
+            // виконуємо під Sync. Monitor реентрантний для того ж потоку, тому рекурсія безпечна.
+            lock (Sync)
             {
-                // Fallback to schema when a migrated type was renamed but its
-                // JSON schema/id remained stable.
-                var byId = _rawByTypeAndId
-                    .FirstOrDefault(pair =>
-                        pair.Key.EndsWith(
-                            "|" + id,
-                            StringComparison.OrdinalIgnoreCase) &&
-                        string.Equals(
-                            pair.Value.Value<string>("sourceType"),
-                            type.FullName,
-                            StringComparison.Ordinal));
-                raw = byId.Value;
+                // Frozen-екземпляри спільні: кожен consumer того самого type/id отримує
+                // той самий матеріалізований config-об'єкт.
+                if (_frozen.TryGetValue(key, out var cached))
+                    return cached;
+
+                if (!_rawByTypeAndId.TryGetValue(key, out var raw))
+                {
+                    // Fallback to schema when a migrated type was renamed but its
+                    // JSON schema/id remained stable.
+                    var byId = _rawByTypeAndId
+                        .FirstOrDefault(pair =>
+                            pair.Key.EndsWith(
+                                "|" + id,
+                                StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(
+                                pair.Value.Value<string>("sourceType"),
+                                type.FullName,
+                                StringComparison.Ordinal));
+                    raw = byId.Value;
+                }
+
+                if (raw == null)
+                    return null;
+
+                return DeserializeAndFreeze(type, id, raw);
             }
-
-            if (raw == null)
-                return null;
-
-            return DeserializeAndFreeze(type, id, raw);
         }
 
         /// <summary>
@@ -169,16 +175,19 @@ namespace Kruty1918.Moyva.Jsonization
             string prefix = type.FullName + "|";
             var result = new List<T>();
 
-            foreach (var pair in _rawByTypeAndId)
+            lock (Sync)
             {
-                if (!pair.Key.StartsWith(
-                        prefix,
-                        StringComparison.Ordinal))
-                    continue;
+                foreach (var pair in _rawByTypeAndId)
+                {
+                    if (!pair.Key.StartsWith(
+                            prefix,
+                            StringComparison.Ordinal))
+                        continue;
 
-                string id = pair.Value.Value<string>("id");
-                if (Get(type, id) is T value)
-                    result.Add(value);
+                    string id = pair.Value.Value<string>("id");
+                    if (Get(type, id) is T value)
+                        result.Add(value);
+                }
             }
 
             return result;
@@ -282,15 +291,18 @@ namespace Kruty1918.Moyva.Jsonization
             string prefix = type.FullName + "|";
             var result = new List<object>();
 
-            foreach (var pair in _rawByTypeAndId)
+            lock (Sync)
             {
-                if (!pair.Key.StartsWith(prefix, StringComparison.Ordinal))
-                    continue;
+                foreach (var pair in _rawByTypeAndId)
+                {
+                    if (!pair.Key.StartsWith(prefix, StringComparison.Ordinal))
+                        continue;
 
-                string id = pair.Value.Value<string>("id");
-                object value = Get(type, id);
-                if (value != null)
-                    result.Add(value);
+                    string id = pair.Value.Value<string>("id");
+                    object value = Get(type, id);
+                    if (value != null)
+                        result.Add(value);
+                }
             }
 
             return result;
@@ -304,7 +316,10 @@ namespace Kruty1918.Moyva.Jsonization
         public static UnityEngine.Object ResolveAsset(string key)
         {
             EnsureLoaded();
-            return _catalog != null ? _catalog.Resolve(key) : null;
+            lock (Sync)
+            {
+                return _catalog != null ? _catalog.Resolve(key) : null;
+            }
         }
 
         /// <summary>
