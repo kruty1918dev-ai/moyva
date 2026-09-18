@@ -401,8 +401,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// <summary>
         /// Перевіряє, чи підтримується даний рендерер для цілей відсіювання.
         /// Підтримуються `SpriteRenderer`, `MeshRenderer` і `TilemapRenderer`,
-        /// рендерер має бути активним та належати дозволеному шару. Ігнорує рендерери
-        /// які знаходяться в батьківському `FogOfWarVolumeController`.
+        /// рендерер має бути активним та належати дозволеному шару.
         /// </summary>
         private bool IsSupportedRenderer(
      Renderer renderer)
@@ -440,10 +439,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 }
             }
 
-            return renderer
-                       .GetComponentInParent<
-                           FogOfWarVolumeController>()
-                   == null;
+            return true;
         }
 
         private static bool IsUnderNonCullableRoot(

@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.Jsonization;
 using Kruty1918.Moyva.MapChunks.API;
 using Kruty1918.Moyva.MapChunks.Runtime;
 using Kruty1918.Moyva.SaveSystem;
@@ -28,46 +29,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         public override void InstallBindings()
         {
-            FogOfWarVolumeController[] fogVolumes =
-                Object.FindObjectsByType<FogOfWarVolumeController>(
-                    FindObjectsInactive.Include,
-                    FindObjectsSortMode.None);
-
-            FogOfWarSettings resolvedSettings =
-                ResolveSettings(fogVolumes);
-
+            FogOfWarSettings resolvedSettings = TryResolveSettings();
             if (resolvedSettings != null)
             {
                 Container.BindInstance(resolvedSettings)
                     .AsSingle();
             }
-            else
-            {
-            }
-
-            int controllerCount =
-                fogVolumes != null
-                    ? fogVolumes.Length
-                    : 0;
-
-            string settingsName =
-                resolvedSettings != null
-                    ? resolvedSettings.name
-                    : "null";
-
-            string presentationName =
-                resolvedSettings != null
-                    ? resolvedSettings.PresentationMode.ToString()
-                    : "LegacyTwcVolume fallback";
-
-            string installerMessage =
-                "[FogOfWar] Installer found " +
-                controllerCount +
-                " FogOfWarVolumeController(s); settings=" +
-                settingsName +
-                "; presentation=" +
-                presentationName +
-                ".";
 
             MapChunkFeatureBindings.Install(Container);
 
@@ -86,84 +53,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 .To<FogVisibilityResolver>()
                 .AsSingle();
 
-            /*
-             * Legacy TWC volume services залишаються
-             * зареєстрованими для fallback mode.
-             */
-            Container.Bind<IFogVolumePreviewBuilder>()
-                .To<FogVolumePreviewBuilder>()
-                .AsSingle();
-
-            Container.Bind<IFogVolumeSceneContextBuilder>()
-                .To<FogVolumeSceneContextBuilder>()
-                .AsSingle();
-
-            Container.Bind<IFogVolumeOutputCleaner>()
-                .To<FogVolumeOutputCleaner>()
-                .AsSingle();
-
-            Container.Bind<IFogVolumeValidationService>()
-                .To<FogVolumeValidationService>()
-                .AsSingle();
-
-            Container.Bind<IFogVolumeStateCache>()
-                .To<FogVolumeStateCache>()
-                .AsSingle();
-
-            Container.Bind<IFogStartupFogServiceFactory>()
-                .To<FogStartupFogServiceFactory>()
-                .AsSingle();
-
-            Container
-                .BindInterfacesAndSelfTo<FogVolumePendingWorkQueue>()
-                .AsSingle();
-
-            Container.Bind<IFogVisualUpdateSchedulerFactory>()
-                .To<FogVisualUpdateSchedulerFactory>()
-                .AsSingle();
-
-            Container.Bind<FogDirtyClusterTracker>()
-                .AsSingle();
-
-            Container.Bind<FogClusterGeometryBuilder>()
-                .AsSingle();
-
-            Container.Bind<FogClusterMaterialProvider>()
-                .AsSingle();
-
-            Container.Bind<FogClusterMeshPresenter>()
-                .AsSingle();
-
-            Container.Bind<FogClusterMeshRegistry>()
-                .AsSingle();
-
-            Container.Bind<FogClusterMeshBuilder>()
-                .AsSingle();
-
-            Container.Bind<FogClusteredVolumeRenderer>()
-                .AsSingle();
-
-            Container.Bind<FogVolumeVisualUpdateEngine>()
-                .AsSingle();
-
-            /*
-             * Concrete visual implementations.
-             * Їхні interfaces напряму не реєструються.
-             */
-            Container.Bind<FogOfWarVolumeUpdater>()
-                .AsSingle();
-
             Container.Bind<FogScreenSpaceTextureUpdater>()
                 .AsSingle();
 
-            /*
-             * Router є єдиним:
-             *
-             * IFogVisualUpdater
-             * IFogVolumeRuntimeUpdater
-             * ITickable
-             * IDisposable
-             */
             Container
                 .BindInterfacesAndSelfTo<FogVisualUpdaterRouter>()
                 .AsSingle()
@@ -207,22 +99,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            if (fogVolumes != null)
-            {
-                for (int i = 0;
-                     i < fogVolumes.Length;
-                     i++)
-                {
-                    FogOfWarVolumeController fogVolume =
-                        fogVolumes[i];
-
-                    if (fogVolume == null)
-                        continue;
-
-                    Container.QueueForInject(fogVolume);
-                }
-            }
-
             Container.Bind<IFogOfWarServiceRegistry>()
                 .To<FogOfWarServiceRegistry>()
                 .AsSingle();
@@ -254,27 +130,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 MapFogChunkCoverageRefreshService>(260);
         }
 
-        private FogOfWarSettings ResolveSettings(
-            FogOfWarVolumeController[] fogVolumes)
+        private static FogOfWarSettings TryResolveSettings()
         {
-            if (fogVolumes == null)
-                return null;
-
-            for (int i = 0;
-                 i < fogVolumes.Length;
-                 i++)
-            {
-                FogOfWarVolumeController controller =
-                    fogVolumes[i];
-
-                if (controller != null
-                    && controller.Settings != null)
-                {
-                    return controller.Settings;
-                }
-            }
-
-            return null;
+            return MoyvaJsonRuntime.Get<FogOfWarSettings>("fogofwarsettings");
         }
     }
 }

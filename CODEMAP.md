@@ -35,7 +35,7 @@ Base: `Features/`
 | Game mode / pause / exit | `GameMode/API/`; `GameMode/Runtime/GameModeInstaller.cs`; `GameMode/Runtime/GameModeService.cs`; `GameMode/Runtime/GameStateService.cs`; `GameMode/Runtime/ExitMatchCoordinator.cs` |
 | Save / restore / launch options | `SaveSystem/API/`; `SaveSystem/Runtime/SaveSystemInstaller.cs`; `SaveSystem/Runtime/SaveService.cs`; `SaveSystem/Runtime/SaveModuleRegistry.cs`; `SaveSystem/Runtime/SavePlayModeOptions.cs` |
 | World settings | `WorldCreation/API/IWorldCreationService.cs`; `WorldCreation/Runtime/WorldCreationInstaller.cs`; `WorldCreation/Runtime/WorldCreationService.cs` |
-| Signals / events | `Signals/API/`; `Signals/Runtime/SignalBusInstaller.cs`; `Signals/Runtime/SignalDomainEventBridge.cs` |
+| Signals / events | `Signals/API/`; `Signals/Runtime/SignalBusInstaller.cs`; `Signals/Runtime/WorldGenerationSignalState.cs` |
 | UI actions | `UIActions/API/`; `UIActions/Runtime/UiActionsInstaller.cs`; `UIActions/Runtime/UiActionRouter.cs` |
 | Tile selection | `Interactions/API/ITileInteractionService.cs`; `Interactions/Runtime/InteractionsInstaller.cs`; `Interactions/Runtime/WorldInfoSelectionCoordinator.cs` |
 | Info panel | `InfoPanel/UI/WorldInfoPanelInstaller.cs` |
@@ -115,7 +115,7 @@ EvaluatePlacement owns placement decisions; SessionStore owns state.
 
 Base: `Features/HomeMenu/Runtime/`
 
-UseDynamicMoyvaUi=true selects MoyvaUI; otherwise UnityHTML.
+Dynamic MoyvaUI is the single production shell.
 
 | Task | Files |
 |---|---|
@@ -123,8 +123,7 @@ UseDynamicMoyvaUi=true selects MoyvaUI; otherwise UnityHTML.
 | Active shell / UI state | `MoyvaUI/HomeMenuMoyvaUiPresenter.cs`; `MoyvaUI/HomeMenuMoyvaUiViewController.cs`; `MoyvaUI/HomeMenuMoyvaUiState.cs` |
 | Active markup / event bridge | `MoyvaUI/HomeMenuMoyvaUiMarkup.cs`; `MoyvaUI/HomeMenuMoyvaUiBridge.cs` |
 | Keyboard editor | `MoyvaUI/HomeMenuControlsMarkup.cs`; `MoyvaUI/HomeMenuControlsEditor.cs` |
-| HTML shell | `UnityHTML/HomeMenuHtmlShellPresenter.cs`; `UnityHTML/HomeMenuHtmlMenuBridge.cs` |
-| Scene UI / navigation | `Shell/HomeMenuInitializer.cs`; `Shell/HomeMenuRuntimeUiFactory.cs`; `Shell/HomeMenuNavigation.cs` |
+| Scene UI / navigation | `Shell/HomeMenuInitializer.cs`; `Shell/HomeMenuNavigation.cs` |
 | Room list | `Lobby/JoinRoomPanelService.cs`; `Lobby/JoinRoomPanelService.RoomList.cs` |
 | Join / transport / cleanup | `Lobby/JoinRoomPanelService.JoinPipeline.cs`; `Lobby/JoinRoomTransportAdapter.cs`; `Lobby/MultiplayerRoomLifecycle.cs` |
 | Target / password / feedback | `Lobby/JoinRoomPanelService.TargetResolution.cs`; `Lobby/JoinRoomPanelService.Feedback.cs`; `Lobby/PasswordPanelService.cs` |
@@ -157,9 +156,8 @@ GameplayHudBindings selects GameplayHtmlPresenter/State.
 | Cargo presentation | `GameplayCargoPanel.cs` |
 | Deployment session | `UnitRecruitmentDeploymentController.cs`; `UnitRecruitmentDeploymentController.Session.cs` |
 | Preview / controls / UI actions | `UnitRecruitmentDeploymentController.Preview.cs`; `UnitRecruitmentDeploymentController.Controls.cs`; `UnitRecruitmentDeploymentController.UiActions.cs` |
-| Alternate presenter lifecycle | `GameplayTurnHudPresenter.cs` |
-| Alternate recruitment / authority | `GameplayTurnHudPresenter.Recruitment.cs`; `GameplayTurnHudPresenter.RecruitmentAuthority.cs` |
-| Alternate queue / selection | `GameplayTurnHudPresenter.RecruitmentQueue.cs`; `GameplayTurnHudPresenter.RecruitmentSelection.cs` |
+| Turn HUD view | `GameplayTurnHudView.cs` |
+| Recruitment indicators | `UnitRecruitmentReadyIndicatorPresenter.cs`; `UnitRecruitmentProgressIndicatorPresenter.cs` |
 
 ## Multiplayer session / commands / transport
 
@@ -203,9 +201,8 @@ Skip visual leaf algorithms for fog-state/composition tasks.
 | Shader / world transform | `ScreenSpace/FogScreenSpaceTextureUpdater.ShaderPublisher.cs`; `ScreenSpace/FogScreenSpaceTextureUpdater.Transform.cs` |
 | Curtain geometry / calibration | `ScreenSpace/FogBoundaryCurtainRenderer.Geometry.cs`; `ScreenSpace/FogBoundaryCurtainRenderer.SurfaceCalibration.cs`; `ScreenSpace/FogBoundaryCurtainRenderer.SurfaceGrid.cs` |
 | Curtain material / top cap | `ScreenSpace/FogBoundaryCurtainRenderer.Presentation.cs`; `ScreenSpace/FogBoundaryCurtainRenderer.TopCap.cs` |
-| Volume host / scene context | `Volume/Controller/FogOfWarVolumeController.cs`; `Volume/Context/FogVolumeSceneContextBuilder.cs` |
-| Volume lifecycle / scheduling | `Volume/Build/FogVolumeVisualUpdateEngine.Lifecycle.cs`; `Volume/Build/FogVolumeVisualUpdateEngine.Scheduling.cs` |
-| TWC runtime layers / build | `Volume/Build/FogVolumeVisualUpdateEngine.RuntimeLayers.cs`; `Volume/Build/FogVolumeVisualUpdateEngine.TwcBuild.cs`; `Volume/Build/FogVolumeVisualUpdateEngine.Height.cs` |
+| Renderer culling | `Culling/FogRendererCullingEngine.cs` |
+| Shared visual context / height | `FogWorldVisualContextFactory.cs`; `FogVolumeHeightSampler.cs` |
 
 ## GraphSystem model / evaluation
 
