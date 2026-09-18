@@ -1,0 +1,18 @@
+{
+  "name": "Kruty1918.Moyva.Startup.Tests",
+  "references": [
+    "Kruty1918.Moyva.AI.Bot.Core",
+    "Kruty1918.Moyva.Bootstrap",
+    "Kruty1918.Moyva.Pathfinding",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.HomeMenu",
+    "Kruty1918.Moyva.Multiplayer",
+    "Kruty1918.Moyva.Jsonization",
+    "Kruty1918.Moyva.SaveSystem",
+    "Kruty1918.Moyva.Turns",
+    "Kruty1918.Moyva.InputRouting"
+  ],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

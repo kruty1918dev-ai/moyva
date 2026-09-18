@@ -1,29 +1,23 @@
 using Kruty1918.Moyva.Multiplayer.Core;
+using UnityEngine;
 
 namespace Kruty1918.Moyva.Multiplayer.Runtime
 {
     /// <summary>
-    /// Simple failure policy: logs the error and returns false for recoverable,
-    /// logs error for non-recoverable. No hard crashes.
+    /// Централізує реакцію на помилки сесії без аварійного завершення гри.
     /// </summary>
     public sealed class SimpleFailureHandlingPolicy : IFailureHandlingPolicy
     {
-        private readonly IMultiplayerLogger _logger;
-
-        public SimpleFailureHandlingPolicy(IMultiplayerLogger logger)
-        {
-            _logger = logger;
-        }
-
+        /// <summary>Позначає відновлювану помилку як невиконану операцію.</summary>
         public bool HandleRecoverable(FailureCategory category, string details)
         {
-            _logger.Warn($"Recoverable failure [{category}]: {details}");
             return false;
         }
 
+        /// <summary>Фіксує критичну помилку, після якої поточна сесія не може продовжитися.</summary>
         public void HandleNonRecoverable(FailureCategory category, string details)
         {
-            _logger.Error($"Non-recoverable failure [{category}]: {details}");
+            Debug.LogError($"Multiplayer failure [{category}]: {details}");
         }
     }
 }

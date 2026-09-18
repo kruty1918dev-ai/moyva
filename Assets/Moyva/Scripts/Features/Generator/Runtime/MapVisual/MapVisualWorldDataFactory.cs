@@ -1,4 +1,3 @@
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.SaveSystem;
@@ -12,21 +11,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IGridService _gridService;
         private readonly IGridProjection _projection;
         private readonly IMapDataGenerator _generator;
-        private readonly IGraphTwcMapDataDiagnostics _graphDiagnostics;
-        private readonly IWorldGenerationDiagnostics _worldDiagnostics;
+        private readonly IMapGenerationDiagnostics _diagnostics;
 
         public MapVisualWorldDataFactory(
             IGridService gridService,
             IGridProjection projection,
             IMapDataGenerator generator,
-            [InjectOptional] IGraphTwcMapDataDiagnostics graphDiagnostics = null,
-            [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null)
+            [InjectOptional] IMapGenerationDiagnostics diagnostics = null)
         {
             _gridService = gridService;
             _projection = projection;
             _generator = generator;
-            _graphDiagnostics = graphDiagnostics;
-            _worldDiagnostics = worldDiagnostics;
+            _diagnostics = diagnostics;
         }
 
         public GeneratedWorldData Generate()
@@ -53,21 +49,22 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ProjectionMode = _projection.ProjectionMode,
                 RenderMode = _projection.ProjectionMode == GridProjectionMode.Isometric3DPreview ? GridRenderMode.Mesh3DPreview : GridRenderMode.Mesh3D,
                 NeighborhoodMode = ResolveNeighborhoodMode(_projection),
+                GameplayTileMap = MapArrayUtils.CloneStringMap(biomeMap),
+                VisualTileMap = MapArrayUtils.CloneStringMap(biomeMap),
                 BiomeMap = biomeMap,
                 ObjectMap = objectMap,
                 HeightMap = heightMap,
                 BuildingMap = buildingMap,
-                LogicalTileMap = _graphDiagnostics?.LastLogicalMap,
-                CompiledLayers = _graphDiagnostics?.LastCompiledLayers,
-                CellSize = _graphDiagnostics?.LastCellSize ?? 1f
+                LogicalTileMap = _diagnostics?.LastLogicalMap,
+                CompiledLayers = _diagnostics?.LastCompiledLayers,
+                CellSize = _diagnostics?.LastCellSize ?? 1f
             };
-            if (_graphDiagnostics != null && _graphDiagnostics.TryGetLastBaseMapWorldBounds(out var bounds))
+            if (_diagnostics != null && _diagnostics.TryGetLastBaseMapWorldBounds(out var bounds))
             {
                 data.HasBaseMapWorldBounds = true;
                 data.BaseMapWorldBounds = bounds;
             }
             ApplyLaunchMetadata(data);
-            _worldDiagnostics?.GraphMapDataGenerated($"graph={_graphDiagnostics?.DiagnosticGraphName ?? "null"}, map={data.Width}x{data.Height}, seed={_graphDiagnostics?.DiagnosticSeed ?? 0}");
             return data;
         }
 

@@ -23,9 +23,6 @@ public sealed class ConstructionSystemProfileSO : MoyvaJsonConfigObject
         [BoxGroup("Defaults"), Required]
         [SerializeField] private ConstructionWallProfileSO _wallProfile;
 
-        [BoxGroup("Defaults"), Required]
-        [SerializeField] private ConstructionDiagnosticsProfileSO _diagnosticsProfile;
-
         [BoxGroup("Integrations")]
         [SerializeField] private MoyvaJsonConfigObject _economyRulesProfile;
 
@@ -40,7 +37,6 @@ public sealed class ConstructionSystemProfileSO : MoyvaJsonConfigObject
         public ConstructionVisualProfileSO VisualProfile => _visualProfile;
         public ConstructionInputProfileSO InputProfile => _inputProfile;
         public ConstructionWallProfileSO WallProfile => _wallProfile;
-        public ConstructionDiagnosticsProfileSO DiagnosticsProfile => _diagnosticsProfile;
         public MoyvaJsonConfigObject EconomyRulesProfile => _economyRulesProfile;
         public MoyvaJsonConfigObject FogOfWarSettings => _fogOfWarSettings;
         public BuildingDefinitionAsset[] HighlightedDefinitions => _highlightedDefinitions;

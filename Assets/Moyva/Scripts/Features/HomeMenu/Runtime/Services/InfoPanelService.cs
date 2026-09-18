@@ -27,7 +27,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (_viewController == null)
             {
-                Debug.LogWarning("[InfoPanelService] IInfoPanelViewController не підключено — повідомлення будуть лише логуватись.");
                 return;
             }
 
@@ -52,7 +51,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             // Без View — повідомляємо у консоль, аби нічого не загубити.
             if (_viewController == null)
             {
-                Debug.Log($"[InfoPanel] {message.Title}: {message.Message}");
                 try { message.OnAcknowledged?.Invoke(); } catch (Exception e) { Debug.LogException(e); }
                 return;
             }

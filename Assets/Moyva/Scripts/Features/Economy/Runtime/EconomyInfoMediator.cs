@@ -23,6 +23,22 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _database = database;
         }
 
+        public RecruitmentPopulationSnapshot GetRecruitmentPopulation(string ownerId, Vector2Int position)
+            => _economyManager?.GetRecruitmentPopulation(ownerId, position) ?? default;
+
+        public bool TryReserveRecruitmentPopulation(string ownerId, Vector2Int position, long queueId, int count, out string reason)
+        {
+            reason = "Population service is unavailable.";
+            return _economyManager != null
+                && _economyManager.TryReserveRecruitmentPopulation(ownerId, position, queueId, count, out reason);
+        }
+
+        public void ReleaseRecruitmentPopulation(string ownerId, long queueId)
+            => _economyManager?.SetRecruitmentPopulationAssignment(ownerId, queueId, null);
+
+        public void DeployRecruitmentPopulation(string ownerId, long queueId, string unitId)
+            => _economyManager?.SetRecruitmentPopulationAssignment(ownerId, queueId, unitId);
+
         public bool TryGetSettlementContext(Vector2Int position, out EconomySettlementContext context)
         {
             context = default;
@@ -82,6 +98,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         public void RefundOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resources)
             => _economyManager?.RefundOwnerPoolResources(ownerId, resources);
+
+        public void RefundRecruitmentResources(string ownerId, string settlementId,
+            IReadOnlyDictionary<string, float> resources)
+            => _economyManager?.RefundRecruitmentResources(ownerId, settlementId, resources);
 
         public bool OwnerHasAnyWarehouse(string ownerId)
             => _economyManager != null && _economyManager.OwnerHasAnyWarehouse(ownerId);

@@ -1,0 +1,61 @@
+{
+  "$schema": "../Schemas/unit.schema.json",
+  "schema": "moyva.unit",
+  "version": 1,
+  "id": "caravan-wagon",
+  "model": "unit-class",
+  "typeId": "caravan-wagon",
+  "displayName": "Caravan Wagon",
+  "role": "Worker",
+  "combatType": "Cavalry",
+  "baseStamina": 80.0,
+  "cargoCapacity": 120.0,
+  "visionRange": 2,
+  "visionHeightBoostPerLevel": 0.0,
+  "canSeeCrest": true,
+  "crestVisibilityFactor": 1.0,
+  "downSlopeVisionBonus": 0.0,
+  "silhouettePenalty": 0.2,
+  "hitPoints": 70,
+  "baseLevel": 1,
+  "cuttingDamage": 0,
+  "penetratingDamage": 0,
+  "crushingDamage": 2,
+  "cuttingDefense": 0,
+  "penetratingDefense": 0,
+  "crushingDefense": 0,
+  "prefab": {
+    "$asset": "asset.game-object.cart-blue-full.c2a3c9da",
+    "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/units/blue/cart_blue_full.prefab",
+    "required": true
+  },
+  "staminaRandomRange": {
+    "x": -4.0,
+    "y": 4.0
+  },
+  "animationSettings": {
+    "moveDurationPerTile": 0.35,
+    "delayOnTile": 0.05,
+    "onStepCompleted": null,
+    "canPerformStep": null,
+    "resolveWorldPosition": null
+  },
+  "customSprite": {
+    "$asset": "asset.sprite.light-cavalry.0929e1c0",
+    "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Units/light-cavalry.png",
+    "required": true
+  },
+  "animationClips": [],
+  "migration": {
+    "sourceRegistry": "Assets/Moyva/Presets/Units/caravan-wagon.json",
+    "sourceHash": "runtime-json-added-caravan-wagon-2026-09-06"
+  },
+  "attackRange": 1,
+  "movementPointsPerTurn": 6.0,
+  "movementProfile": {
+    "$config": {
+      "model": "movement-profile",
+      "id": "cavalry"
+    }
+  }
+}

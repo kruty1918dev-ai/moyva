@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Generator.Runtime.Noise;
-using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Generator.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement

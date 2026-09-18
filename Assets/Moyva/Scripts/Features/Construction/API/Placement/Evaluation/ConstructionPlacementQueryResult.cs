@@ -11,8 +11,7 @@ namespace Kruty1918.Moyva.Construction.API
             bool resourcesValid,
             bool isGateReplacement,
             string reason = null,
-            BuildingPlacementEvaluationResult evaluationResult = null,
-            ConstructionPlacementDiagnostic diagnostic = null)
+            BuildingPlacementEvaluationResult evaluationResult = null)
             : this(
                 availabilityValid: true,
                 spatialValid: isSpatiallyValid,
@@ -20,8 +19,7 @@ namespace Kruty1918.Moyva.Construction.API
                 authorityValid: true,
                 isGateReplacement: isGateReplacement,
                 reason: reason,
-                evaluationResult: evaluationResult,
-                diagnostic: diagnostic)
+                evaluationResult: evaluationResult)
         {
         }
 
@@ -32,8 +30,7 @@ namespace Kruty1918.Moyva.Construction.API
             bool authorityValid,
             bool isGateReplacement,
             string reason = null,
-            BuildingPlacementEvaluationResult evaluationResult = null,
-            ConstructionPlacementDiagnostic diagnostic = null)
+            BuildingPlacementEvaluationResult evaluationResult = null)
         {
             AvailabilityValid = availabilityValid;
             SpatialValid = spatialValid;
@@ -42,7 +39,6 @@ namespace Kruty1918.Moyva.Construction.API
             IsGateReplacement = isGateReplacement;
             Reason = reason;
             EvaluationResult = evaluationResult;
-            Diagnostic = diagnostic;
         }
 
         /// <summary>
@@ -67,7 +63,6 @@ namespace Kruty1918.Moyva.Construction.API
         public bool IsGateReplacement { get; }
         public string Reason { get; }
         public BuildingPlacementEvaluationResult EvaluationResult { get; }
-        public ConstructionPlacementDiagnostic Diagnostic { get; }
 
         public bool CanSelect => AvailabilityValid;
         public bool CanPreview => AvailabilityValid && SpatialValid;

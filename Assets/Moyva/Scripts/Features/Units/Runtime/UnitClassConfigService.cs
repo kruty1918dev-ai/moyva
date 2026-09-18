@@ -15,8 +15,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             {
                 if (!_configByTypeId.ContainsKey(config.TypeId))
                     _configByTypeId.Add(config.TypeId, config);
-                else
-                    Debug.LogWarning($"[UnitClassConfigService] Дублікат TypeId '{config.TypeId}' у реєстрі юнітів. Ігнорую цей запис.");
             }
         }
 

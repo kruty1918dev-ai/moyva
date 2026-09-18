@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
 using Zenject;
@@ -25,8 +24,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             [InjectOptional] FogOfWarSettings settings = null,
             [InjectOptional] IFogVolumeStateCache stateCache = null,
             [InjectOptional] IFogStartupFogServiceFactory startupFogServiceFactory = null,
-            [InjectOptional] IFogDirtyClusterTracker dirtyClusterTracker = null,
-            [InjectOptional] IFogClusteredVolumeRenderer clusteredVolumeRenderer = null)
+            [InjectOptional] FogDirtyClusterTracker dirtyClusterTracker = null,
+            [InjectOptional] FogClusteredVolumeRenderer clusteredVolumeRenderer = null)
             : this(new FogVolumeVisualUpdateEngine(
                 settings,
                 null,
@@ -43,10 +42,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
         }
 
-        internal int DebugUnexploredCellCount => _engine.DebugUnexploredCellCount;
-        internal int DebugExploredCellCount => _engine.DebugExploredCellCount;
-        internal Configuration DebugRuntimeConfiguration => _engine.DebugRuntimeConfiguration;
-
         public void AttachController(FogOfWarVolumeController controller) => _engine.AttachController(controller);
         public void DetachController(FogOfWarVolumeController controller) => _engine.DetachController(controller);
         public void Initialize(int width, int height, FogWorldVisualContext context) => _engine.Initialize(width, height, context);
@@ -58,8 +53,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         public void Tick() => _engine.Tick();
         public void Dispose() => _engine.Dispose();
 
-        internal bool DebugHasUnexploredCell(Vector2Int tile) => _engine.DebugHasUnexploredCell(tile);
-        internal bool DebugHasExploredCell(Vector2Int tile) => _engine.DebugHasExploredCell(tile);
         public void RequestStartupBuildFromController(FogOfWarVolumeController controller, FogWorldVisualContext context) => _engine.RequestStartupBuildFromController(controller, context);
         public void RequestFullRebuildFromController(FogOfWarVolumeController controller) => _engine.RequestFullRebuildFromController(controller);
     }

@@ -39,8 +39,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             string logKey = $"{mapping.IdPattern}:{mapping.BlueprintLayerGuid}:{mapping.BlueprintLayerName}";
-            if (_loggedMissingLayers.Add(logKey))
-                Debug.LogWarning($"{LogTag} Cannot resolve TWC blueprint layer for ID pattern '{mapping.IdPattern}'.");
 
             return false;
         }

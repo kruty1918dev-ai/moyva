@@ -23,18 +23,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var timeout = TimeSpan.FromSeconds(10);
             var deadline = DateTime.UtcNow + timeout;
 
-            Debug.Log($"{Prefix} WaitUntilReadyAsync start. deadline in {timeout.TotalSeconds}s.");
-
             while (!ConnectionState.IsConnected)
             {
                 ct.ThrowIfCancellationRequested();
 
                 var state = ConnectionState;
-                Debug.Log($"{Prefix} CurrentState: IsInitialized={state.IsUnityServicesInitialized}, IsAuthenticated={state.IsAuthenticated}, IsConnecting={state.IsConnecting}, Progress={state.ConnectionProgress:0.##}");
-
-                Debug.Log($"{Prefix} Ensuring authentication/initialization...");
                 await EnsureAuthenticationAsync(ct);
-                Debug.Log($"{Prefix} EnsureAuthenticationAsync returned.");
 
                 progress?.Report(ConnectionState.ConnectionProgress);
 
@@ -47,8 +41,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
                 await Task.Delay(100, ct);
             }
-
-            Debug.Log($"{Prefix} WaitUntilReadyAsync completed — connected.");
             progress?.Report(1f);
         }
 
@@ -56,26 +48,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             try
             {
-                Debug.Log($"{Prefix} EnsureAuthenticationAsync start.");
-                if (UnityServices.State != ServicesInitializationState.Initialized)
-                {
-                    Debug.Log($"{Prefix} UnityServices.State={UnityServices.State} — calling InitializeAsync()");
-                    await UnityServices.InitializeAsync();
-                    Debug.Log($"{Prefix} UnityServices.InitializeAsync completed. State={UnityServices.State}");
-                }
-
-                MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded();
-
-                if (!AuthenticationService.Instance.IsSignedIn)
-                {
-                    Debug.Log($"{Prefix} Not signed in — calling SignInAnonymouslyAsync()");
-                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
-                    Debug.Log($"{Prefix} SignInAnonymouslyAsync completed. IsSignedIn={AuthenticationService.Instance.IsSignedIn}");
-                }
-                else
-                {
-                    Debug.Log($"{Prefix} Already signed in.");
-                }
+                await MultiplayerAuthenticationGate.EnsureReadyAsync(ct);
             }
             catch (Exception exception)
             {
@@ -85,10 +58,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         private MultiplayerConnectionState BuildCurrentState()
         {
-            Debug.Log($"{Prefix} BuildCurrentState start. UnityServices.State={UnityServices.State}, IsSignedIn={AuthenticationService.Instance.IsSignedIn}");
             var unityInitialized = UnityServices.State == ServicesInitializationState.Initialized;
             var unityInitializing = UnityServices.State == ServicesInitializationState.Initializing;
-            var authenticated = unityInitialized && AuthenticationService.Instance.IsSignedIn;
+            var authenticated = unityInitialized && AuthenticationService.Instance.IsSignedIn
+                && AuthenticationService.Instance.IsAuthorized;
 
             var isConnecting = unityInitializing || (unityInitialized && !authenticated);
             var isConnected = unityInitialized && authenticated;
@@ -104,8 +77,89 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 isConnecting,
                 isConnected,
                 progress);
-            
+
             // Note: returning state — caller will log details as needed
+        }
+    }
+
+    internal static class MultiplayerAuthenticationGate
+    {
+        private static readonly object Gate = new();
+        private static Task _initializationTask;
+
+        public static async Task EnsureReadyAsync(CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            Task pending;
+            lock (Gate)
+            {
+                bool ready = UnityServices.State == ServicesInitializationState.Initialized
+                    && AuthenticationService.Instance.IsSignedIn
+                    && AuthenticationService.Instance.IsAuthorized;
+                if (ready)
+                    return;
+                if (_initializationTask == null || _initializationTask.IsCompleted)
+                    _initializationTask = InitializeAndSignInAsync();
+                pending = _initializationTask;
+            }
+            // Cancelling one menu must not cancel application-wide initialization.
+            var cancelled = new TaskCompletionSource<bool>();
+            using (ct.Register(() => cancelled.TrySetCanceled(ct)))
+            {
+                await await Task.WhenAny(pending, cancelled.Task);
+            }
+        }
+
+        private static async Task InitializeAndSignInAsync()
+        {
+            DateTime deadline = DateTime.UtcNow.AddSeconds(30);
+            while (UnityServices.State == ServicesInitializationState.Initializing)
+            {
+                if (DateTime.UtcNow >= deadline)
+                    throw new TimeoutException("Unity Services initialization did not finish.");
+                await Task.Delay(100);
+            }
+            if (UnityServices.State != ServicesInitializationState.Initialized)
+                await UnityServices.InitializeAsync();
+
+            MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded();
+
+            if (AuthenticationService.Instance == null)
+                throw new InvalidOperationException("Authentication service is unavailable.");
+            if (AuthenticationService.Instance.IsSignedIn && AuthenticationService.Instance.IsAuthorized)
+                return;
+            if (AuthenticationService.Instance.IsSignedIn)
+                AuthenticationService.Instance.SignOut();
+
+            try
+            {
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            }
+            catch (AuthenticationException e) when (e.ErrorCode == AuthenticationErrorCodes.ClientInvalidUserState)
+            {
+                await WaitForConcurrentSignInAsync();
+            }
+        }
+
+        private static async Task WaitForConcurrentSignInAsync()
+        {
+            const int delayMs = 100;
+            const int timeoutMs = 5000;
+            int waitedMs = 0;
+
+            while (waitedMs < timeoutMs)
+            {
+                if (AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn
+                    && AuthenticationService.Instance.IsAuthorized)
+                    return;
+
+                await Task.Delay(delayMs);
+                waitedMs += delayMs;
+            }
+
+            if (AuthenticationService.Instance == null || !AuthenticationService.Instance.IsSignedIn
+                || !AuthenticationService.Instance.IsAuthorized)
+                throw new InvalidOperationException("Authentication is already signing in and did not complete.");
         }
     }
 }

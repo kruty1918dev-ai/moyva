@@ -72,7 +72,7 @@ unity command moyva-gameplay-ui-audit --project-path="$PROJECT" --output-dir "$O
 if unity command editor_play --project-path="$PROJECT" --format json >"$OUT/editor_play.json" 2>&1; then
   sleep 8
   capture_view runtime_normal_1280x720 1280 720 || true
-  unity command eval --project-path="$PROJECT" --code 'var go=GameObject.Find("ConstructionUI"); if(go==null) go=GameObject.Find("Canvas/ConstructionUI"); var c=go!=null?go.GetComponent<Kruty1918.Moyva.Construction.UI.ConstructionUIController>():null; if(c!=null){c.EnterConstructionMode(); return "construction-requested";} return "controller-not-found";' --timeout 10000 --format json >"$OUT/runtime_enter_construction.json" 2>&1 || true
+  unity command eval --project-path="$PROJECT" --code 'var ctx=UnityEngine.Object.FindFirstObjectByType<Zenject.SceneContext>(); var c=ctx!=null?ctx.Container.TryResolve<Kruty1918.Moyva.Construction.API.IConstructionSessionCommands>():null; if(c!=null){var q=ctx.Container.TryResolve<Kruty1918.Moyva.Construction.API.IConstructionBootstrapQuery>(); var id=(q!=null&&q.RequiresInitialCastle(c.GetActiveOwner(),out var castle))?castle:"castle"; c.SelectBuilding(id); return "construction-requested";} return "service-not-found";' --timeout 10000 --format json >"$OUT/runtime_enter_construction.json" 2>&1 || true
   sleep 3
   capture_view runtime_construction_1280x720 1280 720 || true
   unity command editor_stop --project-path="$PROJECT" --format json >"$OUT/editor_stop.json" 2>&1 || true
@@ -84,7 +84,7 @@ fi
   echo
   git -C "$PROJECT" status --short 2>/dev/null || true
 } >"$OUT/git_state.txt"
-git -C "$PROJECT" diff -- Assets/Moyva/Scenes/Gamplay_Scene.unity Assets/Moyva/Scripts/Features/Construction/UI/Controllers/ConstructionUIController.cs >"$OUT/pass73.diff" 2>/dev/null || true
+git -C "$PROJECT" diff -- Assets/Moyva/Scenes/Gamplay_Scene.unity Assets/Moyva/Scripts/Features/GameplayHUD/Runtime/GameplayHtmlPresenter.cs >"$OUT/pass73.diff" 2>/dev/null || true
 
 DOWNLOAD=''
 for d in "$HOME/Завантажене" "$HOME/Завантаження" "$HOME/Downloads"; do [[ -d "$d" ]] && { DOWNLOAD="$d"; break; }; done

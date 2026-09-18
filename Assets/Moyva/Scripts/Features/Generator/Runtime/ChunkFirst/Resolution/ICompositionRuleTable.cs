@@ -3,8 +3,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     internal interface ICompositionRuleTable
     {
         bool TryCompare(
-            GraphTileLayerSample current,
-            GraphTileLayerSample candidate,
+            TileLayerSample current,
+            TileLayerSample candidate,
             TileNeighborhood neighborhood,
             out int result,
             out string reason);
@@ -13,8 +13,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     internal sealed class DefaultCompositionRuleTable : ICompositionRuleTable
     {
         public bool TryCompare(
-            GraphTileLayerSample current,
-            GraphTileLayerSample candidate,
+            TileLayerSample current,
+            TileLayerSample candidate,
             TileNeighborhood neighborhood,
             out int result,
             out string reason)

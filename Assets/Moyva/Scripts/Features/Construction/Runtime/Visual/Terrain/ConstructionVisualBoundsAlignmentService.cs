@@ -3,8 +3,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionVisualBoundsAlignmentService : IConstructionVisualBoundsAlignmentService
-    {
+    internal sealed class ConstructionVisualBoundsAlignmentService {
         public void AlignCenterXZ(GameObject instance, Vector3 targetCenter)
         {
             if (instance == null)

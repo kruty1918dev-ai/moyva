@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using Zenject;
 
@@ -7,6 +8,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 {
     public sealed class GeneratedTerrainLevelQueryService :
         IGeneratedTerrainLevelQuery,
+        IGridTerrainSurfaceQuery,
         IGeneratedTerrainSurfaceVersionQuery
     {
         private readonly IGeneratorTerrainLevelService _terrainLevelService;

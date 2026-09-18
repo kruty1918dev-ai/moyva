@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Kruty1918.Moyva.Diagnostics.API;
 
 namespace Kruty1918.Moyva.SaveSystem
 {
@@ -9,7 +8,6 @@ namespace Kruty1918.Moyva.SaveSystem
             int slot,
             IReadOnlyList<ISaveModule> modules,
             string requiredBlockModuleFullName,
-            IDiagnosticFlow flow,
             out string errorMessage);
     }
 }

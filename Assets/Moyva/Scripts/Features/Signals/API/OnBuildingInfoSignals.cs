@@ -60,4 +60,11 @@ namespace Kruty1918.Moyva.Signals
         public string ObjectId;
         public Vector2Int Position;
     }
+
+    public struct WorldFocusPingRequestedSignal
+    {
+        public string TargetId;
+        public Vector2Int Position;
+        public float DurationSeconds;
+    }
 }

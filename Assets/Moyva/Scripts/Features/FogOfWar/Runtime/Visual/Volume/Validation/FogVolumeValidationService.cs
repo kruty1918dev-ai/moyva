@@ -14,7 +14,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// </summary>
         /// <param name="host">Host-компонент, який перевіряється.</param>
         /// <returns>Резюме валідності поточного scene/setup state.</returns>
-        public string BuildValidationSummary(IFogVolumeValidationHost host)
+        public string BuildValidationSummary(FogOfWarVolumeController host)
         {
             if (host?.Settings == null)
                 return "Missing FogOfWarSettings.";

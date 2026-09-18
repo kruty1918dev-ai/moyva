@@ -19,8 +19,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 string ownerId,
                 int required,
                 int completed,
-                long placedTurn)
+                long placedTurn,
+                float partialWork = 0f)
             {
+                PartialWork = Math.Max(0f, Math.Min(0.999999f, partialWork));
                 Position = position;
                 BuildingId = buildingId ?? string.Empty;
                 OwnerId = NormalizeOwner(ownerId);
@@ -35,6 +37,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             public int Required { get; }
             public int Completed { get; }
             public long PlacedTurn { get; }
+            public float PartialWork { get; }
         }
 
         internal readonly struct OperationalTransition
@@ -63,6 +66,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             public int Completed;
             public long PlacedTurn;
             public bool OperationalPublished;
+            public float PartialWork;
         }
 
         private readonly Dictionary<Vector2Int, State> _states = new();
@@ -224,6 +228,79 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public bool Remove(Vector2Int position)
             => _states.Remove(position);
 
+        /// <summary>
+        /// Trusted restore: completes a tracked placement and reports the
+        /// operational transition once. Unknown or already-published positions
+        /// are a no-op.
+        /// </summary>
+        public bool TryRestoreOperational(
+            Vector2Int position,
+            out OperationalTransition transition)
+        {
+            transition = default;
+            if (!_states.TryGetValue(position, out State state)
+                || string.IsNullOrWhiteSpace(state.BuildingId)
+                || state.OperationalPublished)
+            {
+                return false;
+            }
+
+            state.Completed = Math.Max(state.Completed, state.Required);
+            state.PartialWork = 0f;
+            state.OperationalPublished = true;
+            transition = ToOperational(position, state);
+            return true;
+        }
+
+        public bool TryTransferOwner(
+            Vector2Int position,
+            string previousOwnerId,
+            string newOwnerId,
+            out string reason)
+        {
+            reason = string.Empty;
+            if (!_states.TryGetValue(position, out State state))
+            {
+                reason = "Construction lifecycle state not found.";
+                return false;
+            }
+
+            string previous = NormalizeOwner(previousOwnerId);
+            string next = NormalizeOwner(newOwnerId);
+            if (!string.Equals(state.OwnerId, previous, StringComparison.Ordinal))
+            {
+                reason = $"Construction lifecycle belongs to '{state.OwnerId}', not '{previous}'.";
+                return false;
+            }
+
+            state.OwnerId = next;
+            return true;
+        }
+
+        public IReadOnlyList<OperationalTransition> AdvanceRealtime(float work,
+            Func<string, Vector2Int, float> resolveSpeed)
+        {
+            var transitions = new List<OperationalTransition>();
+            var positions = new List<Vector2Int>(_states.Keys);
+            positions.Sort(ComparePosition);
+            foreach (var position in positions)
+            {
+                State state = _states[position];
+                if (state.Completed >= state.Required) continue;
+                double completed = Math.Min(state.Required,
+                    state.Completed + state.PartialWork + work * resolveSpeed(state.OwnerId, position));
+                state.Completed = (int)Math.Floor(completed);
+                state.PartialWork = (float)(completed - state.Completed);
+                if (state.Completed >= state.Required && !state.OperationalPublished
+                    && !string.IsNullOrWhiteSpace(state.BuildingId))
+                {
+                    state.OperationalPublished = true;
+                    transitions.Add(ToOperational(position, state));
+                }
+            }
+            return transitions;
+        }
+
         public IReadOnlyList<OperationalTransition> AdvanceOwnerTurn(
             string ownerId,
             long globalTurn)
@@ -314,6 +391,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         Math.Max(0, saved.Completed),
                         Math.Max(0, saved.Required)),
                     PlacedTurn = Math.Max(0L, saved.PlacedTurn),
+                    PartialWork = saved.PartialWork,
                 };
 
                 if (previous.TryGetValue(saved.Position, out State previousState)
@@ -367,7 +445,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 state.OwnerId,
                 state.Required,
                 state.Completed,
-                state.PlacedTurn);
+                state.PlacedTurn, state.PartialWork);
 
         private static OperationalTransition ToOperational(
             Vector2Int position,

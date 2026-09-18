@@ -1,0 +1,23 @@
+{
+  "name": "Kruty1918.Moyva.Notifications",
+  "rootNamespace": "Kruty1918.Moyva.Notifications",
+  "references": [
+    "Zenject",
+    "Unity.TextMeshPro"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [
+    {
+      "name": "com.demigiant.dotween",
+      "expression": "1.0.0",
+      "define": "DOTWEEN_ENABLED"
+    }
+  ],
+  "noEngineReferences": false
+}

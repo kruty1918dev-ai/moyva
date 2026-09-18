@@ -271,7 +271,7 @@
     "mapMaskEnabled": {
       "type": "boolean",
       "title": "Map Mask Enabled",
-      "description": "Показувати хмаринки тільки всередині меж мапи. Якщо GridService доступний, межі беруться автоматично з розміру мапи."
+      "description": "Показувати хмаринки тільки всередині меж мапи. Якщо IGridService доступний, межі беруться автоматично з розміру мапи."
     },
     "manualMapSize": {
       "type": "object",
@@ -289,7 +289,7 @@
       ],
       "additionalProperties": false,
       "title": "Manual Map Size",
-      "description": "Розмір мапи для сцен без GridService. У звичайній ігровій сцені використовується автоматичний розмір з GridService."
+      "description": "Розмір мапи для сцен без IGridService. У звичайній ігровій сцені використовується автоматичний розмір з IGridService."
     },
     "manualMapCenter": {
       "type": "object",
@@ -307,7 +307,7 @@
       ],
       "additionalProperties": false,
       "title": "Manual Map Center",
-      "description": "Центр ручних меж мапи для сцен без GridService."
+      "description": "Центр ручних меж мапи для сцен без IGridService."
     },
     "maskEdgeFadeWidth": {
       "type": "number",

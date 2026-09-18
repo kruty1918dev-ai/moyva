@@ -60,19 +60,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
 
             if (requestedWidth != Width || requestedHeight != Height)
             {
-                Debug.LogWarning(
-                    "[MOYVA_CHUNK_SIZE] LAYOUT_CROPPED " +
-                    $"requested={requestedWidth}x{requestedHeight} " +
-                    $"effective={Width}x{Height} " +
-                    $"chunkSize={chunkSize} " +
-                    $"trimmed={requestedWidth - Width}x{requestedHeight - Height} " +
-                    "fullChunksOnly=1");
             }
-
-            Debug.Log(
-                $"[MoyvaMapChunks] Layout configured map={Width}x{Height} tiles, " +
-                $"chunk={chunkSize}x{chunkSize} tiles, chunks={countX}x{countY} ({_chunks.Count}), " +
-                $"cellSize={CellSize:0.###}.");
         }
 
         public bool TryGetChunkCoord(Vector2Int tile, out MapChunkCoord coord)

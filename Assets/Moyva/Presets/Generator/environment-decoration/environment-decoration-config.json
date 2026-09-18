@@ -1,0 +1,63 @@
+{
+  "$schema": "../../Schemas/environment-decoration-config.schema.json",
+  "schema": "moyva.environment-decoration-config",
+  "version": 1,
+  "id": "environment-decoration-config",
+  "model": "environment-decoration-config",
+  "enabled": true,
+  "globalDensity": 1.0,
+  "seedOffset": 0,
+  "maxObjectsPerTile": 3,
+  "clusterStrength": 0.7,
+  "clusterRadius": 3,
+  "typeDensities": {
+    "treeDensity": 0.15,
+    "bushDensity": 0.1,
+    "grassDensity": 0.2,
+    "rockDensity": 0.08
+  },
+  "biomeRules": {
+    "grassland": 1.2,
+    "forest": 2.0,
+    "rocky": 1.5,
+    "coast": 0.5,
+    "water": 0.0
+  },
+  "exclusions": {
+    "buildingExclusionRadius": 1,
+    "settlementExclusionRadius": 2,
+    "suppressWaterDecorations": true
+  },
+  "visualVariation": {
+    "enableRotation": true,
+    "enableScaleVariation": true,
+    "minScale": 0.85,
+    "maxScale": 1.15,
+    "maxPositionOffset": 0.2
+  },
+  "assetPools": {
+    "tree": [
+      "green-tree-object-001",
+      "green-tree-object-002",
+      "green-tree-object-003",
+      "green-tree-object-004",
+      "green-tree-object-005",
+      "green-tree-object-006",
+      "green-tree-object-007",
+      "green-tree-object-008"
+    ],
+    "rock": [
+      "stone-object-001",
+      "stone-object-002"
+    ],
+    "palm": [
+      "palm-tree-object-001",
+      "palm-tree-object-002",
+      "palm-tree-object-003"
+    ],
+    "stump": [
+      "green-tree-stump-object-001",
+      "palm-tree-stump-object-001"
+    ]
+  }
+}

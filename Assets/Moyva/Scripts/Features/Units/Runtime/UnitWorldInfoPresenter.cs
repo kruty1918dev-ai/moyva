@@ -17,8 +17,9 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IEconomyInfoMediator _economyInfoMediator;
         private readonly IHealthRegistry _healthRegistry;
         private readonly IUnitOwnershipQuery _ownershipQuery;
-        private readonly IConstructionService _constructionService;
+        private readonly IConstructionSessionCommands _constructionService;
         private readonly IConstructionUnitGarrisonRuntime _garrisonRuntime;
+        private readonly Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
 
         public UnitWorldInfoPresenter(
             SignalBus signalBus,
@@ -27,8 +28,9 @@ namespace Kruty1918.Moyva.Units.Runtime
             [InjectOptional] IEconomyInfoMediator economyInfoMediator,
             [InjectOptional] IHealthRegistry healthRegistry = null,
             [InjectOptional] IUnitOwnershipQuery ownershipQuery = null,
-            [InjectOptional] IConstructionService constructionService = null,
-            [InjectOptional] IConstructionUnitGarrisonRuntime garrisonRuntime = null)
+            [InjectOptional] IConstructionSessionCommands constructionService = null,
+            [InjectOptional] IConstructionUnitGarrisonRuntime garrisonRuntime = null,
+            [InjectOptional] Kruty1918.Moyva.Shared.Localization.ILocalizationService localization = null)
         {
             _signalBus = signalBus;
             _unitClassConfig = unitClassConfig;
@@ -38,7 +40,11 @@ namespace Kruty1918.Moyva.Units.Runtime
             _ownershipQuery = ownershipQuery;
             _constructionService = constructionService;
             _garrisonRuntime = garrisonRuntime;
+            _loca = localization;
         }
+
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
 
         public UnitWorldInfoPresenter(
             SignalBus signalBus,
@@ -89,12 +95,12 @@ namespace Kruty1918.Moyva.Units.Runtime
             });
         }
 
-        private static string ResolveTitle(string unitId, string unitTypeId, UnitClassConfig config)
+        private string ResolveTitle(string unitId, string unitTypeId, UnitClassConfig config)
         {
             if (!string.IsNullOrWhiteSpace(config?.DisplayName))
-                return config.DisplayName;
+                return T(config.DisplayName);
 
-            return "Юніт";
+            return T("Unit");
         }
 
         private string BuildSubtitle(
@@ -109,7 +115,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 && _economyInfoMediator.TryGetSettlementContext(position, out var settlementContext))
             {
                 var settlementName = string.IsNullOrWhiteSpace(settlementContext.SettlementName)
-                    ? "Поселення"
+                    ? T("Settlement")
                     : settlementContext.SettlementName;
 
                 if (!string.IsNullOrWhiteSpace(settlementName))
@@ -125,27 +131,27 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (_healthRegistry != null
                 && _healthRegistry.TryGet(unitId, out IHealth health))
             {
-                sb.AppendLine($"Здоров'я: {health.CurrentHp} / {health.MaxHp}");
+                sb.AppendLine(TF("Health: {0} / {1}", health.CurrentHp, health.MaxHp));
             }
             else if (config?.HitPoints > 0)
-                sb.AppendLine($"Здоров'я: {config.HitPoints}");
+                sb.AppendLine(TF("Health: {0}", config.HitPoints));
 
             float stamina = _unitService.GetStamina(unitId);
-            sb.AppendLine(config?.BaseStamina > 0f
-                ? $"Витривалість: {stamina:0.#} / {config.BaseStamina:0.#}"
-                : $"Витривалість: {stamina:0.#}");
+            sb.AppendLine(config?.MovementPointsPerTurn > 0f
+                ? TF("Movement points: {0:0.#} / {1:0.#}", stamina, config.MovementPointsPerTurn)
+                : TF("Movement points: {0:0.#}", stamina));
 
             AppendMeaningfulFacts(config, sb);
 
             if (_garrisonRuntime != null)
                 sb.AppendLine(_garrisonRuntime.IsGarrisoned(unitId)
-                    ? "Стан: у гарнізоні"
-                    : "Стан: у полі");
+                    ? T("State: garrisoned")
+                    : T("State: in the field"));
 
             return sb.ToString().TrimEnd();
         }
 
-        private static bool AppendMeaningfulFacts(UnitClassConfig config, StringBuilder output)
+        private bool AppendMeaningfulFacts(UnitClassConfig config, StringBuilder output)
         {
             if (config == null || output == null)
                 return false;
@@ -153,15 +159,15 @@ namespace Kruty1918.Moyva.Units.Runtime
             int startLength = output.Length;
 
             if (config.VisionRange > 0)
-                output.AppendLine($"Огляд: {config.VisionRange}");
+                output.AppendLine(TF("Vision: {0}", config.VisionRange));
 
             int totalDamage = config.CuttingDamage + config.PenetratingDamage + config.CrushingDamage;
             if (totalDamage > 0)
-                output.AppendLine($"Шкода: {UnitCombatCalculator.FormatDamageTriplet(config)}");
+                output.AppendLine(TF("Damage: {0}", UnitCombatCalculator.FormatDamageTriplet(config)));
 
             int totalDefense = config.CuttingDefense + config.PenetratingDefense + config.CrushingDefense;
             if (totalDefense > 0)
-                output.AppendLine($"Захист: {UnitCombatCalculator.FormatDefenseTriplet(config)}");
+                output.AppendLine(TF("Defense: {0}", UnitCombatCalculator.FormatDefenseTriplet(config)));
 
             return output.Length > startLength;
         }
@@ -173,7 +179,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (string.IsNullOrWhiteSpace(ownerId)
                 || string.IsNullOrWhiteSpace(localOwnerId))
             {
-                return "власник невідомий";
+                return T("owner unknown");
             }
 
             return !string.IsNullOrWhiteSpace(ownerId)
@@ -181,16 +187,16 @@ namespace Kruty1918.Moyva.Units.Runtime
                        ownerId.Trim(),
                        localOwnerId?.Trim(),
                        StringComparison.Ordinal)
-                ? "ваш юніт"
-                : "чужий юніт";
+                ? T("your unit")
+                : T("enemy unit");
         }
 
-        private static string ResolveRoleText(UnitClassConfig config)
+        private string ResolveRoleText(UnitClassConfig config)
         {
             if (config == null)
-                return "Юніт";
+                return T("Unit");
 
-            return config.Role == UnitRole.Military ? "Військовий юніт" : "Робітник";
+            return config.Role == UnitRole.Military ? T("Military unit") : T("Worker");
         }
 
         private string FormatResources(IReadOnlyDictionary<string, float> resources, string title)
@@ -200,7 +206,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             if (resources == null || resources.Count == 0)
             {
-                sb.Append("Немає ресурсів.");
+                sb.Append(T("No resources."));
                 return sb.ToString();
             }
 
@@ -222,23 +228,23 @@ namespace Kruty1918.Moyva.Units.Runtime
             switch ((resourceId ?? string.Empty).Trim().ToLowerInvariant())
             {
                 case "material":
-                case "materials": return "Матеріали";
-                case "food": return "Їжа";
-                case "money": return "Гроші";
-                case "wood": return "Деревина";
-                case "stone": return "Камінь";
+                case "materials": return T("Materials");
+                case "food": return T("Food");
+                case "money": return T("Money");
+                case "wood": return T("Wood");
+                case "stone": return T("Stone");
                 case "iron":
-                case "iron-ore": return "Залізо";
-                default: return "Ресурс";
+                case "iron-ore": return T("Iron");
+                default: return T("Resource");
             }
         }
 
-        private static string ResolveUnitDisplayName(string unitTypeId, UnitClassConfig config)
+        private string ResolveUnitDisplayName(string unitTypeId, UnitClassConfig config)
         {
             if (!string.IsNullOrWhiteSpace(config?.DisplayName))
-                return config.DisplayName;
+                return T(config.DisplayName);
 
-            return "Юніт";
+            return T("Unit");
         }
     }
 }

@@ -1,0 +1,1512 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/generator-recipe.schema.json",
+  "title": "Moyva — Generator Map Recipe",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.API.GeneratorMapRecipe. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.generator-recipe"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "generator-map-recipe"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "seed": {
+      "type": "integer",
+      "title": "Seed",
+      "description": "0 = resolve seed from the launch context; non-zero pins this recipe's seed."
+    },
+    "sharedSettings": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "mapWidth": {
+          "type": "integer",
+          "title": "Map Width",
+          "description": "Authoritative map width in tiles. 0 = runtime/menu decides.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "mapHeight": {
+          "type": "integer",
+          "title": "Map Height",
+          "description": "Authoritative map height in tiles. 0 = runtime/menu decides.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "gridTopology": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Orthogonal|HexAxial|Layered))$",
+          "x-enumNames": [
+            "Orthogonal",
+            "HexAxial",
+            "Layered"
+          ],
+          "x-flags": false,
+          "title": "Grid Topology"
+        },
+        "projectionMode": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Isometric3DPreview|Orthographic3D))$",
+          "x-enumNames": [
+            "Isometric3DPreview",
+            "Orthographic3D"
+          ],
+          "x-flags": false,
+          "title": "Projection Mode"
+        },
+        "renderMode": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Mesh3DPreview|Mesh3D))$",
+          "x-enumNames": [
+            "Mesh3DPreview",
+            "Mesh3D"
+          ],
+          "x-flags": false,
+          "title": "Render Mode"
+        },
+        "neighborhoodMode": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Auto|Moore8|VonNeumann4|HexAxial6))$",
+          "x-enumNames": [
+            "Auto",
+            "Moore8",
+            "VonNeumann4",
+            "HexAxial6"
+          ],
+          "x-flags": false,
+          "title": "Neighborhood Mode"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Shared Settings"
+    },
+    "tileRegistry": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "definitions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Id"
+              },
+              "movementCost": {
+                "type": "number",
+                "title": "Movement Cost"
+              },
+              "tileWorldCreatorPreset": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Tile World Creator Preset"
+              },
+              "tileWorldCreatorBlueprintLayerGuid": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Tile World Creator Blueprint Layer Guid"
+              },
+              "tileWorldCreatorBlueprintLayerName": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Tile World Creator Blueprint Layer Name"
+              },
+              "visualPrefab": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Visual Prefab"
+              }
+            },
+            "additionalProperties": false
+          },
+          "title": "Definitions"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Tile Registry",
+      "description": "Tile registry used to resolve logical tile ids for generated layers."
+    },
+    "sharedGeneratorSettings": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "waterLikeTileIds": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": "Water Like Tile Ids",
+          "description": "Tile ID, які вважаються водою у всіх нодах генератора."
+        },
+        "riverBaseObjectId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "River Base Object Id",
+          "description": "Базовий Object ID річки для всіх нод генератора."
+        },
+        "separator": {
+          "type": "string",
+          "title": "Separator",
+          "description": "Роздільник для базового типу (Object ID та Tile ID)."
+        },
+        "matchBaseTypes": {
+          "type": "boolean",
+          "title": "Match Base Types",
+          "description": "Якщо увімкнено, порівнює базовий тип (до роздільника) замість точного ID."
+        }
+      },
+      "additionalProperties": false,
+      "title": "Shared Generator Settings",
+      "description": "Shared generator semantics (water-like tile ids, separators, ...)."
+    },
+    "layers": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Id",
+            "description": "Stable id used by mask steps referencing this layer and by object placements."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Name"
+          },
+          "color": {
+            "type": "object",
+            "properties": {
+              "r": {
+                "type": "number"
+              },
+              "g": {
+                "type": "number"
+              },
+              "b": {
+                "type": "number"
+              },
+              "a": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "r",
+              "g",
+              "b",
+              "a"
+            ],
+            "additionalProperties": false,
+            "title": "Color"
+          },
+          "sortingOrder": {
+            "type": "integer",
+            "title": "Sorting Order"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "defaultHeight": {
+            "type": "number",
+            "title": "Default Height"
+          },
+          "useZeroLayerPadding": {
+            "type": "boolean",
+            "title": "Use Zero Layer Padding"
+          },
+          "extraWidthCells": {
+            "type": "integer",
+            "title": "Extra Width Cells",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
+          },
+          "extraLengthCells": {
+            "type": "integer",
+            "title": "Extra Length Cells",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
+          },
+          "generateFlatSurface": {
+            "type": "boolean",
+            "title": "Generate Flat Surface"
+          },
+          "flatSurfaceMaterial": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Flat Surface Material"
+          },
+          "tileGeometryMode": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:SolidTerrain|SurfaceOnly))$",
+            "x-enumNames": [
+              "SolidTerrain",
+              "SurfaceOnly"
+            ],
+            "x-flags": false,
+            "title": "Tile Geometry Mode"
+          },
+          "authoredClosurePolicy": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:PreserveAuthored|GeneratedClosure|TopOnlyTemplate))$",
+            "x-enumNames": [
+              "PreserveAuthored",
+              "GeneratedClosure",
+              "TopOnlyTemplate"
+            ],
+            "x-flags": false,
+            "title": "Authored Closure Policy"
+          },
+          "blueprintLayerGuid": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Blueprint Layer Guid",
+            "description": "Persistent link to the BlueprintLayer in the companion TWC Configuration."
+          },
+          "outputKind": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:Tiles|Objects|Masks|InternalData|Other))$",
+            "x-enumNames": [
+              "Tiles",
+              "Objects",
+              "Masks",
+              "InternalData",
+              "Other"
+            ],
+            "x-flags": false,
+            "title": "Output Kind",
+            "description": "Which output channel this layer feeds."
+          },
+          "tileType": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "displayName": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Display Name"
+              },
+              "aliases": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "title": "Aliases"
+              },
+              "tags": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "title": "Tags"
+              },
+              "traversalClassId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Traversal Class Id"
+              },
+              "visual": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "gridMode": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:Normal|Dual|Flat))$",
+                    "x-enumNames": [
+                      "Normal",
+                      "Dual",
+                      "Flat"
+                    ],
+                    "x-flags": false,
+                    "title": "Grid Mode"
+                  },
+                  "variants": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "preset": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                          "properties": {
+                            "$asset": {
+                              "type": "string",
+                              "title": "Asset ID"
+                            },
+                            "editorPath": {
+                              "type": "string",
+                              "description": "Editor-only path для діагностики/регенерації catalog."
+                            },
+                            "required": {
+                              "type": "boolean",
+                              "default": true
+                            }
+                          },
+                          "required": [
+                            "$asset"
+                          ],
+                          "title": "Preset"
+                        },
+                        "slot": {
+                          "type": "string",
+                          "pattern": "^(?:-?\\d+|(?:Top|Middle|Bottom))$",
+                          "x-enumNames": [
+                            "Top",
+                            "Middle",
+                            "Bottom"
+                          ],
+                          "x-flags": false,
+                          "title": "Slot"
+                        },
+                        "weight": {
+                          "type": "number",
+                          "title": "Weight",
+                          "minimum": 0.0,
+                          "maximum": 1.0,
+                          "x-moyva-editorMinimum": 0.0,
+                          "x-moyva-editorMaximum": 1.0
+                        },
+                        "tileHeight": {
+                          "type": "number",
+                          "title": "Tile Height",
+                          "minimum": 0.0,
+                          "x-moyva-editorMinimum": 0.0
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "title": "Variants"
+                  },
+                  "representativePrefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Representative Prefab"
+                  },
+                  "scaleToCellSize": {
+                    "type": "boolean",
+                    "title": "Scale To Cell Size"
+                  },
+                  "layerYOffset": {
+                    "type": "number",
+                    "title": "Layer Y Offset"
+                  },
+                  "scaleOffset": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      },
+                      "z": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y",
+                      "z"
+                    ],
+                    "additionalProperties": false,
+                    "title": "Scale Offset"
+                  },
+                  "surfaceOffset": {
+                    "type": "number",
+                    "title": "Surface Offset"
+                  },
+                  "flatSurfaceMaterial": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Flat Surface Material"
+                  },
+                  "tileLayerHeightOffset": {
+                    "type": "number",
+                    "title": "Tile Layer Height Offset"
+                  },
+                  "ignoreFillTiles": {
+                    "type": "boolean",
+                    "title": "Ignore Fill Tiles"
+                  },
+                  "meshGenerationOverride": {
+                    "type": "boolean",
+                    "title": "Mesh Generation Override"
+                  },
+                  "mergeTiles": {
+                    "type": "boolean",
+                    "title": "Merge Tiles"
+                  },
+                  "shadowCastingMode": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:Off|On|TwoSided|ShadowsOnly))$",
+                    "x-enumNames": [
+                      "Off",
+                      "On",
+                      "TwoSided",
+                      "ShadowsOnly"
+                    ],
+                    "x-flags": false,
+                    "title": "Shadow Casting Mode"
+                  },
+                  "objectLayer": {
+                    "type": "integer",
+                    "title": "Object Layer"
+                  },
+                  "renderingLayer": {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": false,
+                    "title": "Rendering Layer"
+                  },
+                  "colliderType": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:none|meshCollider|tileCollider))$",
+                    "x-enumNames": [
+                      "none",
+                      "meshCollider",
+                      "tileCollider"
+                    ],
+                    "x-flags": false,
+                    "title": "Collider Type"
+                  },
+                  "tileColliderHeight": {
+                    "type": "number",
+                    "title": "Tile Collider Height",
+                    "minimum": 0.0,
+                    "x-moyva-editorMinimum": 0.0
+                  },
+                  "tileColliderExtrusionHeight": {
+                    "type": "number",
+                    "title": "Tile Collider Extrusion Height",
+                    "minimum": 0.0,
+                    "x-moyva-editorMinimum": 0.0
+                  },
+                  "invertCollisionWalls": {
+                    "type": "boolean",
+                    "title": "Invert Collision Walls"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "Visual"
+              }
+            },
+            "additionalProperties": false,
+            "title": "Tile Type",
+            "description": "Canonical moyva.tile-type JSON referenced by this layer."
+          },
+          "tileVariants": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "preset": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                  "properties": {
+                    "$asset": {
+                      "type": "string",
+                      "title": "Asset ID"
+                    },
+                    "editorPath": {
+                      "type": "string",
+                      "description": "Editor-only path для діагностики/регенерації catalog."
+                    },
+                    "required": {
+                      "type": "boolean",
+                      "default": true
+                    }
+                  },
+                  "required": [
+                    "$asset"
+                  ],
+                  "title": "Preset"
+                },
+                "slot": {
+                  "type": "string",
+                  "pattern": "^(?:-?\\d+|(?:Top|Middle|Bottom))$",
+                  "x-enumNames": [
+                    "Top",
+                    "Middle",
+                    "Bottom"
+                  ],
+                  "x-flags": false,
+                  "title": "Slot"
+                },
+                "weight": {
+                  "type": "number",
+                  "title": "Weight",
+                  "minimum": 0.0,
+                  "maximum": 1.0,
+                  "x-moyva-editorMinimum": 0.0,
+                  "x-moyva-editorMaximum": 1.0
+                },
+                "tileHeight": {
+                  "type": "number",
+                  "title": "Tile Height",
+                  "minimum": 0.0,
+                  "x-moyva-editorMinimum": 0.0
+                }
+              },
+              "additionalProperties": false
+            },
+            "title": "Tile Variants",
+            "description": "Weighted preset variants; overridden by TileType.Visual.Variants when set."
+          },
+          "tileBuild": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "useDualGrid": {
+                "type": "boolean",
+                "title": "Use Dual Grid",
+                "description": "If enabled, TWC uses Dual Grid. Enabled automatically for dual presets."
+              },
+              "scaleTileToCellSize": {
+                "type": "boolean",
+                "title": "Scale Tile To Cell Size",
+                "description": "Scale prefab tiles to the TWC cell size."
+              },
+              "layerYOffset": {
+                "type": "number",
+                "title": "Layer Y Offset",
+                "description": "Y offset of the whole build layer relative to BlueprintLayer.defaultLayerHeight."
+              },
+              "scaleOffset": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "z": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "z"
+                ],
+                "additionalProperties": false,
+                "title": "Scale Offset"
+              },
+              "tileLayerHeightOffset": {
+                "type": "number",
+                "title": "Tile Layer Height Offset",
+                "description": "Height offset of the first tile layer inside the TWC build layer."
+              },
+              "ignoreFillTiles": {
+                "type": "boolean",
+                "title": "Ignore Fill Tiles",
+                "description": "Ignore fill tiles in the first tile layer."
+              },
+              "meshGenerationOverride": {
+                "type": "boolean",
+                "title": "Mesh Generation Override"
+              },
+              "mergeTiles": {
+                "type": "boolean",
+                "title": "Merge Tiles"
+              },
+              "shadowCastingMode": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:Off|On|TwoSided|ShadowsOnly))$",
+                "x-enumNames": [
+                  "Off",
+                  "On",
+                  "TwoSided",
+                  "ShadowsOnly"
+                ],
+                "x-flags": false,
+                "title": "Shadow Casting Mode"
+              },
+              "objectLayer": {
+                "type": "integer",
+                "title": "Object Layer"
+              },
+              "renderingLayer": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false,
+                "title": "Rendering Layer"
+              },
+              "colliderType": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:none|meshCollider|tileCollider))$",
+                "x-enumNames": [
+                  "none",
+                  "meshCollider",
+                  "tileCollider"
+                ],
+                "x-flags": false,
+                "title": "Collider Type"
+              },
+              "tileColliderHeight": {
+                "type": "number",
+                "title": "Tile Collider Height",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "tileColliderExtrusionHeight": {
+                "type": "number",
+                "title": "Tile Collider Extrusion Height",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "invertCollisionWalls": {
+                "type": "boolean",
+                "title": "Invert Collision Walls"
+              }
+            },
+            "additionalProperties": false,
+            "title": "Tile Build",
+            "description": "Build-layer overrides used when TileType has no Visual config."
+          },
+          "steps": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "$type": {
+                  "type": "string",
+                  "enum": [
+                    "bool-invert-step",
+                    "bool-value-mask-step",
+                    "layer-mask-reference-step",
+                    "mask-morphology-step",
+                    "perlin-noise-mask-step",
+                    "shape-mask-step",
+                    "twc-modifier-mask-step"
+                  ]
+                }
+              },
+              "required": [
+                "$type"
+              ],
+              "additionalProperties": true
+            },
+            "title": "Steps",
+            "description": "Ordered mask steps evaluated top-down to produce this layer's mask."
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Layers",
+      "description": "Ordered generator layers. Earlier layers are available as mask references to later ones."
+    },
+    "objectPlacements": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "layerName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Layer Name",
+            "description": "Name of the generated TWC blueprint/build object layer."
+          },
+          "targetLayerId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Target Layer Id",
+            "description": "Recipe layer whose final mask seeds the scatter. Empty = the owning layer."
+          },
+          "exclusionLayerId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Exclusion Layer Id",
+            "description": "Optional recipe layer whose final mask excludes cells."
+          },
+          "prefabs": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "prefab": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "Prefab variant that can be spawned by this object layer.",
+                  "properties": {
+                    "$asset": {
+                      "type": "string",
+                      "title": "Asset ID"
+                    },
+                    "editorPath": {
+                      "type": "string",
+                      "description": "Editor-only path для діагностики/регенерації catalog."
+                    },
+                    "required": {
+                      "type": "boolean",
+                      "default": true
+                    }
+                  },
+                  "required": [
+                    "$asset"
+                  ],
+                  "title": "Prefab"
+                },
+                "weight": {
+                  "type": "number",
+                  "title": "Weight",
+                  "description": "Weighted random selection weight. Values are normalized by the TWC object layer.",
+                  "minimum": 0.0,
+                  "x-moyva-editorMinimum": 0.0
+                },
+                "minScale": {
+                  "type": "number",
+                  "title": "Min Scale",
+                  "minimum": 0.01,
+                  "x-moyva-editorMinimum": 0.01
+                },
+                "maxScale": {
+                  "type": "number",
+                  "title": "Max Scale",
+                  "minimum": 0.01,
+                  "x-moyva-editorMinimum": 0.01
+                },
+                "randomYaw": {
+                  "type": "boolean",
+                  "title": "Random Yaw"
+                },
+                "alignToSurface": {
+                  "type": "boolean",
+                  "title": "Align To Surface"
+                },
+                "yOffset": {
+                  "type": "number",
+                  "title": "Y Offset",
+                  "description": "Vertical offset applied through the generated TWC Object Build Layer."
+                },
+                "minDistance": {
+                  "type": "number",
+                  "title": "Min Distance",
+                  "minimum": 0.0,
+                  "x-moyva-editorMinimum": 0.0
+                },
+                "allowedMasks": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "title": "Allowed Masks"
+                },
+                "blockedMasks": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "title": "Blocked Masks"
+                },
+                "clusterAffinity": {
+                  "type": "number",
+                  "title": "Cluster Affinity",
+                  "minimum": 0.0,
+                  "maximum": 1.0,
+                  "x-moyva-editorMinimum": 0.0,
+                  "x-moyva-editorMaximum": 1.0
+                },
+                "colorVariation": {
+                  "type": "object",
+                  "properties": {
+                    "r": {
+                      "type": "number"
+                    },
+                    "g": {
+                      "type": "number"
+                    },
+                    "b": {
+                      "type": "number"
+                    },
+                    "a": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b",
+                    "a"
+                  ],
+                  "additionalProperties": false,
+                  "title": "Color Variation"
+                },
+                "materialOverride": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                  "properties": {
+                    "$asset": {
+                      "type": "string",
+                      "title": "Asset ID"
+                    },
+                    "editorPath": {
+                      "type": "string",
+                      "description": "Editor-only path для діагностики/регенерації catalog."
+                    },
+                    "required": {
+                      "type": "boolean",
+                      "default": true
+                    }
+                  },
+                  "required": [
+                    "$asset"
+                  ],
+                  "title": "Material Override"
+                }
+              },
+              "additionalProperties": false
+            },
+            "title": "Prefabs",
+            "description": "Prefab variants used by the generated TWC Object Build Layer."
+          },
+          "rule": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "density": {
+                "type": "number",
+                "title": "Density",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "randomSeed": {
+                "type": "integer",
+                "title": "Random Seed"
+              },
+              "minDistance": {
+                "type": "number",
+                "title": "Min Distance",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "jitter": {
+                "type": "number",
+                "title": "Jitter",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "rotationRandomization": {
+                "type": "number",
+                "title": "Rotation Randomization",
+                "minimum": 0.0,
+                "maximum": 180.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 180.0
+              },
+              "scaleRandomization": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false,
+                "title": "Scale Randomization"
+              },
+              "heightRange": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false,
+                "title": "Height Range"
+              },
+              "slopeRange": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false,
+                "title": "Slope Range"
+              },
+              "biomeFilter": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Biome Filter"
+              },
+              "layerFilter": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Layer Filter"
+              },
+              "edgeBias": {
+                "type": "number",
+                "title": "Edge Bias",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "avoidWater": {
+                "type": "boolean",
+                "title": "Avoid Water"
+              },
+              "avoidRoads": {
+                "type": "boolean",
+                "title": "Avoid Roads"
+              },
+              "avoidBuildings": {
+                "type": "boolean",
+                "title": "Avoid Buildings"
+              },
+              "alignToSurface": {
+                "type": "boolean",
+                "title": "Align To Surface"
+              },
+              "embedIntoGround": {
+                "type": "number",
+                "title": "Embed Into Ground"
+              },
+              "parentContainer": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Parent Container"
+              },
+              "runtimeMode": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:RebuildWithWorld|Manual|Incremental))$",
+                "x-enumNames": [
+                  "RebuildWithWorld",
+                  "Manual",
+                  "Incremental"
+                ],
+                "x-flags": false,
+                "title": "Runtime Mode"
+              },
+              "mergeInTWC": {
+                "type": "boolean",
+                "title": "Merge In TWC",
+                "description": "Use TWC object cluster merge. Good for dense grass cards, bad for interactive prefabs."
+              },
+              "useTWCObjectLayer": {
+                "type": "boolean",
+                "title": "Use TWC Object Layer",
+                "description": "When enabled, graph output is converted to a generated TWC Object Build Layer."
+              }
+            },
+            "additionalProperties": false,
+            "title": "Rule",
+            "description": "Scatter rules mapped into the generated TWC Object Build Layer."
+          },
+          "cluster": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "title": "Enabled"
+              },
+              "clusterCount": {
+                "type": "integer",
+                "title": "Cluster Count",
+                "minimum": 1.0,
+                "x-moyva-editorMinimum": 1.0
+              },
+              "clusterRadius": {
+                "type": "integer",
+                "title": "Cluster Radius",
+                "minimum": 1.0,
+                "x-moyva-editorMinimum": 1.0
+              },
+              "clusterDensity": {
+                "type": "number",
+                "title": "Cluster Density",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "noiseScale": {
+                "type": "number",
+                "title": "Noise Scale",
+                "minimum": 0.001,
+                "x-moyva-editorMinimum": 0.001
+              },
+              "noiseThreshold": {
+                "type": "number",
+                "title": "Noise Threshold",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "edgePreference": {
+                "type": "number",
+                "title": "Edge Preference",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "avoidCliffEdgeDistance": {
+                "type": "number",
+                "title": "Avoid Cliff Edge Distance",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              }
+            },
+            "additionalProperties": false,
+            "title": "Cluster",
+            "description": "Cluster scatter settings; Enabled switches to cluster scatter."
+          },
+          "grass": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "texture": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Texture"
+              },
+              "material": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Material"
+              },
+              "prefab": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Prefab"
+              },
+              "tint": {
+                "type": "object",
+                "properties": {
+                  "r": {
+                    "type": "number"
+                  },
+                  "g": {
+                    "type": "number"
+                  },
+                  "b": {
+                    "type": "number"
+                  },
+                  "a": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "r",
+                  "g",
+                  "b",
+                  "a"
+                ],
+                "additionalProperties": false,
+                "title": "Tint"
+              },
+              "alphaClip": {
+                "type": "number",
+                "title": "Alpha Clip",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "crossedPlanes": {
+                "type": "integer",
+                "title": "Crossed Planes",
+                "minimum": 1.0,
+                "maximum": 8.0,
+                "x-moyva-editorMinimum": 1.0,
+                "x-moyva-editorMaximum": 8.0
+              },
+              "geometryMode": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:CrossedPlanes|CameraBillboard))$",
+                "x-enumNames": [
+                  "CrossedPlanes",
+                  "CameraBillboard"
+                ],
+                "x-flags": false,
+                "title": "Geometry Mode"
+              },
+              "width": {
+                "type": "number",
+                "title": "Width",
+                "minimum": 0.01,
+                "x-moyva-editorMinimum": 0.01
+              },
+              "height": {
+                "type": "number",
+                "title": "Height",
+                "minimum": 0.01,
+                "x-moyva-editorMinimum": 0.01
+              },
+              "doubleSided": {
+                "type": "boolean",
+                "title": "Double Sided"
+              },
+              "windWobble": {
+                "type": "boolean",
+                "title": "Wind Wobble"
+              },
+              "colorVariation": {
+                "type": "number",
+                "title": "Color Variation",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              }
+            },
+            "additionalProperties": false,
+            "title": "Grass",
+            "description": "Optional generated grass-card settings appended as a prefab variant."
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Object Placements",
+      "description": "Ordered object scatter passes evaluated after all layer masks."
+    }
+  }
+}

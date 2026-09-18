@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.SaveSystem
     internal sealed class SaveInspectorService : ISaveInspectorService
     {
         private const int FogFormatVersionWithFixedVisionAreas = -2;
+        private const int FogFormatVersionWithOwnerSnapshots = -3;
 
         public bool HasBlock(int slot, string moduleTypeFullName)
         {
@@ -81,7 +82,8 @@ namespace Kruty1918.Moyva.SaveSystem
                 int height;
                 if (markerOrWidth < 0)
                 {
-                    if (markerOrWidth != FogFormatVersionWithFixedVisionAreas)
+                    if (markerOrWidth != FogFormatVersionWithFixedVisionAreas
+                        && markerOrWidth != FogFormatVersionWithOwnerSnapshots)
                         return false;
 
                     width = br.ReadInt32();

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.MapChunks.API;
 using Unity.Collections;
 using UnityEngine;
@@ -11,15 +11,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     {
         private const string TerrainObjectName = "TerrainMesh";
         private readonly ChunkFirstRuntimeMeshRegistry _meshRegistry;
-        private readonly ChunkFirstBuildDiagnostics _diagnostics;
         private readonly Dictionary<Material, List<CombineInstance>> _byMaterial = new Dictionary<Material, List<CombineInstance>>();
         private readonly Stack<List<CombineInstance>> _combineListPool = new Stack<List<CombineInstance>>();
         private readonly List<CombineInstance> _finalCombine = new List<CombineInstance>(16);
         private readonly List<Material> _materials = new List<Material>(16);
         private readonly List<TileMeshSource> _cellSources = new List<TileMeshSource>(4);
-        private readonly HashSet<Vector2Int> _auditProviderEmittedCells =
-            new HashSet<Vector2Int>();
-
         /*
          * Every provider source is generated exactly once for the whole map,
          * then assigned to the chunk containing its physical TileCenterXZ.
@@ -47,8 +43,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private int _canonicalChunkSize;
         private int _canonicalMapWidth;
         private int _canonicalMapHeight;
-        private readonly HashSet<string> _chunkAuditLayerIds =
-            new HashSet<string>(System.StringComparer.Ordinal);
         private readonly Dictionary<TileVerticalFillMeshKey, Mesh> _verticalMeshCache =
             new Dictionary<TileVerticalFillMeshKey, Mesh>();
         private readonly HashSet<TileVerticalFillMeshKey> _verticalMeshPassthroughCache =
@@ -62,22 +56,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly HashSet<TileSurfaceOnlyMeshKey>
             _surfaceOnlyFailureCache =
                 new HashSet<TileSurfaceOnlyMeshKey>();
-        private int _sourceVertices;
-        private int _sourceIndices;
-        private int _sourceTriangles;
-        private int _processedVertices;
-        private int _processedIndices;
-        private int _processedTriangles;
-        private int _visibilityUnreferencedVerticesRemoved;
-        private int _unreferencedVerticesRemoved;
-        private int _exactDuplicateVerticesRemoved;
-
-        public ChunkTerrainMeshBuilder(
-            ChunkFirstRuntimeMeshRegistry meshRegistry,
-            ChunkFirstBuildDiagnostics diagnostics)
+        public ChunkTerrainMeshBuilder(ChunkFirstRuntimeMeshRegistry meshRegistry)
         {
             _meshRegistry = meshRegistry;
-            _diagnostics = diagnostics;
         }
 
         public int Build(
@@ -89,25 +70,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (chunkRoot == null || resolvedCells == null || meshSource == null)
                 return 0;
 
-            ChunkAuditRuntime.BeginChunk(area);
-
             var terrainRoot = EnsureTerrainRoot(chunkRoot);
             ClearExistingMesh(terrainRoot);
             RecycleCombineLists();
             _finalCombine.Clear();
             _materials.Clear();
-            _chunkAuditLayerIds.Clear();
-            _auditProviderEmittedCells.Clear();
-            _sourceVertices = 0;
-            _sourceIndices = 0;
-            _sourceTriangles = 0;
-            _processedVertices = 0;
-            _processedIndices = 0;
-            _processedTriangles = 0;
-            _visibilityUnreferencedVerticesRemoved = 0;
-            _unreferencedVerticesRemoved = 0;
-            _exactDuplicateVerticesRemoved = 0;
-
             EnsureCanonicalSourcePlan(
                 area,
                 resolvedCells,
@@ -119,33 +86,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     resolvedCells,
                     meshSource);
             if (fragmentCount == 0)
-            {
-                ChunkAuditRuntime.CompleteChunk(
-                    chunkRoot,
-                    terrainRoot,
-                    area,
-                    resolvedCells,
-                    _auditProviderEmittedCells,
-                    null);
-
-                LogChunkMetrics(chunkRoot, null);
                 return 0;
-            }
 
             Mesh combined = CombineByMaterial(terrainRoot.name, area);
             if (combined == null || combined.vertexCount == 0)
-            {
-                ChunkAuditRuntime.CompleteChunk(
-                    chunkRoot,
-                    terrainRoot,
-                    area,
-                    resolvedCells,
-                    _auditProviderEmittedCells,
-                    null);
-
-                LogChunkMetrics(chunkRoot, null);
                 return 0;
-            }
 
             var filter = terrainRoot.GetComponent<MeshFilter>();
             if (filter == null)
@@ -167,34 +112,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             _meshRegistry.Register(combined);
 
-            ChunkAuditRuntime.CompleteChunk(
-                chunkRoot,
-                terrainRoot,
-                area,
-                resolvedCells,
-                _auditProviderEmittedCells,
-                combined);
-
-            LogChunkMetrics(chunkRoot, combined);
             return 1;
-        }
-
-        private void LogChunkMetrics(Transform chunkRoot, Mesh emittedMesh)
-        {
-            _diagnostics.LogChunkMesh(
-                chunkRoot != null ? chunkRoot.name : TerrainObjectName,
-                _sourceVertices,
-                _sourceIndices,
-                _sourceTriangles,
-                _processedVertices,
-                _processedIndices,
-                _processedTriangles,
-                emittedMesh != null ? emittedMesh.vertexCount : 0,
-                CountIndices(emittedMesh),
-                CountTriangles(emittedMesh),
-                _visibilityUnreferencedVerticesRemoved
-                + _unreferencedVerticesRemoved,
-                _exactDuplicateVerticesRemoved);
         }
 
         private int CollectFragments(
@@ -218,17 +136,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             {
                 CanonicalTileMeshSource planned =
                     plannedSources[i];
-
-                ChunkAuditRuntime.RecordSource(
-                    area,
-                    planned.PhysicalCell,
-                    planned.Source);
-
-                if (planned.Source.IsValid)
-                {
-                    _auditProviderEmittedCells.Add(
-                        planned.PhysicalCell);
-                }
 
                 AddSource(
                     planned.Source);
@@ -512,23 +419,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 assignedSourceCount +=
                     pair.Value?.Count ?? 0;
             }
-
-            Debug.Log(
-                "[MOYVA_CHUNK_OWNERSHIP] PLAN " +
-                $"map={_canonicalMapWidth}x{_canonicalMapHeight} " +
-                $"chunkSize={_canonicalChunkSize} " +
-                $"chunkSizeSource=CoreStride " +
-                $"chunks={chunkCountX}x{chunkCountY} " +
-                $"resolvedCells={resolvedCellCount} " +
-                $"sources={sourceCount} " +
-                $"assignedSources={assignedSourceCount} " +
-                $"validSources={validSourceCount} " +
-                $"invalidSources={invalidSourceCount} " +
-                $"reassignedSources={reassignedSourceCount} " +
-                $"outOfMapSources={outOfMapSourceCount} " +
-                $"lattice=CanonicalCellCenters " +
-                $"dualPhaseOffset=+0.5 " +
-                $"buckets={_canonicalSourcesByChunk.Count}");
         }
 
         private List<CanonicalTileMeshSource>
@@ -708,96 +598,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (!source.IsValid || source.Mesh.subMeshCount <= 0)
                 return;
 
-            float incomingTop =
-                TwcTileMeshSourceProvider.ResolveTransformedBoundsTop(
-                    source.Mesh.bounds,
-                    source.LocalMatrix);
-
-            float incomingBottom =
-                TwcTileMeshSourceProvider.ResolveTransformedBoundsBottom(
-                    source.Mesh.bounds,
-                    source.LocalMatrix);
-
-            string sourcePositionKey =
-                $"{source.GraphLayerId}|" +
-                $"{source.Mesh.GetInstanceID()}|" +
-                $"{source.LocalMatrix.m03:0.###}|" +
-                $"{source.LocalMatrix.m23:0.###}";
-
-            ChunkFirstHeightAudit.TraceUnique(
-                "BUILDER_INPUT",
-                sourcePositionKey,
-                $"layer={source.GraphLayerName} " +
-                $"mesh={source.Mesh.name} " +
-                $"vertices={source.Mesh.vertexCount} " +
-                $"subMeshes={source.Mesh.subMeshCount} " +
-                $"materials={source.Materials?.Length ?? 0} " +
-                $"matrixY={source.LocalMatrix.m13:0.###} " +
-                $"transformedBottom={incomingBottom:0.###} " +
-                $"transformedTop={incomingTop:0.###}");
-
-            _sourceVertices += source.Mesh.vertexCount;
-            _sourceIndices += CountIndices(source.Mesh);
-            _sourceTriangles += CountTriangles(source.Mesh);
-
             Mesh mesh = ResolveVisibleMesh(source);
 
             if (mesh == null || mesh.subMeshCount <= 0)
-            {
-                ChunkFirstHeightAudit.TraceUnique(
-                    "BUILDER_DROPPED_VISIBLE_MESH",
-                    sourcePositionKey,
-                    $"layer={source.GraphLayerName} " +
-                    $"sourceMesh={source.Mesh.name} " +
-                    $"sourceVertices={source.Mesh.vertexCount} " +
-                    $"matrixY={source.LocalMatrix.m13:0.###} " +
-                    $"visibleBottomY={source.VisibleBottomY:0.###} " +
-                    $"geometryMode={source.TileGeometryMode} " +
-                    $"closurePolicy={source.AuthoredClosurePolicy} " +
-                    $"generateMissingClosure={source.GenerateMissingClosure}");
-
-                _visibilityUnreferencedVerticesRemoved +=
-                    source.Mesh.vertexCount;
-
                 return;
-            }
-
-            float processedTop =
-                TwcTileMeshSourceProvider.ResolveTransformedBoundsTop(
-                    mesh.bounds,
-                    source.LocalMatrix);
-
-            float processedBottom =
-                TwcTileMeshSourceProvider.ResolveTransformedBoundsBottom(
-                    mesh.bounds,
-                    source.LocalMatrix);
-
-            ChunkFirstHeightAudit.TraceUnique(
-                "BUILDER_PROCESSED",
-                $"{sourcePositionKey}|{mesh.GetInstanceID()}",
-                $"layer={source.GraphLayerName} " +
-                $"sourceMesh={source.Mesh.name} " +
-                $"processedMesh={mesh.name} " +
-                $"processedVertices={mesh.vertexCount} " +
-                $"processedSubMeshes={mesh.subMeshCount} " +
-                $"matrixY={source.LocalMatrix.m13:0.###} " +
-                $"processedTransformedBottom={processedBottom:0.###} " +
-                $"processedTransformedTop={processedTop:0.###}");
-
-            _processedVertices += mesh.vertexCount;
-            _processedIndices += CountIndices(mesh);
-            _processedTriangles += CountTriangles(mesh);
-
-            _visibilityUnreferencedVerticesRemoved += Mathf.Max(
-                0,
-                source.Mesh.vertexCount - mesh.vertexCount);
-
-            if (!string.IsNullOrWhiteSpace(source.GraphLayerId))
-                _chunkAuditLayerIds.Add(source.GraphLayerId);
 
             Material[] materials = source.Materials;
             int subMeshCount = mesh.subMeshCount;
-            bool addedToAnyMaterialGroup = false;
 
             for (int subMesh = 0; subMesh < subMeshCount; subMesh++)
             {
@@ -806,19 +613,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     subMesh);
 
                 if (material == null)
-                {
-                    ChunkFirstHeightAudit.TraceUnique(
-                        "BUILDER_NULL_MATERIAL",
-                        $"{sourcePositionKey}|{mesh.GetInstanceID()}|{subMesh}",
-                        $"layer={source.GraphLayerName} " +
-                        $"mesh={mesh.name} " +
-                        $"subMesh={subMesh} " +
-                        $"materials={materials?.Length ?? 0} " +
-                        $"matrixY={source.LocalMatrix.m13:0.###} " +
-                        $"processedTop={processedTop:0.###}");
-
                     continue;
-                }
 
                 if (!_byMaterial.TryGetValue(
                         material,
@@ -840,36 +635,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     transform = source.LocalMatrix
                 });
 
-                addedToAnyMaterialGroup = true;
-
-                ChunkFirstHeightAudit.TraceUnique(
-                    "BUILDER_COMBINE_ADDED",
-                    $"{sourcePositionKey}|" +
-                    $"{mesh.GetInstanceID()}|" +
-                    $"{subMesh}",
-                    $"layer={source.GraphLayerName} " +
-                    $"mesh={mesh.name} " +
-                    $"material={material.name} " +
-                    $"subMesh={subMesh} " +
-                    $"matrixY={source.LocalMatrix.m13:0.###} " +
-                    $"processedTop={processedTop:0.###} " +
-                    $"combineCount={combines.Count}");
-            }
-
-            if (!addedToAnyMaterialGroup)
-            {
-                ChunkFirstHeightAudit.TraceUnique(
-                    "BUILDER_NOT_COMBINED",
-                    $"{sourcePositionKey}|{mesh.GetInstanceID()}",
-                    $"layer={source.GraphLayerName} " +
-                    $"mesh={mesh.name} " +
-                    $"matrixY={source.LocalMatrix.m13:0.###} " +
-                    $"processedBottom={processedBottom:0.###} " +
-                    $"processedTop={processedTop:0.###} " +
-                    $"subMeshes={mesh.subMeshCount} " +
-                    $"materials={materials?.Length ?? 0}");
             }
         }
+
         private Mesh ResolveVisibleMesh(TileMeshSource source)
         {
             if (source.TileGeometryMode == TileGeometryMode.SurfaceOnly)
@@ -997,23 +765,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             if (shouldRunExactVertexWeld)
             {
-                int referencedVerticesBeforeOptimization =
-                    CountReferencedVertices(mesh);
-
                 if (ExactVertexWeldMeshUtility.TryCreate(
                         mesh,
                         out Mesh welded))
                 {
-                    _unreferencedVerticesRemoved += Mathf.Max(
-                        0,
-                        mesh.vertexCount
-                        - referencedVerticesBeforeOptimization);
-
-                    _exactDuplicateVerticesRemoved += Mathf.Max(
-                        0,
-                        referencedVerticesBeforeOptimization
-                        - welded.vertexCount);
-
                     if (Application.isPlaying)
                         UnityEngine.Object.Destroy(mesh);
                     else
@@ -1025,21 +780,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
 
             mesh.RecalculateBounds();
-
-            Bounds actualCombinedBounds = mesh.bounds;
-
-            ChunkFirstHeightAudit.TraceUnique(
-                "CHUNK_MESH",
-                area.Coord.ToString(),
-                $"chunk={area.Coord} " +
-                $"actualMinY={actualCombinedBounds.min.y:0.###} " +
-                $"actualMaxY={actualCombinedBounds.max.y:0.###} " +
-                $"actualSizeY={actualCombinedBounds.size.y:0.###} " +
-                $"vertices={mesh.vertexCount}");
-
             mesh.bounds = CreateStableChunkBounds(area, mesh.bounds);
-            foreach (string graphLayerId in _chunkAuditLayerIds)
-                ChunkFirstHeightAudit.RecordChunkBounds(graphLayerId, mesh.bounds);
             if (!mesh.HasVertexAttribute(VertexAttribute.Normal))
                 mesh.RecalculateNormals();
             return mesh;
@@ -1054,62 +795,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
 
             _byMaterial.Clear();
-        }
-
-        private static int CountIndices(Mesh mesh)
-        {
-            if (mesh == null)
-                return 0;
-
-            long count = 0;
-            for (int subMesh = 0; subMesh < mesh.subMeshCount; subMesh++)
-                count += (long)mesh.GetIndexCount(subMesh);
-
-            return count > int.MaxValue ? int.MaxValue : (int)count;
-        }
-
-        private static int CountTriangles(Mesh mesh)
-        {
-            if (mesh == null)
-                return 0;
-
-            long count = 0;
-            for (int subMesh = 0; subMesh < mesh.subMeshCount; subMesh++)
-            {
-                if (mesh.GetTopology(subMesh) == MeshTopology.Triangles)
-                    count += (long)mesh.GetIndexCount(subMesh) / 3L;
-            }
-
-            return count > int.MaxValue ? int.MaxValue : (int)count;
-        }
-
-        private static int CountReferencedVertices(Mesh mesh)
-        {
-            if (mesh == null || mesh.vertexCount <= 0)
-                return 0;
-
-            var referenced = new bool[mesh.vertexCount];
-            int count = 0;
-            for (int subMesh = 0; subMesh < mesh.subMeshCount; subMesh++)
-            {
-                int[] indices = mesh.GetIndices(
-                    subMesh,
-                    applyBaseVertex: true);
-                for (int index = 0; index < indices.Length; index++)
-                {
-                    int vertex = indices[index];
-                    if ((uint)vertex >= (uint)referenced.Length
-                        || referenced[vertex])
-                    {
-                        continue;
-                    }
-
-                    referenced[vertex] = true;
-                    count++;
-                }
-            }
-
-            return count;
         }
 
         private static Bounds CreateStableChunkBounds(ChunkBuildArea area, Bounds actualBounds)
@@ -1250,560 +935,4 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     /// and UV seams while removing unreferenced vertices and exact duplicates
     /// introduced by mesh combining.
     /// </summary>
-    internal static class ExactVertexWeldMeshUtility
-    {
-        public static bool TryCreate(Mesh source, out Mesh result)
-        {
-            result = null;
-            if (source == null
-                || !source.isReadable
-                || source.vertexCount <= 0
-                || source.subMeshCount <= 0)
-            {
-                return false;
-            }
-
-            int streamCount = source.vertexBufferCount;
-            if (streamCount <= 0)
-                return false;
-
-            var sourceStreams = new NativeArray<byte>[streamCount];
-            var strides = new int[streamCount];
-            Mesh welded = null;
-            using Mesh.MeshDataArray readOnlyMeshData =
-                Mesh.AcquireReadOnlyMeshData(source);
-            Mesh.MeshData sourceMeshData = readOnlyMeshData[0];
-            try
-            {
-                if (!TryCollectReferencedVertices(
-                        source,
-                        out SourceSubMesh[] sourceSubMeshes,
-                        out bool[] referenced,
-                        out int[] minimumOutputIndices))
-                {
-                    return false;
-                }
-
-                for (int stream = 0; stream < streamCount; stream++)
-                {
-                    int stride = source.GetVertexBufferStride(stream);
-                    if (stride <= 0)
-                        return false;
-
-                    strides[stream] = stride;
-                    sourceStreams[stream] =
-                        sourceMeshData.GetVertexData<byte>(stream);
-                }
-
-                var vertexToGroup = new int[source.vertexCount];
-                for (int vertex = 0;
-                     vertex < vertexToGroup.Length;
-                     vertex++)
-                {
-                    vertexToGroup[vertex] = -1;
-                }
-
-                var representatives = new List<int>(source.vertexCount);
-                var groupMinimumOutputIndices =
-                    new List<int>(source.vertexCount);
-                var candidatesByHash =
-                    new Dictionary<ulong, List<int>>(source.vertexCount);
-
-                for (int vertex = 0; vertex < source.vertexCount; vertex++)
-                {
-                    if (!referenced[vertex])
-                        continue;
-
-                    ulong hash = HashVertex(
-                        sourceStreams,
-                        strides,
-                        vertex);
-                    if (candidatesByHash.TryGetValue(
-                            hash,
-                            out List<int> candidates))
-                    {
-                        int matchedIndex = FindMatchingRepresentative(
-                            sourceStreams,
-                            strides,
-                            vertex,
-                            candidates,
-                            representatives);
-                        if (matchedIndex >= 0)
-                        {
-                            vertexToGroup[vertex] = matchedIndex;
-                            groupMinimumOutputIndices[matchedIndex] =
-                                Mathf.Max(
-                                    groupMinimumOutputIndices[matchedIndex],
-                                    minimumOutputIndices[vertex]);
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        candidates = new List<int>(1);
-                        candidatesByHash.Add(hash, candidates);
-                    }
-
-                    int weldedIndex = representatives.Count;
-                    representatives.Add(vertex);
-                    groupMinimumOutputIndices.Add(
-                        minimumOutputIndices[vertex]);
-                    candidates.Add(weldedIndex);
-                    vertexToGroup[vertex] = weldedIndex;
-                }
-
-                if (representatives.Count == source.vertexCount)
-                    return false;
-
-                if (!TryCreateOutputLayout(
-                        source,
-                        sourceSubMeshes,
-                        vertexToGroup,
-                        representatives,
-                        groupMinimumOutputIndices,
-                        out int[] groupToOutput,
-                        out int[] outputBaseVertices))
-                {
-                    return false;
-                }
-
-                var outputToRepresentative =
-                    new int[representatives.Count];
-                for (int group = 0;
-                     group < representatives.Count;
-                     group++)
-                {
-                    outputToRepresentative[groupToOutput[group]] =
-                        representatives[group];
-                }
-
-                welded = new Mesh
-                {
-                    name = source.name + "_ExactWeld",
-                    indexFormat = source.indexFormat,
-                };
-                welded.SetVertexBufferParams(
-                    representatives.Count,
-                    source.GetVertexAttributes());
-
-                MeshUpdateFlags updateFlags =
-                    MeshUpdateFlags.DontRecalculateBounds
-                    | MeshUpdateFlags.DontValidateIndices
-                    | MeshUpdateFlags.DontNotifyMeshUsers;
-                for (int stream = 0; stream < streamCount; stream++)
-                {
-                    int stride = strides[stream];
-                    var destination = new NativeArray<byte>(
-                        representatives.Count * stride,
-                        Allocator.Temp,
-                        NativeArrayOptions.UninitializedMemory);
-                    try
-                    {
-                        for (int weldedIndex = 0;
-                             weldedIndex < representatives.Count;
-                             weldedIndex++)
-                        {
-                            int sourceOffset =
-                                outputToRepresentative[weldedIndex]
-                                * stride;
-                            int destinationOffset = weldedIndex * stride;
-                            for (int offset = 0; offset < stride; offset++)
-                            {
-                                destination[destinationOffset + offset] =
-                                    sourceStreams[stream][sourceOffset + offset];
-                            }
-                        }
-
-                        welded.SetVertexBufferData(
-                            destination,
-                            0,
-                            0,
-                            destination.Length,
-                            stream,
-                            updateFlags);
-                    }
-                    finally
-                    {
-                        destination.Dispose();
-                    }
-                }
-
-                welded.subMeshCount = source.subMeshCount;
-                for (int subMesh = 0;
-                     subMesh < source.subMeshCount;
-                     subMesh++)
-                {
-                    SourceSubMesh sourceSubMesh =
-                        sourceSubMeshes[subMesh];
-                    int outputBaseVertex =
-                        outputBaseVertices[subMesh];
-                    int[] indices =
-                        new int[sourceSubMesh.AbsoluteIndices.Length];
-                    for (int index = 0;
-                         index < indices.Length;
-                         index++)
-                    {
-                        int sourceVertex =
-                            sourceSubMesh.AbsoluteIndices[index];
-                        int outputVertex =
-                            groupToOutput[
-                                vertexToGroup[sourceVertex]];
-                        indices[index] =
-                            outputVertex - outputBaseVertex;
-                    }
-
-                    welded.SetIndices(
-                        indices,
-                        sourceSubMesh.Topology,
-                        subMesh,
-                        calculateBounds: false,
-                        baseVertex: outputBaseVertex);
-
-                    SubMeshDescriptor descriptor =
-                        welded.GetSubMesh(subMesh);
-                    descriptor.bounds = sourceSubMesh.Bounds;
-                    welded.SetSubMesh(
-                        subMesh,
-                        descriptor,
-                        updateFlags);
-                }
-
-                welded.bindposes = source.bindposes;
-                welded.bounds = source.bounds;
-                result = welded;
-                welded = null;
-                return true;
-            }
-            catch (System.Exception)
-            {
-                return false;
-            }
-            finally
-            {
-                if (welded != null)
-                {
-                    if (Application.isPlaying)
-                        UnityEngine.Object.Destroy(welded);
-                    else
-                        UnityEngine.Object.DestroyImmediate(welded);
-                }
-            }
-        }
-
-        private static bool TryCollectReferencedVertices(
-            Mesh source,
-            out SourceSubMesh[] subMeshes,
-            out bool[] referenced,
-            out int[] minimumOutputIndices)
-        {
-            subMeshes = new SourceSubMesh[source.subMeshCount];
-            referenced = new bool[source.vertexCount];
-            minimumOutputIndices = new int[source.vertexCount];
-            for (int subMesh = 0;
-                 subMesh < source.subMeshCount;
-                 subMesh++)
-            {
-                int baseVertex = checked((int)source.GetBaseVertex(subMesh));
-                int[] absoluteIndices = source.GetIndices(
-                    subMesh,
-                    applyBaseVertex: true);
-                for (int index = 0;
-                     index < absoluteIndices.Length;
-                     index++)
-                {
-                    int vertex = absoluteIndices[index];
-                    if ((uint)vertex >= (uint)source.vertexCount)
-                        return false;
-
-                    referenced[vertex] = true;
-                    minimumOutputIndices[vertex] = Mathf.Max(
-                        minimumOutputIndices[vertex],
-                        baseVertex);
-                }
-
-                subMeshes[subMesh] = new SourceSubMesh(
-                    absoluteIndices,
-                    source.GetTopology(subMesh),
-                    baseVertex,
-                    source.GetSubMesh(subMesh).bounds);
-            }
-
-            return true;
-        }
-
-        private static bool TryCreateOutputLayout(
-            Mesh source,
-            IReadOnlyList<SourceSubMesh> subMeshes,
-            IReadOnlyList<int> vertexToGroup,
-            IReadOnlyList<int> representatives,
-            IReadOnlyList<int> groupMinimumOutputIndices,
-            out int[] groupToOutput,
-            out int[] outputBaseVertices)
-        {
-            int groupCount = representatives.Count;
-            var orderedGroups = new List<int>(groupCount);
-            for (int group = 0; group < groupCount; group++)
-                orderedGroups.Add(group);
-            orderedGroups.Sort((first, second) =>
-            {
-                int comparison = groupMinimumOutputIndices[first]
-                    .CompareTo(groupMinimumOutputIndices[second]);
-                return comparison != 0
-                    ? comparison
-                    : representatives[first].CompareTo(
-                        representatives[second]);
-            });
-
-            groupToOutput = new int[groupCount];
-            bool canPreserveBaseVertices = true;
-            for (int output = 0;
-                 output < orderedGroups.Count;
-                 output++)
-            {
-                int group = orderedGroups[output];
-                if (groupMinimumOutputIndices[group] > output)
-                {
-                    canPreserveBaseVertices = false;
-                    break;
-                }
-
-                groupToOutput[group] = output;
-            }
-
-            outputBaseVertices = new int[subMeshes.Count];
-            if (canPreserveBaseVertices)
-            {
-                for (int subMesh = 0;
-                     subMesh < subMeshes.Count;
-                     subMesh++)
-                {
-                    outputBaseVertices[subMesh] =
-                        subMeshes[subMesh].BaseVertex;
-                }
-
-                canPreserveBaseVertices = IndicesFitFormat(
-                    source.indexFormat,
-                    subMeshes,
-                    vertexToGroup,
-                    groupToOutput,
-                    outputBaseVertices);
-            }
-
-            if (canPreserveBaseVertices)
-                return true;
-
-            // Some authored meshes contain unused padding before a non-zero
-            // baseVertex. Removing that padding makes the original numeric
-            // base impossible to retain. Keep vertices in stable source order
-            // and choose the narrowest valid base for only those submeshes.
-            for (int group = 0; group < groupCount; group++)
-                groupToOutput[group] = group;
-
-            for (int subMesh = 0;
-                 subMesh < subMeshes.Count;
-                 subMesh++)
-            {
-                SourceSubMesh sourceSubMesh = subMeshes[subMesh];
-                int sourceBaseVertex = sourceSubMesh.BaseVertex;
-                if (SubMeshIndicesFit(
-                        source.indexFormat,
-                        sourceSubMesh,
-                        vertexToGroup,
-                        groupToOutput,
-                        sourceBaseVertex))
-                {
-                    outputBaseVertices[subMesh] = sourceBaseVertex;
-                    continue;
-                }
-
-                outputBaseVertices[subMesh] = FindMinimumOutputVertex(
-                    sourceSubMesh,
-                    vertexToGroup,
-                    groupToOutput);
-            }
-
-            return IndicesFitFormat(
-                source.indexFormat,
-                subMeshes,
-                vertexToGroup,
-                groupToOutput,
-                outputBaseVertices);
-        }
-
-        private static bool IndicesFitFormat(
-            IndexFormat indexFormat,
-            IReadOnlyList<SourceSubMesh> subMeshes,
-            IReadOnlyList<int> vertexToGroup,
-            IReadOnlyList<int> groupToOutput,
-            IReadOnlyList<int> baseVertices)
-        {
-            for (int subMesh = 0;
-                 subMesh < subMeshes.Count;
-                 subMesh++)
-            {
-                if (!SubMeshIndicesFit(
-                        indexFormat,
-                        subMeshes[subMesh],
-                        vertexToGroup,
-                        groupToOutput,
-                        baseVertices[subMesh]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static bool SubMeshIndicesFit(
-            IndexFormat indexFormat,
-            SourceSubMesh subMesh,
-            IReadOnlyList<int> vertexToGroup,
-            IReadOnlyList<int> groupToOutput,
-            int baseVertex)
-        {
-            if (subMesh.AbsoluteIndices.Length == 0)
-            {
-                return baseVertex == 0
-                    || (baseVertex > 0
-                        && baseVertex < groupToOutput.Count);
-            }
-
-            int maximumIndex = indexFormat == IndexFormat.UInt16
-                ? ushort.MaxValue
-                : int.MaxValue;
-            for (int index = 0;
-                 index < subMesh.AbsoluteIndices.Length;
-                 index++)
-            {
-                int sourceVertex = subMesh.AbsoluteIndices[index];
-                int group = vertexToGroup[sourceVertex];
-                int localIndex =
-                    groupToOutput[group] - baseVertex;
-                if (localIndex < 0 || localIndex > maximumIndex)
-                    return false;
-            }
-
-            return true;
-        }
-
-        private static int FindMinimumOutputVertex(
-            SourceSubMesh subMesh,
-            IReadOnlyList<int> vertexToGroup,
-            IReadOnlyList<int> groupToOutput)
-        {
-            if (subMesh.AbsoluteIndices.Length == 0)
-            {
-                return subMesh.BaseVertex >= 0
-                       && subMesh.BaseVertex < groupToOutput.Count
-                    ? subMesh.BaseVertex
-                    : 0;
-            }
-
-            int minimum = int.MaxValue;
-            for (int index = 0;
-                 index < subMesh.AbsoluteIndices.Length;
-                 index++)
-            {
-                int sourceVertex = subMesh.AbsoluteIndices[index];
-                minimum = Mathf.Min(
-                    minimum,
-                    groupToOutput[vertexToGroup[sourceVertex]]);
-            }
-
-            return minimum;
-        }
-
-        private static int FindMatchingRepresentative(
-            IReadOnlyList<NativeArray<byte>> streams,
-            IReadOnlyList<int> strides,
-            int vertex,
-            IReadOnlyList<int> candidates,
-            IReadOnlyList<int> representatives)
-        {
-            for (int candidateIndex = 0;
-                 candidateIndex < candidates.Count;
-                 candidateIndex++)
-            {
-                int weldedIndex = candidates[candidateIndex];
-                int representative = representatives[weldedIndex];
-                if (VertexEquals(
-                        streams,
-                        strides,
-                        vertex,
-                        representative))
-                {
-                    return weldedIndex;
-                }
-            }
-
-            return -1;
-        }
-
-        private static bool VertexEquals(
-            IReadOnlyList<NativeArray<byte>> streams,
-            IReadOnlyList<int> strides,
-            int first,
-            int second)
-        {
-            for (int stream = 0; stream < streams.Count; stream++)
-            {
-                int stride = strides[stream];
-                int firstOffset = first * stride;
-                int secondOffset = second * stride;
-                for (int offset = 0; offset < stride; offset++)
-                {
-                    if (streams[stream][firstOffset + offset]
-                        != streams[stream][secondOffset + offset])
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        private static ulong HashVertex(
-            IReadOnlyList<NativeArray<byte>> streams,
-            IReadOnlyList<int> strides,
-            int vertex)
-        {
-            const ulong offsetBasis = 14695981039346656037UL;
-            const ulong prime = 1099511628211UL;
-            ulong hash = offsetBasis;
-            for (int stream = 0; stream < streams.Count; stream++)
-            {
-                int stride = strides[stream];
-                int start = vertex * stride;
-                for (int offset = 0; offset < stride; offset++)
-                {
-                    hash ^= streams[stream][start + offset];
-                    hash *= prime;
-                }
-            }
-
-            return hash;
-        }
-
-        private readonly struct SourceSubMesh
-        {
-            public SourceSubMesh(
-                int[] absoluteIndices,
-                MeshTopology topology,
-                int baseVertex,
-                Bounds bounds)
-            {
-                AbsoluteIndices = absoluteIndices;
-                Topology = topology;
-                BaseVertex = baseVertex;
-                Bounds = bounds;
-            }
-
-            public int[] AbsoluteIndices { get; }
-            public MeshTopology Topology { get; }
-            public int BaseVertex { get; }
-            public Bounds Bounds { get; }
-        }
-    }
 }

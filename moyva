@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+PROJECT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -n "${MOYVA_PYTHON:-}" ]]; then
+    CLI_PYTHON="$MOYVA_PYTHON"
+elif [[ -x "$PROJECT/.venv-training/Scripts/python.exe" ]] && "$PROJECT/.venv-training/Scripts/python.exe" -c 'import sys' >/dev/null 2>&1; then
+  CLI_PYTHON="$PROJECT/.venv-training/Scripts/python.exe"
+elif [[ -x "$PROJECT/.venv-training/bin/python" ]] && "$PROJECT/.venv-training/bin/python" -c 'import sys' >/dev/null 2>&1; then
+    CLI_PYTHON="$PROJECT/.venv-training/bin/python"
+else
+    CLI_PYTHON="$(command -v python3.10 || command -v python3 || true)"
+fi
+if [[ -z "$CLI_PYTHON" ]]; then
+    echo "Python is missing. Install Python 3.10.1–3.10.12, then run ./moyva setup." >&2
+    exit 2
+fi
+exec "$CLI_PYTHON" "$PROJECT/tools/ai/moyva_cli_main.py" "$@"

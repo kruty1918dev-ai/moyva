@@ -36,8 +36,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 {
                     foreach (var p in players)
                     {
-                        var isLocal = !string.IsNullOrEmpty(localPlayerId) && string.Equals(p.PlayerId, localPlayerId, StringComparison.Ordinal);
-                        _players.Add(new GameplayPlayer(p.PlayerId, p.DisplayName, p.IsHost, isLocal));
+                        var isLocal = p.IsLocal ||
+                                      (!string.IsNullOrEmpty(localPlayerId) &&
+                                       string.Equals(p.PlayerId, localPlayerId, StringComparison.Ordinal));
+                        _players.Add(new GameplayPlayer(p.PlayerId, p.DisplayName, p.IsHost, isLocal, p.ControllerType));
                     }
                 }
 
@@ -45,10 +47,26 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 Host = default;
                 foreach (var p in _players)
                 {
-                    if (string.Equals(p.PlayerId, localPlayerId, StringComparison.Ordinal))
+                    if (p.IsLocal ||
+                        (!string.IsNullOrEmpty(localPlayerId) && string.Equals(p.PlayerId, localPlayerId, StringComparison.Ordinal)))
+                    {
                         LocalPlayer = p;
+                    }
                     if (p.IsHost)
                         Host = p;
+                }
+
+                if (string.IsNullOrWhiteSpace(LocalPlayer.PlayerId) &&
+                    !string.IsNullOrWhiteSpace(localPlayerId))
+                {
+                    foreach (var p in _players)
+                    {
+                        if (string.Equals(p.PlayerId, localPlayerId, StringComparison.Ordinal))
+                        {
+                            LocalPlayer = p;
+                            break;
+                        }
+                    }
                 }
 
                 _playersSnapshot = _players.Count > 0

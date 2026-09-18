@@ -37,7 +37,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             reason = string.Empty;
             if (room == null)
             {
-                reason = "Кімната недоступна.";
+                reason = "Room is unavailable.";
                 return false;
             }
 
@@ -47,7 +47,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 {
                     if (string.Equals(room.BannedPlayerIds[index], playerId, StringComparison.Ordinal))
                     {
-                        reason = "Вас заблоковано у цій кімнаті.";
+                        reason = "You are blocked from this room.";
                         return false;
                     }
                 }

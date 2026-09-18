@@ -32,6 +32,14 @@ namespace Kruty1918.Moyva.Economy.Runtime
         /// <summary>Remove building position mapping.</summary>
         void UnregisterBuildingPosition(Vector2Int position);
 
+        /// <summary>Transfer an active settlement and all mapped buildings to a new owner.</summary>
+        bool TryTransferSettlementOwner(
+            string settlementId,
+            string previousOwnerId,
+            string newOwnerId,
+            out Vector2Int centerPosition,
+            out string reason);
+
         /// <summary>Try get building at position with owner.</summary>
         bool TryGetBuildingAtPosition(Vector2Int position, out string buildingId, out string ownerId);
 

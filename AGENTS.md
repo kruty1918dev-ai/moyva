@@ -1,112 +1,143 @@
+# Moyva — Agent Rules
 
-## JSON Configuration Policy
+Canonical agent instructions. No audits, inventories, patch logs or historical plans here.
 
-All Moyva-owned gameplay configuration, definitions, registries, presets, balance data, system settings and generator graphs MUST be authored in JSON under `Assets/Moyva/Presets/`.
+## Project
 
-- JSON is the single editable source of truth.
-- Do not introduce new project-owned ScriptableObject configuration assets.
-- Runtime loads JSON once through Load -> Validate -> Resolve -> Freeze and consumes plain C# snapshots/repositories.
-- Unity assets are referenced through stable asset IDs resolved by the generated runtime asset catalog.
-- Do not use `AssetDatabase` in runtime configuration loading.
-- Do not generate ScriptableObject caches from JSON.
-- New data-driven entities are added by adding JSON; no inspector registry list is maintained manually.
-- Polymorphic module/node IDs are allow-listed stable IDs, never unrestricted CLR type names.
+- Unity 6.x, C#, URP.
+- Turn-based strategy, procedural square grid.
+- Zenject is used for dependency injection.
+- Production gameplay source lives under `Assets/Moyva/Scripts/`.
+- Feature ownership, explicit data flow, one mutation authority per concept.
 
-# Moyva Agent Instructions
+## Source of truth
 
-## Project Context
+1. Checked-out C# and Unity serialized assets are authoritative.
+2. `CODEMAP.md` is the routing map, not a second specification.
+3. Moyva-owned gameplay configuration/definitions/presets are JSON under `Assets/Moyva/Presets/`.
+4. Do not introduce new project-owned ScriptableObject configuration as an alternative source of truth.
+5. Historical plans, audits, inventories and backups are not architecture authority.
 
-This is the Unity project **Moyva**.
+## Before changing code
 
-Moyva is a turn-based strategy game built with:
+Start with about 3–6 relevant files; expand only along concrete dependencies:
 
-- Unity 6.x
-- C#
-- URP
-- Zenject
-- TextMeshPro
-- Odin Inspector where appropriate
-- Square grid / tile-based procedural world systems
+1. Find the task/feature in `CODEMAP.md`; read that section, not the whole map.
+2. The specific API contract(s), not the whole `API/` directory.
+3. Its installer/composition root.
+4. The target implementation: relevant methods and surrounding lines.
+5. Focused tests for that feature.
 
-The project must stay maintainable, modular, and safe for long-term development.
+Use scoped `rg --files` or `rg -n` to locate files/symbols before reading content.
+Never load all feature services or partials just because they share a directory/type.
 
----
+### Default context exclusions
 
-## Core Rule
+Unless the task explicitly concerns them, do not read:
 
-Before writing or modifying code, understand the local architecture.
+- `**/Development/**`
+- `**/Editor/**`
+- `**/Tests/**` before the production path is identified
+- `docs/**`, historical migration reports and archived documentation
+- generated site output (`.docs-site/`) and docs site templates unless working on publishing
+- backup/audit artifacts
 
-Do not make broad rewrites unless explicitly requested.
+Search production API, composition and Runtime first; expand on references or failing tests.
+Exclude serialized assets from source searches; inspect them for GUID/compatibility work.
 
-Prefer small, safe, focused changes over large changes.
+## Architecture rules
 
-Every change must preserve existing Unity serialization unless a migration is explicitly requested.
+- SOLID, DRY, KISS, YAGNI.
+- Composition over inheritance.
+- Prefer plain C# domain/services; keep MonoBehaviours thin.
+- One authoritative state-mutation path per gameplay concept.
+- Recruitment: `Features/Units`, `IUnitRecruitmentService` / `UnitRecruitmentService`; no parallel Recruitment feature.
+- UI, multiplayer adapters, and editor tools must delegate to canonical gameplay services.
+- Feature modules own their bindings/composition. Scene/bootstrap installers may delegate, not duplicate the graph.
+- Tests stay outside production `Runtime/` folders.
+- Editor/analyzer code never becomes runtime decision authority.
+- Avoid hidden static global state and hidden side effects.
+- Avoid generic `Manager`, `Helper`, `Utils` when a concrete responsibility can be named.
+- Do not create an interface for a class unless it is an actual boundary, substitutable dependency, or test seam.
+- Keep cohesive files; do not split just to satisfy SRP.
 
----
+Naming semantics:
 
-## Architecture Principles
+`Installer` = DI; `Coordinator` / `Orchestrator` = sequencing; `Policy` = decision rule;
+`Resolver` = input → result; `Store` = owned state; `Registry` = keyed lookup;
+`Adapter` = boundary translation; `Service` = cohesive capability.
 
-Follow these principles:
+## Unity safety
 
-- SOLID
-- DRY
-- KISS
-- YAGNI
-- Composition over inheritance
-- Dependency inversion
-- Clear separation of responsibilities
-- Explicit data flow
-- Minimal coupling between systems
-- High cohesion inside each feature module
+Never delete, rename, or merge serialized Unity types from C# reference count alone.
 
-Avoid:
+Before removal, check C# and scene/prefab/asset GUID references, Zenject bindings,
+reflection/string lookup, asmdefs, save/version compatibility, EditMode/PlayMode tests
+and supported runtime smoke paths.
 
-- God classes
-- static global state
-- hardcoded dependencies
-- hidden side effects
-- duplicated logic
-- oversized MonoBehaviours
-- mixing runtime logic with editor logic
-- mixing game logic with UI logic
-- changing unrelated systems
+Preserve `.meta` files when moving Unity assets.
 
----
+## JSON configuration policy
 
-## Unity-Specific Rules
+Configuration, definitions, registries, presets, balance, settings and generator graphs
+are authored in JSON under `Assets/Moyva/Presets/`.
 
-### MonoBehaviour Rules
+Runtime path:
 
-MonoBehaviours should be thin.
+`Load -> Validate -> Resolve -> Freeze -> Consume`
 
-Use MonoBehaviours mainly for:
+Rules:
 
-- Unity lifecycle entry points
-- scene references
-- view/presentation glue
-- serialized configuration references
-- forwarding events to services/controllers
+- JSON is the editable source of truth.
+- Runtime consumes resolved plain C# snapshots/repositories.
+- Unity object references use stable asset IDs resolved through the runtime asset catalog.
+- No `AssetDatabase` in runtime loading.
+- No generated ScriptableObject cache mirroring JSON.
+- Polymorphic IDs are allow-listed stable IDs, not unrestricted CLR type names.
 
-Avoid putting complex business logic directly in MonoBehaviours.
+## Verification
 
-Prefer plain C# services/classes for core logic.
+For a focused change:
 
----
+1. compile;
+2. run focused EditMode tests;
+3. inspect affected Unity serialization/bindings when relevant.
 
-### ScriptableObject Rules
+For architecture/startup changes additionally:
 
-Use ScriptableObjects for:
+- run the full relevant EditMode suite;
+- smoke-test direct Gameplay and menu -> Gameplay;
+- verify no new Console errors.
 
-- configuration
-- presets
-- balance data
-- tile/building/unit definitions
-- editor-authored data
-- reusable settings
+## Context discipline
 
-Do not hardcode gameplay values directly in scripts if they should be configurable.
+Modify canonical files; consolidate duplicate explanations. Generate inventories on
+demand, never as tracked snapshots. Keep AGENTS within 6 KiB and CODEMAP within 16 KiB.
 
-Bad:
+## Agent cost hygiene
 
-```csharp
-private const int MaxBuildings = 12;
+Exclude from ordinary reads; opt in for relevant tasks:
+
+- `Assets/ThirdParty/**`
+- `Assets/FlatKit/**`
+- `Assets/KayKit/**`
+- `Assets/TextMesh Pro/**`
+- `Assets/Plugins/**`
+- `Library/**`, `Temp/**`, `Logs/**`, `Obj/**`, `Build/**`, `Builds/**`
+- generated audit, recovery, and test-output artifacts
+
+Project Codex defaults: Astra, medium reasoning, one agent. Use the client model/effort
+selector for a difficult stage (high); do not rewrite config to change a running turn.
+Keep related work in one session; start a new session for an independent task.
+
+Return short tool results (normally <=2,000 tokens). Narrow an oversized query instead
+of repeating it with a larger output limit; retrieve missing details by symbol/range.
+Use quiet verification scripts under `tools/ai/`: full logs in ignored `Temp/ai/`,
+only failures and a short summary in context. Do not repeat passed checks without cause.
+
+When measuring cost, report task deltas for input/cached input/output, peak request
+context, tool-output size and agent count. Exclude inherited counters and duplicate
+events; compare completed tasks with equivalent verification, not raw token totals.
+
+After creating logs, reports or temporary context, run `tools/ai/check-context-hygiene.sh`.
+Remove task-generated artifacts from tracked paths; preserve user work.

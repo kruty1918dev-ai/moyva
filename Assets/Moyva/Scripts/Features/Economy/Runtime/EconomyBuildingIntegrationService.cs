@@ -34,6 +34,13 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             var ownerId = NormalizeOwnerId(signal.OwnerId);
 
+            // Instant buildings publish both placement and operational events.
+            // Repeated delivery must not create another settlement or production entry.
+            if (registry.TryGetBuildingAtPosition(signal.Position, out var existingId, out var existingOwner)
+                && string.Equals(existingId, signal.BuildingId, StringComparison.Ordinal)
+                && string.Equals(NormalizeOwnerId(existingOwner), ownerId, StringComparison.Ordinal))
+                return null;
+
             if (signal.HasRelocationSource
                 && signal.RelocationSourcePosition != signal.Position
                 && registry.TryGetSettlementByPosition(signal.RelocationSourcePosition, out var relocatedSettlement))
@@ -107,13 +114,20 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (BuildingDefinitionCapabilities.IsTownHall(definition) ||
                 BuildingDefinitionCapabilities.IsCastle(definition))
             {
-                return CreateSettlement(signal.BuildingId, signal.Position, definition, ownerId, registry, signalBus, database);
+                return CreateSettlement(
+                    signal.BuildingId,
+                    signal.Position,
+                    definition,
+                    ownerId,
+                    registry,
+                    signalBus,
+                    database,
+                    buildingRegistry);
             }
 
             // Otherwise, assign building to nearest settlement of the same owner
             if (!registry.TryFindNearestSettlement(signal.Position, ownerId, out var state))
             {
-                Debug.LogWarning($"[Economy] Будівлю '{signal.BuildingId}' (owner='{ownerId}') розміщено за межами поселень цього власника.");
                 return null;
             }
 
@@ -124,20 +138,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 definition);
             registry.RegisterBuildingPosition(signal.Position, state.SettlementId, signal.BuildingId, ownerId);
 
-            if (BuildingDefinitionCapabilities.IsWarehouse(definition))
-            {
-                string warehouseKey =
-                    ToWarehouseKey(signal.Position);
-                state.EnsureWarehousePool(warehouseKey);
-                state.ConfigureWarehousePolicy(
-                    warehouseKey,
-                    BuildingDefinitionCapabilities
-                        .GetStorageCapacity(definition),
-                    ResolveAcceptedStorageResources(
-                        definition,
-                        database));
-                state.EnsureWarehouseConsistency();
-            }
+            EnsureWarehouseForBuilding(
+                state,
+                signal.Position,
+                definition,
+                database);
 
             // Update housing capacity
             if (BuildingDefinitionCapabilities.IsHousing(definition))
@@ -188,23 +193,33 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 state.EnsureWarehouseConsistency();
             }
 
-            // TownHall destroyed → deactivate settlement
-            if (BuildingDefinitionCapabilities.IsTownHall(definition))
+            if (BuildingDefinitionCapabilities.IsTownHall(definition)
+                || BuildingDefinitionCapabilities.IsCastle(definition))
             {
                 state.IsActive = false;
+                string ownerId = NormalizeOwnerId(state.OwnerId);
                 signalBus.Fire(new SettlementDeactivatedSignal
                 {
                     SettlementId = state.SettlementId,
-                    OwnerId = NormalizeOwnerId(state.OwnerId),
-                    Reason = "Ратушу знищено",
+                    OwnerId = ownerId,
+                    Reason = BuildingDefinitionCapabilities.IsCastle(definition)
+                        ? "Castle destroyed"
+                        : "Town Hall destroyed",
                 });
+                if (!OwnerHasActiveSettlementCenter(ownerId, registry))
+                {
+                    signalBus.Fire(new FactionEliminatedSignal
+                    {
+                        FactionId = ownerId,
+                    });
+                }
             }
 
             if (BuildingDefinitionCapabilities.IsHousing(definition))
                 RecalculateHousing(state, buildingRegistry);
         }
 
-        private EconomySettlementState CreateSettlement(string townHallBuildingId, Vector2Int position, BuildingDefinition definition, string ownerId, ISettlementRegistry registry, SignalBus signalBus, EconomyDatabaseSO database)
+        private EconomySettlementState CreateSettlement(string townHallBuildingId, Vector2Int position, BuildingDefinition definition, string ownerId, ISettlementRegistry registry, SignalBus signalBus, EconomyDatabaseSO database, IBuildingRegistry buildingRegistry)
         {
             var rules = database?.RulesConfig;
             if (rules == null)
@@ -217,7 +232,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             if (activeCount >= rules.Settlement.MaxSettlements)
             {
-                Debug.LogWarning($"[Economy] Ліміт поселень ({rules.Settlement.MaxSettlements}) досягнуто.");
                 return null;
             }
 
@@ -237,11 +251,17 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 position,
                 definition);
 
-            // Start with initial population (2 residents)
-            state.Residents.Add(new EconomyResidentState(age: 25, hp: 100f, comfort: 50f, houseCollapsed: false));
-            state.Residents.Add(new EconomyResidentState(age: 22, hp: 100f, comfort: 50f, houseCollapsed: false));
+            EnsureWarehouseForBuilding(
+                state,
+                position,
+                definition,
+                database);
 
-            RecalculateHousing(state, null);
+            int initialResidents = database?.RulesConfig?.Population?.InitialResidents ?? 15;
+            for (int index = 0; index < initialResidents; index++)
+                state.Residents.Add(new EconomyResidentState(20 + index % 10, 100f, 50f, false));
+
+            RecalculateHousing(state, buildingRegistry);
 
             registry.RegisterSettlement(state, position);
             registry.RegisterBuildingPosition(position, id, townHallBuildingId, ownerId);
@@ -252,8 +272,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 OwnerId = ownerId,
                 TownHallPosition = position,
             });
-
-            Debug.Log($"[Economy] Поселення '{id}' (owner='{ownerId}') створено на позиції {position}.");
             return state;
         }
 
@@ -389,6 +407,27 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return result;
         }
 
+        private static void EnsureWarehouseForBuilding(
+            EconomySettlementState state,
+            Vector2Int position,
+            BuildingDefinition definition,
+            EconomyDatabaseSO database)
+        {
+            if (state == null
+                || !BuildingDefinitionCapabilities.IsWarehouse(definition))
+            {
+                return;
+            }
+
+            string warehouseKey = ToWarehouseKey(position);
+            state.EnsureWarehousePool(warehouseKey);
+            state.ConfigureWarehousePolicy(
+                warehouseKey,
+                BuildingDefinitionCapabilities.GetStorageCapacity(definition),
+                ResolveAcceptedStorageResources(definition, database));
+            state.EnsureWarehouseConsistency();
+        }
+
         private static string ToBuildingInstanceKey(
             string buildingId,
             Vector2Int position)
@@ -409,6 +448,30 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     total += BuildingDefinitionCapabilities.GetHousingCapacity(def);
             }
             state.TotalHousingCapacity = total;
+        }
+
+        private static bool OwnerHasActiveSettlementCenter(
+            string ownerId,
+            ISettlementRegistry registry)
+        {
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
+            foreach (var pair in registry.AllSettlements)
+            {
+                EconomySettlementState settlement = pair.Value;
+                if (settlement == null
+                    || !settlement.IsActive
+                    || !string.Equals(
+                        NormalizeOwnerId(settlement.OwnerId),
+                        normalizedOwnerId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         private bool HasModuleValidationErrors(
@@ -442,11 +505,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     * 1000d;
                 if (elapsedMs >= EconomyPlacementPerfThresholdMs)
                 {
-                    Debug.Log(
-                        $"{PerfLogTag} economy-module-validation " +
-                        $"building={definition.Id} " +
-                        $"errors={hasErrors} " +
-                        $"elapsedMs={elapsedMs:F3}");
                 }
             }
 

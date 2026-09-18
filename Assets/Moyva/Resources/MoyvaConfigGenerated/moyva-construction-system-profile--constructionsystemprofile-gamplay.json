@@ -34,12 +34,6 @@
       "id": "constructionwallprofile-gamplay"
     }
   },
-  "diagnosticsProfile": {
-    "$config": {
-      "model": "construction-diagnostics-profile",
-      "id": "constructiondiagnosticsprofile-gamplay"
-    }
-  },
   "economyRulesProfile": {
     "$config": {
       "model": "economy-rules-config",

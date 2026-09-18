@@ -81,7 +81,6 @@ Shader "Moyva/FogOfWar/BoundaryCurtain"
                 float4 _BottomColor;
                 float _TopBandFraction;
                 float _GradientPower;
-                float _DebugVisualMode;
 
             CBUFFER_END
 
@@ -93,8 +92,6 @@ Shader "Moyva/FogOfWar/BoundaryCurtain"
                 float2 uv
                     : TEXCOORD0;
 
-                float4 color
-                    : COLOR;
             };
 
             struct Varyings
@@ -105,8 +102,6 @@ Shader "Moyva/FogOfWar/BoundaryCurtain"
                 float2 uv
                     : TEXCOORD0;
 
-                float4 color
-                    : COLOR;
             };
 
             Varyings Vert(
@@ -121,9 +116,6 @@ Shader "Moyva/FogOfWar/BoundaryCurtain"
                 output.uv =
                     input.uv;
 
-                output.color =
-                    input.color;
-
                 return output;
             }
 
@@ -131,13 +123,6 @@ Shader "Moyva/FogOfWar/BoundaryCurtain"
                 Varyings input)
                 : SV_Target
             {
-                if (_DebugVisualMode > 0.5)
-                {
-                    return half4(
-                        input.color.rgb,
-                        1.0);
-                }
-
                 float vertical =
                     saturate(
                         input.uv.y);

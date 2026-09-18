@@ -1,0 +1,32 @@
+{
+  "run_id": "moyva-20260915-203117",
+  "started_utc": "2026-09-15T20:31:17.150857+00:00",
+  "commit": "86e69dcb9ad3d369f290cbb136677cb00de01374",
+  "branch": "game-process",
+  "contract": {
+    "behavior": "MoyvaStrategy",
+    "version": 2,
+    "hash": "5a00e6a1cb5ae597d108f32f94a4fc9ba41a93cfd4a2d491c0e1506fe21caadb",
+    "candidateSlots": 128,
+    "observations": 4832
+  },
+  "trainer_config": "/home/oleksiy/Документи/Projects/Moyva/Game-Project/moyva/Assets/Moyva/AI/Training/Config/moyva_ppo.yaml",
+  "seed": 1918,
+  "world_size": 24,
+  "stage": 1,
+  "mode": "HeadlessFast",
+  "executable": "/home/oleksiy/Документи/Projects/Moyva/Game-Project/moyva/Build/Training/MoyvaTraining.x86_64",
+  "arenas": 8,
+  "initialize_from": null,
+  "learn_initial_castle": false,
+  "frozen_evaluation": true,
+  "evaluation_every_steps": 10000,
+  "evaluation_episodes": 50,
+  "max_steps": 1000000,
+  "episode_decisions": null,
+  "time_scale": 5.0,
+  "checkpoint_interval": 50000,
+  "summary_freq": 500,
+  "screen_width": 1280,
+  "screen_height": 720
+}

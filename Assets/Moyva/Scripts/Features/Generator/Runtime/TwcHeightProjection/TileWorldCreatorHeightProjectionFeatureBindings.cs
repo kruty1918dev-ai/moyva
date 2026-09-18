@@ -9,7 +9,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (container.HasBinding<ITileWorldCreatorHeightProjectionService>())
                 return;
 
-            container.Bind<ITileWorldCreatorHeightProjectionDiagnostics>().To<TileWorldCreatorHeightProjectionDiagnostics>().AsSingle();
             container.Bind<ITileWorldCreatorTileTransformCollector>().To<TileWorldCreatorTileTransformCollector>().AsSingle();
             container.Bind<ITileWorldCreatorHeightProjectionOffsetService>().To<TileWorldCreatorHeightProjectionOffsetService>().AsSingle();
             container.Bind<ITileWorldCreatorHeightProjectionApplier>().To<TileWorldCreatorHeightProjectionApplier>().AsSingle();

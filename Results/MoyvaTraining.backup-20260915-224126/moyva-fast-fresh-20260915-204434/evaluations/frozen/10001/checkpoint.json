@@ -1,0 +1,11 @@
+{
+  "source_checkpoint": "/home/oleksiy/Документи/Projects/Moyva/Game-Project/moyva/Results/MoyvaTraining/moyva-fast-fresh-20260915-204434/MoyvaStrategy/MoyvaStrategy-10001.pt",
+  "checkpoint_step": 10001,
+  "contract_hash": "5a00e6a1cb5ae597d108f32f94a4fc9ba41a93cfd4a2d491c0e1506fe21caadb",
+  "checkpoint_sha256": "a2f73dc722b75ed9d0774c63afae5b852ff86d006118899bd9cb6335d4c73e28",
+  "checkpoint_id": "5a00e6a1cb5ae597d108f32f94a4fc9ba41a93cfd4a2d491c0e1506fe21caadb:10001:a2f73dc722b75ed9d0774c63afae5b852ff86d006118899bd9cb6335d4c73e28",
+  "frozen_checkpoint": "/home/oleksiy/Документи/Projects/Moyva/Game-Project/moyva/Results/MoyvaTraining/moyva-fast-fresh-20260915-204434/evaluations/frozen/10001/MoyvaStrategy.pt",
+  "frozen_checkpoint_sha256": "a2f73dc722b75ed9d0774c63afae5b852ff86d006118899bd9cb6335d4c73e28",
+  "frozen_onnx": "/home/oleksiy/Документи/Projects/Moyva/Game-Project/moyva/Results/MoyvaTraining/moyva-fast-fresh-20260915-204434/evaluations/frozen/10001/MoyvaStrategy.onnx",
+  "frozen_onnx_sha256": "773afe0a534a289a94b4249bb8baefed0f9a79d4f953aa07b8196bd6e86339e2"
+}

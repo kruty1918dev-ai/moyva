@@ -5,6 +5,8 @@ on:
     paths:
       - 'Assets/Moyva/Scripts/**/*.cs'
       - 'tools/quality/check-file-length-limits.sh'
+      - 'tools/quality/context_budget.py'
+      - 'tools/quality/context-budget-allowlist.json'
       - '.github/workflows/file-size-guardrails.yml'
   workflow_dispatch:
 
@@ -25,4 +27,5 @@ jobs:
           chmod +x tools/quality/check-file-length-limits.sh
           tools/quality/check-file-length-limits.sh \
             --base-ref "origin/${{ github.base_ref }}" \
-            --changed-only
+            --changed-only \
+            --strict

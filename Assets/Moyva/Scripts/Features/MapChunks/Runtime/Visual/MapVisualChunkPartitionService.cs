@@ -323,24 +323,6 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                 movedRenderers += rendererCount;
             }
 
-            Debug.Log(
-                $"{AuditPrefix} COMPLETE " +
-                $"scanMode=PreferredMapRoots " +
-                $"sceneWideScan=False " +
-                $"pendingPasses={Mathf.Max(0, _pendingPasses - 1)} " +
-                $"scannedRenderers={scannedRenderers} " +
-                $"candidateOwners={_owners.Count} " +
-                $"movedOwners={movedOwners} " +
-                $"movedRenderers={movedRenderers} " +
-                $"multiChunkOwners={multiChunkOwners} " +
-                $"oversizedOwners={oversizedOwners} " +
-                $"emptyOwners={emptyOwners} " +
-                $"alreadyOwnedOwners={alreadyOwnedOwners} " +
-                $"filteredRenderers={filteredRenderers} " +
-                $"renderersWithoutOwner={renderersWithoutOwner} " +
-                $"alreadyChunkOwnedRenderers=" +
-                $"{alreadyChunkOwnedRenderers}");
-
             _ownerRenderers.Clear();
             _owners.Clear();
             _ownerSet.Clear();
@@ -526,13 +508,6 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
             MapChunkCoord target,
             bool hasTarget)
         {
-            Debug.LogWarning(
-                $"{AuditPrefix} {kind} " +
-                $"owner='{BuildPath(owner)}' " +
-                $"rendererCount={rendererCount} " +
-                $"overlaps={FormatChunks(overlaps)} " +
-                $"target={(hasTarget ? target.ToString() : "<none>")} " +
-                $"bounds={FormatBounds(bounds)}");
         }
 
         private static string BuildPath(

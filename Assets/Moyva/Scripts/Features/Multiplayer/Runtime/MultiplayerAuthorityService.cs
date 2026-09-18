@@ -1,9 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
+using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Economy.API;
+using Kruty1918.Moyva.Economy.Runtime;
+using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
@@ -24,38 +30,75 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     ///
     /// Офлайн / хост: дії виконуються безпосередньо, без мережевого round-trip.
     /// </summary>
-    internal sealed class MultiplayerAuthorityService :
+    internal sealed partial class MultiplayerAuthorityService :
         IInitializable,
         IDisposable,
         IConstructionConfirmRequestExecutor,
-        IConstructionAuthorityEndpointRegistry
+        IConstructionAuthorityEndpointRegistry,
+        IUnitCommandAuthorityEndpointRegistry,
+        ICaravanRemoteCommandRequester,
+        ICombatRemoteCommandRequester,
+        ISettlementCaptureRemoteCommandRequester
     {
         private readonly IGameCommandSyncService _syncService;
         private readonly ISessionManager         _sessionManager;
+        private readonly ILocalGameplayRoleResolver _roleResolver;
         private readonly SignalBus               _signalBus;
         private IConstructionService             _constructionService;
-        private readonly IUnitMovementService    _unitMovementService;
-        private readonly IUnitOwnershipQuery     _unitOwnershipQuery;
+        private IUnitMovementService _unitMovementService;
+        private readonly IUnitService _unitService;
+        private IUnitOwnershipQuery _unitOwnershipQuery;
         private readonly IUnitFactory            _unitFactory;
+        private readonly ICaravanService _caravanService;
+        private readonly ICombatCommandService _combatCommandService;
+        private readonly IHealthRegistry _healthRegistry;
+        private readonly ISettlementCaptureService _settlementCaptureService;
+        private readonly IConstructionBuildingCombatTargetQuery _buildingTargetQuery;
+        private readonly IBuildingRegistry _buildingRegistry;
+        private readonly IFogOwnerStateReader _ownerFog;
+        private readonly Dictionary<string, HashSet<string>> _knownUnitsByPeer =
+            new(StringComparer.Ordinal);
+        private readonly Dictionary<string, Vector2Int> _replicatedUnitPositions =
+            new(StringComparer.Ordinal);
 
         // Guard: не ретранслюємо події, що прийшли з мережі (уникаємо нескінченного циклу).
         private bool _applyingNetworkEvent;
+        private bool _disposed;
+        private readonly CancellationTokenSource _lifetime = new();
 
         public MultiplayerAuthorityService(
             IGameCommandSyncService syncService,
             ISessionManager         sessionManager,
             SignalBus               signalBus,
+            ILocalGameplayRoleResolver roleResolver,
             [InjectOptional] IUnitMovementService unitMovementService = null,
+            [InjectOptional] IUnitService unitService = null,
             [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery = null,
             [InjectOptional] IUnitFactory unitFactory = null,
+            [InjectOptional] ICaravanService caravanService = null,
+            [InjectOptional] ICombatCommandService combatCommandService = null,
+            [InjectOptional] IHealthRegistry healthRegistry = null,
+            [InjectOptional] ISettlementCaptureService settlementCaptureService = null,
+            [InjectOptional] IConstructionBuildingCombatTargetQuery buildingTargetQuery = null,
+            [InjectOptional] IBuildingRegistry buildingRegistry = null,
+            [InjectOptional] IFogOwnerStateReader ownerFog = null,
             [InjectOptional] IConstructionService constructionService = null)
         {
             _syncService         = syncService;
             _sessionManager      = sessionManager;
+            _roleResolver        = roleResolver;
             _signalBus           = signalBus;
             _unitMovementService = unitMovementService;
+            _unitService = unitService;
             _unitOwnershipQuery = unitOwnershipQuery;
             _unitFactory         = unitFactory;
+            _caravanService = caravanService;
+            _combatCommandService = combatCommandService;
+            _healthRegistry = healthRegistry;
+            _settlementCaptureService = settlementCaptureService;
+            _buildingTargetQuery = buildingTargetQuery;
+            _buildingRegistry = buildingRegistry;
+            _ownerFog = ownerFog;
             _constructionService = constructionService;
         }
 
@@ -73,8 +116,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     _constructionService,
                     constructionService))
             {
-                Debug.LogWarning(
-                    "[MultiplayerAuthority] Replacing a stale construction scene endpoint.");
             }
 
             _constructionService = constructionService;
@@ -90,8 +131,36 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
         }
 
+                public void AttachUnitCommandServices(
+            IUnitMovementService movementService,
+            IUnitOwnershipQuery ownershipQuery)
+        {
+            if (movementService == null)
+                throw new ArgumentNullException(nameof(movementService));
+            if (ownershipQuery == null)
+                throw new ArgumentNullException(nameof(ownershipQuery));
+
+            _unitMovementService = movementService;
+            _unitOwnershipQuery = ownershipQuery;
+        }
+
+        public void DetachUnitCommandServices(
+            IUnitMovementService movementService,
+            IUnitOwnershipQuery ownershipQuery)
+        {
+            if (ReferenceEquals(_unitMovementService, movementService))
+                _unitMovementService = null;
+            if (ReferenceEquals(_unitOwnershipQuery, ownershipQuery))
+                _unitOwnershipQuery = null;
+        }
+
         public void Initialize()
         {
+            if (_unitService == null || _unitFactory == null || _caravanService == null
+                || _combatCommandService == null || _healthRegistry == null
+                || _settlementCaptureService == null || _buildingTargetQuery == null
+                || _ownerFog == null || _constructionService == null)
+                throw new InvalidOperationException("Multiplayer gameplay authority must be installed in the Gameplay scene with its gameplay services.");
             // Локальні дії гравця: перехоплення перед виконанням
             _signalBus.Subscribe<MoveUnitRequestSignal>(OnLocalMoveUnitRequest);
 
@@ -100,688 +169,237 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolishedLocally);
             _signalBus.Subscribe<UnitMovedSignal>(OnUnitMovedLocally);
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreatedLocally);
+            _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyedLocally);
+            if (_caravanService != null)
+                _caravanService.RouteTransferCommitted += OnRouteTransferCommittedLocally;
 
             // Мережеві обробники (вхідні повідомлення)
             _syncService.RegisterHandler(GameCommandType.BuildingPlace,    OnNetworkBuildingPlace);
             _syncService.RegisterHandler(GameCommandType.BuildingDemolish, OnNetworkBuildingDemolish);
             _syncService.RegisterHandler(GameCommandType.UnitMove,         OnNetworkUnitMove);
             _syncService.RegisterHandler(GameCommandType.UnitSpawn,        OnNetworkUnitSpawn);
+            _syncService.RegisterHandler(GameCommandType.CaravanCommand,   OnNetworkCaravanCommand);
+            _syncService.RegisterHandler(GameCommandType.CombatCommand,    OnNetworkCombatCommand);
+            _syncService.RegisterHandler(GameCommandType.SettlementCaptureCommand, OnNetworkSettlementCaptureCommand);
         }
 
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
+            _applyingNetworkEvent = true;
+            _lifetime.Cancel();
+            _syncService.RegisterHandler(GameCommandType.BuildingPlace, null);
+            _syncService.RegisterHandler(GameCommandType.BuildingDemolish, null);
+            _syncService.RegisterHandler(GameCommandType.UnitMove, null);
+            _syncService.RegisterHandler(GameCommandType.UnitSpawn, null);
+            _syncService.RegisterHandler(GameCommandType.CaravanCommand, null);
+            _syncService.RegisterHandler(GameCommandType.CombatCommand, null);
+            _syncService.RegisterHandler(GameCommandType.SettlementCaptureCommand, null);
             _signalBus.TryUnsubscribe<MoveUnitRequestSignal>(OnLocalMoveUnitRequest);
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlacedLocally);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolishedLocally);
             _signalBus.TryUnsubscribe<UnitMovedSignal>(OnUnitMovedLocally);
             _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreatedLocally);
+            _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyedLocally);
+            if (_caravanService != null)
+                _caravanService.RouteTransferCommitted -= OnRouteTransferCommittedLocally;
+            _lifetime.Dispose();
         }
 
-        // ─── Локальні дії гравця (перехоплення) ─────────────────────────────────
-
-        public bool TryHandleConfirmRequest()
+        private void SendConfirmedCommandToVisiblePeers(
+            GameCommandType type,
+            byte[] payload,
+            string ownerId,
+            Vector2Int position)
         {
-            if (_constructionService == null)
+            IReadOnlyList<Participant> participants =
+                _sessionManager?.Participants;
+            if (participants == null || participants.Count == 0)
             {
-                Debug.LogWarning("[MultiplayerAuthority] PlaceBuildingConfirmRequestSignal received, but IConstructionService is not bound in this scene.");
-                return false;
-            }
-
-            if (IsOfflineOrHost())
-            {
-                // Хост / офлайн: виконуємо одразу; BuildingPlacedSignal транслює результат.
-                _constructionService.Confirm();
-                return true;
-            }
-
-            // Клієнт: зібрати pending-розміщення, скасувати локально, надіслати запити до хоста.
-            var pending = _constructionService.GetPendingPlacements();
-            if (pending == null || pending.Count == 0)
-            {
-                _constructionService.Cancel();
-                return true;
-            }
-
-            string ownerId = _constructionService.GetActiveOwner();
-            var placementQuery =
-                _constructionService as IConstructionPlacementQuery;
-            var intentSource =
-                _constructionService
-                    as IConstructionPendingPlacementIntentSource;
-            foreach (var kv in pending)
-            {
-                ConstructionPlacementCommitIntent intent =
-                    intentSource != null
-                    && intentSource.TryGetPendingPlacementIntent(
-                        kv.Key,
-                        out ConstructionPlacementCommitIntent
-                            pendingIntent)
-                        ? pendingIntent
-                        : ConstructionPlacementCommitIntent.None;
-                if (placementQuery != null)
-                {
-                    ConstructionPlacementQueryResult placement =
-                        placementQuery.EvaluatePlacement(
-                            CreateClientPlacementPreflightRequest(
-                                kv.Value,
-                                kv.Key,
-                                ownerId,
-                                intent.Rotation));
-                    if (!placement.CanPreview
-                        || !placement.ResourcesValid)
-                    {
-                        continue;
-                    }
-                }
-
-                var payload = new BuildingPlacePayload(
-                    GameActionMessageKind.Request,
-                    kv.Value,
-                    kv.Key,
-                    ownerId,
-                    ownerId,
-                    intent.HasRelocationSource,
-                    intent.RelocationSourcePosition
-                        .GetValueOrDefault(),
-                    intent.SatisfiedReplacementBuildingId,
-                    intent.Rotation);
-
-                _syncService.SendCommand(GameCommandType.BuildingPlace, payload.ToBytes());
-            }
-
-            // Pending previews remain until a host confirmation is received.
-            // This preserves unaffordable previews and their exact deficit, and
-            // also prevents a lost/rejected request from silently deleting the
-            // player's placement intent.
-            return true;
-        }
-
-        internal static ConstructionPlacementQueryRequest
-            CreateClientPlacementPreflightRequest(
-                string buildingId,
-                Vector2Int position,
-                string ownerId,
-                ConstructionRotation rotation =
-                    ConstructionRotation.Degrees0)
-            => new ConstructionPlacementQueryRequest(
-                buildingId,
-                position,
-                ignoredPendingPosition: position,
-                includeResources: true,
-                includeDetails: true,
-                ownerId: ownerId,
-                includePendingPlacements: false,
-                attemptSource:
-                    ConstructionPlacementAttemptSource
-                        .NetworkRequest,
-                allowUniquePreviewRelocation: false,
-                rotation: rotation);
-
-        private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
-        {
-            if (_unitMovementService == null || _unitOwnershipQuery == null)
-            {
-                Debug.LogWarning("[MultiplayerAuthority] Move request rejected because unit command services are not bound in this scene.");
+                _syncService.SendCommand(type, payload);
                 return;
             }
 
-            string requesterOwnerId = string.IsNullOrWhiteSpace(signal.RequesterOwnerId)
-                ? _sessionManager?.LocalPlayerId
-                : signal.RequesterOwnerId;
-            string unitOwnerId = _unitOwnershipQuery.GetUnitOwnerId(signal.UnitId);
-            if (!IsUnitCommandAuthorized(unitOwnerId, requesterOwnerId))
+            string normalizedOwnerId =
+                NormalizeOwnerId(ownerId);
+            string localPlayerId =
+                NormalizeOwnerId(_sessionManager.LocalPlayerId);
+            bool sent = false;
+
+            for (int index = 0;
+                 index < participants.Count;
+                 index++)
             {
-                Debug.LogWarning(
-                    $"[Authority] Rejected local UnitMove for '{signal.UnitId}': requester '{requesterOwnerId}' does not own unit '{unitOwnerId}'.");
+                string participantId =
+                    NormalizeOwnerId(
+                        participants[index]?.Identity?.PlayerId);
+                if (string.IsNullOrWhiteSpace(participantId)
+                    || string.Equals(
+                        participantId,
+                        localPlayerId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (!CanPeerObserveWorldEvent(
+                        participantId,
+                        normalizedOwnerId,
+                        position))
+                {
+                    continue;
+                }
+
+                _syncService.SendCommandToPeer(
+                    participantId,
+                    type,
+                    payload);
+                sent = true;
+            }
+
+            if (!sent && participants.Count == 1)
+                _syncService.SendCommand(type, payload);
+        }
+
+        private void SendRequestToHost(
+            GameCommandType type,
+            byte[] payload)
+        {
+            string hostPeerId = ResolveHostPeerId();
+            if (!string.IsNullOrWhiteSpace(hostPeerId)
+                && !string.Equals(
+                    hostPeerId,
+                    NormalizeOwnerId(_sessionManager.LocalPlayerId),
+                    StringComparison.Ordinal))
+            {
+                _syncService.SendCommandToPeer(
+                    hostPeerId,
+                    type,
+                    payload);
                 return;
             }
 
-            if (IsOfflineOrHost())
+            _syncService.SendCommand(type, payload);
+        }
+
+        private void SendConfirmedCommandToOwnerPeers(
+            GameCommandType type,
+            byte[] payload,
+            string ownerId)
+        {
+            string normalizedOwnerId =
+                NormalizeOwnerId(ownerId);
+            if (string.IsNullOrWhiteSpace(normalizedOwnerId))
             {
-                // Хост / офлайн: виконуємо рух одразу; UnitMovedSignal транслює кожен крок.
-                _ = _unitMovementService.MoveUnitAsync(signal.UnitId, signal.TargetPosition, CancellationToken.None);
+                _syncService.SendCommand(type, payload);
                 return;
             }
 
-            // Клієнт: надсилаємо запит до хоста.
-            var payload = new UnitMovePayload(
-                GameActionMessageKind.Request,
-                signal.UnitId,
-                signal.TargetPosition);
-            _syncService.SendCommand(GameCommandType.UnitMove, payload.ToBytes());
-        }
-
-        // ─── Хост: трансляція після локального виконання ─────────────────────────
-
-        private void OnBuildingPlacedLocally(BuildingPlacedSignal signal)
-        {
-            if (_applyingNetworkEvent || !IsOfflineOrHost()) return;
-
-            var payload = new BuildingPlacePayload(
-                GameActionMessageKind.Confirmed,
-                signal.BuildingId,
-                signal.Position,
-                signal.OwnerId,
-                signal.SourceFactionId,
-                signal.HasRelocationSource,
-                signal.RelocationSourcePosition,
-                rotation: ConstructionRotationUtility.Normalize(
-                    signal.RotationQuarterTurns));
-            _syncService.SendCommand(GameCommandType.BuildingPlace, payload.ToBytes());
-        }
-
-        private void OnBuildingDemolishedLocally(BuildingDemolishedSignal signal)
-        {
-            if (_applyingNetworkEvent || !IsOfflineOrHost()) return;
-
-            var payload = new BuildingDemolishPayload(
-                GameActionMessageKind.Confirmed,
-                signal.Position,
-                signal.OwnerId);
-            _syncService.SendCommand(GameCommandType.BuildingDemolish, payload.ToBytes());
-        }
-
-        private void OnUnitMovedLocally(UnitMovedSignal signal)
-        {
-            if (_applyingNetworkEvent || !IsOfflineOrHost()) return;
-
-            // Транслюємо кожен крок руху; клієнти синхронно запускають власний MoveUnitAsync.
-            var payload = new UnitMovePayload(
-                GameActionMessageKind.Confirmed,
-                signal.UnitId,
-                signal.NewPosition);
-            _syncService.SendCommand(GameCommandType.UnitMove, payload.ToBytes());
-        }
-
-        private void OnUnitCreatedLocally(UnitCreatedSignal signal)
-        {
-            if (_applyingNetworkEvent || !IsOfflineOrHost()) return;
-
-            var payload = new UnitSpawnPayload(
-                GameActionMessageKind.Confirmed,
-                signal.UnitId,
-                signal.UnitTypeId,
-                signal.Position,
-                signal.OwnerId);
-            _syncService.SendCommand(GameCommandType.UnitSpawn, payload.ToBytes());
-        }
-
-        // ─── Мережеві обробники (вхідні повідомлення) ────────────────────────────
-
-        private void OnNetworkBuildingPlace(string senderId, byte[] body)
-        {
-            var data = BuildingPlacePayload.FromBytes(body);
-
-            if (_constructionService == null)
+            IReadOnlyList<Participant> participants =
+                _sessionManager?.Participants;
+            if (participants == null || participants.Count == 0)
             {
-                Debug.LogWarning("[MultiplayerAuthority] BuildingPlace command received, but IConstructionService is not bound in this scene.");
+                _syncService.SendCommand(type, payload);
                 return;
             }
 
-            if (data.Kind == GameActionMessageKind.Request)
+            string localPlayerId =
+                NormalizeOwnerId(_sessionManager.LocalPlayerId);
+            bool sent = false;
+            for (int index = 0;
+                 index < participants.Count;
+                 index++)
             {
-                // Лише хост обробляє запити.
-                if (!IsOfflineOrHost()) return;
-                if (!TryResolveAuthorizedRequestOwner(
-                        senderId,
-                        data.OwnerId,
-                        data.SourceFactionId,
-                        out string authorizedOwnerId,
-                        out string authorizationReason))
+                string participantId =
+                    NormalizeOwnerId(
+                        participants[index]?.Identity?.PlayerId);
+                if (!string.Equals(
+                        participantId,
+                        normalizedOwnerId,
+                        StringComparison.Ordinal)
+                    || string.Equals(
+                        participantId,
+                        localPlayerId,
+                        StringComparison.Ordinal))
                 {
-                    Debug.LogWarning(
-                        $"[Authority] Rejected BuildingPlace from '{senderId}': {authorizationReason}");
-                    return;
+                    continue;
                 }
 
-                _applyingNetworkEvent = true;
-                try
-                {
-                    ConstructionPlacementCommitIntent intent =
-                        data.ToCommitIntent();
-                    bool placed;
-                    if (_constructionService
-                        is IAuthoritativeConstructionPlacementExecutor
-                            authoritativeExecutor)
-                    {
-                        placed =
-                            authoritativeExecutor
-                                .TryPlaceAuthoritatively(
-                                    data.BuildingId,
-                                    data.Position,
-                                    authorizedOwnerId,
-                                    intent);
-                    }
-                    else if (!intent.HasRelocationSource
-                             && string.IsNullOrWhiteSpace(
-                                 intent
-                                     .SatisfiedReplacementBuildingId))
-                    {
-                        placed = _constructionService.TryDirectPlace(
-                            data.BuildingId,
-                            data.Position,
-                            authorizedOwnerId);
-                    }
-                    else
-                    {
-                        Debug.LogError(
-                            "[MultiplayerAuthority] Construction service cannot execute the requested placement intent authoritatively.");
-                        placed = false;
-                    }
-
-                    if (placed)
-                    {
-                        // Хост вручну транслює підтвердження (BuildingPlacedSignal вже заблоковано флагом).
-                        var confirmed = new BuildingPlacePayload(
-                            GameActionMessageKind.Confirmed,
-                            data.BuildingId,
-                            data.Position,
-                            authorizedOwnerId,
-                            authorizedOwnerId,
-                            intent.HasRelocationSource,
-                            intent.RelocationSourcePosition
-                                .GetValueOrDefault(),
-                            intent.SatisfiedReplacementBuildingId,
-                            intent.Rotation);
-                        _syncService.SendCommand(GameCommandType.BuildingPlace, confirmed.ToBytes());
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[Authority] Хост відхилив BuildingPlace від {senderId}: " +
-                                         $"buildingId={data.BuildingId} pos={data.Position}");
-                    }
-                }
-                finally
-                {
-                    _applyingNetworkEvent = false;
-                }
+                _syncService.SendCommandToPeer(
+                    participantId,
+                    type,
+                    payload);
+                sent = true;
             }
-            else if (data.Kind == GameActionMessageKind.Confirmed)
-            {
-                // Клієнти застосовують підтверджене розміщення.
-                if (IsOfflineOrHost()) return;
-                if (!IsAuthorizedHostSender(senderId))
-                {
-                    Debug.LogWarning(
-                        $"[Authority] Ignored BuildingPlace confirmation from non-host '{senderId}'.");
-                    return;
-                }
 
-                _applyingNetworkEvent = true;
-                try
-                {
-                    string confirmedOwnerId =
-                        string.IsNullOrWhiteSpace(data.SourceFactionId)
-                            ? data.OwnerId
-                            : data.SourceFactionId;
-                    ConstructionPlacementCommitIntent intent =
-                        data.ToCommitIntent();
-                    bool applied;
-                    if (_constructionService
-                        is IConfirmedConstructionPlacementIntentApplier
-                            intentApplier)
-                    {
-                        applied =
-                            intentApplier
-                                .TryApplyConfirmedPlacement(
-                                    data.BuildingId,
-                                    data.Position,
-                                    confirmedOwnerId,
-                                    intent);
-                    }
-                    else if (!intent.HasRelocationSource
-                             && string.IsNullOrWhiteSpace(
-                                 intent
-                                     .SatisfiedReplacementBuildingId)
-                             && _constructionService
-                                 is IConfirmedConstructionPlacementApplier
-                                     legacyApplier)
-                    {
-                        applied =
-                            legacyApplier.TryApplyConfirmedPlacement(
-                                data.BuildingId,
-                                data.Position,
-                                confirmedOwnerId);
-                    }
-                    else
-                    {
-                        Debug.LogError(
-                            "[MultiplayerAuthority] Construction service cannot apply a host-confirmed placement intent without charging client resources.");
-                        return;
-                    }
-                    if (applied
-                        && _constructionService
-                            .TryGetPendingBuildingIdAt(
-                                data.Position,
-                                out string pendingBuildingId)
-                        && string.Equals(
-                            pendingBuildingId,
-                            data.BuildingId,
-                            System.StringComparison.Ordinal))
-                    {
-                        _constructionService.RemovePendingAt(
-                            data.Position);
-                    }
-                }
-                finally
-                {
-                    _applyingNetworkEvent = false;
-                }
-            }
+            if (!sent && participants.Count == 1)
+                _syncService.SendCommand(type, payload);
         }
 
-        private void OnNetworkBuildingDemolish(string senderId, byte[] body)
+        private string ResolveHostPeerId()
         {
-            var data = BuildingDemolishPayload.FromBytes(body);
+            IReadOnlyList<Participant> participants =
+                _sessionManager?.Participants;
+            if (participants == null || participants.Count == 0)
+                return string.Empty;
 
-            if (_constructionService == null)
-            {
-                Debug.LogWarning("[MultiplayerAuthority] BuildingDemolish command received, but IConstructionService is not bound in this scene.");
-                return;
-            }
-
-            if (data.Kind == GameActionMessageKind.Request)
-            {
-                if (!IsOfflineOrHost()) return;
-                if (!TryResolveAuthorizedRequestOwner(
-                        senderId,
-                        data.OwnerId,
-                        requestedSourceOwnerId: null,
-                        out string authorizedOwnerId,
-                        out string authorizationReason))
-                {
-                    Debug.LogWarning(
-                        $"[Authority] Rejected BuildingDemolish from '{senderId}': {authorizationReason}");
-                    return;
-                }
-
-                _applyingNetworkEvent = true;
-                try
-                {
-                    bool demolished =
-                        _constructionService.TryDemolishByFaction(
-                            data.Position,
-                            authorizedOwnerId);
-                    if (demolished)
-                    {
-                        var confirmed = new BuildingDemolishPayload(
-                            GameActionMessageKind.Confirmed,
-                            data.Position,
-                            authorizedOwnerId);
-                        _syncService.SendCommand(GameCommandType.BuildingDemolish, confirmed.ToBytes());
-                    }
-                }
-                finally
-                {
-                    _applyingNetworkEvent = false;
-                }
-            }
-            else if (data.Kind == GameActionMessageKind.Confirmed)
-            {
-                if (IsOfflineOrHost()) return;
-                if (!IsAuthorizedHostSender(senderId))
-                {
-                    Debug.LogWarning(
-                        $"[Authority] Ignored BuildingDemolish confirmation from non-host '{senderId}'.");
-                    return;
-                }
-
-                _applyingNetworkEvent = true;
-                try
-                {
-                    if (_constructionService
-                        is not IConfirmedConstructionDemolitionApplier applier)
-                    {
-                        Debug.LogError(
-                            "[MultiplayerAuthority] Construction service cannot apply a host-confirmed demolition without local turn authority.");
-                        return;
-                    }
-
-                    if (!applier.TryApplyConfirmedDemolition(
-                            data.Position,
-                            data.OwnerId))
-                    {
-                        Debug.LogWarning(
-                            $"[Authority] Host-confirmed demolition could not be applied at {data.Position} for owner '{data.OwnerId}'.");
-                    }
-                }
-                finally { _applyingNetworkEvent = false; }
-            }
-        }
-
-        private void OnNetworkUnitMove(string senderId, byte[] body)
-        {
-            var data = UnitMovePayload.FromBytes(body);
-
-            if (_unitMovementService == null)
-            {
-                Debug.LogWarning("[MultiplayerAuthority] UnitMove command received, but IUnitMovementService is not bound in this scene.");
-                return;
-            }
-
-            if (data.Kind == GameActionMessageKind.Request)
-            {
-                // Лише хост обробляє запити на рух.
-                if (!IsOfflineOrHost()) return;
-                if (_unitOwnershipQuery == null)
-                    return;
-
-                string unitOwnerId = _unitOwnershipQuery.GetUnitOwnerId(data.UnitId);
-                if (!TryResolveAuthorizedRequestOwner(
-                        senderId,
-                        unitOwnerId,
-                        unitOwnerId,
-                        out _,
-                        out string authorizationReason))
-                {
-                    Debug.LogWarning(
-                        $"[Authority] Rejected UnitMove from '{senderId}' for '{data.UnitId}': {authorizationReason}");
-                    return;
-                }
-                // Хост виконує рух; UnitMovedSignal транслює кожен крок через OnUnitMovedLocally.
-                _ = _unitMovementService.MoveUnitAsync(data.UnitId, data.TargetPosition, CancellationToken.None);
-            }
-            else // Confirmed
-            {
-                // Клієнт запускає власний рух до тієї ж позиції (детерміноване pathfinding).
-                if (IsOfflineOrHost()) return;
-                if (!IsAuthorizedHostSender(senderId))
-                {
-                    Debug.LogWarning(
-                        $"[Authority] Ignored UnitMove confirmation from non-host '{senderId}'.");
-                    return;
-                }
-
-                _ = _unitMovementService.MoveUnitAsync(data.UnitId, data.TargetPosition, CancellationToken.None);
-            }
-        }
-
-        private void OnNetworkUnitSpawn(string senderId, byte[] body)
-        {
-            var data = UnitSpawnPayload.FromBytes(body);
-
-            if (_unitFactory == null)
-            {
-                Debug.LogWarning("[MultiplayerAuthority] UnitSpawn command received, but IUnitFactory is not bound in this scene.");
-                return;
-            }
-
-            if (data.Kind == GameActionMessageKind.Request)
-            {
-                // Резерв для майбутнього: клієнт запитує спавн юніта.
-                if (!IsOfflineOrHost()) return;
-
-                // Хост створює юніта; UnitCreatedSignal надішле Confirmed із призначеним ID.
-                _unitFactory.CreateUnit(data.UnitTypeId, data.Position, data.OwnerId);
-            }
-            else // Confirmed
-            {
-                // Клієнт створює юніта з тим самим ID, що і на хості.
-                if (IsOfflineOrHost()) return;
-
-                _applyingNetworkEvent = true;
-                try
-                {
-                    _unitFactory.CreateUnitWithId(
-                        data.AssignedUnitId, data.UnitTypeId, data.Position, data.OwnerId);
-                }
-                finally
-                {
-                    _applyingNetworkEvent = false;
-                }
-            }
-        }
-
-        // ─── Допоміжне ───────────────────────────────────────────────────────────
-
-        private bool IsOfflineOrHost()
-        {
-            if (_sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
-                return true;
-            return _sessionManager.IsLocalPlayerHost;
-        }
-
-        private bool TryResolveAuthorizedRequestOwner(
-            string senderId,
-            string requestedOwnerId,
-            string requestedSourceOwnerId,
-            out string authorizedOwnerId,
-            out string reason)
-            => TryResolveAuthorizedRequestOwner(
-                _sessionManager?.Participants,
-                senderId,
-                requestedOwnerId,
-                requestedSourceOwnerId,
-                out authorizedOwnerId,
-                out reason);
-
-        internal static bool TryResolveAuthorizedRequestOwner(
-            System.Collections.Generic.IReadOnlyList<Participant>
-                participants,
-            string senderId,
-            string requestedOwnerId,
-            string requestedSourceOwnerId,
-            out string authorizedOwnerId,
-            out string reason)
-        {
-            authorizedOwnerId = null;
-            reason = null;
-            string normalizedSender = senderId?.Trim();
-            if (string.IsNullOrWhiteSpace(normalizedSender))
-            {
-                reason = "Transport sender identity is empty.";
-                return false;
-            }
-
-            Participant authorizedParticipant = null;
-            if (participants != null)
-            {
-                for (int index = 0;
-                     index < participants.Count;
-                     index++)
-                {
-                    Participant candidate = participants[index];
-                    if (candidate?.Identity == null
-                        || candidate.IsBot
-                        || !string.Equals(
-                            candidate.Identity.PlayerId,
-                            normalizedSender,
-                            System.StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-
-                    authorizedParticipant = candidate;
-                    break;
-                }
-            }
-
-            if (authorizedParticipant == null)
-            {
-                reason =
-                    $"Sender '{normalizedSender}' is not an active human participant.";
-                return false;
-            }
-
-            if (!MatchesRequestedOwner(
-                    requestedOwnerId,
-                    normalizedSender)
-                || !MatchesRequestedOwner(
-                    requestedSourceOwnerId,
-                    normalizedSender))
-            {
-                reason =
-                    $"Requested owner does not match sender '{normalizedSender}'.";
-                return false;
-            }
-
-            authorizedOwnerId = normalizedSender;
-            return true;
-        }
-
-        private bool IsAuthorizedHostSender(string senderId)
-            => IsAuthorizedHostSender(
-                _sessionManager?.Participants,
-                senderId);
-
-        internal static bool IsAuthorizedHostSender(
-            System.Collections.Generic.IReadOnlyList<Participant>
-                participants,
-            string senderId)
-        {
-            string normalizedSender = senderId?.Trim();
-            if (string.IsNullOrWhiteSpace(normalizedSender))
-                return false;
-
-            if (participants == null)
-                return false;
-
-            for (int index = 0; index < participants.Count; index++)
+            for (int index = 0;
+                 index < participants.Count;
+                 index++)
             {
                 Participant participant = participants[index];
-                if (participant?.Identity != null
-                    && participant.IsHost
-                    && string.Equals(
-                        participant.Identity.PlayerId,
-                        normalizedSender,
-                        System.StringComparison.Ordinal))
-                {
-                    return true;
-                }
+                if (participant?.IsHost == true)
+                    return NormalizeOwnerId(
+                        participant.Identity?.PlayerId);
             }
 
-            return false;
+            return string.Empty;
         }
 
-        private static bool MatchesRequestedOwner(
-            string requestedOwnerId,
-            string senderId)
-            => string.IsNullOrWhiteSpace(requestedOwnerId)
-                || string.Equals(
-                    requestedOwnerId.Trim(),
-                    senderId,
-                    System.StringComparison.Ordinal);
+        private bool CanPeerObserveWorldEvent(
+            string peerOwnerId,
+            string eventOwnerId,
+            Vector2Int position)
+        {
+            string normalizedPeerOwnerId =
+                NormalizeOwnerId(peerOwnerId);
+            if (string.IsNullOrWhiteSpace(normalizedPeerOwnerId))
+                return false;
 
-        internal static bool IsUnitCommandAuthorized(
-            string unitOwnerId,
-            string requesterOwnerId)
-            => !string.IsNullOrWhiteSpace(unitOwnerId)
-               && !string.IsNullOrWhiteSpace(requesterOwnerId)
-               && string.Equals(
-                   unitOwnerId.Trim(),
-                   requesterOwnerId.Trim(),
-                   StringComparison.Ordinal);
+            if (!string.IsNullOrWhiteSpace(eventOwnerId)
+                && string.Equals(
+                    normalizedPeerOwnerId,
+                    eventOwnerId,
+                    StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return _ownerFog == null
+                   || _ownerFog.IsVisible(
+                       normalizedPeerOwnerId,
+                       position);
+        }
+
+        private static string NormalizeOwnerId(
+            string ownerId)
+        {
+            return string.IsNullOrWhiteSpace(ownerId)
+                ? string.Empty
+                : ownerId.Trim();
+        }
+
     }
-
     internal sealed class MultiplayerConstructionPlacementAuthorityPolicy :
         IConstructionPlacementAuthorityPolicy
     {
-        private readonly ISessionManager _sessionManager;
+        private readonly ILocalGameplayRoleResolver _roleResolver;
 
         public MultiplayerConstructionPlacementAuthorityPolicy(
-            ISessionManager sessionManager)
+            ILocalGameplayRoleResolver roleResolver)
         {
-            _sessionManager = sessionManager;
+            _roleResolver = roleResolver;
         }
 
         public bool CanCommit(
@@ -789,10 +407,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             ConstructionPlacementAttemptSource attemptSource,
             out string reason)
         {
-            var participants = _sessionManager?.Participants;
-            if (participants == null
-                || participants.Count == 0
-                || _sessionManager.IsLocalPlayerHost)
+            if (_roleResolver == null
+                || _roleResolver.Resolve().IsAuthoritative)
             {
                 reason = null;
                 return true;
@@ -802,6 +418,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 "Placement is awaiting authoritative host confirmation.";
             return false;
         }
+
     }
 
     internal sealed class MultiplayerGamePauseModePolicy :

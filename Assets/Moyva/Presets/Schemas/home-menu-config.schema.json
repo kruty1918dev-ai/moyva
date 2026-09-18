@@ -59,6 +59,64 @@
     "sceneActivationDelay": {
       "type": "number",
       "title": "Scene Activation Delay"
+    },
+    "useUnityHtmlShell": {
+      "type": "boolean",
+      "title": "Use Unity Html Shell"
+    },
+    "menuSimulation": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "mapSide": {
+          "type": "integer",
+          "title": "Map Side"
+        },
+        "mobileMapSide": {
+          "type": "integer",
+          "title": "Mobile Map Side"
+        },
+        "textureEdge": {
+          "type": "integer",
+          "title": "Texture Edge"
+        },
+        "mobileTextureEdge": {
+          "type": "integer",
+          "title": "Mobile Texture Edge"
+        },
+        "framesPerSecond": {
+          "type": "integer",
+          "title": "Frames Per Second"
+        },
+        "mobileFramesPerSecond": {
+          "type": "integer",
+          "title": "Mobile Frames Per Second"
+        },
+        "maxUnits": {
+          "type": "integer",
+          "title": "Max Units"
+        },
+        "turnSeconds": {
+          "type": "number",
+          "title": "Turn Seconds"
+        },
+        "shotSeconds": {
+          "type": "number",
+          "title": "Shot Seconds"
+        },
+        "cycleSeconds": {
+          "type": "number",
+          "title": "Cycle Seconds"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Menu Simulation"
     }
   }
 }

@@ -24,7 +24,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             fallback = default;
             if (registry?.Definitions == null)
             {
-                Debug.LogWarning("[MenuPreview] TileRegistry is null or has no definitions.");
                 return cache;
             }
 
@@ -44,10 +43,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                 failed.Append(id).Append(' ');
             }
-
-            Debug.Log($"[MenuPreview] Tile sprite cache: {cache.Count}/{registry.Definitions.Length} entries loaded.");
-            if (failed.Length > 0)
-                Debug.LogWarning($"[MenuPreview] Failed to load tile previews for: {failed}");
 
             return cache;
         }

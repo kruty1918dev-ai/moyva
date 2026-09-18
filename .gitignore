@@ -103,3 +103,81 @@ Assets/_Recovery/
 /Assets/Moyva/Resources/MoyvaConfigGenerated/
 /Assets/Moyva/Resources/MoyvaRuntimeAssetCatalog.prefab
 /Assets/Moyva/Resources/MoyvaRuntimeAssetCatalog.prefab.meta
+/Assets/Moyva/Editor/JsonDocuments/
+
+# BEGIN MOYVA AUDIT GENERATED ARTIFACTS
+# Generated audit/test output must never become source context.
+/.codex-audit/
+/.all-editmode-tests/
+/.artifacts/
+# END MOYVA AUDIT GENERATED ARTIFACTS
+
+# BEGIN MOYVA REPOSITORY HYGIENE
+# AI/editor recovery copies and generated patch backups.
+/.codex-backups/
+/.copilot_tmp/
+/.moyva-patch-backups/
+/.moyva_optimization_backups/
+/.patch-backups/
+
+# Generated audit archives.
+/moyva-p24-gameplay-pass-audit-*.tar.gz
+/moyva-p24d-tech-audit-*.tar.gz
+
+# Accidental/local root artifacts.
+/Moyva_P24D_TECH_ReadyIndicators_v1.zip
+/quadcast-raw.wav
+/.moyva-git-bridge-chatgpt-import-test.md
+/e HEAD
+# END MOYVA REPOSITORY HYGIENE
+
+# BEGIN MOYVA AI CONTEXT HYGIENE
+# Generated architecture/script inventory snapshots become stale and pollute AI search context.
+/00_README_FIRST.txt
+/START_HERE.md
+/ALL_SCRIPTS_COMPLETE_LIST.txt
+/Assets_Moyva_Scripts_RuntimeScripts.txt
+/DETAILED_SCRIPTS_LIST.md
+/SCRIPTS_INVENTORY.csv
+/SCRIPTS_MANAGEMENT_PLAN.md
+/SCRIPTS_QUICK_REFERENCE.md
+/MASTER_SCRIPTS_REFACTORING_PLAN.md
+/text.txt
+/tests/TestResults_*.xml
+/tests/*.tsv
+/Assets/__ChatGPT*/
+/Assets/__ChatGPT*.meta
+# END MOYVA AI CONTEXT HYGIENE
+
+# BEGIN MOYVA AI WORKSPACE HYGIENE
+/.kilo/
+__pycache__/
+*.py[cod]
+# END MOYVA AI WORKSPACE HYGIENE
+
+# BEGIN MOYVA GENERATED DOCS / LEGACY TOOLING HYGIENE
+/.docs-site/
+/docs/index.html
+/docs/pages.json
+/moyva_project.slnx
+/CAPTURE_RUNTIME_AUDIT.sh
+/tools/p24d-ready-indicators/
+# END MOYVA GENERATED DOCS / LEGACY TOOLING HYGIENE
+
+# Unity/IDE generated solution metadata
+/moyva.slnx
+
+# Installed Continue MCP server dependencies
+/.continue/**/node_modules/
+# Dedicated training output (source and configuration stay tracked).
+/Results/MoyvaTraining/
+/Build/Training/
+/.venv-training/
+
+# Machine-local Moyva Control Center settings, IPC and process records.
+/.moyva-local/
+.vscode/settings.json
+
+# Marketing Content Studio generated output (masters, exports, caches, reports).
+/MarketingOutput/
+.vscode/settings.json

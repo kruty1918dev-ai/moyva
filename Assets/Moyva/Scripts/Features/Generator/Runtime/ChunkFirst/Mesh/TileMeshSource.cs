@@ -1,5 +1,5 @@
 using UnityEngine;
-using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Generator.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
@@ -69,8 +69,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Mesh = mesh;
             Materials = materials;
             LocalMatrix = localMatrix;
-            GraphLayerId = graphLayerId;
-            GraphLayerName = graphLayerName;
+            LayerId = graphLayerId;
+            LayerName = graphLayerName;
             VisibleBottomY = visibleBottomY;
             OccludedSides = occludedSides;
             TileCenterXZ = tileCenterXZ;
@@ -84,8 +84,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         public Mesh Mesh { get; }
         public Material[] Materials { get; }
         public Matrix4x4 LocalMatrix { get; }
-        public string GraphLayerId { get; }
-        public string GraphLayerName { get; }
+        public string LayerId { get; }
+        public string LayerName { get; }
         public float VisibleBottomY { get; }
         public TileMeshOccludedSides OccludedSides { get; }
         public Vector2 TileCenterXZ { get; }

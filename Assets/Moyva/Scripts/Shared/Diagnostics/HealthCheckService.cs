@@ -74,7 +74,6 @@ namespace Kruty1918.Moyva.Shared.Diagnostics
         public void Initialize()
         {
             Refresh();
-            Debug.Log($"[HealthCheckService] Initialised. Reporters: {_reporters.Count}. Status: {(IsFullyHealthy ? "ALL READY" : "DEGRADED")}");
         }
 
         public IReadOnlyList<HealthCheckResult> GetAll()

@@ -6,13 +6,12 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionInfluenceRadiusVisualService : IConstructionInfluenceRadiusVisualService
-    {
-        private readonly IConstructionVisualRootService _roots;
-        private readonly IConstructionTerrainAlignmentService _terrainAlignmentService;
+    internal sealed class ConstructionInfluenceRadiusVisualService {
+        private readonly ConstructionVisualRootService _roots;
+        private readonly ConstructionTerrainAlignmentService _terrainAlignmentService;
         private readonly IConstructionGridGeometryService _gridGeometry;
-        private readonly IConstructionInfluenceMeshOverlayRenderer _meshOverlayRenderer;
-        private readonly IConstructionRadiusVisualObjectFactory _objectFactory;
+        private readonly ConstructionInfluenceMeshOverlayRenderer _meshOverlayRenderer;
+        private readonly ConstructionRadiusVisualObjectFactory _objectFactory;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
         private readonly IGridProjection _gridProjection;
         private readonly ConstructionInfluenceRadiusOverlayState _previewOverlay = new();
@@ -23,11 +22,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         [Inject]
         public ConstructionInfluenceRadiusVisualService(
-            IConstructionVisualRootService roots,
-            IConstructionTerrainAlignmentService terrainAlignmentService,
+            ConstructionVisualRootService roots,
+            ConstructionTerrainAlignmentService terrainAlignmentService,
             IConstructionGridGeometryService gridGeometry,
-            IConstructionInfluenceMeshOverlayRenderer meshOverlayRenderer,
-            IConstructionRadiusVisualObjectFactory objectFactory,
+            ConstructionInfluenceMeshOverlayRenderer meshOverlayRenderer,
+            ConstructionRadiusVisualObjectFactory objectFactory,
             [InjectOptional] IGridProjection gridProjection = null,
             [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)
         {

@@ -38,11 +38,15 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private sealed class Entry
         {
+            public IReadOnlyDictionary<string, float> PaidCosts;
+            public string FundingSettlementId;
             public long QueueId;
             public string OwnerId;
             public Vector2Int Position;
             public string RecruitingBuildingId;
             public string UnitTypeId;
+            public float TrainingSeconds;
+            public float CompletedSeconds;
             public int CompletedTurns;
             public int TrainingTurns;
             public long EnqueuedGlobalTurn;
@@ -51,6 +55,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private readonly Dictionary<QueueKey, List<Entry>> _queues = new();
         private long _nextQueueId = 1;
+        public long NextQueueId => _nextQueueId;
 
         public bool CanEnqueue(string ownerId, Vector2Int position, int capacity, out string reason)
         {
@@ -89,7 +94,10 @@ namespace Kruty1918.Moyva.Units.Runtime
             string recruitingBuildingId,
             string unitTypeId,
             int trainingTurns,
-            long globalTurn)
+            long globalTurn,
+            IReadOnlyDictionary<string, float> paidCosts = null,
+            string fundingSettlementId = null,
+            float trainingSeconds = 0f)
         {
             var key = new QueueKey(ownerId, position);
             if (!_queues.TryGetValue(key, out List<Entry> queue))
@@ -100,11 +108,14 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             var entry = new Entry
             {
+                PaidCosts = paidCosts == null ? null : new Dictionary<string, float>(paidCosts),
+                FundingSettlementId = fundingSettlementId,
                 QueueId = _nextQueueId++,
                 OwnerId = ownerId,
                 Position = position,
                 RecruitingBuildingId = recruitingBuildingId ?? string.Empty,
                 UnitTypeId = unitTypeId,
+                TrainingSeconds = Math.Max(0f, trainingSeconds),
                 CompletedTurns = 0,
                 TrainingTurns = Math.Max(1, trainingTurns),
                 EnqueuedGlobalTurn = Math.Max(1L, globalTurn),
@@ -127,8 +138,8 @@ namespace Kruty1918.Moyva.Units.Runtime
                 if (queue.Count == 0)
                     continue;
 
-                Entry head = queue[0];
-                if (head.CompletedTurns >= head.TrainingTurns)
+                Entry head = queue.Find(entry => entry.CompletedTurns < entry.TrainingTurns);
+                if (head == null)
                     continue;
                 if (head.EnqueuedGlobalTurn >= globalTurn || head.LastProgressGlobalTurn >= globalTurn)
                     continue;
@@ -136,6 +147,39 @@ namespace Kruty1918.Moyva.Units.Runtime
                 head.CompletedTurns++;
                 head.LastProgressGlobalTurn = globalTurn;
                 changed = true;
+            }
+            return changed;
+        }
+
+        public IReadOnlyList<UnitRecruitmentQueueItemSnapshot> AdvanceRealtime(float seconds, float roundSeconds)
+        {
+            var changed = new List<UnitRecruitmentQueueItemSnapshot>();
+            if (seconds <= 0f)
+                return changed;
+            foreach (QueueKey key in GetSortedKeys(null))
+            {
+                float remaining = seconds;
+                foreach (Entry entry in _queues[key])
+                {
+                    if (entry.CompletedTurns >= entry.TrainingTurns)
+                        continue;
+                    if (entry.TrainingSeconds <= 0f)
+                    {
+                        entry.TrainingSeconds = entry.TrainingTurns * Math.Max(0.1f, roundSeconds);
+                        entry.CompletedSeconds = entry.CompletedTurns * Math.Max(0.1f, roundSeconds);
+                    }
+                    int before = entry.CompletedTurns;
+                    float advance = Math.Min(remaining, Math.Max(0f, entry.TrainingSeconds - entry.CompletedSeconds));
+                    entry.CompletedSeconds += advance;
+                    remaining -= advance;
+                    entry.CompletedTurns = entry.CompletedSeconds >= entry.TrainingSeconds
+                        ? entry.TrainingTurns
+                        : Math.Min(entry.TrainingTurns - 1, (int)(entry.CompletedSeconds / entry.TrainingSeconds * entry.TrainingTurns));
+                    if (entry.CompletedTurns != before)
+                        changed.Add(Snapshot(entry));
+                    if (remaining <= 0f)
+                        break;
+                }
             }
             return changed;
         }
@@ -162,20 +206,34 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return Array.Empty<UnitRecruitmentQueueItemSnapshot>();
 
             var result = new UnitRecruitmentQueueItemSnapshot[queue.Count];
+            bool trainingAssigned = false;
             for (int index = 0; index < queue.Count; index++)
-                result[index] = Snapshot(queue[index]);
+            {
+                Entry entry = queue[index];
+                bool unfinished = entry.CompletedTurns < entry.TrainingTurns;
+                result[index] = Snapshot(entry, unfinished && trainingAssigned);
+                trainingAssigned |= unfinished;
+            }
             return result;
         }
 
         public bool TryPeekReady(string ownerId, Vector2Int position, out UnitRecruitmentQueueItemSnapshot item)
         {
-            var key = new QueueKey(ownerId, position);
-            if (_queues.TryGetValue(key, out List<Entry> queue)
-                && queue.Count > 0
-                && queue[0].CompletedTurns >= queue[0].TrainingTurns)
+            return TryGetReady(ownerId, position, 0, out item);
+        }
+
+        public bool TryGetReady(string ownerId, Vector2Int position, long queueId,
+            out UnitRecruitmentQueueItemSnapshot item)
+        {
+            if (_queues.TryGetValue(new QueueKey(ownerId, position), out List<Entry> queue))
             {
-                item = Snapshot(queue[0]);
-                return true;
+                Entry entry = queue.Find(candidate => candidate.CompletedTurns >= candidate.TrainingTurns
+                    && (queueId == 0 || candidate.QueueId == queueId));
+                if (entry != null)
+                {
+                    item = Snapshot(entry);
+                    return true;
+                }
             }
             item = default;
             return false;
@@ -191,8 +249,9 @@ namespace Kruty1918.Moyva.Units.Runtime
             for (int index = 0; index < keys.Count; index++)
             {
                 List<Entry> queue = _queues[keys[index]];
-                if (queue.Count > 0 && queue[0].CompletedTurns >= queue[0].TrainingTurns)
-                    result.Add(Snapshot(queue[0]));
+                foreach (Entry entry in queue)
+                    if (entry.CompletedTurns >= entry.TrainingTurns)
+                        result.Add(Snapshot(entry));
             }
             return result;
         }
@@ -204,20 +263,35 @@ namespace Kruty1918.Moyva.Units.Runtime
             out UnitRecruitmentQueueItemSnapshot item)
         {
             var key = new QueueKey(ownerId, position);
-            if (!_queues.TryGetValue(key, out List<Entry> queue)
-                || queue.Count == 0
-                || queue[0].QueueId != expectedQueueId
-                || queue[0].CompletedTurns < queue[0].TrainingTurns)
-            {
-                item = default;
+            item = default;
+            if (!_queues.TryGetValue(key, out List<Entry> queue))
                 return false;
-            }
-
-            Entry entry = queue[0];
-            queue.RemoveAt(0);
+            int index = queue.FindIndex(entry => entry.QueueId == expectedQueueId
+                && entry.CompletedTurns >= entry.TrainingTurns);
+            if (index < 0)
+                return false;
+            item = Snapshot(queue[index]);
+            queue.RemoveAt(index);
             if (queue.Count == 0)
                 _queues.Remove(key);
-            item = Snapshot(entry);
+            return true;
+        }
+
+        public bool TryCancel(string ownerId, Vector2Int position, long queueId,
+            out UnitRecruitmentQueueItemSnapshot item)
+        {
+            item = default;
+            var key = new QueueKey(ownerId, position);
+            if (!_queues.TryGetValue(key, out List<Entry> queue))
+                return false;
+            int index = queue.FindIndex(entry => entry.QueueId == queueId
+                && entry.CompletedTurns < entry.TrainingTurns);
+            if (index < 0)
+                return false;
+            item = Snapshot(queue[index]);
+            queue.RemoveAt(index);
+            if (queue.Count == 0)
+                _queues.Remove(key);
             return true;
         }
 
@@ -301,11 +375,15 @@ namespace Kruty1918.Moyva.Units.Runtime
             long lastProgress = Math.Max(enqueued, item.LastProgressGlobalTurn);
             return new Entry
             {
+                PaidCosts = item.PaidCosts,
+                FundingSettlementId = item.FundingSettlementId,
                 QueueId = item.QueueId,
                 OwnerId = item.OwnerId.Trim(),
                 Position = item.RecruitingBuildingPosition,
                 RecruitingBuildingId = item.RecruitingBuildingId?.Trim() ?? string.Empty,
                 UnitTypeId = item.UnitTypeId.Trim(),
+                TrainingSeconds = item.TrainingSeconds,
+                CompletedSeconds = item.CompletedSeconds,
                 CompletedTurns = completedTurns,
                 TrainingTurns = trainingTurns,
                 EnqueuedGlobalTurn = enqueued,
@@ -313,7 +391,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             };
         }
 
-        private static UnitRecruitmentQueueItemSnapshot Snapshot(Entry entry)
+        private static UnitRecruitmentQueueItemSnapshot Snapshot(Entry entry, bool waiting = false)
         {
             bool ready = entry.CompletedTurns >= entry.TrainingTurns;
             return new UnitRecruitmentQueueItemSnapshot(
@@ -326,7 +404,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                 entry.TrainingTurns,
                 entry.EnqueuedGlobalTurn,
                 entry.LastProgressGlobalTurn,
-                ready ? UnitRecruitmentQueueStatus.Ready : UnitRecruitmentQueueStatus.Training);
+                ready ? UnitRecruitmentQueueStatus.Ready
+                    : waiting ? UnitRecruitmentQueueStatus.Waiting : UnitRecruitmentQueueStatus.Training,
+                entry.PaidCosts,
+                entry.FundingSettlementId, entry.TrainingSeconds, entry.CompletedSeconds);
         }
     }
 }

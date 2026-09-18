@@ -75,6 +75,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         public void Initialize()
         {
             _calendar.OnHourChanged += OnTurnAdvanced;
+            _signalBus.Subscribe<UnitDestroyedSignal>(OnMilitaryUnitDestroyed);
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.Subscribe<BuildingOperationalSignal>(OnBuildingOperational);
             _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
@@ -86,6 +87,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         public void Dispose()
         {
             _calendar.OnHourChanged -= OnTurnAdvanced;
+            _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnMilitaryUnitDestroyed);
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.TryUnsubscribe<BuildingOperationalSignal>(OnBuildingOperational);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
@@ -156,7 +158,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
         {
             if (signal.Entries == null || signal.Entries.Length == 0)
             {
-                Debug.LogWarning($"{StarterPackLogTag} Economy received empty starter-pack payload for owner '{NormalizeOwnerId(signal.OwnerId)}'.");
                 return;
             }
 
@@ -165,7 +166,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (string.IsNullOrWhiteSpace(signal.SettlementId))
             {
                 string ownerId = NormalizeOwnerId(signal.OwnerId);
-                Debug.Log($"{StarterPackLogTag} Economy applying starter-pack to owner pool: owner='{ownerId}', entries=[{entriesDescription}].");
                 for (int index = 0; index < signal.Entries.Length; index++)
                 {
                     var entry = signal.Entries[index];
@@ -183,7 +183,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
             var state = _settlementRegistry.GetSettlement(signal.SettlementId);
             if (state == null || !state.IsActive)
             {
-                Debug.LogWarning($"{StarterPackLogTag} Economy cannot apply starter-pack: settlement '{signal.SettlementId}' is missing or inactive for owner '{NormalizeOwnerId(signal.OwnerId)}'. Entries=[{entriesDescription}].");
                 return;
             }
 
@@ -191,11 +190,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
             string ownerFromSettlement = NormalizeOwnerId(state.OwnerId);
             if (!string.Equals(ownerFromSignal, ownerFromSettlement, StringComparison.Ordinal))
             {
-                Debug.LogWarning($"[Economy] Пропущено стартовий пакет: owner mismatch signal='{ownerFromSignal}', settlement='{ownerFromSettlement}'.");
                 return;
             }
-
-            Debug.Log($"{StarterPackLogTag} Economy applying starter-pack to settlement='{signal.SettlementId}', owner='{ownerFromSignal}', entries=[{entriesDescription}].");
 
             for (int index = 0; index < signal.Entries.Length; index++)
             {
@@ -363,12 +359,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 state.EnsureWarehouseConsistency();
                 refreshedSettlements++;
             }
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] live-refresh economy " +
-                $"revision={revision} " +
-                $"settlements={refreshedSettlements} " +
-                $"buildings={refreshedBuildings}");
         }
 
         // ───────────────────────── Public API for UI / other systems
@@ -471,6 +461,94 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 _ownerResourcePoolService.AddOwnerResource(ownerId, pair.Key, pair.Value, _signalBus);
         }
 
+        public RecruitmentPopulationSnapshot GetRecruitmentPopulation(string ownerId, Vector2Int position)
+        {
+            if (!TryResolveConstructionSettlement(position, ownerId, out var state) || state == null || !state.IsActive)
+                return default;
+            int available = 0, training = 0, military = 0;
+            foreach (var resident in state.Residents)
+            {
+                if (resident.CanRecruit) available++;
+                if (resident.RecruitmentQueueId > 0) training++;
+                if (!string.IsNullOrEmpty(resident.MilitaryUnitId)) military++;
+            }
+            float minimum = Rules?.Population?.MinimumConstructionSpeed ?? 0.25f;
+            float fullSpeed = Rules?.Population?.ConstructionWorkersForFullSpeed ?? 10;
+            return new RecruitmentPopulationSnapshot(state.Residents.Count, available, training, military,
+                Mathf.Clamp(available / fullSpeed, minimum, 1f));
+        }
+
+        public bool TryReserveRecruitmentPopulation(string ownerId, Vector2Int position, long queueId,
+            int count, out string reason)
+        {
+            reason = null;
+            count = Math.Max(1, count);
+            if (queueId < 1 || !TryResolveConstructionSettlement(position, ownerId, out var state)
+                || state == null || !state.IsActive)
+            {
+                reason = "An owned settlement with available population is required.";
+                return false;
+            }
+            if (GetRecruitmentPopulation(ownerId, position).Available < count)
+            {
+                reason = $"Not enough available population: {count} required.";
+                return false;
+            }
+            for (int index = 0; index < state.Residents.Count && count > 0; index++)
+            {
+                if (!state.Residents[index].CanRecruit) continue;
+                state.Residents[index] = state.Residents[index].WithMilitaryAssignment(queueId);
+                count--;
+            }
+            PublishPopulationChanged(state);
+            return true;
+        }
+
+        public void SetRecruitmentPopulationAssignment(string ownerId, long queueId, string unitId)
+        {
+            if (queueId < 1) return;
+            foreach (var state in _settlementRegistry.AllSettlements.Values)
+            {
+                if (!string.Equals(state.OwnerId, ownerId, StringComparison.Ordinal)) continue;
+                bool changed = false;
+                for (int index = 0; index < state.Residents.Count; index++)
+                {
+                    if (state.Residents[index].RecruitmentQueueId != queueId) continue;
+                    state.Residents[index] = state.Residents[index].WithMilitaryAssignment(0, unitId);
+                    changed = true;
+                }
+                if (changed) PublishPopulationChanged(state);
+            }
+        }
+
+        private void OnMilitaryUnitDestroyed(UnitDestroyedSignal signal)
+        {
+            if (string.IsNullOrWhiteSpace(signal.UnitId)) return;
+            foreach (var state in _settlementRegistry.AllSettlements.Values)
+                if (state.Residents.RemoveAll(resident => resident.MilitaryUnitId == signal.UnitId) > 0)
+                    PublishPopulationChanged(state);
+        }
+
+        private void PublishPopulationChanged(EconomySettlementState state)
+            => _signalBus.Fire(new SettlementPopulationChangedSignal
+            { OwnerId = state.OwnerId, SettlementId = state.SettlementId });
+
+        public void RefundRecruitmentResources(string ownerId, string settlementId,
+            IReadOnlyDictionary<string, float> resources)
+        {
+            var settlement = string.IsNullOrWhiteSpace(settlementId)
+                ? null : _settlementRegistry.GetSettlement(settlementId);
+            if (settlement == null || !settlement.IsActive
+                || !string.Equals(NormalizeOwnerId(settlement.OwnerId), NormalizeOwnerId(ownerId), StringComparison.Ordinal))
+            {
+                RefundOwnerPoolResources(ownerId, resources);
+                return;
+            }
+            if (resources != null)
+                foreach (var resource in resources)
+                    AddResource(settlementId, resource.Key, resource.Value);
+        }
+
         public bool TryGetBuildingAtPosition(Vector2Int position, out string buildingId, out string ownerId)
         {
             return _settlementRegistry.TryGetBuildingAtPosition(position, out buildingId, out ownerId);
@@ -560,8 +638,15 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     {
                         SettlementId =
                             state.SettlementId,
+                        OwnerId =
+                            state.OwnerId,
+                        SettlementName =
+                            state.SettlementName,
                         CurrentTurn =
                             state.CurrentTurn,
+                        IsActive =
+                            state.IsActive,
+                        Residents = new List<EconomyResidentState>(state.Residents),
                     };
 
                 foreach (var resource
@@ -683,6 +768,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     continue;
                 }
 
+                RestoreRuntimeSettlementOwner(
+                    state,
+                    saved);
+
                 ApplyRuntimeSnapshot(
                     state,
                     saved);
@@ -694,10 +783,37 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             if (_pendingRuntimeSaveSnapshot.Settlements.Count == 0)
                 _pendingRuntimeSaveSnapshot = null;
+        }
 
-            Debug.Log(
-                $"[MoyvaConstructionModules] economy-runtime-restore " +
-                $"applied={applied} deferred={deferred}");
+        private void RestoreRuntimeSettlementOwner(
+            EconomySettlementState state,
+            EconomySettlementRuntimeSnapshot saved)
+        {
+            if (state == null
+                || saved == null
+                || string.IsNullOrWhiteSpace(saved.OwnerId))
+            {
+                return;
+            }
+
+            string previousOwnerId =
+                NormalizeOwnerId(state.OwnerId);
+            string savedOwnerId =
+                NormalizeOwnerId(saved.OwnerId);
+            if (string.Equals(previousOwnerId, savedOwnerId, StringComparison.Ordinal))
+                return;
+
+            if (!_settlementRegistry.TryTransferSettlementOwner(
+                    state.SettlementId,
+                    previousOwnerId,
+                    savedOwnerId,
+                    out _,
+                    out string reason)
+                && Debug.isDebugBuild)
+            {
+                Debug.LogWarning(
+                    $"[EconomySave] Could not restore owner for settlement '{state.SettlementId}': {reason}");
+            }
         }
 
         private static bool HasAllSavedBuildingInstances(
@@ -736,7 +852,15 @@ namespace Kruty1918.Moyva.Economy.Runtime
             EconomySettlementState state,
             EconomySettlementRuntimeSnapshot saved)
         {
+            if (!string.IsNullOrWhiteSpace(saved.SettlementName))
+                state.SettlementName = saved.SettlementName;
+            state.IsActive = saved.IsActive;
             state.CurrentTurn = saved.CurrentTurn;
+            if (saved.Residents != null)
+            {
+                state.Residents.Clear();
+                state.Residents.AddRange(saved.Residents);
+            }
 
             state.ResourcePool.Clear();
             foreach (var resource in saved.ResourcePool)

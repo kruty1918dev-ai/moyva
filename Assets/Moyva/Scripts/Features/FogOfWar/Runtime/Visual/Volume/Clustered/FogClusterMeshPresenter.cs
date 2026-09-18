@@ -1,18 +1,15 @@
 using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Debug = UnityEngine.Debug;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
-    internal sealed class FogClusterMeshPresenter : IFogClusterMeshPresenter
+    internal sealed class FogClusterMeshPresenter
     {
-        private const string ClusterDiagTag = "[MoyvaFogClusterDiag]";
-        private readonly IFogClusterMaterialProvider _materialProvider;
+        private readonly FogClusterMaterialProvider _materialProvider;
         private readonly Material[] _materials = new Material[2];
-        private bool _loggedMissingMaterial;
 
-        public FogClusterMeshPresenter(IFogClusterMaterialProvider materialProvider)
+        public FogClusterMeshPresenter(FogClusterMaterialProvider materialProvider)
         {
             _materialProvider = materialProvider;
         }
@@ -30,12 +27,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _materials[0] = _materialProvider?.ResolveMaterial(FogStateType.Unexplored);
             _materials[1] = _materialProvider?.ResolveMaterial(FogStateType.Explored);
             handle.MeshRenderer.sharedMaterials = _materials;
-
-            if (!_loggedMissingMaterial && ShouldWarnMissingMaterial())
-            {
-                _loggedMissingMaterial = true;
-                Debug.LogWarning($"{ClusterDiagTag} Clustered fog renderer could not resolve one or more materials from FogOfWarSettings tile presets. Cluster meshes may render with Unity fallback material.");
-            }
         }
 
         private void ConfigureObjectLayer(FogClusterMeshHandle handle)
@@ -59,15 +50,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             var explored = _materialProvider?.ResolveStateSettings(FogStateType.Explored);
             return explored ?? unexplored;
-        }
-
-        private bool ShouldWarnMissingMaterial()
-        {
-            bool missingUnexplored = (_materialProvider?.ShouldRenderState(FogStateType.Unexplored) ?? true)
-                && _materials[0] == null;
-            bool missingExplored = (_materialProvider?.ShouldRenderState(FogStateType.Explored) ?? true)
-                && _materials[1] == null;
-            return missingUnexplored || missingExplored;
         }
 
         private static int ResolveLayer(LayerMask mask)

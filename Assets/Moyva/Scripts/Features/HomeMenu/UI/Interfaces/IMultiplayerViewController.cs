@@ -1,9 +1,9 @@
 using System;
+using Kruty1918.Moyva.Multiplayer.Networking;
 using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
-    // TODO: Implement view controllers for each menu panel (Solo, Multiplayer, CreateRoom, JoinRoom, Continue, WorldSetup) following the pattern of IBotViewController and BotViewController.
     /// <summary>
     /// Контракт головної multiplayer-панелі з вибором create/join.
     /// Залежності: використовується MultiplayerPanelService.
@@ -17,9 +17,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         Button ButtonJoinToRoom { get; set; }
 
         /// <summary>Подія натискання Create Room.</summary>
-        event Action OnCreateRoomClicked;
+        event Action<NetworkProviderType> OnCreateRoomClicked;
 
         /// <summary>Подія натискання Join Room.</summary>
-        event Action OnJoinRoomClicked;
+        event Action<NetworkProviderType> OnJoinRoomClicked;
     }
 }

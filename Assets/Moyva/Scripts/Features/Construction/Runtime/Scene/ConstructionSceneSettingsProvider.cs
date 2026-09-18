@@ -11,8 +11,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         IConstructionPlacementRulesProvider,
         IConstructionVisualSettingsProvider,
         IConstructionInputSettingsProvider,
-        IConstructionWallSettingsProvider,
-        IConstructionDiagnosticsSettingsProvider
+        IConstructionWallSettingsProvider
     {
         private readonly ConstructionSceneContext _sceneContext;
         private readonly int _fallbackMinSpacing;
@@ -103,15 +102,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public bool AllowWallPathThroughGates => _sceneContext?.ResolveWallProfile()?.AllowWallPathThroughGates ?? false;
         public bool ShowWallHandles => _sceneContext?.ResolveWallProfile()?.ShowWallHandles ?? true;
         public ConstructionWallPathMode WallPathMode => _sceneContext?.ResolveWallProfile()?.WallPathMode ?? ConstructionWallPathMode.OrthogonalOnly;
-
-        public bool EnableVerboseLogs => _sceneContext?.ResolveDiagnosticsProfile()?.EnableVerboseLogs ?? (Application.isEditor && Debug.isDebugBuild);
-        public bool EnablePlacementDebug => _sceneContext?.ResolveDiagnosticsProfile()?.EnablePlacementDebug ?? true;
-        public bool EnableResourceDebug => _sceneContext?.ResolveDiagnosticsProfile()?.EnableResourceDebug ?? true;
-        public bool EnableVisualDebug => _sceneContext?.ResolveDiagnosticsProfile()?.EnableVisualDebug ?? true;
-        public bool EnableWallDebug => _sceneContext?.ResolveDiagnosticsProfile()?.EnableWallDebug ?? true;
-        public bool DrawSceneGizmos => _sceneContext?.ResolveDiagnosticsProfile()?.DrawSceneGizmos ?? true;
-        public bool DrawBlockedTiles => _sceneContext?.ResolveDiagnosticsProfile()?.DrawBlockedTiles ?? false;
-        public bool DrawInfluenceZones => _sceneContext?.ResolveDiagnosticsProfile()?.DrawInfluenceZones ?? true;
 
         public Transform ResolvePreviewRoot()
         {

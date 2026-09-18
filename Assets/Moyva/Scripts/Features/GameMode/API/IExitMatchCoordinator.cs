@@ -37,7 +37,7 @@ namespace Kruty1918.Moyva.GameMode.API
             CancellationToken cancellationToken = default);
     }
 
-    /// <summary>Optional solo persistence adapter supplied by SaveSystem.</summary>
+    /// <summary>Optional local persistence adapter supplied by SaveSystem.</summary>
     public interface IExitMatchSaveHandler
     {
         Task SaveBeforeExitAsync(CancellationToken cancellationToken);

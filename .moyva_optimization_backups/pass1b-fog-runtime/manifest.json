@@ -1,7 +1,0 @@
-{
-  "pass": "pass1b-fog-runtime",
-  "files": [
-    "Assets/Moyva/Scripts/Features/FogOfWar/Runtime/Visual/ScreenSpace/FogOfWarScreenSpaceRendererFeature.cs",
-    "Assets/Moyva/Scripts/Features/FogOfWar/Runtime/Visual/ScreenSpace/FogScreenSpaceTextureUpdater.cs"
-  ]
-}

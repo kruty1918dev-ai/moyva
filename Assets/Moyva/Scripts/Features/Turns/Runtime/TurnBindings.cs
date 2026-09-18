@@ -7,6 +7,7 @@ namespace Kruty1918.Moyva.Turns.Runtime
         public static void Install(DiContainer container)
         {
             container.BindInterfacesAndSelfTo<TurnService>().AsSingle().NonLazy();
+            container.BindInterfacesAndSelfTo<GameplayProgressClock>().AsSingle().NonLazy();
         }
     }
 }

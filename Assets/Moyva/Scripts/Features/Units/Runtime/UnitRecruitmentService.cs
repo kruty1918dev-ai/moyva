@@ -13,25 +13,22 @@ namespace Kruty1918.Moyva.Units.Runtime
 {
     internal sealed class UnitRecruitmentService :
         IUnitRecruitmentService,
+        IUnitRecruitmentQuery,
         IUnitRecruitmentStateStore,
         ITurnParticipant,
+        ITickable,
         IInitializable,
         IDisposable
     {
         private readonly UnitRecruitmentQueueStateMachine _queue = new();
-        private readonly IUnitClassConfig _unitClassConfig;
-        private readonly IBuildingRegistry _buildingRegistry;
-        private readonly IConstructionSaveSnapshotSource _constructionSnapshot;
-        private readonly IConstructionLifecycle _constructionLifecycle;
+        private double _lastGameplaySeconds;
+        private bool _enqueuing;
         private readonly IEconomyInfoMediator _economy;
         private readonly ITurnService _turns;
+        private readonly IGameplayProgressClock _progressClock;
         private readonly SignalBus _signalBus;
-        private readonly IUnitFactory _unitFactory;
-        private readonly IUnitService _unitService;
-        private readonly IUnitOwnershipQuery _ownership;
-        private readonly IGridService _grid;
-        private readonly IObjectsMapService _objectsMap;
-        private readonly IUnitPlacementValidator _placementValidator;
+        private readonly UnitRecruitmentBuildingContextResolver _buildingContext;
+        private readonly UnitRecruitmentDeploymentService _deployment;
 
         [Inject]
         public UnitRecruitmentService(
@@ -41,6 +38,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             [InjectOptional] IConstructionLifecycle constructionLifecycle = null,
             [InjectOptional] IEconomyInfoMediator economy = null,
             [InjectOptional] ITurnService turns = null,
+            [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] SignalBus signalBus = null,
             [InjectOptional] IUnitFactory unitFactory = null,
             [InjectOptional] IUnitService unitService = null,
@@ -49,33 +47,117 @@ namespace Kruty1918.Moyva.Units.Runtime
             [InjectOptional] IObjectsMapService objectsMap = null,
             [InjectOptional] IUnitPlacementValidator placementValidator = null)
         {
-            _unitClassConfig = unitClassConfig;
-            _buildingRegistry = buildingRegistry;
-            _constructionSnapshot = constructionSnapshot;
-            _constructionLifecycle = constructionLifecycle;
             _economy = economy;
             _turns = turns;
+            _progressClock = progressClock;
             _signalBus = signalBus;
-            _unitFactory = unitFactory;
-            _unitService = unitService;
-            _ownership = ownership;
-            _grid = grid;
-            _objectsMap = objectsMap;
-            _placementValidator = placementValidator;
+
+            _buildingContext =
+                new UnitRecruitmentBuildingContextResolver(
+                    unitClassConfig,
+                    buildingRegistry,
+                    constructionSnapshot,
+                    constructionLifecycle);
+
+            _deployment =
+                new UnitRecruitmentDeploymentService(
+                    _queue,
+                    _buildingContext,
+                    turns,
+                    progressClock,
+                    signalBus,
+                    unitFactory,
+                    unitService,
+                    ownership,
+                    placementValidator);
         }
 
         public int TurnOrder => 30;
 
         public void Initialize()
-            => _signalBus?.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+        {
+            _signalBus?.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            _lastGameplaySeconds = _progressClock?.ElapsedGameplaySeconds ?? 0d;
+        }
 
         public void Dispose()
-            => _signalBus?.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+        {
+            _signalBus?.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+
+        }
 
         public bool TryEnqueue(string ownerId, Vector2Int recruitingBuildingPosition, string unitTypeId, out string reason)
         {
+            if (_enqueuing)
+            {
+                reason = "Recruitment payment is already in progress.";
+                return false;
+            }
+            _enqueuing = true;
+            try { return TryEnqueueCore(ownerId, recruitingBuildingPosition, unitTypeId, out reason); }
+            finally { _enqueuing = false; }
+        }
+
+        private bool TryEnqueueCore(string ownerId, Vector2Int recruitingBuildingPosition, string unitTypeId, out string reason)
+        {
+            Tick();
+            if (!CanEnqueue(ownerId, recruitingBuildingPosition, unitTypeId, out reason)) return false;
+            if (!TryResolveEligibility(ownerId, recruitingBuildingPosition, unitTypeId,
+                    out string owner, out string recruitingBuildingId, out var recipe, out reason)) return false;
+            string unitType = NormalizeRequiredId(unitTypeId);
+            Dictionary<string, float> costs = BuildCostMap(recipe.Costs);
+            long reservedQueueId = _queue.NextQueueId;
+            if (_economy == null)
+            {
+                reason = "Population service is unavailable.";
+                return false;
+            }
+            if (!_economy.TryReserveRecruitmentPopulation(owner, recruitingBuildingPosition,
+                    reservedQueueId, Math.Max(1, recipe.PopulationCost), out reason))
+                return false;
+            string fundingSettlementId;
+            try
+            {
+                if (!TryConsumeRecruitmentCosts(owner, recruitingBuildingPosition, costs, out fundingSettlementId, out reason))
+                {
+                    _economy.ReleaseRecruitmentPopulation(owner, reservedQueueId);
+                    return false;
+                }
+            }
+            catch
+            {
+                _economy.ReleaseRecruitmentPopulation(owner, reservedQueueId);
+                throw;
+            }
+
+            UnitRecruitmentQueueItemSnapshot enqueued = _queue.EnqueueValidated(
+                owner,
+                recruitingBuildingPosition,
+                recruitingBuildingId,
+                unitType,
+                Math.Max(1, recipe.TrainingTurns),
+                ResolveProgressSequence(), costs, fundingSettlementId,
+                recipe.TrainingSeconds > 0f && !float.IsInfinity(recipe.TrainingSeconds)
+                    ? recipe.TrainingSeconds
+                    : Math.Max(1, recipe.TrainingTurns) * (_progressClock?.SandboxRoundSeconds ?? 10f));
+
+            if (_progressClock?.IsRealtime != true
+                && _turns != null
+                && !_turns.TryRecordAction(owner, "unit-recruit-enqueue"))
+            {
+            }
+
+            FireQueueChanged(enqueued);
+            return true;
+        }
+
+        private bool TryResolveEligibility(string ownerId, Vector2Int recruitingBuildingPosition, string unitTypeId,
+            out string owner, out string recruitingBuildingId, out UnitRecruitmentRecipeDefinition recipe, out string reason)
+        {
+            recruitingBuildingId = null;
+            recipe = null;
             reason = null;
-            string owner = NormalizeRequiredId(ownerId);
+            owner = NormalizeRequiredId(ownerId);
             string unitType = NormalizeRequiredId(unitTypeId);
             if (owner == null)
             {
@@ -87,53 +169,22 @@ namespace Kruty1918.Moyva.Units.Runtime
                 reason = "Unit type is empty.";
                 return false;
             }
-            if (_turns == null)
+            if (_progressClock?.IsRealtime != true && _turns == null)
             {
                 reason = "Turn authority is unavailable for recruitment.";
                 return false;
             }
-            if (!_turns.CanOwnerAct(owner, out reason))
+            if (_progressClock?.IsRealtime != true && !_turns.CanOwnerAct(owner, out reason))
                 return false;
-            if (_constructionSnapshot == null || _buildingRegistry == null || _constructionLifecycle == null)
+            if (!_buildingContext.TryResolveEnqueue(
+                    recruitingBuildingPosition,
+                    owner,
+                    unitType,
+                    out recruitingBuildingId,
+                    out var recruitmentModule,
+                    out recipe,
+                    out reason))
             {
-                reason = "Construction recruitment context is unavailable.";
-                return false;
-            }
-
-            if (!TryFindRecruitingPlacement(recruitingBuildingPosition, out ConstructionSavedPlacement placement))
-            {
-                reason = "Recruiting building is not a committed construction placement.";
-                return false;
-            }
-            if (!string.Equals(NormalizeRequiredId(placement.OwnerId), owner, StringComparison.Ordinal))
-            {
-                reason = "Recruiting building belongs to another owner.";
-                return false;
-            }
-            if (!_constructionLifecycle.IsOperational(recruitingBuildingPosition))
-            {
-                reason = "Recruiting building is still under construction.";
-                return false;
-            }
-
-            BuildingDefinition definition = _buildingRegistry.GetById(placement.BuildingId);
-            if (definition == null
-                || !BuildingDefinitionCapabilities.TryGetEnabledModule(
-                    definition,
-                    out UnitRecruitmentBuildingModule recruitmentModule))
-            {
-                reason = "Building has no enabled unit recruitment module.";
-                return false;
-            }
-
-            if (!TryFindRecipe(recruitmentModule, unitType, out UnitRecruitmentRecipeDefinition recipe))
-            {
-                reason = $"Building cannot recruit unit type '{unitType}'.";
-                return false;
-            }
-            if (_unitClassConfig?.GetConfig(unitType) == null)
-            {
-                reason = $"Unit type '{unitType}' is not registered.";
                 return false;
             }
 
@@ -141,25 +192,87 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (!_queue.CanEnqueue(owner, recruitingBuildingPosition, capacity, out reason))
                 return false;
 
-            Dictionary<string, float> costs = BuildCostMap(recipe.Costs);
-            if (!TryConsumeRecruitmentCosts(owner, recruitingBuildingPosition, costs, out reason))
-                return false;
+            return true;
+        }
 
-            UnitRecruitmentQueueItemSnapshot enqueued = _queue.EnqueueValidated(
-                owner,
-                recruitingBuildingPosition,
-                placement.BuildingId,
-                unitType,
-                Math.Max(1, recipe.TrainingTurns),
-                Math.Max(1L, _turns.GlobalTurn));
-
-            if (!_turns.TryRecordAction(owner, "unit-recruit-enqueue"))
+        public IReadOnlyList<UnitRecruitmentOption> GetOptions(string ownerId)
+        {
+            var result = new List<UnitRecruitmentOption>();
+            string owner = NormalizeRequiredId(ownerId);
+            if (owner == null) return result;
+            foreach (var option in _buildingContext.GetOptions(owner))
             {
-                Debug.LogWarning(
-                    "[UnitRecruitment] Queue commit succeeded but turn action telemetry was rejected after commit.");
+                if (!CanEnqueue(owner, option.Source, option.UnitTypeId, out _)
+                    || !_buildingContext.TryResolveEnqueue(option.Source, owner, option.UnitTypeId,
+                        out _, out var module, out var recipe, out _)) continue;
+                float cost = 0;
+                foreach (float amount in BuildCostMap(recipe.Costs).Values) cost += amount;
+                result.Add(new UnitRecruitmentOption(option.Source, option.UnitTypeId, cost,
+                    Math.Max(1, module.QueueCapacity) - _queue.GetQueue(owner, option.Source).Count,
+                    _economy.GetRecruitmentPopulation(owner, option.Source).Available, Math.Max(1, recipe.TrainingTurns)));
             }
+            result.Sort((a, b) => a.Source.y != b.Source.y ? a.Source.y.CompareTo(b.Source.y)
+                : a.Source.x != b.Source.x ? a.Source.x.CompareTo(b.Source.x)
+                : string.CompareOrdinal(a.UnitTypeId, b.UnitTypeId));
+            return result;
+        }
 
-            FireQueueChanged(enqueued);
+        public bool CanEnqueue(string ownerId, Vector2Int source, string unitTypeId, out string reason)
+        {
+            if (!TryResolveEligibility(ownerId, source, unitTypeId, out var owner, out _, out var recipe, out reason))
+                return false;
+            if (_economy == null || _economy.GetRecruitmentPopulation(owner, source).Available < Math.Max(1, recipe.PopulationCost))
+            { reason = "Not enough available settlement population."; return false; }
+            var costs = BuildCostMap(recipe.Costs);
+            if (costs.Count == 0) return true;
+            IReadOnlyDictionary<string, float> available;
+            if (!_economy.OwnerHasAnyWarehouse(owner)) available = _economy.GetOwnerPoolResourceTotals(owner);
+            else
+            {
+                if (!_economy.TryResolveConstructionSettlement(source, owner, out var settlement)
+                    || string.IsNullOrWhiteSpace(settlement.SettlementId) || settlement.OwnerId != owner)
+                { reason = "No owned settlement is available to fund recruitment at this building."; return false; }
+                available = _economy.GetSettlementResourceTotals(settlement.SettlementId);
+            }
+            foreach (var cost in costs)
+                if (available == null || !available.TryGetValue(cost.Key, out float amount) || amount + 0.0001f < cost.Value)
+                { reason = "Insufficient recruitment resource: " + cost.Key; return false; }
+            return true;
+        }
+
+        public bool TryCancel(string ownerId, Vector2Int recruitingBuildingPosition,
+            long queueId, out string reason)
+        {
+            Tick();
+            reason = null;
+            string owner = NormalizeRequiredId(ownerId);
+            if (owner == null || queueId < 1)
+            {
+                reason = "Invalid recruitment cancellation.";
+                return false;
+            }
+            if (_progressClock?.IsRealtime != true
+                && (_turns == null || !_turns.CanOwnerAct(owner, out reason)))
+                return false;
+            UnitRecruitmentQueueItemSnapshot selected = default;
+            foreach (var item in _queue.GetQueue(owner, recruitingBuildingPosition))
+                if (item.QueueId == queueId)
+                    selected = item;
+            if (selected.QueueId == 0 || selected.IsReady)
+            {
+                reason = "This training job is no longer cancellable.";
+                return false;
+            }
+            if (selected.PaidCosts == null || _economy == null)
+            {
+                reason = "The original payment receipt is unavailable for this saved job.";
+                return false;
+            }
+            if (!_queue.TryCancel(owner, recruitingBuildingPosition, queueId, out var cancelled))
+                return false;
+            _economy.ReleaseRecruitmentPopulation(owner, queueId);
+            _economy.RefundRecruitmentResources(owner, cancelled.FundingSettlementId, cancelled.PaidCosts);
+            FireQueueChanged(cancelled);
             return true;
         }
 
@@ -193,43 +306,10 @@ namespace Kruty1918.Moyva.Units.Runtime
             Vector2Int recruitingBuildingPosition,
             long queueId)
         {
-            string owner = NormalizeRequiredId(ownerId);
-            if (owner == null
-                || queueId < 1
-                || !_queue.TryPeekReady(
-                    owner,
-                    recruitingBuildingPosition,
-                    out UnitRecruitmentQueueItemSnapshot ready)
-                || ready.QueueId != queueId
-                || !TryResolveDeploymentModule(
-                    ready,
-                    out UnitRecruitmentBuildingModule module,
-                    out _))
-            {
-                return Array.Empty<UnitRecruitmentDeploymentTileSnapshot>();
-            }
-
-            List<Vector2Int> candidates = BuildSpawnCandidates(
-                ready.RecruitingBuildingPosition,
-                Math.Max(1, module.SpawnRadius));
-            var result =
-                new UnitRecruitmentDeploymentTileSnapshot[candidates.Count];
-
-            for (int index = 0; index < candidates.Count; index++)
-            {
-                Vector2Int candidate = candidates[index];
-                bool valid = ValidateDeploymentTile(
-                    ready.UnitTypeId,
-                    candidate,
-                    out string reason);
-
-                result[index] = new UnitRecruitmentDeploymentTileSnapshot(
-                    candidate,
-                    valid,
-                    reason);
-            }
-
-            return result;
+            return _deployment.GetDeploymentTiles(
+                ownerId,
+                recruitingBuildingPosition,
+                queueId);
         }
 
         public bool TryDeployReady(
@@ -240,171 +320,16 @@ namespace Kruty1918.Moyva.Units.Runtime
             out string unitId,
             out string reason)
         {
-            unitId = null;
-            reason = null;
-
-            string owner = NormalizeRequiredId(ownerId);
-            if (owner == null)
-            {
-                reason = "Recruitment owner is empty.";
-                return false;
-            }
-
-            if (queueId < 1)
-            {
-                reason = "Recruitment queue id is invalid.";
-                return false;
-            }
-
-            if (_turns == null)
-            {
-                reason = "Turn authority is unavailable for deployment.";
-                return false;
-            }
-
-            if (!_turns.CanOwnerAct(owner, out reason))
-                return false;
-
-            if (!_queue.TryPeekReady(
-                    owner,
-                    recruitingBuildingPosition,
-                    out UnitRecruitmentQueueItemSnapshot ready)
-                || ready.QueueId != queueId)
-            {
-                reason = "Requested recruitment job is not the ready queue head.";
-                return false;
-            }
-
-            if (!TryResolveDeploymentModule(
-                    ready,
-                    out UnitRecruitmentBuildingModule module,
-                    out reason))
-            {
-                return false;
-            }
-
-            if (!IsDeploymentCandidate(
-                    ready.RecruitingBuildingPosition,
-                    Math.Max(1, module.SpawnRadius),
-                    targetPosition))
-            {
-                reason = "Selected tile is outside the recruiting building deployment radius.";
-                return false;
-            }
-
-            if (!ValidateDeploymentTile(
-                    ready.UnitTypeId,
-                    targetPosition,
-                    out reason))
-            {
-                return false;
-            }
-
-            if (_unitFactory == null
-                || _unitService == null
-                || _ownership == null)
-            {
-                reason = "Unit deployment services are unavailable.";
-                return false;
-            }
-
-            string forcedUnitId = BuildRecruitmentUnitId(
-                ready.QueueId,
-                ready.UnitTypeId);
-            string existingType =
-                _unitService.GetUnitTypeId(forcedUnitId);
-
-            if (!string.IsNullOrWhiteSpace(existingType))
-            {
-                string existingOwner = NormalizeRequiredId(
-                    _ownership.GetUnitOwnerId(forcedUnitId));
-
-                if (string.Equals(
-                        existingType,
-                        ready.UnitTypeId,
-                        StringComparison.Ordinal)
-                    && string.Equals(
-                        existingOwner,
-                        ready.OwnerId,
-                        StringComparison.Ordinal))
-                {
-                    unitId = forcedUnitId;
-
-                    if (!_queue.TryTakeReady(
-                            ready.OwnerId,
-                            ready.RecruitingBuildingPosition,
-                            ready.QueueId,
-                            out UnitRecruitmentQueueItemSnapshot recovered))
-                    {
-                        reason =
-                            "Existing deployment was found but the ready queue could not be reconciled.";
-                        return false;
-                    }
-
-                    Vector2Int recoveredPosition = targetPosition;
-                    _unitService.TryGetUnitPosition(
-                        forcedUnitId,
-                        out recoveredPosition);
-
-                    FireDeployed(
-                        recovered,
-                        unitId,
-                        recoveredPosition);
-                    return true;
-                }
-
-                reason =
-                    $"Stable deployment id collision for queue {ready.QueueId}.";
-                return false;
-            }
-
-            try
-            {
-                unitId = _unitFactory.CreateUnitWithId(
-                    forcedUnitId,
-                    ready.UnitTypeId,
-                    targetPosition,
-                    ready.OwnerId);
-
-                if (string.IsNullOrWhiteSpace(unitId))
-                {
-                    reason =
-                        "UnitFactory rejected the selected deployment tile.";
-                    return false;
-                }
-
-                if (!_queue.TryTakeReady(
-                        ready.OwnerId,
-                        ready.RecruitingBuildingPosition,
-                        ready.QueueId,
-                        out UnitRecruitmentQueueItemSnapshot completed))
-                {
-                    reason =
-                        "Unit was created but the ready queue could not be completed.";
-                    Debug.LogError(
-                        $"[UnitRecruitment] Spawned {unitId} but ready queue {ready.QueueId} could not be completed.");
-                    return false;
-                }
-
-                _turns.TryRecordAction(
-                    owner,
-                    "unit-recruit-deploy");
-
-                FireDeployed(
-                    completed,
-                    unitId,
-                    targetPosition);
-
-                return true;
-            }
-            catch (Exception exception)
-            {
-                reason = exception.Message;
-                Debug.LogError(
-                    $"[UnitRecruitment] Manual deployment failed for queue {ready.QueueId}: {exception}");
-                unitId = null;
-                return false;
-            }
+            bool deployed = _deployment.TryDeployReady(
+                ownerId,
+                recruitingBuildingPosition,
+                queueId,
+                targetPosition,
+                out unitId,
+                out reason);
+            if (deployed)
+                _economy?.DeployRecruitmentPopulation(ownerId, queueId, unitId);
+            return deployed;
         }
 
         public IReadOnlyList<UnitRecruitmentQueueItemSnapshot> CaptureState()
@@ -418,6 +343,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                     : _queue.CaptureAll();
 
             _queue.RestoreAll(items);
+            _lastGameplaySeconds = _progressClock?.ElapsedGameplaySeconds ?? 0d;
 
             if (_signalBus != null)
                 FireRestoreQueueNotifications(before, _queue.CaptureAll());
@@ -425,10 +351,38 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         public void OnTurnStarted(TurnContext context)
         {
+            if (_progressClock?.IsRealtime == true)
+                return;
             string owner = NormalizeRequiredId(context.Faction.OwnerId);
             if (owner == null)
                 return;
 
+            AdvanceOwnerProgress(owner, context.GlobalTurn);
+        }
+
+        public void Tick()
+        {
+            double now = _progressClock?.ElapsedGameplaySeconds ?? 0d;
+            float delta = (float)Math.Max(0d, now - _lastGameplaySeconds);
+            _lastGameplaySeconds = now;
+            if (_progressClock?.IsRealtime != true || delta <= 0f)
+                return;
+            foreach (var item in _queue.AdvanceRealtime(delta, _progressClock.SandboxRoundSeconds))
+            {
+                FireQueueChanged(item);
+                if (item.IsReady)
+                    _signalBus?.Fire(new UnitRecruitmentReadySignal
+                    {
+                        OwnerId = item.OwnerId,
+                        BuildingPosition = item.RecruitingBuildingPosition,
+                        QueueId = item.QueueId,
+                        UnitTypeId = item.UnitTypeId,
+                    });
+            }
+        }
+
+        private void AdvanceOwnerProgress(string owner, long sequence)
+        {
             IReadOnlyList<UnitRecruitmentQueueItemSnapshot> readyBefore =
                 _queue.GetReadyHeads(owner);
             var readyIdsBefore = new HashSet<long>();
@@ -437,7 +391,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             bool progressed = _queue.AdvanceOwnerTurn(
                 owner,
-                context.GlobalTurn);
+                sequence);
 
             if (!progressed)
                 return;
@@ -477,74 +431,18 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             // P24A: ready recruitment jobs deliberately persist in the queue.
             // Unit creation happens only through TryDeployReady after an explicit
-            // player/bot tile selection.
+            // participant tile selection.
         }
 
         public void OnTurnEnding(TurnContext context) { }
         public void OnRoundCompleted(int completedRound) { }
 
-        private bool ValidateDeploymentTile(
-            string unitTypeId,
-            Vector2Int position,
-            out string reason)
+        private long ResolveProgressSequence()
         {
-            if (_placementValidator != null)
-            {
-                return _placementValidator.CanDeployUnit(
-                    unitTypeId,
-                    position,
-                    out reason);
-            }
+            if (_progressClock != null && _progressClock.IsRealtime)
+                return Math.Max(1L, _progressClock.CurrentSequence);
 
-            // Conservative fallback for scenes/tests that have not yet bound
-            // IUnitPlacementValidator.
-            if (_grid == null || !_grid.ContainsCell(position))
-            {
-                reason = "Тайл знаходиться за межами карти.";
-                return false;
-            }
-
-            if (!_grid.TryGetTileTypeId(
-                    position,
-                    out string tileTypeId)
-                || string.IsNullOrWhiteSpace(tileTypeId))
-            {
-                reason = "На клітинці немає валідного типу тайла.";
-                return false;
-            }
-
-            if (_objectsMap == null)
-            {
-                reason = "Карта зайнятості об'єктів недоступна.";
-                return false;
-            }
-
-            if (_objectsMap.IsOccupied(position))
-            {
-                _objectsMap.TryGetOccupant(
-                    position,
-                    out string occupantId);
-
-                reason = string.IsNullOrWhiteSpace(occupantId)
-                    ? "Клітинка вже зайнята."
-                    : $"Клітинка зайнята об'єктом '{occupantId}'.";
-                return false;
-            }
-
-            reason = null;
-            return true;
-        }
-
-        private static bool IsDeploymentCandidate(
-            Vector2Int center,
-            int spawnRadius,
-            Vector2Int target)
-        {
-            int radius = Math.Max(1, spawnRadius);
-            int dx = Math.Abs(target.x - center.x);
-            int dy = Math.Abs(target.y - center.y);
-            int ring = Math.Max(dx, dy);
-            return ring >= 1 && ring <= radius;
+            return Math.Max(1L, _turns?.GlobalTurn ?? 1L);
         }
 
         private void FireQueueChanged(
@@ -625,33 +523,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
         }
 
-        private void FireDeployed(
-            UnitRecruitmentQueueItemSnapshot item,
-            string unitId,
-            Vector2Int position)
-        {
-            _signalBus?.Fire(new UnitRecruitmentDeployedSignal
-            {
-                OwnerId = item.OwnerId,
-                BuildingPosition = item.RecruitingBuildingPosition,
-                QueueId = item.QueueId,
-                UnitTypeId = item.UnitTypeId,
-                UnitId = unitId,
-                Position = position,
-            });
-
-            _signalBus?.Fire(new UnitRecruitmentQueueChangedSignal
-            {
-                OwnerId = item.OwnerId,
-                BuildingPosition = item.RecruitingBuildingPosition,
-                QueueId = item.QueueId,
-                UnitTypeId = item.UnitTypeId,
-                CompletedTurns = item.CompletedTurns,
-                TrainingTurns = item.TrainingTurns,
-                IsReady = false,
-            });
-        }
-
         private readonly struct RecruitmentQueueSignalKey : IEquatable<RecruitmentQueueSignalKey>
         {
             public RecruitmentQueueSignalKey(string ownerId, Vector2Int position)
@@ -693,59 +564,16 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
         }
 
-        private bool TryResolveDeploymentModule(
-            UnitRecruitmentQueueItemSnapshot ready,
-            out UnitRecruitmentBuildingModule module,
-            out string reason)
-        {
-            module = null;
-            reason = null;
-            if (_constructionSnapshot == null || _buildingRegistry == null || _constructionLifecycle == null)
-            {
-                reason = "construction context is unavailable";
-                return false;
-            }
-            if (!TryFindRecruitingPlacement(ready.RecruitingBuildingPosition, out ConstructionSavedPlacement placement))
-            {
-                reason = "recruiting building no longer exists";
-                return false;
-            }
-            if (!string.Equals(NormalizeRequiredId(placement.OwnerId), ready.OwnerId, StringComparison.Ordinal))
-            {
-                reason = "recruiting building owner changed";
-                return false;
-            }
-            if (!string.IsNullOrWhiteSpace(ready.RecruitingBuildingId)
-                && !string.Equals(placement.BuildingId, ready.RecruitingBuildingId, StringComparison.Ordinal))
-            {
-                reason = "recruiting building identity changed";
-                return false;
-            }
-            if (!_constructionLifecycle.IsOperational(ready.RecruitingBuildingPosition))
-            {
-                reason = "recruiting building is not operational";
-                return false;
-            }
-            BuildingDefinition definition = _buildingRegistry.GetById(placement.BuildingId);
-            if (definition == null
-                || !BuildingDefinitionCapabilities.TryGetEnabledModule(definition, out module))
-            {
-                reason = "recruiting module is unavailable";
-                return false;
-            }
-            if (_unitClassConfig?.GetConfig(ready.UnitTypeId) == null)
-            {
-                reason = "unit type is no longer registered";
-                return false;
-            }
-            return true;
-        }
-
         private void OnBuildingDemolished(BuildingDemolishedSignal signal)
         {
+            var removed = new List<UnitRecruitmentQueueItemSnapshot>();
+            foreach (var item in _queue.CaptureAll())
+                if (item.RecruitingBuildingPosition == signal.Position)
+                    removed.Add(item);
             if (_queue.RemoveBuildingQueues(signal.Position))
             {
-                Debug.Log($"[UnitRecruitment] Dropped paid recruitment queue at demolished building {signal.Position}.");
+                foreach (var item in removed)
+                    _economy?.ReleaseRecruitmentPopulation(item.OwnerId, item.QueueId);
                 _signalBus?.Fire(new UnitRecruitmentQueueChangedSignal
                 {
                     OwnerId = signal.OwnerId,
@@ -757,46 +585,6 @@ namespace Kruty1918.Moyva.Units.Runtime
                     IsReady = false,
                 });
             }
-        }
-
-        private bool TryFindRecruitingPlacement(Vector2Int position, out ConstructionSavedPlacement placement)
-        {
-            IReadOnlyList<ConstructionSavedPlacement> placements = _constructionSnapshot.GetSavedPlacements();
-            if (placements != null)
-            {
-                for (int index = 0; index < placements.Count; index++)
-                {
-                    if (placements[index].Position != position)
-                        continue;
-                    placement = placements[index];
-                    return true;
-                }
-            }
-            placement = default;
-            return false;
-        }
-
-        private static bool TryFindRecipe(
-            UnitRecruitmentBuildingModule module,
-            string unitTypeId,
-            out UnitRecruitmentRecipeDefinition recipe)
-        {
-            if (module?.Recipes != null)
-            {
-                for (int index = 0; index < module.Recipes.Count; index++)
-                {
-                    UnitRecruitmentRecipeDefinition candidate = module.Recipes[index];
-                    if (candidate == null
-                        || !string.Equals(NormalizeRequiredId(candidate.UnitTypeId), unitTypeId, StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-                    recipe = candidate;
-                    return true;
-                }
-            }
-            recipe = null;
-            return false;
         }
 
         internal static Dictionary<string, float> BuildCostMap(IReadOnlyList<BuildingResourceAmount> source)
@@ -822,8 +610,10 @@ namespace Kruty1918.Moyva.Units.Runtime
             string ownerId,
             Vector2Int buildingPosition,
             IReadOnlyDictionary<string, float> costs,
+            out string fundingSettlementId,
             out string reason)
         {
+            fundingSettlementId = string.Empty;
             reason = null;
             if (costs == null || costs.Count == 0)
                 return true;
@@ -845,36 +635,8 @@ namespace Kruty1918.Moyva.Units.Runtime
                 reason = "No owned settlement is available to fund recruitment at this building.";
                 return false;
             }
+            fundingSettlementId = settlement.SettlementId;
             return _economy.TryConsumeSettlementResources(settlement.SettlementId, costs, out reason);
-        }
-
-        internal static List<Vector2Int> BuildSpawnCandidates(Vector2Int center, int spawnRadius)
-        {
-            int radius = Math.Max(1, spawnRadius);
-            var result = new List<Vector2Int>();
-            for (int ring = 1; ring <= radius; ring++)
-            {
-                int minX = center.x - ring;
-                int maxX = center.x + ring;
-                int minY = center.y - ring;
-                int maxY = center.y + ring;
-
-                for (int x = minX; x <= maxX; x++)
-                    result.Add(new Vector2Int(x, maxY));
-                for (int y = maxY - 1; y >= minY; y--)
-                    result.Add(new Vector2Int(maxX, y));
-                for (int x = maxX - 1; x >= minX; x--)
-                    result.Add(new Vector2Int(x, minY));
-                for (int y = minY + 1; y < maxY; y++)
-                    result.Add(new Vector2Int(minX, y));
-            }
-            return result;
-        }
-
-        internal static string BuildRecruitmentUnitId(long queueId, string unitTypeId)
-        {
-            string type = NormalizeRequiredId(unitTypeId) ?? "unit";
-            return $"recruit_{Math.Max(1L, queueId):D10}_{type}";
         }
 
         private static string NormalizeRequiredId(string value)

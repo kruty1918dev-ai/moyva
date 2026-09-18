@@ -20,6 +20,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         float SfxVolume { get; set; }
         /// <summary>Гучність UI.</summary>
         float UiVolume { get; set; }
+        /// <summary>Гучність амбієнту.</summary>
+        float AmbienceVolume { get; set; }
         /// <summary>Прапорець mute.</summary>
         bool IsMuted { get; set; }
         /// <summary>Профіль якості графіки.</summary>
@@ -55,6 +57,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         event Action<float> OnSfxVolumeChanged;
         /// <summary>Подія зміни гучності UI.</summary>
         event Action<float> OnUiVolumeChanged;
+        /// <summary>Подія зміни гучності амбієнту.</summary>
+        event Action<float> OnAmbienceVolumeChanged;
         /// <summary>Подія зміни mute.</summary>
         event Action<bool> OnMutedChanged;
         /// <summary>Подія зміни графічного профілю.</summary>

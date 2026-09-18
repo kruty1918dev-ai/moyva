@@ -5,9 +5,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class ConstructionTurnParticipant : ITurnParticipant
     {
-        private readonly IConstructionService _construction;
+        private readonly IConstructionSessionCommands _construction;
 
-        public ConstructionTurnParticipant(IConstructionService construction)
+        public ConstructionTurnParticipant(IConstructionSessionCommands construction)
             => _construction = construction;
 
         public int TurnOrder => 10;

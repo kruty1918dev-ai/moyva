@@ -40,4 +40,4 @@ Alternative:
 
 - `Assets/Moyva/Scripts/Features/SaveSystem/Runtime/SavePlayModeOptions.cs`
 - `Assets/Moyva/Scripts/Features/HomeMenu/Runtime/HomeMenuInitializer.cs`
-- `docs/standarts/project-context-data-policy.md`
+- `docs/standards/project-context-data-policy.md`

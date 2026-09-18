@@ -2,10 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Economy.Runtime;
+using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
+using Kruty1918.Moyva.Units.API;
+using Kruty1918.Moyva.Turns.API;
 using UnityEngine;
 using Zenject;
 
@@ -21,43 +25,104 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// and unicasts it to that peer using <see cref="GameCommandType.WorldStateSnapshot"/>.
     ///
     /// Client behaviour: when a snapshot arrives, restores buildings via
-    /// <see cref="IConstructionService.RestoreFromSave"/> and resources via
+    /// <see cref="IConstructionSaveRestorer.RestoreFromSave"/> and resources via
     /// <see cref="EconomyManager.RestoreOwnerResourcePools"/>.
     /// </summary>
-    internal sealed class WorldStateReplicationService : IInitializable, IDisposable
+    internal sealed class WorldStateReplicationService : IInitializable, ITickable, IDisposable
     {
-        private const byte SchemaVersion = 2;
+        private const byte SchemaVersion = 4;
         private const int MaxStatePayloadBytes =
             16 * 1024 * 1024;
-        private const string ModuleLogTag =
-            "[MoyvaConstructionModules]";
+        private const int MaxUnitSnapshotCount = 100000;
 
+        // Snapshots travel as ordered chunks below the transport frame limit
+        // (~60 KiB); the wire layout lives in WorldSnapshotChunkCodec.
+        private const int MaxChunksPerTransfer =
+            (MaxStatePayloadBytes / WorldSnapshotChunkCodec.DataBytes) + 1;
+        private const int ChunksSentPerTick = 2;
+        private const float ChunkTransferExpirySeconds = 30f;
+        private const int MaxIncomingTransfers = 8;
+        private const int MaxOutgoingTransfers = 16;
+
+        private readonly struct OutgoingChunk
+        {
+            public readonly string TargetPeerId;
+            public readonly byte[] Payload;
+
+            public OutgoingChunk(string targetPeerId, byte[] payload)
+            {
+                TargetPeerId = targetPeerId;
+                Payload = payload;
+            }
+        }
+
+        private sealed class IncomingTransfer
+        {
+            public ushort Count;
+            public int TotalSize;
+            public byte[] Buffer;
+            public readonly HashSet<ushort> ReceivedIndexes = new();
+            public float ExpiresAt;
+        }
+
+        private readonly List<IConstructionModuleStatePersistence>
+            _stateProviders;
+        private readonly Queue<string> _pendingSnapshotPeers = new();
+        private readonly HashSet<string> _pendingSnapshotPeerSet =
+            new(StringComparer.Ordinal);
+        private readonly Queue<OutgoingChunk> _outgoingChunks = new();
+        private readonly Dictionary<string, IncomingTransfer> _incomingTransfers =
+            new(StringComparer.Ordinal);
         private readonly IGameCommandSyncService _commandSync;
         private readonly INetworkProvider _network;
         private readonly ISessionManager _sessionManager;
-        private readonly IConstructionService _constructionService;
-        private readonly IMultiplayerLogger _logger;
+        private readonly IConstructionSaveSnapshotSource _placementSnapshots;
+        private readonly IConstructionSaveRestorer _placementRestorer;
+        private readonly IConstructionSessionCommands _constructionSession;
         private readonly EconomyManager _economyManager;
-        private readonly List<IConstructionModuleStatePersistence>
-            _stateProviders;
+        private readonly IFogOwnerStateReader _ownerFog;
+        private readonly IUnitService _unitService;
+        private readonly IUnitFactory _unitFactory;
+        private readonly IUnitOwnershipQuery _unitOwnership;
+        private readonly IHealthRegistry _healthRegistry;
+        private readonly ITurnService _turns;
+        private bool _disposed;
+        private bool _receivedSnapshot;
+        private float _nextRequestAt;
+        private byte[] _pendingSnapshot;
+        private uint _nextTransferId = 1;
 
         public WorldStateReplicationService(
             IGameCommandSyncService commandSync,
             INetworkProvider network,
             ISessionManager sessionManager,
-            IConstructionService constructionService,
-            IMultiplayerLogger logger,
+            IConstructionSaveSnapshotSource placementSnapshots,
+            IConstructionSaveRestorer placementRestorer,
+            IConstructionSessionCommands constructionSession,
             [InjectOptional] EconomyManager economyManager = null,
+            [InjectOptional] IFogOwnerStateReader ownerFog = null,
+            [InjectOptional] IUnitService unitService = null,
+            [InjectOptional] IUnitFactory unitFactory = null,
+            [InjectOptional] IUnitOwnershipQuery unitOwnership = null,
+            [InjectOptional] IHealthRegistry healthRegistry = null,
             [InjectOptional]
             List<IConstructionModuleStatePersistence>
-                stateProviders = null)
+                stateProviders = null,
+            [InjectOptional] ITurnService turns = null)
         {
             _commandSync = commandSync;
             _network = network;
             _sessionManager = sessionManager;
-            _constructionService = constructionService;
-            _logger = logger;
+            _placementSnapshots = placementSnapshots;
+            _placementRestorer = placementRestorer;
+            _constructionSession = constructionSession;
             _economyManager = economyManager;
+            _ownerFog = ownerFog;
+            _unitService = unitService;
+            _unitFactory = unitFactory;
+            _unitOwnership = unitOwnership;
+            _healthRegistry = healthRegistry;
+            _turns = turns;
             _stateProviders =
                 stateProviders
                 ?? new List<IConstructionModuleStatePersistence>();
@@ -66,12 +131,55 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         public void Initialize()
         {
             _commandSync.RegisterHandler(GameCommandType.WorldStateSnapshot, OnSnapshotReceived);
+            _commandSync.RegisterHandler(GameCommandType.WorldStateSnapshotChunk, OnSnapshotChunkReceived);
             _network.PeerConnected += OnPeerConnected;
         }
 
         public void Dispose()
         {
+            _disposed = true;
             _network.PeerConnected -= OnPeerConnected;
+            _commandSync.RegisterHandler(GameCommandType.WorldStateSnapshot, null);
+            _commandSync.RegisterHandler(GameCommandType.WorldStateSnapshotChunk, null);
+            _pendingSnapshot = null;
+            _pendingSnapshotPeers.Clear();
+            _pendingSnapshotPeerSet.Clear();
+            _outgoingChunks.Clear();
+            _incomingTransfers.Clear();
+        }
+
+        private bool WorldReady => _turns != null
+            && (_turns.Phase == TurnPhase.AwaitingInput || _turns.Phase == TurnPhase.Completed);
+
+        public void Tick()
+        {
+            if (_disposed) return;
+
+            ExpireIncomingTransfers();
+
+            if (_sessionManager.IsLocalPlayerHost)
+            {
+                DrainSnapshotJobs();
+                DrainOutgoingChunks();
+                return;
+            }
+
+            if (!WorldReady) return;
+            if (_pendingSnapshot != null)
+            {
+                byte[] payload = _pendingSnapshot;
+                _pendingSnapshot = null;
+                TryApplySnapshot(payload);
+            }
+            if (_receivedSnapshot || Time.unscaledTime < _nextRequestAt) return;
+            _nextRequestAt = Time.unscaledTime + 2f;
+            foreach (var participant in _sessionManager.Participants)
+            {
+                if (participant?.IsHost != true || participant.Identity == null) continue;
+                _commandSync.SendCommandToPeer(participant.Identity.PlayerId,
+                    GameCommandType.WorldStateSnapshot, Array.Empty<byte>());
+                break;
+            }
         }
 
         // ── Host side ──────────────────────────────────────────────────────────
@@ -79,29 +187,95 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private void OnPeerConnected(string peerId)
         {
             // Only the host ships the snapshot; clients ignore peer-connect events.
-            if (!_sessionManager.IsLocalPlayerHost)
+            if (_disposed || !_sessionManager.IsLocalPlayerHost || !WorldReady)
                 return;
             if (string.IsNullOrEmpty(peerId))
                 return;
             if (string.Equals(peerId, _sessionManager.LocalPlayerId, StringComparison.Ordinal))
                 return;
+            if (!MultiplayerAuthorityService.TryResolveAuthorizedRequestOwner(
+                _sessionManager.Participants, peerId, peerId, peerId, out _, out _)) return;
 
+            QueueSnapshotJob(peerId);
+        }
+
+        private void QueueSnapshotJob(string peerId)
+        {
+            if (_pendingSnapshotPeerSet.Add(peerId))
+                _pendingSnapshotPeers.Enqueue(peerId);
+        }
+
+        // Serializing the world is a main-thread cost, so at most one snapshot
+        // is built per tick instead of doing it inside the connect callback.
+        private void DrainSnapshotJobs()
+        {
+            if (_pendingSnapshotPeers.Count == 0 || !WorldReady)
+                return;
+            if (_outgoingChunks.Count > MaxOutgoingTransfers * 4)
+                return;
+
+            var peerId = _pendingSnapshotPeers.Dequeue();
+            _pendingSnapshotPeerSet.Remove(peerId);
             try
             {
-                byte[] payload = BuildSnapshotPayload();
-                _commandSync.SendCommandToPeer(peerId, GameCommandType.WorldStateSnapshot, payload);
-                _logger.Info(
-                    $"{ModuleLogTag} world-state sent " +
-                    $"peer={peerId} schema={SchemaVersion} " +
-                    $"bytes={payload.Length}");
+                string targetOwnerId = ResolvePeerOwnerId(peerId);
+                byte[] payload = BuildSnapshotPayload(targetOwnerId);
+                if (payload == null || payload.Length == 0 || payload.Length > MaxStatePayloadBytes)
+                    return;
+                EnqueueSnapshotChunks(peerId, payload);
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                _logger.Warn($"[WorldStateReplication] Failed to build/send snapshot for '{peerId}': {e.Message}");
+                Debug.LogError($"[WorldReplication] Could not capture snapshot: {exception.Message}");
             }
         }
 
-        private byte[] BuildSnapshotPayload()
+        private void EnqueueSnapshotChunks(string peerId, byte[] payload)
+        {
+            var transferId = _nextTransferId++;
+            if (transferId == 0)
+                transferId = _nextTransferId++;
+
+            var count = WorldSnapshotChunkCodec.ChunkCountFor(payload.Length);
+            if (count > MaxChunksPerTransfer)
+                return;
+
+            for (var index = 0; index < count; index++)
+            {
+                var offset = index * WorldSnapshotChunkCodec.DataBytes;
+                var length = Math.Min(
+                    WorldSnapshotChunkCodec.DataBytes,
+                    payload.Length - offset);
+                _outgoingChunks.Enqueue(
+                    new OutgoingChunk(
+                        peerId,
+                        WorldSnapshotChunkCodec.Build(
+                            transferId,
+                            (ushort)index,
+                            (ushort)count,
+                            payload.Length,
+                            payload,
+                            offset,
+                            length)));
+            }
+        }
+
+        private void DrainOutgoingChunks()
+        {
+            var sent = 0;
+            while (sent < ChunksSentPerTick && _outgoingChunks.Count > 0)
+            {
+                var chunk = _outgoingChunks.Dequeue();
+                _commandSync.SendCommandToPeer(
+                    chunk.TargetPeerId,
+                    GameCommandType.WorldStateSnapshotChunk,
+                    chunk.Payload);
+                sent++;
+            }
+        }
+
+        private byte[] BuildSnapshotPayload(
+            string targetOwnerId)
         {
             using var stream = new MemoryStream();
             using var writer = new BinaryWriter(stream, Encoding.UTF8);
@@ -110,37 +284,17 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             // Buildings with owner identity.
             IReadOnlyList<ConstructionSavedPlacement> buildings =
-                (_constructionService
-                    as IConstructionSaveSnapshotSource)
-                    ?.GetSavedPlacements();
+                _placementSnapshots.GetSavedPlacements();
+            var visibleBuildings =
+                FilterBuildingsForOwner(buildings, targetOwnerId);
 
-            if (buildings == null)
-            {
-                var legacy =
-                    _constructionService
-                        .GetPlayerPlacedBuildings();
-                var fallback =
-                    new List<ConstructionSavedPlacement>(
-                        legacy.Count);
-                foreach (var pair in legacy)
-                {
-                    fallback.Add(
-                        new ConstructionSavedPlacement(
-                            pair.Key,
-                            pair.Value,
-                            _constructionService
-                                .GetActiveOwner()));
-                }
-                buildings = fallback;
-            }
-
-            writer.Write(buildings.Count);
+            writer.Write(visibleBuildings.Count);
             for (int index = 0;
-                 index < buildings.Count;
+                 index < visibleBuildings.Count;
                  index++)
             {
                 ConstructionSavedPlacement building =
-                    buildings[index];
+                    visibleBuildings[index];
                 writer.Write(building.Position.x);
                 writer.Write(building.Position.y);
                 writer.Write(
@@ -149,14 +303,19 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 writer.Write(
                     building.OwnerId
                     ?? string.Empty);
+                writer.Write((int)building.Rotation);
             }
 
-            WriteConstructionModuleStates(writer);
+            var visiblePositions = new HashSet<Vector2Int>();
+            foreach (var building in visibleBuildings) visiblePositions.Add(building.Position);
+            WriteConstructionModuleStates(writer, targetOwnerId, visiblePositions);
+            WriteUnitSnapshots(writer, targetOwnerId);
 
             // Economy
             Dictionary<string, Dictionary<string, float>> pools =
-                _economyManager?.GetOwnerResourceTotalsSnapshot()
-                ?? new Dictionary<string, Dictionary<string, float>>(StringComparer.Ordinal);
+                FilterEconomyPoolsForOwner(
+                    _economyManager?.GetOwnerResourceTotalsSnapshot(),
+                    targetOwnerId);
 
             writer.Write(pools.Count);
             foreach (var ownerPair in pools)
@@ -177,8 +336,247 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             return stream.ToArray();
         }
 
+        private void WriteUnitSnapshots(
+            BinaryWriter writer,
+            string targetOwnerId)
+        {
+            if (_unitService == null)
+            {
+                writer.Write(0);
+                return;
+            }
+
+            IReadOnlyCollection<string> unitIds =
+                _unitService.GetAllUnitIds();
+            if (unitIds == null || unitIds.Count == 0)
+            {
+                writer.Write(0);
+                return;
+            }
+
+            string ownerId = NormalizeOwnerId(targetOwnerId);
+            var visibleUnits =
+                new List<UnitSnapshotRecord>(unitIds.Count);
+            foreach (string unitId in unitIds)
+            {
+                if (string.IsNullOrWhiteSpace(unitId)
+                    || !_unitService.TryGetUnitPosition(
+                        unitId,
+                        out Vector2Int position))
+                {
+                    continue;
+                }
+
+                string unitOwnerId =
+                    NormalizeOwnerId(
+                        _unitOwnership?.GetUnitOwnerId(unitId));
+                if (!CanIncludeUnitForOwner(
+                        ownerId,
+                        unitOwnerId,
+                        position))
+                {
+                    continue;
+                }
+
+                int currentHp = 0;
+                if (_healthRegistry != null
+                    && _healthRegistry.TryGet(unitId, out IHealth health)
+                    && health != null)
+                {
+                    currentHp = health.CurrentHp;
+                }
+
+                visibleUnits.Add(new UnitSnapshotRecord(
+                    unitId.Trim(),
+                    _unitService.GetUnitTypeId(unitId) ?? string.Empty,
+                    unitOwnerId,
+                    position,
+                    _unitService.GetStamina(unitId),
+                    currentHp));
+            }
+
+            writer.Write(visibleUnits.Count);
+            for (int index = 0;
+                 index < visibleUnits.Count;
+                 index++)
+            {
+                UnitSnapshotRecord unit =
+                    visibleUnits[index];
+                writer.Write(unit.UnitId);
+                writer.Write(unit.TypeId);
+                writer.Write(unit.OwnerId);
+                writer.Write(unit.Position.x);
+                writer.Write(unit.Position.y);
+                writer.Write(unit.Stamina);
+                writer.Write(unit.CurrentHp);
+            }
+        }
+
+        private bool CanIncludeUnitForOwner(
+            string targetOwnerId,
+            string unitOwnerId,
+            Vector2Int position)
+        {
+            if (string.IsNullOrWhiteSpace(targetOwnerId))
+                return true;
+
+            if (!string.IsNullOrWhiteSpace(unitOwnerId)
+                && string.Equals(
+                    targetOwnerId,
+                    unitOwnerId,
+                    StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return _ownerFog != null
+                   && _ownerFog.IsVisible(
+                       targetOwnerId,
+                       position);
+        }
+
+        private string ResolvePeerOwnerId(
+            string peerId)
+        {
+            string normalizedPeerId = NormalizeOwnerId(peerId);
+            if (string.IsNullOrWhiteSpace(normalizedPeerId))
+                return string.Empty;
+
+            IReadOnlyList<Participant> participants =
+                _sessionManager?.Participants;
+            if (participants == null || participants.Count == 0)
+                return normalizedPeerId;
+
+            for (int index = 0;
+                 index < participants.Count;
+                 index++)
+            {
+                string participantId =
+                    NormalizeOwnerId(
+                        participants[index]?.Identity?.PlayerId);
+                if (string.Equals(
+                        participantId,
+                        normalizedPeerId,
+                        StringComparison.Ordinal))
+                {
+                    return participantId;
+                }
+            }
+
+            return normalizedPeerId;
+        }
+
+        private List<ConstructionSavedPlacement> FilterBuildingsForOwner(
+            IReadOnlyList<ConstructionSavedPlacement> buildings,
+            string targetOwnerId)
+        {
+            var result = new List<ConstructionSavedPlacement>();
+            if (buildings == null || buildings.Count == 0)
+                return result;
+
+            string ownerId = NormalizeOwnerId(targetOwnerId);
+            bool canFilterByFog =
+                _ownerFog != null
+                && !string.IsNullOrWhiteSpace(ownerId);
+
+            for (int index = 0;
+                 index < buildings.Count;
+                 index++)
+            {
+                ConstructionSavedPlacement building =
+                    buildings[index];
+                string buildingOwnerId =
+                    NormalizeOwnerId(building.OwnerId);
+
+                bool isOwnBuilding =
+                    !string.IsNullOrWhiteSpace(ownerId)
+                    && string.Equals(
+                        buildingOwnerId,
+                        ownerId,
+                        StringComparison.Ordinal);
+                if (isOwnBuilding
+                    || (canFilterByFog && _ownerFog.IsVisible(ownerId, building.Position)))
+                {
+                    result.Add(building);
+                }
+            }
+
+            return result;
+        }
+
+        private static Dictionary<string, Dictionary<string, float>>
+            FilterEconomyPoolsForOwner(
+                Dictionary<string, Dictionary<string, float>> pools,
+                string targetOwnerId)
+        {
+            var result =
+                new Dictionary<string, Dictionary<string, float>>(
+                    StringComparer.Ordinal);
+            if (pools == null || pools.Count == 0)
+                return result;
+
+            string ownerId = NormalizeOwnerId(targetOwnerId);
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                foreach (var pair in pools)
+                {
+                    if (pair.Value != null && pair.Value.Count > 0)
+                    {
+                        result[NormalizeOwnerId(pair.Key)] =
+                            new Dictionary<string, float>(
+                                pair.Value,
+                                StringComparer.Ordinal);
+                    }
+                }
+
+                return result;
+            }
+
+            if (pools.TryGetValue(ownerId, out var exact)
+                && exact != null
+                && exact.Count > 0)
+            {
+                result[ownerId] =
+                    new Dictionary<string, float>(
+                        exact,
+                        StringComparer.Ordinal);
+                return result;
+            }
+
+            foreach (var pair in pools)
+            {
+                string candidateOwnerId =
+                    NormalizeOwnerId(pair.Key);
+                if (!string.Equals(
+                        candidateOwnerId,
+                        ownerId,
+                        StringComparison.Ordinal)
+                    || pair.Value == null
+                    || pair.Value.Count == 0)
+                {
+                    continue;
+                }
+
+                result[ownerId] =
+                    new Dictionary<string, float>(
+                        pair.Value,
+                        StringComparer.Ordinal);
+                break;
+            }
+
+            return result;
+        }
+
+        private static string NormalizeOwnerId(
+            string ownerId)
+        {
+            return string.IsNullOrWhiteSpace(ownerId)
+                ? string.Empty
+                : ownerId.Trim();
+        }
+
         private void WriteConstructionModuleStates(
-            BinaryWriter writer)
+            BinaryWriter writer, string ownerId, ISet<Vector2Int> visiblePositions)
         {
             var providers =
                 new List<IConstructionModuleStatePersistence>();
@@ -217,20 +615,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 IConstructionModuleStatePersistence provider =
                     providers[index];
 
-                byte[] payload;
-                try
-                {
-                    payload =
-                        provider.CaptureState()
-                        ?? Array.Empty<byte>();
-                }
-                catch (Exception ex)
-                {
-                    _logger.Warn(
-                        $"{ModuleLogTag} world-state capture failed " +
-                        $"key={provider.StateKey} error={ex.Message}");
-                    payload = Array.Empty<byte>();
-                }
+                if (!(provider is IConstructionObserverStateSource observerSource))
+                    throw new InvalidOperationException($"Module '{provider.StateKey}' cannot filter observer state.");
+                byte[] payload = observerSource.CaptureObserverState(ownerId, visiblePositions)
+                    ?? throw new InvalidOperationException($"Module '{provider.StateKey}' returned no observer state.");
 
                 writer.Write(provider.StateKey);
                 writer.Write(payload.Length);
@@ -294,46 +682,140 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         key,
                         out IConstructionModuleStatePersistence provider))
                 {
-                    _logger.Warn(
-                        $"{ModuleLogTag} world-state skipped " +
-                        $"key={key} reason=provider-missing");
                     continue;
                 }
 
                 provider.RestoreState(payload);
                 restored++;
             }
-
-            _logger.Info(
-                $"{ModuleLogTag} world-state module-states " +
-                $"restored={restored}/{stateCount}");
         }
 
         // ── Client side ────────────────────────────────────────────────────────
 
         private void OnSnapshotReceived(string senderId, byte[] payload)
         {
+            if (_disposed) return;
             if (_sessionManager.IsLocalPlayerHost)
             {
-                // Host should never apply snapshots from itself or peers; ignore.
+                if (payload != null && payload.Length == 0) OnPeerConnected(senderId);
                 return;
             }
-            if (payload == null || payload.Length < 1)
+            if (!MultiplayerAuthorityService.IsAuthorizedHostSender(_sessionManager.Participants, senderId)
+                || payload == null || payload.Length < 1 || payload.Length > MaxStatePayloadBytes)
             {
-                _logger.Warn("[WorldStateReplication] Received empty snapshot payload.");
                 return;
             }
 
+            if (!WorldReady)
+            {
+                _pendingSnapshot = payload;
+                return;
+            }
+            TryApplySnapshot(payload);
+        }
+
+        private void OnSnapshotChunkReceived(string senderId, byte[] payload)
+        {
+            if (_disposed || _sessionManager.IsLocalPlayerHost)
+                return;
+            if (!MultiplayerAuthorityService.IsAuthorizedHostSender(_sessionManager.Participants, senderId))
+                return;
+            if (!WorldSnapshotChunkCodec.TryParse(
+                    payload,
+                    WorldSnapshotChunkCodec.DataBytes,
+                    MaxStatePayloadBytes,
+                    out var transferId,
+                    out var index,
+                    out var count,
+                    out var totalSize,
+                    out var dataOffset,
+                    out var dataLength)
+                || count > MaxChunksPerTransfer)
+            {
+                return;
+            }
+
+            var key = senderId + "#" + transferId;
+            if (!_incomingTransfers.TryGetValue(key, out var transfer))
+            {
+                if (_incomingTransfers.Count >= MaxIncomingTransfers)
+                    return;
+                transfer = new IncomingTransfer
+                {
+                    Count = count,
+                    TotalSize = totalSize,
+                    Buffer = new byte[totalSize]
+                };
+                _incomingTransfers.Add(key, transfer);
+            }
+            else if (transfer.Count != count || transfer.TotalSize != totalSize)
+            {
+                _incomingTransfers.Remove(key);
+                return;
+            }
+
+            var destOffset = index * WorldSnapshotChunkCodec.DataBytes;
+            if (destOffset < 0 || destOffset >= totalSize)
+            {
+                _incomingTransfers.Remove(key);
+                return;
+            }
+
+            if (transfer.ReceivedIndexes.Add(index))
+            {
+                Buffer.BlockCopy(
+                    payload,
+                    dataOffset,
+                    transfer.Buffer,
+                    destOffset,
+                    Math.Min(dataLength, totalSize - destOffset));
+            }
+            transfer.ExpiresAt = Time.unscaledTime + ChunkTransferExpirySeconds;
+
+            if (transfer.ReceivedIndexes.Count < transfer.Count)
+                return;
+
+            _incomingTransfers.Remove(key);
+            var assembled = transfer.Buffer;
+            if (!WorldReady)
+            {
+                _pendingSnapshot = assembled;
+                return;
+            }
+            TryApplySnapshot(assembled);
+        }
+
+        private void ExpireIncomingTransfers()
+        {
+            if (_incomingTransfers.Count == 0)
+                return;
+
+            var now = Time.unscaledTime;
+            List<string> expired = null;
+            foreach (var pair in _incomingTransfers)
+            {
+                if (pair.Value == null || now < pair.Value.ExpiresAt)
+                    continue;
+                expired ??= new List<string>();
+                expired.Add(pair.Key);
+            }
+
+            if (expired == null)
+                return;
+            foreach (var key in expired)
+                _incomingTransfers.Remove(key);
+        }
+
+        private void TryApplySnapshot(byte[] payload)
+        {
             try
             {
                 ApplySnapshotPayload(payload);
-                _logger.Info(
-                    $"{ModuleLogTag} world-state applied " +
-                    $"host={senderId} bytes={payload.Length}");
+                _receivedSnapshot = true;
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                _logger.Warn($"[WorldStateReplication] Failed to apply snapshot: {e.Message}");
+                Debug.LogError($"[WorldReplication] Could not restore snapshot: {exception.Message}");
             }
         }
 
@@ -343,22 +825,14 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             using var reader = new BinaryReader(stream, Encoding.UTF8);
 
             byte version = reader.ReadByte();
-            if (version != 1
-                && version != SchemaVersion)
+            if (version < 1 || version > SchemaVersion)
             {
-                _logger.Warn(
-                    $"[WorldStateReplication] Unsupported snapshot version " +
-                    $"{version}; ignored.");
-                return;
+                throw new InvalidDataException($"Unsupported world snapshot version {version}.");
             }
 
             // Buildings
             int buildingCount =
                 Math.Max(0, reader.ReadInt32());
-            IConstructionSaveRestorer restorer =
-                _constructionService
-                    as IConstructionSaveRestorer;
-
             for (int i = 0; i < buildingCount; i++)
             {
                 int x = reader.ReadInt32();
@@ -367,29 +841,27 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 string ownerId =
                     version >= 2
                         ? reader.ReadString()
-                        : _constructionService.GetActiveOwner();
+                        : _constructionSession.GetActiveOwner();
+                var rotation =
+                    version >= 3
+                        ? (ConstructionRotation)reader.ReadInt32()
+                        : ConstructionRotation.Degrees0;
 
                 if (string.IsNullOrWhiteSpace(id))
                     continue;
 
                 var position = new Vector2Int(x, y);
-                if (restorer != null)
-                {
-                    restorer.RestoreFromSave(
-                        position,
-                        id,
-                        ownerId);
-                }
-                else
-                {
-                    _constructionService.RestoreFromSave(
-                        position,
-                        id);
-                }
+                _placementRestorer.RestoreFromSave(
+                    position,
+                    id,
+                    ownerId,
+                    rotation);
             }
 
             if (version >= 2)
                 ReadConstructionModuleStates(reader);
+            if (version >= 4)
+                ReadUnitSnapshots(reader);
 
             // Economy
             int ownerCount = reader.ReadInt32();
@@ -412,6 +884,108 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
 
             _economyManager?.RestoreOwnerResourcePools(restored);
+        }
+
+        private void ReadUnitSnapshots(
+            BinaryReader reader)
+        {
+            int unitCount =
+                Math.Max(0, reader.ReadInt32());
+            if (unitCount > MaxUnitSnapshotCount)
+            {
+                throw new InvalidDataException(
+                    $"Invalid unit snapshot count {unitCount}.");
+            }
+
+            for (int index = 0;
+                 index < unitCount;
+                 index++)
+            {
+                string unitId = reader.ReadString();
+                string typeId = reader.ReadString();
+                string ownerId = reader.ReadString();
+                var position =
+                    new Vector2Int(
+                        reader.ReadInt32(),
+                        reader.ReadInt32());
+                float stamina = reader.ReadSingle();
+                int currentHp = reader.ReadInt32();
+
+                if (_unitFactory == null
+                    || _unitService == null
+                    || string.IsNullOrWhiteSpace(unitId)
+                    || string.IsNullOrWhiteSpace(typeId))
+                {
+                    continue;
+                }
+
+                string normalizedUnitId = unitId.Trim();
+                if (_unitService.TryGetUnitPosition(
+                        normalizedUnitId,
+                        out _))
+                {
+                    continue;
+                }
+
+                string createdUnitId =
+                    _unitFactory.CreateUnitWithId(
+                        normalizedUnitId,
+                        typeId.Trim(),
+                        position,
+                        ownerId);
+                if (string.IsNullOrWhiteSpace(createdUnitId))
+                    continue;
+
+                if (!float.IsNaN(stamina)
+                    && !float.IsInfinity(stamina)
+                    && stamina >= 0f)
+                {
+                    _unitService.SetStamina(
+                        createdUnitId,
+                        stamina);
+                }
+
+                if (currentHp > 0
+                    && _healthRegistry != null
+                    && _healthRegistry.TryGet(
+                        createdUnitId,
+                        out IHealth health)
+                    && health != null)
+                {
+                    int damageToRestore =
+                        Math.Max(
+                            0,
+                            health.CurrentHp - currentHp);
+                    if (damageToRestore > 0)
+                        health.TakeDamage(damageToRestore);
+                }
+            }
+        }
+
+        private readonly struct UnitSnapshotRecord
+        {
+            public UnitSnapshotRecord(
+                string unitId,
+                string typeId,
+                string ownerId,
+                Vector2Int position,
+                float stamina,
+                int currentHp)
+            {
+                UnitId = unitId ?? string.Empty;
+                TypeId = typeId ?? string.Empty;
+                OwnerId = ownerId ?? string.Empty;
+                Position = position;
+                Stamina = stamina;
+                CurrentHp = currentHp;
+            }
+
+            public string UnitId { get; }
+            public string TypeId { get; }
+            public string OwnerId { get; }
+            public Vector2Int Position { get; }
+            public float Stamina { get; }
+            public int CurrentHp { get; }
         }
     }
 }

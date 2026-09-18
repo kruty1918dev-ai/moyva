@@ -36,9 +36,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         [TabGroup("Profiles", "Resolved"), ShowInInspector, ReadOnly]
         private ConstructionWallProfileSO ResolvedWallProfile => ResolveWallProfile();
 
-        [TabGroup("Profiles", "Resolved"), ShowInInspector, ReadOnly]
-        private ConstructionDiagnosticsProfileSO ResolvedDiagnosticsProfile => ResolveDiagnosticsProfile();
-
         [TabGroup("Overview", "Status"), ShowInInspector, ReadOnly, PropertyOrder(-5)]
         private string ValidationSummary => BuildValidationSummary();
 
@@ -96,10 +93,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ? _sceneOverrides.WallProfileOverride
             : _systemProfile != null ? _systemProfile.WallProfile : null;
 
-        public ConstructionDiagnosticsProfileSO ResolveDiagnosticsProfile() => _sceneOverrides?.DiagnosticsProfileOverride != null
-            ? _sceneOverrides.DiagnosticsProfileOverride
-            : _systemProfile != null ? _systemProfile.DiagnosticsProfile : null;
-
         private void OnValidate()
         {
             if (_buildingRegistry == null && _systemProfile != null && _systemProfile.BuildingRegistry != null)
@@ -130,8 +123,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 builder.AppendLine("- Input profile is missing.");
             if (ResolveWallProfile() == null)
                 builder.AppendLine("- Wall profile is missing.");
-            if (ResolveDiagnosticsProfile() == null)
-                builder.AppendLine("- Diagnostics profile is missing.");
             if (_sceneRoots?.PreviewRoot == null)
                 builder.AppendLine("- Preview root is not assigned.");
             if (_sceneRoots?.PlacedRoot == null)

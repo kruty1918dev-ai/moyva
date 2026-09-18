@@ -116,15 +116,6 @@
       "title": "Apply In Scene View During Play",
       "description": "Якщо вимкнено, під час Play Mode Fog of War рендериться тільки для Game camera, а не дублюється у Scene View."
     },
-    "enableMorphologyDebugPasses": {
-      "type": "boolean",
-      "title": "Enable Morphology Debug Passes",
-      "description": "Вмикає додаткові fullscreen Dilate/Erode passes лише для діагностики ClosedScreenState. Фінальна маска використовує RawPointState і цих проходів не потребує."
-    },
-    "logPipelineDiagnostics": {
-      "type": "boolean",
-      "title": "Log Pipeline Diagnostics"
-    },
     "m_Active": {
       "type": "boolean",
       "title": "Active"

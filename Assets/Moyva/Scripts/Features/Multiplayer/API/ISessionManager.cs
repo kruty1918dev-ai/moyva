@@ -5,6 +5,35 @@ using Kruty1918.Moyva.Multiplayer.Core;
 
 namespace Kruty1918.Moyva.Multiplayer.Core
 {
+    public enum LocalGameplayRole
+    {
+        Offline = 0,
+        Host = 1,
+        Client = 2,
+    }
+
+    public readonly struct LocalGameplayRoleSnapshot
+    {
+        public LocalGameplayRoleSnapshot(
+            LocalGameplayRole role,
+            string playerId)
+        {
+            Role = role;
+            PlayerId = playerId?.Trim() ?? string.Empty;
+        }
+
+        public LocalGameplayRole Role { get; }
+        public string PlayerId { get; }
+        public bool IsAuthoritative =>
+            Role == LocalGameplayRole.Offline
+            || Role == LocalGameplayRole.Host;
+    }
+
+    public interface ILocalGameplayRoleResolver
+    {
+        LocalGameplayRoleSnapshot Resolve();
+    }
+
     /// <summary>
     /// High-level session orchestrator.
     /// </summary>

@@ -1,0 +1,146 @@
+{
+  "$schema": "../../Schemas/audio-feedback.schema.json",
+  "schema": "moyva.audio-feedback",
+  "version": 1,
+  "id": "moyvaaudiofeedback",
+  "model": "audio-feedback",
+  "eventSounds": [
+    {
+      "eventName": "unit-moved",
+      "soundKey": "sfx-unit-moved",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "unit-created",
+      "soundKey": "sfx-unit-created",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "unit-destroyed",
+      "soundKey": "sfx-unit-destroyed",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "building-placed",
+      "soundKey": "sfx-building-placed",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "building-demolished",
+      "soundKey": "sfx-building-demolished",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "settlement-created",
+      "soundKey": "sfx-settlement-created",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "resource-deficit",
+      "soundKey": "sfx-resource-deficit",
+      "volumeScale": 1.0,
+      "atPosition": false
+    },
+    {
+      "eventName": "combat-attack",
+      "soundKey": "sfx-combat-attack",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "combat-hit",
+      "soundKey": "sfx-combat-hit",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "combat-kill",
+      "soundKey": "sfx-combat-kill",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "combat-miss",
+      "soundKey": "sfx-combat-miss",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "turn-changed",
+      "soundKey": "sfx-turn-changed",
+      "volumeScale": 1.0,
+      "atPosition": false
+    },
+    {
+      "eventName": "game-started",
+      "soundKey": "sfx-game-started",
+      "volumeScale": 1.0,
+      "atPosition": false
+    },
+    {
+      "eventName": "game-ended",
+      "soundKey": "sfx-game-ended",
+      "volumeScale": 1.0,
+      "atPosition": false
+    },
+    {
+      "eventName": "game-paused",
+      "soundKey": "sfx-game-paused",
+      "volumeScale": 1.0,
+      "atPosition": false
+    },
+    {
+      "eventName": "game-resumed",
+      "soundKey": "sfx-game-resumed",
+      "volumeScale": 1.0,
+      "atPosition": false
+    }
+  ],
+  "uiActionSounds": [
+    {
+      "source": "Escape",
+      "status": "",
+      "actionId": "",
+      "soundKey": "ui-back",
+      "volumeScale": 1.0
+    },
+    {
+      "source": "Hotkey",
+      "status": "Performed",
+      "actionId": "",
+      "soundKey": "ui-click",
+      "volumeScale": 0.9
+    },
+    {
+      "source": "",
+      "status": "Rejected",
+      "actionId": "",
+      "soundKey": "ui-denied",
+      "volumeScale": 1.0
+    },
+    {
+      "source": "",
+      "status": "Cancelled",
+      "actionId": "",
+      "soundKey": "ui-back",
+      "volumeScale": 1.0
+    }
+  ],
+  "uiPointerClick": "ui-click",
+  "uiPointerDenied": "ui-denied",
+  "uiPointerHover": "ui-hover",
+  "uiPointerHoverEnabled": true,
+  "uiPointerHoverCooldown": 0.08,
+  "uiPointerDragTickInterval": 0.07,
+  "uiPointerDragTick": "ui-slider-tick",
+  "notificationInfo": "ui-notification-info",
+  "notificationSuccess": "ui-notification-success",
+  "notificationWarning": "ui-notification-warning",
+  "notificationError": "ui-notification-error"
+}

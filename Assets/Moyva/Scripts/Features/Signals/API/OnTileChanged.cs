@@ -81,6 +81,17 @@ namespace Kruty1918.Moyva.Signals
     }
 
     /// <summary>
+    /// Presentation-only local selection signal for unit overlays. Movement
+    /// commands still use MoveUnitRequestSignal.
+    /// </summary>
+    public struct LocalUnitSelectionChangedSignal
+    {
+        public string UnitId;
+        public Vector2Int Position;
+        public bool IsSelected;
+    }
+
+    /// <summary>
     /// Надсилається TileInteractionService, коли гравець наказує юніту рухатись до тайлу.
     /// MultiplayerAuthorityService перехоплює і або виконує MoveUnitAsync локально (хост/офлайн),
     /// або надсилає запит до хоста (клієнт).
@@ -102,7 +113,7 @@ namespace Kruty1918.Moyva.Signals
     }
 
     /// <summary>
-    /// Надсилається ObjectsMapService після будь-якої зміни карти обʼєктів
+    /// Надсилається реалізацією IObjectsMapService після зміни карти обʼєктів.
     /// </summary>
     public struct OnObjectsMapChangedSignal
     {
@@ -175,7 +186,6 @@ namespace Kruty1918.Moyva.Signals
     {
         public int SlotIndex;
         public string ParticipantId;
-        public bool IsBot;
         public Vector2Int Position;
     }
 

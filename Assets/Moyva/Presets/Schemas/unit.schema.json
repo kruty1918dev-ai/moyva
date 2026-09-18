@@ -81,6 +81,116 @@
       "type": "number",
       "title": "Base Stamina"
     },
+    "cargoCapacity": {
+      "type": "number",
+      "title": "Cargo Capacity",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "movementPointsPerTurn": {
+      "type": "number",
+      "title": "Movement Points Per Turn",
+      "description": "Очки руху, що відновлюються на початку ходу юніта.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "movementProfile": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "fallback": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "passable": {
+              "type": "boolean",
+              "title": "Passable"
+            },
+            "staminaCost": {
+              "type": "number",
+              "title": "Stamina Cost",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "title": "Fallback"
+        },
+        "classRules": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "classId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Class Id"
+              },
+              "passable": {
+                "type": "boolean",
+                "title": "Passable"
+              },
+              "staminaCost": {
+                "type": "number",
+                "title": "Stamina Cost",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          },
+          "title": "Class Rules"
+        },
+        "tileOverrides": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "tileTypeId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Tile Type Id"
+              },
+              "passable": {
+                "type": "boolean",
+                "title": "Passable"
+              },
+              "staminaCost": {
+                "type": "number",
+                "title": "Stamina Cost",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          },
+          "title": "Tile Overrides"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Movement Profile",
+      "description": "JSON-профіль вартості та доступності terrain для цього типу юніта."
+    },
     "visionRange": {
       "type": "integer",
       "title": "Vision Range",
@@ -133,6 +243,13 @@
     "baseLevel": {
       "type": "integer",
       "title": "Base Level",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "attackRange": {
+      "type": "integer",
+      "title": "Attack Range",
+      "description": "Дальність атаки у тайлах grid. 1 = ближній бій; >1 = дальня атака.",
       "minimum": 1.0,
       "x-moyva-editorMinimum": 1.0
     },
@@ -202,6 +319,275 @@
         "$asset"
       ],
       "title": "Prefab"
+    },
+    "presentation": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "prefab": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Prefab"
+        },
+        "customSprite": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Custom Sprite"
+        },
+        "scaleMultiplier": {
+          "type": "number",
+          "title": "Scale Multiplier",
+          "minimum": 0.0001,
+          "x-moyva-editorMinimum": 0.0001
+        },
+        "positionOffset": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "additionalProperties": false,
+          "title": "Position Offset"
+        },
+        "rotationOffset": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "additionalProperties": false,
+          "title": "Rotation Offset"
+        },
+        "groundOffsetY": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "title": "Ground Offset Y"
+        },
+        "tint": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Tint"
+        },
+        "teamColorEnabled": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "title": "Team Color Enabled"
+        },
+        "outline": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "enabled": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "title": "Enabled"
+            },
+            "width": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "title": "Width",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
+            },
+            "color": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "r": {
+                  "type": "number"
+                },
+                "g": {
+                  "type": "number"
+                },
+                "b": {
+                  "type": "number"
+                },
+                "a": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b",
+                "a"
+              ],
+              "additionalProperties": false,
+              "title": "Color"
+            }
+          },
+          "additionalProperties": false,
+          "title": "Outline"
+        },
+        "shadows": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "cast": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "title": "Cast"
+            },
+            "receive": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "title": "Receive"
+            }
+          },
+          "additionalProperties": false,
+          "title": "Shadows"
+        },
+        "previewPrefab": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Preview Prefab"
+        },
+        "selection": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "markerScale": {
+              "type": "number",
+              "title": "Marker Scale",
+              "minimum": 0.0001,
+              "x-moyva-editorMinimum": 0.0001
+            }
+          },
+          "additionalProperties": false,
+          "title": "Selection"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Presentation"
     },
     "staminaRandomRange": {
       "type": "object",

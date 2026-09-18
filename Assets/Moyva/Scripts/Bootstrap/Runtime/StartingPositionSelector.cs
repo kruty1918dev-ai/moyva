@@ -1,5 +1,9 @@
+using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Kruty1918.Moyva.Pathfinding.API;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
@@ -7,46 +11,123 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
     internal interface IStartingPositionSelector
     {
-        List<Vector2Int> PickStartingPositions(WorldGeneratedDataSignal signal, int positionsCount);
+        List<Vector2Int> PickStartingPositions(
+            WorldGeneratedDataSignal signal,
+            int positionsCount);
+
+        Task<List<Vector2Int>> PickStartingPositionsAsync(
+            WorldGeneratedDataSignal signal, int positionsCount, CancellationToken cancellationToken);
+
         Vector2Int PickStartingPosition(Vector2Int baseMapSize);
     }
 
-    internal sealed class StartingPositionSelector
-        : IStartingPositionSelector
+    internal sealed class StartingPositionSelector :
+        IStartingPositionSelector
     {
         private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
+
         private readonly StartingPositionInitializerSettings _settings;
         private readonly IPathfinder _pathfinder;
+        private readonly StartingPositionTerrainQualityEvaluator _terrain;
 
-        public StartingPositionSelector(StartingPositionInitializerSettings settings, IPathfinder pathfinder)
+        public StartingPositionSelector(
+            StartingPositionInitializerSettings settings,
+            IPathfinder pathfinder)
         {
-            _settings = settings;
+            _settings =
+                settings ??
+                new StartingPositionInitializerSettings();
+
             _pathfinder = pathfinder;
+            _terrain =
+                new StartingPositionTerrainQualityEvaluator(_settings);
         }
 
-        public List<Vector2Int> PickStartingPositions(WorldGeneratedDataSignal signal, int positionsCount)
+        public List<Vector2Int> PickStartingPositions(
+            WorldGeneratedDataSignal signal,
+            int positionsCount)
         {
-            var positions = new List<Vector2Int>(positionsCount);
-            int attempts = Mathf.Max(1, _settings.startCandidateAttempts);
-            Debug.Log($"{DirectDiagTag} Selector.ENTER requestedCount={positionsCount}, map={signal.Width}x{signal.Height}, hasHeightMap={signal.HeightMap != null}, minHeight={Mathf.Min(_settings.startMinHeight, _settings.startMaxHeight)}, maxHeight={Mathf.Max(_settings.startMinHeight, _settings.startMaxHeight)}, minDistance={Mathf.Max(1, _settings.minAStarDistanceBetweenPlayers)}, attempts={attempts}.");
+            var positions = new List<Vector2Int>(Mathf.Max(0, positionsCount));
+            foreach (var step in SelectPositions(signal, positionsCount, positions)) { }
+            return positions;
+        }
 
-            for (int positionIndex = 0; positionIndex < positionsCount; positionIndex++)
+        public async Task<List<Vector2Int>> PickStartingPositionsAsync(
+            WorldGeneratedDataSignal signal, int positionsCount, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            // Leave the world-generated signal handler before publishing spawns.
+            await Task.Yield();
+            var positions = new List<Vector2Int>(Mathf.Max(0, positionsCount));
+            var slice = System.Diagnostics.Stopwatch.StartNew();
+            foreach (var step in SelectPositions(signal, positionsCount, positions))
             {
-                if (TryPickStartingPosition(signal, positions, attempts, out Vector2Int position))
-                    positions.Add(position);
-                else
-                    Debug.LogWarning($"[Bootstrap] Не вдалось знайти стартову позицію #{positionIndex + 1} із заданими обмеженнями.");
+                cancellationToken.ThrowIfCancellationRequested();
+                if (slice.ElapsedMilliseconds < 4)
+                    continue;
+
+                // Keep Unity, transport updates and Relay keep-alives running.
+                // Selection still runs on Unity's thread; pathfinding is not thread safe.
+                await Task.Yield();
+                cancellationToken.ThrowIfCancellationRequested();
+                slice.Restart();
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            return positions;
+        }
+
+        private IEnumerable<object> SelectPositions(
+            WorldGeneratedDataSignal signal, int positionsCount, List<Vector2Int> positions)
+        {
+            int attempts = Mathf.Max(
+                1,
+                _settings.startCandidateAttempts);
+
+            bool allowBestEffortFallback =
+                signal.Source == WorldGeneratedDataSource.DirectGameplayTest ||
+                signal.Source == WorldGeneratedDataSource.GeneratedHost ||
+                GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest ||
+                GameLaunchContext.Source == GameLaunchSource.DirectGameplayTest ||
+                GameLaunchContext.Mode == GameLaunchMode.MenuNewGame ||
+                GameLaunchContext.Mode == GameLaunchMode.MenuBotGame ||
+                GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame;
+
+            for (int positionIndex = 0;
+                 positionIndex < positionsCount;
+                 positionIndex++)
+            {
+                var result = new SelectionResult();
+                foreach (var step in SelectCandidate(signal, positions, attempts, result))
+                    yield return step;
+                if (result.Found)
+                {
+                    positions.Add(result.Position);
+                    continue;
+                }
+
+                // Keep the topology alive, but relax constraints in an explicit
+                // order. Every participant slot goes through the same selector.
+                if (allowBestEffortFallback)
+                {
+                    for (int relaxation = 0; relaxation < 3 && !result.Found; relaxation++)
+                    {
+                        foreach (var step in SelectBestEffort(signal, positions,
+                                     relaxation == 0, relaxation < 2, result))
+                            yield return step;
+                    }
+                }
+
+                if (result.Found)
+                {
+                    positions.Add(result.Position);
+                    continue;
+                }
+
+                Debug.LogError(
+                    $"[Bootstrap] Failed to find start position " +
+                    $"#{positionIndex + 1}/{positionsCount}.");
             }
 
-            if (positions.Count > 1)
-                Debug.Log($"[Bootstrap] Host зарезервував стартові позиції: {string.Join(", ", positions)}");
-
-            if (positions.Count == 0)
-                Debug.Log($"{DirectDiagTag} Selector.FAIL reason=no-valid-positions requested={positionsCount}, candidates=0, map={signal.Width}x{signal.Height}.");
-
-            Debug.Log($"{DirectDiagTag} Selector.RESULT selected={positions.Count}, selectedShort={FormatPositions(positions)}.");
-
-            return positions;
         }
 
         public bool TryPickStartingPosition(
@@ -55,17 +136,65 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int attempts,
             out Vector2Int position)
         {
-            Vector2Int baseMapSize = StartingPositionMapUtility.ResolveBaseMapSize(signal);
+            var result = new SelectionResult();
+            foreach (var step in SelectCandidate(signal, existingPositions, attempts, result)) { }
+            position = result.Position;
+            return result.Found;
+        }
+
+        private IEnumerable<object> SelectCandidate(
+            WorldGeneratedDataSignal signal, IReadOnlyList<Vector2Int> existingPositions,
+            int attempts, SelectionResult result)
+        {
+            Vector2Int baseMapSize =
+                StartingPositionMapUtility.ResolveBaseMapSize(signal);
+
+            int rejectedBounds = 0;
             int rejectedHeight = 0;
             int rejectedDistance = 0;
+            int rejectedTerrain = 0;
+
+            bool found = false;
+            Vector2Int best = default;
+            int bestScore = int.MinValue;
+            StartingPositionTerrainQuality bestQuality = default;
+
+            attempts = Mathf.Max(1, attempts);
+
+            // Randomness lives only in candidate sampling. The winner of the
+            // sampled set is selected by deterministic utility.
             for (int attempt = 0; attempt < attempts; attempt++)
             {
-                Vector2Int candidate = PickStartingPosition(baseMapSize);
+                yield return null;
+                Vector2Int candidate =
+                    PickStartingPosition(baseMapSize);
+
+                if (!IsInsideStartBounds(
+                        candidate,
+                        baseMapSize.x,
+                        baseMapSize.y))
+                {
+                    rejectedBounds++;
+                    continue;
+                }
+
                 if (!IsValidStartHeight(signal, candidate))
                 {
                     rejectedHeight++;
                     continue;
                 }
+
+                StartingPositionTerrainQuality quality =
+                    _terrain.Evaluate(signal, candidate);
+
+                if (!quality.HardValid)
+                {
+                    rejectedTerrain++;
+                    continue;
+                }
+
+                if (!CanImproveScore(candidate, quality.Utility, found, best, bestScore))
+                    continue;
 
                 if (!HasRequiredDistance(candidate, existingPositions))
                 {
@@ -73,97 +202,201 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     continue;
                 }
 
-                Debug.Log($"{DirectDiagTag} Selector.Candidates count=1, rejectedOutOfBounds=0, rejectedHeight={rejectedHeight}, rejectedDistance={rejectedDistance}, rejectedWater=0.");
-                position = candidate;
-                return true;
+                int score =
+                    quality.Utility +
+                    ScoreInterPlayerSeparation(
+                        candidate,
+                        existingPositions);
+
+                if (!found ||
+                    score > bestScore ||
+                    score == bestScore &&
+                    ComparePosition(candidate, best) < 0)
+                {
+                    found = true;
+                    best = candidate;
+                    bestScore = score;
+                    bestQuality = quality;
+                }
             }
 
-            for (int x = 0; x < baseMapSize.x; x++)
+            if (!found)
             {
-                for (int y = 0; y < baseMapSize.y; y++)
+                // Exhaustive deterministic fallback keeps the same hard criteria
+                // instead of accepting the first coordinate in scan order.
+                for (int x = 0; x < baseMapSize.x; x++)
                 {
-                    Vector2Int candidate = new Vector2Int(x, y);
-                    if (IsInsideStartBounds(candidate, baseMapSize.x, baseMapSize.y) &&
-                        IsValidStartHeight(signal, candidate) &&
-                        HasRequiredDistance(candidate, existingPositions))
+                    for (int y = 0; y < baseMapSize.y; y++)
                     {
-                        Debug.Log($"{DirectDiagTag} Selector.Candidates count=1, rejectedOutOfBounds=0, rejectedHeight={rejectedHeight}, rejectedDistance={rejectedDistance}, rejectedWater=0.");
-                        position = candidate;
-                        return true;
+                        yield return null;
+                        var candidate = new Vector2Int(x, y);
+
+                        if (!IsInsideStartBounds(
+                                candidate,
+                                baseMapSize.x,
+                                baseMapSize.y) ||
+                            !IsValidStartHeight(signal, candidate))
+                        {
+                            continue;
+                        }
+
+                        StartingPositionTerrainQuality quality =
+                            _terrain.Evaluate(signal, candidate);
+
+                        if (!quality.HardValid)
+                            continue;
+
+                        if (!CanImproveScore(candidate, quality.Utility, found, best, bestScore) ||
+                            !HasRequiredDistance(candidate, existingPositions))
+                            continue;
+
+                        int score =
+                            quality.Utility +
+                            ScoreInterPlayerSeparation(
+                                candidate,
+                                existingPositions);
+
+                        if (!found ||
+                            score > bestScore ||
+                            score == bestScore &&
+                            ComparePosition(candidate, best) < 0)
+                        {
+                            found = true;
+                            best = candidate;
+                            bestScore = score;
+                            bestQuality = quality;
+                        }
                     }
                 }
             }
 
-            Debug.Log($"{DirectDiagTag} Selector.Candidates count=0, rejectedOutOfBounds=0, rejectedHeight={rejectedHeight}, rejectedDistance={rejectedDistance}, rejectedWater=0.");
-            position = Vector2Int.zero;
-            return false;
+            result.Position = best;
+            result.Found = found;
         }
 
-        public Vector2Int PickStartingPosition(int width, int height)
-        {
-            return PickStartingPosition(new Vector2Int(width, height));
-        }
+        public Vector2Int PickStartingPosition(
+            int width,
+            int height)
+            => PickStartingPosition(
+                new Vector2Int(width, height));
 
-        public Vector2Int PickStartingPosition(Vector2Int baseMapSize)
+        public Vector2Int PickStartingPosition(
+            Vector2Int baseMapSize)
         {
             int width = Mathf.Max(0, baseMapSize.x);
             int height = Mathf.Max(0, baseMapSize.y);
+
             if (width <= 0 || height <= 0)
                 return Vector2Int.zero;
 
-            Vector2Int position = StartingPositionMapUtility.PickRuntimeRandomPoint(
-                width,
-                height,
-                _settings.minMarginFromBorder,
-                _settings.relativeMarginFactor,
-                out int seed);
-            Debug.Log($"{DirectDiagTag} Selector.PickRandom position={position}, seed={seed}, map={width}x{height}.");
+            Vector2Int position =
+                StartingPositionMapUtility.PickRuntimeRandomPoint(
+                    width,
+                    height,
+                    _settings.minMarginFromBorder,
+                    _settings.relativeMarginFactor,
+                    out int seed);
+
             return position;
         }
 
-        public bool IsInsideStartBounds(Vector2Int position, int width, int height)
+        public bool IsInsideStartBounds(
+            Vector2Int position,
+            int width,
+            int height)
         {
             if (width <= 0 || height <= 0)
                 return false;
 
             int minSide = Mathf.Min(width, height);
-            int relativeMargin = Mathf.FloorToInt(minSide * Mathf.Clamp01(_settings.relativeMarginFactor));
-            int margin = Mathf.Max(_settings.minMarginFromBorder, relativeMargin);
+            int relativeMargin =
+                Mathf.FloorToInt(
+                    minSide *
+                    Mathf.Clamp01(_settings.relativeMarginFactor));
+
+            int margin = Mathf.Max(
+                _settings.minMarginFromBorder,
+                relativeMargin);
 
             int xMin = Mathf.Clamp(margin, 0, width - 1);
-            int xMax = Mathf.Clamp(width - margin - 1, xMin, width - 1);
-            int yMin = Mathf.Clamp(margin, 0, height - 1);
-            int yMax = Mathf.Clamp(height - margin - 1, yMin, height - 1);
+            int xMax = Mathf.Clamp(
+                width - margin - 1,
+                xMin,
+                width - 1);
 
-            return position.x >= xMin && position.x <= xMax && position.y >= yMin && position.y <= yMax;
+            int yMin = Mathf.Clamp(margin, 0, height - 1);
+            int yMax = Mathf.Clamp(
+                height - margin - 1,
+                yMin,
+                height - 1);
+
+            return
+                position.x >= xMin &&
+                position.x <= xMax &&
+                position.y >= yMin &&
+                position.y <= yMax;
         }
 
-        public bool IsValidStartHeight(WorldGeneratedDataSignal signal, Vector2Int position)
+        public bool IsValidStartHeight(
+            WorldGeneratedDataSignal signal,
+            Vector2Int position)
         {
             if (signal.HeightMap == null)
                 return !_settings.requireHeightMapForStart;
 
-            if (position.x < 0 || position.x >= signal.HeightMap.GetLength(0) ||
-                position.y < 0 || position.y >= signal.HeightMap.GetLength(1))
+            if (position.x < 0 ||
+                position.x >= signal.HeightMap.GetLength(0) ||
+                position.y < 0 ||
+                position.y >= signal.HeightMap.GetLength(1))
             {
                 return false;
             }
 
-            float minHeight = Mathf.Min(_settings.startMinHeight, _settings.startMaxHeight);
-            float maxHeight = Mathf.Max(_settings.startMinHeight, _settings.startMaxHeight);
-            float height = signal.HeightMap[position.x, position.y];
-            return height >= minHeight && height <= maxHeight;
+            float minHeight = Mathf.Min(
+                _settings.startMinHeight,
+                _settings.startMaxHeight);
+
+            float maxHeight = Mathf.Max(
+                _settings.startMinHeight,
+                _settings.startMaxHeight);
+
+            float height =
+                signal.HeightMap[position.x, position.y];
+
+            return
+                height >= minHeight &&
+                height <= maxHeight;
         }
 
-        public bool HasRequiredDistance(Vector2Int candidate, IReadOnlyList<Vector2Int> existingPositions)
+        public bool HasRequiredDistance(
+            Vector2Int candidate,
+            IReadOnlyList<Vector2Int> existingPositions)
         {
-            if (existingPositions == null || existingPositions.Count == 0)
-                return true;
-
-            int minDistance = Mathf.Max(1, _settings.minAStarDistanceBetweenPlayers);
-            for (int index = 0; index < existingPositions.Count; index++)
+            if (existingPositions == null ||
+                existingPositions.Count == 0)
             {
-                int distance = ResolveStartDistance(candidate, existingPositions[index]);
+                return true;
+            }
+
+            int minDistance = Mathf.Max(
+                1,
+                _settings.minAStarDistanceBetweenPlayers);
+
+            for (int index = 0;
+                 index < existingPositions.Count;
+                 index++)
+            {
+                // Square-grid routes (including diagonals) cannot use fewer
+                // steps than this bound. The no-route Euclidean fallback also
+                // satisfies it, so distant candidates need no path search.
+                if (MinimumGridSteps(candidate, existingPositions[index]) >= minDistance)
+                    continue;
+
+                int distance =
+                    ResolveStartDistance(
+                        candidate,
+                        existingPositions[index]);
+
                 if (distance < minDistance)
                     return false;
             }
@@ -171,25 +404,202 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return true;
         }
 
-        public int ResolveStartDistance(Vector2Int first, Vector2Int second)
+        public int ResolveStartDistance(
+            Vector2Int first,
+            Vector2Int second)
         {
             if (_pathfinder != null)
             {
-                List<Vector2Int> path = _pathfinder.FindPath(first, second);
+                List<Vector2Int> path =
+                    _pathfinder.FindPath(first, second);
+
                 if (path != null && path.Count > 0)
                     return Mathf.Max(0, path.Count - 1);
             }
 
-            return Mathf.CeilToInt(Vector2.Distance(first, second));
+            return Mathf.CeilToInt(
+                Vector2.Distance(first, second));
         }
 
-        private static string FormatPositions(IReadOnlyList<Vector2Int> positions)
+        private bool TryPickBestEffortPosition(
+            WorldGeneratedDataSignal signal,
+            IReadOnlyList<Vector2Int> existingPositions,
+            bool requireTerrainQuality,
+            bool requireValidHeight,
+            out Vector2Int position)
         {
-            if (positions == null || positions.Count == 0)
+            var result = new SelectionResult();
+            foreach (var step in SelectBestEffort(signal, existingPositions,
+                         requireTerrainQuality, requireValidHeight, result)) { }
+            position = result.Position;
+            return result.Found;
+        }
+
+        private sealed class SelectionResult
+        {
+            public bool Found;
+            public Vector2Int Position;
+        }
+
+        private IEnumerable<object> SelectBestEffort(
+            WorldGeneratedDataSignal signal, IReadOnlyList<Vector2Int> existingPositions,
+            bool requireTerrainQuality, bool requireValidHeight, SelectionResult result)
+        {
+            Vector2Int baseMapSize =
+                StartingPositionMapUtility.ResolveBaseMapSize(signal);
+
+            bool found = false;
+            Vector2Int best = default;
+            int bestScore = int.MinValue;
+
+            for (int x = 0; x < baseMapSize.x; x++)
+            {
+                for (int y = 0; y < baseMapSize.y; y++)
+                {
+                    yield return null;
+                    var candidate = new Vector2Int(x, y);
+
+                    if (!IsInsideStartBounds(
+                            candidate,
+                            baseMapSize.x,
+                            baseMapSize.y))
+                    {
+                        continue;
+                    }
+
+                    if (ContainsPosition(
+                            existingPositions,
+                            candidate))
+                    {
+                        continue;
+                    }
+
+                    if (requireValidHeight &&
+                        !IsValidStartHeight(signal, candidate))
+                    {
+                        continue;
+                    }
+
+                    StartingPositionTerrainQuality quality =
+                        _terrain.Evaluate(signal, candidate);
+
+                    if (requireTerrainQuality &&
+                        !quality.HardValid)
+                    {
+                        continue;
+                    }
+
+                    if (!CanImproveScore(candidate, quality.Utility, found, best, bestScore))
+                        continue;
+
+                    int score =
+                        quality.Utility +
+                        ScoreInterPlayerSeparation(
+                            candidate,
+                            existingPositions);
+
+                    if (!found ||
+                        score > bestScore ||
+                        score == bestScore &&
+                        ComparePosition(candidate, best) < 0)
+                    {
+                        found = true;
+                        best = candidate;
+                        bestScore = score;
+                    }
+                }
+            }
+
+            result.Position = best;
+            result.Found = found;
+        }
+
+        private int ScoreInterPlayerSeparation(
+            Vector2Int candidate,
+            IReadOnlyList<Vector2Int> existingPositions)
+        {
+            if (existingPositions == null ||
+                existingPositions.Count == 0)
+            {
+                return 0;
+            }
+
+            int minimum = int.MaxValue;
+
+            for (int i = 0; i < existingPositions.Count; i++)
+            {
+                // Separation utility saturates at 50 steps. There is no need
+                // to construct a route whose length cannot change the score.
+                int distance =
+                    MinimumGridSteps(candidate, existingPositions[i]) >= 50
+                    ? 50
+                    : ResolveStartDistance(
+                        candidate,
+                        existingPositions[i]);
+
+                if (distance < minimum)
+                    minimum = distance;
+            }
+
+            if (minimum == int.MaxValue)
+                return 0;
+
+            // Distance remains a soft preference after the hard minimum passes.
+            return Mathf.Min(300, minimum * 6);
+        }
+
+        private static int MinimumGridSteps(Vector2Int first, Vector2Int second)
+            => Mathf.Max(Mathf.Abs(first.x - second.x), Mathf.Abs(first.y - second.y));
+
+        private static bool CanImproveScore(
+            Vector2Int candidate, int terrainUtility,
+            bool found, Vector2Int best, int bestScore)
+        {
+            // Preserve the same winner and coordinate tie-break, even during
+            // exhaustive fallback, without routing candidates that cannot win.
+            int maximumScore = terrainUtility + 300;
+            return !found || maximumScore > bestScore ||
+                maximumScore == bestScore && ComparePosition(candidate, best) < 0;
+        }
+
+        private static bool ContainsPosition(
+            IReadOnlyList<Vector2Int> positions,
+            Vector2Int candidate)
+        {
+            if (positions == null)
+                return false;
+
+            for (int i = 0; i < positions.Count; i++)
+            {
+                if (positions[i] == candidate)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static int ComparePosition(
+            Vector2Int left,
+            Vector2Int right)
+        {
+            int x = left.x.CompareTo(right.x);
+            return x != 0
+                ? x
+                : left.y.CompareTo(right.y);
+        }
+
+        private static string FormatPositions(
+            IReadOnlyList<Vector2Int> positions)
+        {
+            if (positions == null ||
+                positions.Count == 0)
+            {
                 return "[]";
+            }
 
             int count = Mathf.Min(positions.Count, 4);
             var parts = new string[count];
+
             for (int index = 0; index < count; index++)
                 parts[index] = positions[index].ToString();
 

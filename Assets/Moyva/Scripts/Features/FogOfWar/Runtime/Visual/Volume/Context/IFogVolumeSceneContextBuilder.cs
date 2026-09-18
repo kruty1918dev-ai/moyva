@@ -13,6 +13,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// </summary>
         /// <param name="host">Host-компонент, з якого беруться settings та fallback transform.</param>
         /// <returns>Побудований world visual context.</returns>
-        FogWorldVisualContext BuildContext(IFogVolumeSceneContextHost host);
+        FogWorldVisualContext BuildContext(FogOfWarVolumeController host);
     }
 }

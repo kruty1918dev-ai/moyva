@@ -1,5 +1,40 @@
 {
   "dependencies": {
+    "com.kruty1918.moyva.unityhtml": {
+      "version": "file:com.kruty1918.moyva.unityhtml",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.reactunity.core": "0.23.2",
+        "com.reactunity.jint": "0.23.2",
+        "com.reactunity.quickjs": "0.23.2",
+        "com.unity.ugui": "2.0.0"
+      }
+    },
+    "com.reactunity.core": {
+      "version": "https://github.com/ReactUnity/core.git#8c4caa95f49b45e8fb7bb1f833eaa08adaa31496",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.editorcoroutines": "1.0.0",
+        "com.unity.nuget.newtonsoft-json": "3.0.2"
+      },
+      "hash": "8c4caa95f49b45e8fb7bb1f833eaa08adaa31496"
+    },
+    "com.reactunity.jint": {
+      "version": "https://github.com/ReactUnity/core.git#5788df06c9525ffbd24b7f2ef55b9c638386e808",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "5788df06c9525ffbd24b7f2ef55b9c638386e808"
+    },
+    "com.reactunity.quickjs": {
+      "version": "https://github.com/ReactUnity/core.git#6b28051d738504283bff89bd7584eaf1287debec",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "6b28051d738504283bff89bd7584eaf1287debec"
+    },
     "com.unity.2d.animation": {
       "version": "13.0.4",
       "depth": 1,
@@ -172,6 +207,13 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unity.editorcoroutines": {
+      "version": "1.0.1",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
     "com.unity.ext.nunit": {
       "version": "2.0.5",
       "depth": 1,
@@ -226,6 +268,18 @@
       "depth": 1,
       "source": "registry",
       "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.ml-agents": {
+      "version": "4.0.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.ai.inference": "2.2.1",
+        "com.unity.modules.physics": "1.0.0",
+        "com.unity.modules.jsonserialize": "1.0.0",
+        "com.unity.modules.imageconversion": "1.0.0"
+      },
       "url": "https://packages.unity.com"
     },
     "com.unity.multiplayer.center": {

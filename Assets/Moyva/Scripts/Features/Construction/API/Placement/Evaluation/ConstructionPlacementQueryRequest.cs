@@ -65,7 +65,7 @@ namespace Kruty1918.Moyva.Construction.API
         public bool IncludePendingPlacements { get; }
 
         /// <summary>
-        /// Identifies the caller for structured placement diagnostics.
+        /// Визначає джерело запиту для правил авторитету розміщення.
         /// </summary>
         public ConstructionPlacementAttemptSource AttemptSource { get; }
 

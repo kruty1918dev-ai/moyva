@@ -24,17 +24,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public bool ForceMergeTiles => !UsesLegacyHeightProjection;
     }
 
-    public static class TileWorldCreatorTerrainBuildPolicy
-    {
-        private static readonly ITileWorldCreatorTerrainBuildPolicyService DefaultService = new TileWorldCreatorTerrainBuildPolicyService();
-
-        public static TileWorldCreatorTerrainBuildPolicyResult Resolve(TileWorldCreatorBuildOptions options, int chunkSizeTiles)
-            => DefaultService.Resolve(options, chunkSizeTiles);
-
-        public static void Apply(Configuration configuration, TileWorldCreatorTerrainBuildPolicyResult policy, string source)
-            => DefaultService.Apply(configuration, policy, source);
-    }
-
     public interface ITileWorldCreatorTerrainBuildPolicyService
     {
         TileWorldCreatorTerrainBuildPolicyResult Resolve(TileWorldCreatorBuildOptions options, int chunkSizeTiles);
@@ -55,10 +44,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             if (configuration == null)
                 return;
-
-            Debug.Log(
-                $"{LogTag} Terrain build policy apply: source={source}, mode={policy.Mode}, chunk={policy.ChunkSizeTiles}, " +
-                $"forceMergeTiles={policy.ForceMergeTiles}, chunkFirst={policy.UsesChunkFirstComposite}, precomputedHeights={policy.UsesPrecomputedHeights}, legacyProjector={policy.UsesLegacyHeightProjection}.");
             TileWorldCreatorChunkBatchingUtility.Apply(configuration, policy.ChunkSizeTiles, policy.ForceMergeTiles, source);
         }
     }

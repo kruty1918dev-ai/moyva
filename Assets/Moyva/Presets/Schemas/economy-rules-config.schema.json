@@ -75,6 +75,18 @@
         "null"
       ],
       "properties": {
+        "initialResidents": {
+          "type": "integer",
+          "title": "Initial Residents"
+        },
+        "constructionWorkersForFullSpeed": {
+          "type": "integer",
+          "title": "Construction Workers For Full Speed"
+        },
+        "minimumConstructionSpeed": {
+          "type": "number",
+          "title": "Minimum Construction Speed"
+        },
         "newResidentsArrivalIntervalTurns": {
           "type": "integer",
           "title": "New Residents Arrival Interval Turns",

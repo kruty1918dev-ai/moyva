@@ -1,7 +1,9 @@
 using Kruty1918.Moyva.Combat;
 using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Notifications.Runtime;
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.UIActions.Runtime;
 using Kruty1918.Moyva.WorldCreation.API;
 using Kruty1918.Moyva.InputRouting.Runtime;
 using System;
@@ -14,6 +16,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     public sealed class ConstructionInstaller : MonoInstaller
     {
+        public static void InstallSimulationBindings(DiContainer container, IBuildingRegistry registry,
+            int townHallBuildRadius)
+        {
+            container.BindInstance(registry).AsSingle();
+            container.BindInstance(0).WithId("fallbackMinSpacing");
+            container.BindInstance(townHallBuildRadius).WithId("fallbackTownHallBuildRadius");
+            container.BindInterfacesAndSelfTo<ConstructionSceneSettingsProvider>().AsSingle();
+            container.Bind<int>().WithId("minSpacing")
+                .FromResolveGetter<IConstructionPlacementRulesProvider>(p => p.MinSpacing).AsCached();
+            container.Bind<int>().WithId("townHallBuildRadius")
+                .FromResolveGetter<IConstructionPlacementRulesProvider>(p => p.TownHallBuildRadius).AsCached();
+            container.BindInterfacesAndSelfTo<ConstructionService>().AsSingle();
+            container.BindInterfacesTo<ConstructionTurnParticipant>().AsSingle();
+            container.BindInterfacesAndSelfTo<ConstructionLifecycleService>().AsSingle();
+            container.BindInterfacesAndSelfTo<WallTopologyService>().AsSingle();
+            container.Bind<IWallGateReplacementValidator>().To<WallGateReplacementValidator>().AsSingle();
+            container.BindInterfacesAndSelfTo<BuildingHealthService>().AsSingle();
+        }
+
         [SerializeField] private BuildingRegistrySO buildingRegistry;
         [SerializeField] private WorldCreationDefaultsSO _worldDefaults;
         [SerializeField] private ConstructionSceneContext _sceneContext;
@@ -28,6 +49,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public override void InstallBindings()
         {
             InputRoutingBindings.Install(Container);
+            NotificationsInstaller.Install(Container);
+            UiActionsInstaller.Install(Container);
 
             _sceneContext ??= GetComponent<ConstructionSceneContext>();
             if (buildingRegistry == null && _sceneContext?.BuildingRegistry != null)
@@ -140,8 +163,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .To<WallPathfinder>()
                 .AsSingle();
 
-            Container.Bind<IWallDragPreviewService>()
-                .To<WallDragPreviewService>()
+            Container.Bind<WallDragPreviewService>()
                 .AsSingle();
 
             Container.Bind<IWallVisualResolver>()
@@ -152,8 +174,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .To<WallPrefabResolver>()
                 .AsSingle();
 
-            Container.Bind<IWallHandleController>()
-                .To<WallHandleController>()
+            Container.Bind<WallHandleController>()
                 .AsSingle();
 
             Container.Bind<IWallPlacementService>()
@@ -196,15 +217,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            if (Application.isEditor || Debug.isDebugBuild)
-            {
-                Container.BindInterfacesAndSelfTo<FirstCastlePerformanceRecorder>()
-                    .AsSingle()
-                    .NonLazy();
-            }
-
-            QueueSceneDebugViewInjection();
-
             // Явний порядок Initialize() — виконується ПІСЛЯ GameMode (-10).
             Container.BindExecutionOrder<ConstructionService>(0);
             Container.BindExecutionOrder<ConstructionConfirmRequestRouter>(2);
@@ -229,21 +241,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
-        private void QueueSceneDebugViewInjection()
-        {
-            var debugViews = FindObjectsByType<ConstructionDebugSceneView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            for (int i = 0; i < debugViews.Length; i++)
-            {
-                if (debugViews[i] != null)
-                    Container.QueueForInject(debugViews[i]);
-            }
-        }
-
         private int ResolveTownHallBuildRadiusFromEconomy()
         {
             if (TryResolveTownHallBuildRadiusFromProfile(_sceneContext?.SystemProfile?.EconomyRulesProfile, out int profileRadius))
             {
-                Debug.Log($"[ConstructionInstaller] townHallBuildRadius resolved from ConstructionSystemProfile.EconomyRulesProfile.Settlement.MinTownHallDistance = {profileRadius}");
                 return profileRadius;
             }
 
@@ -301,7 +302,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 throw new InvalidOperationException("MinTownHallDistance has invalid type.");
 
             int resolved = Mathf.Max(0, minDistance);
-            Debug.Log($"[ConstructionInstaller] townHallBuildRadius resolved from Economy.Settlement.MinTownHallDistance = {resolved}");
             return resolved;
         }
 

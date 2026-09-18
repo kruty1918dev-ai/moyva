@@ -9,27 +9,19 @@ namespace Kruty1918.Moyva.Faction.Runtime
     {
         private readonly List<FactionDefinition> _all;
         private readonly Dictionary<string, FactionDefinition> _byId;
-        private readonly List<FactionDefinition> _bots;
-
         public FactionDefinition LocalPlayerFaction { get; }
 
         public FactionRegistry(IEnumerable<FactionDefinition> definitions)
         {
             _all   = definitions?.ToList() ?? new List<FactionDefinition>();
             _byId  = _all.ToDictionary(d => d.FactionId.Value);
-            _bots  = _all.Where(d => d.FactionType == FactionType.Bot).ToList();
-
             LocalPlayerFaction = _all.FirstOrDefault(d => d.FactionType == FactionType.Human);
-
-            if (LocalPlayerFaction == null && _all.Count > 0)
-            {
-                UnityEngine.Debug.LogWarning("[FactionRegistry] Жодної Human-фракції у конфігу сесії не знайдено.");
-            }
         }
 
+        /// <summary>Повертає всі фракції поточної сесії.</summary>
         public IReadOnlyList<FactionDefinition> GetAll()          => _all;
-        public IReadOnlyList<FactionDefinition> GetBotFactions()  => _bots;
 
+        /// <summary>Шукає фракцію за стабільним ідентифікатором.</summary>
         public bool TryGet(FactionId id, out FactionDefinition definition)
             => _byId.TryGetValue(id.Value, out definition);
     }

@@ -534,24 +534,6 @@
           "x-moyva-editorMinimum": 0.25,
           "x-moyva-editorMaximum": 4.0
         },
-        "depthAwareStateCloseRadiusPixels": {
-          "type": "integer",
-          "title": "Depth Aware State Close Radius Pixels",
-          "description": "Використовується лише для debug ClosedScreenState. Фінальна форма fog береться з RawScreenState.",
-          "minimum": 0.0,
-          "maximum": 3.0,
-          "x-moyva-editorMinimum": 0.0,
-          "x-moyva-editorMaximum": 3.0
-        },
-        "depthAwareBoundarySoftnessPixels": {
-          "type": "number",
-          "title": "Depth Aware Boundary Softness Pixels",
-          "description": "М'якість внутрішньої фаски. Не впливає на логічну форму основної fog mask.",
-          "minimum": 0.0,
-          "maximum": 4.0,
-          "x-moyva-editorMinimum": 0.0,
-          "x-moyva-editorMaximum": 4.0
-        },
         "curtainEnabled": {
           "type": "boolean",
           "title": "Curtain Enabled",
@@ -748,102 +730,6 @@
         "applyInSceneView": {
           "type": "boolean",
           "title": "Apply In Scene View"
-        },
-        "logCurtainDiagnostics": {
-          "type": "boolean",
-          "title": "Log Curtain Diagnostics",
-          "description": "Пише summary та boundary-сегменти у Console з префіксом [MOYVA_FOG_CURTAIN_DIAG]."
-        },
-        "logShaderDiagnostics": {
-          "type": "boolean",
-          "title": "Log Shader Diagnostics",
-          "description": "Пише camera/world-to-grid probes у Console з префіксом [MOYVA_FOG_SHADER_DIAG]."
-        },
-        "diagnosticLogIntervalSeconds": {
-          "type": "number",
-          "title": "Diagnostic Log Interval Seconds"
-        },
-        "diagnosticMaxSegmentLogs": {
-          "type": "integer",
-          "title": "Diagnostic Max Segment Logs",
-          "minimum": 1.0,
-          "maximum": 64.0,
-          "x-moyva-editorMinimum": 1.0,
-          "x-moyva-editorMaximum": 64.0
-        },
-        "diagnosticCenterRadiusCells": {
-          "type": "integer",
-          "title": "Diagnostic Center Radius Cells",
-          "description": "Радіус навколо центра відкритої області, з якого boundary-сегменти потрапляють у детальний лог.",
-          "minimum": 1.0,
-          "maximum": 30.0,
-          "x-moyva-editorMinimum": 1.0,
-          "x-moyva-editorMaximum": 30.0
-        },
-        "diagnosticMaskRadiusCells": {
-          "type": "integer",
-          "title": "Diagnostic Mask Radius Cells",
-          "description": "Радіус ASCII-знімка fog mask. V=Visible, e=Explored, B=boundary, #=Unexplored.",
-          "minimum": 3.0,
-          "maximum": 20.0,
-          "x-moyva-editorMinimum": 3.0,
-          "x-moyva-editorMaximum": 20.0
-        },
-        "diagnosticMaxComponentLogs": {
-          "type": "integer",
-          "title": "Diagnostic Max Component Logs",
-          "minimum": 1.0,
-          "maximum": 16.0,
-          "x-moyva-editorMinimum": 1.0,
-          "x-moyva-editorMaximum": 16.0
-        },
-        "curtainDebugVisualMode": {
-          "type": "string",
-          "pattern": "^(?:-?\\d+|(?:Off|BoundaryDirection|HeightBands|SegmentParity|HeightRelation))$",
-          "x-enumNames": [
-            "Off",
-            "BoundaryDirection",
-            "HeightBands",
-            "SegmentParity",
-            "HeightRelation"
-          ],
-          "x-flags": false,
-          "title": "Curtain Debug Visual Mode",
-          "description": "BoundaryDirection: Left=red, Right=green, Down=blue, Up=yellow."
-        },
-        "shaderDebugMode": {
-          "type": "string",
-          "pattern": "^(?:-?\\d+|(?:Off|FogState|GridCoordinates|SceneDepth|WorldGridPosition|FogSurfaceDepth|RawScreenState|ClosedScreenState|ScreenBoundary|VirtualDepth))$",
-          "x-enumNames": [
-            "Off",
-            "FogState",
-            "GridCoordinates",
-            "SceneDepth",
-            "WorldGridPosition",
-            "FogSurfaceDepth",
-            "RawScreenState",
-            "ClosedScreenState",
-            "ScreenBoundary",
-            "VirtualDepth"
-          ],
-          "x-flags": false,
-          "title": "Shader Debug Mode"
-        },
-        "shaderDebugGridLineWidthPixels": {
-          "type": "number",
-          "title": "Shader Debug Grid Line Width Pixels",
-          "minimum": 0.5,
-          "maximum": 6.0,
-          "x-moyva-editorMinimum": 0.5,
-          "x-moyva-editorMaximum": 6.0
-        },
-        "shaderDiagnosticRaycastMask": {
-          "type": "integer",
-          "title": "Shader Diagnostic Raycast Mask"
-        },
-        "shaderDiagnosticRaycastDistance": {
-          "type": "number",
-          "title": "Shader Diagnostic Raycast Distance"
         }
       },
       "additionalProperties": false,
@@ -1067,10 +953,6 @@
           "maximum": 1.0,
           "x-moyva-editorMinimum": 0.01,
           "x-moyva-editorMaximum": 1.0
-        },
-        "logClusterUpdates": {
-          "type": "boolean",
-          "title": "Log Cluster Updates"
         },
         "topClearance": {
           "type": "number",

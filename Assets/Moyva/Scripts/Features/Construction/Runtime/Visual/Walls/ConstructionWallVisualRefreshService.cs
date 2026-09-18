@@ -5,23 +5,24 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionWallVisualRefreshService : IConstructionWallVisualRefreshService
-    {
+    internal sealed class ConstructionWallVisualRefreshService {
         private readonly IObjectsMapService _objectsMapService;
         private readonly IBuildingRegistry _buildingRegistry;
-        private readonly LazyInject<IConstructionService> _constructionService;
+        private readonly LazyInject<IConstructionSessionCommands> _constructionService;
         private readonly IWallVisualResolver _wallVisualResolver;
-        private readonly IConstructionPlacedVisualService _placedVisuals;
-        private readonly IConstructionPreviewVisualService _previewVisuals;
+        private readonly ConstructionPlacedVisualService _placedVisuals;
+        private readonly ConstructionPreviewVisualService _previewVisuals;
+        private readonly IConstructionLifecycle _constructionLifecycle;
 
         [Inject]
         public ConstructionWallVisualRefreshService(
             IObjectsMapService objectsMapService,
             IBuildingRegistry buildingRegistry,
-            LazyInject<IConstructionService> constructionService,
+            LazyInject<IConstructionSessionCommands> constructionService,
             IWallVisualResolver wallVisualResolver,
-            IConstructionPlacedVisualService placedVisuals,
-            IConstructionPreviewVisualService previewVisuals)
+            ConstructionPlacedVisualService placedVisuals,
+            ConstructionPreviewVisualService previewVisuals,
+            [InjectOptional] IConstructionLifecycle constructionLifecycle = null)
         {
             _objectsMapService = objectsMapService;
             _buildingRegistry = buildingRegistry;
@@ -29,6 +30,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _wallVisualResolver = wallVisualResolver;
             _placedVisuals = placedVisuals;
             _previewVisuals = previewVisuals;
+            _constructionLifecycle = constructionLifecycle;
         }
 
         public void RefreshPlacedNeighborhood(Vector2Int center)
@@ -59,7 +61,31 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!_wallVisualResolver.TryResolvePlacedVisual(position, occupantId, out GameObject prefab, out Quaternion rotation))
                 return;
 
-            _placedVisuals.Replace(position, occupantId, prefab, rotation, ResolveVisualYOffset(occupantId));
+            BuildingDefinition def = _buildingRegistry.GetById(occupantId);
+            bool isOperational =
+                _constructionLifecycle == null
+                || _constructionLifecycle.IsOperational(position);
+            bool showConstructionVisual =
+                def != null
+                && def.BuildTurns > 0
+                && !isOperational
+                && def.ResolveConstructionPrefab() != null;
+            if (showConstructionVisual)
+            {
+                prefab = def.ResolveConstructionPrefab();
+                rotation = Quaternion.identity;
+            }
+
+            _placedVisuals.Replace(
+                position,
+                occupantId,
+                prefab,
+                rotation,
+                def?.ResolveVisualYOffset() ?? 0f,
+                presentation: def?.Presentation);
+
+            if (showConstructionVisual)
+                _placedVisuals.MarkUnderConstruction(position);
         }
 
         private void RefreshPreviewAt(Vector2Int position, string fallbackBuildingId)
@@ -69,7 +95,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             string buildingId = ResolvePreviewBuildingId(position, fallbackBuildingId);
             if (_wallVisualResolver.TryResolvePreviewVisual(position, buildingId, out GameObject prefab))
-                _previewVisuals.ReplaceWallPreview(position, buildingId, prefab, ResolveVisualYOffset(buildingId));
+            {
+                BuildingDefinition def = _buildingRegistry.GetById(buildingId);
+                _previewVisuals.ReplaceWallPreview(
+                    position,
+                    buildingId,
+                    prefab,
+                    def?.ResolveVisualYOffset() ?? 0f,
+                    def?.Presentation);
+            }
         }
 
         private string ResolvePreviewBuildingId(Vector2Int position, string fallbackBuildingId)
@@ -83,7 +117,5 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return fallbackBuildingId;
         }
 
-        private float ResolveVisualYOffset(string buildingId)
-            => _buildingRegistry.GetById(buildingId)?.VisualYOffset ?? 0f;
     }
 }

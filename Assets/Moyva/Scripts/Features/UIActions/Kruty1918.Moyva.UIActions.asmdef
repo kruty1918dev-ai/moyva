@@ -1,0 +1,19 @@
+{
+  "name": "Kruty1918.Moyva.UIActions",
+  "rootNamespace": "Kruty1918.Moyva.UIActions",
+  "references": [
+    "Zenject",
+    "Unity.InputSystem",
+    "Unity.TextMeshPro",
+    "Kruty1918.Moyva.InputRouting"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

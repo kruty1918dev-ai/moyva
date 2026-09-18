@@ -2,6 +2,7 @@ using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.MapChunks.API;
 using Kruty1918.Moyva.MapChunks.Runtime;
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
 
@@ -12,6 +13,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// </summary>
     public class FogOfWarInstaller : MonoInstaller
     {
+        public static void InstallSimulationBindings(DiContainer container)
+        {
+            container.Bind<IFogSaveDataProvider>().To<FogSaveDataStub>().AsSingle();
+            container.Bind<HeightAwareVisionEngine>().AsSingle();
+            container.BindInterfacesAndSelfTo<HeightAwareVisionService>().AsSingle();
+            container.Bind<IFogVisibilityResolver>().To<FogVisibilityResolver>().AsSingle();
+            container.BindInterfacesAndSelfTo<FogOfWarService>().FromMethod(ctx => new FogOfWarService(
+                ctx.Container.Resolve<IFogVisibilityResolver>(), ctx.Container.Resolve<IHeightAwareVisionService>(),
+                null, ctx.Container.Resolve<IFogSaveDataProvider>(), ctx.Container.Resolve<SignalBus>(),
+                ctx.Container.TryResolve<FogOfWarSettings>(), ctx.Container.Resolve<IWorldGenerationSignalState>())).AsSingle();
+        }
+
         public override void InstallBindings()
         {
             FogOfWarVolumeController[] fogVolumes =
@@ -29,9 +42,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
             else
             {
-                Debug.LogWarning(
-                    "[FogOfWar] FogOfWarInstaller did not find " +
-                    "FogOfWarSettings on any FogOfWarVolumeController.");
             }
 
             int controllerCount =
@@ -57,10 +67,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 "; presentation=" +
                 presentationName +
                 ".";
-
-            Debug.Log(installerMessage);
-
-            LogControllerDiagnostics(fogVolumes);
 
             MapChunkFeatureBindings.Install(Container);
 
@@ -115,32 +121,25 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 .To<FogVisualUpdateSchedulerFactory>()
                 .AsSingle();
 
-            Container.Bind<IFogDirtyClusterTracker>()
-                .To<FogDirtyClusterTracker>()
+            Container.Bind<FogDirtyClusterTracker>()
                 .AsSingle();
 
-            Container.Bind<IFogClusterGeometryBuilder>()
-                .To<FogClusterGeometryBuilder>()
+            Container.Bind<FogClusterGeometryBuilder>()
                 .AsSingle();
 
-            Container.Bind<IFogClusterMaterialProvider>()
-                .To<FogClusterMaterialProvider>()
+            Container.Bind<FogClusterMaterialProvider>()
                 .AsSingle();
 
-            Container.Bind<IFogClusterMeshPresenter>()
-                .To<FogClusterMeshPresenter>()
+            Container.Bind<FogClusterMeshPresenter>()
                 .AsSingle();
 
-            Container.Bind<IFogClusterMeshRegistry>()
-                .To<FogClusterMeshRegistry>()
+            Container.Bind<FogClusterMeshRegistry>()
                 .AsSingle();
 
-            Container.Bind<IFogClusterMeshBuilder>()
-                .To<FogClusterMeshBuilder>()
+            Container.Bind<FogClusterMeshBuilder>()
                 .AsSingle();
 
-            Container.Bind<IFogClusteredVolumeRenderer>()
-                .To<FogClusteredVolumeRenderer>()
+            Container.Bind<FogClusteredVolumeRenderer>()
                 .AsSingle();
 
             Container.Bind<FogVolumeVisualUpdateEngine>()
@@ -237,84 +236,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             Container.BindExecutionOrder<
                 MapFogChunkCoverageRefreshService>(260);
-        }
-
-        private static void LogControllerDiagnostics(
-            FogOfWarVolumeController[] fogVolumes)
-        {
-            if (fogVolumes == null
-                || fogVolumes.Length == 0)
-            {
-                return;
-            }
-
-            for (int i = 0;
-                 i < fogVolumes.Length;
-                 i++)
-            {
-                FogOfWarVolumeController fogVolume =
-                    fogVolumes[i];
-
-                if (fogVolume == null)
-                    continue;
-
-                var manager =
-                    fogVolume.TileWorldCreatorManager;
-
-                string settingsName =
-                    fogVolume.Settings != null
-                        ? fogVolume.Settings.name
-                        : "null";
-
-                string presentationName =
-                    fogVolume.Settings != null
-                        ? fogVolume.Settings
-                            .PresentationMode
-                            .ToString()
-                        : "unknown";
-
-                string managerName =
-                    manager != null
-                        ? manager.name
-                        : "null";
-
-                string managerConfigurationName =
-                    manager != null
-                    && manager.configuration != null
-                        ? manager.configuration.name
-                        : "null";
-
-                string message =
-                    "[FogOfWar] Controller[" +
-                    i +
-                    "] name='" +
-                    fogVolume.name +
-                    "', active=" +
-                    fogVolume.gameObject.activeInHierarchy +
-                    ", enabled=" +
-                    fogVolume.enabled +
-                    ", settings=" +
-                    settingsName +
-                    ", presentation=" +
-                    presentationName +
-                    ", manager=" +
-                    managerName +
-                    ", managerConfig=" +
-                    managerConfigurationName +
-                    ", updateMode=" +
-                    fogVolume.EffectiveUpdateMode +
-                    ", logSummary=" +
-                    fogVolume.LogBuildSummary +
-                    ", logEveryUpdate=" +
-                    fogVolume.LogEveryVolumeUpdate +
-                    ", logValidation=" +
-                    fogVolume.LogValidationWarnings +
-                    ".";
-
-                Debug.Log(
-                    message,
-                    fogVolume);
-            }
         }
 
         private FogOfWarSettings ResolveSettings(

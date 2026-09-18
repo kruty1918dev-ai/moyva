@@ -1,7 +1,9 @@
 using UnityEngine;
 using Zenject;
+using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.Combat;
 using Kruty1918.Moyva.Combat.API;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.WorldCreation.API;
 
@@ -11,6 +13,32 @@ namespace Kruty1918.Moyva.Units.Runtime
     {
         [SerializeField] private UnitRegistrySO _unitRegistry;
         [SerializeField] private WorldCreationDefaultsSO _worldDefaults;
+
+        public static void InstallPreviewBindings(DiContainer container, UnitRegistrySO registry)
+        {
+            container.BindInstance(registry);
+            CombatInstaller.Install(container);
+            container.BindInterfacesAndSelfTo<UnitService>().AsSingle();
+            container.Bind<IUnitFactory>().To<UnitFactory>().AsSingle();
+            container.Bind<IUnitClassConfig>().To<UnitClassConfigService>().AsSingle();
+            container.Bind<IUnitGameplayProfileService>().To<UnitGameplayProfileService>().AsSingle();
+            container.Bind<IUnitWorldPositionResolver>().To<UnitWorldPositionResolver>().AsSingle();
+            container.BindInterfacesAndSelfTo<UnitMovementService>().AsSingle();
+            container.BindInterfacesAndSelfTo<UnitCombatService>().AsSingle();
+        }
+
+        public static void InstallSimulationBindings(DiContainer container, UnitRegistrySO registry)
+        {
+            InstallPreviewBindings(container, registry);
+            container.Bind<IUnitPlacementValidator>().To<UnitPlacementValidator>().AsSingle();
+            container.BindInterfacesAndSelfTo<UnitTraversalPolicy>().AsSingle();
+            container.BindInterfacesAndSelfTo<UnitMovementRangeQuery>().AsSingle();
+            container.Decorate<IUnitMovementService>().With<UnitTurnAuthorityMovementService>();
+            container.BindInterfacesTo<UnitTurnParticipant>().AsSingle();
+            container.BindInterfacesAndSelfTo<UnitTurnActionStateService>().AsSingle();
+            container.BindInterfacesAndSelfTo<UnitRecruitmentService>().AsSingle();
+            container.Bind<ICombatCommandService>().To<UnitCombatCommandService>().AsSingle();
+        }
 
         public override void InstallBindings()
         {
@@ -35,6 +63,13 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInterfacesAndSelfTo<UnitsSaveModule>()
+                .AsSingle();
+
+            Container.BindInterfacesTo<SaveModuleRegistrar<UnitsSaveModule>>()
+                .AsSingle()
+                .NonLazy();
+
             Container.Bind<IUnitFactory>()
                 .To<UnitFactory>()
                 .AsSingle();
@@ -42,6 +77,18 @@ namespace Kruty1918.Moyva.Units.Runtime
             Container.Bind<IUnitPlacementValidator>()
                 .To<UnitPlacementValidator>()
                 .AsSingle();
+
+            Container.Bind<IUnitWorldPositionResolver>()
+                .To<UnitWorldPositionResolver>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<UnitTraversalPolicy>()
+                .AsSingle()
+                .NonLazy();
+
+            Container.BindInterfacesAndSelfTo<UnitMovementRangeQuery>()
+                .AsSingle()
+                .NonLazy();
 
             Container.BindInterfacesAndSelfTo<UnitMovementService>()
                 .AsSingle();
@@ -51,6 +98,10 @@ namespace Kruty1918.Moyva.Units.Runtime
             // ITurnBlocker so end-turn waits for its active movement set.
             Container.Decorate<IUnitMovementService>()
                 .With<UnitTurnAuthorityMovementService>();
+
+            Container.BindInterfacesAndSelfTo<UnitAuthorityEndpointBridge>()
+                .AsSingle()
+                .NonLazy();
 
             Container.BindInterfacesTo<UnitTurnParticipant>()
                 .AsSingle();
@@ -68,15 +119,29 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .To<UnitGameplayProfileService>()
                 .AsSingle();
 
-            Container.Bind<IUnitCombatService>()
-                .To<UnitCombatService>()
+            Container.BindInterfacesAndSelfTo<UnitTurnActionStateService>()
                 .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<UnitCombatService>()
+                .AsSingle();
+
+            Container.Bind<ICombatCommandService>()
+                .To<UnitCombatCommandService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<UnitCombatPresentationService>()
+                .AsSingle()
+                .NonLazy();
 
             Container.BindInterfacesAndSelfTo<UnitWorldInfoPresenter>()
                 .AsSingle()
                 .NonLazy();
 
             Container.BindInterfacesAndSelfTo<UnitSelectionVisualService>()
+                .AsSingle()
+                .NonLazy();
+
+            Container.BindInterfacesAndSelfTo<UnitMovementGridPresenter>()
                 .AsSingle()
                 .NonLazy();
         }

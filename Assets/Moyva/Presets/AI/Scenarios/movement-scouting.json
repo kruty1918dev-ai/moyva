@@ -1,0 +1,70 @@
+{
+  "scenario": {
+    "id": "movement-scouting",
+    "title": "Movement and scouting",
+    "legacyStage": 7,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "prerequisites": ["recruitment"],
+    "minMeaningfulCandidates": 2,
+    "maxForcedActionRatio": 0.9,
+    "requiredIntents": ["Move", "EndTurn"],
+    "steps": [
+      {
+        "id": "movement",
+        "goal": 5,
+        "criterion": 5,
+        "requiredCount": 1,
+        "threshold": 0
+      },
+      {
+        "id": "scouting",
+        "goal": 5,
+        "criterion": 6,
+        "requiredCount": 1,
+        "threshold": 0
+      }
+    ],
+    "startingConditions": {
+      "learnerStartsWithCastle": true,
+      "learnerMustPlaceCastle": false,
+      "startingResources": [],
+      "startingUnits": [
+        { "unitTypeId": "warrior", "count": 1, "owner": "learner", "deployed": true, "near": "anchor", "healthFraction": 1.0 }
+      ],
+      "startingBuildings": [],
+      "opponent": {
+        "enabled": false,
+        "startingUnits": 0,
+        "startingCastle": false,
+        "unitTypeId": "warrior",
+        "archetype": "passive",
+        "residents": 0
+      },
+      "objectives": [],
+      "residents": 0,
+      "openingRevealRadius": 3
+    },
+    "availableCapabilities": ["movement", "scouting", "end-turn"],
+    "generationConstraints": {
+      "minReachableArea": 2,
+      "requiredResourceTypes": ["walnut-wood-materials-resources"],
+      "minOpponentDistance": 2,
+      "maxOpponentDistance": 0,
+      "objectiveReachability": true,
+      "requiredTerrainCompatibility": []
+    },
+    "rewardRules": {
+      "validatedGameplayEventsOnly": true,
+      "rewardSetupActions": false,
+      "requireMeaningfulEvent": true,
+      "maxGameplayRewardEventsPerTurn": 12,
+      "allowedGameplayEvents": []
+    },
+    "masteryPolicy": {
+      "kind": 0,
+      "successEpisodesRequired": 3,
+      "maxDecisionsPerSuccessfulEpisode": 150
+    }
+  }
+}

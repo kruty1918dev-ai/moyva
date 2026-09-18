@@ -53,14 +53,8 @@ namespace Kruty1918.Moyva.WorldCreation.API
         /// <summary>Рівень складності.</summary>
         public DifficultyLevel Difficulty { get; set; } = DifficultyLevel.Normal;
 
-        /// <summary>Чи увімкнені бот-гравці.</summary>
-        public bool EnableBots { get; set; } = true;
-
-        /// <summary>Кількість людських гравців (1–4).</summary>
-        public int HumanPlayerCount { get; set; } = 1;
-
-        /// <summary>Кількість бот-гравців (0–4).</summary>
-        public int BotCount { get; set; } = 1;
+        /// <summary>Кількість мережевих гравців (2–4).</summary>
+        public int PlayerCount { get; set; } = 2;
 
         /// <summary>Стартова кількість золота на фракцію.</summary>
         public int StartingGold { get; set; } = 200;
@@ -117,9 +111,5 @@ namespace Kruty1918.Moyva.WorldCreation.API
             _                      => 64
         };
 
-        /// <summary>
-        /// Загальна кількість фракцій (люди + боти).
-        /// </summary>
-        public int TotalFactions => HumanPlayerCount + BotCount;
     }
 }

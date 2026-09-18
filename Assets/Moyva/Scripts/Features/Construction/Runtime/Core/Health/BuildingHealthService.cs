@@ -7,7 +7,6 @@ using Kruty1918.Moyva.Calendar.Core;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
-using Unity.Profiling;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
@@ -23,13 +22,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
     /// </summary>
     internal sealed class BuildingHealthService :
         IBuildingGarrisonService,
+        IConstructionBuildingCombatTargetQuery,
         IConstructionModuleStatePersistence,
+        IConstructionObserverStateSource,
         IInitializable,
         IDisposable
     {
-        private const string PerfLogTag =
-            "[MoyvaConstructionPerf]";
-        private const double HealthPlacementPerfThresholdMs = 0.5d;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IHealthRegistry _healthRegistry;
         private readonly SignalBus _signalBus;
@@ -118,6 +116,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            _signalBus.Subscribe<BuildingOwnershipTransferredSignal>(
+                OnBuildingOwnershipTransferred);
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreated);
             _signalBus.Subscribe<UnitMovedSignal>(OnUnitMoved);
             _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
@@ -127,16 +127,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _calendarService.OnHourChanged += OnDefenseTurn;
             BuildingDefinitionAsset.RuntimeRevisionChanged +=
                 OnBuildingDefinitionRuntimeRevisionChanged;
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] defense-authority " +
-                $"authoritative={IsAuthoritativeRuntime}");
         }
 
         public void Dispose()
         {
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            _signalBus.TryUnsubscribe<BuildingOwnershipTransferredSignal>(
+                OnBuildingOwnershipTransferred);
             _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreated);
             _signalBus.TryUnsubscribe<UnitMovedSignal>(OnUnitMoved);
             _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
@@ -155,15 +153,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _pendingGarrisonRestoreByUnit.Clear();
         }
 
-        private static readonly ProfilerMarker BuildingPlacedMarker =
-            new("Moyva.BuildCommit.Subscriber.Health");
-
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
-            using var marker = BuildingPlacedMarker.Auto();
-            double startedAt =
-                Time.realtimeSinceStartupAsDouble;
-
             if (signal.HasRelocationSource && signal.RelocationSourcePosition != signal.Position)
             {
                 _healthRegistry.Unregister(
@@ -173,7 +164,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var definition = _buildingRegistry.GetById(signal.BuildingId);
             if (definition == null)
             {
-                Debug.LogWarning($"[BuildingHealthService] Визначення будівлі '{signal.BuildingId}' не знайдено; health не буде зареєстроване.");
                 return;
             }
 
@@ -235,20 +225,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _defenses.Remove(signal.Position);
             }
 
-            if (Debug.isDebugBuild)
-            {
-                double elapsedMs =
-                    (Time.realtimeSinceStartupAsDouble - startedAt)
-                    * 1000d;
-                if (elapsedMs >= HealthPlacementPerfThresholdMs)
-                {
-                    Debug.Log(
-                        $"{PerfLogTag} health-register " +
-                        $"building={signal.BuildingId} " +
-                        $"pos={signal.Position} hp={maxHp} " +
-                        $"elapsedMs={elapsedMs:F3}");
-                }
-            }
         }
 
         private void OnBuildingDestroyed(
@@ -272,11 +248,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ReleaseGarrisonForBuilding(position);
             _buildingOwners.Remove(position);
             _buildingIds.Remove(position);
-
-            Debug.LogWarning(
-                $"[MoyvaConstructionModules] building-destroyed " +
-                $"position={position} cause=health-zero " +
-                "constructionSink=missing-or-rejected");
         }
 
         private void OnBuildingDemolished(
@@ -290,6 +261,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ReleaseGarrisonForBuilding(signal.Position);
             _buildingOwners.Remove(signal.Position);
             _buildingIds.Remove(signal.Position);
+        }
+
+        private void OnBuildingOwnershipTransferred(
+            BuildingOwnershipTransferredSignal signal)
+        {
+            if (string.IsNullOrWhiteSpace(signal.NewOwnerId))
+                return;
+            Vector2Int position = signal.Position;
+            _buildingOwners[position] = NormalizeOwner(
+                signal.NewOwnerId,
+                null);
         }
 
         private void OnUnitCreated(UnitCreatedSignal signal)
@@ -351,6 +333,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         public byte[] CaptureState()
+            => CaptureState(null, null);
+
+        public byte[] CaptureObserverState(string ownerId, ISet<Vector2Int> visibleBuildings)
+            => CaptureState(ownerId, visibleBuildings ?? throw new ArgumentNullException(nameof(visibleBuildings)));
+
+        private byte[] CaptureState(string observerOwnerId, ISet<Vector2Int> visibleBuildings)
         {
             using var stream = new MemoryStream();
             using var writer = new BinaryWriter(stream);
@@ -377,6 +365,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                  index++)
             {
                 Vector2Int position = positions[index];
+                if (visibleBuildings != null && !visibleBuildings.Contains(position))
+                    continue;
                 string buildingId = _buildingIds[position];
                 string entityId =
                     BuildingEntityId(
@@ -410,6 +400,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var unitIds =
                 new List<string>(
                     _garrisonBuildingByUnit.Keys);
+            if (visibleBuildings != null)
+                unitIds.RemoveAll(id => !visibleBuildings.Contains(_garrisonBuildingByUnit[id])
+                    || !_units.TryGetValue(id, out var unit)
+                    || !string.Equals(unit.OwnerId, observerOwnerId, StringComparison.Ordinal));
             unitIds.Sort(StringComparer.Ordinal);
 
             writer.Write(unitIds.Count);
@@ -427,11 +421,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             writer.Flush();
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] building-runtime-save " +
-                $"health={healthEntries.Count} " +
-                $"garrisonUnits={unitIds.Count}");
 
             return stream.ToArray();
         }
@@ -451,9 +440,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             int version = reader.ReadInt32();
             if (version != 2)
             {
-                Debug.LogWarning(
-                    $"[MoyvaConstructionModules] building-runtime-load " +
-                    $"unsupported-version={version}");
                 return;
             }
 
@@ -537,14 +523,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (_pendingGarrisonRestoreByUnit.Count < before)
                     restoredGarrison++;
             }
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] building-runtime-load " +
-                $"health={restoredHealth}/{healthCount} " +
-                $"healthSkipped={skippedHealth} " +
-                $"garrisonQueued={queued} " +
-                $"garrisonRestored={restoredGarrison} " +
-                $"garrisonPending={_pendingGarrisonRestoreByUnit.Count}");
         }
 
         private void TryRestorePendingGarrisonsForBuilding(
@@ -593,10 +571,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (capacity <= 0)
             {
                 _pendingGarrisonRestoreByUnit.Remove(unitId);
-                Debug.LogWarning(
-                    $"[MoyvaConstructionModules] garrison-load drop " +
-                    $"unit={unitId} building={buildingPosition} " +
-                    "reason=no-capacity");
                 return;
             }
 
@@ -612,10 +586,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (units.Count >= capacity)
             {
                 _pendingGarrisonRestoreByUnit.Remove(unitId);
-                Debug.LogWarning(
-                    $"[MoyvaConstructionModules] garrison-load drop " +
-                    $"unit={unitId} building={buildingPosition} " +
-                    $"reason=capacity count={units.Count}/{capacity}");
                 return;
             }
 
@@ -634,11 +604,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     StringComparison.Ordinal))
             {
                 _pendingGarrisonRestoreByUnit.Remove(unitId);
-                Debug.LogWarning(
-                    $"[MoyvaConstructionModules] garrison-load drop " +
-                    $"unit={unitId} building={buildingPosition} " +
-                    $"reason=owner-mismatch " +
-                    $"unitOwner={unitOwner} buildingOwner={buildingOwner}");
                 return;
             }
 
@@ -656,11 +621,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _garrisonBuildingByUnit[unitId] =
                 buildingPosition;
             _pendingGarrisonRestoreByUnit.Remove(unitId);
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] garrison-load restored " +
-                $"unit={unitId} building={buildingPosition} " +
-                $"count={units.Count}/{capacity}");
         }
 
         public bool TryGarrisonUnit(
@@ -732,10 +692,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             units.Add(unitId);
             _garrisonBuildingByUnit[unitId] = buildingPosition;
-            Debug.Log(
-                $"[MoyvaConstructionModules] garrison enter " +
-                $"building={buildingId}@{buildingPosition} unit={unitId} " +
-                $"count={units.Count}/{capacity}");
             return true;
         }
 
@@ -765,9 +721,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             RemoveUnitFromGarrisonCollections(unitId);
-            Debug.Log(
-                $"[MoyvaConstructionModules] garrison exit " +
-                $"building={buildingPosition} unit={unitId} target={targetPosition}");
             return true;
         }
 
@@ -807,6 +760,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 BuildingDefinitionCapabilities
                     .GetGarrisonCapacity(definition);
             return capacity > 0;
+        }
+
+        public bool TryGetCombatTarget(
+            string entityId,
+            out ConstructionBuildingCombatTarget target)
+        {
+            target = default;
+            if (!TryParseBuildingEntityId(entityId, out string buildingId, out Vector2Int position)
+                || !_buildingIds.TryGetValue(position, out string placedBuildingId)
+                || !string.Equals(placedBuildingId, buildingId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            string owner = _buildingOwners.TryGetValue(position, out string storedOwner)
+                ? storedOwner
+                : "player_0";
+            target = new ConstructionBuildingCombatTarget(entityId, buildingId, position, owner);
+            return true;
         }
 
         private List<string> GetOrCreateGarrisonList(
@@ -877,26 +849,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     RemoveUnitFromGarrisonCollections(unitId);
                     released++;
-
-                    Debug.Log(
-                        $"[MoyvaConstructionModules] garrison release " +
-                        $"building={buildingPosition} unit={unitId} " +
-                        $"target={target}");
                 }
                 else
                 {
                     failed++;
                     Debug.LogError(
-                        $"[MoyvaConstructionModules] garrison release failed " +
+                        $"[ConstructionHealth] Garrison release failed: " +
                         $"building={buildingPosition} unit={unitId} " +
                         $"reason={reason}");
                 }
             }
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] garrison release-summary " +
-                $"building={buildingPosition} " +
-                $"released={released} failed={failed}");
         }
 
         private void EnforceGarrisonCapacity(
@@ -940,7 +902,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         out string reason))
                 {
                     Debug.LogError(
-                        $"[MoyvaConstructionModules] garrison capacity-trim failed " +
+                        $"[ConstructionHealth] Garrison capacity trim failed: " +
                         $"building={buildingPosition} unit={unitId} " +
                         $"targetCapacity={capacity} reason={reason}");
                     continue;
@@ -948,11 +910,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 RemoveUnitFromGarrisonCollections(unitId);
                 mustRelease--;
-
-                Debug.Log(
-                    $"[MoyvaConstructionModules] garrison capacity-trim " +
-                    $"building={buildingPosition} unit={unitId} " +
-                    $"target={target} capacity={capacity}");
             }
         }
 
@@ -1020,10 +977,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 refreshed++;
             }
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] live-refresh building-runtime " +
-                $"revision={revision} buildings={refreshed}");
         }
 
         private bool IsAuthoritativeRuntime =>
@@ -1037,9 +990,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (!_loggedReplicaDefenseSuppression)
                 {
                     _loggedReplicaDefenseSuppression = true;
-                    Debug.Log(
-                        "[MoyvaConstructionModules] defense-turn " +
-                        "suppressed=replica");
                 }
                 return;
             }
@@ -1125,5 +1075,33 @@ namespace Kruty1918.Moyva.Construction.Runtime
         /// </summary>
         public static string BuildingEntityId(string buildingId, Vector2Int position)
             => $"{buildingId}@{position.x},{position.y}";
+
+        private static bool TryParseBuildingEntityId(
+            string entityId,
+            out string buildingId,
+            out Vector2Int position)
+        {
+            buildingId = null;
+            position = default;
+            if (string.IsNullOrWhiteSpace(entityId))
+                return false;
+
+            int at = entityId.LastIndexOf('@');
+            if (at <= 0 || at >= entityId.Length - 1)
+                return false;
+
+            string rawPosition = entityId.Substring(at + 1);
+            int comma = rawPosition.IndexOf(',');
+            if (comma <= 0
+                || !int.TryParse(rawPosition.Substring(0, comma), out int x)
+                || !int.TryParse(rawPosition.Substring(comma + 1), out int y))
+            {
+                return false;
+            }
+
+            buildingId = entityId.Substring(0, at);
+            position = new Vector2Int(x, y);
+            return true;
+        }
     }
 }

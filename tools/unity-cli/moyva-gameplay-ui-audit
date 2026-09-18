@@ -359,7 +359,7 @@ EDITOR_LOG="$HOME/.config/unity3d/Editor.log"
 if [[ -f "$EDITOR_LOG" ]]; then
   tail -n 7000 "$EDITOR_LOG" >"$REPORT_DIR/editor_log_tail_7000.txt" || true
   grep -E \
-    'error CS[0-9]+|NullReferenceException|MissingReferenceException|ConstructionUI|GameModeUI|WorldInfoPanel|EconomyPlayerResource|MoyvaGameplayUiAudit|Pipeline' \
+    'error CS[0-9]+|NullReferenceException|MissingReferenceException|GameplayHtml|WorldInfoPanel|Economy|MoyvaGameplayUiAudit|Pipeline' \
     "$REPORT_DIR/editor_log_tail_7000.txt" \
     >"$REPORT_DIR/editor_log_ui_relevant.txt" || true
 fi

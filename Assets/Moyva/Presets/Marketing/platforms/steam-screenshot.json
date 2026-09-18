@@ -1,0 +1,22 @@
+{
+  "schema": "moyva.marketing-platform",
+  "version": 1,
+  "id": "steam-screenshot",
+  "displayName": "Steam Gameplay Screenshot",
+  "aspectRatio": 1.7778,
+  "resolutionWidth": 1920,
+  "resolutionHeight": 1080,
+  "minResolutionWidth": 1920,
+  "minResolutionHeight": 1080,
+  "safeAreaMargin": 0.02,
+  "textAllowed": false,
+  "gameplayOnly": true,
+  "logoAllowed": false,
+  "uiRecommended": true,
+  "preRenderedAllowed": false,
+  "imageFormat": "png",
+  "videoFormat": "mp4",
+  "preferredDurationSec": 0.0,
+  "maxDurationSec": 0.0,
+  "notes": "Real gameplay only. No marketing text, no logo, no staged/prerendered stills."
+}

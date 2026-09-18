@@ -178,7 +178,7 @@ namespace Kruty1918.Moyva.Jsonization
             if (type == null) return string.Empty;
             if (type.Name == "BuildingDefinitionAsset") return "moyva.building";
             if (type.Name == "UnitClassConfig") return "moyva.unit";
-            if (type.Name == "GraphAsset") return "moyva.generator-graph";
+            if (type.Name == "GeneratorMapRecipe") return "moyva.generator-recipe";
             if (type.Name == "WorldCreationDefaultsSO") return "moyva.world-creation";
             return "moyva." + StableId(type);
         }

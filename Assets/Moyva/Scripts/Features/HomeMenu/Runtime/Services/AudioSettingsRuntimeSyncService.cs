@@ -49,10 +49,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
             float effectiveMusicVolume = settings.IsMuted ? 0f : settings.MusicVolume;
             float effectiveSfxVolume = settings.IsMuted ? 0f : settings.SfxVolume;
             float effectiveUiVolume = settings.IsMuted ? 0f : settings.UiVolume;
+            float effectiveAmbienceVolume = settings.IsMuted ? 0f : settings.AmbienceVolume;
 
+            // MasterVolume вже застосовується через AudioListener.volume + mixer-параметр
+            // у LocalGameSettingsService — тут лише per-bus гучності.
             _audioService?.SetBusVolume(AudioBus.Music, effectiveMusicVolume);
             _audioService?.SetBusVolume(AudioBus.Sfx, effectiveSfxVolume);
             _audioService?.SetBusVolume(AudioBus.Ui, effectiveUiVolume);
+            _audioService?.SetBusVolume(AudioBus.Ambience, effectiveAmbienceVolume);
 
             if (_musicService == null)
                 return;

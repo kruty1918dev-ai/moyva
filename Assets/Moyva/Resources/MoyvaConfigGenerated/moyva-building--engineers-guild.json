@@ -29,6 +29,13 @@
       "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/engineers-guild.png",
       "required": true
     },
+    "variants": {
+      "constructionPrefab": {
+        "$asset": "asset.game-object.building-scaffolding.07c8416d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
+        "required": true
+      }
+    },
     "uiTint": {
       "r": 1.0,
       "g": 1.0,

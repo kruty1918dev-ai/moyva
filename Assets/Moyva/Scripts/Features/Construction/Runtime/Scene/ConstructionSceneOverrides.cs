@@ -19,13 +19,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
         [BoxGroup("Overrides")]
         [SerializeField] private ConstructionWallProfileSO _wallProfileOverride;
 
-        [BoxGroup("Overrides")]
-        [SerializeField] private ConstructionDiagnosticsProfileSO _diagnosticsProfileOverride;
-
         public ConstructionPlacementRulesProfileSO PlacementRulesProfileOverride => _placementRulesProfileOverride;
         public ConstructionVisualProfileSO VisualProfileOverride => _visualProfileOverride;
         public ConstructionInputProfileSO InputProfileOverride => _inputProfileOverride;
         public ConstructionWallProfileSO WallProfileOverride => _wallProfileOverride;
-        public ConstructionDiagnosticsProfileSO DiagnosticsProfileOverride => _diagnosticsProfileOverride;
     }
 }

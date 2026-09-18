@@ -1,6 +1,8 @@
 using System;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.UI;
+using Kruty1918.Moyva.Multiplayer.Lobbies;
+using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.Graphics;
 using Zenject;
 
@@ -8,15 +10,25 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal sealed class GameSettingsPanelService : IGameSettingsPanelService, IInitializable, IDisposable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         [InjectOptional] private IGameSettingsViewController _viewController;
         [Inject] private ILocalGameSettingsService _settingsService;
         [InjectOptional] private IConfirmationService _confirmationService;
+        [InjectOptional] private HomeMenuMoyvaUiViewController _moyvaUiViewController;
+        [InjectOptional] private ILobbyService _lobbyService;
         private IGraphicsSettingsService _graphicsSettingsService;
+        private IPlayerControlSettingsService _controlSettingsService;
 
         [Inject]
-        private void Construct([InjectOptional] IGraphicsSettingsService graphicsSettingsService)
+        private void Construct(
+            [InjectOptional] IGraphicsSettingsService graphicsSettingsService,
+            [InjectOptional] IPlayerControlSettingsService controlSettingsService)
         {
             _graphicsSettingsService = graphicsSettingsService;
+            _controlSettingsService = controlSettingsService;
         }
 
         public void Initialize()
@@ -34,6 +46,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _viewController.OnSfxVolumeChanged += OnSfxVolumeChanged;
             _viewController.OnUiVolumeChanged -= OnUiVolumeChanged;
             _viewController.OnUiVolumeChanged += OnUiVolumeChanged;
+            _viewController.OnAmbienceVolumeChanged -= OnAmbienceVolumeChanged;
+            _viewController.OnAmbienceVolumeChanged += OnAmbienceVolumeChanged;
             _viewController.OnMutedChanged -= OnMutedChanged;
             _viewController.OnMutedChanged += OnMutedChanged;
             _viewController.OnGraphicsProfileChanged -= OnGraphicsProfileChanged;
@@ -68,6 +82,25 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _graphicsSettingsService.OnSettingsChanged += OnGraphicsSettingsChanged;
                 _viewController.RefreshGraphics(_graphicsSettingsService.Settings);
             }
+            if (_controlSettingsService != null && _moyvaUiViewController != null)
+            {
+                _controlSettingsService.OnSettingsChanged -= OnControlSettingsChanged;
+                _controlSettingsService.OnSettingsChanged += OnControlSettingsChanged;
+                _moyvaUiViewController.OnMouseSensitivityChanged -= OnMouseSensitivityChanged;
+                _moyvaUiViewController.OnMouseSensitivityChanged += OnMouseSensitivityChanged;
+                _moyvaUiViewController.OnMovementSpeedChanged -= OnMovementSpeedChanged;
+                _moyvaUiViewController.OnMovementSpeedChanged += OnMovementSpeedChanged;
+                _moyvaUiViewController.OnOrbitSpeedChanged -= OnOrbitSpeedChanged;
+                _moyvaUiViewController.OnOrbitSpeedChanged += OnOrbitSpeedChanged;
+                _moyvaUiViewController.OnZoomSpeedChanged -= OnZoomSpeedChanged;
+                _moyvaUiViewController.OnZoomSpeedChanged += OnZoomSpeedChanged;
+                _moyvaUiViewController.OnControlBindingChanged -= OnControlBindingChanged;
+                _moyvaUiViewController.OnControlBindingChanged += OnControlBindingChanged;
+                _moyvaUiViewController.OnResetControlsClicked -= OnResetControlsClicked;
+                _moyvaUiViewController.OnResetControlsClicked += OnResetControlsClicked;
+                _moyvaUiViewController.RefreshControls(_controlSettingsService.Settings);
+            }
+            ApplySettingsPolicy();
             _viewController.Refresh(_settingsService.Settings);
         }
 
@@ -80,6 +113,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _viewController.OnMusicVolumeChanged -= OnMusicVolumeChanged;
                 _viewController.OnSfxVolumeChanged -= OnSfxVolumeChanged;
                 _viewController.OnUiVolumeChanged -= OnUiVolumeChanged;
+                _viewController.OnAmbienceVolumeChanged -= OnAmbienceVolumeChanged;
                 _viewController.OnMutedChanged -= OnMutedChanged;
                 _viewController.OnGraphicsProfileChanged -= OnGraphicsProfileChanged;
                 _viewController.OnTargetFrameRateChanged -= OnTargetFrameRateChanged;
@@ -100,6 +134,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (_graphicsSettingsService != null)
                 _graphicsSettingsService.OnSettingsChanged -= OnGraphicsSettingsChanged;
+
+            if (_controlSettingsService != null)
+                _controlSettingsService.OnSettingsChanged -= OnControlSettingsChanged;
+
+            if (_moyvaUiViewController != null)
+            {
+                _moyvaUiViewController.OnMouseSensitivityChanged -= OnMouseSensitivityChanged;
+                _moyvaUiViewController.OnMovementSpeedChanged -= OnMovementSpeedChanged;
+                _moyvaUiViewController.OnOrbitSpeedChanged -= OnOrbitSpeedChanged;
+                _moyvaUiViewController.OnZoomSpeedChanged -= OnZoomSpeedChanged;
+                _moyvaUiViewController.OnControlBindingChanged -= OnControlBindingChanged;
+                _moyvaUiViewController.OnResetControlsClicked -= OnResetControlsClicked;
+            }
         }
 
         private void OnPlayerNameChanged(string playerName)
@@ -126,6 +173,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private void OnUiVolumeChanged(float volume)
         {
             _settingsService.SetUiVolume(volume);
+        }
+
+        private void OnAmbienceVolumeChanged(float volume)
+        {
+            _settingsService.SetAmbienceVolume(volume);
         }
 
         private void OnMutedChanged(bool isMuted)
@@ -198,8 +250,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             _confirmationService.Show(new ConfirmationRequest
             {
-                LabelText = "Підтвердження",
-                MessageText = "Видалити всі локальні збереження?",
+                LabelText = "Confirmation",
+                MessageText = T("Delete all local saves?"),
                 OnConfirm = _settingsService.DeleteAllSaves,
                 OnCancel = () => { }
             });
@@ -213,6 +265,43 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private void OnGraphicsSettingsChanged(GraphicsSettingsData settings)
         {
             _viewController?.RefreshGraphics(settings);
+            ApplySettingsPolicy();
+        }
+
+        private void OnMouseSensitivityChanged(float value) => _controlSettingsService?.SetMouseSensitivity(value);
+        private void OnMovementSpeedChanged(float value) => _controlSettingsService?.SetMovementSpeed(value);
+        private void OnOrbitSpeedChanged(float value) => _controlSettingsService?.SetOrbitSpeed(value);
+        private void OnZoomSpeedChanged(float value) => _controlSettingsService?.SetZoomSpeed(value);
+
+        private void OnControlBindingChanged(PlayerControlAction action, string controlPath)
+        {
+            if (_controlSettingsService == null)
+                return;
+
+            if (!_controlSettingsService.TrySetBinding(action, controlPath, out var conflictingAction))
+            {
+                _confirmationService?.Show(new ConfirmationRequest
+                {
+                    LabelText = T("Control conflict"),
+                    MessageText = TF("This key is already assigned to {0}.", conflictingAction),
+                    OnConfirm = () => { }
+                });
+            }
+        }
+
+        private void OnResetControlsClicked() => _controlSettingsService?.ResetToDefaults();
+
+        private void OnControlSettingsChanged(PlayerControlSettingsData settings)
+        {
+            _moyvaUiViewController?.RefreshControls(settings);
+        }
+
+        private void ApplySettingsPolicy()
+        {
+            bool humanMultiplayer = _lobbyService?.Current != null &&
+                                    _lobbyService.Current.Players != null &&
+                                    _lobbyService.Current.Players.Count > 1;
+            _moyvaUiViewController?.SetGraphicsInteractable(!humanMultiplayer);
         }
     }
 }

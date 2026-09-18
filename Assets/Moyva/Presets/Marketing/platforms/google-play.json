@@ -1,0 +1,22 @@
+{
+  "schema": "moyva.marketing-platform",
+  "version": 1,
+  "id": "google-play",
+  "displayName": "Google Play",
+  "aspectRatio": 1.7778,
+  "resolutionWidth": 1920,
+  "resolutionHeight": 1080,
+  "minResolutionWidth": 1280,
+  "minResolutionHeight": 720,
+  "safeAreaMargin": 0.05,
+  "textAllowed": true,
+  "gameplayOnly": false,
+  "logoAllowed": true,
+  "uiRecommended": true,
+  "preRenderedAllowed": true,
+  "imageFormat": "png",
+  "videoFormat": "mp4",
+  "preferredDurationSec": 30.0,
+  "maxDurationSec": 120.0,
+  "notes": "Store listing screenshots and feature video."
+}

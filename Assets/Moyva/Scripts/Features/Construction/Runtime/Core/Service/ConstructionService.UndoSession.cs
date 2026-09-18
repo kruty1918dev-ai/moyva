@@ -1,0 +1,267 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Signals;
+using UnityEngine;
+
+namespace Kruty1918.Moyva.Construction.Runtime
+{
+    internal sealed partial class ConstructionService
+    {
+        public void Cancel()
+        {
+            ResetSession(clearRedoHistory: false);
+        }
+
+        public void UndoLast()
+        {
+            if (!CanActiveOwnerMutate(
+                    "undo construction preview",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                return;
+            }
+
+            EndPendingUndoBatch();
+
+            if (_undoSnapshots.Count == 0)
+            {
+                return;
+            }
+
+            _redoSnapshots.Add(ClonePendingSnapshot());
+
+            int snapshotIndex = _undoSnapshots.Count - 1;
+            var snapshot = _undoSnapshots[snapshotIndex];
+            _undoSnapshots.RemoveAt(snapshotIndex);
+
+            ApplyPendingSnapshot(snapshot);
+
+            if (_pendingPlacements.Count == 0 && State == BuildingPlacementState.Idle)
+                SetPlacementSelection(_selectedBuildingId, BuildingPlacementState.Placing);
+        }
+
+        public void RedoLast()
+        {
+            if (!CanActiveOwnerMutate(
+                    "redo construction preview",
+                    out string turnReason))
+            {
+                _lastActionMessage = turnReason;
+                return;
+            }
+
+            EndPendingUndoBatch();
+
+            if (_redoSnapshots.Count == 0)
+            {
+                return;
+            }
+
+            if (!_isActive)
+            {
+                return;
+            }
+
+            _undoSnapshots.Add(ClonePendingSnapshot());
+
+            int snapshotIndex = _redoSnapshots.Count - 1;
+            var snapshot = _redoSnapshots[snapshotIndex];
+            _redoSnapshots.RemoveAt(snapshotIndex);
+
+            ApplyPendingSnapshot(snapshot);
+
+            if (_pendingPlacements.Count > 0)
+            {
+                SetPlacementSelection(
+                    _pendingPlacements[_pendingPlacements.Count - 1].BuildingId,
+                    BuildingPlacementState.Placing);
+            }
+            else if (State == BuildingPlacementState.Idle)
+            {
+                SetPlacementSelection(_selectedBuildingId, BuildingPlacementState.Placing);
+            }
+        }
+        private void ResetSession(bool clearRedoHistory)
+        {
+            ResetPendingUndoBatchState();
+
+            if (!clearRedoHistory && _pendingPlacements.Count > 0)
+            {
+                _redoSnapshots.Clear();
+                _redoSnapshots.Add(ClonePendingSnapshot());
+            }
+
+            for (int i = _pendingPlacements.Count - 1; i >= 0; i--)
+            {
+                var placement = _pendingPlacements[i];
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                        Position = placement.Position,
+                        BuildingId = placement.BuildingId,
+                        RotationQuarterTurns =
+                            (int)placement.Rotation,
+                        PreviewState = BuildingPreviewState.None
+                });
+            }
+
+            _pendingPlacements.Clear();
+            _pendingPositions.Clear();
+            _pendingPlacementByPosition.Clear();
+            MarkPendingPlacementsChanged();
+            if (clearRedoHistory)
+                _redoSnapshots.Clear();
+
+            ClearPendingDemolitionsPreview();
+
+            _undoSnapshots.Clear();
+
+            _signalBus.Fire(new BuildingCancelledSignal());
+            SetPlacementSelection(null, BuildingPlacementState.Idle);
+            ApplyBootstrapCastleSelectionIfNeeded();
+        }
+
+        private void ClearPendingDemolitionsPreview()
+        {
+            for (int i = 0; i < _pendingDemolitions.Count; i++)
+            {
+                var demolition = _pendingDemolitions[i];
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = demolition.Position,
+                    BuildingId = demolition.BuildingId,
+                    PreviewState = BuildingPreviewState.None
+                });
+            }
+
+            _pendingDemolitions.Clear();
+            _pendingDemolitionPositions.Clear();
+        }
+
+        public void BeginPendingUndoBatch(string reason = null)
+        {
+            if (_pendingUndoBatchDepth == 0)
+            {
+                _pendingUndoBatchSnapshot = ClonePendingSnapshot();
+                _pendingUndoBatchChanged = false;
+                _pendingUndoBatchClearRedoHistory = false;
+            }
+
+            _pendingUndoBatchDepth++;
+        }
+
+        public void EndPendingUndoBatch()
+        {
+            if (_pendingUndoBatchDepth <= 0)
+                return;
+
+            _pendingUndoBatchDepth--;
+            if (_pendingUndoBatchDepth > 0)
+                return;
+
+            if (_pendingUndoBatchChanged)
+            {
+                _undoSnapshots.Add(
+                    _pendingUndoBatchSnapshot
+                    ?? new List<PendingPlacement>());
+
+                if (_pendingUndoBatchClearRedoHistory)
+                    _redoSnapshots.Clear();
+
+            }
+
+            ResetPendingUndoBatchState();
+        }
+
+        private void ResetPendingUndoBatchState()
+        {
+            _pendingUndoBatchDepth = 0;
+            _pendingUndoBatchSnapshot = null;
+            _pendingUndoBatchChanged = false;
+            _pendingUndoBatchClearRedoHistory = false;
+        }
+
+        private void SaveSnapshotForUndo(bool clearRedoHistory)
+        {
+            if (_pendingUndoBatchDepth > 0)
+            {
+                _pendingUndoBatchChanged = true;
+                _pendingUndoBatchClearRedoHistory |=
+                    clearRedoHistory;
+                return;
+            }
+
+            _undoSnapshots.Add(ClonePendingSnapshot());
+            if (clearRedoHistory)
+                _redoSnapshots.Clear();
+        }
+
+        private List<PendingPlacement> ClonePendingSnapshot()
+        {
+            return new List<PendingPlacement>(_pendingPlacements);
+        }
+
+        private void ApplyPendingSnapshot(List<PendingPlacement> snapshot)
+        {
+            var previous = ClonePendingSnapshot();
+
+            _pendingPlacements.Clear();
+            _pendingPositions.Clear();
+            _pendingPlacementByPosition.Clear();
+
+            for (int i = 0; i < snapshot.Count; i++)
+            {
+                var placement = snapshot[i];
+                _pendingPlacements.Add(placement);
+                _pendingPositions.Add(placement.Position);
+                _pendingPlacementByPosition[placement.Position] =
+                    placement;
+            }
+            MarkPendingPlacementsChanged();
+
+            var previousByPosition = new Dictionary<Vector2Int, PendingPlacement>();
+            for (int i = 0; i < previous.Count; i++)
+                previousByPosition[previous[i].Position] = previous[i];
+
+            var currentByPosition = new Dictionary<Vector2Int, PendingPlacement>();
+            for (int i = 0; i < _pendingPlacements.Count; i++)
+                currentByPosition[_pendingPlacements[i].Position] = _pendingPlacements[i];
+
+            foreach (var pair in previousByPosition)
+            {
+                if (!currentByPosition.TryGetValue(pair.Key, out var current)
+                    || current.BuildingId != pair.Value.BuildingId
+                    || current.Rotation != pair.Value.Rotation)
+                {
+                    _signalBus.Fire(new BuildingPreviewChangedSignal
+                    {
+                        Position = pair.Key,
+                        BuildingId = pair.Value.BuildingId,
+                        RotationQuarterTurns =
+                            (int)pair.Value.Rotation,
+                        PreviewState = BuildingPreviewState.None
+                    });
+                }
+            }
+
+            foreach (var pair in currentByPosition)
+            {
+                if (!previousByPosition.TryGetValue(pair.Key, out var previousPlacement)
+                    || previousPlacement.BuildingId != pair.Value.BuildingId
+                    || previousPlacement.Rotation != pair.Value.Rotation)
+                {
+                    _signalBus.Fire(new BuildingPreviewChangedSignal
+                    {
+                        Position = pair.Key,
+                        BuildingId = pair.Value.BuildingId,
+                        RotationQuarterTurns =
+                            (int)pair.Value.Rotation,
+                        PreviewState = BuildingPreviewState.Valid
+                    });
+                }
+            }
+        }
+    }
+}

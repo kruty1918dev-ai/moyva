@@ -44,6 +44,20 @@ namespace Kruty1918.Moyva.Grid.Runtime
 		/// <summary>
 		/// Реєструє залежності модуля Grid у контейнері Zenject.
 		/// </summary>
+		public static void InstallPreviewBindings(DiContainer container, TileRegistrySO tiles,
+			MoyvaProjectSettingsSO settings, int width, int height)
+		{
+			container.BindInstance(tiles);
+			container.BindInstance(settings);
+			container.Bind<IGridProjection>().FromInstance(GridProjectionFactory.Create(settings));
+			MapChunkFeatureBindings.Install(container);
+			container.BindInterfacesAndSelfTo<TileTypeRepository>().AsSingle();
+			container.Bind<MovementProfileRepository>().AsSingle();
+			container.Bind<ITraversalCostResolver>().To<TraversalCostResolver>().AsSingle();
+			container.BindInterfacesTo<ChunkedGridService>().AsSingle().WithArguments(width, height);
+			container.Bind<ITileSettingsService>().To<TileSettingsService>().AsSingle();
+		}
+
 		public override void InstallBindings()
 		{
 			int resolvedWidth = gridWidth;
@@ -67,8 +81,21 @@ namespace Kruty1918.Moyva.Grid.Runtime
 			if (!Container.HasBinding<IGridProjection>())
 				Container.Bind<IGridProjection>().FromInstance(GridProjectionFactory.Create(resolvedProjectSettings)).AsSingle();
 
+			if (!Container.HasBinding<IWorldPointerGridResolver>())
+				Container.Bind<IWorldPointerGridResolver>().To<WorldPointerGridResolver>().AsSingle();
+
 			MapChunkFeatureBindings.Install(Container);
 			Container.BindInterfacesTo<Project3DLightingInitializer>().AsSingle().NonLazy();
+
+			Container.BindInterfacesAndSelfTo<TileTypeRepository>()
+				.AsSingle()
+				.NonLazy();
+			Container.Bind<MovementProfileRepository>()
+				.AsSingle()
+				.NonLazy();
+			Container.Bind<ITraversalCostResolver>()
+				.To<TraversalCostResolver>()
+				.AsSingle();
 
 			Container.BindInterfacesTo<ChunkedGridService>().AsSingle()
 				.WithArguments(resolvedWidth, resolvedHeight);

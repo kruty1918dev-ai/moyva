@@ -132,7 +132,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             string n = type.Name;
             if (n == "BuildingDefinitionAsset") return "moyva.building";
             if (n == "UnitClassConfig") return "moyva.unit";
-            if (n == "GraphAsset") return "moyva.generator-graph";
+            if (n == "GeneratorMapRecipe") return "moyva.generator-recipe";
             if (n == "WorldCreationDefaultsSO") return "moyva.world-creation";
             string id = MoyvaJsonTypeRegistry.StableId(type);
             return "moyva." + (string.IsNullOrWhiteSpace(id) ? Slug(type.Name) : id);
@@ -151,7 +151,6 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             string name = type?.Name ?? "Unknown";
             if (name == "BuildingDefinitionAsset" || full.Contains("Construction")) return "Buildings";
             if (name == "UnitClassConfig" || full.Contains(".Units.")) return "Units";
-            if (name == "GraphAsset" || full.Contains("GraphSystem")) return "Graphs";
             if (full.Contains("Generator")) return "Generator";
             if (full.Contains("Economy")) return "Economy";
             if (full.Contains("WorldCreation")) return "WorldCreation";

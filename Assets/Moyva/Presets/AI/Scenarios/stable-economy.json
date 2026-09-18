@@ -1,0 +1,80 @@
+{
+  "scenario": {
+    "id": "stable-economy",
+    "title": "Stable economy",
+    "legacyStage": 4,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "prerequisites": ["production"],
+    "minMeaningfulCandidates": 2,
+    "maxForcedActionRatio": 0.9,
+    "requiredIntents": ["Build", "EndTurn"],
+    "steps": [
+      {
+        "id": "stable-economy",
+        "goal": 3,
+        "criterion": 3,
+        "requiredCount": 1,
+        "threshold": 0,
+        "requiredTurns": 3,
+        "resources": [
+          {
+            "resourceId": "walnut-wood-materials-resources",
+            "minStock": 1.0,
+            "minProductionPerTurn": 1.0
+          },
+          {
+            "resourceId": "hardwood-materials-resources",
+            "minStock": 1.0,
+            "minProductionPerTurn": 1.0
+          }
+        ]
+      }
+    ],
+    "startingConditions": {
+      "learnerStartsWithCastle": true,
+      "learnerMustPlaceCastle": false,
+      "startingResources": [
+        { "resourceId": "walnut-wood-materials-resources", "amount": 30, "owner": "learner" },
+        { "resourceId": "hardwood-materials-resources", "amount": 20, "owner": "learner" },
+        { "resourceId": "steak-food-resources", "amount": 40, "owner": "learner" }
+      ],
+      "startingUnits": [],
+      "startingBuildings": [
+        { "buildingTypeId": "wood-camp", "count": 1, "owner": "learner", "operational": true, "healthFraction": 1.0 }
+      ],
+      "opponent": {
+        "enabled": false,
+        "startingUnits": 0,
+        "startingCastle": false,
+        "unitTypeId": "warrior",
+        "archetype": "passive",
+        "residents": 0
+      },
+      "objectives": [],
+      "residents": 8,
+      "openingRevealRadius": -1
+    },
+    "availableCapabilities": ["construction", "economy", "end-turn"],
+    "generationConstraints": {
+      "minReachableArea": 2,
+      "requiredResourceTypes": ["walnut-wood-materials-resources"],
+      "minOpponentDistance": 2,
+      "maxOpponentDistance": 0,
+      "objectiveReachability": true,
+      "requiredTerrainCompatibility": []
+    },
+    "rewardRules": {
+      "validatedGameplayEventsOnly": true,
+      "rewardSetupActions": false,
+      "requireMeaningfulEvent": true,
+      "maxGameplayRewardEventsPerTurn": 12,
+      "allowedGameplayEvents": []
+    },
+    "masteryPolicy": {
+      "kind": 0,
+      "successEpisodesRequired": 3,
+      "maxDecisionsPerSuccessfulEpisode": 150
+    }
+  }
+}

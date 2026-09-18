@@ -61,12 +61,12 @@
       },
       "title": "Positions"
     },
-    "sourceGraphLayerId": {
+    "sourceLayerId": {
       "type": [
         "string",
         "null"
       ],
-      "title": "Source Graph Layer Id"
+      "title": "Source Layer Id"
     },
     "sourceLayerName": {
       "type": [

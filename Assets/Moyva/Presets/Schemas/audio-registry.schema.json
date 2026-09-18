@@ -127,6 +127,14 @@
             "x-flags": false,
             "title": "Bus"
           },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Channel",
+            "description": "Іменований канал у bus (див. registry.channels). Порожньо — без каналу."
+          },
           "mixerGroup": {
             "type": [
               "object",
@@ -215,6 +223,30 @@
             "maximum": 256.0,
             "x-moyva-editorMinimum": 0.0,
             "x-moyva-editorMaximum": 256.0
+          },
+          "minDistance": {
+            "type": "number",
+            "title": "Min Distance",
+            "description": "3D-відстані для spatialBlend>0. 0 → дефолти Unity.",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
+          },
+          "maxDistance": {
+            "type": "number",
+            "title": "Max Distance",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
+          },
+          "rolloffMode": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:Logarithmic|Linear|Custom))$",
+            "x-enumNames": [
+              "Logarithmic",
+              "Linear",
+              "Custom"
+            ],
+            "x-flags": false,
+            "title": "Rolloff Mode"
           },
           "loop": {
             "type": "boolean",
@@ -429,11 +461,163 @@
             },
             "additionalProperties": false,
             "title": "Effects"
+          },
+          "duck": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "title": "Enabled"
+              },
+              "targetBus": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:Master|Music|Sfx|Ui|Ambience))$",
+                "x-enumNames": [
+                  "Master",
+                  "Music",
+                  "Sfx",
+                  "Ui",
+                  "Ambience"
+                ],
+                "x-flags": false,
+                "title": "Target Bus"
+              },
+              "amount": {
+                "type": "number",
+                "title": "Amount",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "attack": {
+                "type": "number",
+                "title": "Attack",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "hold": {
+                "type": "number",
+                "title": "Hold",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "release": {
+                "type": "number",
+                "title": "Release",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              }
+            },
+            "additionalProperties": false,
+            "title": "Duck",
+            "description": "При відтворенні приглушити цільовий bus (музика/амбієнт під час бою тощо)."
           }
         },
         "additionalProperties": false
       },
       "title": "Sounds"
+    },
+    "channels": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Key"
+          },
+          "bus": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:Master|Music|Sfx|Ui|Ambience))$",
+            "x-enumNames": [
+              "Master",
+              "Music",
+              "Sfx",
+              "Ui",
+              "Ambience"
+            ],
+            "x-flags": false,
+            "title": "Bus"
+          },
+          "volume": {
+            "type": "number",
+            "title": "Volume",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Channels"
+    },
+    "busGroups": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "bus": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:Master|Music|Sfx|Ui|Ambience))$",
+            "x-enumNames": [
+              "Master",
+              "Music",
+              "Sfx",
+              "Ui",
+              "Ambience"
+            ],
+            "x-flags": false,
+            "title": "Bus"
+          },
+          "mixerGroup": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Mixer Group"
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Bus Groups"
     },
     "defaultPoolSize": {
       "type": "integer",
@@ -444,10 +628,6 @@
     "dontDestroyOnLoad": {
       "type": "boolean",
       "title": "Dont Destroy On Load"
-    },
-    "verboseLogs": {
-      "type": "boolean",
-      "title": "Verbose Logs"
     }
   }
 }

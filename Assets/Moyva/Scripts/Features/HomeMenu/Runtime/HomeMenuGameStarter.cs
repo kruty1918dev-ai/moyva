@@ -24,15 +24,22 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         /// <summary>Startup-пайплайн, що готує й активує gameplay-сцену.</summary>
         private readonly IGameplayStartupPipeline _startupPipeline;
 
+        /// <summary>Підготовлений menu/session контекст для діагностики запуску.</summary>
+        private readonly IGameplaySession _session;
+
         /// <summary>Захист від повторного одночасного старту гри.</summary>
         private bool _isStarting;
 
         /// <summary>Створити сервіс запуску гри з меню.</summary>
         [Inject]
-        public HomeMenuGameStarter(IOverlayLoader overlayLoader, IGameplayStartupPipeline startupPipeline)
+        public HomeMenuGameStarter(
+            IOverlayLoader overlayLoader,
+            IGameplayStartupPipeline startupPipeline,
+            [InjectOptional] IGameplaySession session = null)
         {
             _overlayLoader = Guard.NotNull(overlayLoader, nameof(overlayLoader));
             _startupPipeline = Guard.NotNull(startupPipeline, nameof(startupPipeline));
+            _session = session;
         }
 
         /// <summary>
@@ -43,7 +50,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             // 1: Якщо старт уже триває, не запускаємо другий паралельний pipeline.
             if (_isStarting)
             {
-                Debug.LogWarning($"{Prefix} StartGameAsync викликано повторно — ігнорування.");
+                Debug.LogWarning($"{Prefix} StartGameAsync ignored because startup is already running.");
                 return;
             }
 
@@ -51,18 +58,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _isStarting = true;
             try
             {
+                Debug.Log($"{Prefix} Start requested. {DescribeSession()}");
                 // 3: Даємо зовнішньому коду скасувати операцію ще до входу в pipeline.
                 ct.ThrowIfCancellationRequested();
 
                 // 4: Запускаємо внутрішній workflow старту гри.
                 await RunAsync(CancellationToken.None);
+                Debug.Log($"{Prefix} Startup pipeline completed.");
             }
             catch (OperationCanceledException)
             {
                 // 5: При скасуванні розблоковуємо overlay і прибираємо його негайно.
                 _overlayLoader.UnlockOverlay();
                 _overlayLoader.StopOverlay(forceImmediate: true);
-                Debug.Log($"{Prefix} Запуск скасовано.");
                 throw;
             }
             catch (Exception e)
@@ -70,7 +78,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 // 6: На будь-якій помилці також відновлюємо UI в консистентний стан.
                 _overlayLoader.UnlockOverlay();
                 _overlayLoader.StopOverlay(forceImmediate: true);
-                Debug.LogError($"{Prefix} Помилка запуску: {e}");
+                Debug.LogError($"{Prefix} Start failed: {e}");
                 throw;
             }
             finally
@@ -83,14 +91,22 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         /// <summary>Виконати внутрішній startup workflow і залогувати його межі.</summary>
         private async Task RunAsync(CancellationToken ct)
         {
-            // 1: Логуємо початок pipeline для діагностики запуску.
-            Debug.Log($"{Prefix} Startup pipeline begin.");
-
             // 2: Передаємо керування startup-пайплайну, який виконає всі фази переходу в gameplay.
             await _startupPipeline.RunAsync(ct);
+        }
 
-            // 3: Логуємо завершення та фінальну фазу для простішого troubleshooting.
-            Debug.Log($"{Prefix} Startup pipeline completed. Final phase={_startupPipeline.CurrentPhase}.");
+        private string DescribeSession()
+        {
+            if (_session == null)
+                return "GameplaySession=<null>";
+
+            var world = _session.WorldSettings;
+            var players = _session.Players;
+            return $"SessionMode={_session.Mode}, IsHost={_session.IsHost}, " +
+                   $"World='{world.WorldName}', Seed={world.Seed}, Size={world.Size}, " +
+                   $"MapType={world.MapType}, Difficulty={world.Difficulty}, MaxPlayers={world.MaxPlayers}, " +
+                   $"Dimensions={world.Width}x{world.Height}, Players={players?.Count ?? 0}, " +
+                   $"LocalPlayer='{_session.LocalPlayer.PlayerId}'";
         }
     }
 }

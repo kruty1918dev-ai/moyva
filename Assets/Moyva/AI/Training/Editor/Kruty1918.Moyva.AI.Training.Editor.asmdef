@@ -1,0 +1,16 @@
+{
+    "name":  "Kruty1918.Moyva.AI.Training.Editor",
+    "references":  [
+                       "UnityEditor.TestRunner",
+                       "UnityEngine.TestRunner",
+                       "Kruty1918.Moyva.AI.Training",
+                       "Kruty1918.Moyva.AI.Bot.Core",
+                       "Unity.ML-Agents",
+                       "Zenject",
+                       "Kruty1918.Moyva.Turns"
+                   ],
+    "includePlatforms":  [
+                             "Editor"
+                         ],
+    "autoReferenced":  false
+}

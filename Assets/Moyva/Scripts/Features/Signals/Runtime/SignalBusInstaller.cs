@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<UnitGarrisonStateChangedSignal>()
                 .OptionalSubscriber();
             Container.DeclareSignal<InterruptMovementSignal>();
+            Container.DeclareSignal<LocalUnitSelectionChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<OnMapObjectSpawnedSignal>();
             Container.DeclareSignal<OnObjectsMapChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<GridTileChangedSignal>().OptionalSubscriber();
@@ -45,6 +46,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<BuildingPreviewDragVisualSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildGridHoverChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildingDemolishedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<BuildingOwnershipTransferredSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildingOperationalSignal>().OptionalSubscriber();
             Container.DeclareSignal<ShowWallHandlesSignal>();
             Container.DeclareSignal<PlaceBuildingConfirmRequestSignal>().OptionalSubscriber();
@@ -64,14 +66,18 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<UnitInfoPanelRequestedSignal>().OptionalSubscriber();
             Container.DeclareSignal<MapObjectInfoPanelRequestedSignal>().OptionalSubscriber();
             Container.DeclareSignal<WorldInfoSelectionChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<WorldFocusPingRequestedSignal>().OptionalSubscriber();
 
             // FogOfWar
             Container.DeclareSignal<FogStateChangedSignal>();
 
             // Economy
+            Container.DeclareSignal<CaravanDeliveryCompletedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<SettlementPopulationChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<EconomyTickCompletedSignal>().OptionalSubscriber();
             Container.DeclareSignal<SettlementCreatedSignal>().OptionalSubscriber();
             Container.DeclareSignal<SettlementDeactivatedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<SettlementCapturedSignal>().OptionalSubscriber();
             Container.DeclareSignal<SettlementResourceChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<ResourceDeficitSignal>().OptionalSubscriber();
             Container.DeclareSignal<GrantStarterPackResourcesSignal>().OptionalSubscriber();

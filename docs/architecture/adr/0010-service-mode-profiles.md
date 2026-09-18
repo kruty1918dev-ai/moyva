@@ -46,4 +46,4 @@ Alternative:
 - `Assets/Moyva/Scripts/Features/HomeMenu/Runtime/HomeMenuInitializer.cs`
 - `Assets/Moyva/Scripts/Features/HomeMenu/Runtime/Services/JoinRoomTransportAdapter.cs`
 - `Assets/Moyva/Scripts/Features/HomeMenu/Runtime/Startup/GameplayStartupPipeline.cs`
-- `docs/standarts/service-mode-profiles.md`
+- `docs/standards/service-mode-profiles.md`

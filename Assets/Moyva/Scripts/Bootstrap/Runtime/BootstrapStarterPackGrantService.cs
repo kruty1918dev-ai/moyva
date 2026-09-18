@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         bool TryGrant(string settlementId, string ownerId);
     }
 
-    internal sealed class BootstrapStarterPackGrantService : IBootstrapStarterPackGrantService
+    public sealed class BootstrapStarterPackGrantService : IBootstrapStarterPackGrantService
     {
         private const string StarterPackLogTag = "[Bootstrap][StarterPack]";
 
@@ -33,10 +33,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public bool TryGrant(string settlementId, string ownerId)
         {
+            if (string.IsNullOrWhiteSpace(settlementId))
+            {
+                Debug.LogWarning($"{StarterPackLogTag} Starter resources require a settlement target; owner-pool grants are rejected.");
+                return false;
+            }
+
             var entries = _settings.InitialResources;
             if (entries == null || entries.Count == 0)
             {
-                Debug.Log($"{StarterPackLogTag} Skip grant: no starter-pack entries configured for owner '{ownerId}'.");
                 return true;
             }
 
@@ -58,7 +63,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (!grantedAny)
             {
-                Debug.LogWarning($"{StarterPackLogTag} Skip grant: configured starter-pack entries for owner '{ownerId}' are empty after validation.");
                 return true;
             }
 
@@ -72,8 +76,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string target = string.IsNullOrWhiteSpace(settlementId)
                 ? "owner pool"
                 : $"settlement='{settlementId}'";
-            Debug.Log($"{StarterPackLogTag} Grant fired: owner='{ownerId}', target={target}, entries=[{BootstrapStarterPackResourceUtility.DescribeEntries(payload)}].");
-            Debug.Log($"[Bootstrap] Видано стартовий пакет owner='{ownerId}' для {target}.");
 
             return true;
         }

@@ -2,6 +2,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Kruty1918.Moyva.UIActions.Runtime;
 using Zenject;
 
 namespace Kruty1918.Moyva.InfoPanel.UI
@@ -18,9 +19,10 @@ namespace Kruty1918.Moyva.InfoPanel.UI
 
         public override void InstallBindings()
         {
+            UiActionsInstaller.Install(Container);
+
             if (panelPrefab == null)
             {
-                Debug.LogWarning("[WorldInfoPanelInstaller] panelPrefab не присвоєно. Панель інформації вимкнена.");
                 return;
             }
 

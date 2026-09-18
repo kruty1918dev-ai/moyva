@@ -1,10 +1,30 @@
+using System;
+using System.Collections.Generic;
+using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.UIActions.API;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed partial class ConstructionInputService
     {
+        private bool IsPointerOverInteractiveUI(Vector2 screenPosition, int pointerId)
+        {
+            if (!_blockInteractiveUi || _uiHitTester == null)
+                return false;
+
+            return _allowClicksThroughNonInteractiveUi
+                ? _uiHitTester.IsPointerOverInteractiveUI(screenPosition, pointerId)
+                : _uiHitTester.IsPointerOverAnyUI(screenPosition, pointerId);
+        }
+
+        // From ConstructionInputService.State.cs
         private void CancelActivePointerDrags()
         {
             _isDraggingPendingPlacement = false;
@@ -61,15 +81,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private void OnGameModeChanged(GameModeChangedSignal signal)
         {
             _isActive = signal.NewMode == GameModeType.Construction;
-            _mandatoryCastlePreviewBootstrapPending = _isActive;
             if (!_isActive)
             {
                 ClearBuildGridHover();
                 CancelActiveDrags();
             }
-
-            if (VerboseLogs)
-                Debug.Log($"{LogTag} Active changed -> {_isActive}");
         }
     }
 }

@@ -1,0 +1,33 @@
+{
+  "$schema": "../Schemas/tile-type.schema.json",
+  "schema": "moyva.tile-type",
+  "version": 1,
+  "id": "mountain",
+  "model": "tile-type",
+  "displayName": "Mountain",
+  "aliases": [],
+  "tags": ["land", "mountain"],
+  "traversalClassId": "mountain",
+  "visual": {
+    "gridMode": "Dual",
+    "variants": [
+      {
+        "preset": {
+          "$asset": "asset.tile-preset.baseblockpresetgreenramp.53689e49",
+          "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetGreenRamp.asset",
+          "required": true
+        },
+        "slot": "Top",
+        "weight": 1.0,
+        "tileHeight": 0.0
+      }
+    ],
+    "representativePrefab": {
+      "$asset": "asset.game-object.baseblock-fill.9d579ac9",
+      "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Green/BaseBlock_Fill.prefab",
+      "required": true
+    },
+    "scaleToCellSize": true,
+    "layerYOffset": 0.0
+  }
+}

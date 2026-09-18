@@ -147,6 +147,41 @@
           ],
           "title": "Prefab"
         },
+        "variants": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "constructionPrefab": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+              "properties": {
+                "$asset": {
+                  "type": "string",
+                  "title": "Asset ID"
+                },
+                "editorPath": {
+                  "type": "string",
+                  "description": "Editor-only path для діагностики/регенерації catalog."
+                },
+                "required": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "required": [
+                "$asset"
+              ],
+              "title": "Construction Prefab"
+            }
+          },
+          "additionalProperties": false,
+          "title": "Variants"
+        },
         "icon": {
           "type": [
             "object",
@@ -308,6 +343,215 @@
           },
           "additionalProperties": false,
           "title": "Preview Settings"
+        },
+        "scaleMultiplier": {
+          "type": "number",
+          "title": "Scale Multiplier",
+          "minimum": 0.0001,
+          "x-moyva-editorMinimum": 0.0001
+        },
+        "positionOffset": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "additionalProperties": false,
+          "title": "Position Offset"
+        },
+        "rotationOffset": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "additionalProperties": false,
+          "title": "Rotation Offset"
+        },
+        "groundOffsetY": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "title": "Ground Offset Y"
+        },
+        "tint": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Tint"
+        },
+        "teamColorEnabled": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "title": "Team Color Enabled"
+        },
+        "outline": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "enabled": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "title": "Enabled"
+            },
+            "width": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "title": "Width",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
+            },
+            "color": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "r": {
+                  "type": "number"
+                },
+                "g": {
+                  "type": "number"
+                },
+                "b": {
+                  "type": "number"
+                },
+                "a": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b",
+                "a"
+              ],
+              "additionalProperties": false,
+              "title": "Color"
+            }
+          },
+          "additionalProperties": false,
+          "title": "Outline"
+        },
+        "shadows": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "cast": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "title": "Cast"
+            },
+            "receive": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "title": "Receive"
+            }
+          },
+          "additionalProperties": false,
+          "title": "Shadows"
+        },
+        "previewPrefab": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Preview Prefab"
+        },
+        "selection": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "markerScale": {
+              "type": "number",
+              "title": "Marker Scale",
+              "minimum": 0.0001,
+              "x-moyva-editorMinimum": 0.0001
+            }
+          },
+          "additionalProperties": false,
+          "title": "Selection"
         }
       },
       "additionalProperties": false,
@@ -711,6 +955,7 @@
               "terrain-placement-rule-module",
               "tile-requirement",
               "town-hall",
+              "unit-recruitment",
               "wall",
               "warehouse",
               "workerless",

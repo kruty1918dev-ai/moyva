@@ -51,6 +51,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             public float StartAlpha = 1f;
         }
 
+        [Serializable]
+        public sealed class SandboxProgressSettings
+        {
+            [Tooltip("Realtime seconds that represent one gameplay progress cycle in sandbox mode.")]
+            [Min(0.1f)]
+            [SerializeField]
+            public float RoundSeconds = 10f;
+
+            [Tooltip("Initial sandbox speed multiplier.")]
+            [Range(0.1f, 8f)]
+            [SerializeField]
+            public float InitialSpeed = 1f;
+        }
+
         [Header("Initial Resources")]
         [Tooltip("Список ресурсів, які гравець отримує на старт нової гри.")]
         [SerializeField]
@@ -58,14 +72,24 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         // Bootstrap читає саме цей список, щоб стартові ресурси з редактора потрапляли в новий світ.
         public List<InitialResourceEntry> InitialResources = new()
         {
-            new InitialResourceEntry("steak-food-resources", 50f),
-            new InitialResourceEntry("hardwood-materials-resources", 30f),
+            new InitialResourceEntry("steak-food-resources", 140f),
+            new InitialResourceEntry("walnut-wood-materials-resources", 180f),
+            new InitialResourceEntry("hardwood-materials-resources", 120f),
+            new InitialResourceEntry("stone-materials-resources", 100f),
+            new InitialResourceEntry("iron-ore-materials-resources", 20f),
+            new InitialResourceEntry("iron-ingot-materials-resources", 20f),
+            new InitialResourceEntry("gold-coins-materials-resources", 50f),
         };
 
         [Header("World Reveal")]
         [Tooltip("Налаштування плавного проявлення світу після генерації/завантаження.")]
         [SerializeField]
         public WorldRevealFadeSettings WorldRevealFade = new();
+
+        [Header("Sandbox Progress")]
+        [Tooltip("Realtime progress settings used when gameplay runs without turn ownership.")]
+        [SerializeField]
+        public SandboxProgressSettings SandboxProgress = new();
 
         public BootstrapGameSettings() { }
     }

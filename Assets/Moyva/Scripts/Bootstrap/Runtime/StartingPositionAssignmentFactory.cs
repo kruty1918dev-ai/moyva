@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Signals;
@@ -29,55 +30,79 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool hasWorldSettings,
             int maxPlayers)
         {
-            Debug.Log($"{DirectDiagTag} AssignmentFactory.ENTER positions={positions.Count}, participants={participants?.Count ?? 0}, mode={Kruty1918.Moyva.SaveSystem.GameLaunchContext.Mode}, localPlayerId={localPlayerId}.");
-            var assignments = new SpawnPositionAssignment[positions.Count];
+            bool isDirectGameplay = GameplayLaunchTopology.IsDirectGameplay(
+                Kruty1918.Moyva.SaveSystem.GameLaunchContext.Mode,
+                Kruty1918.Moyva.SaveSystem.GameLaunchContext.Source,
+                hasWorldSettings,
+                maxPlayers,
+                localPlayerId);
+
             int participantCount = participants?.Count ?? 0;
-            int launchParticipantCount = hasWorldSettings
-                ? Mathf.Max(1, maxPlayers)
-                : 1;
+            int launchParticipantCount =
+                GameplayLaunchTopology.ResolveLaunchParticipantCount(
+                    isDirectGameplay,
+                    participantCount);
 
-            for (int index = 0; index < positions.Count; index++)
+            int assignmentCount =
+                GameplayLaunchTopology.ResolveAssignmentCount(
+                    positions.Count,
+                    isDirectGameplay,
+                    launchParticipantCount);
+
+            var assignments = new SpawnPositionAssignment[assignmentCount];
+
+            for (int index = 0; index < assignmentCount; index++)
             {
-                string participantId = string.Empty;
-                bool isBot = false;
+                Participant participant =
+                    participants != null && index < participantCount
+                        ? participants[index]
+                        : null;
 
-                if (participants != null && index < participantCount)
-                {
-                    participantId = participants[index].Identity?.PlayerId ?? string.Empty;
-                    isBot = participants[index].IsBot;
-                }
-                else if (index == 0)
-                {
-                    participantId = !string.IsNullOrEmpty(localPlayerId) ? localPlayerId : "local-player";
-                }
-                else if (index < launchParticipantCount)
-                {
-                    participantId = $"bot-{index:00}";
-                    isBot = true;
-                }
+                GameplayParticipantSpec spec =
+                    GameplayLaunchTopology.ResolveParticipant(
+                        index,
+                        isDirectGameplay,
+                        participant,
+                        localPlayerId,
+                        launchParticipantCount);
+                string participantId = ResolveAssignmentParticipantId(
+                    index,
+                    isDirectGameplay,
+                    participant,
+                    spec.ParticipantId,
+                    localPlayerId);
 
                 assignments[index] = new SpawnPositionAssignment
                 {
                     SlotIndex = index,
                     ParticipantId = participantId,
-                    IsBot = isBot,
                     Position = positions[index],
                 };
             }
 
-            int botAssignments = 0;
-            string localAssignment = "<none>";
-            for (int index = 0; index < assignments.Length; index++)
-            {
-                if (assignments[index].IsBot)
-                    botAssignments++;
+            return assignments;
+        }
 
-                if (assignments[index].ParticipantId == localPlayerId || (string.IsNullOrEmpty(localPlayerId) && index == 0))
-                    localAssignment = assignments[index].Position.ToString();
+        private static string ResolveAssignmentParticipantId(
+            int slotIndex,
+            bool isDirectGameplay,
+            Participant participant,
+            string resolvedParticipantId,
+            string localPlayerId)
+        {
+            if (!isDirectGameplay && Kruty1918.Moyva.SaveSystem.GameLaunchContext.HasBotOpponent)
+                return resolvedParticipantId;
+
+            if (!isDirectGameplay
+                && (participant?.IsHost == true || participant == null && slotIndex == 0)
+                && Kruty1918.Moyva.SaveSystem.GameLaunchContext.HasLocalPlayerRole
+                && Kruty1918.Moyva.SaveSystem.GameLaunchContext.IsLocalPlayerHost
+                && !string.IsNullOrWhiteSpace(localPlayerId))
+            {
+                return localPlayerId.Trim();
             }
 
-            Debug.Log($"{DirectDiagTag} AssignmentFactory.RESULT assignments={assignments.Length}, localAssignment={localAssignment}, botAssignments={botAssignments}.");
-            return assignments;
+            return resolvedParticipantId;
         }
 
         public SpawnPositionAssignment[] CopySpawnAssignments(IReadOnlyList<SpawnPositionAssignment> assignments)

@@ -13,13 +13,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
         IWallTopologyService,
         IConstructionGateStateService,
         IConstructionModuleStatePersistence,
+        IConstructionObserverStateSource,
         IInitializable,
         IDisposable
     {
-        private readonly LazyInject<IConstructionService> _constructionService;
+        private readonly LazyInject<IConstructionSessionCommands> _constructionService;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IObjectsMapService _objectsMapService;
-        private readonly IConstructionPlacedVisualService _placedVisuals;
+        private readonly ConstructionPlacedVisualService _placedVisuals;
         private readonly SignalBus _signalBus;
         private readonly Dictionary<Vector2Int, bool>
             _gateOpenState = new();
@@ -28,12 +29,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         [Inject]
         public WallTopologyService(
-            LazyInject<IConstructionService> constructionService,
+            LazyInject<IConstructionSessionCommands> constructionService,
             IBuildingRegistry buildingRegistry,
             IObjectsMapService objectsMapService,
             SignalBus signalBus,
             [InjectOptional]
-            IConstructionPlacedVisualService placedVisuals = null)
+            ConstructionPlacedVisualService placedVisuals = null)
         {
             _constructionService = constructionService;
             _buildingRegistry = buildingRegistry;
@@ -90,6 +91,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         public byte[] CaptureState()
+            => CaptureState(null);
+
+        public byte[] CaptureObserverState(string ownerId, ISet<Vector2Int> visibleBuildings)
+            => CaptureState(visibleBuildings ?? throw new ArgumentNullException(nameof(visibleBuildings)));
+
+        private byte[] CaptureState(ISet<Vector2Int> visibleBuildings)
         {
             using var stream = new MemoryStream();
             using var writer = new BinaryWriter(stream);
@@ -99,7 +106,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var openGates = new List<Vector2Int>();
             foreach (var pair in _gateOpenState)
             {
-                if (pair.Value
+                if (pair.Value && (visibleBuildings == null || visibleBuildings.Contains(pair.Key))
                     && TryGetPlacedGate(
                         pair.Key,
                         out _,
@@ -130,10 +137,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             writer.Flush();
 
-            Debug.Log(
-                $"[MoyvaConstructionModules] gate-save " +
-                $"open={openGates.Count}");
-
             return stream.ToArray();
         }
 
@@ -151,9 +154,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             int version = reader.ReadInt32();
             if (version != 1)
             {
-                Debug.LogWarning(
-                    $"[MoyvaConstructionModules] gate-load " +
-                    $"unsupported-version={version}");
                 return;
             }
 
@@ -188,10 +188,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     restored++;
                 }
             }
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] gate-load " +
-                $"open={restored} skipped={skipped}");
         }
 
         public bool IsWallOrGate(string buildingId)
@@ -254,10 +250,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 position,
                 isOpen,
                 speed);
-            Debug.Log(
-                $"[MoyvaConstructionModules] gate-state " +
-                $"building={buildingId}@{position} open={isOpen} " +
-                $"speed={speed:0.###} transition={transitionSeconds:0.###}s");
             return true;
         }
 

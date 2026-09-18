@@ -22,13 +22,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// <inheritdoc cref="IMultiplayerIdentityService"/>
     public sealed class MultiplayerIdentityService : IMultiplayerIdentityService
     {
-        private readonly IMultiplayerLogger _logger;
-
-        public MultiplayerIdentityService(IMultiplayerLogger logger)
-        {
-            _logger = logger;
-        }
-
         public async Task<ParticipantIdentity> ResolveAsync(string preferredNickname, CancellationToken ct = default)
         {
             string nickname = string.IsNullOrWhiteSpace(preferredNickname)
@@ -37,21 +30,14 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             try
             {
-                if (UnityServices.State != ServicesInitializationState.Initialized)
-                    await UnityServices.InitializeAsync();
-
-                MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded(_logger);
-
-                if (!AuthenticationService.Instance.IsSignedIn)
-                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                await MultiplayerAuthenticationGate.EnsureReadyAsync(ct);
 
                 var ugsId = AuthenticationService.Instance.PlayerId;
                 if (!string.IsNullOrWhiteSpace(ugsId))
                     return new ParticipantIdentity(ugsId, nickname);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                _logger?.Warn($"[Identity] UGS sign-in failed: {e.Message}. Falling back to device id.");
             }
 
             string fallback = SystemInfo.deviceUniqueIdentifier;

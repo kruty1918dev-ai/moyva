@@ -104,7 +104,6 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 }
             }
 
-            report.duplicateIds += Math.Max(0, byModelId.Count == report.jsonFiles ? 0 : report.jsonFiles - byModelId.Count);
             JsonizationEditorUtil.WriteJson(reportPath, report);
             string summary = $"MOYVA_JSON_VALIDATE files={report.jsonFiles} schemas={report.schemas} duplicates={report.duplicateIds} configRefs={report.unresolvedConfigRefs} assetRefs={report.unresolvedAssetRefs} errors={report.errors.Count}";
             if (report.errors.Count > 0 || report.duplicateIds > 0)

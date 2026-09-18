@@ -19,7 +19,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     {
         private readonly INetworkProvider _primary;
         private readonly INetworkProvider _fallback;
-        private readonly IMultiplayerLogger _logger;
 
         // Observers subscribed to this provider's Messages
         private readonly List<IObserver<NetworkMessage>> _observers = new List<IObserver<NetworkMessage>>();
@@ -35,12 +34,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         public FallbackNetworkProvider(
             INetworkProvider primary,
-            INetworkProvider fallback,
-            IMultiplayerLogger logger)
+            INetworkProvider fallback)
         {
             _primary = primary ?? throw new ArgumentNullException(nameof(primary));
             _fallback = fallback ?? throw new ArgumentNullException(nameof(fallback));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             // Forward peer events from both providers (the active one fires them)
             _primary.PeerConnected += id => PeerConnected?.Invoke(id);
@@ -89,14 +86,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 if (result == null)
                     return SessionResult.Fail("JoinSession returned null result.");
 
-                if (!result.Success)
-                    _logger.Warn($"[Fallback] JoinSession failed on active provider ({provider.GetType().Name}) for '{sessionId}': '{result.ErrorMessage}'. Auto fallback is disabled for joins.");
-
                 return result;
             }
             catch (Exception e)
             {
-                _logger.Error($"[Fallback] JoinSession threw on active provider ({provider.GetType().Name}) for '{sessionId}': {e.Message}. Auto fallback is disabled for joins.");
                 return SessionResult.Fail(e.Message);
             }
         }
@@ -115,15 +108,13 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             {
                 result = await action(_primary);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                _logger.Warn($"[Fallback] Primary provider threw '{e.Message}'. Switching to fallback.");
                 return await ActivateFallbackAndRetry(action, ct);
             }
 
             if (!result.Success)
             {
-                _logger.Warn($"[Fallback] Primary provider failed: '{result.ErrorMessage}'. Switching to fallback.");
                 return await ActivateFallbackAndRetry(action, ct);
             }
 
@@ -136,7 +127,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             _usingFallback = true;
             SubscribeTo(_fallback);
-            _logger.Info("[Fallback] Now using fallback provider.");
 
             try
             {
@@ -144,7 +134,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             }
             catch (Exception e)
             {
-                _logger.Error($"[Fallback] Fallback provider also failed: {e.Message}");
                 return SessionResult.Fail($"Both primary and fallback providers failed. Last error: {e.Message}");
             }
         }
@@ -156,7 +145,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             _usingFallback = false;
             SubscribeTo(_primary);
-            _logger.Info("[Fallback] Reset — will try primary provider again.");
         }
 
         public void Dispose()

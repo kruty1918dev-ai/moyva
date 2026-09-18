@@ -39,7 +39,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
                     var layer = objectLayers[i];
                     if (!CanApply(layer, out string reason))
                     {
-                        Debug.LogWarning($"[MoyvaObjectPlacement] Skipped object layer '{layer?.LayerName ?? "<null>"}': {reason}");
                         continue;
                     }
 
@@ -107,7 +106,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             if (!includeLayerSuffix)
                 return baseName;
 
-            string suffix = ResolveGraphLayerLabel(layer?.TargetGraphLayerId, terrainLayers);
+            string suffix = ResolveGraphLayerLabel(layer?.TargetLayerId, terrainLayers);
             return string.IsNullOrWhiteSpace(suffix)
                 ? baseName
                 : $"{baseName} @ {suffix}";
@@ -125,7 +124,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
                 for (int i = 0; i < terrainLayers.Count; i++)
                 {
                     var map = terrainLayers[i];
-                    if (map == null || map.GraphLayerId != graphLayerId)
+                    if (map == null || map.LayerId != graphLayerId)
                         continue;
 
                     if (!string.IsNullOrWhiteSpace(map.LayerName))
@@ -269,7 +268,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             layerRoot.localScale = Vector3.one;
 
             float cellSize = Mathf.Max(0.0001f, config.cellSize);
-            float baseHeight = ResolveTargetHeight(config, source.TargetGraphLayerId, terrainLayers);
+            float baseHeight = ResolveTargetHeight(config, source.TargetLayerId, terrainLayers);
             int mapWidth = Mathf.Max(1, config.width);
             int mapHeight = Mathf.Max(1, config.height);
             int spawned = 0;
@@ -328,10 +327,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             if (spawned == 0)
             {
                 DestroyObject(layerObject);
-                Debug.LogWarning(
-                    $"[MoyvaObjectPlacement] Direct object layer '{source.LayerName}' created no instances. " +
-                    $"Candidates={source.Candidates.Count}, outOfBounds={outOfBounds}, missingPrefab={missingPrefab}, " +
-                    $"instantiateFailed={instantiateFailed}, map={mapWidth}x{mapHeight}, targetLayer='{source.TargetGraphLayerId ?? "<none>"}'.");
             }
         }
 
@@ -347,10 +342,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             {
                 RemoveGeneratedLayerByName(config, generatedName);
                 MarkSceneDirty(manager);
-                Debug.LogWarning(
-                    $"[MoyvaObjectPlacement] TWC object layer '{source.LayerName}' has no in-bounds cells after filtering. " +
-                    $"Candidates={source.Candidates.Count}, outOfBounds={outOfBounds}, map={Mathf.Max(1, config.width)}x{Mathf.Max(1, config.height)}, " +
-                    $"targetLayer='{source.TargetGraphLayerId ?? "<none>"}'.");
                 return;
             }
 
@@ -362,7 +353,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             blueprint.layerName = generatedName;
             blueprint.isEnabled = true;
             blueprint.layerColor = new Color(0.52f, 0.84f, 0.32f, 1f);
-            blueprint.defaultLayerHeight = ResolveTargetHeight(config, source.TargetGraphLayerId, terrainLayers);
+            blueprint.defaultLayerHeight = ResolveTargetHeight(config, source.TargetLayerId, terrainLayers);
             blueprint.useZeroLayerPadding = false;
             blueprint.borderPaddingCells = 0;
             blueprint.borderPaddingWidthCells = 0;
@@ -603,7 +594,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             for (int i = 0; i < terrainLayers.Count; i++)
             {
                 var map = terrainLayers[i];
-                if (map == null || map.GraphLayerId != targetGraphLayerId)
+                if (map == null || map.LayerId != targetGraphLayerId)
                     continue;
 
                 var blueprint = config.GetBlueprintLayerByGuid(map.BlueprintLayerGuid);

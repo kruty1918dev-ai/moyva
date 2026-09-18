@@ -20,11 +20,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private readonly SignalBus _signalBus;
         private readonly INetworkProvider _networkProvider;
         private readonly IGameCommandSyncService _commandSyncService;
-        private readonly IMultiplayerLogger _logger;
         private readonly IWorldGenerationSignalState _worldGenerationSignalState;
 
     #pragma warning disable CS0649
         [InjectOptional] private ISessionManager _sessionManager;
+        [InjectOptional] private IMultiplayerStartupBarrier _startupBarrier;
     #pragma warning restore CS0649
 
         private bool _suppressNextBroadcast;
@@ -33,13 +33,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             SignalBus signalBus,
             INetworkProvider networkProvider,
             IGameCommandSyncService commandSyncService,
-            IMultiplayerLogger logger,
             [InjectOptional] IWorldGenerationSignalState worldGenerationSignalState = null)
         {
             _signalBus = signalBus ?? throw new ArgumentNullException(nameof(signalBus));
             _networkProvider = networkProvider ?? throw new ArgumentNullException(nameof(networkProvider));
             _commandSyncService = commandSyncService ?? throw new ArgumentNullException(nameof(commandSyncService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _worldGenerationSignalState = worldGenerationSignalState;
         }
 
@@ -54,6 +52,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             _signalBus.TryUnsubscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
             _networkProvider.PeerConnected -= OnPeerConnected;
+            _commandSyncService.RegisterHandler(GameCommandType.StartingPositions, null);
         }
 
         private void OnWorldSpawnPositions(WorldSpawnPositionsSignal signal)
@@ -77,15 +76,41 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         private void OnPeerConnected(string peerId)
         {
+            if (_startupBarrier != null && !_startupBarrier.IsHostReady)
+                return;
             if (string.IsNullOrEmpty(peerId) || !ShouldBroadcastFromThisPeer() || _cachedAssignments == null || _cachedAssignments.Length == 0)
                 return;
-
-            _logger.Trace($"StartingPositionSyncService: rebroadcasting spawn positions to peer {peerId}.");
             _commandSyncService.SendCommand(GameCommandType.StartingPositions, SerializeAssignments(_cachedAssignments));
         }
 
         private void OnStartingPositionsCommand(string senderId, byte[] payload)
         {
+            if (_sessionManager?.IsLocalPlayerHost == true && payload != null && payload.Length == 0)
+            {
+                // Catch up a client whose world cycle started after the broadcast.
+                // Never replay the previous world's cached positions during a new load.
+                if (_startupBarrier?.IsHostReady != true || _worldGenerationSignalState == null)
+                    return;
+                foreach (var participant in _sessionManager.Participants)
+                {
+                    if (participant?.Identity?.PlayerId != senderId || participant.IsHost)
+                        continue;
+                    if (_worldGenerationSignalState.TryGetWorldSpawnPositions(out var current) && current.Assignments?.Length > 0)
+                        _commandSyncService.SendCommandToPeer(senderId, GameCommandType.StartingPositions,
+                            SerializeAssignments(current.Assignments));
+                    return;
+                }
+                return;
+            }
+
+            if (_sessionManager == null
+                || _sessionManager.IsLocalPlayerHost
+                || !MultiplayerAuthorityService.IsAuthorizedHostSender(
+                    _sessionManager.Participants, senderId))
+            {
+                return;
+            }
+
             if (payload == null || payload.Length == 0)
                 return;
 
@@ -94,8 +119,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 return;
 
             CacheAssignments(assignments);
-            _logger.Trace($"StartingPositionSyncService: received {assignments.Length} assignments from {senderId}.");
-            _suppressNextBroadcast = true;
             long startupSequence = 0;
             string startupSessionId = null;
             if (_worldGenerationSignalState != null)
@@ -109,7 +132,17 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 Assignments = assignments,
             };
             if (_worldGenerationSignalState == null || _worldGenerationSignalState.TryStoreWorldSpawnPositions(spawnPositionsSignal, out spawnPositionsSignal))
-                _signalBus.Fire(spawnPositionsSignal);
+            {
+                _suppressNextBroadcast = true;
+                try
+                {
+                    _signalBus.Fire(spawnPositionsSignal);
+                }
+                finally
+                {
+                    _suppressNextBroadcast = false;
+                }
+            }
         }
 
         private bool ShouldBroadcastFromThisPeer()
@@ -152,7 +185,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 SpawnPositionAssignment assignment = assignments[index];
                 writer.Write(assignment.SlotIndex);
                 writer.Write(assignment.ParticipantId ?? string.Empty);
-                writer.Write(assignment.IsBot);
+                writer.Write(false);
                 writer.Write(assignment.Position.x);
                 writer.Write(assignment.Position.y);
             }
@@ -171,7 +204,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 int version = reader.ReadInt32();
                 if (version != PayloadVersion)
                 {
-                    _logger.Warn($"StartingPositionSyncService: unsupported payload version {version}.");
                     return null;
                 }
 
@@ -179,23 +211,31 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 if (count <= 0)
                     return Array.Empty<SpawnPositionAssignment>();
 
+                // Bound the count against the bytes actually available so a
+                // malformed packet cannot force a giant allocation up front.
+                const int minEntryBytes = 4 + 1 + 1 + 4 + 4; // slot + strlen + bool + x + y
+                if (count > (stream.Length - stream.Position) / minEntryBytes
+                    || count > 4096)
+                    return null;
+
                 var assignments = new SpawnPositionAssignment[count];
                 for (int index = 0; index < count; index++)
                 {
+                    int slotIndex = reader.ReadInt32();
+                    string participantId = reader.ReadString();
+                    reader.ReadBoolean();
                     assignments[index] = new SpawnPositionAssignment
                     {
-                        SlotIndex = reader.ReadInt32(),
-                        ParticipantId = reader.ReadString(),
-                        IsBot = reader.ReadBoolean(),
+                        SlotIndex = slotIndex,
+                        ParticipantId = participantId,
                         Position = new Vector2Int(reader.ReadInt32(), reader.ReadInt32()),
                     };
                 }
 
                 return assignments;
             }
-            catch (Exception exception)
+            catch (Exception)
             {
-                _logger.Warn($"StartingPositionSyncService: failed to deserialize assignments: {exception.Message}");
                 return null;
             }
         }

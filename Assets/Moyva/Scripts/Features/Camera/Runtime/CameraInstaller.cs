@@ -25,7 +25,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         [Header("References")]
         [SerializeField] private UnityEngine.Camera _sceneCamera;
-        
+
         [Header("Settings")]
         [SerializeField] private CameraSettingsSO _cameraSettings;
         [SerializeField] private InputActionAsset _cameraInputAsset;
@@ -53,14 +53,10 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             // 2. Біндимо налаштування
             var cameraSettings = _cameraSettings != null ? _cameraSettings : CreateRuntimeFallbackCameraSettings();
-            if (_cameraSettings == null)
-                Debug.LogWarning("[CameraInstaller] CameraSettingsSO is not assigned. Using runtime fallback isometric camera settings.");
 
             Container.BindInstance(cameraSettings).AsSingle();
             if (cameraInputAsset != null)
                 Container.BindInstance(cameraInputAsset).AsSingle();
-            else
-                Debug.LogWarning("[CameraInstaller] Camera input asset is not assigned. Camera input controller is disabled.");
 
             // 3. Біндимо сервіси. 
             // Використовуємо BindInterfacesAndSelfTo, щоб підхопити ITickable, IInitializable та самі інтерфейси API
@@ -70,7 +66,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             Container.BindInterfacesAndSelfTo<CameraZoom>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraMapRenderMaskService>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraAutoFramingService>().AsSingle();
-            
+
             // CameraFocused не має Tick/Initializable, тому можна просто до інтерфейсу
             Container.BindInterfacesTo<CameraFocused>().AsSingle();
 
@@ -91,7 +87,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
             var defaultAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(DefaultCameraInputAssetPath);
             if (defaultAsset != null)
             {
-                Debug.LogWarning($"[CameraInstaller] Camera input asset is not assigned. Using default asset at '{DefaultCameraInputAssetPath}'.");
                 return defaultAsset;
             }
 #endif

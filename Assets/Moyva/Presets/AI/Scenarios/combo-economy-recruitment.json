@@ -1,0 +1,92 @@
+{
+  "scenario": {
+    "id": "combo-economy-recruitment",
+    "title": "Economy + recruitment review",
+    "legacyStage": 3,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "combination": true,
+    "prerequisites": ["stable-economy", "recruitment"],
+    "minMeaningfulCandidates": 2,
+    "maxForcedActionRatio": 0.9,
+    "requiredIntents": ["Build", "Recruit", "EndTurn"],
+    "steps": [
+      {
+        "id": "stable-economy",
+        "goal": 3,
+        "criterion": 3,
+        "requiredCount": 1,
+        "threshold": 0,
+        "requiredTurns": 2,
+        "requiredIntents": ["Build", "EndTurn"],
+        "resources": [
+          {
+            "resourceId": "walnut-wood-materials-resources",
+            "minStock": 1.0,
+            "minProductionPerTurn": 1.0
+          },
+          {
+            "resourceId": "hardwood-materials-resources",
+            "minStock": 1.0,
+            "minProductionPerTurn": 1.0
+          }
+        ]
+      },
+      {
+        "id": "unit-recruited",
+        "goal": 4,
+        "criterion": 4,
+        "requiredCount": 1,
+        "threshold": 0,
+        "unitTypeId": "warrior",
+        "requiredIntents": ["Recruit", "EndTurn"]
+      }
+    ],
+    "startingConditions": {
+      "learnerStartsWithCastle": true,
+      "learnerMustPlaceCastle": false,
+      "startingResources": [
+        { "resourceId": "steak-food-resources", "amount": 60, "owner": "learner" },
+        { "resourceId": "hardwood-materials-resources", "amount": 40, "owner": "learner" },
+        { "resourceId": "walnut-wood-materials-resources", "amount": 40, "owner": "learner" }
+      ],
+      "startingUnits": [],
+      "startingBuildings": [
+        { "buildingTypeId": "wood-camp", "count": 1, "owner": "learner", "operational": true, "healthFraction": 1.0 },
+        { "buildingTypeId": "barrack", "count": 1, "owner": "learner", "operational": true, "healthFraction": 1.0 }
+      ],
+      "opponent": {
+        "enabled": false,
+        "startingUnits": 0,
+        "startingCastle": false,
+        "unitTypeId": "warrior",
+        "archetype": "passive",
+        "residents": 0
+      },
+      "objectives": [],
+      "residents": 10,
+      "openingRevealRadius": -1
+    },
+    "availableCapabilities": ["construction", "economy", "recruitment", "end-turn"],
+    "generationConstraints": {
+      "minReachableArea": 2,
+      "requiredResourceTypes": ["walnut-wood-materials-resources"],
+      "minOpponentDistance": 2,
+      "maxOpponentDistance": 0,
+      "objectiveReachability": true,
+      "requiredTerrainCompatibility": []
+    },
+    "rewardRules": {
+      "validatedGameplayEventsOnly": true,
+      "rewardSetupActions": false,
+      "requireMeaningfulEvent": true,
+      "maxGameplayRewardEventsPerTurn": 12,
+      "allowedGameplayEvents": []
+    },
+    "masteryPolicy": {
+      "kind": 0,
+      "successEpisodesRequired": 3,
+      "maxDecisionsPerSuccessfulEpisode": 150
+    }
+  }
+}

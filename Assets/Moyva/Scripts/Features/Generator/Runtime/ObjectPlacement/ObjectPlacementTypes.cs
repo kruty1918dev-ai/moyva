@@ -240,7 +240,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
     public sealed class ObjectPlacementLayer
     {
         public string LayerName { get; set; }
-        public string TargetGraphLayerId { get; set; }
+        public string TargetLayerId { get; set; }
         public ObjectPlacementRule Rule { get; set; } = new();
         public ClusterSettings Cluster { get; set; } = new();
         public List<ObjectPrefabEntry> Prefabs { get; } = new();

@@ -1,0 +1,25 @@
+{
+  "schema": "moyva.marketing-metadata",
+  "version": 1,
+  "overrides": [
+    {
+      "contentId": "castle-01",
+      "valueTier": "Hero",
+      "suitsClose": true,
+      "suitsWide": true,
+      "scoreBias": 2.0
+    },
+    {
+      "contentId": "archer",
+      "valueTier": "Supporting",
+      "suitsClose": true,
+      "scoreBias": 0.5
+    },
+    {
+      "contentId": "boat",
+      "valueTier": "Supporting",
+      "biome": "water",
+      "scoreBias": 0.5
+    }
+  ]
+}

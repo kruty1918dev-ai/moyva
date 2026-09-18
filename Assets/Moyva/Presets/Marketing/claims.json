@@ -1,0 +1,94 @@
+{
+  "schema": "moyva.marketing-claims",
+  "version": 1,
+  "claims": [
+    {
+      "id": "build",
+      "category": "imperative",
+      "en": "BUILD",
+      "uk": "БУДУЙ",
+      "de": "BAUE",
+      "requires": ["settlement"]
+    },
+    {
+      "id": "command",
+      "category": "imperative",
+      "en": "COMMAND",
+      "uk": "КОМАНДУЙ",
+      "de": "BEFEHLIGE",
+      "requires": ["units"]
+    },
+    {
+      "id": "expand",
+      "category": "imperative",
+      "en": "EXPAND",
+      "uk": "РОЗШИРЮЙСЯ",
+      "de": "EXPANDIERE",
+      "requires": ["buildings"]
+    },
+    {
+      "id": "defend",
+      "category": "imperative",
+      "en": "DEFEND",
+      "uk": "ЗАХИЩАЙ",
+      "de": "VERTEIDIGE",
+      "requires": ["defense"]
+    },
+    {
+      "id": "hold-the-line",
+      "category": "challenge",
+      "en": "HOLD THE LINE",
+      "uk": "ТРИМАЙ СТРІЙ",
+      "de": "HALTE DIE LINIE",
+      "requires": ["combat"]
+    },
+    {
+      "id": "every-turn",
+      "category": "challenge",
+      "en": "EVERY TURN COUNTS",
+      "uk": "КОЖЕН ХІД ВАЖЛИВИЙ",
+      "de": "JEDER ZUG ZÄHLT",
+      "requires": ["units"]
+    },
+    {
+      "id": "your-settlement",
+      "category": "world",
+      "en": "YOUR SETTLEMENT. YOUR STRATEGY.",
+      "uk": "ТВОЄ ПОСЕЛЕННЯ. ТВОЯ СТРАТЕГІЯ.",
+      "de": "DEINE SIEDLUNG. DEINE STRATEGIE.",
+      "requires": ["settlement"]
+    },
+    {
+      "id": "strike-from-afar",
+      "category": "mechanic",
+      "en": "STRIKE FROM AFAR",
+      "uk": "БИЙ ЗДАЛЕКА",
+      "de": "TRIFF AUS DER FERNE",
+      "requires": ["ranged"]
+    },
+    {
+      "id": "take-to-water",
+      "category": "mechanic",
+      "en": "TAKE TO THE WATER",
+      "uk": "ВИХОДЬ У ВОДУ",
+      "de": "STECH IN SEE",
+      "requires": ["naval"]
+    },
+    {
+      "id": "feed-your-people",
+      "category": "mechanic",
+      "en": "FEED. BUILD. PREPARE.",
+      "uk": "ГОДУЙ. БУДУЙ. ГОТУЙСЯ.",
+      "de": "ERNÄHRE. BAUE. RÜSTE.",
+      "requires": ["economy"]
+    },
+    {
+      "id": "turn-based-war",
+      "category": "world",
+      "en": "A TURN-BASED WAR FOR THE LAND",
+      "uk": "ПОКРОКОВА ВІЙНА ЗА ЗЕМЛЮ",
+      "de": "EIN RUNDEBASIERTER KRIEG UM DAS LAND",
+      "requires": ["combat"]
+    }
+  ]
+}

@@ -15,9 +15,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (!_enableMultiTouchCancel)
                     return true;
 
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Multi-touch detected. Active drags cancelled.");
-
                 CancelActivePointerDrags();
                 EndWallUndoBatch();
                 _touchTapTracker.Reset();
@@ -61,17 +58,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             bool multiTouchObserved = pointer.ActivePointerCount > 1;
             _touchTapTracker.Begin(pointer.PointerId, startScreenPosition, Time.unscaledTime, startedOverUi, multiTouchObserved);
             TryBeginReleaseSelectionPendingPlacementDragCandidate(startScreenPosition, startedOverUi);
-
-            if (VerboseLogs)
-                Debug.Log($"{LogTag} Touch tracking started. touchId={pointer.PointerId}, startedOverUi={startedOverUi}.");
         }
 
         private void CompleteReleaseSelectionTracking(Vector2 releaseScreenPosition, int touchId)
         {
             if (_isDraggingPendingPlacement)
             {
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Touch drag ended at {_draggedPlacementPosition}. touchId={touchId}");
 
                 SnapPendingPlacementToPointerTile(releaseScreenPosition);
                 PublishPendingPlacementDragVisual(releaseScreenPosition, _draggedPlacementPosition, snapToGrid: true);
@@ -82,9 +74,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             bool isTap = _touchTapTracker.Complete(Time.unscaledTime, _touchTapMaxDurationSeconds);
-
-            if (VerboseLogs)
-                Debug.Log($"{LogTag} Touch tracking completed. touchId={touchId}, isTap={isTap}.");
 
             if (isTap)
                 HandlePointerSelection(releaseScreenPosition, touchId, allowDragStart: false, selectionOnRelease: true);
@@ -113,9 +102,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _hasTouchPendingDragCandidate = true;
             _touchPendingDragCandidatePosition = startTile;
-
-            if (VerboseLogs)
-                Debug.Log($"{LogTag} Touch drag candidate started at {startTile}.");
         }
 
         private bool TryHandleReleaseSelectionPendingPlacementDrag(ConstructionPointerSnapshot pointer)
@@ -136,9 +122,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _isDraggingPendingPlacement = true;
                 _draggedPlacementPosition = _touchPendingDragCandidatePosition;
                 ClearPendingPlacementSnapTarget();
-
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Touch drag started at {_draggedPlacementPosition}.");
             }
 
             PublishPendingPlacementDragVisual(screenPosition, _draggedPlacementPosition, snapToGrid: false);
@@ -156,14 +139,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ClearTouchWallAnchor();
                 if (!IsBuildGridPlacementAllowed(tilePos, selectedBuildingId))
                 {
-                    if (VerboseLogs)
-                        Debug.Log($"{LogTag} Touch gate placement rejected by build grid at {tilePos}");
                     return;
                 }
 
                 bool gatePlaced = _constructionService.TryPreviewAt(tilePos);
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Touch gate placement at {tilePos} => {gatePlaced}");
                 return;
             }
 
@@ -181,22 +160,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (_constructionService.HasPendingPlacementAt(tilePos))
                 {
                     _touchPendingMoveSourcePosition = tilePos;
-                    if (VerboseLogs)
-                        Debug.Log($"{LogTag} Touch move source changed to {tilePos}.");
                     return;
                 }
 
                 if (!_constructionService.TryGetPendingBuildingIdAt(_touchPendingMoveSourcePosition, out string movingBuildingId)
                     || !IsBuildGridPlacementAllowed(tilePos, movingBuildingId, _touchPendingMoveSourcePosition))
                 {
-                    if (VerboseLogs)
-                        Debug.Log($"{LogTag} Touch move rejected by build grid: {_touchPendingMoveSourcePosition} -> {tilePos}");
                     return;
                 }
 
                 bool moved = _constructionService.TryMovePendingPlacement(_touchPendingMoveSourcePosition, tilePos);
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Touch move preview {_touchPendingMoveSourcePosition} -> {tilePos} => {moved}");
 
                 if (moved)
                     ClearTouchPendingMoveSource();
@@ -209,22 +182,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _hasTouchPendingMoveSource = true;
                 _touchPendingMoveSourcePosition = tilePos;
 
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Touch move source selected at {tilePos}.");
-
                 return;
             }
 
             if (!IsBuildGridPlacementAllowed(tilePos, selectedBuildingId))
             {
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Touch placement rejected by build grid at {tilePos}");
                 return;
             }
 
             bool placed = _constructionService.TryPreviewAt(tilePos);
-            if (VerboseLogs)
-                Debug.Log($"{LogTag} Touch preview at {tilePos} => {placed}");
         }
 
         private void HandleTouchWallSelection(Vector2Int tilePos)
@@ -235,9 +201,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     PreviewWallPathTo(tilePos);
 
                 EndWallUndoBatch();
-
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Touch wall path completed: {_touchWallAnchorPosition} -> {tilePos}");
 
                 ClearTouchWallAnchor();
                 return;
@@ -257,16 +220,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 string selectedBuildingId = _constructionService.GetSelectedBuildingId();
                 if (!IsBuildGridPlacementAllowed(tilePos, selectedBuildingId))
                 {
-                    if (VerboseLogs)
-                        Debug.Log($"{LogTag} Touch wall anchor at {tilePos} rejected by build grid.");
                     return;
                 }
 
                 bool placed = _constructionService.TryPreviewAt(tilePos);
                 if (!placed)
                 {
-                    if (VerboseLogs)
-                        Debug.Log($"{LogTag} Touch wall anchor at {tilePos} rejected.");
                     return;
                 }
             }
@@ -277,9 +236,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _lastWallDragTile = tilePos;
             _wallDragPendingPositions.Clear();
             _wallDragPendingPositions.Add(tilePos);
-
-            if (VerboseLogs)
-                Debug.Log($"{LogTag} Touch wall anchor set at {tilePos}.");
         }
     }
 }

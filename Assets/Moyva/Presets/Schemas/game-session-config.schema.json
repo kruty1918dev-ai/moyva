@@ -55,14 +55,13 @@
               "null"
             ],
             "title": "Faction Id",
-            "description": "Унікальний рядковий ідентифікатор фракції, напр. 'player_0', 'bot_1'."
+            "description": "Унікальний рядковий ідентифікатор фракції, наприклад 'player_0'."
           },
           "type": {
             "type": "string",
-            "pattern": "^(?:-?\\d+|(?:Human|Bot|Network))$",
+            "pattern": "^(?:-?\\d+|(?:Human|Network))$",
             "x-enumNames": [
               "Human",
-              "Bot",
               "Network"
             ],
             "x-flags": false,

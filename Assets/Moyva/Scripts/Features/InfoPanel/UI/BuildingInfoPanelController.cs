@@ -1,6 +1,7 @@
 using System;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.UIActions.API;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,7 +9,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.InfoPanel.UI
 {
-    public sealed class WorldInfoPanelController : IInitializable, IDisposable
+    public sealed class WorldInfoPanelController : IInitializable, IDisposable, IUiActionHandler
     {
         private readonly SignalBus _signalBus;
 
@@ -19,6 +20,9 @@ namespace Kruty1918.Moyva.InfoPanel.UI
         private readonly Button _closeButton;
         private readonly Transform _constructionCostContainer;
         private readonly EconomyDatabaseSO _economyDatabase;
+        private readonly IUiContextStack _uiContexts;
+        private IDisposable _panelContext;
+        private bool _isVisible;
 
         public WorldInfoPanelController(
             SignalBus signalBus,
@@ -35,6 +39,7 @@ namespace Kruty1918.Moyva.InfoPanel.UI
                 resourcesText as TMP_Text,
                 closeButton,
                 null,
+                null,
                 null)
         {
         }
@@ -48,7 +53,8 @@ namespace Kruty1918.Moyva.InfoPanel.UI
             [Inject(Id = "BuildingInfoResourcesText")] TMP_Text resourcesText,
             [Inject(Id = "BuildingInfoCloseButton")] Button closeButton,
             [Inject(Id = "ConstructionCostContainer", Optional = true)] Transform constructionCostContainer,
-            [InjectOptional] EconomyDatabaseSO economyDatabase)
+            [InjectOptional] EconomyDatabaseSO economyDatabase,
+            [InjectOptional] IUiContextStack uiContexts = null)
         {
             _signalBus = signalBus;
             _panelRoot = panelRoot;
@@ -58,6 +64,7 @@ namespace Kruty1918.Moyva.InfoPanel.UI
             _closeButton = closeButton;
             _constructionCostContainer = constructionCostContainer;
             _economyDatabase = economyDatabase;
+            _uiContexts = uiContexts;
         }
 
         public void Initialize()
@@ -75,6 +82,13 @@ namespace Kruty1918.Moyva.InfoPanel.UI
 
                 if (_closeButton != null)
                     _closeButton.onClick.AddListener(ClosePanel);
+
+                _panelContext = _uiContexts?.Push(new UiContextRegistration(
+                    "WorldInfoPanel",
+                    UiContextLayer.Panel,
+                    10,
+                    () => _isVisible,
+                    UiActionIds.Diagnostics.PanelClose));
 
                 SetVisible(false);
             }
@@ -96,6 +110,8 @@ namespace Kruty1918.Moyva.InfoPanel.UI
 
                 if (_closeButton != null)
                     _closeButton.onClick.RemoveListener(ClosePanel);
+
+                _panelContext?.Dispose();
             }
             catch (Exception ex)
             {
@@ -242,14 +258,35 @@ namespace Kruty1918.Moyva.InfoPanel.UI
 
         private void ClosePanel()
         {
-            SetVisible(false);
-            _signalBus.Fire<WorldInfoPanelClosedSignal>();
+            Execute(new UiActionRequest(
+                UiActionIds.Diagnostics.PanelClose,
+                UiActionSource.Button,
+                "WorldInfoPanel"));
         }
 
         private void SetVisible(bool isVisible)
         {
+            _isVisible = isVisible;
             if (_panelRoot != null)
                 _panelRoot.SetActive(isVisible);
+        }
+
+        public System.Collections.Generic.IReadOnlyCollection<UiActionId> ActionIds { get; } =
+            new[] { UiActionIds.Diagnostics.PanelClose };
+
+        public UiActionResult Execute(in UiActionRequest request)
+        {
+            if (!_isVisible)
+                return UiActionResult.Rejected(UiActionReason.WrongContext);
+
+            ClosePanelInternal();
+            return UiActionResult.Performed();
+        }
+
+        private void ClosePanelInternal()
+        {
+            SetVisible(false);
+            _signalBus.Fire<WorldInfoPanelClosedSignal>();
         }
     }
 }

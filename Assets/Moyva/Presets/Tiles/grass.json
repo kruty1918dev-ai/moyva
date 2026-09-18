@@ -1,0 +1,28 @@
+{
+  "$schema": "../Schemas/tile-type.schema.json",
+  "schema": "moyva.tile-type",
+  "version": 1,
+  "id": "grass",
+  "model": "tile-type",
+  "displayName": "Grass",
+  "aliases": ["TileGrass", "grass-tile-001"],
+  "tags": ["land"],
+  "traversalClassId": "grass",
+  "visual": {
+    "gridMode": "Dual",
+    "variants": [
+      {
+        "preset": {
+          "$asset": "asset.tile-preset.02-dual-grid-grass-kaykit-style.05593a2d",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/02_dual_grid_grass_kaykit_style.asset",
+          "required": true
+        },
+        "slot": "Top",
+        "weight": 1.0,
+        "tileHeight": 0.0
+      }
+    ],
+    "scaleToCellSize": true,
+    "layerYOffset": 0.0
+  }
+}

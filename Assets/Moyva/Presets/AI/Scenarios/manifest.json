@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "curriculum": [
+    "foundation-legal-setup",
+    "castle",
+    "production",
+    "stable-economy",
+    "recruitment",
+    "movement-scouting",
+    "combat-defense",
+    "capture",
+    "full-game-autonomous"
+  ]
+}

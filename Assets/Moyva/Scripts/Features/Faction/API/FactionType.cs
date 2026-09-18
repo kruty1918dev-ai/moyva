@@ -2,14 +2,11 @@ namespace Kruty1918.Moyva.Faction.API
 {
     /// <summary>
     /// Тип контролера фракції.
-    /// Human — керується локальним гравцем.
-    /// Bot    — керується AI.
-    /// Network — керується віддаленим гравцем через relay (для майбутнього мультиплеєру).
+    /// Human керується локальним гравцем, Network — віддаленим учасником.
     /// </summary>
     public enum FactionType
     {
-        Human   = 0,
-        Bot     = 1,
+        Human = 0,
         Network = 2,
     }
 }

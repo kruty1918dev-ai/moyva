@@ -43,4 +43,4 @@ Alternative:
 - `Assets/Moyva/Scripts/Features/Multiplayer/API/MultiplayerConfigMigrationPipeline.cs`
 - `Assets/Moyva/Scripts/Features/Multiplayer/Runtime/BinaryConfigStore.cs`
 - `Assets/Moyva/Scripts/Features/Multiplayer/API/MultiplayerConfigLifecycle.cs`
-- `docs/standarts/multiplayer-config-schema-migration.md`
+- `docs/standards/multiplayer-config-schema-migration.md`

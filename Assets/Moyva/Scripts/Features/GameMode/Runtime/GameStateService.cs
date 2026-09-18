@@ -11,9 +11,14 @@ namespace Kruty1918.Moyva.GameMode.Runtime
     /// Керує станом ігрового циклу: старт, пауза, відновлення, завершення.
     /// Надсилає відповідні сигнали через SignalBus.
     /// </summary>
-    internal sealed class GameStateService : IGameStateService, IDisposable
+    internal sealed class GameStateService :
+        IGameStateService,
+        IGameResultStateStore,
+        IDisposable
     {
         public GameStateType CurrentState { get; private set; } = GameStateType.Idle;
+        public bool IsGameOver => CurrentState == GameStateType.GameOver;
+        public string WinnerId => _winnerId;
 
         private readonly SignalBus _signalBus;
         private readonly IGamePauseModePolicy _pauseModePolicy;
@@ -21,6 +26,7 @@ namespace Kruty1918.Moyva.GameMode.Runtime
         private IDisposable _inputBlock;
         private float _timeScaleBeforePause = 1f;
         private bool _ownsSimulationPause;
+        private string _winnerId = string.Empty;
 
         [Inject]
         public GameStateService(
@@ -35,6 +41,8 @@ namespace Kruty1918.Moyva.GameMode.Runtime
 
         public void StartGame()
         {
+            ReleasePauseState();
+            _winnerId = string.Empty;
             CurrentState = GameStateType.Playing;
             _signalBus.Fire(new GameStartedSignal());
         }
@@ -72,9 +80,23 @@ namespace Kruty1918.Moyva.GameMode.Runtime
 
         public void EndGame(string winnerId)
         {
+            string normalizedWinner = winnerId?.Trim() ?? string.Empty;
+            if (IsGameOver && string.Equals(_winnerId, normalizedWinner, StringComparison.Ordinal))
+                return;
+
             ReleasePauseState();
+            _inputBlock = _inputPolicy?.AcquireBlock(GameplayInputKind.All, this);
+            _winnerId = normalizedWinner;
             CurrentState = GameStateType.GameOver;
-            _signalBus.Fire(new GameEndedSignal { WinnerId = winnerId });
+            _signalBus.Fire(new GameEndedSignal { WinnerId = _winnerId });
+        }
+
+        public void RestoreResult(bool isGameOver, string winnerId)
+        {
+            if (isGameOver)
+                EndGame(winnerId);
+            else
+                StartGame();
         }
 
         public void Dispose() => ReleasePauseState();

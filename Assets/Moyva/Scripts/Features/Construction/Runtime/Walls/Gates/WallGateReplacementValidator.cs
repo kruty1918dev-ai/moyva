@@ -7,7 +7,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class WallGateReplacementValidator : IWallGateReplacementValidator
     {
-        private readonly LazyInject<IConstructionService> _constructionService;
+        private readonly LazyInject<IConstructionSessionCommands> _constructionService;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IObjectsMapService _objectsMapService;
         private readonly IWallTopologyService _wallTopologyService;
@@ -15,7 +15,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         [Inject]
         public WallGateReplacementValidator(
-            LazyInject<IConstructionService> constructionService,
+            LazyInject<IConstructionSessionCommands> constructionService,
             IBuildingRegistry buildingRegistry,
             IObjectsMapService objectsMapService,
             IWallTopologyService wallTopologyService,

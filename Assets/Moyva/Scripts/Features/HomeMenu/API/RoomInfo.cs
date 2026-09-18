@@ -73,7 +73,7 @@ namespace Kruty1918.Moyva.HomeMenu.API
                 // 2: Lobby id віддаємо з явною міткою, щоб не плутати з join code.
                 if (HasLobbyId) return $"LobbyId: {LobbyId.Trim()}";
                 // 3: Повідомляємо користувачу, що ключ недоступний.
-                return "Код недоступний";
+                return "Code unavailable";
             }
         }
 

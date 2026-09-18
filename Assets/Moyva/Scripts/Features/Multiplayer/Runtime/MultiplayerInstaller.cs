@@ -7,6 +7,8 @@ using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
+using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.Shared.Connectivity;
 using UnityEngine;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
@@ -14,6 +16,57 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Multiplayer.Runtime
 {
+    internal sealed class LocalGameplayRoleResolver :
+        ILocalGameplayRoleResolver
+    {
+        private readonly ISessionManager _sessionManager;
+
+        public LocalGameplayRoleResolver(
+            ISessionManager sessionManager)
+        {
+            _sessionManager = sessionManager;
+        }
+
+        public LocalGameplayRoleSnapshot Resolve()
+        {
+            GameLaunchContext.EnsureNotExpired();
+            bool isMultiplayerLaunch =
+                GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame
+                || GameLaunchContext.Mode == GameLaunchMode.MenuJoinGame;
+            if (GameLaunchContext.Mode != GameLaunchMode.Unknown
+                && !isMultiplayerLaunch)
+            {
+                return new LocalGameplayRoleSnapshot(
+                    LocalGameplayRole.Offline,
+                    GameLaunchContext.LocalPlayerId);
+            }
+
+            if (GameLaunchContext.HasLocalPlayerRole)
+            {
+                return new LocalGameplayRoleSnapshot(
+                    GameLaunchContext.IsLocalPlayerHost
+                        ? LocalGameplayRole.Host
+                        : LocalGameplayRole.Client,
+                    GameLaunchContext.LocalPlayerId);
+            }
+
+            IReadOnlyList<Participant> participants =
+                _sessionManager?.Participants;
+            if (participants == null || participants.Count == 0)
+            {
+                return new LocalGameplayRoleSnapshot(
+                    LocalGameplayRole.Offline,
+                    _sessionManager?.LocalPlayerId);
+            }
+
+            return new LocalGameplayRoleSnapshot(
+                _sessionManager.IsLocalPlayerHost
+                    ? LocalGameplayRole.Host
+                    : LocalGameplayRole.Client,
+                _sessionManager.LocalPlayerId);
+        }
+    }
+
     /// <summary>
     /// Zenject MonoInstaller для мультиплеєрної підсистеми.
     /// Підключіть у сцені для реєстрації всіх мережевих сервісів.
@@ -21,44 +74,30 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     internal sealed class MultiplayerConstructionRuntimeAuthority :
         IConstructionRuntimeAuthorityQuery
     {
-        private readonly ISessionManager _sessionManager;
+        private readonly ILocalGameplayRoleResolver _roleResolver;
 
         public MultiplayerConstructionRuntimeAuthority(
-            ISessionManager sessionManager)
+            ILocalGameplayRoleResolver roleResolver)
         {
-            _sessionManager = sessionManager;
+            _roleResolver = roleResolver;
         }
 
         public bool IsAuthoritativeRuntime
         {
             get
             {
-                if (_sessionManager == null)
-                    return true;
-
-                IReadOnlyList<Participant> participants =
-                    _sessionManager.Participants;
-                return participants == null
-                    || participants.Count <= 1
-                    || _sessionManager.IsLocalPlayerHost;
+                return _roleResolver == null
+                    || _roleResolver.Resolve().IsAuthoritative;
             }
         }
     }
 
     public sealed class MultiplayerInstaller : MonoInstaller
     {
-        private const string Prefix = "[MultiplayerInstaller]";
-
         // Bind minimal, switchable wrappers synchronously so ILobbyService and INetworkProvider
         // are always resolvable by other installers during scene startup.
         public override void InstallBindings()
         {
-            Debug.Log($"{Prefix} InstallBindings start.");
-
-            // Logging and config store required by switchable wrappers
-            Container.Bind<IMultiplayerLogger>()
-                .To<UnityMultiplayerLogger>()
-                .AsSingle();
 
             Container.Bind<IConfigStore>()
                 .To<BinaryConfigStore>()
@@ -68,8 +107,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 .FromMethod(ctx =>
                 {
                     var store = ctx.Container.Resolve<IConfigStore>();
-                    var logger = ctx.Container.Resolve<IMultiplayerLogger>();
-                    return MultiplayerConfigLifecycle.LoadValidateFreeze(store, logger);
+                    return MultiplayerConfigLifecycle.LoadValidateFreeze(store);
                 })
                 .AsSingle();
 
@@ -115,9 +153,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .AsSingle();
             }
 
+            EnsureStartupBarrierBinding(Container);
             if (!Container.HasBinding(typeof(StartingPositionSyncService)))
             {
-                Container.BindInterfacesTo<StartingPositionSyncService>()
+                Container.BindInterfacesAndSelfTo<StartingPositionSyncService>()
                     .AsSingle()
                     .NonLazy();
             }
@@ -127,13 +166,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             // `async void` to avoid race conditions where other installers run before
             // the wrapper bindings exist.
             var _ = Install(Container);
-
-            Debug.Log($"{Prefix} InstallBindings end.");
         }
 
         public static async Task Install(DiContainer container)
         {
-            Debug.Log("[MultiplayerInstaller] Install start.");
             // If this static Install() is invoked directly (ProjectServicesInstaller calls it),
             // ensure the minimal, switchable wrappers are bound synchronously so other
             // installers can resolve `ILobbyService` immediately.
@@ -141,10 +177,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             {
                 if (!container.HasBinding(typeof(ILobbyService)))
                 {
-                    // Logging and config store required by switchable wrappers
-                    if (!container.HasBinding(typeof(IMultiplayerLogger)))
-                        container.Bind<IMultiplayerLogger>().To<UnityMultiplayerLogger>().AsSingle();
-
                     if (!container.HasBinding(typeof(IConfigStore)))
                         container.Bind<IConfigStore>().To<BinaryConfigStore>().AsSingle();
 
@@ -152,8 +184,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         container.Bind<MultiplayerConfig>().FromMethod(ctx =>
                         {
                             var store = ctx.Container.Resolve<IConfigStore>();
-                            var logger = ctx.Container.Resolve<IMultiplayerLogger>();
-                            return MultiplayerConfigLifecycle.LoadValidateFreeze(store, logger);
+                            return MultiplayerConfigLifecycle.LoadValidateFreeze(store);
                         }).AsSingle();
 
                     if (!container.HasBinding(typeof(SwitchableNetworkProvider)))
@@ -186,91 +217,68 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         .AsSingle();
                 }
 
+                EnsureStartupBarrierBinding(container);
                 if (!container.HasBinding(typeof(StartingPositionSyncService)))
-                    container.BindInterfacesTo<StartingPositionSyncService>().AsSingle().NonLazy();
+                    container.BindInterfacesAndSelfTo<StartingPositionSyncService>().AsSingle().NonLazy();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"[MultiplayerInstaller] Ensure minimal bindings failed: {ex.Message}");
             }
-            Debug.Log($"[MultiplayerInstaller] Ensure minimal bindings: ILobbyServiceBound={container.HasBinding(typeof(ILobbyService))}, SwitchableLobbyServiceBound={container.HasBinding(typeof(SwitchableLobbyService))}");
             var canUseUgs = false;
             var hasInternet = false;
             try
             {
-                Debug.Log($"{Prefix} Probing Unity Services initialization (timeout 6s)");
-                var initTask = UnityServices.InitializeAsync();
+                var initTask = MultiplayerAuthenticationGate.EnsureReadyAsync();
                 var initTimeout = Task.Delay(TimeSpan.FromSeconds(6));
                 var initCompleted = await Task.WhenAny(initTask, initTimeout);
 
                 if (initCompleted == initTask)
                 {
-                    Debug.Log($"{Prefix} UnityServices.InitializeAsync completed.");
                     try
                     {
+                        await initTask;
                         // Try quick anonymous sign-in if not already signed in/authorized
                         if (!AuthenticationService.Instance.IsSignedIn || !AuthenticationService.Instance.IsAuthorized)
                         {
-                            MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded();
-                            Debug.Log($"{Prefix} Attempting anonymous sign-in (timeout 6s)");
-                            var signInTask = AuthenticationService.Instance.SignInAnonymouslyAsync();
+                            var signInTask = MultiplayerAuthenticationGate.EnsureReadyAsync();
                             var signInCompleted = await Task.WhenAny(signInTask, Task.Delay(TimeSpan.FromSeconds(6)));
                             if (signInCompleted == signInTask && AuthenticationService.Instance.IsSignedIn && AuthenticationService.Instance.IsAuthorized)
                             {
-                                Debug.Log($"{Prefix} Anonymous sign-in succeeded.");
                                 canUseUgs = true;
                                 hasInternet = true;
-                            }
-                            else
-                            {
-                                Debug.Log($"{Prefix} Anonymous sign-in timed out or failed.");
                             }
                         }
                         else
                         {
-                            Debug.Log($"{Prefix} Already signed in and authorized.");
                             canUseUgs = true;
                             hasInternet = true;
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        Debug.LogError($"{Prefix} Exception during sign-in check: {ex.Message}");
-                    }
-                }
-                else
-                {
-                    Debug.Log($"{Prefix} UnityServices.InitializeAsync timed out.");
+                    catch (Exception) { }
                 }
 
                 if (!canUseUgs)
                 {
-                    Debug.Log($"{Prefix} Falling back to HTTP-based InternetChecker probe.");
-                    try { hasInternet = await InternetChecker.HasInternetAsync(3, 3); } catch (Exception ex) { Debug.LogError($"{Prefix} HTTP probe failed: {ex.Message}"); hasInternet = false; }
+                    try { hasInternet = await InternetChecker.HasInternetAsync(3, 3); }
+                    catch (Exception) { hasInternet = false; }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"{Prefix} Connectivity probe failed: {ex.Message}");
-                try { hasInternet = await InternetChecker.HasInternetAsync(3, 3); } catch (Exception innerEx) { Debug.LogError($"{Prefix} HTTP probe fallback failed: {innerEx.Message}"); hasInternet = false; }
+                try { hasInternet = await InternetChecker.HasInternetAsync(3, 3); }
+                catch (Exception) { hasInternet = false; }
             }
 
-            Debug.Log($"{Prefix} Connectivity probe result: hasInternet={hasInternet}");
-
-            // We bound a preliminary MultiplayerConfig and logger synchronously in InstallBindings
+            // We bound a preliminary MultiplayerConfig synchronously in InstallBindings
             // so the switchable wrappers are resolvable during startup. Now compute the final
             // config taking connectivity into account and update the container + switchable
             // lobby provider accordingly.
             var store = container.Resolve<IConfigStore>();
-            IMultiplayerLogger logger = container.HasBinding(typeof(IMultiplayerLogger))
-                ? container.Resolve<IMultiplayerLogger>()
-                : null;
-            var cfg = MultiplayerConfigLifecycle.LoadValidateFreeze(store, logger);
+            var cfg = MultiplayerConfigLifecycle.LoadValidateFreeze(store);
             cfg = ApplyRiskFeatureToggles(cfg);
             MultiplayerConfig finalCfg;
             if (!canUseUgs)
             {
-                Debug.LogWarning($"{Prefix} UGS unavailable due to initialization/auth failure. Falling back to configured fallback provider ({cfg.FallbackProviderType}).");
                 finalCfg = new MultiplayerConfig(
                     cfg.SchemaVersion,
                     cfg.FallbackProviderType,
@@ -305,7 +313,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
                 if (!ugsPresent)
                 {
-                    Debug.LogWarning($"{Prefix} UGS Lobby package not detected. Falling back to LAN provider to keep ILobbyService operational.");
                     finalCfg = new MultiplayerConfig(
                         cfg.SchemaVersion,
                         NetworkProviderType.Lan,
@@ -323,14 +330,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 }
                 else
                 {
-                    var relayReflectionValid = RelayNetworkProvider.TryValidateReflectionBindings(out var reflectionError);
+                    var relayReflectionValid = RelayNetworkProvider.TryValidateReflectionBindings(out _);
                     if (cfg.ProviderType == NetworkProviderType.Relay && !relayReflectionValid)
                     {
                         var fallbackType = cfg.FallbackProviderType == NetworkProviderType.Relay
                             ? NetworkProviderType.Offline
                             : cfg.FallbackProviderType;
-
-                        Debug.LogWarning($"{Prefix} Relay reflection metadata is invalid: {reflectionError}. Falling back to {fallbackType}.");
                         finalCfg = new MultiplayerConfig(
                             cfg.SchemaVersion,
                             fallbackType,
@@ -354,50 +359,22 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
             try
             {
-                var switchable = container.Resolve<SwitchableLobbyService>();
-                await switchable.SwitchToAsync(finalCfg.ProviderType);
-                Debug.Log($"{Prefix} SwitchableLobbyService active provider: {switchable.CurrentProviderType}");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"{Prefix} Failed to switch SwitchableLobbyService provider: {ex.Message}");
-            }
-
-            try
-            {
-                if (container.HasBinding(typeof(SwitchableNetworkProvider)))
-                {
-                    var switchableNetwork = container.Resolve<SwitchableNetworkProvider>();
-                    await switchableNetwork.SwitchToAsync(ResolveNetworkBootstrapProviderType(finalCfg));
-                    Debug.Log($"{Prefix} SwitchableNetworkProvider active type: {switchableNetwork.CurrentType}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"{Prefix} Failed to switch SwitchableNetworkProvider provider: {ex.Message}");
-            }
-
-            try
-            {
                 if (container.HasBinding(typeof(IMultiplayerModeSelector)))
                 {
-                    var modeSelector = container.Resolve<IMultiplayerModeSelector>();
-                    await modeSelector.SetModeAsync(finalCfg.ProviderType);
-                    Debug.Log($"{Prefix} MultiplayerModeSelector active mode: {modeSelector.CurrentMode}, effective lobby provider: {modeSelector.EffectiveMode}");
+                    if (container.Resolve<IMultiplayerModeSelector>() is MultiplayerModeSelector modeSelector)
+                    {
+                        await modeSelector.ApplyBootstrapModeAsync(
+                            finalCfg.ProviderType,
+                            ResolveNetworkBootstrapProviderType(finalCfg));
+                    }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.LogWarning($"{Prefix} Failed to sync MultiplayerModeSelector provider: {ex.Message}");
             }
 
             // Автоматичний leave сесії при виході з гри (Application.quitting / wantsToQuit).
             container.BindInterfacesAndSelfTo<MultiplayerExitDisconnect>()
-                .AsSingle()
-                .NonLazy();
-
-            // Late-join catch-up: host надсилає snapshot будівель + economy кожному новому peer.
-            container.BindInterfacesAndSelfTo<WorldStateReplicationService>()
                 .AsSingle()
                 .NonLazy();
 
@@ -437,9 +414,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .AsSingle();
             }
 
-            // NetworkModeController: orchestrates runtime switching and auto-probing
-            container.Bind<NetworkModeController>()
-                .AsSingle();
         }
 
         /// <summary>
@@ -447,6 +421,17 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         /// UGS/network probing. Scene installers must be able to resolve these
         /// bindings deterministically during their own InstallBindings pass.
         /// </summary>
+        public static void InstallGameplayBindings(DiContainer container)
+        {
+            if (container.HasBinding<MultiplayerTurnSyncService>())
+                return;
+            container.Bind<Kruty1918.Moyva.Turns.API.ITurnAuthorityPolicy>()
+                .To<MultiplayerTurnAuthorityPolicy>().AsSingle();
+            container.BindInterfacesAndSelfTo<MultiplayerTurnSyncService>().AsSingle().NonLazy();
+            container.BindInterfacesAndSelfTo<MultiplayerAuthorityService>().AsSingle().NonLazy();
+            container.BindInterfacesAndSelfTo<WorldStateReplicationService>().AsSingle().NonLazy();
+        }
+
         internal static void EnsureAuthorityCoreBindings(
             DiContainer container)
         {
@@ -493,17 +478,17 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .AsSingle();
             }
 
-            if (!container.HasBinding(typeof(IParticipantFallbackService)))
-            {
-                container.Bind<IParticipantFallbackService>()
-                    .To<ParticipantFallbackService>()
-                    .AsSingle();
-            }
-
             if (!container.HasBinding(typeof(ISessionManager)))
             {
                 container.Bind<ISessionManager>()
                     .To<SessionManager>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(typeof(ILocalGameplayRoleResolver)))
+            {
+                container.Bind<ILocalGameplayRoleResolver>()
+                    .To<LocalGameplayRoleResolver>()
                     .AsSingle();
             }
 
@@ -533,15 +518,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .AsSingle();
             }
 
-            if (!container.HasBinding(
-                    typeof(MultiplayerAuthorityService)))
-            {
-                container
-                    .BindInterfacesAndSelfTo<
-                        MultiplayerAuthorityService>()
-                    .AsSingle()
-                    .NonLazy();
-            }
+        }
+
+        private static void EnsureStartupBarrierBinding(DiContainer container)
+        {
+            if (!container.HasBinding<IMultiplayerStartupBarrier>())
+                container.BindInterfacesAndSelfTo<MultiplayerStartupBarrier>().AsSingle().NonLazy();
         }
 
         private static MultiplayerConfig ApplyRiskFeatureToggles(MultiplayerConfig config)
@@ -559,8 +541,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             if (providerType == config.ProviderType && fallbackType == config.FallbackProviderType)
                 return config;
-
-            Debug.LogWarning($"{Prefix} Relay provider is disabled by feature toggle. Provider '{config.ProviderType}' is mapped to '{providerType}', fallback '{config.FallbackProviderType}' -> '{fallbackType}'.");
 
             return new MultiplayerConfig(
                 config.SchemaVersion,
@@ -589,8 +569,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var fallbackType = config.FallbackProviderType == NetworkProviderType.Relay
                 ? NetworkProviderType.Offline
                 : config.FallbackProviderType;
-
-            Debug.LogWarning($"{Prefix} Relay transport runtime is unavailable (missing package and/or MOYVA_UGS_RELAY define). Lobby provider stays Relay for room listing; network provider falls back to {fallbackType} until Relay becomes available.");
             return fallbackType;
         }
     }

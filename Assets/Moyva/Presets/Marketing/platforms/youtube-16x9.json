@@ -1,0 +1,22 @@
+{
+  "schema": "moyva.marketing-platform",
+  "version": 1,
+  "id": "youtube-16x9",
+  "displayName": "YouTube",
+  "aspectRatio": 1.7778,
+  "resolutionWidth": 1920,
+  "resolutionHeight": 1080,
+  "minResolutionWidth": 1280,
+  "minResolutionHeight": 720,
+  "safeAreaMargin": 0.05,
+  "textAllowed": true,
+  "gameplayOnly": false,
+  "logoAllowed": true,
+  "uiRecommended": false,
+  "preRenderedAllowed": true,
+  "imageFormat": "png",
+  "videoFormat": "mp4",
+  "preferredDurationSec": 60.0,
+  "maxDurationSec": 180.0,
+  "notes": "Standard 16:9 video. End card allowed."
+}

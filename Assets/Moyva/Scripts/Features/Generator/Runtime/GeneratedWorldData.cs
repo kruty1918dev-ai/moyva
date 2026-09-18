@@ -16,12 +16,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public GridProjectionMode ProjectionMode = GridProjectionMode.Orthographic3D;
         public GridRenderMode RenderMode = GridRenderMode.Mesh3D;
         public GridNeighborhoodMode NeighborhoodMode = GridNeighborhoodMode.Moore8;
+        public string[,] GameplayTileMap;
+        public string[,] VisualTileMap;
         public string[,] BiomeMap;
         public string[,] ObjectMap;
         public float[,] HeightMap;
         public int[,] TerrainLevelMap;
         public string[,] BuildingMap;
-        public GraphLogicalTileMap LogicalTileMap;
+        public LogicalTileMap LogicalTileMap;
         public System.Collections.Generic.IReadOnlyList<CompiledLayerMap> CompiledLayers;
         public bool ForceChunkFirstCompositeBuild;
         public float CellSize = 1f;
@@ -49,6 +51,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ProjectionMode = ProjectionMode,
                 RenderMode = RenderMode,
                 NeighborhoodMode = NeighborhoodMode,
+                GameplayTileMap = MapArrayUtils.CloneStringMap(GameplayTileMap),
+                VisualTileMap = MapArrayUtils.CloneStringMap(VisualTileMap),
                 BiomeMap = MapArrayUtils.CloneStringMap(BiomeMap),
                 ObjectMap = MapArrayUtils.CloneStringMap(ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(HeightMap),

@@ -5,6 +5,17 @@ using System.Threading.Tasks;
 
 namespace Kruty1918.Moyva.Multiplayer.Lobbies
 {
+    /// <summary>The provider's local identity, using the same IDs as its lobby roster.</summary>
+    public interface ILobbyLocalIdentity
+    {
+        string LocalPlayerId { get; }
+    }
+
+    public interface ILobbyHostMigrationService
+    {
+        Task<bool> TryTransferHostAsync(string newHostPlayerId, string relayJoinCode, CancellationToken ct = default);
+    }
+
     /// <summary>
     /// High-level abstraction over Unity Gaming Services Lobby.
     /// Responsible for room lifecycle (create, join, list, leave) and for

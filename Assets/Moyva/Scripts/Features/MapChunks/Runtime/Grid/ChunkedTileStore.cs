@@ -34,8 +34,6 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                 if (IsValid(item.Key))
                     Set(item.Key, item.Value);
             }
-
-            Debug.Log($"[MoyvaMapChunks] TileStore resized map={Width}x{Height} tiles, chunk={ChunkSize}x{ChunkSize} tiles.");
         }
 
         public string Get(Vector2Int position)

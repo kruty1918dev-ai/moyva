@@ -1,0 +1,24 @@
+{
+  "$schema": "../Schemas/movement-profile.schema.json",
+  "schema": "moyva.movement-profile",
+  "version": 1,
+  "id": "ground-default",
+  "model": "movement-profile",
+  "fallback": {
+    "passable": true,
+    "staminaCost": 1.0
+  },
+  "classRules": [
+    { "classId": "water", "passable": false, "staminaCost": 0.0 },
+    { "classId": "road", "passable": true, "staminaCost": 0.75 },
+    { "classId": "grass", "passable": true, "staminaCost": 1.0 },
+    { "classId": "sand", "passable": true, "staminaCost": 1.15 },
+    { "classId": "swamp", "passable": true, "staminaCost": 2.5 },
+    { "classId": "hill", "passable": true, "staminaCost": 1.4 },
+    { "classId": "mountain", "passable": false, "staminaCost": 0.0 },
+    { "classId": "snow", "passable": true, "staminaCost": 2.2 },
+    { "classId": "forest-sparse", "passable": true, "staminaCost": 1.4 },
+    { "classId": "forest-dense", "passable": true, "staminaCost": 2.0 }
+  ],
+  "tileOverrides": []
+}

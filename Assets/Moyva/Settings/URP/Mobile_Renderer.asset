@@ -254,8 +254,6 @@ MonoBehaviour:
   _forceFullResolutionState: 1
   _applyInSceneView: 1
   _applyInSceneViewDuringPlay: 0
-  _enableMorphologyDebugPasses: 0
-  _logPipelineDiagnostics: 1
 --- !u!114 &2715838963536112315
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,0 +1,29 @@
+{
+    "MoyvaStrategy": {
+        "checkpoints": [
+            {
+                "steps": 5044,
+                "file_path": "/home/oleksiy/\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0438/Projects/Moyva/Game-Project/moyva/Results/MoyvaTraining/moyva-20260915-201659/MoyvaStrategy/MoyvaStrategy-5044.onnx",
+                "reward": 0.9998000264167786,
+                "creation_time": 1789504104.099614,
+                "auxillary_file_paths": [
+                    "/home/oleksiy/\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0438/Projects/Moyva/Game-Project/moyva/Results/MoyvaTraining/moyva-20260915-201659/MoyvaStrategy/MoyvaStrategy-5044.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 5044,
+            "file_path": "/home/oleksiy/\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0438/Projects/Moyva/Game-Project/moyva/Results/MoyvaTraining/moyva-20260915-201659/MoyvaStrategy.onnx",
+            "reward": 0.9998000264167786,
+            "creation_time": 1789504104.099614,
+            "auxillary_file_paths": [
+                "/home/oleksiy/\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0438/Projects/Moyva/Game-Project/moyva/Results/MoyvaTraining/moyva-20260915-201659/MoyvaStrategy/MoyvaStrategy-5044.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.1+cu121"
+    }
+}

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using Zenject;
@@ -20,7 +21,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         // Construction can depend back on ITurnService. Active-owner fallback is
         // only needed when ResolveActiveOwnerId runs, not while this resolver is created.
-        private readonly LazyInject<IConstructionService> _constructionService;
+        private readonly LazyInject<IConstructionSessionCommands> _constructionService;
         private readonly IStartingPositionState _startingPositionState;
 
     #pragma warning disable CS0649
@@ -28,7 +29,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     #pragma warning restore CS0649
 
         public BootstrapOwnerIdResolver(
-            LazyInject<IConstructionService> constructionService,
+            LazyInject<IConstructionSessionCommands> constructionService,
             [InjectOptional] IStartingPositionState startingPositionState = null)
         {
             _constructionService = constructionService;
@@ -43,6 +44,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (!string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
                 return NormalizeOwnerId(_sessionManager.LocalPlayerId);
+
+            if (GameLaunchContext.HasLocalPlayerRole &&
+                !string.IsNullOrWhiteSpace(GameLaunchContext.LocalPlayerId))
+            {
+                return NormalizeOwnerId(GameLaunchContext.LocalPlayerId);
+            }
 
             return NormalizeOwnerId(_constructionService.Value.GetActiveOwner());
         }
@@ -61,56 +68,96 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (factions == null || factions.Count == 0)
                 return string.Empty;
 
+            // Direct Gameplay is local; stale ISessionManager data must not win.
+            if (GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest)
+                return factions[0].OwnerId ?? string.Empty;
+
             var participants = _sessionManager?.Participants;
-            bool hasAuthoritativeSession = participants != null && participants.Count > 0;
+            bool hasAuthoritativeSession =
+                participants != null &&
+                participants.Count > 0;
+            string sessionLocalPlayerId =
+                _sessionManager?.LocalPlayerId?.Trim();
+            string launchLocalPlayerId =
+                GameLaunchContext.HasLocalPlayerRole
+                    ? GameLaunchContext.LocalPlayerId?.Trim()
+                    : string.Empty;
+
             if (hasAuthoritativeSession)
             {
-                string localPlayerId = _sessionManager.LocalPlayerId?.Trim();
+                string localPlayerId =
+                    !string.IsNullOrWhiteSpace(sessionLocalPlayerId)
+                        ? sessionLocalPlayerId
+                        : launchLocalPlayerId;
+
                 if (string.IsNullOrWhiteSpace(localPlayerId))
                     return string.Empty;
 
-                for (int index = 0; index < factions.Count; index++)
+                if (TryFindFactionOwner(
+                        factions,
+                        localPlayerId,
+                        out string factionOwnerId))
+                    return factionOwnerId;
+
+                if (GameLaunchContext.HasLocalPlayerRole
+                    && GameLaunchContext.IsLocalPlayerHost
+                    && factions.Count == 1)
                 {
-                    if (string.Equals(factions[index].OwnerId, localPlayerId, StringComparison.Ordinal))
-                        return factions[index].OwnerId;
+                    return factions[0].OwnerId ?? string.Empty;
                 }
 
                 return string.Empty;
             }
 
-            for (int index = 0; index < factions.Count; index++)
-            {
-                if (!factions[index].IsBot && !string.IsNullOrWhiteSpace(factions[index].OwnerId))
-                    return factions[index].OwnerId;
-            }
+            if (TryFindFactionOwner(
+                    factions,
+                    launchLocalPlayerId,
+                    out string launchFactionOwnerId))
+                return launchFactionOwnerId;
 
             return factions[0].OwnerId ?? string.Empty;
         }
 
+        private static bool TryFindFactionOwner(
+            IReadOnlyList<TurnFaction> factions,
+            string ownerId,
+            out string factionOwnerId)
+        {
+            factionOwnerId = string.Empty;
+            if (factions == null || string.IsNullOrWhiteSpace(ownerId))
+                return false;
+
+            for (int index = 0; index < factions.Count; index++)
+            {
+                if (string.Equals(
+                        factions[index].OwnerId,
+                        ownerId.Trim(),
+                        StringComparison.Ordinal))
+                {
+                    factionOwnerId = factions[index].OwnerId;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private string ResolveLocalActiveOwnerId(IReadOnlyList<SpawnPositionAssignment> targets)
         {
-            string localPlayerId = _sessionManager?.LocalPlayerId;
+            string localPlayerId = !string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId)
+                ? _sessionManager.LocalPlayerId
+                : (GameLaunchContext.HasLocalPlayerRole ? GameLaunchContext.LocalPlayerId : string.Empty);
 
             if (targets != null)
             {
                 for (int index = 0; index < targets.Count; index++)
                 {
                     var target = targets[index];
-                    if (target.IsBot)
-                        continue;
-
                     if (!string.IsNullOrWhiteSpace(localPlayerId)
                         && string.Equals(target.ParticipantId, localPlayerId, StringComparison.Ordinal))
                     {
                         return ResolveSpawnOwnerId(target, index);
                     }
-                }
-
-                for (int index = 0; index < targets.Count; index++)
-                {
-                    var target = targets[index];
-                    if (!target.IsBot)
-                        return ResolveSpawnOwnerId(target, index);
                 }
 
                 if (targets.Count > 0)
@@ -124,9 +171,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             if (!string.IsNullOrWhiteSpace(assignment.ParticipantId))
                 return assignment.ParticipantId;
-
-            if (assignment.IsBot)
-                return $"bot-{assignment.SlotIndex:00}";
 
             return fallbackIndex == 0 ? DefaultOwnerId : $"spawn-slot-{assignment.SlotIndex:00}";
         }

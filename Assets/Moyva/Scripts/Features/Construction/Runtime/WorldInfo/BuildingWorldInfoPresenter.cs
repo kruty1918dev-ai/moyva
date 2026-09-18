@@ -13,16 +13,22 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly SignalBus _signalBus;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IEconomyInfoMediator _economyInfoMediator;
+        private readonly Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
 
         public BuildingWorldInfoPresenter(
             SignalBus signalBus,
             IBuildingRegistry buildingRegistry,
-            [InjectOptional] IEconomyInfoMediator economyInfoMediator)
+            [InjectOptional] IEconomyInfoMediator economyInfoMediator,
+            [InjectOptional] Kruty1918.Moyva.Shared.Localization.ILocalizationService localization = null)
         {
             _signalBus = signalBus;
             _buildingRegistry = buildingRegistry;
             _economyInfoMediator = economyInfoMediator;
+            _loca = localization;
         }
+
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
 
         public void Initialize()
         {
@@ -53,8 +59,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
 
                 var title = string.IsNullOrWhiteSpace(definition.DisplayName)
-                    ? "Будівля"
-                    : definition.DisplayName;
+                    ? T("Building")
+                    : T(definition.DisplayName);
 
                 var subtitle = BuildSubtitle(definition, settlementContext.SettlementName);
                 var content = hasEconomyContext
@@ -75,37 +81,38 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
-        private static string BuildSubtitle(BuildingDefinition definition, string settlementName)
+        private string BuildSubtitle(BuildingDefinition definition, string settlementName)
         {
             if (string.IsNullOrWhiteSpace(settlementName))
-                settlementName = "Без поселення";
+                settlementName = "No settlement";
 
             if (BuildingDefinitionCapabilities.IsTownHall(definition))
-                return $"Ратуша • {settlementName}";
+                return T("Town Hall") + " • " + settlementName;
 
             if (BuildingDefinitionCapabilities.IsWarehouse(definition))
-                return $"Склад • {settlementName}";
+                return T("Warehouse") + " • " + settlementName;
 
             if (BuildingDefinitionCapabilities.IsCastle(definition))
-                return $"Капітал • {settlementName}";
+                return T("Capital") + " • " + settlementName;
 
-            return $"Будівля • {settlementName}";
+            return T("Building") + " • " + settlementName;
         }
 
         private string BuildFallbackText(BuildingDefinition definition)
         {
             var details = new StringBuilder();
             if (!string.IsNullOrWhiteSpace(definition.Description))
-                details.AppendLine(definition.Description.Trim());
+                details.AppendLine(T(definition.Description.Trim()));
 
             BuildingDefaultInfoExtractor.AppendMeaningfulFacts(
                 definition,
                 details,
-                ResolveResourceDisplayName);
+                ResolveResourceDisplayName,
+                _loca);
 
             return details.Length > 0
                 ? details.ToString().TrimEnd()
-                : "Додаткових відомостей немає.";
+                : T("No additional information.");
         }
 
         private string BuildResourcesText(BuildingDefinition definition, EconomySettlementContext settlementContext, Vector2Int position)
@@ -115,27 +122,27 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (BuildingDefinitionCapabilities.IsWarehouse(definition))
             {
                 resources = _economyInfoMediator.GetWarehouseResourceTotals(position);
-                return FormatResources(resources, "Ресурси складу");
+                return FormatResources(resources, T("Warehouse resources"));
             }
 
             if (BuildingDefinitionCapabilities.IsTownHall(definition))
             {
                 resources = _economyInfoMediator.GetSettlementWarehousesTotal(settlementContext.SettlementId);
-                return FormatResources(resources, "Ресурси всіх складів поселення");
+                return FormatResources(resources, T("Resources of all settlement warehouses"));
             }
 
             if (BuildingDefinitionCapabilities.IsCastle(definition))
             {
                 resources = _economyInfoMediator.GetOwnerResourceTotals(settlementContext.OwnerId);
-                return FormatResources(resources, "Зведення по капіталу власника");
+                return FormatResources(resources, T("Owner capital summary"));
             }
 
             resources = _economyInfoMediator.GetSettlementResourceTotals(settlementContext.SettlementId);
             var details = new StringBuilder();
-            details.AppendLine(FormatResources(resources, "Ресурси поселення"));
+            details.AppendLine(FormatResources(resources, T("Settlement resources")));
 
             int beforeFacts = details.Length;
-            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, details, ResolveResourceDisplayName))
+            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, details, ResolveResourceDisplayName, _loca))
             {
                 if (beforeFacts > 0)
                     details.Insert(beforeFacts, Environment.NewLine);
@@ -151,7 +158,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (resources == null || resources.Count == 0)
             {
-                sb.Append("Немає ресурсів.");
+                sb.Append(T("No resources."));
                 return sb.ToString();
             }
 
@@ -201,15 +208,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             switch ((resourceId ?? string.Empty).Trim().ToLowerInvariant())
             {
                 case "material":
-                case "materials": return "Матеріали";
-                case "food": return "Їжа";
-                case "money": return "Гроші";
-                case "wood": return "Деревина";
-                case "hardwood": return "Оброблена деревина";
-                case "stone": return "Камінь";
+                case "materials": return T("Materials");
+                case "food": return T("Food");
+                case "money": return T("Money");
+                case "wood": return T("Wood");
+                case "hardwood": return T("Processed wood");
+                case "stone": return T("Stone");
                 case "iron":
-                case "iron-ore": return "Залізо";
-                default: return "Ресурс";
+                case "iron-ore": return T("Iron");
+                default: return T("Resource");
             }
         }
     }

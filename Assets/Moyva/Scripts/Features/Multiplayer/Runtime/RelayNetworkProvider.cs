@@ -61,7 +61,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             return RelayReflectionCache.TryValidate(out error);
         }
 
-        public const uint ProtocolVersion = 1;
+        // v2: frames run through ReliableTransportChannel (sequence header),
+        // so peers on protocol v1 are rejected cleanly at handshake.
+        public const uint ProtocolVersion = 2;
         private const byte FrameHello = 1;
         private const byte FrameIdentity = 2;
         private const byte FrameUserData = 3;
@@ -69,10 +71,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private const int MaxFrameBodyBytes = 60 * 1024;
         private const int HandshakeTimeoutMs = 15_000;
-        private const int PumpDelayMs = 16;
-
         private readonly RelayProviderSettings _settings;
-        private readonly IMultiplayerLogger _logger;
+        private readonly MultiplayerTransportPump _transportPump;
         private readonly List<IObserver<NetworkMessage>> _observers = new List<IObserver<NetworkMessage>>();
         private string _configuredLocalPeerId;
 
@@ -82,10 +82,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     #pragma warning restore CS0067
         public IObservable<NetworkMessage> Messages => new MessageObservable(_observers);
 
-        public RelayNetworkProvider(RelayProviderSettings settings, IMultiplayerLogger logger)
+        public RelayNetworkProvider(RelayProviderSettings settings)
         {
             _settings = settings ?? RelayProviderSettings.Default();
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _transportPump = new MultiplayerTransportPump();
         }
 
         public void SetLocalPeerId(string playerId)
@@ -138,12 +138,36 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         private NetworkConnection _serverConnection;
         private NativeList<NetworkConnection> _serverConnections;
         private readonly Dictionary<int, string> _connectionPlayerIds = new Dictionary<int, string>();
-        private bool _hostHelloReceived;
-        private bool _isHost;
+        private volatile bool _hostHelloReceived;
+        private volatile bool _isHost;
         private string _localPeerId;
-        private string _hostPeerId;
-        private CancellationTokenSource _pumpCts;
-        private Task _pumpTask;
+        private volatile string _hostPeerId;
+        private ReliableTransportChannel _reliableChannel;
+        private readonly Dictionary<NetworkConnection, string> _helloPeerIds = new();
+        private readonly List<NetworkConnection> _expiredHandshakes = new();
+        private volatile string _transportError;
+        private volatile bool _transportActive;
+        private volatile int _relayStatus;
+
+        // Outbound user messages are enqueued by any thread and drained on the
+        // transport pump thread, which exclusively owns the driver.
+        private const int MaxOutboundPerTick = 32;
+        private const int MaxRetryQueue = 256;
+        private readonly System.Collections.Concurrent.ConcurrentQueue<OutboundMessage> _outbound =
+            new System.Collections.Concurrent.ConcurrentQueue<OutboundMessage>();
+        private readonly Queue<OutboundMessage> _sendRetry = new Queue<OutboundMessage>();
+
+        private readonly struct OutboundMessage
+        {
+            public readonly string TargetPeerId;
+            public readonly byte[] Payload;
+
+            public OutboundMessage(string targetPeerId, byte[] payload)
+            {
+                TargetPeerId = targetPeerId;
+                Payload = payload;
+            }
+        }
 
         private async Task<SessionResult> HostViaRelayAsync(CancellationToken ct)
         {
@@ -152,9 +176,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 await EnsureRelayReadyAsync();
                 _localPeerId = ResolveLocalPeerId(
                     AuthenticationService.Instance.PlayerId);
-                _hostPeerId = _localPeerId;
 
                 await ShutdownTransportAsync();
+                _hostPeerId = _localPeerId;
 
                 var relayService = ResolveRelayServiceInstance();
                 var allocation = await CreateAllocationAsync(
@@ -163,17 +187,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     string.IsNullOrEmpty(_settings.Region) ? null : _settings.Region);
 
                 var allocationId = GetPropertyValue<Guid>(allocation, "AllocationId");
-                var joinCode = await GetJoinCodeAsync(relayService, allocationId);
-                if (!RelayJoinCodeUtility.IsValid(joinCode))
-                    return await FailAndShutdownAsync($"Relay GetJoinCodeAsync returned invalid join code '{joinCode ?? string.Empty}'.");
-
-                _logger.Info($"[Relay] Hosted allocation. Join code: {joinCode}");
-
                 var relayServerData = BuildRelayServerData(allocation, RelayConnectionType, isHostAllocation: true);
-                var netSettings = new NetworkSettings();
-                netSettings.WithRelayParameters(ref relayServerData);
-
-                _driver = NetworkDriver.Create(netSettings);
+                _driver = CreateRelayDriver(ref relayServerData);
+                _reliableChannel = new ReliableTransportChannel(_driver);
                 _serverConnections = new NativeList<NetworkConnection>(
                     Math.Max(_settings.MaxConnections, 4), Allocator.Persistent);
 
@@ -184,14 +200,28 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     return await FailAndShutdownAsync("Relay host listen failed.");
 
                 _isHost = true;
+                Application.runInBackground = true;
+                _transportActive = true;
                 StartPumpLoop(ct);
-                PeerConnected?.Invoke(_localPeerId);
+                var deadline = DateTime.UtcNow.AddMilliseconds(HandshakeTimeoutMs);
+                while (_relayStatus != (int)RelayConnectionStatus.Established)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if (_relayStatus == (int)RelayConnectionStatus.AllocationInvalid)
+                        return await FailAndShutdownAsync("Relay host allocation expired or was rejected before binding.");
+                    if (DateTime.UtcNow >= deadline)
+                        return await FailAndShutdownAsync("Relay host binding timeout. Could not reach the Relay server.");
+                    await Task.Delay(50, ct);
+                }
+                var joinCode = await GetJoinCodeAsync(relayService, allocationId);
+                if (!RelayJoinCodeUtility.IsValid(joinCode))
+                    return await FailAndShutdownAsync("Relay returned an invalid join code.");
+                RaisePeerConnected(_localPeerId);
                 return SessionResult.Ok(joinCode);
             }
             catch (Exception e)
             {
                 await SafeShutdownAfterFailureAsync();
-                _logger.Error($"[Relay] HostAsync failed: {e.Message}");
                 return SessionResult.Fail(e.Message);
             }
         }
@@ -217,10 +247,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 var joinAllocation = await JoinAllocationAsync(relayService, normalizedJoinCode);
 
                 var relayServerData = BuildRelayServerData(joinAllocation, RelayConnectionType, isHostAllocation: false);
-                var netSettings = new NetworkSettings();
-                netSettings.WithRelayParameters(ref relayServerData);
-
-                _driver = NetworkDriver.Create(netSettings);
+                _driver = CreateRelayDriver(ref relayServerData);
+                _reliableChannel = new ReliableTransportChannel(_driver);
 
                 if (_driver.Bind(NetworkEndpoint.AnyIpv4) != 0)
                     return await FailAndShutdownAsync("Relay client bind failed.");
@@ -230,17 +258,20 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     return await FailAndShutdownAsync("Relay client connect request failed.");
 
                 _isHost = false;
+                Application.runInBackground = true;
+                _transportActive = true;
                 StartPumpLoop(ct);
 
                 var deadline = DateTime.UtcNow.AddMilliseconds(HandshakeTimeoutMs);
                 while (!_hostHelloReceived)
                 {
                     if (ct.IsCancellationRequested) return await FailAndShutdownAsync("Join cancelled.");
+                    if (_relayStatus == (int)RelayConnectionStatus.AllocationInvalid)
+                        return await FailAndShutdownAsync("Relay allocation expired or was rejected. Ask the host to recreate the room.");
+                    if (!string.IsNullOrEmpty(_transportError)) return await FailAndShutdownAsync(_transportError);
                     if (DateTime.UtcNow > deadline) return await FailAndShutdownAsync("Relay handshake timeout.");
                     await Task.Delay(50, ct);
                 }
-
-                _logger.Info($"[Relay] Joined allocation. Host={_hostPeerId}");
                 return SessionResult.Ok(normalizedJoinCode);
             }
             catch (OperationCanceledException)
@@ -251,7 +282,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             catch (Exception e)
             {
                 await SafeShutdownAfterFailureAsync();
-                _logger.Error($"[Relay] JoinAsync failed: {e.Message}");
                 return SessionResult.Fail(e.Message);
             }
         }
@@ -261,7 +291,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             var localId = _localPeerId;
             await ShutdownTransportAsync();
             if (!string.IsNullOrEmpty(localId))
-                PeerDisconnected?.Invoke(localId);
+                RaisePeerDisconnected(localId);
         }
 
         private async Task<SessionResult> FailAndShutdownAsync(string message)
@@ -276,32 +306,48 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             {
                 await ShutdownTransportAsync();
             }
-            catch (Exception shutdownError)
+            catch (Exception)
             {
-                _logger.Warn($"[Relay] Shutdown after failure also failed: {shutdownError.Message}");
                 CleanupTransportImmediate();
             }
         }
 
         private Task SendViaRelayAsync(string targetPeerId, byte[] payload, CancellationToken ct)
         {
-            if (!_driver.IsCreated)
-            {
-                _logger.Warn("[Relay] SendMessage ignored: driver is not created.");
-                return Task.CompletedTask;
-            }
+            if (ct.IsCancellationRequested)
+                return Task.FromCanceled(ct);
+            if (!_transportActive)
+                return Task.FromException(
+                    new InvalidOperationException("Relay session is not connected."));
 
-            var safePayload = payload ?? Array.Empty<byte>();
-            var frame = BuildUserDataFrame(_localPeerId, targetPeerId, safePayload);
+            _outbound.Enqueue(
+                new OutboundMessage(
+                    targetPeerId,
+                    payload ?? Array.Empty<byte>()));
+            return Task.CompletedTask;
+        }
+
+        private void DeliverOutbound(string targetPeerId, byte[] safePayload)
+        {
+            var frame = MultiplayerFrameCodec.BuildUserDataFrame(
+                FrameUserData,
+                _localPeerId,
+                targetPeerId,
+                safePayload);
 
             if (_isHost)
             {
                 if (string.IsNullOrWhiteSpace(targetPeerId) || targetPeerId == "*")
                 {
+                    var recipientCount = 0;
+                    for (var i = 0; i < _serverConnections.Length; i++)
+                        if (IsAuthenticatedConnection(_serverConnections[i]))
+                            recipientCount++;
+                    _reliableChannel.EnsureCapacity(frame.Length, recipientCount);
                     for (int i = 0; i < _serverConnections.Length; i++)
                     {
                         var c = _serverConnections[i];
-                        if (c.IsCreated)
+                        if (IsAuthenticatedConnection(c))
                             SendFrame(c, frame);
                     }
                 }
@@ -309,32 +355,61 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 {
                     SendFrame(target, frame);
                 }
+                else if (!string.Equals(targetPeerId, _localPeerId, StringComparison.Ordinal))
+                {
+                    Debug.LogWarning(
+                        $"[Relay Transport] Peer '{targetPeerId}' is not connected; message dropped.");
+                }
 
-                DispatchUserMessage(_localPeerId, safePayload);
+                PostUserMessage(_localPeerId, safePayload);
             }
             else
             {
                 SendFrame(_serverConnection, frame);
             }
+        }
 
-            return Task.CompletedTask;
+        private void DrainOutbound()
+        {
+            var budget = MaxOutboundPerTick;
+            while (budget-- > 0 && TryDequeueOutbound(out var message))
+            {
+                try
+                {
+                    DeliverOutbound(message.TargetPeerId, message.Payload);
+                }
+                catch (TransportSendQueueFullException)
+                {
+                    // Back-pressure: retry next tick ahead of new traffic.
+                    if (_sendRetry.Count < MaxRetryQueue)
+                        _sendRetry.Enqueue(message);
+                    else
+                        Debug.LogWarning(
+                            "[Relay Transport] Dropping a message; the send retry queue is full.");
+                    break;
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogWarning(
+                        $"[Relay Transport] Send failed: {exception.Message}");
+                }
+            }
+        }
+
+        private bool TryDequeueOutbound(out OutboundMessage message)
+        {
+            if (_sendRetry.Count > 0)
+            {
+                message = _sendRetry.Dequeue();
+                return true;
+            }
+
+            return _outbound.TryDequeue(out message);
         }
 
         private async Task EnsureRelayReadyAsync()
         {
-            if (UnityServices.State != ServicesInitializationState.Initialized)
-            {
-                await UnityServices.InitializeAsync();
-                _logger.Info("[Relay] Unity Services initialized.");
-            }
-
-            MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded(_logger);
-
-            if (!AuthenticationService.Instance.IsSignedIn)
-            {
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
-                _logger.Info("[Relay] Signed in anonymously.");
-            }
+            await MultiplayerAuthenticationGate.EnsureReadyAsync();
         }
 
         private static object ResolveRelayServiceInstance()
@@ -408,14 +483,24 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             return null;
         }
 
+        private static NetworkDriver CreateRelayDriver(ref RelayServerData relayServerData)
+        {
+            var settings = new NetworkSettings();
+            try
+            {
+                settings.WithRelayParameters(ref relayServerData);
+                ReliableTransportChannel.Configure(ref settings);
+                return NetworkDriver.Create(settings);
+            }
+            finally { settings.Dispose(); }
+        }
+
         private static RelayServerData BuildRelayServerData(object allocation, string connectionType, bool isHostAllocation)
         {
             var endpoints = GetPropertyValue<System.Collections.IEnumerable>(allocation, "ServerEndpoints");
             object selectedEndpoint = null;
-            object firstEndpoint = null;
             foreach (var endpoint in endpoints)
             {
-                firstEndpoint ??= endpoint;
                 var endpointType = GetPropertyValue<string>(endpoint, "ConnectionType");
                 if (string.Equals(endpointType, connectionType, StringComparison.OrdinalIgnoreCase))
                 {
@@ -424,9 +509,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 }
             }
 
-            selectedEndpoint ??= firstEndpoint;
             if (selectedEndpoint == null)
-                throw new InvalidOperationException("Relay allocation does not contain server endpoints.");
+                throw new InvalidOperationException($"Relay allocation does not contain a '{connectionType}' endpoint.");
 
             var host = GetPropertyValue<string>(selectedEndpoint, "Host");
             var port = Convert.ToUInt16(GetPropertyValue<int>(selectedEndpoint, "Port"));
@@ -456,71 +540,42 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private void StartPumpLoop(CancellationToken externalCt)
         {
-            _pumpCts?.Cancel();
-            _pumpCts?.Dispose();
-            _pumpCts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
-            _pumpTask = PumpLoopAsync(_pumpCts.Token);
+            _transportPump.Start(
+                // The connect token owns setup only. The established transport
+                // belongs to the session and stops explicitly on leave/dispose.
+                CancellationToken.None,
+                () => _driver.IsCreated,
+                PumpTransportOnce);
         }
 
-        private async Task PumpLoopAsync(CancellationToken ct)
+        private void PumpTransportOnce()
         {
-            while (!ct.IsCancellationRequested && _driver.IsCreated)
-            {
-                try
-                {
-                    _driver.ScheduleUpdate().Complete();
-
-                    if (_isHost)
-                        PumpHost();
-                    else
-                        PumpClient();
-                }
-                catch (Exception e)
-                {
-                    _logger.Warn($"[Relay] Pump error: {e.Message}");
-                }
-
-                try { await Task.Delay(PumpDelayMs, ct); }
-                catch (OperationCanceledException) { return; }
-            }
+            _driver.ScheduleUpdate().Complete();
+            _relayStatus = (int)_driver.GetRelayConnectionStatus();
+            DrainOutbound();
+            if (_isHost)
+                PumpHost();
+            else
+                PumpClient();
+            _reliableChannel?.Flush(_driver, FailTransportPeer);
         }
 
         private void PumpHost()
         {
-            NetworkConnection incoming;
-            while ((incoming = _driver.Accept()) != default)
+            MultiplayerFrameCodec.PumpHostConnections(
+                ref _driver,
+                ref _serverConnections,
+                _connectionPlayerIds,
+                HandleFrame,
+                RaisePeerDisconnected);
+            _expiredHandshakes.Clear();
+            foreach (var pair in _helloPeerIds)
+                if (_driver.GetConnectionState(pair.Key) == NetworkConnection.State.Disconnected)
+                    _expiredHandshakes.Add(pair.Key);
+            foreach (var connection in _expiredHandshakes)
             {
-                _serverConnections.Add(incoming);
-            }
-
-            for (int i = 0; i < _serverConnections.Length; i++)
-            {
-                var connection = _serverConnections[i];
-                if (!connection.IsCreated)
-                {
-                    _serverConnections.RemoveAtSwapBack(i--);
-                    continue;
-                }
-
-                NetworkEvent.Type eventType;
-                while ((eventType = _driver.PopEventForConnection(connection, out var stream)) != NetworkEvent.Type.Empty)
-                {
-                    switch (eventType)
-                    {
-                        case NetworkEvent.Type.Data:
-                            HandleFrame(connection, stream, isHostSide: true);
-                            break;
-                        case NetworkEvent.Type.Disconnect:
-                            var key = connection.GetHashCode();
-                            if (_connectionPlayerIds.TryGetValue(key, out var pid))
-                            {
-                                _connectionPlayerIds.Remove(key);
-                                PeerDisconnected?.Invoke(pid);
-                            }
-                            _serverConnections[i] = default;
-                            break;
-                    }
-                }
+                _helloPeerIds.Remove(connection);
+                _reliableChannel?.Forget(connection);
             }
         }
 
@@ -534,28 +589,40 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 switch (eventType)
                 {
                     case NetworkEvent.Type.Connect:
-                        _logger.Info("[Relay] Client connected to host; sending Hello+Identity.");
-                        SendFrame(_serverConnection, BuildHelloFrame(_localPeerId));
-                        SendFrame(_serverConnection, BuildIdentityFrame(_localPeerId));
+                        SendControlFrame(_serverConnection, BuildHelloFrame(_localPeerId));
+                        SendControlFrame(_serverConnection, BuildIdentityFrame(_localPeerId));
                         break;
                     case NetworkEvent.Type.Data:
                         HandleFrame(_serverConnection, stream, isHostSide: false);
                         break;
                     case NetworkEvent.Type.Disconnect:
-                        _logger.Warn("[Relay] Client disconnected from host.");
+                        _reliableChannel?.Forget(_serverConnection);
+                        _helloPeerIds.Remove(_serverConnection);
                         _serverConnection = default;
+                        _transportActive = false;
+                        _transportError ??= "Relay host disconnected during the session.";
                         if (!string.IsNullOrEmpty(_hostPeerId))
-                            PeerDisconnected?.Invoke(_hostPeerId);
+                            RaisePeerDisconnected(_hostPeerId);
                         break;
                 }
             }
         }
 
+        private const int MaximumIdentityBytes = 256;
+
         private void HandleFrame(NetworkConnection source, UtpDataStreamReader stream, bool isHostSide)
         {
+            if (_reliableChannel == null || _driver.GetConnectionState(source) != NetworkConnection.State.Connected)
+                return;
+            if (!_reliableChannel.TryReadFrame(source, ref stream, out var channelError))
+            {
+                if (channelError != null)
+                    FailTransportPeer(source, channelError);
+                return;
+            }
             if (!TryReadFrame(stream, out byte type, out byte[] body))
             {
-                _logger.Warn("[Relay] Failed to read frame.");
+                FailTransportPeer(source, "Invalid Relay message frame.");
                 return;
             }
 
@@ -566,68 +633,95 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 case FrameUserData: HandleUserData(source, body, isHostSide); break;
                 case FrameBye:      break;
                 default:
-                    _logger.Warn($"[Relay] Unknown frame type {type}.");
                     break;
             }
         }
 
         private void HandleHello(NetworkConnection source, byte[] body, bool isHostSide)
         {
-            if (body == null || body.Length < 4)
+            if (body == null || body.Length <= 4 || body.Length > MaximumIdentityBytes + 4)
             {
-                _logger.Warn("[Relay] Invalid Hello frame.");
+                FailTransportPeer(source, "Invalid Relay handshake identity.");
                 return;
             }
 
             uint version = BitConverter.ToUInt32(body, 0);
             if (version != ProtocolVersion)
             {
-                _logger.Warn($"[Relay] Protocol mismatch: remote={version}, local={ProtocolVersion}. Dropping.");
-                _driver.Disconnect(source);
+                FailTransportPeer(source, "Relay game versions are incompatible.");
                 return;
             }
 
             string peerId = body.Length > 4 ? Encoding.UTF8.GetString(body, 4, body.Length - 4) : string.Empty;
+            if (string.IsNullOrWhiteSpace(peerId) || string.Equals(peerId, _localPeerId, StringComparison.Ordinal))
+            {
+                FailTransportPeer(source, "Relay peer identity conflicts with the local player.");
+                return;
+            }
+            if (_helloPeerIds.TryGetValue(source, out var previousIdentity))
+            {
+                if (!string.Equals(previousIdentity, peerId, StringComparison.Ordinal))
+                    FailTransportPeer(source, "Relay peer tried to change its identity.");
+                return;
+            }
+            _helloPeerIds.Add(source, peerId);
             if (isHostSide)
             {
-                SendFrame(source, BuildHelloFrame(_localPeerId));
-                SendFrame(source, BuildIdentityFrame(_localPeerId));
+                SendControlFrame(source, BuildHelloFrame(_localPeerId));
+                SendControlFrame(source, BuildIdentityFrame(_localPeerId));
             }
-            else
+            else if (!string.IsNullOrEmpty(peerId))
             {
-                if (!string.IsNullOrEmpty(peerId))
-                    _hostPeerId = peerId;
+                _hostPeerId = peerId;
             }
         }
 
         private void HandleIdentity(NetworkConnection source, byte[] body, bool isHostSide)
         {
             string peerId = body != null && body.Length > 0 ? Encoding.UTF8.GetString(body) : string.Empty;
-            if (string.IsNullOrEmpty(peerId))
+            if (string.IsNullOrWhiteSpace(peerId) || body.Length > MaximumIdentityBytes ||
+                !_helloPeerIds.TryGetValue(source, out var helloIdentity) ||
+                !string.Equals(helloIdentity, peerId, StringComparison.Ordinal))
             {
-                _logger.Warn("[Relay] Empty Identity frame, ignoring.");
+                FailTransportPeer(source, "Relay identity does not match the handshake.");
                 return;
             }
 
             int key = source.GetHashCode();
             if (isHostSide)
             {
+                if (_connectionPlayerIds.TryGetValue(key, out var existingIdentity))
+                {
+                    if (!string.Equals(existingIdentity, peerId, StringComparison.Ordinal))
+                        FailTransportPeer(source, "Relay peer tried to change its identity.");
+                    return;
+                }
+                if (TryFindConnectionByPlayerId(peerId, out var existingConnection) && existingConnection != source)
+                {
+                    FailTransportPeer(source, "Another connected Relay player already uses this identity.");
+                    return;
+                }
                 _connectionPlayerIds[key] = peerId;
-                PeerConnected?.Invoke(peerId);
+                RaisePeerConnected(peerId);
             }
             else
             {
+                if (_hostHelloReceived)
+                    return;
                 _hostPeerId = peerId;
                 _hostHelloReceived = true;
-                PeerConnected?.Invoke(peerId);
+                RaisePeerConnected(peerId);
             }
         }
 
         private void HandleUserData(NetworkConnection source, byte[] body, bool isHostSide)
         {
-            if (!TryParseUserData(body, out string target, out string senderId, out byte[] payload))
+            if (!MultiplayerFrameCodec.TryParseUserData(
+                    body,
+                    out string target,
+                    out string senderId,
+                    out byte[] payload))
             {
-                _logger.Warn("[Relay] Malformed UserData frame.");
                 return;
             }
 
@@ -640,39 +734,38 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     || string.IsNullOrWhiteSpace(
                         authoritativeSenderId))
                 {
-                    _logger.Warn(
-                        "[Relay] UserData arrived before an authenticated peer identity; dropping.");
                     return;
-                }
-
-                if (!string.Equals(
-                        senderId,
-                        authoritativeSenderId,
-                        StringComparison.Ordinal))
-                {
-                    _logger.Warn(
-                        $"[Relay] Replaced spoofed sender '{senderId}' with transport identity '{authoritativeSenderId}'.");
                 }
 
                 senderId = authoritativeSenderId;
             }
+            else if (!_hostHelloReceived)
+            {
+                FailTransportPeer(source, "Relay gameplay message arrived before the host handshake.");
+                return;
+            }
 
-            DispatchUserMessage(senderId, payload);
+            PostUserMessage(senderId, payload);
             if (!isHostSide) return;
 
-            byte[] wireFrame = BuildUserDataFrame(senderId, target, payload);
+            byte[] wireFrame =
+                MultiplayerFrameCodec.BuildUserDataFrame(
+                    FrameUserData,
+                    senderId,
+                    target,
+                    payload);
             if (string.IsNullOrWhiteSpace(target) || target == "*")
             {
                 for (int i = 0; i < _serverConnections.Length; i++)
                 {
                     var c = _serverConnections[i];
-                    if (!c.IsCreated || c == source) continue;
-                    SendFrame(c, wireFrame);
+                    if (!IsAuthenticatedConnection(c) || c == source) continue;
+                    SendControlFrame(c, wireFrame);
                 }
             }
             else if (target != _localPeerId && TryFindConnectionByPlayerId(target, out var dest))
             {
-                SendFrame(dest, wireFrame);
+                SendControlFrame(dest, wireFrame);
             }
         }
 
@@ -687,39 +780,57 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private void SendFrame(NetworkConnection connection, byte[] frame)
         {
-            if (!_driver.IsCreated || !connection.IsCreated || frame == null) return;
-            if (frame.Length > MaxFrameBodyBytes + 3)
-            {
-                _logger.Warn($"[Relay] Frame too large ({frame.Length}B), dropping.");
-                return;
-            }
+            if (_reliableChannel == null)
+                throw new InvalidOperationException("Relay transport is not initialized.");
+            _reliableChannel.Send(_driver, connection, frame);
+        }
 
-            if (_driver.BeginSend(connection, out var writer) != 0)
-            {
-                _logger.Warn("[Relay] BeginSend failed.");
-                return;
-            }
+        private void SendControlFrame(NetworkConnection connection, byte[] frame)
+        {
+            try { SendFrame(connection, frame); }
+            catch (Exception exception) { FailTransportPeer(connection, exception.Message); }
+        }
 
-            var buffer = new NativeArray<byte>(frame, Allocator.Temp);
-            writer.WriteBytes(buffer);
-            buffer.Dispose();
-            _driver.EndSend(writer);
+        private bool IsAuthenticatedConnection(NetworkConnection connection)
+            => connection.IsCreated && _driver.GetConnectionState(connection) == NetworkConnection.State.Connected &&
+               _connectionPlayerIds.ContainsKey(connection.GetHashCode());
+
+        private void FailTransportPeer(NetworkConnection connection, string reason)
+        {
+            Debug.LogWarning($"[Relay Transport] {reason}");
+            _reliableChannel?.Forget(connection);
+            _helloPeerIds.Remove(connection);
+            if (_driver.IsCreated && connection.IsCreated)
+                _driver.Disconnect(connection);
+            if (!_isHost)
+            {
+                _transportError = reason;
+                _transportActive = false;
+                _serverConnection = default;
+                if (!string.IsNullOrEmpty(_hostPeerId))
+                    RaisePeerDisconnected(_hostPeerId);
+            }
+            else if (_connectionPlayerIds.TryGetValue(connection.GetHashCode(), out var peerId))
+            {
+                _connectionPlayerIds.Remove(connection.GetHashCode());
+                RaisePeerDisconnected(peerId);
+            }
         }
 
         private static bool TryReadFrame(UtpDataStreamReader stream, out byte type, out byte[] body)
         {
             type = 0; body = null;
-            if (stream.Length < 3) return false;
+            if (stream.Length - stream.GetBytesRead() < 3) return false;
 
             type = stream.ReadByte();
             ushort len = stream.ReadUShort();
             if (len > MaxFrameBodyBytes) return false;
-            if (stream.Length - stream.GetBytesRead() < len) return false;
+            if (stream.Length - stream.GetBytesRead() != len) return false;
 
             body = new byte[len];
             if (len > 0)
             {
-                var buffer = new NativeArray<byte>(len, Allocator.Temp);
+                var buffer = new NativeArray<byte>(len, Allocator.TempJob);
                 stream.ReadBytes(buffer);
                 buffer.CopyTo(body);
                 buffer.Dispose();
@@ -734,73 +845,17 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             Buffer.BlockCopy(BitConverter.GetBytes(ProtocolVersion), 0, body, 0, 4);
             if (idBytes.Length > 0)
                 Buffer.BlockCopy(idBytes, 0, body, 4, idBytes.Length);
-            return WrapFrame(FrameHello, body);
+            return MultiplayerFrameCodec.Wrap(
+                FrameHello,
+                body);
         }
 
         private static byte[] BuildIdentityFrame(string peerId)
         {
-            return WrapFrame(FrameIdentity, Encoding.UTF8.GetBytes(peerId ?? string.Empty));
-        }
-
-        private static byte[] BuildUserDataFrame(string senderId, string targetPeerId, byte[] payload)
-        {
-            var targetBytes = Encoding.UTF8.GetBytes(string.IsNullOrWhiteSpace(targetPeerId) ? "*" : targetPeerId);
-            var senderBytes = Encoding.UTF8.GetBytes(senderId ?? string.Empty);
-            var p = payload ?? Array.Empty<byte>();
-
-            var body = new byte[2 + targetBytes.Length + 2 + senderBytes.Length + p.Length];
-            int offset = 0;
-            WriteUShort(body, ref offset, (ushort)targetBytes.Length);
-            Buffer.BlockCopy(targetBytes, 0, body, offset, targetBytes.Length); offset += targetBytes.Length;
-            WriteUShort(body, ref offset, (ushort)senderBytes.Length);
-            Buffer.BlockCopy(senderBytes, 0, body, offset, senderBytes.Length); offset += senderBytes.Length;
-            if (p.Length > 0) Buffer.BlockCopy(p, 0, body, offset, p.Length);
-            return WrapFrame(FrameUserData, body);
-        }
-
-        private static bool TryParseUserData(byte[] body, out string target, out string senderId, out byte[] payload)
-        {
-            target = null; senderId = null; payload = null;
-            if (body == null || body.Length < 4) return false;
-
-            int offset = 0;
-            ushort tLen = ReadUShort(body, ref offset);
-            if (offset + tLen > body.Length) return false;
-            target = Encoding.UTF8.GetString(body, offset, tLen); offset += tLen;
-
-            if (offset + 2 > body.Length) return false;
-            ushort sLen = ReadUShort(body, ref offset);
-            if (offset + sLen > body.Length) return false;
-            senderId = Encoding.UTF8.GetString(body, offset, sLen); offset += sLen;
-
-            int payloadLen = body.Length - offset;
-            payload = new byte[payloadLen];
-            if (payloadLen > 0) Buffer.BlockCopy(body, offset, payload, 0, payloadLen);
-            return true;
-        }
-
-        private static byte[] WrapFrame(byte type, byte[] body)
-        {
-            if (body == null) body = Array.Empty<byte>();
-            var frame = new byte[3 + body.Length];
-            frame[0] = type;
-            frame[1] = (byte)(body.Length & 0xFF);
-            frame[2] = (byte)((body.Length >> 8) & 0xFF);
-            if (body.Length > 0) Buffer.BlockCopy(body, 0, frame, 3, body.Length);
-            return frame;
-        }
-
-        private static void WriteUShort(byte[] buf, ref int offset, ushort value)
-        {
-            buf[offset++] = (byte)(value & 0xFF);
-            buf[offset++] = (byte)((value >> 8) & 0xFF);
-        }
-
-        private static ushort ReadUShort(byte[] buf, ref int offset)
-        {
-            ushort v = (ushort)(buf[offset] | (buf[offset + 1] << 8));
-            offset += 2;
-            return v;
+            return MultiplayerFrameCodec.Wrap(
+                FrameIdentity,
+                Encoding.UTF8.GetBytes(
+                    peerId ?? string.Empty));
         }
 
         private bool TryFindConnectionByPlayerId(string playerId, out NetworkConnection connection)
@@ -812,7 +867,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     for (int i = 0; i < _serverConnections.Length; i++)
                     {
                         var c = _serverConnections[i];
-                        if (c.IsCreated && c.GetHashCode() == kv.Key)
+                        if (IsAuthenticatedConnection(c) && c.GetHashCode() == kv.Key)
                         {
                             connection = c;
                             return true;
@@ -824,27 +879,39 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             return false;
         }
 
-        private void DispatchUserMessage(string senderId, byte[] payload)
+        private void RaisePeerConnected(string peerId)
+        {
+            MultiplayerThreadContext.Post(() => PeerConnected?.Invoke(peerId));
+        }
+
+        private void RaisePeerDisconnected(string peerId)
+        {
+            MultiplayerThreadContext.Post(() => PeerDisconnected?.Invoke(peerId));
+        }
+
+        // Messages always reach observers on Unity's main thread; the
+        // pump thread never runs gameplay or UI callbacks.
+        private void PostUserMessage(string senderId, byte[] payload)
         {
             var msg = new NetworkMessage(senderId ?? string.Empty, payload ?? Array.Empty<byte>());
+            MultiplayerThreadContext.Post(() => DispatchUserMessage(msg));
+        }
+
+        private void DispatchUserMessage(NetworkMessage message)
+        {
             for (int i = _observers.Count - 1; i >= 0; i--)
             {
-                try { _observers[i].OnNext(msg); }
-                catch (Exception e) { _logger.Warn($"[Relay] Observer error: {e.Message}"); }
+                try { _observers[i].OnNext(message); }
+                catch (Exception) { }
             }
         }
 
         private async Task ShutdownTransportAsync()
         {
-            if (_pumpCts != null)
-            {
-                _pumpCts.Cancel();
-                try { if (_pumpTask != null) await _pumpTask; }
-                catch (OperationCanceledException) { /* expected */ }
-                _pumpTask = null;
-                _pumpCts.Dispose();
-                _pumpCts = null;
-            }
+            _transportActive = false;
+            await _transportPump.StopAsync();
+            while (_outbound.TryDequeue(out _)) { }
+            _sendRetry.Clear();
 
             if (_driver.IsCreated)
             {
@@ -863,9 +930,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 {
                     _driver.ScheduleUpdate().Complete();
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    _logger.Warn($"[Relay] Final transport update failed during shutdown: {e.Message}");
                 }
 
                 _driver.Dispose();
@@ -877,6 +943,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             _driver = default;
             _serverConnection = default;
             _connectionPlayerIds.Clear();
+            _reliableChannel = null;
+            _helloPeerIds.Clear();
+            _expiredHandshakes.Clear();
+            _transportError = null;
             _hostHelloReceived = false;
             _hostPeerId = null;
             _isHost = false;
@@ -884,20 +954,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private void CleanupTransportImmediate()
         {
-            try
-            {
-                _pumpCts?.Cancel();
-            }
-            catch { }
-
-            try
-            {
-                _pumpCts?.Dispose();
-            }
-            catch { }
-
-            _pumpCts = null;
-            _pumpTask = null;
+            _transportActive = false;
+            _transportPump.Dispose();
+            while (_outbound.TryDequeue(out _)) { }
+            _sendRetry.Clear();
 
             try
             {
@@ -916,6 +976,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             _driver = default;
             _serverConnection = default;
             _connectionPlayerIds.Clear();
+            _reliableChannel = null;
+            _helloPeerIds.Clear();
+            _expiredHandshakes.Clear();
+            _transportError = null;
             _hostHelloReceived = false;
             _hostPeerId = null;
             _isHost = false;
@@ -934,7 +998,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             const string msg = "Unity Relay SDK not installed. Add com.unity.services.relay + com.unity.transport " +
                                "and enable MOYVA_UGS_RELAY scripting define.";
-            _logger.Warn($"[Relay] {msg}");
             return SessionResult.Fail(msg);
         }
 

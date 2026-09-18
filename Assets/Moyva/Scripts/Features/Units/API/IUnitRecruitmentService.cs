@@ -7,6 +7,7 @@ namespace Kruty1918.Moyva.Units.API
     {
         Training = 0,
         Ready = 1,
+        Waiting = 2,
     }
 
     public readonly struct UnitRecruitmentQueueItemSnapshot
@@ -44,8 +45,18 @@ namespace Kruty1918.Moyva.Units.API
             int trainingTurns,
             long enqueuedGlobalTurn,
             long lastProgressGlobalTurn,
-            UnitRecruitmentQueueStatus status)
+            UnitRecruitmentQueueStatus status,
+            IReadOnlyDictionary<string, float> paidCosts = null,
+            string fundingSettlementId = null,
+            float trainingSeconds = 0f,
+            float completedSeconds = 0f)
         {
+            PaidCosts = paidCosts == null ? null
+                : new System.Collections.ObjectModel.ReadOnlyDictionary<string, float>(
+                    new Dictionary<string, float>(paidCosts));
+            FundingSettlementId = fundingSettlementId ?? string.Empty;
+            TrainingSeconds = System.Math.Max(0f, trainingSeconds);
+            CompletedSeconds = System.Math.Max(0f, System.Math.Min(completedSeconds, TrainingSeconds));
             QueueId = queueId;
             OwnerId = ownerId ?? string.Empty;
             RecruitingBuildingPosition = recruitingBuildingPosition;
@@ -59,9 +70,17 @@ namespace Kruty1918.Moyva.Units.API
                 : lastProgressGlobalTurn;
             Status = CompletedTurns >= TrainingTurns
                 ? UnitRecruitmentQueueStatus.Ready
-                : UnitRecruitmentQueueStatus.Training;
+                : status == UnitRecruitmentQueueStatus.Waiting
+                    ? UnitRecruitmentQueueStatus.Waiting
+                    : UnitRecruitmentQueueStatus.Training;
         }
 
+        // Null identifies legacy saves whose original receipt is unavailable.
+        public IReadOnlyDictionary<string, float> PaidCosts { get; }
+        public string FundingSettlementId { get; }
+        public float TrainingSeconds { get; }
+        public float CompletedSeconds { get; }
+        public float RemainingSeconds => IsReady ? 0f : System.Math.Max(0f, TrainingSeconds - CompletedSeconds);
         public long QueueId { get; }
         public string OwnerId { get; }
         public Vector2Int RecruitingBuildingPosition { get; }
@@ -103,6 +122,9 @@ namespace Kruty1918.Moyva.Units.API
             string unitTypeId,
             out string reason);
 
+        bool TryCancel(string ownerId, Vector2Int recruitingBuildingPosition,
+            long queueId, out string reason);
+
         IReadOnlyList<UnitRecruitmentQueueItemSnapshot> GetQueue(
             string ownerId,
             Vector2Int recruitingBuildingPosition);
@@ -113,7 +135,7 @@ namespace Kruty1918.Moyva.Units.API
             out UnitRecruitmentQueueItemSnapshot item);
 
         /// <summary>
-        /// Returns the ready head from each recruitment building owned by
+        /// Returns all ready jobs from recruitment buildings owned by
         /// <paramref name="ownerId"/>. Ready jobs remain queued until an explicit
         /// deployment succeeds.
         /// </summary>
@@ -130,7 +152,7 @@ namespace Kruty1918.Moyva.Units.API
             long queueId);
 
         /// <summary>
-        /// Explicitly deploys a ready queue head onto a selected valid tile.
+        /// Explicitly deploys a selected ready job onto a selected valid tile.
         /// This is the only recruitment path that creates a unit after P24A.
         /// </summary>
         bool TryDeployReady(

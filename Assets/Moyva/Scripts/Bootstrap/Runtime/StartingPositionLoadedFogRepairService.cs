@@ -61,11 +61,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             StartingPositionTryResolveClosestPosition tryGetClosestUnitPosition)
         {
             Vector2Int baseMapSize = StartingPositionMapUtility.ResolveBaseMapSize(signal);
-            Debug.Log($"{StartDiagTag} RepairLoadedFogIfNeeded begin map={signal.Width}x{signal.Height}, baseMap={baseMapSize.x}x{baseMapSize.y}, hasStartState={hasStartingPosition}, hasLocalSpawnResolver={tryGetLocalSpawnPosition != null}, hasUnitResolver={tryGetClosestUnitPosition != null}.");
             if (canRunStartLogic != null && !canRunStartLogic())
             {
-                Debug.LogWarning($"{StartDiagTag} RepairLoadedFogIfNeeded blocked canRunStartLogic=false.");
-                Debug.LogWarning($"{_debugTag} Bootstrap.RepairLoadedFogIfNeeded blocked by CanRunStartLogic=false.");
                 return false;
             }
 
@@ -75,8 +72,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 : snapshot.GetLength(0) != baseMapSize.x || snapshot.GetLength(1) != baseMapSize.y
                     ? $"wrong-size:{snapshot.GetLength(0)}x{snapshot.GetLength(1)}"
                     : "candidate";
-            Debug.Log($"{StartDiagTag} RepairLoadedFogIfNeeded snapshotState={snapshotState}, map={signal.Width}x{signal.Height}, baseMap={baseMapSize.x}x{baseMapSize.y}.");
-            Debug.Log($"{_debugTag} Bootstrap.RepairLoadedFogIfNeeded snapshot={(snapshot != null ? $"{snapshot.GetLength(0)}x{snapshot.GetLength(1)}" : "null")}, map={signal.Width}x{signal.Height}, baseMap={baseMapSize.x}x{baseMapSize.y}.");
 
             if (IsFogSnapshotUsable(
                     snapshot,
@@ -87,8 +82,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     startingPosition,
                     tryGetClosestUnitPosition))
             {
-                Debug.Log($"{StartDiagTag} RepairLoadedFogIfNeeded snapshot usable, no repair reveal needed.");
-                Debug.Log($"{_debugTag} Bootstrap.RepairLoadedFogIfNeeded snapshot usable, no reveal repair needed.");
                 return false;
             }
 
@@ -110,8 +103,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 tryGetClosestUnitPosition);
             int radius = _settings.ResolveRevealedRadius(baseMapSize.x, baseMapSize.y);
             var shape = _settings.ResolveRevealShape();
-            Debug.LogWarning($"{StartDiagTag} RepairLoadedFogIfNeeded applying repair center={center}, reason={reason}, radius={radius}, shape={shape}, snapshotState={snapshotState}.");
-            Debug.LogWarning($"{_debugTag} Bootstrap.RepairLoadedFogIfNeeded applying repair center={center}, radius={radius}, shape={shape}, map={signal.Width}x{signal.Height}, baseMap={baseMapSize.x}x{baseMapSize.y}.");
             _fogOfWarService.RevealArea(center, radius, shape, keepVisible: true, visibleAreaId: _startRevealAnchorId);
 
             if (_settings.keepCoreFullyVisible)
@@ -119,9 +110,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             bool visibleAfter = _fogOfWarService != null && _fogOfWarService.IsVisible(center);
             bool exploredAfter = _fogOfWarService != null && _fogOfWarService.IsExplored(center);
-            Debug.Log($"{StartDiagTag} RepairLoadedFogIfNeeded result center={center}, repairExecuted=true, visibleAfter={visibleAfter}, exploredAfter={exploredAfter}.");
-
-            Debug.LogWarning($"[Bootstrap] FogOfWar snapshot був невалідний або без видимої ділянки для мапи {baseMapSize.x}x{baseMapSize.y}. Стартову область відновлено біля {center}.");
             return true;
         }
 

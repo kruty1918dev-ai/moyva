@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Moyva/Scenes/Boot.unity
+    guid: 4eb93b26f3fd41a288e066c545c433a6
+  - enabled: 1
     path: Assets/Moyva/Scenes/HomeMenu.unity
     guid: 189be40ae5d2d24d7b99f7257e37e0af
   - enabled: 1

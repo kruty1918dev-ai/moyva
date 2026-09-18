@@ -79,13 +79,13 @@ public sealed class CloudsSettings : MoyvaJsonConfigObject
         [Min(0f)] public float FadeDuration = 1.2f;
 
         [Header("Маска мапи")]
-        [Tooltip("Показувати хмаринки тільки всередині меж мапи. Якщо GridService доступний, межі беруться автоматично з розміру мапи.")]
+        [Tooltip("Показувати хмаринки тільки всередині меж мапи. Якщо IGridService доступний, межі беруться автоматично з розміру мапи.")]
         public bool MapMaskEnabled = true;
 
-        [Tooltip("Розмір мапи для сцен без GridService. У звичайній ігровій сцені використовується автоматичний розмір з GridService.")]
+        [Tooltip("Розмір мапи для сцен без IGridService. У звичайній ігровій сцені використовується автоматичний розмір з IGridService.")]
         public Vector2 ManualMapSize = new Vector2(32f, 32f);
 
-        [Tooltip("Центр ручних меж мапи для сцен без GridService.")]
+        [Tooltip("Центр ручних меж мапи для сцен без IGridService.")]
         public Vector2 ManualMapCenter = new Vector2(15.5f, 15.5f);
 
         [Tooltip("Ширина піксельного входу/виходу хмаринки біля краю маски у world units.")]

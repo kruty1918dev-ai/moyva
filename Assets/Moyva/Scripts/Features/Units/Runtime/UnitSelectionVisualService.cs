@@ -10,16 +10,21 @@ namespace Kruty1918.Moyva.Units.Runtime
     {
         private readonly SignalBus _signalBus;
         private readonly IUnitService _unitService;
+        private readonly IUnitClassConfig _unitClassConfig;
         private readonly SpriteSelectionHighlighter _selectionHighlighter = new();
         private GameObject _selectionRing;
         private Material _selectionRingMaterial;
 
         private string _selectedUnitId;
 
-        public UnitSelectionVisualService(SignalBus signalBus, IUnitService unitService)
+        public UnitSelectionVisualService(
+            SignalBus signalBus,
+            IUnitService unitService,
+            [InjectOptional] IUnitClassConfig unitClassConfig = null)
         {
             _signalBus = signalBus;
             _unitService = unitService;
+            _unitClassConfig = unitClassConfig;
         }
 
         public void Initialize()
@@ -52,7 +57,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             ClearSelectionRing();
             GameObject unitObject = _unitService.GetUnitObject(signal.ObjectId);
             _selectionHighlighter.Apply(unitObject);
-            ApplySelectionRing(unitObject);
+            ApplySelectionRing(unitObject, ResolveConfig(signal.ObjectId));
         }
 
         private void OnUnitDestroyed(UnitDestroyedSignal signal)
@@ -65,12 +70,14 @@ namespace Kruty1918.Moyva.Units.Runtime
             ClearSelectionRing();
         }
 
-        private void ApplySelectionRing(GameObject unitObject)
+        private void ApplySelectionRing(
+            GameObject unitObject,
+            UnitClassConfig config)
         {
             if (unitObject == null)
                 return;
 
-            float radius = ResolveRingRadius(unitObject);
+            float radius = ResolveRingRadius(unitObject, config);
             _selectionRing = new GameObject("SelectionRing");
             _selectionRing.transform.SetParent(unitObject.transform, false);
             _selectionRing.transform.localPosition = new Vector3(0f, 0.035f, 0f);
@@ -107,11 +114,14 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
         }
 
-        private static float ResolveRingRadius(GameObject unitObject)
+        internal static float ResolveRingRadius(
+            GameObject unitObject,
+            UnitClassConfig config = null)
         {
             Renderer[] renderers = unitObject.GetComponentsInChildren<Renderer>(true);
+            float markerScale = ResolveMarkerScale(config);
             if (renderers.Length == 0)
-                return 0.55f;
+                return 0.55f * markerScale;
 
             Bounds bounds = renderers[0].bounds;
             for (int index = 1; index < renderers.Length; index++)
@@ -119,9 +129,24 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             Vector3 localExtents = unitObject.transform.InverseTransformVector(
                 bounds.extents);
-            return Mathf.Max(
+            float radius = Mathf.Max(
                 0.4f,
                 Mathf.Max(Mathf.Abs(localExtents.x), Mathf.Abs(localExtents.z)) * 1.2f);
+            return radius * markerScale;
+        }
+
+        internal static float ResolveMarkerScale(UnitClassConfig config)
+            => config?.ResolvePresentation()?.ResolveSelectionMarkerScale() ?? 1f;
+
+        private UnitClassConfig ResolveConfig(string unitId)
+        {
+            if (_unitClassConfig == null || string.IsNullOrWhiteSpace(unitId))
+                return null;
+
+            string unitTypeId = _unitService.GetUnitTypeId(unitId);
+            return string.IsNullOrWhiteSpace(unitTypeId)
+                ? null
+                : _unitClassConfig.GetConfig(unitTypeId);
         }
 
         private void ClearSelectionRing()

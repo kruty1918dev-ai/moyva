@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Turns.API;
@@ -17,7 +18,7 @@ namespace Kruty1918.Moyva.Units.Runtime
     /// the active faction in AwaitingInput, and its linked cancellation token is
     /// cancelled as soon as that authoritative turn identity changes.
     /// </summary>
-    internal sealed class UnitTurnAuthorityMovementService : IUnitMovementService
+    internal sealed class UnitTurnAuthorityMovementService : IUnitMovementService, IUnitMovementQuery
     {
         internal readonly struct UnitTurnCommandLease
         {
@@ -41,19 +42,38 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private readonly IUnitMovementService _decorated;
         private readonly ITurnService _turns;
+        private readonly IGameplayProgressClock _progressClock;
         private readonly IUnitOwnershipQuery _ownership;
         private readonly IUnitService _units;
+        private readonly IUnitMovementQuery _movementQuery;
 
         public UnitTurnAuthorityMovementService(
             IUnitMovementService decorated,
             [InjectOptional] ITurnService turns = null,
+            [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] IUnitOwnershipQuery ownership = null,
-            [InjectOptional] IUnitService units = null)
+            [InjectOptional] IUnitService units = null,
+            [InjectOptional] IUnitMovementQuery movementQuery = null)
         {
             _decorated = decorated ?? throw new ArgumentNullException(nameof(decorated));
             _turns = turns;
+            _progressClock = progressClock;
             _ownership = ownership;
             _units = units;
+            _movementQuery = movementQuery;
+        }
+
+        public IReadOnlyList<UnitMovementTileSnapshot> GetMovementTiles(string unitId)
+        {
+            IUnitMovementQuery query =
+                _movementQuery != null
+                && !ReferenceEquals(_movementQuery, this)
+                    ? _movementQuery
+                    : _decorated as IUnitMovementQuery;
+
+            return query != null
+                ? query.GetMovementTiles(unitId)
+                : Array.Empty<UnitMovementTileSnapshot>();
         }
 
         public async Task MoveUnitAsync(
@@ -61,36 +81,43 @@ namespace Kruty1918.Moyva.Units.Runtime
             Vector2Int targetPosition,
             CancellationToken token = default)
         {
-            if (!TryAcquireLease(unitId, out UnitTurnCommandLease lease, out string reason))
+            if (!TryAcquireLease(
+                    unitId,
+                    out UnitTurnCommandLease lease,
+                    out string reason))
             {
                 Debug.LogWarning(
-                    $"[UnitTurnAuthority] Move rejected for '{unitId ?? "<null>"}': {reason}");
+                    $"[MOYVA_MOVE][AUTHORITY] Move rejected. unit='{unitId}' target={targetPosition}. reason={reason ?? "Unknown"}.");
                 return;
             }
 
             using var authorityCancellation = new CancellationTokenSource();
-            using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-                token,
-                authorityCancellation.Token);
+            using var linkedCancellation =
+                CancellationTokenSource.CreateLinkedTokenSource(
+                    token,
+                    authorityCancellation.Token);
+
+            bool watchTurnState = _turns != null
+                && _progressClock?.IsRealtime != true;
 
             void OnTurnStateChanged()
             {
-                if (!IsLeaseValid(lease, out _)
+                if (!IsLeaseValid(lease, out string leaseReason)
                     && !authorityCancellation.IsCancellationRequested)
                 {
                     authorityCancellation.Cancel();
                 }
             }
 
-            _turns.StateChanged += OnTurnStateChanged;
+            if (watchTurnState)
+                _turns.StateChanged += OnTurnStateChanged;
+
             try
             {
-                // Closes the subscribe/check race: if authority changed immediately
-                // before the handler became visible, do not enter the decorated move.
                 if (!IsLeaseValid(lease, out reason))
                 {
                     Debug.LogWarning(
-                        $"[UnitTurnAuthority] Move cancelled before start for '{unitId}': {reason}");
+                        $"[MOYVA_MOVE][AUTHORITY] Move lease expired before execution. unit='{unitId}' target={targetPosition}. reason={reason ?? "Unknown"}.");
                     return;
                 }
 
@@ -99,12 +126,22 @@ namespace Kruty1918.Moyva.Units.Runtime
                     targetPosition,
                     linkedCancellation.Token);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError(
+                    $"[UnitMovement] Move delegate failed for unit '{unitId}' at {targetPosition}: {exception.Message}");
+                throw;
+            }
             finally
             {
-                _turns.StateChanged -= OnTurnStateChanged;
+                if (watchTurnState)
+                    _turns.StateChanged -= OnTurnStateChanged;
             }
         }
-
         internal bool TryAcquireLease(
             string unitId,
             out UnitTurnCommandLease lease,
@@ -145,6 +182,12 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
             }
 
+            if (_progressClock?.IsRealtime == true)
+            {
+                lease = new UnitTurnCommandLease(normalizedUnitId, ownerId, 0, 0);
+                return IsLeaseValid(lease, out reason);
+            }
+
             if (_turns == null)
             {
                 reason = "Turn authority is unavailable.";
@@ -167,12 +210,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             UnitTurnCommandLease lease,
             out string reason)
         {
-            if (_turns == null)
-            {
-                reason = "Turn authority is unavailable.";
-                return false;
-            }
-
             if (_ownership == null)
             {
                 reason = "Unit ownership authority is unavailable.";
@@ -193,6 +230,18 @@ namespace Kruty1918.Moyva.Units.Runtime
                     StringComparison.Ordinal))
             {
                 reason = "Unit ownership changed while the command was active.";
+                return false;
+            }
+
+            if (_progressClock?.IsRealtime == true)
+            {
+                reason = null;
+                return true;
+            }
+
+            if (_turns == null)
+            {
+                reason = "Turn authority is unavailable.";
                 return false;
             }
 

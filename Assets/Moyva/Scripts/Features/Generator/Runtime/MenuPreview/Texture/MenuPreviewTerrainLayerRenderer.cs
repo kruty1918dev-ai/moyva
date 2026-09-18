@@ -42,9 +42,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 DrawFallbackTile(context, x, y, id, missed);
                 misses++;
             }
-
-            Debug.Log($"[MenuPreview] Terrain render: {hits} hits, {misses} misses. " +
-                (missed.Count > 0 ? $"Unknown tile IDs: [{string.Join(", ", missed)}]" : "All IDs resolved."));
         }
 
         private void DrawHeightFallback(MenuPreviewTextureBuildContext context)

@@ -2,6 +2,12 @@ namespace Kruty1918.Moyva.SaveSystem
 {
     using System;
 
+    public enum PlayerControllerType
+    {
+        Human = 0,
+        Bot = 1
+    }
+
     public enum GameLaunchMode
     {
         Unknown = 0,
@@ -10,6 +16,7 @@ namespace Kruty1918.Moyva.SaveSystem
         MenuLoadGame = 3,
         MenuJoinGame = 4,
         MenuMultiplayerGame = 5,
+        MenuBotGame = 6,
     }
 
     public enum GameLaunchSource
@@ -46,6 +53,27 @@ namespace Kruty1918.Moyva.SaveSystem
         public static int Difficulty { get; private set; }
         public static int MaxPlayers { get; private set; }
         public static bool IsPrivate { get; private set; }
+        public static bool HasLocalPlayerRole { get; private set; }
+        public static bool IsLocalPlayerHost { get; private set; }
+        public static string LocalPlayerId { get; private set; } = string.Empty;
+        public static string BotPlayerId { get; private set; } = string.Empty;
+        public static string BotDifficultyId { get; private set; } = string.Empty;
+        public static bool HasBotOpponent => Mode == GameLaunchMode.MenuBotGame && !string.IsNullOrEmpty(BotPlayerId);
+
+        public static void ConfigureBotOpponent(string playerId, string difficultyId = null)
+        {
+            if (Mode != GameLaunchMode.MenuNewGame || MaxPlayers != 2
+                || string.IsNullOrWhiteSpace(playerId) || playerId == LocalPlayerId)
+                throw new InvalidOperationException("A bot opponent requires a two-player local new game.");
+            BotPlayerId = playerId.Trim();
+            BotDifficultyId = string.IsNullOrWhiteSpace(difficultyId) ? string.Empty : difficultyId.Trim();
+            Mode = GameLaunchMode.MenuBotGame;
+            _autoLoadOverride = false;
+        }
+
+        public static PlayerControllerType GetPlayerController(string playerId)
+            => HasBotOpponent && string.Equals(playerId, BotPlayerId, StringComparison.Ordinal)
+                ? PlayerControllerType.Bot : PlayerControllerType.Human;
         public static DateTime ConfiguredAtUtc => _configuredAtUtc;
         public static DateTime ExpiresAtUtc => _expiresAtUtc;
         public static bool HasActiveContext => Mode != GameLaunchMode.Unknown;
@@ -57,7 +85,8 @@ namespace Kruty1918.Moyva.SaveSystem
             Source = GameLaunchSource.DirectGameplayTest;
             SaveSlot = 0;
             ClearWorldSettings();
-            MaxPlayers = 1;
+            ClearLocalPlayerRole();
+            MaxPlayers = 2;
             _autoLoadOverride = false;
             _autoSaveOverride = false;
             MarkConfigured(DefaultContextTtl);
@@ -87,6 +116,7 @@ namespace Kruty1918.Moyva.SaveSystem
             Source = GameLaunchSource.HomeMenu;
             SaveSlot = ClampSlot(saveSlot);
             ClearWorldSettings();
+            ClearLocalPlayerRole();
             _autoLoadOverride = false;
             _autoSaveOverride = true;
             MarkConfigured(DefaultContextTtl);
@@ -102,12 +132,15 @@ namespace Kruty1918.Moyva.SaveSystem
             int maxPlayers,
             bool isPrivate,
             int width = 0,
-            int height = 0)
+            int height = 0,
+            bool? isLocalPlayerHost = null,
+            string localPlayerId = null)
         {
             Mode = GameLaunchMode.MenuNewGame;
             Source = GameLaunchSource.HomeMenu;
             SaveSlot = ClampSlot(saveSlot);
             SetWorldSettings(worldName, seed, size, mapType, difficulty, maxPlayers, isPrivate, width, height);
+            SetLocalPlayerRole(isLocalPlayerHost, localPlayerId);
             _autoLoadOverride = false;
             _autoSaveOverride = true;
             MarkConfigured(DefaultContextTtl);
@@ -119,6 +152,7 @@ namespace Kruty1918.Moyva.SaveSystem
             Source = GameLaunchSource.SaveLoad;
             SaveSlot = ClampSlot(saveSlot);
             ClearWorldSettings();
+            ClearLocalPlayerRole();
             _autoLoadOverride = true;
             _autoSaveOverride = true;
             MarkConfigured(DefaultContextTtl);
@@ -130,6 +164,7 @@ namespace Kruty1918.Moyva.SaveSystem
             Source = GameLaunchSource.HomeMenu;
             SaveSlot = 0;
             ClearWorldSettings();
+            ClearLocalPlayerRole();
             _autoLoadOverride = false;
             _autoSaveOverride = false;
             MarkConfigured(DefaultContextTtl);
@@ -144,12 +179,15 @@ namespace Kruty1918.Moyva.SaveSystem
             int maxPlayers,
             bool isPrivate,
             int width = 0,
-            int height = 0)
+            int height = 0,
+            bool? isLocalPlayerHost = null,
+            string localPlayerId = null)
         {
             Mode = GameLaunchMode.MenuMultiplayerGame;
             Source = GameLaunchSource.HomeMenu;
             SaveSlot = 0;
             SetWorldSettings(worldName, seed, size, mapType, difficulty, maxPlayers, isPrivate, width, height);
+            SetLocalPlayerRole(isLocalPlayerHost, localPlayerId);
             _autoLoadOverride = false;
             _autoSaveOverride = false;
             MarkConfigured(DefaultContextTtl);
@@ -161,6 +199,7 @@ namespace Kruty1918.Moyva.SaveSystem
             Source = GameLaunchSource.Unknown;
             SaveSlot = 0;
             ClearWorldSettings();
+            ClearLocalPlayerRole();
             _autoLoadOverride = null;
             _autoSaveOverride = null;
             _configuredAtUtc = DateTime.MinValue;
@@ -269,6 +308,8 @@ namespace Kruty1918.Moyva.SaveSystem
 
         private static void ClearWorldSettings()
         {
+            BotPlayerId = string.Empty;
+            BotDifficultyId = string.Empty;
             HasWorldSettings = false;
             WorldName = string.Empty;
             Seed = 0;
@@ -279,6 +320,22 @@ namespace Kruty1918.Moyva.SaveSystem
             Difficulty = 0;
             MaxPlayers = 0;
             IsPrivate = false;
+        }
+
+        private static void SetLocalPlayerRole(bool? isLocalPlayerHost, string localPlayerId)
+        {
+            BotPlayerId = string.Empty;
+            BotDifficultyId = string.Empty;
+            HasLocalPlayerRole = isLocalPlayerHost.HasValue || !string.IsNullOrWhiteSpace(localPlayerId);
+            IsLocalPlayerHost = isLocalPlayerHost ?? false;
+            LocalPlayerId = string.IsNullOrWhiteSpace(localPlayerId) ? string.Empty : localPlayerId.Trim();
+        }
+
+        private static void ClearLocalPlayerRole()
+        {
+            HasLocalPlayerRole = false;
+            IsLocalPlayerHost = false;
+            LocalPlayerId = string.Empty;
         }
 
         private static int ClampSlot(int slot)

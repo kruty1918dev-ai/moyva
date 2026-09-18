@@ -8,7 +8,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             TileWorldCreatorTerrainSideWallEdge edge,
             int currentLevel,
             int edgeLevel,
-            ref TileWorldCreatorTerrainSideWallBuildStats stats,
-            ref TileWorldCreatorTerrainSideWallArtifactDiagnostics diagnostics);
+            int width,
+            int height,
+            ref int wallCount);
     }
 }

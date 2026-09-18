@@ -14,7 +14,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         /// <summary>
         /// Перевіряє, чи варто рендерити об'єкт з огляду на стан туману в області його меж.
-        /// Повертає true якщо хоча б одна клітина в області не є невідкритою (Unexplored).
+        /// Повертає true якщо хоча б одна клітина в області зараз повністю видима.
         /// </summary>
         /// <param name="worldBounds">Світові межі об'єкта.</param>
         /// <param name="fogService">Gameplay fog service.</param>
@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             {
                 for (int y = min.y; y <= max.y; y++)
                 {
-                    if (fogService.GetFogState(new Vector2Int(x, y)) != FogStateType.Unexplored)
+                    if (fogService.GetFogState(new Vector2Int(x, y)) == FogStateType.Visible)
                         return true;
                 }
             }

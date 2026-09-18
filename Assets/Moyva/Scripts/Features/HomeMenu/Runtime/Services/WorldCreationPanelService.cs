@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
+using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.HomeMenu.UI;
+using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.WorldCreation.API;
@@ -12,25 +15,33 @@ using Zenject;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
-    internal class WorldCreationPanelService : IWorldCreationPanelService, IInitializable, IDisposable
+    internal sealed class WorldCreationPanelService : IInitializable, IDisposable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         [Inject] private IWorldSetupViewController _viewController;
         [Inject] private INavigation _navigation;
         [Inject] private IGameplaySession _gameplaySession;
-        [Inject] private IHomeMenuGameStarter _gameStarter;
         [InjectOptional] private ILobbyService _lobbyService;
+        [InjectOptional] private INetworkProvider _networkProvider;
         [InjectOptional] private ISaveService _saveService;
+        [InjectOptional] private ISessionManager _sessionManager;
         [InjectOptional] private ILocalGameSettingsService _localSettings;
         [InjectOptional] private IMultiplayerModeSelector _modeSelector;
-        [InjectOptional] private ISelectedGameModeService _selectedGameModeService;
-        [InjectOptional] private IBotViewController _botViewController;
+        [InjectOptional] private ILobbyFlowContext _lobbyFlowContext;
         [InjectOptional] private WorldCreationDefaultsSO _worldCreationDefaults;
+        [InjectOptional] private IHomeMenuGameStarter _gameStarter;
+        [InjectOptional] private IOverlayLoader _overlayLoader;
+        [InjectOptional] private IGameStateService _gameStateService;
         [InjectOptional] private IInfoPanelService _infoPanelService;
+        [InjectOptional] private HomeMenuMoyvaUiState _moyvaUiState;
         [Inject(Id = "LobbyPanelName")] private string _lobbyPanelName;
-        private WolrdCreationMode _mode;
-        private bool _isStarting;
+        private bool _isStartingLocalGame;
         private CancellationTokenSource _startCts;
 
+        /// <summary>Підписує multiplayer world setup на UI та застосовує JSON defaults.</summary>
         public void Initialize()
         {
             _viewController.OnButtonNextClicked -= OnCreteWorldClicked;
@@ -41,11 +52,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Refresh();
         }
 
+        /// <summary>Відписує обробники UI під час закриття меню.</summary>
         public void Dispose()
         {
             _viewController.OnButtonNextClicked -= OnCreteWorldClicked;
             _viewController.OnSettingsChanged -= Refresh;
-
             _startCts?.Cancel();
             _startCts?.Dispose();
             _startCts = null;
@@ -53,132 +64,105 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private async void OnCreteWorldClicked()
         {
+            if (_isStartingLocalGame)
+                return;
+
             if (!CanProceed())
             {
                 Refresh();
                 return;
             }
 
-            if (ShouldStoreMultiplayerDraft())
+            int saveSlot = 0;
+            if (IsSoloFlow() && !TryFindNewSaveSlot(out saveSlot))
             {
-                ApplyMultiplayerSessionDraft();
-                _navigation.Open(_lobbyPanelName);
+                _infoPanelService?.Show(new InfoMessage(T("Cannot start game"),
+                    _saveService == null ? T("The save service is not available. Return to the main menu and try again.")
+                    : T("No save slot is available. Delete an old save before starting a new world.")));
+                return;
             }
-            else if (_mode == WolrdCreationMode.Solo)
-            {
-                if (_isStarting)
-                    return;
 
-                _isStarting = true;
+            if (ShouldCreateMultiplayerLobby())
+            {
+                _isStartingLocalGame = true;
+                Refresh();
                 _startCts?.Cancel();
                 _startCts?.Dispose();
                 _startCts = new CancellationTokenSource();
-                var ct = _startCts.Token;
+
                 try
                 {
-                    ApplySoloSession();
-                    await _gameStarter.StartGameAsync(ct);
+                    _overlayLoader?.LoadOverlay(0f, 100f, "%");
+                    var room = await CreateMultiplayerLobbyAsync(_startCts.Token);
+                    if (room == null)
+                        return;
+
+                    ApplyGameplaySessionDraft(saveSlot);
+                    _navigation.Open(_lobbyPanelName);
+                    return;
                 }
                 catch (OperationCanceledException)
                 {
-                    Debug.Log("[WorldCreationPanelService] Solo start canceled.");
+                    return;
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"[WorldCreationPanelService] Solo start failed: {e}");
-                    _infoPanelService?.Show(new InfoMessage("Помилка старту", e.Message));
+                    Debug.LogError($"[WorldCreationPanelService] Multiplayer lobby creation failed: {e}");
+                    _infoPanelService?.Show(new InfoMessage("Room Error", e.Message));
+                    await CleanupFailedLobbyCreationAsync();
+                    return;
                 }
                 finally
                 {
-                    _isStarting = false;
+                    _isStartingLocalGame = false;
+                    try { _overlayLoader?.StopOverlay(true); } catch { }
                     Refresh();
                 }
             }
+
+            ApplyGameplaySessionDraft(saveSlot);
+            if (ShouldContinueToLobby())
+                _navigation.Open(_lobbyPanelName);
             else
-            {
-                throw new InvalidOperationException($"Unsupported world creation mode: {_mode}");
-            }
+                await StartLocalGameAsync();
         }
 
-        public void Refresh()
+        private void Refresh()
         {
             if (_viewController.CreateWorldButton != null)
                 _viewController.CreateWorldButton.interactable = CanProceed();
         }
 
-        public void SetupMode(WolrdCreationMode mode)
-        {
-            _mode = mode;
-            Refresh();
-        }
-
         private bool CanProceed()
-        {
-            return !_isStarting
-                && !string.IsNullOrWhiteSpace(_viewController.WorldName)
+            => !string.IsNullOrWhiteSpace(_viewController.WorldName)
                 && _viewController.Seed != 0;
-        }
 
-        private bool ShouldStoreMultiplayerDraft()
+        private bool TryFindNewSaveSlot(out int slot)
         {
-            if (_mode == WolrdCreationMode.Multiplayer)
-                return true;
-
-            var currentLobby = _lobbyService?.Current;
-            return currentLobby != null && !string.IsNullOrWhiteSpace(currentLobby.LobbyId ?? currentLobby.LobbyCode);
-        }
-
-        private void ApplySoloSession()
-        {
-            string localId = "local-player";
-            string playerName = string.IsNullOrWhiteSpace(_localSettings?.PlayerName)
-                ? "Player"
-                : _localSettings.PlayerName;
-
-            var players = new List<GameplayPlayer>
+            if (_saveService != null)
             {
-                new GameplayPlayer(localId, playerName, isHost: true, isLocal: true)
-            };
+                for (slot = 0; slot <= 99; slot++)
+                    if (!_saveService.HasSave(slot)) return true;
+            }
 
-            int botCount = _selectedGameModeService != null
-                && _selectedGameModeService.SelectedGameMode == Kruty1918.Moyva.HomeMenu.API.GameMode.Bot
-                && _botViewController != null
-                    ? Mathf.Max(0, _botViewController.BotCount)
-                    : 0;
-
-            var worldSettings = new WorldSettingsDto(
-                _viewController.WorldName,
-                _viewController.Seed,
-                (int)_viewController.Size,
-                ResolveWorldWidth(),
-                ResolveWorldHeight(),
-                _viewController.MapType,
-                _viewController.Difficulty,
-                maxPlayers: 1 + botCount,
-                isPrivate: true);
-
-            GameLaunchContext.ConfigureMenuNewGame(
-                ResolveNewGameSlot(),
-                worldSettings.WorldName,
-                worldSettings.Seed,
-                worldSettings.Size,
-                (int)worldSettings.MapType,
-                (int)worldSettings.Difficulty,
-                worldSettings.MaxPlayers,
-                worldSettings.IsPrivate,
-                worldSettings.Width,
-                worldSettings.Height);
-            _gameplaySession.Apply(NetworkProviderType.Offline, worldSettings, players, localId);
+            slot = -1;
+            return false;
         }
 
-        private void ApplyMultiplayerSessionDraft()
+        private void ApplyGameplaySessionDraft(int saveSlot)
         {
             string localId = ResolveLocalPlayerId();
             string playerName = string.IsNullOrWhiteSpace(_localSettings?.PlayerName)
                 ? "Player"
                 : _localSettings.PlayerName;
+            bool soloFlow = IsSoloFlow();
+            bool botMatch = _moyvaUiState?.PlayFlow == HomeMenuPlayFlow.HumanVsBot;
             var currentLobby = _lobbyService?.Current;
-            int maxPlayers = currentLobby?.MaxPlayers > 0 ? currentLobby.MaxPlayers : 2;
+            int maxPlayers = soloFlow
+                ? (botMatch ? 2 : 1)
+                : currentLobby != null && currentLobby.MaxPlayers > 0
+                    ? currentLobby.MaxPlayers
+                    : 2;
 
             var worldSettings = new WorldSettingsDto(
                 _viewController.WorldName,
@@ -189,28 +173,63 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _viewController.MapType,
                 _viewController.Difficulty,
                 maxPlayers,
-                currentLobby?.IsPrivate ?? true);
+                soloFlow || (currentLobby?.IsPrivate ?? true));
 
             var players = new List<GameplayPlayer>
             {
                 new GameplayPlayer(localId, playerName, isHost: true, isLocal: true)
             };
 
-            _gameplaySession.Apply(_modeSelector?.CurrentMode ?? NetworkProviderType.Relay, worldSettings, players, localId);
-            GameLaunchContext.ConfigureMenuMultiplayerGame(
-                worldSettings.WorldName,
-                worldSettings.Seed,
-                worldSettings.Size,
-                (int)worldSettings.MapType,
-                (int)worldSettings.Difficulty,
-                worldSettings.MaxPlayers,
-                worldSettings.IsPrivate,
-                worldSettings.Width,
-                worldSettings.Height);
+            if (botMatch)
+                players.Add(new GameplayPlayer("bot-1", "Bot", false, false, PlayerControllerType.Bot));
+
+            _gameplaySession.Apply(ResolveProvider(), worldSettings, players, localId);
+            if (soloFlow)
+            {
+                GameLaunchContext.ConfigureMenuNewGame(
+                    saveSlot,
+                    worldSettings.WorldName,
+                    worldSettings.Seed,
+                    worldSettings.Size,
+                    (int)worldSettings.MapType,
+                    (int)worldSettings.Difficulty,
+                    worldSettings.MaxPlayers,
+                    worldSettings.IsPrivate,
+                    worldSettings.Width,
+                    worldSettings.Height,
+                    isLocalPlayerHost: true,
+                    localPlayerId: localId);
+                if (botMatch)
+                    GameLaunchContext.ConfigureBotOpponent(players[1].PlayerId, _viewController.SelectedBotDifficultyId);
+            }
+            else
+            {
+                GameLaunchContext.ConfigureMenuMultiplayerGame(
+                    worldSettings.WorldName,
+                    worldSettings.Seed,
+                    worldSettings.Size,
+                    (int)worldSettings.MapType,
+                    (int)worldSettings.Difficulty,
+                    worldSettings.MaxPlayers,
+                    worldSettings.IsPrivate,
+                    worldSettings.Width,
+                    worldSettings.Height,
+                    isLocalPlayerHost: true,
+                    localPlayerId: localId);
+            }
         }
 
         private string ResolveLocalPlayerId()
         {
+            if (!string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
+                return _sessionManager.LocalPlayerId.Trim();
+
+            if (GameLaunchContext.HasLocalPlayerRole
+                && !string.IsNullOrWhiteSpace(GameLaunchContext.LocalPlayerId))
+            {
+                return GameLaunchContext.LocalPlayerId.Trim();
+            }
+
             var currentLobby = _lobbyService?.Current;
             if (currentLobby?.Players != null)
             {
@@ -236,6 +255,197 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             return "local-player";
+        }
+
+        private NetworkProviderType ResolveProvider()
+        {
+            if (IsSoloFlow())
+                return NetworkProviderType.Offline;
+
+            if (_lobbyFlowContext != null && _lobbyFlowContext.FlowKind != LobbyFlowKind.None)
+                return _lobbyFlowContext.Provider;
+
+            if (_lobbyService?.Current != null)
+                return _modeSelector?.CurrentMode ?? NetworkProviderType.Relay;
+
+            return NetworkProviderType.Offline;
+        }
+
+        private bool ShouldContinueToLobby()
+        {
+            if (IsSoloFlow())
+                return false;
+
+            if (_lobbyService?.Current != null)
+                return true;
+
+            return _lobbyFlowContext != null && _lobbyFlowContext.FlowKind != LobbyFlowKind.None;
+        }
+
+        private bool ShouldCreateMultiplayerLobby()
+        {
+            return !IsSoloFlow()
+                && _lobbyService?.Current == null
+                && _lobbyFlowContext != null
+                && _lobbyFlowContext.FlowKind == LobbyFlowKind.Create
+                && _lobbyFlowContext.HasRoomDraft;
+        }
+
+        private bool IsSoloFlow()
+        {
+            if (_moyvaUiState != null)
+                return _moyvaUiState.PlayFlow != HomeMenuPlayFlow.Multiplayer;
+
+            if (_lobbyFlowContext != null && _lobbyFlowContext.FlowKind != LobbyFlowKind.None)
+                return false;
+
+            return _lobbyService?.Current == null;
+        }
+
+        private async Task StartLocalGameAsync()
+        {
+            if (_isStartingLocalGame)
+                return;
+
+            if (_gameStarter == null)
+            {
+                Debug.LogError("[WorldCreationPanelService] Cannot start local game: IHomeMenuGameStarter is not available.");
+                return;
+            }
+
+            _isStartingLocalGame = true;
+            _startCts?.Cancel();
+            _startCts?.Dispose();
+            _startCts = new CancellationTokenSource();
+
+            try
+            {
+                _overlayLoader?.LoadOverlay(0f, 100f, "%");
+                _gameStateService?.StartGame();
+                await _gameStarter.StartGameAsync(_startCts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[WorldCreationPanelService] Local game start failed: {e}");
+            }
+            finally
+            {
+                _isStartingLocalGame = false;
+                try { _overlayLoader?.StopOverlay(true); } catch { }
+            }
+        }
+
+        private async Task<LobbyRoom> CreateMultiplayerLobbyAsync(CancellationToken ct)
+        {
+            if (_lobbyService == null)
+                throw new InvalidOperationException("Lobby service is unavailable.");
+
+            await ApplySelectedProviderAsync(ct);
+
+            var providerType = ResolveProvider();
+            string roomName = string.IsNullOrWhiteSpace(_lobbyFlowContext?.RoomName)
+                ? "Moyva Lobby"
+                : _lobbyFlowContext.RoomName.Trim();
+
+            string transportJoinCode = await StartNetworkHostAsync(providerType, roomName, ct);
+            if (transportJoinCode == null)
+                return null;
+
+            var options = new CreateRoomOptions(
+                roomName,
+                Mathf.Clamp(_lobbyFlowContext?.MaxPlayers ?? 4, 2, 8),
+                isPrivate: !(_lobbyFlowContext?.IsPublic ?? true),
+                displayName: ResolvePlayerName(),
+                password: _lobbyFlowContext?.Password,
+                relayJoinCode: transportJoinCode);
+
+            LobbyRoom room = await _lobbyService.CreateRoomAsync(options, ct);
+            if (room == null)
+                throw new InvalidOperationException("Could not create lobby: service returned an empty result.");
+
+            if (!string.IsNullOrWhiteSpace(transportJoinCode))
+                await _lobbyService.SetRelayJoinCodeAsync(transportJoinCode, ct);
+
+            _lobbyFlowContext?.ClearRoomDraft();
+            return room;
+        }
+
+        private async Task ApplySelectedProviderAsync(CancellationToken ct)
+        {
+            if (_modeSelector != null)
+                await _modeSelector.SetModeAsync(ResolveProvider());
+        }
+
+        private async Task<string> StartNetworkHostAsync(NetworkProviderType providerType, string roomName, CancellationToken ct)
+        {
+            if (_networkProvider == null)
+            {
+                if (providerType == NetworkProviderType.Relay)
+                    throw new InvalidOperationException("Global Relay transport is unavailable.");
+
+                return string.Empty;
+            }
+
+            var effectiveNetworkType = ResolveEffectiveNetworkProviderType();
+            if (providerType == NetworkProviderType.Relay && effectiveNetworkType != NetworkProviderType.Relay)
+                throw new InvalidOperationException($"Global Relay transport is unavailable: the active network provider is {effectiveNetworkType}.");
+
+            var hostSessionId = providerType == NetworkProviderType.Relay
+                ? string.Empty
+                : roomName;
+            var result = await _networkProvider.HostSessionAsync(hostSessionId, ct);
+            if (result == null || !result.Success)
+                throw new InvalidOperationException(result?.ErrorMessage ?? "Could not start the network session.");
+
+            var joinCode = result.SessionId?.Trim() ?? string.Empty;
+            if (providerType == NetworkProviderType.Relay && !RelayJoinCodeUtility.IsValid(joinCode))
+                throw new InvalidOperationException($"Relay returned an invalid join code '{joinCode}'.");
+
+            if (providerType == NetworkProviderType.Lan && !IsLanJoinCode(joinCode))
+                throw new InvalidOperationException($"LAN transport returned an invalid join code '{joinCode}'. Expected lan:<ip>:<port>.");
+
+            return joinCode;
+        }
+
+        private static bool IsLanJoinCode(string joinCode)
+        {
+            if (string.IsNullOrWhiteSpace(joinCode))
+                return false;
+
+            var parts = joinCode.Trim().Split(':');
+            return parts.Length >= 3
+                && string.Equals(parts[0], "lan", StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(parts[1])
+                && int.TryParse(parts[2], out var port)
+                && port > 0
+                && port <= 65535;
+        }
+
+        private NetworkProviderType ResolveEffectiveNetworkProviderType()
+        {
+            return _networkProvider is SwitchableNetworkProvider switchableNetworkProvider
+                ? switchableNetworkProvider.CurrentType
+                : _networkProvider is RelayNetworkProvider ? NetworkProviderType.Relay
+                : _networkProvider is LanNetworkProvider ? NetworkProviderType.Lan
+                : _networkProvider is WebSocketNetworkProvider ? NetworkProviderType.WebSocket
+                : _networkProvider is OfflineNetworkProvider ? NetworkProviderType.Offline
+                : ResolveProvider();
+        }
+
+        private async Task CleanupFailedLobbyCreationAsync()
+        {
+            try { if (_lobbyService != null) await _lobbyService.LeaveAsync(); } catch { }
+            try { if (_networkProvider != null) await _networkProvider.LeaveSessionAsync(); } catch { }
+        }
+
+        private string ResolvePlayerName()
+        {
+            return string.IsNullOrWhiteSpace(_localSettings?.PlayerName)
+                ? "Player"
+                : _localSettings.PlayerName;
         }
 
         private void ApplyDefaultsToView()
@@ -303,18 +513,5 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             };
         }
 
-        private int ResolveNewGameSlot()
-        {
-            if (_saveService == null)
-                return 0;
-
-            for (int slot = 0; slot <= 99; slot++)
-            {
-                if (!_saveService.HasSave(slot))
-                    return slot;
-            }
-
-            return 0;
-        }
     }
 }

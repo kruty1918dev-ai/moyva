@@ -39,7 +39,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int[,] levelMap = worldData?.TerrainLevelMap;
             if (levelMap == null)
             {
-                Debug.LogWarning($"{LogTag} ApplyIntegerTerrainHeights skipped: TerrainLevelMap is null after fallback attempt.");
                 return;
             }
 
@@ -97,7 +96,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             float baseY = _baseHeightResolver.ResolveTerrainBaseHeight(configuration);
-            Debug.Log($"{SideWallLogTag} Configure side walls from post processor: manager='{managerRoot.name}', cellSize={cellSize}, heightStep={_options.TerrainHeightStep}, baseY={baseY:0.###}, material='{(_options.TerrainSideWallMaterial != null ? _options.TerrainSideWallMaterial.name : "<runtime>")}', color={TileWorldCreatorMapFormatUtility.FormatColor(_options.TerrainSideWallColor)}, levelStats={TileWorldCreatorMapFormatUtility.FormatLevelStats(levelMap)}.");
             wallBuilder.Configure(managerRoot, levelMap, cellSize, _options.TerrainHeightStep, baseY, _options.TerrainSideWallMaterial, _options.TerrainSideWallColor, _options.GenerateTerrainSideWallsAtMapBorder);
         }
 

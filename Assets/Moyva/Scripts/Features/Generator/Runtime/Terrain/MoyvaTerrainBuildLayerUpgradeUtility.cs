@@ -19,7 +19,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             CopyIdentity(current, replacement, layerName);
             ReplaceInConfiguration(configuration, current, replacement);
-            Debug.Log($"[MoyvaTWCChunks] Upgraded TWC build layer '{layerName}' to height-aware merged terrain layer. preservedGuid='{replacement.guid}'.");
             return replacement;
         }
 
@@ -41,7 +40,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Configuration configuration = manager != null ? manager.configuration : null;
             if (configuration != null)
             {
-                GraphCompilerLayerAssetUtility.EnsureBuildRootFolder(configuration);
+                RecipeCompilerLayerAssetUtility.EnsureBuildRootFolder(configuration);
                 if (!configuration.buildLayerFolders[0].buildLayers.Contains(layer))
                     configuration.buildLayerFolders[0].buildLayers.Add(layer);
             }
@@ -53,7 +52,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
 #if UNITY_EDITOR
             return manager != null
-                   && GraphCompilerLayerAssetUtility.IsPersistentAsset(manager.configuration);
+                   && RecipeCompilerLayerAssetUtility.IsPersistentAsset(manager.configuration);
 #else
             return manager != null;
 #endif

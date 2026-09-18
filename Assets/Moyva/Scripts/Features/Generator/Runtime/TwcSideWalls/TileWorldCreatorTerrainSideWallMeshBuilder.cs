@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -8,99 +7,33 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         private readonly ITileWorldCreatorTerrainSideWallEdgeAppender _edgeAppender;
 
-        public TileWorldCreatorTerrainSideWallMeshBuilder(ITileWorldCreatorTerrainSideWallEdgeAppender edgeAppender)
+        public TileWorldCreatorTerrainSideWallMeshBuilder(
+            ITileWorldCreatorTerrainSideWallEdgeAppender edgeAppender)
         {
             _edgeAppender = edgeAppender;
         }
 
-        public TileWorldCreatorTerrainSideWallBuildResult Build(
+        /// <summary>Перебудовує бічні стінки для всіх перепадів висоти в мапі.</summary>
+        public void Build(
             TileWorldCreatorTerrainSideWallState state,
             TileWorldCreatorTerrainSideWallConfig config)
         {
             state.ClearBuildBuffers();
             state.Mesh.Clear();
-            if (!TryCreateStats(config, out var stats, out string skipReason))
-                return new TileWorldCreatorTerrainSideWallBuildResult(true, skipReason, stats, default, IndexFormat.UInt16);
+            if (!TryResolveGrid(config, out int width, out int height, out int edgeLevel))
+                return;
 
-            var artifacts = new TileWorldCreatorTerrainSideWallArtifactDiagnostics(config.CellSize, config.HeightStep);
-            for (int x = 0; x < stats.Width; x++)
-            for (int y = 0; y < stats.Height; y++)
-                AppendCellWalls(state, config, x, y, stats.EdgeLevel, ref stats, ref artifacts);
+            int wallCount = 0;
+            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+                AppendCellWalls(state, config, x, y, width, height, edgeLevel, ref wallCount);
 
-            if (stats.WallCount == 0)
-                return new TileWorldCreatorTerrainSideWallBuildResult(false, "no side walls produced", stats, artifacts, IndexFormat.UInt16);
+            if (wallCount == 0)
+                return;
 
-            IndexFormat indexFormat = state.Vertices.Count > 65000 ? IndexFormat.UInt32 : IndexFormat.UInt16;
-            ApplyMesh(state, indexFormat);
-            stats.VertexCount = state.Vertices.Count;
-            stats.TriangleCount = state.Triangles.Count / 3;
-            return new TileWorldCreatorTerrainSideWallBuildResult(false, null, stats, artifacts, indexFormat);
-        }
-
-        private static bool TryCreateStats(
-            TileWorldCreatorTerrainSideWallConfig config,
-            out TileWorldCreatorTerrainSideWallBuildStats stats,
-            out string skipReason)
-        {
-            stats = new TileWorldCreatorTerrainSideWallBuildStats
-            {
-                DifferenceHistogram = new SortedDictionary<int, int>()
-            };
-            skipReason = null;
-            if (config.TerrainLevelMap == null)
-            {
-                skipReason = "TerrainLevelMap is null.";
-                return false;
-            }
-
-            stats.Width = config.TerrainLevelMap.GetLength(0);
-            stats.Height = config.TerrainLevelMap.GetLength(1);
-            if (stats.Width <= 0 || stats.Height <= 0)
-            {
-                skipReason = $"TerrainLevelMap size is {stats.Width}x{stats.Height}.";
-                return false;
-            }
-
-            FindLevelRange(config.TerrainLevelMap, stats.Width, stats.Height, out stats.MinLevel, out stats.MaxLevel);
-            stats.EdgeLevel = Mathf.Min(0, stats.MinLevel);
-            return true;
-        }
-
-        private void AppendCellWalls(
-            TileWorldCreatorTerrainSideWallState state,
-            TileWorldCreatorTerrainSideWallConfig config,
-            int cellX,
-            int cellY,
-            int edgeLevel,
-            ref TileWorldCreatorTerrainSideWallBuildStats stats,
-            ref TileWorldCreatorTerrainSideWallArtifactDiagnostics artifacts)
-        {
-            int level = config.TerrainLevelMap[cellX, cellY];
-            float minX = (cellX * config.CellSize) - (config.CellSize * 0.5f);
-            float maxX = minX + config.CellSize;
-            float minZ = (cellY * config.CellSize) - (config.CellSize * 0.5f);
-            float maxZ = minZ + config.CellSize;
-            AppendEdge(state, config, new TileWorldCreatorTerrainSideWallEdge(cellX, cellY, cellX + 1, cellY, "East", new Vector3(maxX, 0f, minZ), new Vector3(maxX, 0f, maxZ)), level, edgeLevel, ref stats, ref artifacts);
-            AppendEdge(state, config, new TileWorldCreatorTerrainSideWallEdge(cellX, cellY, cellX - 1, cellY, "West", new Vector3(minX, 0f, maxZ), new Vector3(minX, 0f, minZ)), level, edgeLevel, ref stats, ref artifacts);
-            AppendEdge(state, config, new TileWorldCreatorTerrainSideWallEdge(cellX, cellY, cellX, cellY + 1, "North", new Vector3(maxX, 0f, maxZ), new Vector3(minX, 0f, maxZ)), level, edgeLevel, ref stats, ref artifacts);
-            AppendEdge(state, config, new TileWorldCreatorTerrainSideWallEdge(cellX, cellY, cellX, cellY - 1, "South", new Vector3(minX, 0f, minZ), new Vector3(maxX, 0f, minZ)), level, edgeLevel, ref stats, ref artifacts);
-        }
-
-        private void AppendEdge(
-            TileWorldCreatorTerrainSideWallState state,
-            TileWorldCreatorTerrainSideWallConfig config,
-            TileWorldCreatorTerrainSideWallEdge edge,
-            int level,
-            int edgeLevel,
-            ref TileWorldCreatorTerrainSideWallBuildStats stats,
-            ref TileWorldCreatorTerrainSideWallArtifactDiagnostics artifacts)
-        {
-            _edgeAppender.TryAppend(state, config, edge, level, edgeLevel, ref stats, ref artifacts);
-        }
-
-        private static void ApplyMesh(TileWorldCreatorTerrainSideWallState state, IndexFormat indexFormat)
-        {
-            state.Mesh.indexFormat = indexFormat;
+            state.Mesh.indexFormat = state.Vertices.Count > 65000
+                ? IndexFormat.UInt32
+                : IndexFormat.UInt16;
             state.Mesh.SetVertices(state.Vertices);
             state.Mesh.SetTriangles(state.Triangles, 0);
             state.Mesh.SetUVs(0, state.Uvs);
@@ -109,16 +42,59 @@ namespace Kruty1918.Moyva.Generator.Runtime
             state.Mesh.RecalculateBounds();
         }
 
-        private static void FindLevelRange(int[,] levels, int width, int height, out int min, out int max)
+        private static bool TryResolveGrid(
+            TileWorldCreatorTerrainSideWallConfig config,
+            out int width,
+            out int height,
+            out int edgeLevel)
         {
-            min = int.MaxValue;
-            max = int.MinValue;
+            width = config.TerrainLevelMap?.GetLength(0) ?? 0;
+            height = config.TerrainLevelMap?.GetLength(1) ?? 0;
+            edgeLevel = 0;
+            if (width <= 0 || height <= 0)
+                return false;
+
+            int minimum = int.MaxValue;
             for (int x = 0; x < width; x++)
             for (int y = 0; y < height; y++)
+                minimum = Mathf.Min(minimum, config.TerrainLevelMap[x, y]);
+
+            edgeLevel = Mathf.Min(0, minimum);
+            return true;
+        }
+
+        private void AppendCellWalls(
+            TileWorldCreatorTerrainSideWallState state,
+            TileWorldCreatorTerrainSideWallConfig config,
+            int cellX,
+            int cellY,
+            int width,
+            int height,
+            int edgeLevel,
+            ref int wallCount)
+        {
+            int level = config.TerrainLevelMap[cellX, cellY];
+            float minX = (cellX - 0.5f) * config.CellSize;
+            float maxX = minX + config.CellSize;
+            float minZ = (cellY - 0.5f) * config.CellSize;
+            float maxZ = minZ + config.CellSize;
+
+            AppendEdge(new TileWorldCreatorTerrainSideWallEdge(cellX, cellY, cellX + 1, cellY, "East", new Vector3(maxX, 0f, minZ), new Vector3(maxX, 0f, maxZ)), ref wallCount);
+            AppendEdge(new TileWorldCreatorTerrainSideWallEdge(cellX, cellY, cellX - 1, cellY, "West", new Vector3(minX, 0f, maxZ), new Vector3(minX, 0f, minZ)), ref wallCount);
+            AppendEdge(new TileWorldCreatorTerrainSideWallEdge(cellX, cellY, cellX, cellY + 1, "North", new Vector3(maxX, 0f, maxZ), new Vector3(minX, 0f, maxZ)), ref wallCount);
+            AppendEdge(new TileWorldCreatorTerrainSideWallEdge(cellX, cellY, cellX, cellY - 1, "South", new Vector3(minX, 0f, minZ), new Vector3(maxX, 0f, minZ)), ref wallCount);
+
+            void AppendEdge(TileWorldCreatorTerrainSideWallEdge edge, ref int count)
             {
-                int level = levels[x, y];
-                min = Mathf.Min(min, level);
-                max = Mathf.Max(max, level);
+                _edgeAppender.TryAppend(
+                    state,
+                    config,
+                    edge,
+                    level,
+                    edgeLevel,
+                    width,
+                    height,
+                    ref count);
             }
         }
     }

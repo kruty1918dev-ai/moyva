@@ -1,32 +1,33 @@
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Presentation.API;
+using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionPreviewVisualSignalHandler : IConstructionPreviewVisualSignalHandler
-    {
+    internal sealed class ConstructionPreviewVisualSignalHandler {
         private readonly IBuildingRegistry _buildingRegistry;
-        private readonly LazyInject<IConstructionService> _constructionService;
+        private readonly LazyInject<IConstructionSessionCommands> _constructionService;
         private readonly IWallTopologyService _wallTopologyService;
-        private readonly IConstructionPreviewVisualService _previewVisuals;
-        private readonly IConstructionPlacedVisualService _placedVisuals;
-        private readonly IConstructionWallVisualRefreshService _wallVisuals;
-        private readonly IConstructionInfluenceRadiusVisualService _radiusVisuals;
-        private readonly IConstructionBlockedFlashService _blockedFlashService;
+        private readonly ConstructionPreviewVisualService _previewVisuals;
+        private readonly ConstructionPlacedVisualService _placedVisuals;
+        private readonly ConstructionWallVisualRefreshService _wallVisuals;
+        private readonly ConstructionInfluenceRadiusVisualService _radiusVisuals;
+        private readonly ConstructionBlockedFlashService _blockedFlashService;
         private readonly int _townHallBuildRadius;
 
         [Inject]
         public ConstructionPreviewVisualSignalHandler(
             IBuildingRegistry buildingRegistry,
-            LazyInject<IConstructionService> constructionService,
+            LazyInject<IConstructionSessionCommands> constructionService,
             IWallTopologyService wallTopologyService,
-            IConstructionPreviewVisualService previewVisuals,
-            IConstructionPlacedVisualService placedVisuals,
-            IConstructionWallVisualRefreshService wallVisuals,
-            IConstructionInfluenceRadiusVisualService radiusVisuals,
-            IConstructionBlockedFlashService blockedFlashService,
+            ConstructionPreviewVisualService previewVisuals,
+            ConstructionPlacedVisualService placedVisuals,
+            ConstructionWallVisualRefreshService wallVisuals,
+            ConstructionInfluenceRadiusVisualService radiusVisuals,
+            ConstructionBlockedFlashService blockedFlashService,
             [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius)
         {
             _buildingRegistry = buildingRegistry;
@@ -64,10 +65,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
             {
+                bool existed = _previewVisuals.TryGet(signal.Position, out GameObject existing);
+                Quaternion previous = existed && existing != null ? existing.transform.rotation : Quaternion.identity;
                 GameObject preview = _previewVisuals.Show(signal, def);
                 ApplyRotation(
                     preview,
-                    signal.RotationQuarterTurns);
+                    signal.RotationQuarterTurns,
+                    def.Presentation);
+                if (existed && preview != null)
+                {
+                    var rotation = preview.GetComponent<ConstructionPreviewRotation>()
+                        ?? preview.AddComponent<ConstructionPreviewRotation>();
+                    rotation.Apply(previous, preview.transform.rotation);
+                }
                 ShowOrHidePreviewRadius(def, signal.Position);
                 RefreshWallPreviewIfNeeded(signal);
             }
@@ -77,35 +87,60 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
             {
-                _previewVisuals.TryMove(signal.FromPosition, signal.ToPosition, signal.BuildingId, def.VisualYOffset);
+                Quaternion baseRotation = ResolveBaseRotation(
+                    signal.RotationQuarterTurns);
+                _previewVisuals.TryMove(
+                    signal.FromPosition,
+                    signal.ToPosition,
+                    signal.BuildingId,
+                    def.ResolveVisualYOffset(),
+                    def.Presentation,
+                    baseRotation);
                 if (_previewVisuals.TryGet(
                         signal.ToPosition,
                         out GameObject preview))
                 {
                     ApplyRotation(
                         preview,
-                        signal.RotationQuarterTurns);
+                        signal.RotationQuarterTurns,
+                        def.Presentation);
                 }
             }
         }
 
         private static void ApplyRotation(
             GameObject visual,
-            int rotationQuarterTurns)
+            int rotationQuarterTurns,
+            EntityPresentationConfig presentation)
         {
             if (visual == null)
                 return;
 
             visual.transform.rotation =
-                ConstructionRotationUtility.ToWorldRotation(
-                    ConstructionRotationUtility.Normalize(
-                        rotationQuarterTurns));
+                EntityPresentationApplier.ResolveRotation(
+                    ResolveBaseRotation(rotationQuarterTurns),
+                    presentation);
         }
+
+        private static Quaternion ResolveBaseRotation(int rotationQuarterTurns)
+            => ConstructionRotationUtility.ToWorldRotation(
+                ConstructionRotationUtility.Normalize(
+                    rotationQuarterTurns));
 
         public void Handle(BuildingPreviewDragVisualSignal signal)
         {
             if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
-                _previewVisuals.MoveDragVisual(signal.Position, signal.BuildingId, signal.WorldPosition, signal.SnapToGrid, signal.HasSnapTarget, signal.SnapTargetPosition, signal.IsSnapTargetValid, def.VisualYOffset);
+                _previewVisuals.MoveDragVisual(
+                    signal.Position,
+                    signal.BuildingId,
+                    signal.WorldPosition,
+                    signal.SnapToGrid,
+                    signal.HasSnapTarget,
+                    signal.SnapTargetPosition,
+                    signal.IsSnapTargetValid,
+                    def.ResolveVisualYOffset(),
+                    def.Presentation,
+                    ResolveBaseRotation(signal.RotationQuarterTurns));
         }
 
         public void Handle(BuildGridHoverChangedSignal signal)
@@ -165,7 +200,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private bool TryGetDefinition(string buildingId, out BuildingDefinition def)
         {
             def = string.IsNullOrWhiteSpace(buildingId) ? null : _buildingRegistry.GetById(buildingId);
-            return def != null && def.Prefab != null;
+            return def != null && def.ResolvePreviewPrefab() != null;
         }
 
         private bool HasInfluenceRadius(BuildingDefinition def)

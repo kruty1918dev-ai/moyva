@@ -26,6 +26,9 @@ namespace Kruty1918.Moyva.HomeMenu.API
         /// <summary>Гучність UI-звуків.</summary>
         float UiVolume { get; }
 
+        /// <summary>Гучність ембієнсу/світових звуків.</summary>
+        float AmbienceVolume { get; }
+
         /// <summary>Прапорець повного вимкнення звуку.</summary>
         bool IsMuted { get; }
 
@@ -46,6 +49,9 @@ namespace Kruty1918.Moyva.HomeMenu.API
 
         /// <summary>Змінити гучність UI.</summary>
         void SetUiVolume(float volume);
+
+        /// <summary>Змінити гучність ембієнсу.</summary>
+        void SetAmbienceVolume(float volume);
 
         /// <summary>Увімкнути або вимкнути mute.</summary>
         void SetMuted(bool isMuted);

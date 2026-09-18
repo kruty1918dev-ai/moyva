@@ -6,8 +6,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     {
         public ResolvedTileComposition(
             Vector2Int cell,
-            GraphTileLayerSample mainTerrain,
-            GraphTileLayerSample overlay,
+            TileLayerSample mainTerrain,
+            TileLayerSample overlay,
             bool hasMainTerrain,
             bool hasOverlay,
             string reason,
@@ -55,8 +55,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         }
 
         public Vector2Int Cell { get; }
-        public GraphTileLayerSample MainTerrain { get; }
-        public GraphTileLayerSample Overlay { get; }
+        public TileLayerSample MainTerrain { get; }
+        public TileLayerSample Overlay { get; }
         public bool HasMainTerrain { get; }
         public bool HasOverlay { get; }
         public string Reason { get; }

@@ -1,0 +1,26 @@
+{
+  "name": "Kruty1918.Moyva.GameAudio",
+  "rootNamespace": "Kruty1918.Moyva.GameAudio",
+  "references": [
+    "Zenject",
+    "Unity.InputSystem",
+    "Kruty1918.Moyva.Jsonization",
+    "Kruty1918.Moyva.Shared",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.Grid",
+    "Kruty1918.Moyva.Camera",
+    "Kruty1918.Moyva.Units",
+    "Kruty1918.Moyva.Notifications",
+    "Kruty1918.Moyva.Turns",
+    "Kruty1918.Moyva.UIActions"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

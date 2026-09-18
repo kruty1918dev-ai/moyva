@@ -15,6 +15,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal class ContinuePanelService : Kruty1918.Moyva.HomeMenu.API.IContinuePanelService, IInitializable, IDisposable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         [Inject] private IContinueViewController _viewController;
         [Inject] private ISaveService _saveService;
         [Inject] private SignalBus _signalBus;
@@ -80,9 +84,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         creationUtc = File.GetCreationTimeUtc(slotPath);
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Debug.LogWarning($"[ContinuePanelService] Failed reading file times for {slotPath}: {e.Message}");
                 }
 
                 // Choose last modification time; if missing, fallback to creation time; if both missing, use info.LastWriteTimeUtc or now.
@@ -112,7 +115,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             int slotIndex = Mathf.Clamp(slot.SlotIndex, 0, 99);
             if (!_saveService.HasSave(slotIndex))
             {
-                _infoPanelService?.Show(new InfoMessage("Збереження не знайдено", $"Слот {slotIndex:D2} більше не існує."));
+                _infoPanelService?.Show(new InfoMessage("Save Not Found", TF("Slot {0:D2} no longer exists.", slotIndex)));
                 RefreshSlotsList();
                 return;
             }
@@ -130,12 +133,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (OperationCanceledException)
             {
-                Debug.Log("[ContinuePanelService] Start game operation canceled.");
             }
             catch (Exception e)
             {
                 Debug.LogError($"[ContinuePanelService] Failed to load slot {slotIndex:D2}: {e}");
-                _infoPanelService?.Show(new InfoMessage("Помилка завантаження", e.Message));
+                _infoPanelService?.Show(new InfoMessage("Load Failed", e.Message));
             }
             finally
             {
@@ -155,7 +157,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 new GameplayPlayer(localId, playerName, isHost: true, isLocal: true)
             };
 
-            var displayName = string.IsNullOrWhiteSpace(worldName) ? "Збережений світ" : worldName.Trim();
+            var displayName = string.IsNullOrWhiteSpace(worldName) ? "Saved World" : worldName.Trim();
             var worldSettings = new WorldSettingsDto(displayName, 0, (int)WorldSize.Medium, MapType.Continents, Difficulty.Normal, 1, true);
             _gameplaySession.Apply(NetworkProviderType.Offline, worldSettings, players, localId);
         }

@@ -1,0 +1,65 @@
+{
+  "scenario": {
+    "id": "castle",
+    "title": "First castle",
+    "legacyStage": 5,
+    "learnerBuildsInitialCastle": true,
+    "fullGame": false,
+    "prerequisites": ["foundation-legal-setup"],
+    "minMeaningfulCandidates": 2,
+    "maxForcedActionRatio": 0.9,
+    "requiredIntents": ["Build", "EndTurn"],
+    "steps": [
+      {
+        "id": "castle-operational",
+        "goal": 1,
+        "criterion": 1,
+        "requiredCount": 1,
+        "threshold": 0,
+        "buildingTypeId": "castle-01"
+      }
+    ],
+    "startingConditions": {
+      "learnerStartsWithCastle": false,
+      "learnerMustPlaceCastle": true,
+      "startingResources": [
+        { "resourceId": "walnut-wood-materials-resources", "amount": 40, "owner": "learner" },
+        { "resourceId": "hardwood-materials-resources", "amount": 20, "owner": "learner" }
+      ],
+      "startingUnits": [],
+      "startingBuildings": [],
+      "opponent": {
+        "enabled": false,
+        "startingUnits": 0,
+        "startingCastle": false,
+        "unitTypeId": "warrior",
+        "archetype": "passive",
+        "residents": 0
+      },
+      "objectives": [],
+      "residents": 0,
+      "openingRevealRadius": -1
+    },
+    "availableCapabilities": ["construction", "end-turn"],
+    "generationConstraints": {
+      "minReachableArea": 2,
+      "requiredResourceTypes": ["walnut-wood-materials-resources"],
+      "minOpponentDistance": 2,
+      "maxOpponentDistance": 0,
+      "objectiveReachability": true,
+      "requiredTerrainCompatibility": []
+    },
+    "rewardRules": {
+      "validatedGameplayEventsOnly": true,
+      "rewardSetupActions": false,
+      "requireMeaningfulEvent": true,
+      "maxGameplayRewardEventsPerTurn": 12,
+      "allowedGameplayEvents": []
+    },
+    "masteryPolicy": {
+      "kind": 0,
+      "successEpisodesRequired": 3,
+      "maxDecisionsPerSuccessfulEpisode": 50
+    }
+  }
+}

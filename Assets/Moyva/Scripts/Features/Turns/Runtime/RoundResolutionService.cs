@@ -38,7 +38,6 @@ namespace Kruty1918.Moyva.Turns.Runtime
             }
 
             participants ??= Array.Empty<ITurnParticipant>();
-            Debug.Log($"[RoundResolution] begin round={completedRound} participants={participants.Count}.");
 
             try
             {
@@ -53,22 +52,16 @@ namespace Kruty1918.Moyva.Turns.Runtime
                     if (lifecycleGuard != null && !lifecycleGuard())
                     {
                         reason = $"Turn lifecycle changed while resolving participant {participant.GetType().Name}.";
-                        Debug.LogWarning($"[RoundResolution] aborted round={completedRound}: {reason}");
                         return false;
                     }
                 }
-
-                Debug.Log($"[RoundResolution] participants-complete round={completedRound}; advancing calendar.");
                 _calendar.AdvanceTurn();
 
                 if (lifecycleGuard != null && !lifecycleGuard())
                 {
                     reason = "Turn lifecycle changed while advancing the round calendar.";
-                    Debug.LogWarning($"[RoundResolution] aborted round={completedRound}: {reason}");
                     return false;
                 }
-
-                Debug.Log($"[RoundResolution] complete round={completedRound}.");
                 return true;
             }
             catch (Exception exception)

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Kruty1918.Moyva.Jsonization;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
@@ -12,10 +13,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
     /// Switchable ILobbyService wrapper. Keeps a stable DI entry point while allowing runtime switches
     /// between UGS lobby and LAN discovery.
     /// </summary>
-    public sealed class SwitchableLobbyService : ILobbyService, IDisposable
+    public sealed class SwitchableLobbyService : ILobbyService, ILobbyLocalIdentity, IDisposable
     {
         private readonly MultiplayerConfig _config;
-        private readonly IMultiplayerLogger _logger;
+        private readonly string _configFingerprint;
 
         private ILobbyService _inner;
         private NetworkProviderType _requestedProviderType;
@@ -27,12 +28,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public event Action<LobbyState> StateChanged;
 
         public LobbyRoom Current => _inner?.Current;
+        public string LocalPlayerId => (_inner as ILobbyLocalIdentity)?.LocalPlayerId ?? string.Empty;
         public LobbyState State => _inner?.State ?? LobbyState.Closed;
 
-        public SwitchableLobbyService(MultiplayerConfig config, IMultiplayerLogger logger)
+        public SwitchableLobbyService(MultiplayerConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _configFingerprint = MoyvaJsonRuntime.ConfigFingerprint;
 
             _requestedProviderType = _config.ProviderType;
             _inner = CreateByType(_requestedProviderType, out _effectiveProviderType);
@@ -42,8 +44,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public NetworkProviderType RequestedProviderType => _requestedProviderType;
 
         /// <summary>
-        /// Current active provider type represented by the inner implementation.
-        /// Useful for diagnostics and logging.
+        /// Фактичний тип активної lobby-реалізації.
         /// </summary>
         public NetworkProviderType CurrentProviderType => _effectiveProviderType;
 
@@ -52,13 +53,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             if (type == NetworkProviderType.Lan)
             {
                 effectiveType = NetworkProviderType.Lan;
-                return new LanLobbyService(_logger);
+                return new LanLobbyService();
             }
 
             if (type == NetworkProviderType.Offline)
             {
                 effectiveType = NetworkProviderType.Offline;
-                return new OfflineLobbyService(_logger);
+                return new OfflineLobbyService();
             }
 
             // For Relay (UGS) provider: if the Unity Lobbies package isn't installed in the project,
@@ -77,15 +78,14 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                             name.StartsWith("Unity.Services.Multiplayer", StringComparison.OrdinalIgnoreCase))
                         {
                             effectiveType = NetworkProviderType.Relay;
-                            return new UgsLobbyService(_logger);
+                            return new UgsLobbyService();
                         }
                     }
                 }
                 catch { }
 
             effectiveType = NetworkProviderType.Offline;
-            _logger?.Warn($"[SwitchableLobbyService] Lobby provider '{type}' is unavailable - falling back to OfflineLobbyService.");
-            return new OfflineLobbyService(_logger);
+            return new OfflineLobbyService();
         }
 
         private void HookInner(ILobbyService service)
@@ -123,11 +123,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 if (_requestedProviderType == type)
                 {
-                    _logger.Trace($"[SwitchableLobbyService] SwitchToAsync skipped: requested={type}, effective={_effectiveProviderType}.");
                     return;
                 }
-
-                _logger.Info($"[SwitchableLobbyService] Switching lobby provider: requested={_requestedProviderType} effective={_effectiveProviderType} -> requested={type}.");
 
                 try { await _inner.LeaveAsync(ct).ConfigureAwait(false); } catch { }
                 UnhookInner(_inner);
@@ -136,29 +133,30 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 _requestedProviderType = type;
                 _inner = CreateByType(type, out _effectiveProviderType);
                 HookInner(_inner);
-
-                _logger.Info($"[SwitchableLobbyService] Lobby provider switched: requested={_requestedProviderType}, effective={_effectiveProviderType}, impl={_inner.GetType().Name}.");
-            }
-            catch (Exception e)
-            {
-                _logger.Error($"[SwitchableLobbyService] SwitchToAsync failed: {e}");
-                throw;
             }
             finally { _switchLock.Release(); }
         }
 
         // Delegates
         public Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, CancellationToken ct = default)
-            => _inner.CreateRoomAsync(options, ct);
+            => _inner.CreateRoomAsync(
+                options?.WithConfigFingerprint(_configFingerprint),
+                ct);
 
         public Task<LobbyRoom> JoinByCodeAsync(string lobbyCode, string displayName, CancellationToken ct = default)
-            => _inner.JoinByCodeAsync(lobbyCode, displayName, ct);
+            => JoinCompatibleAsync(
+                _inner.JoinByCodeAsync(lobbyCode, displayName, ct),
+                ct);
 
         public Task<LobbyRoom> JoinByIdAsync(string lobbyId, string displayName, CancellationToken ct = default)
-            => _inner.JoinByIdAsync(lobbyId, displayName, ct);
+            => JoinCompatibleAsync(
+                _inner.JoinByIdAsync(lobbyId, displayName, ct),
+                ct);
 
         public Task<LobbyRoom> JoinByCodeWithPasswordAsync(string lobbyCode, string displayName, string password, CancellationToken ct = default)
-            => _inner.JoinByCodeWithPasswordAsync(lobbyCode, displayName, password, ct);
+            => JoinCompatibleAsync(
+                _inner.JoinByCodeWithPasswordAsync(lobbyCode, displayName, password, ct),
+                ct);
 
         public Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(CancellationToken ct = default)
             => _inner.QueryRoomsAsync(ct);
@@ -170,6 +168,41 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public Task SetRelayJoinCodeAsync(string relayJoinCode, CancellationToken ct = default) => _inner.SetRelayJoinCodeAsync(relayJoinCode, ct);
 
         public Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, CancellationToken ct = default) => _inner.LockAsync(locked, startedWorldSettingsBytes, ct);
+
+        private async Task<LobbyRoom> JoinCompatibleAsync(
+            Task<LobbyRoom> joinOperation,
+            CancellationToken ct)
+        {
+            LobbyRoom room = await joinOperation.ConfigureAwait(false);
+            if (room == null)
+                return null;
+
+            if (!_config.EnforceConfigConsistency
+                || string.Equals(
+                    room.ConfigFingerprint,
+                    _configFingerprint,
+                    StringComparison.Ordinal))
+            {
+                return room;
+            }
+
+            UnityEngine.Debug.LogError(
+                "[MultiplayerConfig] Refusing lobby join because gameplay JSON fingerprints " +
+                $"do not match. Lobby={room.ConfigFingerprint}, Local={_configFingerprint}.");
+            try
+            {
+                await _inner.LeaveAsync(ct).ConfigureAwait(false);
+            }
+            catch (Exception leaveException)
+            {
+                UnityEngine.Debug.LogWarning(
+                    $"[MultiplayerConfig] Cleanup after rejected join failed: {leaveException.Message}");
+            }
+
+            throw new RoomConfigMismatchException(
+                _configFingerprint,
+                room.ConfigFingerprint);
+        }
 
         public void Dispose()
         {

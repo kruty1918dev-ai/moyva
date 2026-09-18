@@ -24,7 +24,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public void Prepare(Configuration configuration, GeneratedWorldData worldData, TileWorldCreatorTerrainBuildPolicyResult terrainPolicy)
         {
-            Debug.Log($"{LogTag} PrepareConfiguration before: config='{configuration.name}', size={configuration.width}x{configuration.height}, cellSize={configuration.cellSize}, lastCellSize={configuration.lastCellSize}, clusterCellSize={configuration.clusterCellSize}, mergeTiles={configuration.mergeTiles}, useGlobalSeed={configuration.useGlobalRandomSeed}, globalSeed={configuration.globalRandomSeed}, currentSeed={configuration.currentRandomSeed}.");
 
             if (_options.SyncConfigurationSize)
             {
@@ -49,11 +48,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (terrainPolicy.UsesLegacyHeightProjection && configuration.mergeTiles)
             {
-                Debug.LogWarning($"{LogTag} Disabling Configuration.mergeTiles for Moyva per-cell height projection. TWC merged cluster meshes cannot be shifted per terrain cell.");
                 configuration.mergeTiles = false;
             }
-
-            Debug.Log($"{LogTag} PrepareConfiguration after: config='{configuration.name}', size={configuration.width}x{configuration.height}, cellSize={configuration.cellSize}, lastCellSize={configuration.lastCellSize}, clusterCellSize={configuration.clusterCellSize}, mergeTiles={configuration.mergeTiles}, useGlobalSeed={configuration.useGlobalRandomSeed}, globalSeed={configuration.globalRandomSeed}, currentSeed={configuration.currentRandomSeed}.");
         }
 
         public void ConfigureTerrainHeightContext(GeneratedWorldData worldData, TileWorldCreatorTerrainBuildPolicyResult terrainPolicy)

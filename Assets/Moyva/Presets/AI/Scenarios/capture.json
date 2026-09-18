@@ -1,0 +1,72 @@
+{
+  "scenario": {
+    "id": "capture",
+    "title": "Capture",
+    "legacyStage": 6,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "prerequisites": ["combat-defense"],
+    "minMeaningfulCandidates": 2,
+    "maxForcedActionRatio": 0.85,
+    "requiredIntents": ["Move", "Capture", "EndTurn"],
+    "steps": [
+      {
+        "id": "capture",
+        "goal": 7,
+        "criterion": 8,
+        "requiredCount": 1,
+        "threshold": 0,
+        "objectiveType": "settlement"
+      }
+    ],
+    "startingConditions": {
+      "learnerStartsWithCastle": true,
+      "learnerMustPlaceCastle": false,
+      "startingResources": [],
+      "startingUnits": [
+        { "unitTypeId": "warrior", "count": 2, "owner": "learner", "deployed": true, "near": "anchor", "healthFraction": 1.0 }
+      ],
+      "startingBuildings": [],
+      "opponent": {
+        "enabled": true,
+        "startingUnits": 0,
+        "startingCastle": true,
+        "unitTypeId": "warrior",
+        "archetype": "passive",
+        "residents": 0
+      },
+      "objectives": [
+        {
+          "objectiveId": "",
+          "objectiveType": "settlement",
+          "owner": "opponent",
+          "buildingTypeId": "castle-01",
+          "healthFraction": 0.2
+        }
+      ],
+      "residents": 0,
+      "openingRevealRadius": -1
+    },
+    "availableCapabilities": ["movement", "combat", "capture", "scouting", "end-turn"],
+    "generationConstraints": {
+      "minReachableArea": 2,
+      "requiredResourceTypes": ["walnut-wood-materials-resources"],
+      "minOpponentDistance": 2,
+      "maxOpponentDistance": 0,
+      "objectiveReachability": true,
+      "requiredTerrainCompatibility": []
+    },
+    "rewardRules": {
+      "validatedGameplayEventsOnly": true,
+      "rewardSetupActions": false,
+      "requireMeaningfulEvent": true,
+      "maxGameplayRewardEventsPerTurn": 16,
+      "allowedGameplayEvents": []
+    },
+    "masteryPolicy": {
+      "kind": 0,
+      "successEpisodesRequired": 3,
+      "maxDecisionsPerSuccessfulEpisode": 250
+    }
+  }
+}

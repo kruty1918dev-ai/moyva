@@ -21,10 +21,12 @@ jobs:
 
       - name: Generate dependency map and check cycles
         run: |
-          python3 tools/quality/feature_dependency_map.py --check-cycles
+          python3 tools/quality/feature_dependency_map.py \
+            --output /tmp/feature-dependency-map.md \
+            --check-cycles
 
       - name: Upload dependency map artifact
         uses: actions/upload-artifact@v4
         with:
           name: feature-dependency-map
-          path: docs/architecture/feature-dependency-map.md
+          path: /tmp/feature-dependency-map.md

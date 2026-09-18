@@ -88,27 +88,9 @@ namespace Kruty1918.Moyva.WorldCreation.Runtime
                 }
             }
 
-            if (config.HumanPlayerCount < 1 || config.HumanPlayerCount > 4)
+            if (config.PlayerCount < 2 || config.PlayerCount > 4)
             {
-                errorMessage = "Кількість людських гравців: від 1 до 4.";
-                return false;
-            }
-
-            if (config.BotCount < 0 || config.BotCount > 4)
-            {
-                errorMessage = "Кількість ботів: від 0 до 4.";
-                return false;
-            }
-
-            if (!config.EnableBots && config.BotCount > 0)
-            {
-                errorMessage = "Боти вимкнені, але кількість ботів > 0.";
-                return false;
-            }
-
-            if (config.TotalFactions < 2)
-            {
-                errorMessage = "Потрібно мінімум 2 фракції (гравці + боти).";
+                errorMessage = "Кількість гравців: від 2 до 4.";
                 return false;
             }
 
@@ -133,25 +115,23 @@ namespace Kruty1918.Moyva.WorldCreation.Runtime
         {
             return new WorldCreationConfigData
             {
-                WorldName          = config.WorldName,
-                Seed               = config.Seed != 0 ? config.Seed : GenerateRandomSeed(),
-                SizePresetIndex    = (int)config.SizePreset,
-                CustomWidth        = config.CustomWidth,
-                CustomHeight       = config.CustomHeight,
+                WorldName = config.WorldName,
+                Seed = config.Seed != 0 ? config.Seed : GenerateRandomSeed(),
+                SizePresetIndex = (int)config.SizePreset,
+                CustomWidth = config.CustomWidth,
+                CustomHeight = config.CustomHeight,
                 MapTypePresetIndex = (int)config.MapType,
-                DifficultyIndex    = (int)config.Difficulty,
-                EnableBots         = config.EnableBots,
-                HumanPlayerCount   = config.HumanPlayerCount,
-                BotCount           = config.BotCount,
-                StartingGold       = config.StartingGold,
-                StartingFood       = config.StartingFood,
-                ForestDensity      = config.ForestDensity,
-                MountainDensity    = config.MountainDensity,
-                WaterDensity       = config.WaterDensity,
-                VillageDensity     = config.VillageDensity,
-                GenerateRivers     = config.GenerateRivers,
-                GenerateBiomes     = config.GenerateBiomes,
-                ApplyWFC           = config.ApplyWFC
+                DifficultyIndex = (int)config.Difficulty,
+                PlayerCount = config.PlayerCount,
+                StartingGold = config.StartingGold,
+                StartingFood = config.StartingFood,
+                ForestDensity = config.ForestDensity,
+                MountainDensity = config.MountainDensity,
+                WaterDensity = config.WaterDensity,
+                VillageDensity = config.VillageDensity,
+                GenerateRivers = config.GenerateRivers,
+                GenerateBiomes = config.GenerateBiomes,
+                ApplyWFC = config.ApplyWFC
             };
         }
     }

@@ -1,0 +1,10 @@
+{
+  "results": "Results/MoyvaTraining",
+  "trainer": "Assets/Moyva/AI/Training/Config/moyva_ppo.yaml",
+  "disk_block_gib": 2,
+  "disk_warn_gib": 10,
+  "refresh_seconds": 3,
+  "preflight": "standard",
+  "unity": null,
+  "python": null
+}

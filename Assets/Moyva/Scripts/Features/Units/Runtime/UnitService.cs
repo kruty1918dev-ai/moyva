@@ -83,10 +83,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             _gateStateService = gateStateService;
         }
 
-        [System.Diagnostics.Conditional("MOYVA_VERBOSE_MOVEMENT")]
-        private static void LogMovementVerbose(string message)
-            => Debug.Log(message);
-
         public void Initialize()
         {
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreated);
@@ -106,7 +102,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             var config = _unitClassConfig.GetConfig(signal.UnitTypeId);
             if (config == null)
             {
-                Debug.LogWarning($"[UnitService] OnUnitCreated: конфігурація для typeId='{signal.UnitTypeId}' (unitId='{signal.UnitId}') НЕ ЗНАЙДЕНА! Юніт НЕ буде зареєстрований.");
                 return;
             }
 
@@ -139,16 +134,12 @@ namespace Kruty1918.Moyva.Units.Runtime
                 _healthRegistry.Register(health);
             }
 
-            LogMovementVerbose(
-                $"[UnitService] Unit {signal.UnitId} registered. " +
-                $"Stamina={startStamina}, Position={signal.Position}");
         }
 
         private void OnUnitMoved(UnitMovedSignal signal)
         {
             if (!_unitStamina.ContainsKey(signal.UnitId))
             {
-                Debug.LogWarning($"[UnitService] OnUnitMoved: юніт '{signal.UnitId}' не зареєстрований у _unitStamina. Сигнал ігнорується.");
                 return;
             }
 
@@ -164,25 +155,27 @@ namespace Kruty1918.Moyva.Units.Runtime
                 {
                     UnitId = signal.UnitId,
                 });
-                Debug.LogWarning(
-                    $"[UnitService] Completed move signal rejected for " +
-                    $"{signal.UnitId}: stamina={staminaBefore}, " +
-                    $"cost={signal.Cost}, garrisoned=" +
-                    $"{_garrisonedUnitPositions.ContainsKey(signal.UnitId)}.");
                 return;
             }
 
             _unitStamina[signal.UnitId] -= signal.Cost;
             _unitPositions[signal.UnitId] = signal.NewPosition;
 
-            LogMovementVerbose(
-                $"[UnitService] Unit {signal.UnitId} -> {signal.NewPosition}. " +
-                $"Stamina {staminaBefore} -> {_unitStamina[signal.UnitId]}");
-
         }
 
         private void OnUnitDestroyed(UnitDestroyedSignal signal)
         {
+            if (_unitPositions.TryGetValue(
+                    signal.UnitId,
+                    out Vector2Int occupiedPosition))
+            {
+                if (_objectsMapService is IObjectsMapSharedOccupancy sharedOccupancy)
+                    sharedOccupancy.TryUnregisterOccupant(signal.UnitId);
+                else if (_objectsMapService.TryGetOccupant(occupiedPosition, out string occupantId)
+                         && string.Equals(occupantId, signal.UnitId, StringComparison.Ordinal))
+                    _objectsMapService.Unregister(occupiedPosition);
+            }
+
             if (_unitObjects.TryGetValue(
                     signal.UnitId,
                     out GameObject unitObject)
@@ -219,7 +212,17 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (string.IsNullOrEmpty(unitId) || !_unitStamina.ContainsKey(unitId))
                 return;
 
-            _unitStamina[unitId] = Mathf.Max(0f, stamina);
+            float cap = float.PositiveInfinity;
+            string typeId = GetUnitTypeId(unitId);
+            UnitClassConfig config = string.IsNullOrWhiteSpace(typeId)
+                ? null
+                : _unitClassConfig.GetConfig(typeId);
+            if (config != null)
+                cap = Mathf.Max(0f, config.MovementPointsPerTurn);
+
+            _unitStamina[unitId] = float.IsPositiveInfinity(cap)
+                ? Mathf.Max(0f, stamina)
+                : Mathf.Clamp(stamina, 0f, cap);
         }
 
         public bool TryGetUnitPosition(string unitId, out Vector2Int position)
@@ -383,10 +386,6 @@ namespace Kruty1918.Moyva.Units.Runtime
                         : 0,
                     OwnerId = GetUnitOwnerId(unitId),
                 });
-
-            Debug.Log(
-                $"[MoyvaConstructionModules] garrison restore-unit " +
-                $"unit={unitId} building={buildingPosition}");
             return true;
         }
 
@@ -658,7 +657,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private float ResolveStartingStamina(string unitTypeId, UnitClassConfig config)
         {
-            return config == null ? 0f : Mathf.Max(0f, config.BaseStamina);
+            return config == null
+                ? 0f
+                : Mathf.Max(0f, config.MovementPointsPerTurn);
         }
     }
 }

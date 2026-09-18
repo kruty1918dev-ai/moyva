@@ -25,8 +25,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 if (layerPositions.Value == null || layerPositions.Value.Count == 0)
                     continue;
-
-                Debug.Log($"{LogTag} AddCellsToLayerByGuid layerGuid='{layerPositions.Key}', positions={layerPositions.Value.Count}, bounds={TileWorldCreatorMapFormatUtility.FormatPositionBounds(layerPositions.Value)}.");
                 _manager.AddCellsToLayerByGuid(layerPositions.Key, layerPositions.Value);
             }
         }

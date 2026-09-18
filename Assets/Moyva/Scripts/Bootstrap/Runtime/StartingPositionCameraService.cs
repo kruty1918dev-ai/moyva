@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         void TeleportMainCamera(Vector2Int startPos, WorldGeneratedDataSignal signal);
     }
 
-    internal sealed class StartingPositionCameraService
+    internal sealed partial class StartingPositionCameraService
         : IStartingPositionCameraService
     {
         private const string StartupChainTag = "[MoyvaStartupChain]";
@@ -41,78 +41,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _settings = settings;
         }
 
-        public void TeleportMainCamera(Vector2Int startPos, WorldGeneratedDataSignal signal)
-        {
-            Debug.Log($"{StartupChainTag} Camera.BootstrapTeleport ENTER start={startPos}, map={signal.Width}x{signal.Height}, hasCamera={_camera != null}, hasMovement={_cameraMovement != null}, before={FormatCameraState()}.");
-            if (TryTeleportCameraToStartupFocus(startPos, signal))
-            {
-                Debug.Log($"{StartupChainTag} Camera.BootstrapTeleport EXIT path=startup-focus start={startPos}, after={FormatCameraState()}.");
-                return;
-            }
 
-            Debug.LogWarning($"{StartupChainTag} Camera.BootstrapTeleport FALLBACK path=raw-position start={startPos}, cameraZ={_settings.cameraZ}, before={FormatCameraState()}.");
-            _cameraMovement.TeleportCamera(new Vector3(startPos.x, startPos.y, _settings.cameraZ));
-            Debug.Log($"{StartupChainTag} Camera.BootstrapTeleport EXIT path=raw-position start={startPos}, after={FormatCameraState()}.");
-        }
 
-        public bool TryTeleportCameraToStartupFocus(Vector2Int startPos, WorldGeneratedDataSignal signal)
-        {
-            if (_cameraMovement == null)
-            {
-                Debug.LogWarning($"{StartupChainTag} Camera.BootstrapFocus SKIP reason=no-camera-movement start={startPos}, camera={FormatCameraState()}.");
-                return false;
-            }
 
-            Debug.Log($"{StartupChainTag} Camera.BootstrapFocus ENTER start={startPos}, before={FormatCameraState()}.");
-            ApplyConfiguredStartupCameraPose();
-            Vector3 focusPoint = ResolveStartupFocusPoint(startPos, signal);
-            float distance = ResolveStartupCameraDistance();
-            Debug.Log($"{StartupChainTag} Camera.BootstrapFocus CALL movement focusPoint={FormatVector(focusPoint)}, distance={distance:0.###}, projection={ResolveProjectionMode()}, cameraAfterPose={FormatCameraState()}.");
-            _cameraMovement.TeleportCameraToFocusPoint(focusPoint, distance);
-            ApplyStartupCameraZoom(startPos, focusPoint, signal);
-            Debug.Log($"{StartupChainTag} Camera.BootstrapFocus EXIT start={startPos}, focusPoint={FormatVector(focusPoint)}, distance={distance:0.###}, after={FormatCameraState()}.");
-            return true;
-        }
 
-        public void ApplyConfiguredStartupCameraPose()
-        {
-            if (_camera == null)
-            {
-                Debug.LogWarning($"{StartupChainTag} Camera.BootstrapPose SKIP reason=no-camera.");
-                return;
-            }
-
-            Debug.Log($"{StartupChainTag} Camera.BootstrapPose ENTER before={FormatCameraState()}.");
-            _camera.transform.rotation = Quaternion.Euler(ResolveStartupCameraEuler());
-            bool usePerspective = ResolveUsePerspectiveStartupCamera();
-            _camera.orthographic = !usePerspective;
-
-            if (_camera.orthographic)
-                _camera.orthographicSize = ResolveStartupOrthographicSize();
-            else
-                _camera.fieldOfView = ResolveStartupFieldOfView();
-            Debug.Log($"{StartupChainTag} Camera.BootstrapPose EXIT usePerspective={usePerspective}, after={FormatCameraState()}.");
-        }
-
-        public Vector3 ResolveStartupCameraEuler()
-        {
-            GridProjectionMode projectionMode = ResolveProjectionMode();
-            if (_projectSettings != null)
-                return _projectSettings.Resolve3DCameraEuler(projectionMode);
-
-            return projectionMode == GridProjectionMode.Orthographic3D
-                ? (_cameraSettings != null ? _cameraSettings.orthographic3DEuler : new Vector3(90f, 0f, 0f))
-                : (_cameraSettings != null ? _cameraSettings.isometric3DEuler : new Vector3(50f, 45f, 0f));
-        }
-
-        public bool ResolveUsePerspectiveStartupCamera()
-        {
-            bool autoOrthographic = _cameraSettings != null && _cameraSettings.ResolveUseOrthographicCameraIn3D();
-            if (_projectSettings != null)
-                return _projectSettings.ResolveUsePerspectiveCamera(autoOrthographic);
-
-            return ResolveProjectionMode() == GridProjectionMode.Isometric3DPreview || !autoOrthographic;
-        }
 
         public GridProjectionMode ResolveProjectionMode()
         {
@@ -140,112 +72,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return _cameraSettings != null ? _cameraSettings.ResolveDefault3DOrthographicSize() : 20f;
         }
 
-        public Vector3 ResolveStartupFocusPoint(Vector2Int startPos, WorldGeneratedDataSignal signal)
-        {
-            if (signal.CellSize > 0.0001f && _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ)
-                return new Vector3(startPos.x * signal.CellSize, StartingPositionMapUtility.ResolveHeight(signal, startPos), startPos.y * signal.CellSize);
 
-            if (_gridProjection != null)
-                return _gridProjection.GridToWorld(startPos, StartingPositionMapUtility.ResolveHeight(signal, startPos));
 
-            return new Vector3(startPos.x, startPos.y, 0f);
-        }
 
-        public float ResolveStartupCameraDistance()
-        {
-            if (_projectSettings != null)
-                return _projectSettings.ResolveProject3DCameraDistance();
 
-            if (_cameraSettings != null)
-                return _cameraSettings.ResolveDefault3DCameraDistance();
-
-            if (TryResolveCurrentCameraPlaneDistance(out float currentDistance))
-                return currentDistance;
-
-            return 20f;
-        }
-
-        public bool TryResolveCurrentCameraPlaneDistance(out float distance)
-        {
-            distance = 0f;
-            if (_camera == null)
-                return false;
-
-            Vector3 normal = _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ
-                ? Vector3.up
-                : Vector3.forward;
-            Vector3 direction = _camera.transform.forward;
-            float denominator = Vector3.Dot(normal, direction);
-            if (Mathf.Abs(denominator) <= 0.0001f)
-                return false;
-
-            distance = -Vector3.Dot(normal, _camera.transform.position) / denominator;
-            return distance > 0.1f && !float.IsNaN(distance) && !float.IsInfinity(distance);
-        }
-
-        public void ApplyStartupCameraZoom(Vector2Int startPos, Vector3 focusPoint, WorldGeneratedDataSignal signal)
-        {
-            if (!ShouldEnsureStartupCameraShowsRevealedArea() || _cameraZoom == null || _camera == null)
-                return;
-
-            Vector2Int baseMapSize = StartingPositionMapUtility.ResolveBaseMapSize(signal);
-            float radius = ResolveStartupCameraRadius(baseMapSize.x, baseMapSize.y) + ResolveStartupCameraPaddingTiles();
-            Vector3[] corners = BuildStartupZoneCorners(startPos, focusPoint, radius, signal);
-            if (_camera.orthographic)
-            {
-                float zoom = ResolveOrthographicZoomToFit(focusPoint, corners);
-                _camera.orthographicSize = zoom;
-                _cameraZoom.ForceZoomCamera(zoom);
-                return;
-            }
-
-            float fieldOfView = ResolvePerspectiveFieldOfViewToFit(focusPoint, corners);
-            _camera.fieldOfView = fieldOfView;
-            _cameraZoom.ForceZoomCamera(fieldOfView);
-        }
-
-        private string FormatCameraState()
-        {
-            if (_camera == null)
-                return "camera=null";
-
-            return $"pos={FormatVector(_camera.transform.position)}, rot={FormatVector(_camera.transform.eulerAngles)}, orthographic={_camera.orthographic}, orthoSize={_camera.orthographicSize:0.###}, fov={_camera.fieldOfView:0.###}";
-        }
 
         private static string FormatVector(Vector3 value)
         {
             return $"({value.x:0.###}, {value.y:0.###}, {value.z:0.###})";
         }
 
-        public bool ShouldEnsureStartupCameraShowsRevealedArea()
-        {
-            return _projectSettings != null
-                ? _projectSettings.EnsureStartupCameraShowsRevealedArea
-                : _settings.ensureStartupCameraShowsRevealedArea;
-        }
 
-        public float ResolveStartupCameraPaddingTiles()
-        {
-            return _projectSettings != null
-                ? _projectSettings.ResolveStartupCameraPaddingTiles()
-                : Mathf.Max(0f, _settings.startupCameraPaddingTiles);
-        }
 
-        public int ResolveStartupCameraRadius(int width, int height)
-        {
-            MoyvaStartupCameraRadiusSource source = _projectSettings != null
-                ? _projectSettings.StartupCameraRadiusSource
-                : _settings.startupCameraRadiusSource;
-
-            return source switch
-            {
-                MoyvaStartupCameraRadiusSource.CoreVisibleRadius => _settings.ResolveCoreVisibleRadius(width, height),
-                MoyvaStartupCameraRadiusSource.ManualRadius => _projectSettings != null
-                    ? _projectSettings.ResolveManualStartupCameraRadius()
-                    : Mathf.Max(1, _settings.manualStartupCameraRadius),
-                _ => _settings.ResolveRevealedRadius(width, height),
-            };
-        }
 
         public Vector3[] BuildStartupZoneCorners(Vector2Int startPos, Vector3 focusPoint, float radius, WorldGeneratedDataSignal signal)
         {

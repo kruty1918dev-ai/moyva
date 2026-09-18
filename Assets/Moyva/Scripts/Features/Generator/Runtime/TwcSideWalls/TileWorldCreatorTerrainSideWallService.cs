@@ -6,16 +6,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         private readonly ITileWorldCreatorTerrainSideWallComponentService _components;
         private readonly ITileWorldCreatorTerrainSideWallMeshBuilder _meshBuilder;
-        private readonly ITileWorldCreatorTerrainSideWallDiagnostics _diagnostics;
 
         public TileWorldCreatorTerrainSideWallService(
             ITileWorldCreatorTerrainSideWallComponentService components,
-            ITileWorldCreatorTerrainSideWallMeshBuilder meshBuilder,
-            ITileWorldCreatorTerrainSideWallDiagnostics diagnostics)
+            ITileWorldCreatorTerrainSideWallMeshBuilder meshBuilder)
         {
             _components = components;
             _meshBuilder = meshBuilder;
-            _diagnostics = diagnostics;
         }
 
         public void Configure(
@@ -25,7 +22,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             _components.Ensure(state, owner, config);
             state.LastConfig = config;
-            _diagnostics.LogConfigure(owner, state, config);
             Rebuild(state, config);
         }
 
@@ -34,7 +30,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             TileWorldCreatorTerrainSideWallBuilder owner,
             string reason)
         {
-            _diagnostics.LogDelayedRebuild(state, reason);
             if (state.Mesh == null)
                 _components.Ensure(state, owner, state.LastConfig);
             Rebuild(state, state.LastConfig);
@@ -45,7 +40,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (state.Mesh != null)
                 state.Mesh.Clear();
 
-            _diagnostics.LogCleared(reason);
         }
 
         public void Dispose(TileWorldCreatorTerrainSideWallState state)
@@ -61,14 +55,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (state.Mesh == null)
                 return;
 
-            var result = _meshBuilder.Build(state, config);
-            if (result.Skipped)
-            {
-                _diagnostics.LogSkipped(result.SkipReason);
-                return;
-            }
-
-            _diagnostics.LogBuildResult(state, result);
+            _meshBuilder.Build(state, config);
         }
 
         private static void DestroyRuntimeObject(Object instance)

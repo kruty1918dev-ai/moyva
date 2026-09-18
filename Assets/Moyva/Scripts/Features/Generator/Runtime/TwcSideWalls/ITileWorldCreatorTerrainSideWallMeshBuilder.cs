@@ -2,7 +2,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal interface ITileWorldCreatorTerrainSideWallMeshBuilder
     {
-        TileWorldCreatorTerrainSideWallBuildResult Build(
+        void Build(
             TileWorldCreatorTerrainSideWallState state,
             TileWorldCreatorTerrainSideWallConfig config);
     }

@@ -1,14 +1,21 @@
 using Kruty1918.Moyva.GameMode.API;
+using Kruty1918.Moyva.UIActions.Runtime;
 using Kruty1918.Moyva.Turns.Runtime;
-using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.GameMode.Runtime
 {
     public sealed class GameModeInstaller : MonoInstaller
     {
+        public static void InstallSimulationBindings(DiContainer container)
+        {
+            container.BindInterfacesAndSelfTo<GameStateService>().AsSingle();
+            container.BindInterfacesAndSelfTo<MatchEndConditionService>().AsSingle();
+        }
+
         public override void InstallBindings()
         {
+            UiActionsInstaller.Install(Container);
             TurnBindings.Install(Container);
 
             Container.Bind<IGameModeService>()
@@ -24,23 +31,12 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            var gameModeUiController = Object.FindFirstObjectByType<GameModeUIController>(FindObjectsInactive.Include);
-            if (gameModeUiController != null)
-            {
-                Container.QueueForInject(gameModeUiController);
-                Container.BindInterfacesAndSelfTo<GameModeUIController>()
-                    .FromInstance(gameModeUiController)
-                    .AsSingle()
-                    .NonLazy();
-            }
-            else
-            {
-                Debug.LogWarning("[GameModeInstaller] GameModeUIController не знайдено у сцені. Кнопки перемикання режимів не будуть ініціалізовані.");
-            }
+            Container.BindInterfacesAndSelfTo<GameModeUiActionHandler>()
+                .AsSingle()
+                .NonLazy();
 
             // Явний порядок Initialize() — менше число = раніше.
-            Container.Bind<IGameStateService>()
-                .To<GameStateService>()
+            Container.BindInterfacesAndSelfTo<GameStateService>()
                 .AsSingle();
 
             Container.Bind<IExitMatchSceneLoader>()
@@ -51,17 +47,17 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 .To<ExitMatchCoordinator>()
                 .AsSingle();
 
+            Container.BindInterfacesAndSelfTo<MatchEndConditionService>()
+                .AsSingle()
+                .NonLazy();
+
             Container.BindInterfacesAndSelfTo<GameplayPauseInputController>()
                 .AsSingle()
                 .NonLazy();
 
-            Container.BindInterfacesAndSelfTo<GameplayPauseMenuPresenter>()
-                .AsSingle()
-                .NonLazy();
-
             Container.BindExecutionOrder<GameModeChangeRequestRouter>(-10);
+            Container.BindExecutionOrder<GameModeUiActionHandler>(-10);
             Container.BindExecutionOrder<GameModePanelController>(-10);
-            Container.BindExecutionOrder<GameModeUIController>(-5);
             // Observe Esc before construction input. In Construction mode this
             // controller yields, then the construction layer consumes it.
             Container.BindExecutionOrder<GameplayPauseInputController>(-100);

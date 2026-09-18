@@ -26,6 +26,9 @@ public sealed class AudioMixerBindingsSO : MoyvaJsonConfigObject
         /// <summary>Назва параметра UI-звуків у мікшері.</summary>
         public string uiParameter = "UiVolume";
 
+        /// <summary>Назва параметра ембієнсу/світових звуків у мікшері.</summary>
+        public string ambienceParameter = "AmbienceVolume";
+
         /// <summary>Значення master-гучності за замовчуванням.</summary>
         public float defaultMaster = 0.8f;
 
@@ -37,5 +40,8 @@ public sealed class AudioMixerBindingsSO : MoyvaJsonConfigObject
 
         /// <summary>Значення гучності UI за замовчуванням.</summary>
         public float defaultUi = 0.9f;
+
+        /// <summary>Значення гучності ембієнсу за замовчуванням.</summary>
+        public float defaultAmbience = 0.85f;
     }
 }

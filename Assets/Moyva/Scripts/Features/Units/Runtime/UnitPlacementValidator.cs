@@ -21,15 +21,21 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IObjectsMapService _objectsMap;
         private readonly IGeneratedTerrainLevelQuery _terrainLevelQuery;
         private readonly WorldCreationDefaultsSO _worldDefaults;
+        private readonly ITraversalCostResolver _traversalCosts;
+        private readonly IUnitClassConfig _unitConfigs;
 
         public UnitPlacementValidator(
             IGridService grid,
             IObjectsMapService objectsMap,
+            ITraversalCostResolver traversalCosts,
+            IUnitClassConfig unitConfigs,
             [InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null,
             [InjectOptional] WorldCreationDefaultsSO worldDefaults = null)
         {
             _grid = grid;
             _objectsMap = objectsMap;
+            _traversalCosts = traversalCosts;
+            _unitConfigs = unitConfigs;
             _terrainLevelQuery = terrainLevelQuery;
             _worldDefaults = worldDefaults;
         }
@@ -82,8 +88,41 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
             }
 
-            if (!IsTerrainAllowed(position, out reason))
+            if (_grid == null || !_grid.ContainsCell(position))
+            {
+                reason = "Тайл знаходиться за межами карти.";
                 return false;
+            }
+
+            if (!_grid.TryGetTileTypeId(position, out string tileTypeId))
+            {
+                reason = "На клітинці немає валідного типу тайла.";
+                return false;
+            }
+
+            UnitClassConfig config = _unitConfigs.GetConfig(unitTypeId);
+            string movementProfileId = config?.MovementProfile?.JsonId;
+            if (string.IsNullOrWhiteSpace(movementProfileId))
+                movementProfileId = MovementProfileIds.GroundDefault;
+            if (!_traversalCosts.TryResolve(
+                    movementProfileId,
+                    tileTypeId,
+                    out _,
+                    out reason))
+            {
+                return false;
+            }
+
+            if (_terrainLevelQuery != null
+                && _terrainLevelQuery.TryGetTerrainLevel(position, out int terrainLevel)
+                && terrainLevel > 0
+                && IsTerrainLevelBlocked(
+                    _worldDefaults?.BlockedUnitHillLevelRanges,
+                    terrainLevel))
+            {
+                reason = $"Рівень висоти {terrainLevel} заборонений для юнітів.";
+                return false;
+            }
 
             if (_objectsMap == null)
             {

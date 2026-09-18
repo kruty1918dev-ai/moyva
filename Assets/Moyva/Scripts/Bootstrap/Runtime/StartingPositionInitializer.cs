@@ -1,6 +1,6 @@
 using System;
-using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Signals;
+using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
@@ -17,13 +17,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         internal const string StartVisionAnchorId = "bootstrap-start-vision-anchor";
         internal const string StartRevealAnchorId = "bootstrap-start-vision-anchor-initial";
         internal const string DebugTag = "[MoyvaFogTrace]";
-        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
-        private const string PolicyDiagTag = "[MoyvaStartPolicyDiag]";
-        private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
-
         private readonly SignalBus _signalBus;
         private readonly IStartingPositionWorkflowService _workflowService;
-        private readonly IWorldGenerationDiagnostics _worldDiagnostics;
         private readonly IWorldGenerationSignalState _worldGenerationSignalState;
         private int _lastHandledWorldRevision;
         private int _lastHandledSpawnRevision;
@@ -31,61 +26,48 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public StartingPositionInitializer(
             SignalBus signalBus,
             IStartingPositionWorkflowService workflowService,
-            [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null,
             [InjectOptional] IWorldGenerationSignalState worldGenerationSignalState = null)
         {
             _signalBus = signalBus;
             _workflowService = workflowService;
-            _worldDiagnostics = worldDiagnostics;
             _worldGenerationSignalState = worldGenerationSignalState;
-            UnityEngine.Debug.Log($"{DirectDiagTag} StartingPositionInitializer.Construct workflow={workflowService != null}, signalBus={signalBus != null}.");
         }
 
         public void Initialize()
         {
             System.Diagnostics.Debug.Assert(_signalBus != null);
             System.Diagnostics.Debug.Assert(_workflowService != null);
-
-            UnityEngine.Debug.Log($"{DirectDiagTag} StartingPositionInitializer.Initialize subscribing signals.");
-            UnityEngine.Debug.Log($"{PolicyDiagTag} StartingPositionInitializer.Initialize subscribe-start.");
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
-            _worldDiagnostics?.BootstrapSubscribedWorldSignals($"frame={UnityEngine.Time.frameCount}");
+            Debug.Log($"{DebugTag} Initializer subscribed. cachedState={_worldGenerationSignalState != null}.");
             ReplayCachedWorldSignalsIfAvailable();
-            UnityEngine.Debug.Log($"{PolicyDiagTag} StartingPositionInitializer.Initialize subscribe-complete.");
-            UnityEngine.Debug.Log($"{WorldGenDiagTag} Receiver.Bootstrap.Initialize subscribed frame={UnityEngine.Time.frameCount}");
         }
 
         public void Dispose()
         {
-            UnityEngine.Debug.Log($"{DirectDiagTag} StartingPositionInitializer.Dispose unsubscribing signals.");
-            UnityEngine.Debug.Log($"{PolicyDiagTag} StartingPositionInitializer.Dispose unsubscribe-start.");
             _signalBus.TryUnsubscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
             _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
-            UnityEngine.Debug.Log($"{PolicyDiagTag} StartingPositionInitializer.Dispose unsubscribe-complete.");
         }
 
         private void OnWorldSpawnPositions(WorldSpawnPositionsSignal signal)
         {
             if (ShouldSkipSpawnSignal(signal))
+            {
+                Debug.Log($"{DebugTag} WorldSpawnPositions skipped as duplicate revision={signal.SnapshotRevision}.");
                 return;
+            }
 
-            int assignments = signal.Assignments?.Length ?? 0;
-            UnityEngine.Debug.Log($"{WorldGenDiagTag} Receiver.Bootstrap.WorldSpawnPositions RECEIVED frame={UnityEngine.Time.frameCount}, assignments={assignments}, source=payload-unknown");
-            UnityEngine.Debug.Log($"{DirectDiagTag} StartingPositionInitializer.OnWorldSpawnPositions received assignments={assignments}, forwardingToWorkflow=true.");
-            UnityEngine.Debug.Log($"{PolicyDiagTag} StartingPositionInitializer.OnWorldSpawnPositions assignments={assignments}.");
             _workflowService.HandleWorldSpawnPositions(signal);
         }
 
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
             if (ShouldSkipWorldSignal(signal))
+            {
+                Debug.Log($"{DebugTag} WorldGenerated skipped as duplicate revision={signal.SnapshotRevision}.");
                 return;
+            }
 
-            _worldDiagnostics?.BootstrapWorldGeneratedReceived($"map={signal.Width}x{signal.Height}, frame={UnityEngine.Time.frameCount}");
-            UnityEngine.Debug.Log($"{WorldGenDiagTag} Receiver.Bootstrap.WorldGenerated RECEIVED frame={UnityEngine.Time.frameCount}, map={signal.Width}x{signal.Height}");
-            UnityEngine.Debug.Log($"{DirectDiagTag} StartingPositionInitializer.OnWorldGenerated received map={signal.Width}x{signal.Height}, forwardingToWorkflow=true.");
-            UnityEngine.Debug.Log($"{PolicyDiagTag} StartingPositionInitializer.OnWorldGenerated map={signal.Width}x{signal.Height}.");
             _workflowService.HandleWorldGenerated(signal);
         }
 
@@ -96,13 +78,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (_worldGenerationSignalState.TryGetWorldGeneratedData(out var worldSignal))
             {
-                UnityEngine.Debug.Log($"{WorldGenDiagTag} Receiver.Bootstrap.WorldGenerated REPLAY frame={UnityEngine.Time.frameCount}, map={worldSignal.Width}x{worldSignal.Height}");
+                Debug.Log($"{DebugTag} Replaying cached WorldGenerated revision={worldSignal.SnapshotRevision}.");
                 OnWorldGenerated(worldSignal);
             }
 
             if (_worldGenerationSignalState.TryGetWorldSpawnPositions(out var spawnSignal))
             {
-                UnityEngine.Debug.Log($"{WorldGenDiagTag} Receiver.Bootstrap.WorldSpawnPositions REPLAY frame={UnityEngine.Time.frameCount}, assignments={spawnSignal.Assignments?.Length ?? 0}");
+                Debug.Log($"{DebugTag} Replaying cached WorldSpawnPositions revision={spawnSignal.SnapshotRevision}, assignments={spawnSignal.Assignments?.Length ?? 0}.");
                 OnWorldSpawnPositions(spawnSignal);
             }
         }
@@ -114,8 +96,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _lastHandledWorldRevision = signal.SnapshotRevision;
                 return false;
             }
-
-            UnityEngine.Debug.Log($"{WorldGenDiagTag} Receiver.Bootstrap.WorldGenerated SKIP duplicate revision={signal.SnapshotRevision}, sequence={signal.StartupSequence}, source={signal.Source}.");
             return true;
         }
 
@@ -126,8 +106,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _lastHandledSpawnRevision = signal.SnapshotRevision;
                 return false;
             }
-
-            UnityEngine.Debug.Log($"{WorldGenDiagTag} Receiver.Bootstrap.WorldSpawnPositions SKIP duplicate revision={signal.SnapshotRevision}, sequence={signal.StartupSequence}, source={signal.Source}.");
             return true;
         }
     }

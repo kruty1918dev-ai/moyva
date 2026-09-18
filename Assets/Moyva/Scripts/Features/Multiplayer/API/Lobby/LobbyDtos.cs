@@ -43,6 +43,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public byte[] StartedWorldSettingsBytes { get; }
         public IReadOnlyList<string> BannedPlayerIds { get; }
         public RoomCapabilityFlags CapabilityFlags { get; }
+        public string ConfigFingerprint { get; }
 
         /// <summary>Хеш пароля кімнати (SHA-256 hex). Порожній = кімната без пароля.</summary>
         public string PasswordHash { get; }
@@ -64,7 +65,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             IReadOnlyList<LobbyReconnectRecord> reconnectRecords = null,
             byte[] startedWorldSettingsBytes = null,
             IReadOnlyList<string> bannedPlayerIds = null,
-            RoomCapabilityFlags capabilityFlags = RoomCapabilityFlags.ReconnectWindow | RoomCapabilityFlags.HostMigration | RoomCapabilityFlags.KickPlayers | RoomCapabilityFlags.BanPlayers | RoomCapabilityFlags.DeterministicSeedHandshake | RoomCapabilityFlags.SynchronizedMatchStart)
+            RoomCapabilityFlags capabilityFlags = RoomCapabilityFlags.ReconnectWindow | RoomCapabilityFlags.HostMigration | RoomCapabilityFlags.KickPlayers | RoomCapabilityFlags.BanPlayers | RoomCapabilityFlags.DeterministicSeedHandshake | RoomCapabilityFlags.SynchronizedMatchStart,
+            string configFingerprint = null)
         {
             LobbyId = lobbyId ?? string.Empty;
             LobbyCode = lobbyCode ?? string.Empty;
@@ -80,6 +82,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             StartedWorldSettingsBytes = startedWorldSettingsBytes ?? Array.Empty<byte>();
             BannedPlayerIds = bannedPlayerIds ?? Array.Empty<string>();
             CapabilityFlags = capabilityFlags;
+            ConfigFingerprint = configFingerprint?.Trim() ?? string.Empty;
 
             if (HasPassword)
                 CapabilityFlags |= RoomCapabilityFlags.PasswordProtectedJoin;
@@ -129,11 +132,19 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public bool IsPrivate { get; }
         public string DisplayName { get; }
         public string RelayJoinCode { get; }
+        public string ConfigFingerprint { get; }
 
         /// <summary>Сирий пароль, введений хостом. Зберігається як SHA-256 хеш, ніколи не передається по мережі в відкритому вигляді.</summary>
         public string Password { get; }
 
-        public CreateRoomOptions(string name, int maxPlayers, bool isPrivate, string displayName, string password = null, string relayJoinCode = null)
+        public CreateRoomOptions(
+            string name,
+            int maxPlayers,
+            bool isPrivate,
+            string displayName,
+            string password = null,
+            string relayJoinCode = null,
+            string configFingerprint = null)
         {
             Name = string.IsNullOrWhiteSpace(name) ? "Room" : name.Trim();
             MaxPlayers = maxPlayers > 0 ? maxPlayers : 4;
@@ -141,9 +152,20 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Player" : displayName.Trim();
             Password = password;
             RelayJoinCode = relayJoinCode?.Trim() ?? string.Empty;
+            ConfigFingerprint = configFingerprint?.Trim() ?? string.Empty;
         }
 
         /// <summary>True, якщо пароль був введений.</summary>
         public bool HasPassword => !string.IsNullOrEmpty(Password);
+
+        public CreateRoomOptions WithConfigFingerprint(string configFingerprint)
+            => new(
+                Name,
+                MaxPlayers,
+                IsPrivate,
+                DisplayName,
+                Password,
+                RelayJoinCode,
+                configFingerprint);
     }
 }

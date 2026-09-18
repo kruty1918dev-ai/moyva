@@ -1,0 +1,28 @@
+{
+  "$schema": "../Schemas/tile-type.schema.json",
+  "schema": "moyva.tile-type",
+  "version": 1,
+  "id": "sand",
+  "model": "tile-type",
+  "displayName": "Sand",
+  "aliases": ["beach", "sand-shore-band", "sand-tile-003"],
+  "tags": ["land", "coast"],
+  "traversalClassId": "sand",
+  "visual": {
+    "gridMode": "Dual",
+    "variants": [
+      {
+        "preset": {
+          "$asset": "asset.tile-preset.01-dual-grid-sand-kaykit-style.70f407af",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/01_dual_grid_sand_kaykit_style.asset",
+          "required": true
+        },
+        "slot": "Top",
+        "weight": 1.0,
+        "tileHeight": 0.0
+      }
+    ],
+    "scaleToCellSize": true,
+    "layerYOffset": 0.0
+  }
+}

@@ -1,3 +1,5 @@
+using Kruty1918.Moyva.SaveSystem;
+
 namespace Kruty1918.Moyva.HomeMenu.API
 {
     /// <summary>
@@ -25,12 +27,16 @@ namespace Kruty1918.Moyva.HomeMenu.API
         /// <param name="displayName">Ім'я, видиме в UI.</param>
         /// <param name="isHost">Прапорець хоста.</param>
         /// <param name="isLocal">Прапорець локального гравця.</param>
-        public GameplayPlayer(string playerId, string displayName, bool isHost, bool isLocal)
+        public PlayerControllerType ControllerType { get; }
+
+        public GameplayPlayer(string playerId, string displayName, bool isHost, bool isLocal,
+            PlayerControllerType controllerType = PlayerControllerType.Human)
         {
             PlayerId = playerId ?? string.Empty;
             DisplayName = displayName ?? string.Empty;
             IsHost = isHost;
             IsLocal = isLocal;
+            ControllerType = controllerType;
         }
     }
 }

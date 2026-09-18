@@ -1,0 +1,68 @@
+{
+  "scenario": {
+    "id": "production",
+    "title": "Resource production",
+    "legacyStage": 4,
+    "learnerBuildsInitialCastle": false,
+    "fullGame": false,
+    "prerequisites": ["castle"],
+    "minMeaningfulCandidates": 2,
+    "maxForcedActionRatio": 0.9,
+    "requiredIntents": ["Build", "EndTurn"],
+    "steps": [
+      {
+        "id": "wood-production",
+        "goal": 2,
+        "criterion": 2,
+        "requiredCount": 1,
+        "threshold": 0,
+        "resourceId": "walnut-wood-materials-resources",
+        "buildingTypeId": "wood-camp",
+        "minProductionPerTurn": 1.0
+      }
+    ],
+    "startingConditions": {
+      "learnerStartsWithCastle": true,
+      "learnerMustPlaceCastle": false,
+      "startingResources": [
+        { "resourceId": "walnut-wood-materials-resources", "amount": 40, "owner": "learner" },
+        { "resourceId": "hardwood-materials-resources", "amount": 20, "owner": "learner" },
+        { "resourceId": "steak-food-resources", "amount": 40, "owner": "learner" }
+      ],
+      "startingUnits": [],
+      "startingBuildings": [],
+      "opponent": {
+        "enabled": false,
+        "startingUnits": 0,
+        "startingCastle": false,
+        "unitTypeId": "warrior",
+        "archetype": "passive",
+        "residents": 0
+      },
+      "objectives": [],
+      "residents": 6,
+      "openingRevealRadius": -1
+    },
+    "availableCapabilities": ["construction", "economy", "end-turn"],
+    "generationConstraints": {
+      "minReachableArea": 2,
+      "requiredResourceTypes": ["walnut-wood-materials-resources"],
+      "minOpponentDistance": 2,
+      "maxOpponentDistance": 0,
+      "objectiveReachability": true,
+      "requiredTerrainCompatibility": []
+    },
+    "rewardRules": {
+      "validatedGameplayEventsOnly": true,
+      "rewardSetupActions": false,
+      "requireMeaningfulEvent": true,
+      "maxGameplayRewardEventsPerTurn": 12,
+      "allowedGameplayEvents": []
+    },
+    "masteryPolicy": {
+      "kind": 0,
+      "successEpisodesRequired": 3,
+      "maxDecisionsPerSuccessfulEpisode": 100
+    }
+  }
+}

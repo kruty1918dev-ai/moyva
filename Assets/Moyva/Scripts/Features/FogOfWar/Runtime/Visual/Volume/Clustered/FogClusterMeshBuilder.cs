@@ -1,23 +1,21 @@
 using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
 using Zenject;
-using Debug = UnityEngine.Debug;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
-    internal sealed class FogClusterMeshBuilder : IFogClusterMeshBuilder
+    internal sealed class FogClusterMeshBuilder
     {
-        private const string ClusterDiagTag = "[MoyvaFogClusterDiag]";
         private const float HeightEpsilon = 0.001f;
         private const float BoundarySurfaceOverlap = 0.02f;
         private readonly FogOfWarSettings _settings;
-        private readonly IFogClusterGeometryBuilder _geometryBuilder;
-        private readonly IFogClusterMaterialProvider _materialProvider;
+        private readonly FogClusterGeometryBuilder _geometryBuilder;
+        private readonly FogClusterMaterialProvider _materialProvider;
 
         public FogClusterMeshBuilder(
             [InjectOptional] FogOfWarSettings settings = null,
-            [InjectOptional] IFogClusterGeometryBuilder geometryBuilder = null,
-            [InjectOptional] IFogClusterMaterialProvider materialProvider = null)
+            [InjectOptional] FogClusterGeometryBuilder geometryBuilder = null,
+            [InjectOptional] FogClusterMaterialProvider materialProvider = null)
         {
             _settings = settings;
             _geometryBuilder = geometryBuilder ?? new FogClusterGeometryBuilder();
@@ -46,9 +44,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             int startY = Mathf.Clamp(key.ClusterY * clusterSize, 0, context.Height);
             int endX = Mathf.Min(startX + clusterSize, context.Width);
             int endY = Mathf.Min(startY + clusterSize, context.Height);
-            int cellsChecked = 0;
-            int quads = 0;
-            int sides = 0;
             var heightSampler = new FogVolumeHeightSampler(context, _settings);
             float cellSize = Mathf.Max(0.0001f, context.CellSize);
             Vector3 origin = context.HasMapWorldBounds ? context.MapWorldBounds.min : Vector3.zero;
@@ -58,7 +53,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 for (int x = startX; x < endX; x++)
                 {
                     var cell = new Vector2Int(x, y);
-                    cellsChecked++;
                     if (!TryResolveRenderedSample(
                             cell,
                             context,
@@ -75,21 +69,17 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         cellSize,
                         origin,
                         sample.SubMeshIndex);
-                    quads++;
-                    sides += AddOpenSides(sample, context, fogService, heightSampler, cellSize, origin);
+                    AddOpenSides(sample, context, fogService, heightSampler, cellSize, origin);
                 }
             }
 
             _geometryBuilder.ApplyTo(mesh);
-
-            if (ShouldLogClusterUpdates())
-                Debug.Log($"{ClusterDiagTag} RebuildCluster key={key} cellsChecked={cellsChecked}, quads={quads}, sides={sides}.");
         }
 
         private static int ResolveSubMeshIndex(FogStateType state)
             => state == FogStateType.Explored ? 1 : 0;
 
-        private int AddOpenSides(
+        private void AddOpenSides(
             FogCellRenderSample sample,
             FogWorldVisualContext context,
             IFogStateReader fogService,
@@ -97,13 +87,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             float cellSize,
             Vector3 origin)
         {
-            int sides = 0;
             float x0 = origin.x + sample.Cell.x * cellSize;
             float z0 = origin.z + sample.Cell.y * cellSize;
             float x1 = x0 + cellSize;
             float z1 = z0 + cellSize;
 
-            sides += AddSideIfNeeded(
+            AddSideIfNeeded(
                 sample,
                 new Vector2Int(sample.Cell.x, sample.Cell.y + 1),
                 context,
@@ -112,7 +101,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 new Vector3(x0, sample.Height, z1),
                 new Vector3(x1, sample.Height, z1),
                 cellSize);
-            sides += AddSideIfNeeded(
+            AddSideIfNeeded(
                 sample,
                 new Vector2Int(sample.Cell.x + 1, sample.Cell.y),
                 context,
@@ -121,7 +110,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 new Vector3(x1, sample.Height, z1),
                 new Vector3(x1, sample.Height, z0),
                 cellSize);
-            sides += AddSideIfNeeded(
+            AddSideIfNeeded(
                 sample,
                 new Vector2Int(sample.Cell.x, sample.Cell.y - 1),
                 context,
@@ -130,7 +119,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 new Vector3(x1, sample.Height, z0),
                 new Vector3(x0, sample.Height, z0),
                 cellSize);
-            sides += AddSideIfNeeded(
+            AddSideIfNeeded(
                 sample,
                 new Vector2Int(sample.Cell.x - 1, sample.Cell.y),
                 context,
@@ -140,10 +129,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 new Vector3(x0, sample.Height, z1),
                 cellSize);
 
-            return sides;
         }
 
-        private int AddSideIfNeeded(
+        private void AddSideIfNeeded(
             FogCellRenderSample sample,
             Vector2Int neighborCell,
             FogWorldVisualContext context,
@@ -157,7 +145,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (TryResolveRenderedSample(neighborCell, context, fogService, heightSampler, out FogCellRenderSample neighbor))
             {
                 if (sample.Height <= neighbor.Height + HeightEpsilon)
-                    return 0;
+                    return;
 
                 bottomHeight = neighbor.Height;
             }
@@ -167,7 +155,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             if (sample.Height <= bottomHeight + HeightEpsilon)
-                return 0;
+                return;
 
             _geometryBuilder.AddCellSide(
                 topStart,
@@ -175,7 +163,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 new Vector3(topEnd.x, bottomHeight, topEnd.z),
                 new Vector3(topStart.x, bottomHeight, topStart.z),
                 sample.SubMeshIndex);
-            return 1;
         }
 
         private static float ResolveBoundaryBottomHeight(
@@ -225,11 +212,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private static bool IsInBounds(Vector2Int cell, FogWorldVisualContext context)
             => cell.x >= 0 && cell.y >= 0 && cell.x < context.Width && cell.y < context.Height;
-
-        private bool ShouldLogClusterUpdates()
-            => Debug.isDebugBuild
-                && _settings != null
-                && _settings.Volume.LogClusterUpdates;
 
         private readonly struct FogCellRenderSample
         {

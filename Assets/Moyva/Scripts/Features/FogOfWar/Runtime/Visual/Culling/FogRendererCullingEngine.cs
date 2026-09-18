@@ -4,7 +4,6 @@ using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
-using Unity.Profiling;
 using UnityEngine.Tilemaps;
 using Zenject;
 
@@ -61,7 +60,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private float _nextDiscoveryAt;
 
         /// <summary>
-        /// Створює runtime culling service для приховування renderer-ів під unexplored fog.
+        /// Створює runtime culling service для приховування renderer-ів поза поточною видимістю.
         /// </summary>
         /// <param name="fogService">Gameplay fog service, який дає актуальний fog state.</param>
         /// <param name="gridService">Grid service для розрахунку покритих клітин.</param>
@@ -173,14 +172,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             RequestDiscovery();
         }
 
-        private static readonly ProfilerMarker BuildingPlacedMarker =
-            new("Moyva.BuildCommit.Subscriber.FogRendererDiscovery");
-
         private void OnBuildingPlaced(BuildingPlacedSignal _)
-        {
-            using var marker = BuildingPlacedMarker.Auto();
-            RequestDiscovery();
-        }
+            => RequestDiscovery();
 
         private void OnBuildingDemolished(BuildingDemolishedSignal _)
             => RequestDiscovery();

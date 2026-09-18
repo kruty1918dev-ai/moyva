@@ -13,6 +13,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// </summary>
         /// <param name="host">Host-компонент з settings та точкою підключення updater-а.</param>
         /// <param name="context">World context для preview build.</param>
-        void BuildPreview(IFogVolumePreviewHost host, FogWorldVisualContext context);
+        void BuildPreview(FogOfWarVolumeController host, FogWorldVisualContext context);
     }
 }

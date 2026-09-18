@@ -9,20 +9,19 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed class ConstructionBuildGridChunkSurfaceBuilder : IConstructionBuildGridChunkSurfaceBuilder
-    {
+    internal sealed class ConstructionBuildGridChunkSurfaceBuilder {
         private const float MinSurfaceOffsetY = 0.001f;
         private const float MaxSurfaceOffsetY = 0.5f;
 
         private readonly IGridService _gridService;
-        private readonly IConstructionTerrainAlignmentService _terrainAlignment;
+        private readonly ConstructionTerrainAlignmentService _terrainAlignment;
         private readonly IConstructionGridGeometryService _gridGeometry;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
 
         [Inject]
         public ConstructionBuildGridChunkSurfaceBuilder(
             IGridService gridService,
-            IConstructionTerrainAlignmentService terrainAlignment,
+            ConstructionTerrainAlignmentService terrainAlignment,
             [InjectOptional] IConstructionGridGeometryService gridGeometry = null,
             [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)
         {

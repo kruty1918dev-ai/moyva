@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
@@ -19,42 +18,42 @@ namespace Kruty1918.Moyva.Construction.Runtime
     ///     int32  — Y позиції тайлу
     ///     string — buildingId (UTF-8 з length prefix via BinaryWriter)
     /// </summary>
+    [SaveModuleId("Kruty1918.Moyva.Construction.Runtime.ConstructionSaveModule")]
     internal sealed class ConstructionSaveModule : ISaveModule
     {
         private const int SchemaMagic =
             unchecked((int)0xC0535632);
         private const int SchemaVersion = 3;
-        private const string ModuleLogTag =
-            "[MoyvaConstructionModules]";
-        private const string PerfLogTag =
-            "[MoyvaConstructionPerf]";
-        private const double SlowSaveThresholdMs = 2d;
         private const int MaxStatePayloadBytes =
             16 * 1024 * 1024;
 
-        private readonly IConstructionService _constructionService;
+        private readonly IConstructionSaveSnapshotSource _placementSnapshots;
+        private readonly IConstructionSaveRestorer _placementRestorer;
+        private readonly IConstructionSessionCommands _session;
         private readonly List<IConstructionModuleStatePersistence>
             _stateProviders;
 
         [Inject]
         public ConstructionSaveModule(
-            IConstructionService constructionService,
+            IConstructionSaveSnapshotSource placementSnapshots,
+            IConstructionSaveRestorer placementRestorer,
+            IConstructionSessionCommands session,
             [InjectOptional]
             List<IConstructionModuleStatePersistence>
                 stateProviders = null)
         {
-            _constructionService = constructionService;
+            _placementSnapshots = placementSnapshots;
+            _placementRestorer = placementRestorer;
+            _session = session;
             _stateProviders =
                 stateProviders
                 ?? new List<IConstructionModuleStatePersistence>();
 
-            AuditStateProviders("init");
+            ValidateStateProviders();
         }
 
-        private void AuditStateProviders(string phase)
+        private void ValidateStateProviders()
         {
-            var keys =
-                new List<string>();
             var seen =
                 new HashSet<string>(
                     StringComparer.Ordinal);
@@ -82,60 +81,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     continue;
                 }
 
-                keys.Add(key);
             }
-
-            keys.Sort(StringComparer.Ordinal);
-
-            string keySummary =
-                keys.Count == 0
-                    ? "none"
-                    : string.Join(",", keys);
 
             if (duplicates > 0 || invalid > 0)
             {
                 Debug.LogError(
-                    $"{ModuleLogTag} state-provider-audit " +
-                    $"phase={phase} " +
-                    $"schema={BuildingDefinitionCapabilities.RuntimeStateSchemaVersion} " +
-                    $"providers={keys.Count} duplicates={duplicates} " +
-                    $"invalid={invalid} keys=[{keySummary}]");
-                return;
+                    $"[ConstructionSave] Invalid module state providers: " +
+                    $"duplicates={duplicates}, invalid={invalid}.");
             }
-
-            Debug.Log(
-                $"{ModuleLogTag} state-provider-audit " +
-                $"phase={phase} " +
-                $"schema={BuildingDefinitionCapabilities.RuntimeStateSchemaVersion} " +
-                $"providers={keys.Count} keys=[{keySummary}]");
         }
 
         public void OnSave(ISaveContext context)
         {
-            long startedAt = Stopwatch.GetTimestamp();
-
             IReadOnlyList<ConstructionSavedPlacement> placements =
-                (_constructionService
-                    as IConstructionSaveSnapshotSource)
-                    ?.GetSavedPlacements();
-
-            if (placements == null)
-            {
-                var legacy =
-                    _constructionService.GetPlayerPlacedBuildings();
-                var fallback =
-                    new List<ConstructionSavedPlacement>(
-                        legacy.Count);
-                foreach (var pair in legacy)
-                {
-                    fallback.Add(
-                        new ConstructionSavedPlacement(
-                            pair.Key,
-                            pair.Value,
-                            _constructionService.GetActiveOwner()));
-                }
-                placements = fallback;
-            }
+                _placementSnapshots.GetSavedPlacements();
 
             context.Writer.Write(SchemaMagic);
             context.Writer.Write(SchemaVersion);
@@ -187,7 +146,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             context.Writer.Write(providers.Count);
 
-            int savedStates = 0;
             for (int index = 0;
                  index < providers.Count;
                  index++)
@@ -201,51 +159,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         provider.CaptureState()
                         ?? Array.Empty<byte>();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Debug.LogWarning(
-                        $"{ModuleLogTag} save-state failed " +
-                        $"key={provider.StateKey} " +
-                        $"error={ex.GetType().Name}:{ex.Message}");
                     payload = Array.Empty<byte>();
                 }
 
                 context.Writer.Write(provider.StateKey);
                 context.Writer.Write(payload.Length);
                 if (payload.Length > 0)
-                {
                     context.Writer.Write(payload);
-                    savedStates++;
-                }
-            }
-
-            double elapsedMs =
-                (Stopwatch.GetTimestamp() - startedAt)
-                * 1000d
-                / Stopwatch.Frequency;
-
-            Debug.Log(
-                $"{ModuleLogTag} save schema={SchemaVersion} " +
-                $"placements={placements.Count} " +
-                $"providers={providers.Count} " +
-                $"states={savedStates} " +
-                $"elapsedMs={elapsedMs:0.###}");
-
-            if (Debug.isDebugBuild
-                && elapsedMs >= SlowSaveThresholdMs)
-            {
-                Debug.Log(
-                    $"{PerfLogTag} construction-save " +
-                    $"placements={placements.Count} " +
-                    $"providers={providers.Count} " +
-                    $"elapsedMs={elapsedMs:0.###}");
             }
         }
 
         public void OnLoad(ISaveContext context)
         {
-            long startedAt = Stopwatch.GetTimestamp();
-
             int markerOrLegacyCount =
                 context.Reader.ReadInt32();
 
@@ -254,37 +181,22 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 RestoreLegacyPlacements(
                     context,
                     markerOrLegacyCount);
-
-                Debug.Log(
-                    $"{ModuleLogTag} load legacy " +
-                    $"placements={markerOrLegacyCount}");
                 return;
             }
 
             if (markerOrLegacyCount != SchemaMagic)
             {
-                Debug.LogWarning(
-                    $"{ModuleLogTag} load rejected " +
-                    $"reason=unknown-schema-marker " +
-                    $"marker={markerOrLegacyCount}");
                 return;
             }
 
             int version = context.Reader.ReadInt32();
             if (version != 2 && version != SchemaVersion)
             {
-                Debug.LogWarning(
-                    $"{ModuleLogTag} load rejected " +
-                    $"reason=unsupported-version " +
-                    $"version={version} expected={SchemaVersion}");
                 return;
             }
 
             int placementCount =
                 Math.Max(0, context.Reader.ReadInt32());
-            IConstructionSaveRestorer restorer =
-                _constructionService as IConstructionSaveRestorer;
-
             for (int index = 0;
                  index < placementCount;
                  index++)
@@ -301,20 +213,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     : ConstructionRotation.Degrees0;
                 var position = new Vector2Int(x, y);
 
-                if (restorer != null)
-                {
-                    restorer.RestoreFromSave(
-                        position,
-                        buildingId,
-                        ownerId,
-                        rotation);
-                }
-                else
-                {
-                    _constructionService.RestoreFromSave(
-                        position,
-                        buildingId);
-                }
+                _placementRestorer.RestoreFromSave(
+                    position,
+                    buildingId,
+                    ownerId,
+                    rotation);
             }
 
             var providersByKey =
@@ -341,7 +244,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             int stateCount =
                 Math.Max(0, context.Reader.ReadInt32());
-            int restoredStates = 0;
 
             for (int index = 0;
                  index < stateCount;
@@ -353,9 +255,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (length < 0
                     || length > MaxStatePayloadBytes)
                 {
-                    Debug.LogWarning(
-                        $"{ModuleLogTag} load-state rejected " +
-                        $"key={key} length={length}");
                     return;
                 }
 
@@ -363,10 +262,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     context.Reader.ReadBytes(length);
                 if (payload.Length != length)
                 {
-                    Debug.LogWarning(
-                        $"{ModuleLogTag} load-state truncated " +
-                        $"key={key} expected={length} " +
-                        $"actual={payload.Length}");
                     return;
                 }
 
@@ -374,45 +269,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         key,
                         out IConstructionModuleStatePersistence provider))
                 {
-                    Debug.LogWarning(
-                        $"{ModuleLogTag} load-state skipped " +
-                        $"key={key} reason=provider-missing");
                     continue;
                 }
 
                 try
                 {
                     provider.RestoreState(payload);
-                    restoredStates++;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Debug.LogWarning(
-                        $"{ModuleLogTag} load-state failed " +
-                        $"key={key} " +
-                        $"error={ex.GetType().Name}:{ex.Message}");
                 }
-            }
-
-            double elapsedMs =
-                (Stopwatch.GetTimestamp() - startedAt)
-                * 1000d
-                / Stopwatch.Frequency;
-
-            Debug.Log(
-                $"{ModuleLogTag} load schema={version} " +
-                $"placements={placementCount} " +
-                $"states={restoredStates}/{stateCount} " +
-                $"elapsedMs={elapsedMs:0.###}");
-
-            if (Debug.isDebugBuild
-                && elapsedMs >= SlowSaveThresholdMs)
-            {
-                Debug.Log(
-                    $"{PerfLogTag} construction-load " +
-                    $"placements={placementCount} " +
-                    $"states={stateCount} " +
-                    $"elapsedMs={elapsedMs:0.###}");
             }
         }
 
@@ -429,9 +295,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 string buildingId =
                     context.Reader.ReadString();
 
-                _constructionService.RestoreFromSave(
+                _placementRestorer.RestoreFromSave(
                     new Vector2Int(x, y),
-                    buildingId);
+                    buildingId,
+                    _session.GetActiveOwner());
             }
         }
     }

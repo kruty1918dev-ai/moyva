@@ -41,4 +41,4 @@ Alternative:
 
 - `Assets/Moyva/Scripts/Features/Multiplayer/API/MultiplayerConfigLifecycle.cs`
 - `Assets/Moyva/Scripts/Features/Calendar/API/CalendarConfigLifecycle.cs`
-- `docs/standarts/runtime-config-lifecycle.md`
+- `docs/standards/runtime-config-lifecycle.md`

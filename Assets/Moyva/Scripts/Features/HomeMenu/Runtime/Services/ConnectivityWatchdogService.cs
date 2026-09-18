@@ -14,6 +14,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     /// </summary>
     internal sealed class ConnectivityWatchdogService : IInitializable, IDisposable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         private const string Prefix = "[ConnectivityWatchdog]";
 
         [Inject] private IConnectivityService _connectivity;
@@ -52,7 +56,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
                 if (isOnline)
                 {
-                    Debug.Log($"{Prefix} Connectivity restored.");
                     return;
                 }
 
@@ -60,11 +63,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 var mode = _modeSelector?.CurrentMode ?? NetworkProviderType.Offline;
                 if (mode == NetworkProviderType.Offline || mode == NetworkProviderType.Lan)
                 {
-                    Debug.Log($"{Prefix} Connectivity lost, but mode={mode} — ignoring.");
                     return;
                 }
-
-                Debug.LogWarning($"{Prefix} Connectivity lost in mode={mode}; navigating to fallback panel.");
 
                 if (!string.IsNullOrWhiteSpace(_fallbackPanelName) && _navigation != null)
                 {
@@ -73,8 +73,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 }
 
                 _infoPanel?.Show(new InfoMessage(
-                    "З'єднання втрачено",
-                    "Інтернет-з'єднання було перерване. Перевірте мережу та спробуйте знову."));
+                    "Connection Lost",
+                    T("The internet connection was interrupted. Check your network and try again.")));
             }
             catch (Exception e)
             {

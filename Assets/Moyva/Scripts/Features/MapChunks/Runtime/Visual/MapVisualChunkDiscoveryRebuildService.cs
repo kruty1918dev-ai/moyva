@@ -33,7 +33,6 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                 _collector.CollectScene(_renderers);
 
             int registered = RegisterRenderers();
-            Debug.Log($"[MoyvaMapChunks] Visual discovery registered renderers={registered}, scanned={_renderers.Count}.");
             _registry.ApplyVisibility();
             _renderers.Clear();
         }

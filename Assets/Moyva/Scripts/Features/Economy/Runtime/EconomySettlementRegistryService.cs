@@ -99,6 +99,66 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _positionToOwnerId.Remove(position);
         }
 
+        public bool TryTransferSettlementOwner(
+            string settlementId,
+            string previousOwnerId,
+            string newOwnerId,
+            out Vector2Int centerPosition,
+            out string reason)
+        {
+            centerPosition = default;
+            reason = null;
+            if (string.IsNullOrWhiteSpace(settlementId)
+                || !_settlements.TryGetValue(settlementId, out var state)
+                || state == null)
+            {
+                reason = "Settlement not found.";
+                return false;
+            }
+
+            string normalizedPrevious = NormalizeOwnerId(previousOwnerId);
+            string normalizedNext = NormalizeOwnerId(newOwnerId);
+            if (!state.IsActive)
+            {
+                reason = "Settlement is inactive.";
+                return false;
+            }
+
+            if (!string.Equals(
+                    NormalizeOwnerId(state.OwnerId),
+                    normalizedPrevious,
+                    StringComparison.Ordinal))
+            {
+                reason = $"Settlement belongs to '{state.OwnerId}', not '{normalizedPrevious}'.";
+                return false;
+            }
+
+            if (string.Equals(normalizedPrevious, normalizedNext, StringComparison.Ordinal))
+            {
+                reason = "Settlement already belongs to this owner.";
+                return false;
+            }
+
+            bool centerResolved = false;
+            var mappedPositions = new List<Vector2Int>();
+            foreach (var pair in _positionToSettlement)
+            {
+                if (!string.Equals(pair.Value, settlementId, StringComparison.Ordinal))
+                    continue;
+                mappedPositions.Add(pair.Key);
+                if (!centerResolved)
+                {
+                    centerPosition = pair.Key;
+                    centerResolved = true;
+                }
+            }
+
+            state.OwnerId = normalizedNext;
+            foreach (Vector2Int position in mappedPositions)
+                _positionToOwnerId[position] = normalizedNext;
+            return true;
+        }
+
         public bool TryGetBuildingAtPosition(Vector2Int position, out string buildingId, out string ownerId)
         {
             buildingId = null;

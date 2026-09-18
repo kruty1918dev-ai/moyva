@@ -114,6 +114,14 @@ namespace Kruty1918.Moyva.Signals
         public string SourceFactionId;
     }
 
+    public struct BuildingOwnershipTransferredSignal
+    {
+        public string BuildingId;
+        public Vector2Int Position;
+        public string PreviousOwnerId;
+        public string NewOwnerId;
+    }
+
     /// <summary>
     /// Надсилається WallPlacementService.ShowWallHandles() / EndDrag().
     /// Отримується: UI-компонент ручок стін.
