@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Kruty1918.Moyva.Generator.Runtime.Geography;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -14,5 +15,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public float CellSize = 1f;
         public bool HasBaseMapWorldBounds;
         public Bounds BaseMapWorldBounds;
+
+        // Geography engine output. TerrainLevelMap is authored per-cell and
+        // must reach GeneratedWorldData unmodified; HasAuthoredGeography tells
+        // downstream post-processing (level normalisation, shore-band expand)
+        // to leave the authored data alone.
+        public int[,] TerrainLevelMap;
+        public bool ForceChunkFirst;
+        public bool HasAuthoredGeography;
+        public Vector2Int[] SpawnHints;
+        public WorldGenerationReport GeographyReport;
     }
 }

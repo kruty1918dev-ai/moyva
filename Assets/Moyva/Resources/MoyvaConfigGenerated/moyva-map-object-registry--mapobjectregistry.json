@@ -476,6 +476,110 @@
         "editorPath": "Assets/Moyva/Prefabs/Environment/stone-object-002.prefab",
         "required": true
       }
+    },
+    {
+      "id": "kaykit-tree-single-a",
+      "visualPrefab": {
+        "$asset": "asset.game-object.tree-single-a.174ef685",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/tree_single_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "kaykit-tree-single-b",
+      "visualPrefab": {
+        "$asset": "asset.game-object.tree-single-b.4ec7db67",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/tree_single_B.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "kaykit-trees-a-small",
+      "visualPrefab": {
+        "$asset": "asset.game-object.trees-a-small.9ea9c5cf",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/trees_A_small.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "kaykit-trees-a-medium",
+      "visualPrefab": {
+        "$asset": "asset.game-object.trees-a-medium.01f219b3",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/trees_A_medium.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "kaykit-trees-a-large",
+      "visualPrefab": {
+        "$asset": "asset.game-object.trees-a-large.a52a501f",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/trees_A_large.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "kaykit-trees-b-small",
+      "visualPrefab": {
+        "$asset": "asset.game-object.trees-b-small.d82cb8d5",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/trees_B_small.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "kaykit-trees-b-medium",
+      "visualPrefab": {
+        "$asset": "asset.game-object.trees-b-medium.1a19cb43",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/trees_B_medium.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "kaykit-trees-b-large",
+      "visualPrefab": {
+        "$asset": "asset.game-object.trees-b-large.f2347796",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/trees_B_large.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "kaykit-rock-single-a",
+      "visualPrefab": {
+        "$asset": "asset.game-object.rock-single-a.ac00d45c",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/rock_single_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "kaykit-rock-single-b",
+      "visualPrefab": {
+        "$asset": "asset.game-object.rock-single-b.fd5838d3",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/rock_single_B.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "kaykit-rock-single-c",
+      "visualPrefab": {
+        "$asset": "asset.game-object.rock-single-c.849a20ae",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/rock_single_C.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "kaykit-rock-single-d",
+      "visualPrefab": {
+        "$asset": "asset.game-object.rock-single-d.b86d4e06",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/rock_single_D.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "kaykit-rock-single-e",
+      "visualPrefab": {
+        "$asset": "asset.game-object.rock-single-e.ee27ebc1",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/rock_single_E.prefab",
+        "required": true
+      }
     }
   ],
   "migration": {

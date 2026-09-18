@@ -1,0 +1,204 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://moyva.local/schemas/environment-decoration.schema.json",
+ "title": "Moyva — Environment Decoration Config",
+ "description": "Configuration for procedural environment decoration generation. Controls density, clustering, biome rules, and asset selection for visual-only decorations.",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "schema",
+  "version",
+  "id",
+  "model"
+ ],
+ "properties": {
+  "$schema": {
+   "type": "string",
+   "title": "JSON Schema"
+  },
+  "schema": {
+   "const": "moyva.environment-decoration"
+  },
+  "version": {
+   "type": "integer",
+   "minimum": 1,
+   "default": 1
+  },
+  "id": {
+   "type": "string",
+   "minLength": 1,
+   "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+   "title": "Стабільний ID"
+  },
+  "model": {
+   "const": "environment-decoration"
+  },
+  "migration": {
+   "type": "object",
+   "additionalProperties": true
+  },
+  "enabled": {
+   "type": "boolean",
+   "default": true,
+   "title": "Enabled"
+  },
+  "globalDensity": {
+   "type": "number",
+   "minimum": 0,
+   "maximum": 2,
+   "default": 1.0,
+   "title": "Global Density"
+  },
+  "seedOffset": {
+   "type": "integer",
+   "default": 0,
+   "title": "Seed Offset"
+  },
+  "maxObjectsPerTile": {
+   "type": "integer",
+   "minimum": 0,
+   "default": 3,
+   "title": "Max Objects Per Tile"
+  },
+  "clusterStrength": {
+   "type": "number",
+   "minimum": 0,
+   "maximum": 1,
+   "default": 0.7,
+   "title": "Cluster Strength"
+  },
+  "clusterRadius": {
+   "type": "integer",
+   "minimum": 1,
+   "default": 3,
+   "title": "Cluster Radius"
+  },
+  "typeDensities": {
+   "type": "object",
+   "properties": {
+    "treeDensity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1,
+     "default": 0.15
+    },
+    "bushDensity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1,
+     "default": 0.1
+    },
+    "grassDensity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1,
+     "default": 0.2
+    },
+    "rockDensity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1,
+     "default": 0.08
+    }
+   },
+   "additionalProperties": false
+  },
+  "biomeRules": {
+   "type": "object",
+   "properties": {
+    "grassland": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 3,
+     "default": 1.2
+    },
+    "forest": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 3,
+     "default": 2.0
+    },
+    "rocky": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 3,
+     "default": 1.5
+    },
+    "coast": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 3,
+     "default": 0.5
+    },
+    "water": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 3,
+     "default": 0.0
+    }
+   },
+   "additionalProperties": false
+  },
+  "exclusions": {
+   "type": "object",
+   "properties": {
+    "buildingExclusionRadius": {
+     "type": "integer",
+     "minimum": 0,
+     "default": 1
+    },
+    "settlementExclusionRadius": {
+     "type": "integer",
+     "minimum": 0,
+     "default": 2
+    },
+    "suppressWaterDecorations": {
+     "type": "boolean",
+     "default": true
+    }
+   },
+   "additionalProperties": false
+  },
+  "visualVariation": {
+   "type": "object",
+   "properties": {
+    "enableRotation": {
+     "type": "boolean",
+     "default": true
+    },
+    "enableScaleVariation": {
+     "type": "boolean",
+     "default": true
+    },
+    "minScale": {
+     "type": "number",
+     "minimum": 0.5,
+     "maximum": 1,
+     "default": 0.85
+    },
+    "maxScale": {
+     "type": "number",
+     "minimum": 1,
+     "maximum": 1.5,
+     "default": 1.15
+    },
+    "maxPositionOffset": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 0.5,
+     "default": 0.2
+    }
+   },
+   "additionalProperties": false
+  },
+  "assetPools": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   }
+  }
+ }
+}

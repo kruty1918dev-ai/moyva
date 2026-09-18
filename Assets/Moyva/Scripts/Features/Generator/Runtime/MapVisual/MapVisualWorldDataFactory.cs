@@ -57,7 +57,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 BuildingMap = buildingMap,
                 LogicalTileMap = _graphDiagnostics?.LastLogicalMap,
                 CompiledLayers = _graphDiagnostics?.LastCompiledLayers,
-                CellSize = _graphDiagnostics?.LastCellSize ?? 1f
+                CellSize = _graphDiagnostics?.LastCellSize ?? 1f,
+                TerrainLevelMap = _graphDiagnostics?.LastTerrainLevelMap,
+                ForceChunkFirstCompositeBuild = _graphDiagnostics?.LastForceChunkFirst ?? false,
+                HasAuthoredGeography = _graphDiagnostics?.LastHasAuthoredGeography ?? false,
+                SpawnHints = _graphDiagnostics?.LastSpawnHints != null
+                    ? (Vector2Int[])_graphDiagnostics.LastSpawnHints.Clone()
+                    : null
             };
             if (_graphDiagnostics != null && _graphDiagnostics.TryGetLastBaseMapWorldBounds(out var bounds))
             {

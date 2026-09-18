@@ -180,6 +180,11 @@ namespace Kruty1918.Moyva.Signals
         public string[,] ObjectMap;
         public float[,] HeightMap;
         public int[,] TerrainLevelMap;
+        /// <summary>
+        /// Fairness-validated spawn cells proposed by the geography engine.
+        /// Null/empty means the consumer selects starts on its own.
+        /// </summary>
+        public Vector2Int[] SpawnHints;
     }
 
     public struct SpawnPositionAssignment

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
@@ -15,6 +16,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IGraphTwcLogicalMapExportService _logicalMapExport;
         private readonly IGraphTwcTerrainHeightPublisher _terrainHeightPublisher;
         private readonly IGraphTwcEmptyMapFactory _emptyMapFactory;
+        private readonly Geography.GeographyMapGenerationStep _geographyStep;
 
         public GraphTwcMapGenerationPipeline(
             IGraphTwcSeedService seedService,
@@ -23,7 +25,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IGraphToConfigurationCompilerService compiler,
             IGraphTwcLogicalMapExportService logicalMapExport,
             IGraphTwcTerrainHeightPublisher terrainHeightPublisher,
-            IGraphTwcEmptyMapFactory emptyMapFactory)
+            IGraphTwcEmptyMapFactory emptyMapFactory,
+            [InjectOptional] Geography.GeographyMapGenerationStep geographyStep = null)
         {
             _seedService = seedService;
             _sizeResolver = sizeResolver;
@@ -32,6 +35,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _logicalMapExport = logicalMapExport;
             _terrainHeightPublisher = terrainHeightPublisher;
             _emptyMapFactory = emptyMapFactory;
+            _geographyStep = geographyStep;
         }
 
         public GraphTwcMapGenerationResult Generate(GraphTwcMapGenerationRequest request)
@@ -63,6 +67,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
     int seed,
     Vector2Int mapSize)
         {
+            // The deterministic geography engine is the authoritative runtime
+            // world generator when its JSON config is enabled. The graph path
+            // below stays for editor previews and as the disabled-config
+            // fallback.
+            if (_geographyStep != null
+                && _geographyStep.TryGenerate(request, seed, mapSize, out var geographyResult))
+                return geographyResult;
+
             GraphTwcValidationResult validation =
                 _validation.Validate(request.Graph);
 
