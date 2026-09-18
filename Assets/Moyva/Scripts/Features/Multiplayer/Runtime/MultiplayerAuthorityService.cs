@@ -142,13 +142,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             if (constructionService == null)
                 throw new ArgumentNullException(nameof(constructionService));
 
-            if (_constructionService != null
-                && !ReferenceEquals(
-                    _constructionService,
-                    constructionService))
-            {
-            }
-
             _constructionService = constructionService;
         }
 
