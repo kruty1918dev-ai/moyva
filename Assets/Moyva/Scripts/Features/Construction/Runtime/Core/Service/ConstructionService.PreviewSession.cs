@@ -297,6 +297,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var placement = _pendingPlacements[index];
             SaveSnapshotForUndo(clearRedoHistory: true);
 
+            // Cancelling the placement releases its supply reservations and
+            // stops any dispatched delivery routes.
+            _economyInfoMediator?.ReleaseConstructionSupplyReservations(position);
+
             _pendingPlacements.RemoveAt(index);
             _pendingPositions.Remove(position);
             _pendingPlacementByPosition.Remove(position);

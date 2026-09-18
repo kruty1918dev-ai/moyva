@@ -31,6 +31,11 @@ namespace Kruty1918.Moyva.Economy
             container.Bind<IEconomyTurnProcessor>().To<EconomyTurnProcessorService>().AsSingle();
             container.Bind<IEconomyInfoMediator>().To<EconomyInfoMediator>().AsSingle();
             container.Bind<IEconomyRuntimeApi>().To<EconomyRuntimeApi>().AsSingle();
+            if (!container.HasBinding<IConstructionSupplyService>())
+            {
+                container.BindInterfacesAndSelfTo<ConstructionSupplyService>().AsSingle().NonLazy();
+                container.BindInterfacesTo<SaveModuleRegistrar<ConstructionSupplyService>>().AsSingle().NonLazy();
+            }
             InstallCaptureBindings(container);
         }
 
@@ -152,6 +157,17 @@ namespace Kruty1918.Moyva.Economy
                     .AsSingle();
 
                 Container.BindInterfacesTo<SaveModuleRegistrar<EconomySaveModule>>()
+                    .AsSingle()
+                    .NonLazy();
+            }
+
+            if (!Container.HasBinding<IConstructionSupplyService>())
+            {
+                Container.BindInterfacesAndSelfTo<ConstructionSupplyService>()
+                    .AsSingle()
+                    .NonLazy();
+
+                Container.BindInterfacesTo<SaveModuleRegistrar<ConstructionSupplyService>>()
                     .AsSingle()
                     .NonLazy();
             }

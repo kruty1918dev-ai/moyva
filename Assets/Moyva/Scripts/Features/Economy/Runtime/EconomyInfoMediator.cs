@@ -14,13 +14,16 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         private readonly EconomyManager _economyManager;
         private readonly EconomyDatabaseSO _database;
+        private readonly IConstructionSupplyService _supply;
 
         public EconomyInfoMediator(
             EconomyManager economyManager,
-            [InjectOptional] EconomyDatabaseSO database)
+            [InjectOptional] EconomyDatabaseSO database,
+            [InjectOptional] IConstructionSupplyService supply)
         {
             _economyManager = economyManager;
             _database = database;
+            _supply = supply;
         }
 
         public RecruitmentPopulationSnapshot GetRecruitmentPopulation(string ownerId, Vector2Int position)
@@ -114,6 +117,20 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         public IReadOnlyDictionary<string, float> GetSettlementResourceTotals(string settlementId)
             => _economyManager?.GetSettlementResourceTotals(settlementId) ?? EmptyResources;
+
+        public IReadOnlyDictionary<string, float> GetSettlementReservedResourceTotals(string settlementId)
+            => _economyManager?.GetSettlementReservedResourceTotals(settlementId) ?? EmptyResources;
+
+        public IReadOnlyDictionary<string, float> GetSettlementAvailableResourceTotals(string settlementId)
+            => _economyManager?.GetSettlementAvailableResourceTotals(settlementId) ?? EmptyResources;
+
+        public void ReleaseConstructionSupplyReservations(Vector2Int placementPosition)
+            => _supply?.CancelOrderAt(placementPosition);
+
+        public IReadOnlyDictionary<string, float> GetSettlementResourcesForPlacement(
+            string settlementId, Vector2Int placementPosition)
+            => _supply?.GetResourcesForPlacement(settlementId, placementPosition)
+               ?? GetSettlementResourceTotals(settlementId);
 
         public IReadOnlyDictionary<string, float> GetOwnerPoolResourceTotals(string ownerId)
             => _economyManager?.GetOwnerPoolResourceTotals(ownerId) ?? EmptyResources;

@@ -84,6 +84,8 @@ namespace Kruty1918.Moyva.Units.API
         public UnitCombatType CombatType = UnitCombatType.Infantry;
 
         public float BaseStamina;
+        [Tooltip("Чи є цей тип транспортним юнітом (візок/караван). Транспорт може перевозити ресурси, але не є бойовим юнітом.")]
+        public bool CanTransportCargo;
         [Min(0f)] public float CargoCapacity;
         [Tooltip("Очки руху, що відновлюються на початку ходу юніта.")]
         [Min(0f)] public float MovementPointsPerTurn = 5f;

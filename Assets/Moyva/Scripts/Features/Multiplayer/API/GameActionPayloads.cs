@@ -275,6 +275,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         StartRoute = 1,
         StopRoute = 2,
         FoundSettlement = 3,
+        SupplyDispatch = 4,
+        CancelSupply = 5,
     }
 
     public readonly struct CaravanCommandPayload

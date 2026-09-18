@@ -34,6 +34,9 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _signalBus.Subscribe<MapObjectInfoPanelRequestedSignal>(OnMapObjectInfoRequested);
             _signalBus.Subscribe<WorldInfoPanelClosedSignal>(OnWorldInfoPanelClosed);
             _signalBus.Subscribe<UnitMovedSignal>(OnUnitMoved);
+            _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            _signalBus.Subscribe<SettlementCapturedSignal>(OnSettlementCaptured);
             _signalBus.Subscribe<EconomyTickCompletedSignal>(OnEconomyTickCompleted);
             _signalBus.Subscribe<SettlementResourceChangedSignal>(OnSettlementResourceChanged);
         }
@@ -45,6 +48,9 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _signalBus.TryUnsubscribe<MapObjectInfoPanelRequestedSignal>(OnMapObjectInfoRequested);
             _signalBus.TryUnsubscribe<WorldInfoPanelClosedSignal>(OnWorldInfoPanelClosed);
             _signalBus.TryUnsubscribe<UnitMovedSignal>(OnUnitMoved);
+            _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            _signalBus.TryUnsubscribe<SettlementCapturedSignal>(OnSettlementCaptured);
             _signalBus.TryUnsubscribe<EconomyTickCompletedSignal>(OnEconomyTickCompleted);
             _signalBus.TryUnsubscribe<SettlementResourceChangedSignal>(OnSettlementResourceChanged);
         }
@@ -107,6 +113,28 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                     Position = position,
                 });
             }
+        }
+
+        private void OnUnitDestroyed(UnitDestroyedSignal signal)
+        {
+            if (_selectedKind == WorldInfoSelectionKind.Unit
+                && string.Equals(_selectedObjectId, signal.UnitId, StringComparison.Ordinal))
+                OnWorldInfoPanelClosed(default);
+        }
+
+        private void OnBuildingDemolished(BuildingDemolishedSignal signal)
+        {
+            if (_selectedKind == WorldInfoSelectionKind.Building
+                && _selectedPosition == signal.Position)
+                OnWorldInfoPanelClosed(default);
+        }
+
+        private void OnSettlementCaptured(SettlementCapturedSignal signal)
+        {
+            if (_selectedKind == WorldInfoSelectionKind.MapObject
+                && (string.Equals(_selectedObjectId, signal.SettlementId, StringComparison.Ordinal)
+                    || _selectedPosition == signal.CenterPosition))
+                OnWorldInfoPanelClosed(default);
         }
 
         private void OnEconomyTickCompleted(EconomyTickCompletedSignal _)

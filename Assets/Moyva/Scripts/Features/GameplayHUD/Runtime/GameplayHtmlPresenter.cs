@@ -93,6 +93,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] GameplayHtmlAnchor[] anchors = null,
             [InjectOptional] GameplayCargoPanel cargo = null,
+            [InjectOptional] GameplaySupplyPanel supply = null,
             [InjectOptional] ICombatRemoteCommandRequester remoteCombat = null,
             [InjectOptional] ISettlementCaptureRemoteCommandRequester remoteSettlementCapture = null,
             [InjectOptional] IGameResultStateStore gameResult = null,
@@ -118,7 +119,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _remoteSettlementCapture = remoteSettlementCapture;
             _gameResult = gameResult;
             _remoteTurns = remoteTurns;
-            _bridge = new GameplayHtmlBridge(state, readModel, actions, construction, roles, cameraFocus, exit, progressClock, cargo, signals);
+            _bridge = new GameplayHtmlBridge(state, readModel, actions, construction, roles, cameraFocus, exit, progressClock, cargo, supply, signals);
         }
 
         public IReadOnlyCollection<UiActionId> ActionIds => HandledActions;
@@ -455,6 +456,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.Subscribe<BuildingSelectionChangedSignal>(OnGameplayChanged);
             _signals.Subscribe<BuildingOperationalSignal>(OnBuildingOperational);
             _signals.Subscribe<CaravanDeliveryCompletedSignal>(OnDeliveryCompleted);
+            _signals.Subscribe<ConstructionSupplyReadySignal>(OnSupplyReady);
             _signals.Subscribe<BuildingDemolishedSignal>(OnGameplayChanged);
             _signals.Subscribe<EconomyTickCompletedSignal>(OnGameplayChanged);
             _signals.Subscribe<SettlementCreatedSignal>(OnGameplayChanged);
@@ -482,6 +484,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.TryUnsubscribe<BuildingSelectionChangedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<BuildingOperationalSignal>(OnBuildingOperational);
             _signals.TryUnsubscribe<CaravanDeliveryCompletedSignal>(OnDeliveryCompleted);
+            _signals.TryUnsubscribe<ConstructionSupplyReadySignal>(OnSupplyReady);
             _signals.TryUnsubscribe<BuildingDemolishedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<EconomyTickCompletedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<SettlementCreatedSignal>(OnGameplayChanged);
@@ -596,6 +599,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 signal.UnitId, deliveryDetails: details.ToString());
         }
         private void OnGameplayChanged(UnitRecruitmentDeployedSignal _) => _state.MarkDirty();
+        private void OnSupplyReady(ConstructionSupplyReadySignal signal)
+        {
+            _state.MarkDirty();
+            if (signal.OwnerId == ResolveLocalOwnerId())
+                _state.AddNotification(
+                    $"{_readModel.ResolveBuildingDisplayName(signal.BuildingId)} is fully supplied in {signal.SettlementName}.",
+                    "Success", signal.Position, signal.BuildingId);
+        }
 
         private string ResolveLocalOwnerId()
         {

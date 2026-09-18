@@ -238,6 +238,12 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
             }
 
+            if (attacker.CanTransportCargo)
+            {
+                reason = "Transport units cannot attack.";
+                return false;
+            }
+
             int range = Mathf.Max(1, attacker.AttackRange);
             int distance = Mathf.Max(
                 Mathf.Abs(attackerPosition.x - target.Position.x),

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
+using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Multiplayer.Runtime
@@ -63,6 +64,66 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 buildingId,
                 null), out reason);
 
+        public bool TryRequestSupplyDispatch(ConstructionSupplyDispatchRequest request,
+            IReadOnlyDictionary<string, float> requiredCosts, out string reason)
+            => SendCaravanRequest(new CaravanCommandPayload(
+                GameActionMessageKind.Request,
+                CaravanCommandAction.SupplyDispatch,
+                request.OwnerId,
+                request.UnitId,
+                0,
+                request.SourceSettlementId,
+                request.SourceWarehouseKey,
+                string.Empty,
+                FormatPosition(request.Position),
+                false,
+                request.BuildingId,
+                requiredCosts), out reason);
+
+        public bool TryRequestCancelSupply(string ownerId, Vector2Int position, out string reason)
+            => SendCaravanRequest(new CaravanCommandPayload(
+                GameActionMessageKind.Request,
+                CaravanCommandAction.CancelSupply,
+                ownerId,
+                string.Empty,
+                0,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                FormatPosition(position),
+                false,
+                string.Empty,
+                null), out reason);
+
+        // Host → owner peers: an order closed (cancel/confirm); stop route mirrors.
+        private void OnConstructionSupplyOrderClosed(ConstructionSupplyOrderClosedSignal signal)
+        {
+            if (_applyingNetworkEvent || !IsOfflineOrHost()) return;
+            var wagons = signal.WagonIds;
+            if (wagons == null || wagons.Count == 0) return;
+            foreach (var wagonId in wagons)
+            {
+                if (string.IsNullOrWhiteSpace(wagonId)) continue;
+                var payload = WithRequestId(new CaravanCommandPayload(
+                    GameActionMessageKind.Confirmed,
+                    CaravanCommandAction.CancelSupply,
+                    signal.OwnerId,
+                    wagonId,
+                    0,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    FormatPosition(signal.Position),
+                    false,
+                    string.Empty,
+                    null), $"supply-close:{signal.Position.x}:{signal.Position.y}:{wagonId}:{++_routeConfirmationSequence}");
+                SendConfirmedCommandToOwnerPeers(
+                    GameCommandType.CaravanCommand,
+                    payload.ToBytes(),
+                    signal.OwnerId);
+            }
+        }
+
         private void OnRouteTransferCommittedLocally(CaravanRouteTransferCommitted committed)
         {
             if (_applyingNetworkEvent || !IsOfflineOrHost())
@@ -90,7 +151,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 reason = "Local host executes logistics directly.";
                 return false;
             }
-            if (string.IsNullOrWhiteSpace(payload.OwnerId) || string.IsNullOrWhiteSpace(payload.UnitId))
+            if (string.IsNullOrWhiteSpace(payload.OwnerId)
+                || (string.IsNullOrWhiteSpace(payload.UnitId)
+                    && payload.Action != CaravanCommandAction.CancelSupply))
             {
                 reason = "Logistics request is missing owner or wagon.";
                 return false;
@@ -231,6 +294,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 return;
             }
 
+            if (data.Action == CaravanCommandAction.SupplyDispatch)
+                BroadcastConfirmedSupplyRoute(authorizedOwnerId, data.UnitId);
+
             _confirmedCaravanRequests[cacheKey] = confirmed;
             TrimConfirmedCaravanCache();
             SendConfirmedCommandToOwnerPeers(
@@ -275,6 +341,33 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 rejected.ToBytes());
         }
 
+        // The supply dispatch created the route host-side; peers mirror it via a
+        // regular confirmed StartRoute carrying the actual shipment.
+        private void BroadcastConfirmedSupplyRoute(string ownerId, string unitId)
+        {
+            if (_caravanService == null
+                || !_caravanService.TryGetRoute(ownerId, unitId, out var route))
+                return;
+            var routeRequest = route.Request;
+            var payload = WithRequestId(new CaravanCommandPayload(
+                GameActionMessageKind.Confirmed,
+                CaravanCommandAction.StartRoute,
+                routeRequest.OwnerId,
+                routeRequest.UnitId,
+                0,
+                routeRequest.SourceSettlementId,
+                routeRequest.SourceWarehouseKey,
+                routeRequest.TargetSettlementId,
+                routeRequest.TargetWarehouseKey,
+                routeRequest.Repeat,
+                string.Empty,
+                routeRequest.Resources), $"supply-route:{++_routeConfirmationSequence}");
+            SendConfirmedCommandToOwnerPeers(
+                GameCommandType.CaravanCommand,
+                payload.ToBytes(),
+                routeRequest.OwnerId);
+        }
+
         private CaravanTransferResult ExecuteAuthorizedCaravanCommand(
             string ownerId,
             CaravanCommandPayload data)
@@ -296,8 +389,33 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     ownerId,
                     data.UnitId,
                     data.BuildingId),
+                CaravanCommandAction.SupplyDispatch => _constructionSupply == null
+                    ? CaravanTransferResult.Rejected("Construction supply is unavailable.")
+                    : TryParsePosition(data.TargetWarehouseKey, out var supplyPosition)
+                        ? _constructionSupply.DispatchSupply(new ConstructionSupplyDispatchRequest(
+                            ownerId,
+                            data.BuildingId,
+                            supplyPosition,
+                            data.SettlementId,
+                            data.WarehouseKey,
+                            data.UnitId), data.Resources)
+                        : CaravanTransferResult.Rejected("Supply dispatch position is invalid."),
+                CaravanCommandAction.CancelSupply => _constructionSupply == null
+                    ? CaravanTransferResult.Rejected("Construction supply is unavailable.")
+                    : TryParsePosition(data.TargetWarehouseKey, out var cancelPosition)
+                        ? CancelSupplyAt(ownerId, cancelPosition)
+                        : CaravanTransferResult.Rejected("Supply cancel position is invalid."),
                 _ => CaravanTransferResult.Rejected("Unknown caravan command."),
             };
+        }
+
+        private CaravanTransferResult CancelSupplyAt(string ownerId, Vector2Int position)
+        {
+            if (_constructionSupply.TryGetOrderAt(position, out var order)
+                && !string.Equals(order.OwnerId, ownerId, StringComparison.Ordinal))
+                return CaravanTransferResult.Rejected("The supply order belongs to another kingdom.");
+            _constructionSupply.CancelOrderAt(position);
+            return CaravanTransferResult.Success();
         }
 
         private CaravanTransferResult ApplyConfirmedCaravanCommand(CaravanCommandPayload data)
@@ -324,9 +442,35 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         data.BuildingId,
                         position)
                     : CaravanTransferResult.Rejected("Confirmed founding position is invalid."),
+                CaravanCommandAction.SupplyDispatch => _constructionSupply == null
+                    ? CaravanTransferResult.Rejected("Construction supply is unavailable.")
+                    : TryParsePosition(data.TargetWarehouseKey, out var confirmedSupplyPosition)
+                        ? _constructionSupply.ApplyConfirmedDispatch(new ConstructionSupplyDispatchRequest(
+                            data.OwnerId,
+                            data.BuildingId,
+                            confirmedSupplyPosition,
+                            data.SettlementId,
+                            data.WarehouseKey,
+                            data.UnitId), data.Resources)
+                        : CaravanTransferResult.Rejected("Confirmed supply position is invalid."),
+                CaravanCommandAction.CancelSupply => _constructionSupply == null
+                    ? CaravanTransferResult.Rejected("Construction supply is unavailable.")
+                    : TryParsePosition(data.TargetWarehouseKey, out var confirmedCancelPosition)
+                        ? ApplyConfirmedCancelSupply(data.OwnerId, data.UnitId, confirmedCancelPosition)
+                        : CaravanTransferResult.Rejected("Confirmed supply position is invalid."),
                 _ => CaravanTransferResult.Rejected("Unknown confirmed caravan command."),
             };
         }
+
+        private CaravanTransferResult ApplyConfirmedCancelSupply(string ownerId, string unitId,
+            Vector2Int position)
+        {
+            _constructionSupply.ApplyConfirmedCancelOrder(ownerId, unitId, position);
+            return CaravanTransferResult.Success();
+        }
+
+        private static string FormatPosition(Vector2Int position)
+            => $"{position.x}:{position.y}";
 
         private static CaravanCommandPayload ToPayload(
             CaravanCommandAction action,
@@ -466,6 +610,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 CaravanCommandAction.StartRoute => CaravanCommandKind.StartRoute,
                 CaravanCommandAction.StopRoute => CaravanCommandKind.StopRoute,
                 CaravanCommandAction.FoundSettlement => CaravanCommandKind.FoundSettlement,
+                CaravanCommandAction.SupplyDispatch => CaravanCommandKind.SupplyDispatch,
+                CaravanCommandAction.CancelSupply => CaravanCommandKind.CancelSupply,
                 _ => CaravanCommandKind.Transfer,
             };
 

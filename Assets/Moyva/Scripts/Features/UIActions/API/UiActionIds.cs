@@ -67,6 +67,7 @@ namespace Kruty1918.Moyva.UIActions.API
             public static readonly UiActionId StartRoute = new("ui.logistics.route.start");
             public static readonly UiActionId StopRoute = new("ui.logistics.route.stop");
             public static readonly UiActionId FoundSettlement = new("ui.logistics.found-settlement");
+            public static readonly UiActionId Supply = new("ui.logistics.supply");
         }
 
         public static class Pause
