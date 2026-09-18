@@ -1286,8 +1286,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1998921541}
+  m_Children: []
   m_Father: {fileID: 326201343}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!43 &61894835
@@ -6455,10 +6454,6 @@ MonoBehaviour:
     PropertyPath: _cameraSettings
     ConfigType: Kruty1918.Moyva.Camera.API.CameraSettingsSO
     ConfigId: camerasettings
-  - Target: {fileID: 1998921543}
-    PropertyPath: _settings
-    ConfigType: Kruty1918.Moyva.FogOfWar.API.FogOfWarSettings
-    ConfigId: fogofwarsettings
   - Target: {fileID: 1306218301}
     PropertyPath: _sessionConfig
     ConfigType: Kruty1918.Moyva.Calendar.Runtime.CalendarSessionConfigSO
@@ -35936,71 +35931,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1995369042}
   m_CullTransparentMesh: 1
---- !u!1 &1998921540
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1998921541}
-  - component: {fileID: 1998921542}
-  - component: {fileID: 1998921543}
-  m_Layer: 0
-  m_Name: FogOfWarVolume
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1998921541
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1998921540}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 59869032}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1998921542
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1998921540}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff3c15772288115478645c6fc1f0c442, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: GiantGrey.TileWorldCreator::GiantGrey.TileWorldCreator.TileWorldCreatorManager
-  configuration: {fileID: 0}
-  showClusterCellsDebug: 0
---- !u!114 &1998921543
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1998921540}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c3bc9d12be5b4a34bff748110fb73e92, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.FogOfWar::Kruty1918.Moyva.FogOfWar.Runtime.FogOfWarVolumeController
-  _overrideUpdateMode: 0
-  _updateMode: 0
-  _rebuildIntervalSeconds: 0.1
-  _overrideCellSize: 0
-  _cellSizeOverride: 1
-  _additionalTopClearance: 0.5
 --- !u!1 &2017014816
 GameObject:
   m_ObjectHideFlags: 0
@@ -38065,7 +37995,6 @@ GameObject:
   - component: {fileID: 2098751154}
   - component: {fileID: 2098751157}
   - component: {fileID: 2098751156}
-  - component: {fileID: 2098751159}
   - component: {fileID: 2098751162}
   - component: {fileID: 2098751161}
   - component: {fileID: 2098751163}
@@ -38137,140 +38066,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2098751153}
   m_CullTransparentMesh: 1
---- !u!114 &2098751159
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2098751153}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0e83b836a65941a0a0eae9904caa5247, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Bootstrap::Kruty1918.Moyva.Bootstrap.Runtime.GameplayRecruitmentPanelView
-  _buildingName: {fileID: 360609881}
-  _subtitle: {fileID: 1122831288}
-  _stateChip: {fileID: 1574788579}
-  _stateChipLabel: {fileID: 1667942602}
-  _closeButton: {fileID: 847034116}
-  _recipeIcons:
-  - {fileID: 1702322319}
-  - {fileID: 876576594}
-  - {fileID: 522642063}
-  - {fileID: 2080970447}
-  - {fileID: 1011457701}
-  - {fileID: 1285978178}
-  - {fileID: 543576311}
-  - {fileID: 165356409}
-  - {fileID: 1385891034}
-  - {fileID: 382150459}
-  - {fileID: 1550474270}
-  - {fileID: 1871595628}
-  _recipeNameTexts:
-  - {fileID: 649810763}
-  - {fileID: 877168109}
-  - {fileID: 1684642870}
-  - {fileID: 422284899}
-  - {fileID: 541063900}
-  - {fileID: 1045570363}
-  - {fileID: 2113156238}
-  - {fileID: 144535810}
-  - {fileID: 420842969}
-  - {fileID: 1856910800}
-  - {fileID: 934139141}
-  - {fileID: 1935902643}
-  _recipeTrainingTexts:
-  - {fileID: 1764844738}
-  - {fileID: 483536504}
-  - {fileID: 1357006749}
-  - {fileID: 1768401258}
-  - {fileID: 1596259592}
-  - {fileID: 740376498}
-  - {fileID: 769948382}
-  - {fileID: 44701771}
-  - {fileID: 918850267}
-  - {fileID: 1621761917}
-  - {fileID: 712836416}
-  - {fileID: 1494746995}
-  _recipeSelectedAccents:
-  - {fileID: 1251011004}
-  - {fileID: 344645803}
-  - {fileID: 1995359033}
-  - {fileID: 1090995810}
-  - {fileID: 1323660373}
-  - {fileID: 1438202468}
-  - {fileID: 2115076857}
-  - {fileID: 480787683}
-  - {fileID: 635737200}
-  - {fileID: 423251954}
-  - {fileID: 2069917228}
-  - {fileID: 1551297353}
-  _selectionPanel: {fileID: 86433207}
-  _selectionIcon: {fileID: 2133092573}
-  _selectionName: {fileID: 1095459989}
-  _selectionClass: {fileID: 1115061478}
-  _selectionStats: {fileID: 1650222740}
-  _statRows:
-  - {fileID: 1384785553}
-  - {fileID: 1093348604}
-  - {fileID: 1495720033}
-  - {fileID: 1934566116}
-  - {fileID: 1805904448}
-  - {fileID: 122166811}
-  _statLabels:
-  - {fileID: 1500462265}
-  - {fileID: 97634280}
-  - {fileID: 1326544361}
-  - {fileID: 1305177419}
-  - {fileID: 1469916412}
-  - {fileID: 230045343}
-  _statValues:
-  - {fileID: 794884435}
-  - {fileID: 1408545190}
-  - {fileID: 122300202}
-  - {fileID: 752650732}
-  - {fileID: 437223216}
-  - {fileID: 1910998789}
-  _hireButton: {fileID: 2091718393}
-  _hireButtonLabel: {fileID: 1584355389}
-  _actionHint: {fileID: 904807897}
-  _costRows:
-  - {fileID: 1247893630}
-  - {fileID: 937998442}
-  - {fileID: 166172394}
-  _costIcons:
-  - {fileID: 716773566}
-  - {fileID: 2090042738}
-  - {fileID: 1314961928}
-  _costLabels:
-  - {fileID: 34416830}
-  - {fileID: 1455412352}
-  - {fileID: 1517165851}
-  _buildingStatePanel: {fileID: 1133490374}
-  _buildingStateTitle: {fileID: 1110601387}
-  _buildingStateDetail: {fileID: 728449957}
-  _buildingStateProgressFill: {fileID: 1995369044}
-  _queueSection: {fileID: 1748270778}
-  _queueTitle: {fileID: 1317899688}
-  _queueCapacity: {fileID: 1813728964}
-  _queueEmptyText: {fileID: 2058757779}
-  _queueButtons:
-  - {fileID: 103055888}
-  - {fileID: 294369090}
-  - {fileID: 1950182355}
-  _queueIcons:
-  - {fileID: 1511621725}
-  - {fileID: 2017014818}
-  - {fileID: 1079573809}
-  _queueLabels:
-  - {fileID: 384297977}
-  - {fileID: 1741005029}
-  - {fileID: 1717060931}
-  _queueProgressFills:
-  - {fileID: 1841702139}
-  - {fileID: 1143320529}
-  - {fileID: 1424754605}
 --- !u!114 &2098751161
 MonoBehaviour:
   m_ObjectHideFlags: 0
