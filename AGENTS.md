@@ -140,4 +140,4 @@ context, tool-output size and agent count. Exclude inherited counters and duplic
 events; compare completed tasks with equivalent verification, not raw token totals.
 
 After creating logs, reports or temporary context, run `tools/ai/check-context-hygiene.sh`.
-Remove generated artifacts introduced by the task from tracked paths; preserve user work.
+Remove task-generated artifacts from tracked paths; preserve user work.

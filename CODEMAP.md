@@ -215,17 +215,6 @@ Skip visual leaf algorithms for fog-state/composition tasks.
 | Volume lifecycle / scheduling | `Volume/Build/FogVolumeVisualUpdateEngine.Lifecycle.cs`; `Volume/Build/FogVolumeVisualUpdateEngine.Scheduling.cs` |
 | TWC runtime layers / build | `Volume/Build/FogVolumeVisualUpdateEngine.RuntimeLayers.cs`; `Volume/Build/FogVolumeVisualUpdateEngine.TwcBuild.cs`; `Volume/Build/FogVolumeVisualUpdateEngine.Height.cs` |
 
-## GraphSystem model / evaluation
-
-Base: `Features/GraphSystem/`
-
-| Task | Files |
-|---|---|
-| Model / normalization / authoring | `API/GraphAsset.cs`; `API/GraphAsset.State.cs`; `API/GraphAsset.Authoring.cs` |
-| Runner contract / execution plan | `API/IGraphRunner.cs`; `Runtime/GraphRunner.cs` |
-| Sync/async execution / ports | `Runtime/GraphRunner.Execution.cs`; `Runtime/GraphRunner.Contracts.cs` |
-| Structural validation | `Runtime/GraphValidator.cs` |
-
 ## Generator / world build
 
 Base: `Features/Generator/`
@@ -236,7 +225,7 @@ World build: generate/restore → Grid → signals.
 |---|---|
 | Contract / composition | `API/IMapDataGenerator.cs`; `Runtime/GeneratorInstaller.cs`; `Runtime/GeneratorBindingGroups.cs` |
 | Startup decision / world-build sequence | `Runtime/GeneratorWorldStartupBuilder.cs`; `Runtime/MapVisualInstantiator.cs`; `Runtime/MapVisual/MapVisualWorldBuildOrchestrator.cs` |
-| Graph provider / pipeline | `Runtime/GraphTwcMapDataGenerator.cs`; `Runtime/GraphEvaluationPipeline.cs` |
-| Generator graph semantics | `Runtime/GeneratorGraphSemanticValidator.cs` |
+| Recipe model / pipeline | `API/GeneratorMapRecipe.cs`; `Runtime/MapData/RecipeMapDataGenerator.cs`; `Runtime/Recipe/RecipeToConfigurationCompilerService.cs` |
+| Recipe semantics / masks | `Runtime/Recipe/GeneratorMapRecipeValidator.cs`; `Runtime/Recipe/GeneratorMaskEvaluator.cs` |
+| Logical tile map | `Runtime/LogicalMap/LogicalTileMapBuilderService.cs`; `Runtime/LogicalTileMap.cs` |
 | Chunk-first terrain mesh | `Runtime/ChunkFirst/Mesh/`; `Runtime/ChunkFirst/TwcAdapter/TwcTileMeshSourceProvider.cs` |
-| Add node settings / map arithmetic | `Runtime/Nodes/AddNode.cs`; `Runtime/Nodes/AddNode.Evaluator.cs` |
