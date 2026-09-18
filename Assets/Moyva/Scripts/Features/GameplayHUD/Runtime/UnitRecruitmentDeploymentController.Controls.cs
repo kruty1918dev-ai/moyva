@@ -125,12 +125,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private Canvas ResolveCanvas()
         {
-            Canvas canvas = _hudView != null
-                ? _hudView.GetComponentInParent<Canvas>(true)
-                : null;
-            if (canvas != null)
-                return canvas;
-
             return Object.FindFirstObjectByType<Canvas>(
                 FindObjectsInactive.Include);
         }

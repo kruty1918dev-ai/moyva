@@ -38,8 +38,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private RectTransform _constructionClose;
         private RectTransform _constructionPreview;
 
-        private Behaviour _oldHudLayout;
-
         private int _lastScreenWidth = -1;
         private int _lastScreenHeight = -1;
         private Rect _lastSafeArea;
@@ -155,23 +153,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _constructionActionBar = FindRect("ConstructionUI/Root/ActionBar");
             _constructionClose = FindRect("ConstructionUI/Root/CloseButton");
             _constructionPreview = FindRect("ConstructionUI/Root/PreviewPanelInfo");
-
-            if (_hudRoot != null)
-            {
-                foreach (MonoBehaviour behaviour in _hudRoot.GetComponents<MonoBehaviour>())
-                {
-                    if (behaviour == null ||
-                        behaviour.GetType().FullName != "Kruty1918.Moyva.Bootstrap.Runtime.GameplayResponsiveHudLayout")
-                    {
-                        continue;
-                    }
-
-                    _oldHudLayout = behaviour;
-                    if (_oldHudLayout.enabled)
-                        _oldHudLayout.enabled = false;
-                    break;
-                }
-            }
 
             StretchRoot(_hudRoot);
             StretchRoot(FindRect("GameModeUI"));

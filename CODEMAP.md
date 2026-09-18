@@ -156,8 +156,7 @@ GameplayHudBindings selects GameplayHtmlPresenter/State.
 | Cargo presentation | `GameplayCargoPanel.cs` |
 | Deployment session | `UnitRecruitmentDeploymentController.cs`; `UnitRecruitmentDeploymentController.Session.cs` |
 | Preview / controls / UI actions | `UnitRecruitmentDeploymentController.Preview.cs`; `UnitRecruitmentDeploymentController.Controls.cs`; `UnitRecruitmentDeploymentController.UiActions.cs` |
-| Turn HUD view | `GameplayTurnHudView.cs` |
-| Recruitment indicators | `UnitRecruitmentReadyIndicatorPresenter.cs`; `UnitRecruitmentProgressIndicatorPresenter.cs` |
+| Recruitment indicators / canvas | `UnitRecruitmentReadyIndicatorPresenter.cs`; `UnitRecruitmentProgressIndicatorPresenter.cs`; `RecruitmentIndicatorCanvasContainer.cs` |
 
 ## Multiplayer session / commands / transport
 
