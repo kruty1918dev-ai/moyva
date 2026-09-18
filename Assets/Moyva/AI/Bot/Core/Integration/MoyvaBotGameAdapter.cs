@@ -35,12 +35,14 @@ namespace Kruty1918.Moyva.AI.Bot
         private readonly IUnitOwnershipQuery _owners;
         private readonly IUnitGameplayProfileService _profiles;
         private readonly IFogOwnerStateReader _fog;
+        private readonly IFogIntelReader _intel;
         private readonly IGeneratedTerrainLevelQuery _terrain;
         private readonly IEconomyInfoMediator _economy;
         public MoyvaBotPerceptionSource(ITurnService turns, IUnitService units, IUnitOwnershipQuery owners,
             IFogOwnerStateReader fog, IUnitGameplayProfileService profiles = null,
-            IGeneratedTerrainLevelQuery terrain = null, IEconomyInfoMediator economy = null)
-        { _turns = turns; _units = units; _owners = owners; _fog = fog; _profiles = profiles; _terrain = terrain; _economy = economy; }
+            IGeneratedTerrainLevelQuery terrain = null, IEconomyInfoMediator economy = null,
+            IFogIntelReader intel = null)
+        { _turns = turns; _units = units; _owners = owners; _fog = fog; _profiles = profiles; _terrain = terrain; _economy = economy; _intel = intel; }
         public BotPerceptionSnapshot Capture(string player)
         {
             var result = new BotPerceptionSnapshot();
@@ -70,6 +72,26 @@ namespace Kruty1918.Moyva.AI.Bot
                 }
             result.Global[BotObservationSchema.OwnUnits] = own / (float)(own + 100);
             result.Global[BotObservationSchema.VisibleOtherUnits] = visibleOther / (float)(visibleOther + 100);
+            if (_intel != null)
+            {
+                // Last-known intel: remembered hostiles inform scouting and
+                // attack decisions without exposing hidden current state.
+                int rememberedUnits = 0, rememberedBuildings = 0;
+                var units = _intel.GetRememberedUnits(player);
+                if (units != null)
+                    foreach (var record in units)
+                        if (record != null
+                            && !string.Equals(record.OwnerId, player, System.StringComparison.Ordinal))
+                            rememberedUnits++;
+                var buildings = _intel.GetRememberedBuildings(player);
+                if (buildings != null)
+                    foreach (var record in buildings)
+                        if (record != null
+                            && !string.Equals(record.OwnerId, player, System.StringComparison.Ordinal))
+                            rememberedBuildings++;
+                result.Global[BotObservationSchema.RememberedEnemyUnits] = rememberedUnits / (float)(rememberedUnits + 100);
+                result.Global[BotObservationSchema.RememberedEnemyBuildings] = rememberedBuildings / (float)(rememberedBuildings + 100);
+            }
             result.Global[34] = Normalize(visionTotal, own * 12f);
             result.Global[35] = Normalize(attackTotal, own * 30f);
             result.Global[36] = Normalize(heightTotal, own * 4f);

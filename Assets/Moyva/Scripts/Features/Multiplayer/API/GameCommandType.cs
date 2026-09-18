@@ -19,5 +19,11 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         CaravanCommand = 14,
         CombatCommand = 15,
         SettlementCaptureCommand = 16,
+        /// <summary>
+        /// Host correction that tells a peer to forget a remembered entity:
+        /// the peer re-observed the entity's last-known cell and it is gone.
+        /// Never sent for entities the peer cannot legitimately observe.
+        /// </summary>
+        UnitVanish = 17,
     }
 }

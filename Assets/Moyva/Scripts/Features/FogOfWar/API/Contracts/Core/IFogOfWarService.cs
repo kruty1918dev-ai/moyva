@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.FogOfWar.API
         , IFogStateReader
         , IFogExplorationSnapshotStore
         , IFogDirtyTileFeed
+        , IFogLocalPerspective
     {
     }
 }

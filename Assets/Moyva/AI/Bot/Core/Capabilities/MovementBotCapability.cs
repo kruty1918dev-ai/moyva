@@ -35,24 +35,32 @@ namespace Kruty1918.Moyva.AI.Bot
             {
                 if (_owners.GetUnitOwnerId(id) != player || !_units.TryGetUnitPosition(id, out var start)) continue;
                 foreach (var tile in _query.GetMovementTiles(id))
-                    if (tile.IsReachable && tile.Position != start && _fog.IsVisible(player, tile.Position))
-                    {
-                        float cost = Mathf.Max(0, tile.Cost);
-                        var features = new float[BotDecisionContract.CandidateFeatureCount];
-                        features[13] = Vector2Int.Distance(start, tile.Position) / (Vector2Int.Distance(start, tile.Position) + 10f);
-                        features[14] = cost / (cost + 10f); features[17] = 1; features[18] = 1;
-                        features[27] = tile.Position.x / 128f;
-                        features[28] = tile.Position.y / 128f;
-                        int terrainLevel = BotUnitTacticalFeatureEncoder.ResolveTerrainLevel(_terrain, tile.Position);
-                        BotUnitTacticalFeatureEncoder.WriteActorFeatures(
-                            features,
-                            BotUnitTacticalFeatureEncoder.ResolveProfile(_units, _profiles, id),
-                            terrainLevel,
-                            terrainLevel,
-                            ResolveMovementPurpose(id, terrainLevel));
-                        yield return new BotCandidateAction(id + ":" + tile.Position.x + ":" + tile.Position.y,
-                            Id, BotIntentType.Move, id, x: tile.Position.x, y: tile.Position.y, features: features);
-                    }
+                {
+                    if (!tile.IsReachable || tile.Position == start) continue;
+                    // Fog-aware scouting: any reachable tile is a legal move —
+                    // movement itself is validated against the real map — but
+                    // unexplored destinations are tagged as exploration so the
+                    // policy can scout territory it has never seen.
+                    FogStateType fogState = _fog.GetFogState(player, tile.Position);
+                    float cost = Mathf.Max(0, tile.Cost);
+                    var features = new float[BotDecisionContract.CandidateFeatureCount];
+                    features[13] = Vector2Int.Distance(start, tile.Position) / (Vector2Int.Distance(start, tile.Position) + 10f);
+                    features[14] = cost / (cost + 10f); features[17] = 1; features[18] = 1;
+                    features[27] = tile.Position.x / 128f;
+                    features[28] = tile.Position.y / 128f;
+                    int terrainLevel = BotUnitTacticalFeatureEncoder.ResolveTerrainLevel(_terrain, tile.Position);
+                    BotIntentType purpose = fogState == FogStateType.Unexplored
+                        ? BotIntentType.Explore
+                        : ResolveMovementPurpose(id, terrainLevel);
+                    BotUnitTacticalFeatureEncoder.WriteActorFeatures(
+                        features,
+                        BotUnitTacticalFeatureEncoder.ResolveProfile(_units, _profiles, id),
+                        terrainLevel,
+                        terrainLevel,
+                        purpose);
+                    yield return new BotCandidateAction(id + ":" + tile.Position.x + ":" + tile.Position.y,
+                        Id, BotIntentType.Move, id, x: tile.Position.x, y: tile.Position.y, features: features);
+                }
             }
         }
         public bool Validate(string player, BotCandidateAction candidate, out string reason)
@@ -60,7 +68,7 @@ namespace Kruty1918.Moyva.AI.Bot
             reason = "Movement candidate is no longer legal.";
             var position = new Vector2Int(candidate.X, candidate.Y);
             return UnavailableReason(player) == null && _turns.Read(player).CanAct
-                && _owners.GetUnitOwnerId(candidate.ActorKey) == player && _fog.IsVisible(player, position)
+                && _owners.GetUnitOwnerId(candidate.ActorKey) == player
                 && _units.TryGetUnitPosition(candidate.ActorKey, out var current) && current != position
                 && _query.GetMovementTiles(candidate.ActorKey).Any(x => x.Position == position && x.IsReachable);
         }

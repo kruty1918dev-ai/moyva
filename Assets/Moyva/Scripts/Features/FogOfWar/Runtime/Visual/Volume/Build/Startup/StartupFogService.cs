@@ -51,6 +51,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         public void LoadFromSnapshot(bool[,] explored) { }
         public IReadOnlyCollection<Vector2Int> GetLastDirtyTiles() => Array.Empty<Vector2Int>();
 
+        // Single-viewer startup stub: unresolved local owner, every source counts as local.
+        public string LocalPerspectiveOwnerId => null;
+        public void SetLocalPerspectiveOwnerId(string ownerId) { }
+        public bool IsLocalPerspectiveOwner(string ownerId) => true;
+
         private bool IsInsideVisibleReveal(Vector2Int position)
         {
             if (position.x < 0 || position.y < 0 || position.x >= _width || position.y >= _height)

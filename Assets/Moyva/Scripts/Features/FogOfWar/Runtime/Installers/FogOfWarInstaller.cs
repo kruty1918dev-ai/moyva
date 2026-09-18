@@ -23,6 +23,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 ctx.Container.Resolve<IFogVisibilityResolver>(), ctx.Container.Resolve<IHeightAwareVisionService>(),
                 null, ctx.Container.Resolve<IFogSaveDataProvider>(), ctx.Container.Resolve<SignalBus>(),
                 ctx.Container.TryResolve<FogOfWarSettings>(), ctx.Container.Resolve<IWorldGenerationSignalState>())).AsSingle();
+            container.BindInterfacesAndSelfTo<FogIntelStore>().AsSingle();
         }
 
         public override void InstallBindings()
@@ -170,6 +171,21 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             Container
                 .BindInterfacesAndSelfTo<FogOfWarService>()
+                .AsSingle()
+                .NonLazy();
+
+            // Remembered-entity intel: last-known unit/building snapshots per
+            // owner. Bound after the fog service so the visibility feed is
+            // available at construction time.
+            Container
+                .BindInterfacesAndSelfTo<FogIntelStore>()
+                .AsSingle()
+                .NonLazy();
+
+            // Ghost markers for remembered entities — pure presentation,
+            // pooled sprites, never gameplay objects.
+            Container
+                .BindInterfacesAndSelfTo<FogIntelGhostPresenter>()
                 .AsSingle()
                 .NonLazy();
 

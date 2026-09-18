@@ -53,6 +53,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _unitPositions.Remove(areaId);
                 _fixedVisionShapes.Remove(areaId);
                 _unitVisionModifiers.Remove(areaId);
+                _sourceOwners.Remove(areaId);
             }
 
             var tiles = FogRevealShapeTileCalculator.ComputeShapeTiles(center, radius, shape, _width, _height);
@@ -100,6 +101,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _unitPositions[areaId] = center;
                 _unitVisionModifiers[areaId] = default;
                 _fixedVisionShapes[areaId] = shape;
+                _sourceOwners[areaId] = string.Empty;
                 _unitVisibleTiles[areaId] = tiles;
 
                 foreach (var tile in tiles)

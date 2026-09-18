@@ -95,6 +95,12 @@ internal sealed partial class FogVolumePreviewBuilder
             /// Preview stub не накопичує dirty tiles.
             /// </summary>
             public IReadOnlyCollection<Vector2Int> GetLastDirtyTiles() => System.Array.Empty<Vector2Int>();
+
+            // Single-viewer preview stub: unresolved local owner, every
+            // source counts as local.
+            public string LocalPerspectiveOwnerId => null;
+            public void SetLocalPerspectiveOwnerId(string ownerId) { }
+            public bool IsLocalPerspectiveOwner(string ownerId) => true;
         }
     }
 }

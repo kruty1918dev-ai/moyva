@@ -80,6 +80,13 @@ namespace Kruty1918.Moyva.Bootstrap
                 .AsSingle();
             Kruty1918.Moyva.AI.Bot.BotRuntimeInstaller.Install(Container);
 
+            // Pushes the resolved local owner into fog so the shared grid
+            // becomes the local player's perspective before units spawn.
+            Container.BindInterfacesTo<FogLocalPerspectiveInitializer>()
+                .AsSingle()
+                .NonLazy();
+            Container.BindExecutionOrder<FogLocalPerspectiveInitializer>(89);
+
             Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
             Container.BindExecutionOrder<TestUnitSpawner>(100);
 
