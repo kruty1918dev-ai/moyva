@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Kruty1918.Moyva.Shared.Graphics;
 using Kruty1918.Moyva.Shared.UI;
 using TMPro;
 using UnityEngine;
@@ -215,7 +216,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             // 1: Аудіо-реєстр і стартові графічні налаштування — ті самі ресурси,
             //    що прогріває GameplayStartupPipeline перед gameplay-сценою.
             ResourceRequest audioRequest = Resources.LoadAsync<TextAsset>("MoyvaAudioRegistry");
-            ResourceRequest graphicsRequest = Resources.LoadAsync<TextAsset>("MoyvaStartupGraphics");
+            ResourceRequest graphicsRequest = Resources.LoadAsync<TextAsset>(GraphicsStartupSettingsSO.DefaultResourcePath);
 
             while (!audioRequest.isDone || !graphicsRequest.isDone)
             {
