@@ -87,14 +87,14 @@ namespace Kruty1918.Moyva.Bootstrap
                 .NonLazy();
             Container.BindExecutionOrder<FogLocalPerspectiveInitializer>(89);
 
-            Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
-            Container.BindExecutionOrder<TestUnitSpawner>(100);
+            Container.BindInterfacesTo<SaveAutoLoadInitializer>().AsSingle().NonLazy();
+            Container.BindExecutionOrder<SaveAutoLoadInitializer>(100);
 
             GameplayHudBindings.Install(Container);
             CaravanGameplayAccess.Install(Container);
 
             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
-            // Виконується після TestUnitSpawner, щоб знати чи є збереження.
+            // Виконується після SaveAutoLoadInitializer, щоб знати чи є збереження.
             Container.BindInstance(startingPositionSettings).AsSingle();
             BindStartingPositionServices();
             Container.BindInterfacesTo<StartingPositionInitializer>().AsSingle().NonLazy();

@@ -4,11 +4,11 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
-    internal sealed class TestUnitSpawner : IInitializable
+    internal sealed class SaveAutoLoadInitializer : IInitializable
     {
         private readonly ISaveService _saveService;
 
-        public TestUnitSpawner(ISaveService saveService)
+        public SaveAutoLoadInitializer(ISaveService saveService)
         {
             _saveService = saveService;
         }
