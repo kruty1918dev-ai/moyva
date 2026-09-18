@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Combat.API;
+using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
@@ -16,12 +17,13 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IUnitOwnershipQuery _ownership;
         private readonly IGridService _grid;
         private readonly IUnitAttackAvailabilityQuery _attackAvailability;
+        private readonly IFogOwnerStateReader _ownerFog;
 
         public event Action<string, string> AttackStarted;
         public event Action<UnitAttackResult> AttackResolved;
 
         public UnitCombatService(IUnitService unitService, IUnitClassConfig unitClassConfig)
-            : this(unitService, unitClassConfig, null, null, null, null) { }
+            : this(unitService, unitClassConfig, null, null, null, null, null) { }
 
         [Inject]
         public UnitCombatService(
@@ -30,7 +32,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             [InjectOptional] IHealthRegistry healthRegistry = null,
             [InjectOptional] IUnitOwnershipQuery ownership = null,
             [InjectOptional] IGridService grid = null,
-            [InjectOptional] IUnitAttackAvailabilityQuery attackAvailability = null)
+            [InjectOptional] IUnitAttackAvailabilityQuery attackAvailability = null,
+            [InjectOptional] IFogOwnerStateReader ownerFog = null)
         {
             _unitService = unitService;
             _unitClassConfig = unitClassConfig;
@@ -38,6 +41,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _ownership = ownership;
             _grid = grid;
             _attackAvailability = attackAvailability;
+            _ownerFog = ownerFog;
         }
 
         public bool TryPreviewAttack(string attackerUnitId, string defenderUnitId, out UnitCombatBreakdown breakdown)
@@ -98,6 +102,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             if (string.Equals(attackerOwner, targetOwner, StringComparison.Ordinal))
             { reason = UnitAttackRejectReason.SameOwner; return false; }
+
+            if (_ownerFog != null && !_ownerFog.IsVisible(attackerOwner, targetPosition))
+            { reason = UnitAttackRejectReason.TargetNotVisible; return false; }
 
             UnitClassConfig attacker, ignored;
             if (!TryGetConfig(attackerUnitId, out attacker) || !TryGetConfig(targetUnitId, out ignored))

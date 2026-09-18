@@ -1,0 +1,216 @@
+{
+  "shots": [
+    {
+      "shotId": "shot01",
+      "category": 4,
+      "rig": 15,
+      "motion": 0,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "world",
+        "instanceId": "",
+        "worldX": 31.5,
+        "worldY": 0.0,
+        "worldZ": 31.5,
+        "approximateRadius": 32.0
+      },
+      "durationSec": 1.6,
+      "motionSpeed": 0.5,
+      "seed": 346707724,
+      "beat": "",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    },
+    {
+      "shotId": "shot02",
+      "category": 5,
+      "rig": 15,
+      "motion": 0,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "world",
+        "instanceId": "",
+        "worldX": 31.5,
+        "worldY": 0.0,
+        "worldZ": 31.5,
+        "approximateRadius": 32.0
+      },
+      "durationSec": 1.6,
+      "motionSpeed": 0.5,
+      "seed": 411314860,
+      "beat": "",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    },
+    {
+      "shotId": "shot03",
+      "category": 5,
+      "rig": 15,
+      "motion": 0,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "world",
+        "instanceId": "",
+        "worldX": 31.5,
+        "worldY": 0.0,
+        "worldZ": 31.5,
+        "approximateRadius": 32.0
+      },
+      "durationSec": 1.6,
+      "motionSpeed": 0.5,
+      "seed": 1030912818,
+      "beat": "",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    },
+    {
+      "shotId": "shot04",
+      "category": 0,
+      "rig": 2,
+      "motion": 5,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "terrain",
+        "instanceId": "tile-46-19",
+        "worldX": 46.0,
+        "worldY": 0.0,
+        "worldZ": 19.0,
+        "approximateRadius": 4.0
+      },
+      "durationSec": 1.6,
+      "motionSpeed": 0.5,
+      "seed": 1011480631,
+      "beat": "",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    },
+    {
+      "shotId": "shot05",
+      "category": 2,
+      "rig": 15,
+      "motion": 0,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "world",
+        "instanceId": "",
+        "worldX": 31.5,
+        "worldY": 0.0,
+        "worldZ": 31.5,
+        "approximateRadius": 32.0
+      },
+      "durationSec": 1.6,
+      "motionSpeed": 0.5,
+      "seed": 957285160,
+      "beat": "",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    },
+    {
+      "shotId": "shot06",
+      "category": 4,
+      "rig": 15,
+      "motion": 0,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "world",
+        "instanceId": "",
+        "worldX": 31.5,
+        "worldY": 0.0,
+        "worldZ": 31.5,
+        "approximateRadius": 32.0
+      },
+      "durationSec": 1.6,
+      "motionSpeed": 0.5,
+      "seed": 253692334,
+      "beat": "",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    },
+    {
+      "shotId": "shot07",
+      "category": 4,
+      "rig": 15,
+      "motion": 0,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "world",
+        "instanceId": "",
+        "worldX": 31.5,
+        "worldY": 0.0,
+        "worldZ": 31.5,
+        "approximateRadius": 32.0
+      },
+      "durationSec": 1.6,
+      "motionSpeed": 0.5,
+      "seed": 1756793619,
+      "beat": "",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    },
+    {
+      "shotId": "shot08",
+      "category": 7,
+      "rig": 15,
+      "motion": 0,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "terrain",
+        "instanceId": "tile-61-22",
+        "worldX": 61.0,
+        "worldY": 0.0,
+        "worldZ": 22.0,
+        "approximateRadius": 4.0
+      },
+      "durationSec": 1.6,
+      "motionSpeed": 0.5,
+      "seed": 1725649972,
+      "beat": "",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    },
+    {
+      "shotId": "shot09",
+      "category": 0,
+      "rig": 2,
+      "motion": 5,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "terrain",
+        "instanceId": "tile-13-28",
+        "worldX": 13.0,
+        "worldY": 0.0,
+        "worldZ": 28.0,
+        "approximateRadius": 4.0
+      },
+      "durationSec": 1.6,
+      "motionSpeed": 0.5,
+      "seed": 256227987,
+      "beat": "",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    },
+    {
+      "shotId": "shot10",
+      "category": 9,
+      "rig": 15,
+      "motion": 0,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "world",
+        "instanceId": "",
+        "worldX": 31.5,
+        "worldY": 0.0,
+        "worldZ": 31.5,
+        "approximateRadius": 32.0
+      },
+      "durationSec": 1.6,
+      "motionSpeed": 0.5,
+      "seed": 1597923521,
+      "beat": "",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    }
+  ],
+  "seed": 761103202,
+  "recipeId": "steam-screenshots"
+}

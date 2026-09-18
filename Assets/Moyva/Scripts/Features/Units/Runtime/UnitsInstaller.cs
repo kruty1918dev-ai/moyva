@@ -37,6 +37,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             container.BindInterfacesTo<UnitTurnParticipant>().AsSingle();
             container.BindInterfacesAndSelfTo<UnitTurnActionStateService>().AsSingle();
             container.BindInterfacesAndSelfTo<UnitRecruitmentService>().AsSingle();
+            container.BindInterfacesAndSelfTo<UnitGroupService>().AsSingle();
             container.Bind<ICombatCommandService>().To<UnitCombatCommandService>().AsSingle();
         }
 
@@ -124,6 +125,10 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             Container.BindInterfacesAndSelfTo<UnitCombatService>()
                 .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<UnitGroupService>()
+                .AsSingle()
+                .NonLazy();
 
             Container.Bind<ICombatCommandService>()
                 .To<UnitCombatCommandService>()

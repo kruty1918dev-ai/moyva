@@ -1,0 +1,90 @@
+{
+  "shots": [
+    {
+      "shotId": "beat-hook-1",
+      "category": 6,
+      "rig": 9,
+      "motion": 0,
+      "transitionIn": 2,
+      "subject": {
+        "contentId": "archer",
+        "instanceId": "archer_01_3538",
+        "worldX": 36.0,
+        "worldY": 0.191566423,
+        "worldZ": 35.0,
+        "approximateRadius": 0.5
+      },
+      "durationSec": 2.1,
+      "motionSpeed": 0.5,
+      "seed": 2092345137,
+      "beat": "Hook",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    },
+    {
+      "shotId": "beat-build-1",
+      "category": 1,
+      "rig": 14,
+      "motion": 4,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "world",
+        "instanceId": "",
+        "worldX": 31.5,
+        "worldY": 0.0,
+        "worldZ": 31.5,
+        "approximateRadius": 32.0
+      },
+      "durationSec": 3.9,
+      "motionSpeed": 0.5,
+      "seed": 1646211099,
+      "beat": "Build",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    },
+    {
+      "shotId": "beat-action-1",
+      "category": 6,
+      "rig": 10,
+      "motion": 0,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "spearman",
+        "instanceId": "spearman_01_3496",
+        "worldX": 35.0,
+        "worldY": 0.203083739,
+        "worldZ": 36.0,
+        "approximateRadius": 0.5
+      },
+      "durationSec": 5.7,
+      "motionSpeed": 0.5,
+      "seed": 1824827410,
+      "beat": "Action",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    },
+    {
+      "shotId": "beat-end-1",
+      "category": 10,
+      "rig": 0,
+      "motion": 0,
+      "transitionIn": 3,
+      "subject": {
+        "contentId": "world",
+        "instanceId": "",
+        "worldX": 31.5,
+        "worldY": 0.0,
+        "worldZ": 31.5,
+        "approximateRadius": 32.0
+      },
+      "durationSec": 3.30000019,
+      "motionSpeed": 0.5,
+      "seed": 1353724162,
+      "beat": "End",
+      "textClaimId": "",
+      "aspectIntent": 1.77777779
+    }
+  ],
+  "seed": 1408960828,
+  "recipeId": "teaser-15"
+}

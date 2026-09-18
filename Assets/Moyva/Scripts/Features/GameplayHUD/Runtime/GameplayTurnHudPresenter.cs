@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Economy.API;
+using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.UIActions.API;
@@ -20,6 +21,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IUnitService _units;
         private readonly IUnitClassConfig _unitConfigs;
         private readonly IUnitRecruitmentService _recruitment;
+        private readonly IUnitRecruitmentRemoteCommandRequester _remoteRecruitment;
+        private readonly ILocalGameplayRoleResolver _roleResolver;
         private readonly IConstructionSessionCommands _construction;
         private readonly IBuildingRegistry _buildings;
         private readonly SignalBus _signals;
@@ -69,12 +72,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             GameplayTurnHudView view,
             [InjectOptional] IUiContextStack uiContexts = null,
             [InjectOptional] EconomyDatabaseSO economyDatabase = null,
-            [InjectOptional] List<ITurnBlocker> blockers = null)
+            [InjectOptional] List<ITurnBlocker> blockers = null,
+            [InjectOptional] IUnitRecruitmentRemoteCommandRequester remoteRecruitment = null,
+            [InjectOptional] ILocalGameplayRoleResolver roleResolver = null)
         {
             _turns = turns;
             _units = units;
             _unitConfigs = unitConfigs;
             _recruitment = recruitment;
+            _remoteRecruitment = remoteRecruitment;
+            _roleResolver = roleResolver;
             _construction = construction;
             _buildings = buildings;
             _signals = signals;

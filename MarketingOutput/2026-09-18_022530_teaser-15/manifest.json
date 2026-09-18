@@ -1,0 +1,82 @@
+{
+  "schema": "moyva.marketing-manifest",
+  "version": 1,
+  "runId": "2026-09-18_022530_teaser-15",
+  "timestampUtc": "2026-09-18T02:25:30.6749822Z",
+  "status": "ok",
+  "recipeId": "teaser-15",
+  "platformProfileId": "youtube-16x9",
+  "resolutionWidth": 1920,
+  "resolutionHeight": 1080,
+  "frameRate": 30,
+  "durationSec": 15.0,
+  "worldSeed": 1547287037,
+  "scenarioSeed": 1082546808,
+  "cinematicSeed": 1408960828,
+  "sourceGameProcessSha": "09cf91af6ec818765294f0cbe59b600f0ae94ff9",
+  "toolBranchSha": "09cf91af6ec818765294f0cbe59b600f0ae94ff9",
+  "language": "en",
+  "assetIds": [],
+  "audioKeys": [],
+  "filesGenerated": [
+    "Metadata\\shots.json",
+    "Master/teaser-15_master.mp4"
+  ],
+  "validationIssues": [
+    "staging:staged:placed 0 buildings, spawned 3 units (canonical APIs)."
+  ],
+  "shots": [
+    {
+      "shotId": "beat-hook-1",
+      "category": "Combat",
+      "rig": "BattleWide",
+      "beat": "Hook",
+      "subjectId": "archer",
+      "seed": 2092345137,
+      "durationSec": 2.1,
+      "score": 0.0,
+      "status": "ok",
+      "failure": "",
+      "files": []
+    },
+    {
+      "shotId": "beat-build-1",
+      "category": "Settlement",
+      "rig": "Orbit",
+      "beat": "Build",
+      "subjectId": "world",
+      "seed": 1646211099,
+      "durationSec": 3.9,
+      "score": 0.0,
+      "status": "ok",
+      "failure": "",
+      "files": []
+    },
+    {
+      "shotId": "beat-action-1",
+      "category": "Combat",
+      "rig": "BattleMedium",
+      "beat": "Action",
+      "subjectId": "spearman",
+      "seed": 1824827410,
+      "durationSec": 5.7,
+      "score": 0.0,
+      "status": "ok",
+      "failure": "",
+      "files": []
+    },
+    {
+      "shotId": "beat-end-1",
+      "category": "EndCard",
+      "rig": "Static",
+      "beat": "End",
+      "subjectId": "world",
+      "seed": 1353724162,
+      "durationSec": 3.30000019,
+      "score": 0.0,
+      "status": "ok",
+      "failure": "",
+      "files": []
+    }
+  ]
+}

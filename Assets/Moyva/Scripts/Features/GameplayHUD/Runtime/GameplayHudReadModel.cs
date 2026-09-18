@@ -11,6 +11,7 @@ using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Interactions.API;
 using Kruty1918.Moyva.Jsonization;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Notifications.API;
@@ -41,6 +42,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IUnitService _units;
         private readonly IUnitOwnershipQuery _unitOwnership;
         private readonly IUnitRecruitmentService _recruitment;
+        private readonly IUnitRecruitmentRemoteCommandRequester _remoteRecruitment;
+        private readonly IUnitGroupService _unitGroups;
+        private readonly ITileInteractionService _tileInteraction;
         private readonly IUnitClassConfig _unitConfigs;
         private readonly ICombatCommandService _combat;
         private readonly ICombatRemoteCommandRequester _remoteCombat;
@@ -80,6 +84,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IUnitService units = null,
             [InjectOptional] IUnitOwnershipQuery unitOwnership = null,
             [InjectOptional] IUnitRecruitmentService recruitment = null,
+            [InjectOptional] IUnitRecruitmentRemoteCommandRequester remoteRecruitment = null,
+            [InjectOptional] IUnitGroupService unitGroups = null,
+            [InjectOptional] ITileInteractionService tileInteraction = null,
             [InjectOptional] IUnitClassConfig unitConfigs = null,
             [InjectOptional] ICombatCommandService combat = null,
             [InjectOptional] ICombatRemoteCommandRequester remoteCombat = null,
@@ -111,6 +118,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _units = units;
             _unitOwnership = unitOwnership;
             _recruitment = recruitment;
+            _remoteRecruitment = remoteRecruitment;
+            _unitGroups = unitGroups;
+            _tileInteraction = tileInteraction;
             _unitConfigs = unitConfigs;
             _combat = combat;
             _remoteCombat = remoteCombat;
@@ -577,6 +587,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "Recruitment service is unavailable.");
 
             string ownerId = ResolveOwnerId();
+            if (_roleResolver?.Resolve().Role == LocalGameplayRole.Client)
+            {
+                string remoteReason = null;
+                if (_remoteRecruitment != null
+                    && _remoteRecruitment.TryRequestEnqueue(
+                        ownerId, _selectionPosition, unitTypeId.Trim(), out remoteReason))
+                {
+                    return UiActionResult.Performed();
+                }
+
+                return UiActionResult.Rejected(
+                    UiActionReason.ActionUnavailable,
+                    string.IsNullOrWhiteSpace(remoteReason)
+                        ? "Recruitment request could not be sent to host."
+                        : remoteReason);
+            }
+
             if (!_recruitment.TryEnqueue(ownerId, _selectionPosition, unitTypeId.Trim(), out string reason))
             {
                 return UiActionResult.Rejected(
@@ -592,6 +619,24 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_selectionKind != WorldInfoSelectionKind.Building || _recruitment == null
                 || !long.TryParse(queueId, out long id))
                 return UiActionResult.Rejected(UiActionReason.WrongContext);
+
+            if (_roleResolver?.Resolve().Role == LocalGameplayRole.Client)
+            {
+                string remoteReason = null;
+                if (_remoteRecruitment != null
+                    && _remoteRecruitment.TryRequestCancel(
+                        ResolveOwnerId(), _selectionPosition, id, out remoteReason))
+                {
+                    return UiActionResult.Performed();
+                }
+
+                return UiActionResult.Rejected(
+                    UiActionReason.ActionUnavailable,
+                    string.IsNullOrWhiteSpace(remoteReason)
+                        ? "Cancel request could not be sent to host."
+                        : remoteReason);
+            }
+
             return _recruitment.TryCancel(ResolveOwnerId(), _selectionPosition, id, out string reason)
                 ? UiActionResult.Performed()
                 : UiActionResult.Rejected(UiActionReason.ActionUnavailable, reason);
@@ -902,6 +947,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                             parts.Count > 0 ? string.Join(", ", parts) : "Empty",
                             "Only local stock funds construction here"));
                     }
+                    CaptureUnitGroup(snapshot, ownerId);
                     break;
                 }
                 default:
@@ -911,6 +957,47 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             snapshot.SelectionFacts = facts.ToArray();
+        }
+
+        private void CaptureUnitGroup(GameplayHtmlSnapshot snapshot, string ownerId)
+        {
+            snapshot.SelectedUnitGroupId = string.Empty;
+            snapshot.SelectedUnitGroupSize = 0;
+            snapshot.SelectedUnitGroupMembers = string.Empty;
+            snapshot.GroupMergeArmed = _tileInteraction?.IsGroupMergeArmed ?? false;
+
+            if (!snapshot.SelectionOwnedByLocalPlayer
+                || _unitGroups == null
+                || string.IsNullOrWhiteSpace(_selectionId))
+            {
+                return;
+            }
+
+            string groupId = _unitGroups.GetGroupIdOfUnit(_selectionId);
+            if (string.IsNullOrEmpty(groupId)
+                || !_unitGroups.TryGetGroup(groupId, out UnitGroupSnapshot group)
+                || group.Count <= 0)
+            {
+                return;
+            }
+
+            snapshot.SelectedUnitGroupId = groupId;
+            snapshot.SelectedUnitGroupSize = group.Count;
+
+            var names = new List<string>(group.Count);
+            for (int index = 0; index < group.Count && index < 6; index++)
+            {
+                string memberType = _units?.GetUnitTypeId(group.UnitIds[index]);
+                UnitClassConfig memberConfig = string.IsNullOrWhiteSpace(memberType)
+                    ? null
+                    : _unitConfigs?.GetConfig(memberType);
+                names.Add(string.IsNullOrWhiteSpace(memberConfig?.DisplayName)
+                    ? Display(memberType ?? group.UnitIds[index])
+                    : memberConfig.DisplayName.Trim());
+            }
+            if (group.Count > names.Count)
+                names.Add($"+{group.Count - names.Count} more");
+            snapshot.SelectedUnitGroupMembers = string.Join(", ", names);
         }
 
         private static string ResolveRecruitmentUnavailableReason(

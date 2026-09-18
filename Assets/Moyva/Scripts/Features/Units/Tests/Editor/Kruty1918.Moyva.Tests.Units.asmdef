@@ -1,0 +1,22 @@
+{
+  "name": "Kruty1918.Moyva.Tests.Units",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Units",
+  "references": [
+    "Zenject",
+    "Kruty1918.Moyva.Units",
+    "Kruty1918.Moyva.Combat",
+    "Kruty1918.Moyva.FogOfWar",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.Grid",
+    "Kruty1918.Moyva.ObjectsMap",
+    "Kruty1918.Moyva.Turns"
+  ],
+  "includePlatforms": ["Editor"],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "Zenject-usage.dll",
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

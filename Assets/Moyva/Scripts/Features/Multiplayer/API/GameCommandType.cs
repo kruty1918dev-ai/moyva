@@ -25,5 +25,9 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         /// Never sent for entities the peer cannot legitimately observe.
         /// </summary>
         UnitVanish = 17,
+        UnitGroupCommand = 18,
+        UnitGroupSync = 19,
+        UnitRecruitmentCommand = 20,
+        UnitRecruitmentSync = 21,
     }
 }

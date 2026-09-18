@@ -1,0 +1,17 @@
+{
+  "name": "Kruty1918.Moyva.Tests.Bootstrap",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Bootstrap",
+  "references": [
+    "Zenject",
+    "Kruty1918.Moyva.Bootstrap",
+    "Kruty1918.Moyva.Signals"
+  ],
+  "includePlatforms": ["Editor"],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "Zenject-usage.dll",
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

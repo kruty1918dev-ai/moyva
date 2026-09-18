@@ -441,6 +441,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             public void FoundSettlement() { }
             public void AttackSelection() { }
             public void CaptureSelection() { }
+            public void GroupMergeToggle() { }
+            public void GroupDisband() { }
             public void Recruit(object value) { }
             public void ClosePanel() { }
             public void Construction() { }

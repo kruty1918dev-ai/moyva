@@ -240,6 +240,36 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     !snapshot.CanAttackSelection));
             }
 
+            if (string.Equals(snapshot.SelectionKind, "Unit", StringComparison.Ordinal)
+                && snapshot.SelectionOwnedByLocalPlayer
+                && snapshot.CanIssueLocalCommands)
+            {
+                if (!string.IsNullOrWhiteSpace(snapshot.SelectedUnitGroupId))
+                {
+                    DataRow(
+                        html,
+                        "Group",
+                        $"{snapshot.SelectedUnitGroupSize} unit(s)",
+                        string.IsNullOrWhiteSpace(snapshot.SelectedUnitGroupMembers)
+                            ? "Move orders apply to the whole group"
+                            : snapshot.SelectedUnitGroupMembers);
+                    html.Append(Button(
+                        "DISBAND GROUP",
+                        "Globals.gameplay.GroupDisband()",
+                        "button danger wide",
+                        "Disband this unit group",
+                        false));
+                }
+                html.Append(Button(
+                    snapshot.GroupMergeArmed ? "CANCEL MERGE" : "MERGE INTO GROUP",
+                    "Globals.gameplay.GroupMergeToggle()",
+                    snapshot.GroupMergeArmed ? "button wide" : "button primary wide",
+                    snapshot.GroupMergeArmed
+                        ? "Merge armed: click another own unit on the map, or press to cancel"
+                        : "Arm merge, then click another own unit on the map",
+                    false));
+            }
+
             if (!string.IsNullOrWhiteSpace(snapshot.AttackSourceId)
                 && string.Equals(snapshot.SelectionKind, "Building", StringComparison.Ordinal)
                 && !snapshot.SelectionOwnedByLocalPlayer)

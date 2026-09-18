@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Economy.API;
+using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.UIActions.API;
@@ -268,7 +269,29 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
             }
 
-            if (!_recruitment.TryEnqueue(
+            bool enqueued;
+            if (_roleResolver?.Resolve().Role == LocalGameplayRole.Client)
+            {
+                string remoteReason = null;
+                enqueued = _remoteRecruitment != null
+                    && _remoteRecruitment.TryRequestEnqueue(
+                        _authority.LocalOwnerId,
+                        _selectedBuilding.Value,
+                        unitTypeId,
+                        out remoteReason);
+                if (enqueued)
+                {
+                    _statusOverride =
+                        $"{ResolveUnitName(unitTypeId)}: запит на найм надіслано хосту.";
+                }
+                else
+                {
+                    _statusOverride = string.IsNullOrWhiteSpace(remoteReason)
+                        ? "Запит на найм не вдалося надіслати хосту."
+                        : remoteReason;
+                }
+            }
+            else if (!_recruitment.TryEnqueue(
                     _authority.LocalOwnerId,
                     _selectedBuilding.Value,
                     unitTypeId,

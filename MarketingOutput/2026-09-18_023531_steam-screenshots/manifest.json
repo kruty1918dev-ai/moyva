@@ -1,0 +1,212 @@
+{
+  "schema": "moyva.marketing-manifest",
+  "version": 1,
+  "runId": "2026-09-18_023531_steam-screenshots",
+  "timestampUtc": "2026-09-18T02:35:31.7319280Z",
+  "status": "ok",
+  "recipeId": "steam-screenshots",
+  "platformProfileId": "steam-screenshot",
+  "resolutionWidth": 1920,
+  "resolutionHeight": 1080,
+  "frameRate": 30,
+  "durationSec": 30.0,
+  "worldSeed": 530716517,
+  "scenarioSeed": 1242629976,
+  "cinematicSeed": 1019236413,
+  "sourceGameProcessSha": "09cf91af6ec818765294f0cbe59b600f0ae94ff9",
+  "toolBranchSha": "09cf91af6ec818765294f0cbe59b600f0ae94ff9",
+  "language": "en",
+  "assetIds": [
+    "world",
+    "terrain"
+  ],
+  "audioKeys": [],
+  "filesGenerated": [
+    "Metadata\\shots.json",
+    "Master\\steam-screenshots_shot01_master.png",
+    "steam-screenshot\\steam-screenshots_shot01.png",
+    "Master\\steam-screenshots_shot02_master.png",
+    "steam-screenshot\\steam-screenshots_shot02.png",
+    "Master\\steam-screenshots_shot03_master.png",
+    "steam-screenshot\\steam-screenshots_shot03.png",
+    "Master\\steam-screenshots_shot04_master.png",
+    "steam-screenshot\\steam-screenshots_shot04.png",
+    "Master\\steam-screenshots_shot05_master.png",
+    "steam-screenshot\\steam-screenshots_shot05.png",
+    "Master\\steam-screenshots_shot06_master.png",
+    "steam-screenshot\\steam-screenshots_shot06.png",
+    "Master\\steam-screenshots_shot07_master.png",
+    "steam-screenshot\\steam-screenshots_shot07.png",
+    "Master\\steam-screenshots_shot08_master.png",
+    "steam-screenshot\\steam-screenshots_shot08.png",
+    "Master\\steam-screenshots_shot09_master.png",
+    "steam-screenshot\\steam-screenshots_shot09.png",
+    "Master\\steam-screenshots_shot10_master.png",
+    "steam-screenshot\\steam-screenshots_shot10.png"
+  ],
+  "validationIssues": [
+    "Platform 'steam-screenshot' forbids staged/prerendered stills: staging spawns must be off."
+  ],
+  "shots": [
+    {
+      "shotId": "shot01",
+      "category": "Army",
+      "rig": "TopDown",
+      "beat": "",
+      "subjectId": "world",
+      "seed": 44609905,
+      "durationSec": 1.6,
+      "score": 0.6123684,
+      "status": "ok",
+      "failure": "",
+      "files": [
+        "Master/steam-screenshots_shot01_master.png",
+        "steam-screenshot/steam-screenshots_shot01.png"
+      ]
+    },
+    {
+      "shotId": "shot02",
+      "category": "Tactical",
+      "rig": "TopDown",
+      "beat": "",
+      "subjectId": "world",
+      "seed": 251763743,
+      "durationSec": 1.6,
+      "score": 0.6128433,
+      "status": "ok",
+      "failure": "",
+      "files": [
+        "Master/steam-screenshots_shot02_master.png",
+        "steam-screenshot/steam-screenshots_shot02.png"
+      ]
+    },
+    {
+      "shotId": "shot03",
+      "category": "Tactical",
+      "rig": "TopDown",
+      "beat": "",
+      "subjectId": "world",
+      "seed": 1959518635,
+      "durationSec": 1.6,
+      "score": 0.613658845,
+      "status": "ok",
+      "failure": "",
+      "files": [
+        "Master/steam-screenshots_shot03_master.png",
+        "steam-screenshot/steam-screenshots_shot03.png"
+      ]
+    },
+    {
+      "shotId": "shot04",
+      "category": "WorldBeauty",
+      "rig": "TacticalOverview",
+      "beat": "",
+      "subjectId": "terrain",
+      "seed": 1091519741,
+      "durationSec": 1.6,
+      "score": 0.553178132,
+      "status": "ok",
+      "failure": "",
+      "files": [
+        "Master/steam-screenshots_shot04_master.png",
+        "steam-screenshot/steam-screenshots_shot04.png"
+      ]
+    },
+    {
+      "shotId": "shot05",
+      "category": "Economy",
+      "rig": "TopDown",
+      "beat": "",
+      "subjectId": "world",
+      "seed": 795860292,
+      "durationSec": 1.6,
+      "score": 0.6127055,
+      "status": "ok",
+      "failure": "",
+      "files": [
+        "Master/steam-screenshots_shot05_master.png",
+        "steam-screenshot/steam-screenshots_shot05.png"
+      ]
+    },
+    {
+      "shotId": "shot06",
+      "category": "Army",
+      "rig": "TopDown",
+      "beat": "",
+      "subjectId": "world",
+      "seed": 379449117,
+      "durationSec": 1.6,
+      "score": 0.6116161,
+      "status": "ok",
+      "failure": "",
+      "files": [
+        "Master/steam-screenshots_shot06_master.png",
+        "steam-screenshot/steam-screenshots_shot06.png"
+      ]
+    },
+    {
+      "shotId": "shot07",
+      "category": "Army",
+      "rig": "TopDown",
+      "beat": "",
+      "subjectId": "world",
+      "seed": 1342828698,
+      "durationSec": 1.6,
+      "score": 0.6120932,
+      "status": "ok",
+      "failure": "",
+      "files": [
+        "Master/steam-screenshots_shot07_master.png",
+        "steam-screenshot/steam-screenshots_shot07.png"
+      ]
+    },
+    {
+      "shotId": "shot08",
+      "category": "Exploration",
+      "rig": "TopDown",
+      "beat": "",
+      "subjectId": "terrain",
+      "seed": 2009562990,
+      "durationSec": 1.6,
+      "score": 0.7115768,
+      "status": "ok",
+      "failure": "",
+      "files": [
+        "Master/steam-screenshots_shot08_master.png",
+        "steam-screenshot/steam-screenshots_shot08.png"
+      ]
+    },
+    {
+      "shotId": "shot09",
+      "category": "WorldBeauty",
+      "rig": "TacticalOverview",
+      "beat": "",
+      "subjectId": "terrain",
+      "seed": 2015573006,
+      "durationSec": 1.6,
+      "score": 0.5661152,
+      "status": "ok",
+      "failure": "",
+      "files": [
+        "Master/steam-screenshots_shot09_master.png",
+        "steam-screenshot/steam-screenshots_shot09.png"
+      ]
+    },
+    {
+      "shotId": "shot10",
+      "category": "UiGameplay",
+      "rig": "TopDown",
+      "beat": "",
+      "subjectId": "world",
+      "seed": 2085652905,
+      "durationSec": 1.6,
+      "score": 0.6132305,
+      "status": "ok",
+      "failure": "",
+      "files": [
+        "Master/steam-screenshots_shot10_master.png",
+        "steam-screenshot/steam-screenshots_shot10.png"
+      ]
+    }
+  ]
+}
