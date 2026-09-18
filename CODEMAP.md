@@ -230,5 +230,6 @@ World build: generate/restore → Grid → signals.
 | Startup decision / world-build sequence | `Runtime/GeneratorWorldStartupBuilder.cs`; `Runtime/MapVisualInstantiator.cs`; `Runtime/MapVisual/MapVisualWorldBuildOrchestrator.cs` |
 | Graph provider / pipeline | `Runtime/GraphTwcMapDataGenerator.cs`; `Runtime/GraphEvaluationPipeline.cs` |
 | Generator graph semantics | `Runtime/GeneratorGraphSemanticValidator.cs` |
+| Geography engine (deterministic world gen) | `Runtime/Geography/`; `API/WorldGenerationConfig.cs` |
 | Chunk-first terrain mesh | `Runtime/ChunkFirst/Mesh/`; `Runtime/ChunkFirst/TwcAdapter/TwcTileMeshSourceProvider.cs` |
 | Add node settings / map arithmetic | `Runtime/Nodes/AddNode.cs`; `Runtime/Nodes/AddNode.Evaluator.cs` |

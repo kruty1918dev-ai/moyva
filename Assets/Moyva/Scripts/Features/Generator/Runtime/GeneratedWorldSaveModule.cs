@@ -15,7 +15,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     [SaveModuleId("Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule")]
     internal sealed class GeneratedWorldSaveModule : IStagedSaveModule
     {
-        private const int CurrentVersion = 4;
+        private const int CurrentVersion = 5;
         private const int MaxCompiledLayers = 1024;
         private const int MaxSamplesPerCell = 64;
 
@@ -54,6 +54,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             WriteStringMap(context, data.BuildingMap, data.Width, data.Height);
             WriteIntMap(context, data.TerrainLevelMap, data.Width, data.Height);
             WriteWorldSettings(context, data);
+            context.Writer.Write(data.HasAuthoredGeography);
             WriteCompiledLayers(context, data.CompiledLayers);
             WriteLogicalTileMap(context, data.LogicalTileMap, data.Width, data.Height);
 
@@ -91,7 +92,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private GeneratedWorldData ReadVersioned(ISaveContext context, int version)
         {
-            if (version != 2 && version != 3 && version != CurrentVersion)
+            if (version < 2 || version > CurrentVersion)
             {
                 throw new InvalidDataException(
                     $"[GeneratedWorldSave] Unsupported world payload version {version}. " +
@@ -134,6 +135,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 data.TerrainLevelMap = ReadIntMap(context, width, height);
                 ReadWorldSettings(context, data);
+                if (version >= 5)
+                    data.HasAuthoredGeography = context.Reader.ReadBoolean();
                 data.CompiledLayers = ReadCompiledLayers(context);
                 data.LogicalTileMap = version >= 4
                     ? ReadLogicalTileMap(context, width, height)

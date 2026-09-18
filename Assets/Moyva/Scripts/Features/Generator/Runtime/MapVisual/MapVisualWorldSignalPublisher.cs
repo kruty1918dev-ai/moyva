@@ -76,6 +76,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ObjectMap = MapArrayUtils.CloneStringMap(worldData.ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(worldData.HeightMap),
                 TerrainLevelMap = MapArrayUtils.CloneIntMap(worldData.TerrainLevelMap),
+                SpawnHints = worldData.SpawnHints != null
+                    ? (Vector2Int[])worldData.SpawnHints.Clone()
+                    : null,
             };
         }
 

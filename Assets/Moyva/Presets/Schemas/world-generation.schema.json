@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/world-generation.schema.json",
+  "title": "Moyva — World Generation Config",
+  "description": "JSON source of truth for Kruty1918.Moyva.Generator.API.WorldGenerationConfig — deterministic geography engine parameters.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.world-generation"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model": {
+      "const": "world-generation"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "maxGenerationAttempts": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 6
+    },
+    "terrainLevels": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
+    "archetypes": {
+      "type": ["array", "null"],
+      "items": {
+        "type": ["object", "null"],
+        "properties": {
+          "id": { "type": ["string", "null"] },
+          "landRatio": { "type": "number", "minimum": 0.05, "maximum": 0.95 },
+          "centreCount": { "type": "integer", "minimum": 1 },
+          "centreRadius": { "type": "number" },
+          "coastWarp": { "type": "number" },
+          "mountainDensity": { "type": "number" },
+          "mountainRangeCount": { "type": "integer" },
+          "hillDensity": { "type": "number" },
+          "riverDensity": { "type": "number" },
+          "lakeDensity": { "type": "number" },
+          "aridity": { "type": "number" },
+          "forestDensity": { "type": "number" },
+          "snowDensity": { "type": "number" }
+        }
+      }
+    },
+    "hydrology": { "type": ["object", "null"], "additionalProperties": true },
+    "coast": { "type": ["object", "null"], "additionalProperties": true },
+    "biomes": { "type": ["object", "null"], "additionalProperties": true },
+    "objects": { "type": ["object", "null"], "additionalProperties": true },
+    "fairness": { "type": ["object", "null"], "additionalProperties": true },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}
