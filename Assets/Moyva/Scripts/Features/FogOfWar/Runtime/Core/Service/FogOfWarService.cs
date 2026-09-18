@@ -33,6 +33,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private int _height;
         private bool _initialized;
 
+        /// <summary>
+        /// The LOCAL player's fog grid. Only vision sources owned by
+        /// <see cref="_localPerspectiveOwnerId"/> (or unowned sources) add
+        /// tiles here — see FogOfWarService.Perspective.cs.
+        /// </summary>
         private readonly FogStateGrid _stateGrid = new FogStateGrid();
         private bool[,] _pendingExploredSnapshot;
         private readonly Dictionary<string, OwnerFogState> _ownerStates =
@@ -55,8 +60,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private readonly Dictionary<string, FogRevealShape> _fixedVisionShapes
             = new Dictionary<string, FogRevealShape>();
 
-        private readonly Dictionary<string, (Vector2Int Position, int VisionRange, FogRevealShape? Shape, FogVisionModifiers Modifiers)> _pendingUnits
-            = new Dictionary<string, (Vector2Int Position, int VisionRange, FogRevealShape? Shape, FogVisionModifiers Modifiers)>();
+        private readonly Dictionary<string, (Vector2Int Position, int VisionRange, FogRevealShape? Shape, FogVisionModifiers Modifiers, string OwnerId)> _pendingUnits
+            = new Dictionary<string, (Vector2Int Position, int VisionRange, FogRevealShape? Shape, FogVisionModifiers Modifiers, string OwnerId)>();
 
         private readonly List<FogPendingRevealArea> _pendingRevealAreas = new List<FogPendingRevealArea>();
         private readonly FogVisualDirtyBuffer _visualDirtyBuffer = new FogVisualDirtyBuffer();

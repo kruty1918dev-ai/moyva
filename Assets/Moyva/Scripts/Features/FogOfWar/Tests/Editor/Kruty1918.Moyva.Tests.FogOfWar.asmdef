@@ -1,0 +1,13 @@
+{
+  "name": "Kruty1918.Moyva.Tests.FogOfWar",
+  "rootNamespace": "Kruty1918.Moyva.Tests.FogOfWar",
+  "references": [
+    "Kruty1918.Moyva.FogOfWar",
+    "Kruty1918.Moyva.SaveSystem",
+    "Kruty1918.Moyva.Signals",
+    "Zenject"
+  ],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

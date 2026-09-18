@@ -90,6 +90,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             foreach (var unitEntry in _unitPositions)
             {
+                if (!SourceContributesToLocalGrid(unitEntry.Key))
+                    continue;
+
                 if (!_unitVisionRange.TryGetValue(unitEntry.Key, out int range))
                     range = _defaultVisionRange;
 

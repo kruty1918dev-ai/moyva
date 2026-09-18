@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             var modifiers = signal.HasCustomVisionModifiers
                 ? new FogVisionModifiers(signal.CanSeeCrest, signal.CrestVisibilityFactor, signal.DownSlopeVisionBonus, signal.SilhouettePenalty)
                 : default;
-            RegisterVisionArea(signal.UnitId, signal.Position, ClampVisionRange(requestedRange), null, modifiers);
+            RegisterVisionArea(signal.UnitId, signal.Position, ClampVisionRange(requestedRange), null, modifiers, signal.OwnerId);
             RegisterOwnerVisionArea(signal.OwnerId, signal.UnitId, signal.Position, ClampVisionRange(requestedRange), null, modifiers);
         }
 
@@ -34,6 +34,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (signal.IsGarrisoned)
             {
                 UnregisterUnit(signal.UnitId);
+                // A garrisoned unit stops providing vision for its owner too.
+                UnregisterUnit(signal.OwnerId, signal.UnitId);
                 return;
             }
 
@@ -44,24 +46,14 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 signal.UnitId,
                 signal.UnitPosition,
                 ClampVisionRange(requestedRange),
-                null);
+                null,
+                default,
+                signal.OwnerId);
             RegisterUnit(
                 signal.OwnerId,
                 signal.UnitId,
                 signal.UnitPosition,
                 ClampVisionRange(requestedRange));
-        }
-
-        private void OnBuildingPlaced(BuildingPlacedSignal signal)
-        {
-            if (signal.HasRelocationSource && signal.RelocationSourcePosition != signal.Position)
-                UnregisterUnit(GetBuildingVisionAreaId(signal.RelocationSourcePosition));
-
-            RegisterFixedVisionArea(
-                GetBuildingVisionAreaId(signal.Position),
-                signal.Position,
-                _defaultVisionRange,
-                FogRevealShape.PixelCircle);
         }
 
         private void OnBuildingDemolished(BuildingDemolishedSignal signal)
@@ -74,10 +66,20 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private void OnBuildingOwnershipTransferred(
             BuildingOwnershipTransferredSignal signal)
         {
+            string areaId = GetBuildingVisionAreaId(signal.Position);
             TransferFixedVisionAreaOwner(
-                GetBuildingVisionAreaId(signal.Position),
+                areaId,
                 signal.PreviousOwnerId,
                 signal.NewOwnerId);
+
+            // Keep the global catalog's owner in sync so the building's vision
+            // joins/leaves the local perspective together with ownership.
+            if (_unitPositions.ContainsKey(areaId))
+            {
+                TrackSourceOwner(areaId, signal.NewOwnerId);
+                ReapplyLocalPerspectiveSource(areaId);
+                FlushVisual();
+            }
         }
 
         private void OnWorldGeneratedData(WorldGeneratedDataSignal signal)

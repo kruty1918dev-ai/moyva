@@ -81,7 +81,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (_pendingUnits.Count > 0)
             {
                 foreach (var kvp in _pendingUnits)
-                    RegisterVisionArea(kvp.Key, kvp.Value.Position, kvp.Value.VisionRange, kvp.Value.Shape, kvp.Value.Modifiers);
+                    RegisterVisionArea(kvp.Key, kvp.Value.Position, kvp.Value.VisionRange, kvp.Value.Shape, kvp.Value.Modifiers, kvp.Value.OwnerId);
 
                 _pendingUnits.Clear();
             }
@@ -127,6 +127,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 LoadFromSnapshot(exploredSnapshot);
 
             InitializeOwnerStates();
+            RecalculateAllVisibility();
         }
 
         /// <summary>

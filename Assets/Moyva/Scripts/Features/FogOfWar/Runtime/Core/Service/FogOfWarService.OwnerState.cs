@@ -79,6 +79,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             state.Grid.LoadExploredSnapshot(explored);
             RecalculateOwnerVisibility(ownerId, state);
             BumpVersion();
+            FlushOwnerVisibilityGained();
         }
 
         public void RegisterUnit(string ownerId, string unitId, Vector2Int position, int visionRange)
@@ -91,6 +92,21 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             int visionRange,
             FogRevealShape shape)
             => RegisterOwnerVisionArea(ownerId, areaId, position, visionRange, shape, default);
+
+        public void RegisterOwnedFixedVisionArea(
+            string ownerId,
+            string areaId,
+            Vector2Int position,
+            int visionRange,
+            FogRevealShape shape)
+        {
+            // The global catalog entry keeps the owner tag even when the owner
+            // is not the local perspective: SourceContributesToLocalGrid gates
+            // tile contribution, and a later perspective switch re-evaluates
+            // the catalog correctly.
+            RegisterVisionArea(areaId, position, visionRange, shape, default, ownerId);
+            RegisterOwnerVisionArea(ownerId, areaId, position, visionRange, shape, default);
+        }
 
         public void RevealArea(
             string ownerId,
@@ -120,6 +136,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             ApplyOwnerRevealArea(ownerId, state, center, radius, shape, keepVisible, visibleAreaId);
             BumpVersion();
+            FlushOwnerVisibilityGained();
         }
 
         public void UpdateUnitPosition(string ownerId, string unitId, Vector2Int newPosition)
@@ -144,6 +161,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (_initialized)
                 AddOwnerVisibleTiles(ownerId, state, unitId, newPosition);
             BumpVersion();
+            FlushOwnerVisibilityGained();
         }
 
         public void UpdateUnitVisionRange(string ownerId, string unitId, int visionRange)
@@ -163,6 +181,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 AddOwnerVisibleTiles(ownerId, state, unitId, position);
             }
             BumpVersion();
+            FlushOwnerVisibilityGained();
         }
 
         public void UnregisterUnit(string ownerId, string unitId)
@@ -181,6 +200,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
             _ownerByVisionSourceId.Remove(unitId);
             BumpVersion();
+            FlushOwnerVisibilityGained();
         }
 
         public void TransferFixedVisionAreaOwner(string areaId, string previousOwnerId, string newOwnerId)
@@ -208,6 +228,22 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             UnregisterUnit(previousOwnerId, areaId);
             RegisterOwnerVisionArea(newOwnerId, areaId, position, range, shape, modifiers);
+
+            // The global catalog tracks the source under its new owner so the
+            // local grid gains/loses the building's vision with ownership.
+            _unitPositions[areaId] = position;
+            _unitVisionRange[areaId] = range;
+            _unitVisionModifiers[areaId] = modifiers;
+            if (shape.HasValue)
+                _fixedVisionShapes[areaId] = shape.Value;
+            TrackSourceOwner(areaId, newOwnerId);
+            if (_initialized)
+            {
+                ReapplyLocalPerspectiveSource(areaId);
+                FlushVisual();
+            }
+
+            FlushOwnerVisibilityGained();
         }
 
         private OwnerFogState GetOrCreateOwnerState(string ownerId)
@@ -287,6 +323,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (_initialized)
                 AddOwnerVisibleTiles(ownerId, state, sourceId, position);
             BumpVersion();
+            FlushOwnerVisibilityGained();
         }
 
         private void AddOwnerVisibleTiles(
@@ -301,7 +338,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             IReadOnlyList<Vector2Int> tiles = ComputeOwnerVisibleTiles(ownerId, state, sourceId, position, range);
             state.VisibleTiles[sourceId] = tiles;
             foreach (var tile in tiles)
+            {
+                TrackOwnerVisibleGained(ownerId, state.Grid, tile);
                 state.Grid.IncrementVisible(tile);
+            }
         }
 
         private bool RemoveOwnerVisibleTiles(OwnerFogState state, string sourceId)
@@ -432,6 +472,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             state.VisibleTiles.Clear();
             foreach (var source in state.Positions)
                 AddOwnerVisibleTiles(ownerId, state, source.Key, source.Value);
+
+            FlushOwnerVisibilityGained();
         }
 
         private Dictionary<string, bool[,]> CaptureOwnerExploredSnapshots()

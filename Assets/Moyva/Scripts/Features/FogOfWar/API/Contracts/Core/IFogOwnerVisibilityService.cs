@@ -14,6 +14,13 @@ namespace Kruty1918.Moyva.FogOfWar.API
     {
         void RegisterUnit(string ownerId, string unitId, Vector2Int position, int visionRange);
         void RegisterFixedVisionArea(string ownerId, string areaId, Vector2Int position, int visionRange, FogRevealShape shape);
+        /// <summary>
+        /// Registers the fixed area in the owner's grid AND in the
+        /// local-perspective catalog, tagged with the owner. Tiles reach the
+        /// local grid only while the owner is the local perspective owner, so
+        /// later perspective switches cannot leak this source's vision.
+        /// </summary>
+        void RegisterOwnedFixedVisionArea(string ownerId, string areaId, Vector2Int position, int visionRange, FogRevealShape shape);
         void RevealArea(string ownerId, Vector2Int center, int radius, FogRevealShape shape, bool keepVisible, string visibleAreaId = null);
         void UpdateUnitPosition(string ownerId, string unitId, Vector2Int newPosition);
         void UpdateUnitVisionRange(string ownerId, string unitId, int visionRange);
