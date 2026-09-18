@@ -119,6 +119,16 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 }
                 catch (Exception exception)
                 {
+                    // Teardown race: the native driver can be deallocated between the
+                    // IsCreated check above and this tick. Shutdown, not a failure —
+                    // a LogError here fails tests and alarms players on quit.
+                    if (exception is ObjectDisposedException ||
+                        (exception.Message ?? string.Empty).Contains("deallocated"))
+                    {
+                        Debug.LogWarning(
+                            $"[TransportPump] Stopping after driver disposal: {exception.Message}");
+                        return;
+                    }
                     Debug.LogError($"Multiplayer transport update failed: {exception.Message}");
                     return;
                 }

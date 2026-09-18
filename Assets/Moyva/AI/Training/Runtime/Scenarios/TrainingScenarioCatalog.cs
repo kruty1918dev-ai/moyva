@@ -11,17 +11,36 @@ namespace Kruty1918.Moyva.AI.Training
     [Serializable]
     internal sealed class TrainingScenarioJsonEnvelope { public TrainingScenarioDefinition scenario; }
 
+    [Serializable]
+    internal sealed class TrainingScenarioManifest
+    {
+        public int version = 1;
+        public string[] curriculum = Array.Empty<string>();
+    }
+
     public sealed class TrainingScenarioCatalog
     {
+        internal const string ManifestFileName = "manifest.json";
+
         private static readonly HashSet<string> ScenarioResourceFallback = new HashSet<string>(StringComparer.Ordinal)
         {
             "walnut-wood-materials-resources"
         };
 
         private readonly Dictionary<string, TrainingScenarioDefinition> _items;
+        private readonly TrainingScenarioDefinition[] _curriculum;
+        private readonly TrainingScenarioDefinition[] _combinations;
         public IReadOnlyCollection<TrainingScenarioDefinition> Items => _items.Values;
+        // Ordered skill progression owned by the scenario manifest (or by
+        // definition order when a directory has no manifest).
+        public IReadOnlyList<TrainingScenarioDefinition> Curriculum => _curriculum;
+        // Review scenarios flagged combination in their own definitions.
+        public IReadOnlyList<TrainingScenarioDefinition> Combinations => _combinations;
+        public TrainingScenarioDefinition FullGameScenario { get; }
+        public TrainingScenarioDefinition BootstrapScenario { get; }
 
-        public TrainingScenarioCatalog(IEnumerable<TrainingScenarioDefinition> definitions)
+        public TrainingScenarioCatalog(IEnumerable<TrainingScenarioDefinition> definitions,
+            IEnumerable<string> curriculumOrder = null)
         {
             var all = (definitions ?? Array.Empty<TrainingScenarioDefinition>()).ToArray();
             var ids = new HashSet<string>(all.Where(x => x != null && !string.IsNullOrWhiteSpace(x.id)).Select(x => x.id),
@@ -30,9 +49,42 @@ namespace Kruty1918.Moyva.AI.Training
             foreach (var definition in all)
             {
                 Validate(definition, ids);
+                if (definition.combination)
+                {
+                    if (definition.fullGame)
+                        throw new ArgumentException("Combination scenario cannot be a full-game scenario: " + definition.id);
+                    if ((definition.prerequisites?.Length ?? 0) == 0)
+                        throw new ArgumentException("Combination scenario requires prerequisites: " + definition.id);
+                }
                 if (_items.ContainsKey(definition.id)) throw new ArgumentException("Duplicate scenario: " + definition.id);
                 _items.Add(definition.id, definition);
             }
+            _curriculum = ResolveCurriculum(curriculumOrder);
+            _combinations = _items.Values.Where(s => s.combination).ToArray();
+            FullGameScenario = _curriculum.LastOrDefault(s => s.fullGame);
+            BootstrapScenario = _items.Values.FirstOrDefault(
+                s => s.masteryPolicy != null && s.masteryPolicy.kind == TrainingScenarioMasteryKind.BootstrapQualification);
+        }
+
+        private TrainingScenarioDefinition[] ResolveCurriculum(IEnumerable<string> order)
+        {
+            var ids = order?.Where(id => !string.IsNullOrWhiteSpace(id)).ToArray();
+            if (ids == null || ids.Length == 0)
+                return _items.Values.Where(s => !s.combination).ToArray();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var result = new List<TrainingScenarioDefinition>();
+            foreach (var id in ids)
+            {
+                if (!seen.Add(id))
+                    throw new ArgumentException("Scenario manifest repeats scenario: " + id);
+                var scenario = Get(id);
+                if (scenario == null)
+                    throw new ArgumentException("Scenario manifest references missing scenario: " + id);
+                if (scenario.combination)
+                    throw new ArgumentException("Scenario manifest cannot order a combination scenario: " + id);
+                result.Add(scenario);
+            }
+            return result.ToArray();
         }
 
         public TrainingScenarioDefinition Get(string id)
@@ -61,11 +113,17 @@ namespace Kruty1918.Moyva.AI.Training
         {
             var presets = TryLoadPresetDefinitions();
             return presets != null
-                ? new TrainingScenarioCatalog(presets)
+                ? new TrainingScenarioCatalog(presets.Definitions, presets.Curriculum)
                 : new TrainingScenarioCatalog(FallbackDefinitions());
         }
 
-        private static TrainingScenarioDefinition[] TryLoadPresetDefinitions()
+        private sealed class PresetLoadResult
+        {
+            public TrainingScenarioDefinition[] Definitions;
+            public string[] Curriculum;
+        }
+
+        private static PresetLoadResult TryLoadPresetDefinitions()
         {
             string configured = Environment.GetEnvironmentVariable("MOYVA_SCENARIO_DIR");
             if (!string.IsNullOrWhiteSpace(configured))
@@ -85,31 +143,44 @@ namespace Kruty1918.Moyva.AI.Training
             return null;
         }
 
-        private static TrainingScenarioDefinition[] LoadPresetDirectory(string directory)
+        private static PresetLoadResult LoadPresetDirectory(string directory)
         {
-            string[] files = Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly);
+            string[] files = Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly)
+                .Where(path => !string.Equals(Path.GetFileName(path), ManifestFileName, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
             Array.Sort(files, StringComparer.OrdinalIgnoreCase);
             if (files.Length == 0)
                 throw new InvalidOperationException("No training scenario JSON files found in: " + directory);
 
             var scenarios = files.Select(path => ParseJson(File.ReadAllText(path), validateResources: false)).ToArray();
-            string[] required =
-            {
-                "foundation-legal-setup", "castle", "production", "stable-economy", "recruitment",
-                "movement-scouting", "combat-defense", "capture", "full-game-autonomous",
-                "combo-economy-recruitment", "combo-field-ops"
-            };
-            string[] missing = required.Where(id => scenarios.All(s => !string.Equals(s.id, id, StringComparison.Ordinal))).ToArray();
-            if (missing.Length > 0)
-                throw new InvalidOperationException(
-                    "Training scenario preset directory is missing required scenarios: " + string.Join(", ", missing));
 
             // Cross-scenario validation is intentionally done after all IDs are known.
             var ids = new HashSet<string>(scenarios.Select(s => s.id), StringComparer.Ordinal);
             foreach (var scenario in scenarios) Validate(scenario, ids);
 
-            Debug.Log("MOYVA_SCENARIOS_LOADED path=" + directory + " count=" + scenarios.Length);
-            return scenarios;
+            var manifest = LoadManifest(directory);
+            Debug.Log("MOYVA_SCENARIOS_LOADED path=" + directory + " count=" + scenarios.Length
+                + (manifest != null ? " manifest=" + manifest.Length : " manifest=<derived>"));
+            return new PresetLoadResult { Definitions = scenarios, Curriculum = manifest };
+        }
+
+        // The manifest owns progression order. Absent a manifest the catalog
+        // falls back to load order so ad-hoc scenario directories still work.
+        private static string[] LoadManifest(string directory)
+        {
+            string path = Path.Combine(directory, ManifestFileName);
+            if (!File.Exists(path))
+            {
+                Debug.LogWarning("No " + ManifestFileName + " in " + directory
+                    + "; curriculum order is derived from scenario load order.");
+                return null;
+            }
+            var manifest = JsonUtility.FromJson<TrainingScenarioManifest>(File.ReadAllText(path));
+            if (manifest == null || manifest.version != 1
+                || manifest.curriculum == null || manifest.curriculum.Length == 0)
+                throw new InvalidOperationException(
+                    "Scenario manifest requires version 1 and a non-empty curriculum list: " + path);
+            return manifest.curriculum;
         }
 
         public static TrainingScenarioDefinition ParseJson(string json)
@@ -134,9 +205,14 @@ namespace Kruty1918.Moyva.AI.Training
                 foreach (var resource in MoyvaJsonRuntime.GetAll<EconomyResourceDefinition>() ?? Array.Empty<EconomyResourceDefinition>())
                     if (resource != null && !string.IsNullOrWhiteSpace(resource.Id)) result.Add(resource.Id);
             }
-            catch
+            catch (Exception exception)
             {
                 // ParseJson must remain deterministic in pure unit tests where the config runtime is not initialized.
+                // Логуємо реальну причину: без цього збій завантаження конфігу маскується під
+                // "unknown resource" помилки валідації, і першопричина губиться.
+                Debug.LogWarning(
+                    $"[TrainingScenarioCatalog] Economy resource catalog unavailable; " +
+                    $"falling back to built-in ids only: {exception.Message}");
             }
             return result;
         }
@@ -320,6 +396,27 @@ namespace Kruty1918.Moyva.AI.Training
             var fieldCombat = Combat();
             fieldCombat.requiredIntents = new[] { "Move", "Attack", "EndTurn" };
 
+            // C1 — economy + recruitment run together from a ready base.
+            var comboEconomy = Make("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment,
+                new[] { "stable-economy", "recruitment" },
+                new[] { "construction", "economy", "recruitment", "end-turn" },
+                Base(true, false, Opponent(false), residents: 10,
+                    resources: new[] { Res(Steak, 60), Res(Hardwood, 40), Res(Walnut, 40) },
+                    buildings: new[] { LearnerBuilding("wood-camp"), LearnerBuilding("barrack") }),
+                2, 0.9f, new[] { "Build", "Recruit", "EndTurn" }, 150, false, TrainingScenarioMasteryKind.Evaluation,
+                comboStable, comboRecruit);
+            comboEconomy.combination = true;
+
+            // C2 — field operations: maneuver then destroy a passive target.
+            var comboFieldOps = Make("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat,
+                new[] { "movement-scouting", "combat-defense" },
+                new[] { "movement", "combat", "scouting", "end-turn" },
+                Base(true, false, Opponent(true, units: 1, castle: false, archetype: "passive"),
+                    units: new[] { LearnerUnits(2) }),
+                2, 0.85f, new[] { "Move", "Attack", "EndTurn" }, 200, false, TrainingScenarioMasteryKind.Evaluation,
+                fieldMove, fieldCombat);
+            comboFieldOps.combination = true;
+
             return new[]
             {
                 foundation,
@@ -378,24 +475,8 @@ namespace Kruty1918.Moyva.AI.Training
                             { objectiveType = "settlement", owner = "opponent", healthFraction = 0.2f } }),
                     2, 0.85f, new[] { "Move", "Capture", "EndTurn" }, 250, false, TrainingScenarioMasteryKind.Evaluation, Capture()),
 
-                // C1 — economy + recruitment run together from a ready base.
-                Make("combo-economy-recruitment", "Economy + recruitment review", TrainingCurriculumStage.Recruitment,
-                    new[] { "stable-economy", "recruitment" },
-                    new[] { "construction", "economy", "recruitment", "end-turn" },
-                    Base(true, false, Opponent(false), residents: 10,
-                        resources: new[] { Res(Steak, 60), Res(Hardwood, 40), Res(Walnut, 40) },
-                        buildings: new[] { LearnerBuilding("wood-camp"), LearnerBuilding("barrack") }),
-                    2, 0.9f, new[] { "Build", "Recruit", "EndTurn" }, 150, false, TrainingScenarioMasteryKind.Evaluation,
-                    comboStable, comboRecruit),
-
-                // C2 — field operations: maneuver then destroy a passive target.
-                Make("combo-field-ops", "Movement + combat review", TrainingCurriculumStage.Combat,
-                    new[] { "movement-scouting", "combat-defense" },
-                    new[] { "movement", "combat", "scouting", "end-turn" },
-                    Base(true, false, Opponent(true, units: 1, castle: false, archetype: "passive"),
-                        units: new[] { LearnerUnits(2) }),
-                    2, 0.85f, new[] { "Move", "Attack", "EndTurn" }, 200, false, TrainingScenarioMasteryKind.Evaluation,
-                    fieldMove, fieldCombat),
+                comboEconomy,
+                comboFieldOps,
 
                 // S10 — full game: real opening, heuristic opponent, real victory.
                 Make("full-game-autonomous", "Full game autonomous", TrainingCurriculumStage.FullGame,
