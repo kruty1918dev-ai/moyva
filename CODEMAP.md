@@ -47,15 +47,15 @@ Base: `Features/`
 
 ## Marketing Content Studio (tooling branch)
 
-Base: `Features/Marketing/` + `Assets/Moyva/Editor/MarketingStudio/`
+Base: `Features/Marketing/`
 
 | Task | Files |
 |---|---|
-| Recipes / platforms / shots / manifest | `Contracts/` (plain DTOs, Newtonsoft JSON) |
-| Content index snapshot / preset store | `Content/`; editor `MarketingContentIndexBuilder.cs` |
-| Shot planning / beats / golden frames | `Planning/` |
-| Scene runtime / capture | `Runtime/MarketingStudioController.cs` + directors |
-| Studio window / Recorder / CLI | `Assets/Moyva/Editor/MarketingStudio/` |
+| Capture runtime + directors | `Runtime/MarketingStudioController.cs` |
+| Shot planning / golden frames | `Planning/` |
+| Recipe/platform contracts | `Contracts/` |
+
+Editor surface (window, Recorder, CLI): Assets/Moyva/Editor/MarketingStudio/. JSON presets: Assets/Moyva/Presets/Marketing/.
 
 ## Bootstrap / launch
 
