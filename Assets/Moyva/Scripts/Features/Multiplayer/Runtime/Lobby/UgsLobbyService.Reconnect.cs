@@ -154,7 +154,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             _lobby = null;
             _current = null;
             _isHost = false;
-            KickedFromLobby?.Invoke(reason);
+            RaiseKickedFromLobby(reason);
             PublishState(LobbyState.Closed);
         }
 

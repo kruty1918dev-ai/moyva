@@ -127,7 +127,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             _lobby = await LobbyService.Instance.UpdateLobbyAsync(_lobby.Id, update);
             _current = Project(_lobby);
             _isHost = string.Equals(_current.HostPlayerId, AuthenticationService.Instance.PlayerId, StringComparison.Ordinal);
-            LobbyUpdated?.Invoke(_current);
+            RaiseLobbyUpdated(_current);
             PublishState(_current.State);
             if (_isHost)
                 StartLoops();
@@ -167,7 +167,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             _lobby = await LobbyService.Instance.GetLobbyAsync(_lobby.Id);
             _current = Project(_lobby);
-            LobbyUpdated?.Invoke(_current);
+            RaiseLobbyUpdated(_current);
         }
 
         public async Task SetRelayJoinCodeAsync(string relayJoinCode, CancellationToken ct = default)
@@ -191,7 +191,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             _lobby = await LobbyService.Instance.UpdateLobbyAsync(_lobby.Id, updateOpts);
             _current = Project(_lobby);
-            LobbyUpdated?.Invoke(_current);
+            RaiseLobbyUpdated(_current);
             PublishState(_current.State);
         }
 
@@ -212,7 +212,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             };
             _lobby = await LobbyService.Instance.UpdateLobbyAsync(_lobby.Id, opts);
             _current = Project(_lobby);
-            LobbyUpdated?.Invoke(_current);
+            RaiseLobbyUpdated(_current);
             PublishState(state);
         }
 

@@ -99,6 +99,79 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _signals.Publish(worldData, source);
         }
 
+        /// <summary>
+        /// Same stages as <see cref="BuildWorld"/> but yields one frame between
+        /// them so the scene activation, loading UI and the (worker-thread)
+        /// transport pump stay responsive during generation.
+        /// </summary>
+        public async System.Threading.Tasks.Task BuildWorldAsync()
+        {
+            bool hasPendingWorld = _state.HasPendingWorldData;
+            if (GameLaunchContext.Mode == GameLaunchMode.MenuLoadGame && !hasPendingWorld)
+                throw new GeneratedWorldDataIntegrityException(
+                    $"Cannot continue slot {GameLaunchContext.SaveSlot:D2}: no saved world was restored. New generation is disabled for a load request.");
+            bool botMatch = GameLaunchContext.Mode == GameLaunchMode.MenuBotGame;
+            string source = ResolveSource(hasPendingWorld && !botMatch);
+
+            // Let the caller's initialization pass finish before the heavy
+            // synchronous generation block runs.
+            await System.Threading.Tasks.Task.Yield();
+
+            GeneratedWorldData worldData = _state.TryConsumePendingWorldData(out var pending) && !botMatch
+                ? pending
+                : _dataFactory.Generate();
+
+            await System.Threading.Tasks.Task.Yield();
+
+            worldData = _integrity != null
+                ? _integrity.EnsureReadyForBuild(worldData, source)
+                : worldData;
+
+            if (worldData == null)
+                throw new GeneratedWorldDataIntegrityException(
+                    "[GeneratedWorldIntegrity] Cannot build generated world: world data is null and no integrity service is bound.");
+
+            await System.Threading.Tasks.Task.Yield();
+
+            TileWorldCreatorWorldBuildResult visualBuildResult =
+                _tileWorldCreatorBridge?.Build(worldData)
+                ?? TileWorldCreatorWorldBuildResult.Disabled;
+            if (visualBuildResult.Succeeded)
+            {
+                _fallbackPresenter?.Clear();
+                ApplyVisualBounds(worldData, visualBuildResult);
+            }
+            else
+            {
+                TileWorldCreatorWorldBuildResult fallbackResult =
+                    _fallbackPresenter?.Present(worldData)
+                    ?? TileWorldCreatorWorldBuildResult.Disabled;
+                if (fallbackResult.Succeeded)
+                {
+                    ApplyVisualBounds(worldData, fallbackResult);
+                }
+                else
+                {
+                    string reason =
+                        "[MapVisualInstantiator] Generated world data is available, " +
+                        "but neither TileWorldCreator nor the fallback terrain presenter produced a visible map.";
+                    Debug.LogError(reason);
+                    throw new GeneratedWorldDataIntegrityException(reason);
+                }
+            }
+
+            await System.Threading.Tasks.Task.Yield();
+
+            _gridWriter.Write(worldData);
+            PublishTerrainData(worldData);
+            GenerateEnvironmentDecorations(worldData);
+
+            await System.Threading.Tasks.Task.Yield();
+
+            _state.SetCurrentWorldData(worldData);
+            _signals.Publish(worldData, source);
+        }
+
         private void GenerateEnvironmentDecorations(GeneratedWorldData worldData)
         {
             if (_decorationGenerator == null || _decorationSpawner == null)

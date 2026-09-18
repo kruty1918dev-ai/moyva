@@ -25,6 +25,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Multiplayer.Runtime;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Multiplayer.Networking
@@ -276,12 +277,12 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             if (text.StartsWith("PEER_CONNECTED:"))
             {
                 var peerId = text.Substring("PEER_CONNECTED:".Length);
-                PeerConnected?.Invoke(peerId);
+                MultiplayerThreadContext.Post(() => PeerConnected?.Invoke(peerId));
             }
             else if (text.StartsWith("PEER_DISCONNECTED:"))
             {
                 var peerId = text.Substring("PEER_DISCONNECTED:".Length);
-                PeerDisconnected?.Invoke(peerId);
+                MultiplayerThreadContext.Post(() => PeerDisconnected?.Invoke(peerId));
             }
         }
 
@@ -299,8 +300,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             }
 
             var msg = new NetworkMessage(senderId, payload);
-            foreach (var obs in _observers)
-                obs.OnNext(msg);
+            MultiplayerThreadContext.Post(() =>
+            {
+                foreach (var obs in _observers)
+                    obs.OnNext(msg);
+            });
         }
 
         // ── Reconnect ──────────────────────────────────────────────────────────────

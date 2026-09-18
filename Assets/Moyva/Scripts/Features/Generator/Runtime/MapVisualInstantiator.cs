@@ -28,7 +28,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IMapDataGenerator mapDataGenerator,
             DiContainer container,
             SignalBus signalBus,
-            [InjectOptional] IGraphTwcMapDataDiagnostics graphTwcDiagnostics,
+            [InjectOptional] IMapGenerationDiagnostics diagnostics,
             [InjectOptional] IGridProjection gridProjection = null,
             [InjectOptional] IWaterLayerMaterialSettings waterLayerMaterialSettings = null,
             [InjectOptional] ITileWorldCreatorWorldBuildBridge tileWorldCreatorBridge = null,
@@ -46,7 +46,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 signalBus,
                 _state,
                 gridProjection,
-                graphTwcDiagnostics,
+                diagnostics,
                 worldGenerationSignalState,
                 tileWorldCreatorBridge,
                 tileTypes);
@@ -65,6 +65,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public void BuildWorld()
         {
             _orchestrator.BuildWorld();
+        }
+
+        public System.Threading.Tasks.Task BuildWorldAsync()
+        {
+            return _orchestrator.BuildWorldAsync();
         }
 
         internal void SetPendingWorldData(GeneratedWorldData data)

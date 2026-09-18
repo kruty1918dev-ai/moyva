@@ -1,0 +1,21 @@
+{
+    "name": "Kruty1918.Moyva.Tests.Multiplayer",
+    "rootNamespace": "Kruty1918.Moyva.Tests.Multiplayer",
+    "references": [
+        "Kruty1918.Moyva.Multiplayer"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

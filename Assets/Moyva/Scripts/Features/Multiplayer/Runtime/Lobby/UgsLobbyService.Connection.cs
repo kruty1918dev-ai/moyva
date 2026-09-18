@@ -71,7 +71,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
                 _isHost = true;
                 _current = Project(_lobby);
-                LobbyUpdated?.Invoke(_current);
+                RaiseLobbyUpdated(_current);
                 PublishState(_current.State);
 
                 StartLoops();
@@ -127,7 +127,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
                 _isHost = false;
                 _current = Project(_lobby);
-                LobbyUpdated?.Invoke(_current);
+                RaiseLobbyUpdated(_current);
                 PublishState(_current.State);
 
                 StartLoops();
@@ -183,7 +183,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 }
                 _isHost = false;
                 _current = Project(_lobby);
-                LobbyUpdated?.Invoke(_current);
+                RaiseLobbyUpdated(_current);
                 PublishState(_current.State);
 
                 StartLoops();

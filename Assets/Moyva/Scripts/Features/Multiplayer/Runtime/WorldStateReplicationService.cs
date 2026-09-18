@@ -34,6 +34,45 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private const int MaxStatePayloadBytes =
             16 * 1024 * 1024;
         private const int MaxUnitSnapshotCount = 100000;
+
+        // Snapshots travel as ordered chunks below the transport frame limit
+        // (~60 KiB); the wire layout lives in WorldSnapshotChunkCodec.
+        private const int MaxChunksPerTransfer =
+            (MaxStatePayloadBytes / WorldSnapshotChunkCodec.DataBytes) + 1;
+        private const int ChunksSentPerTick = 2;
+        private const float ChunkTransferExpirySeconds = 30f;
+        private const int MaxIncomingTransfers = 8;
+        private const int MaxOutgoingTransfers = 16;
+
+        private readonly struct OutgoingChunk
+        {
+            public readonly string TargetPeerId;
+            public readonly byte[] Payload;
+
+            public OutgoingChunk(string targetPeerId, byte[] payload)
+            {
+                TargetPeerId = targetPeerId;
+                Payload = payload;
+            }
+        }
+
+        private sealed class IncomingTransfer
+        {
+            public ushort Count;
+            public int TotalSize;
+            public byte[] Buffer;
+            public readonly HashSet<ushort> ReceivedIndexes = new();
+            public float ExpiresAt;
+        }
+
+        private readonly List<IConstructionModuleStatePersistence>
+            _stateProviders;
+        private readonly Queue<string> _pendingSnapshotPeers = new();
+        private readonly HashSet<string> _pendingSnapshotPeerSet =
+            new(StringComparer.Ordinal);
+        private readonly Queue<OutgoingChunk> _outgoingChunks = new();
+        private readonly Dictionary<string, IncomingTransfer> _incomingTransfers =
+            new(StringComparer.Ordinal);
         private readonly IGameCommandSyncService _commandSync;
         private readonly INetworkProvider _network;
         private readonly ISessionManager _sessionManager;
@@ -51,8 +90,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private bool _receivedSnapshot;
         private float _nextRequestAt;
         private byte[] _pendingSnapshot;
-        private readonly List<IConstructionModuleStatePersistence>
-            _stateProviders;
+        private uint _nextTransferId = 1;
 
         public WorldStateReplicationService(
             IGameCommandSyncService commandSync,
@@ -93,6 +131,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         public void Initialize()
         {
             _commandSync.RegisterHandler(GameCommandType.WorldStateSnapshot, OnSnapshotReceived);
+            _commandSync.RegisterHandler(GameCommandType.WorldStateSnapshotChunk, OnSnapshotChunkReceived);
             _network.PeerConnected += OnPeerConnected;
         }
 
@@ -101,7 +140,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _disposed = true;
             _network.PeerConnected -= OnPeerConnected;
             _commandSync.RegisterHandler(GameCommandType.WorldStateSnapshot, null);
+            _commandSync.RegisterHandler(GameCommandType.WorldStateSnapshotChunk, null);
             _pendingSnapshot = null;
+            _pendingSnapshotPeers.Clear();
+            _pendingSnapshotPeerSet.Clear();
+            _outgoingChunks.Clear();
+            _incomingTransfers.Clear();
         }
 
         private bool WorldReady => _turns != null
@@ -109,7 +153,18 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         public void Tick()
         {
-            if (_disposed || _sessionManager.IsLocalPlayerHost || !WorldReady) return;
+            if (_disposed) return;
+
+            ExpireIncomingTransfers();
+
+            if (_sessionManager.IsLocalPlayerHost)
+            {
+                DrainSnapshotJobs();
+                DrainOutgoingChunks();
+                return;
+            }
+
+            if (!WorldReady) return;
             if (_pendingSnapshot != null)
             {
                 byte[] payload = _pendingSnapshot;
@@ -141,15 +196,81 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             if (!MultiplayerAuthorityService.TryResolveAuthorizedRequestOwner(
                 _sessionManager.Participants, peerId, peerId, peerId, out _, out _)) return;
 
+            QueueSnapshotJob(peerId);
+        }
+
+        private void QueueSnapshotJob(string peerId)
+        {
+            if (_pendingSnapshotPeerSet.Add(peerId))
+                _pendingSnapshotPeers.Enqueue(peerId);
+        }
+
+        // Serializing the world is a main-thread cost, so at most one snapshot
+        // is built per tick instead of doing it inside the connect callback.
+        private void DrainSnapshotJobs()
+        {
+            if (_pendingSnapshotPeers.Count == 0 || !WorldReady)
+                return;
+            if (_outgoingChunks.Count > MaxOutgoingTransfers * 4)
+                return;
+
+            var peerId = _pendingSnapshotPeers.Dequeue();
+            _pendingSnapshotPeerSet.Remove(peerId);
             try
             {
                 string targetOwnerId = ResolvePeerOwnerId(peerId);
                 byte[] payload = BuildSnapshotPayload(targetOwnerId);
-                _commandSync.SendCommandToPeer(peerId, GameCommandType.WorldStateSnapshot, payload);
+                if (payload == null || payload.Length == 0 || payload.Length > MaxStatePayloadBytes)
+                    return;
+                EnqueueSnapshotChunks(peerId, payload);
             }
             catch (Exception exception)
             {
                 Debug.LogError($"[WorldReplication] Could not capture snapshot: {exception.Message}");
+            }
+        }
+
+        private void EnqueueSnapshotChunks(string peerId, byte[] payload)
+        {
+            var transferId = _nextTransferId++;
+            if (transferId == 0)
+                transferId = _nextTransferId++;
+
+            var count = WorldSnapshotChunkCodec.ChunkCountFor(payload.Length);
+            if (count > MaxChunksPerTransfer)
+                return;
+
+            for (var index = 0; index < count; index++)
+            {
+                var offset = index * WorldSnapshotChunkCodec.DataBytes;
+                var length = Math.Min(
+                    WorldSnapshotChunkCodec.DataBytes,
+                    payload.Length - offset);
+                _outgoingChunks.Enqueue(
+                    new OutgoingChunk(
+                        peerId,
+                        WorldSnapshotChunkCodec.Build(
+                            transferId,
+                            (ushort)index,
+                            (ushort)count,
+                            payload.Length,
+                            payload,
+                            offset,
+                            length)));
+            }
+        }
+
+        private void DrainOutgoingChunks()
+        {
+            var sent = 0;
+            while (sent < ChunksSentPerTick && _outgoingChunks.Count > 0)
+            {
+                var chunk = _outgoingChunks.Dequeue();
+                _commandSync.SendCommandToPeer(
+                    chunk.TargetPeerId,
+                    GameCommandType.WorldStateSnapshotChunk,
+                    chunk.Payload);
+                sent++;
             }
         }
 
@@ -591,6 +712,98 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 return;
             }
             TryApplySnapshot(payload);
+        }
+
+        private void OnSnapshotChunkReceived(string senderId, byte[] payload)
+        {
+            if (_disposed || _sessionManager.IsLocalPlayerHost)
+                return;
+            if (!MultiplayerAuthorityService.IsAuthorizedHostSender(_sessionManager.Participants, senderId))
+                return;
+            if (!WorldSnapshotChunkCodec.TryParse(
+                    payload,
+                    WorldSnapshotChunkCodec.DataBytes,
+                    MaxStatePayloadBytes,
+                    out var transferId,
+                    out var index,
+                    out var count,
+                    out var totalSize,
+                    out var dataOffset,
+                    out var dataLength)
+                || count > MaxChunksPerTransfer)
+            {
+                return;
+            }
+
+            var key = senderId + "#" + transferId;
+            if (!_incomingTransfers.TryGetValue(key, out var transfer))
+            {
+                if (_incomingTransfers.Count >= MaxIncomingTransfers)
+                    return;
+                transfer = new IncomingTransfer
+                {
+                    Count = count,
+                    TotalSize = totalSize,
+                    Buffer = new byte[totalSize]
+                };
+                _incomingTransfers.Add(key, transfer);
+            }
+            else if (transfer.Count != count || transfer.TotalSize != totalSize)
+            {
+                _incomingTransfers.Remove(key);
+                return;
+            }
+
+            var destOffset = index * WorldSnapshotChunkCodec.DataBytes;
+            if (destOffset < 0 || destOffset >= totalSize)
+            {
+                _incomingTransfers.Remove(key);
+                return;
+            }
+
+            if (transfer.ReceivedIndexes.Add(index))
+            {
+                Buffer.BlockCopy(
+                    payload,
+                    dataOffset,
+                    transfer.Buffer,
+                    destOffset,
+                    Math.Min(dataLength, totalSize - destOffset));
+            }
+            transfer.ExpiresAt = Time.unscaledTime + ChunkTransferExpirySeconds;
+
+            if (transfer.ReceivedIndexes.Count < transfer.Count)
+                return;
+
+            _incomingTransfers.Remove(key);
+            var assembled = transfer.Buffer;
+            if (!WorldReady)
+            {
+                _pendingSnapshot = assembled;
+                return;
+            }
+            TryApplySnapshot(assembled);
+        }
+
+        private void ExpireIncomingTransfers()
+        {
+            if (_incomingTransfers.Count == 0)
+                return;
+
+            var now = Time.unscaledTime;
+            List<string> expired = null;
+            foreach (var pair in _incomingTransfers)
+            {
+                if (pair.Value == null || now < pair.Value.ExpiresAt)
+                    continue;
+                expired ??= new List<string>();
+                expired.Add(pair.Key);
+            }
+
+            if (expired == null)
+                return;
+            foreach (var key in expired)
+                _incomingTransfers.Remove(key);
         }
 
         private void TryApplySnapshot(byte[] payload)

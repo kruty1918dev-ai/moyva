@@ -59,11 +59,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var lobbyCode = parts.Length >= 15 && IsShortLanLobbyCode(parts[14])
                 ? parts[14].Trim()
                 : (roomId.Length >= 8 ? roomId.Substring(0, 8) : roomId);
+            var bannedPlayerIds = parts.Length >= 16 ? DeserializePlayerIds(parts[15]) : null;
 
             var advertisedIp = ResolvePayloadEndpointIp(parsedIp, sourceEndPoint);
             joinCode = $"lan:{advertisedIp}:{port}";
             room = new LobbyRoom(roomId, lobbyCode, name, max, isPrivate, hostId, joinCode, players, passwordHash, state,
                 startedWorldSettingsBytes: worldSettings,
+                bannedPlayerIds: bannedPlayerIds,
                 configFingerprint: configFingerprint);
             return true;
         }
@@ -84,7 +86,19 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         {
             if (_state == state) return;
             _state = state;
-            StateChanged?.Invoke(state);
+            MultiplayerThreadContext.Post(() => StateChanged?.Invoke(state));
+        }
+
+        // Lobby callbacks may originate on discovery background tasks; always
+        // deliver them on Unity's main thread so session state stays single-threaded.
+        private void RaiseLobbyUpdated(LobbyRoom room)
+        {
+            MultiplayerThreadContext.Post(() => LobbyUpdated?.Invoke(room));
+        }
+
+        private void RaiseKickedFromLobby(string reason)
+        {
+            MultiplayerThreadContext.Post(() => KickedFromLobby?.Invoke(reason));
         }
 
         private static bool IsDiscoveryQuery(string payload)
@@ -150,6 +164,37 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 return string.Empty;
             }
+        }
+
+        private static string SerializePlayerIds(IReadOnlyList<string> playerIds)
+        {
+            if (playerIds == null || playerIds.Count == 0)
+                return string.Empty;
+
+            var parts = new List<string>(playerIds.Count);
+            foreach (var playerId in playerIds)
+            {
+                if (!string.IsNullOrWhiteSpace(playerId))
+                    parts.Add(EncodeToken(playerId.Trim()));
+            }
+
+            return string.Join(",", parts);
+        }
+
+        private static List<string> DeserializePlayerIds(string value)
+        {
+            var playerIds = new List<string>();
+            if (string.IsNullOrWhiteSpace(value))
+                return playerIds;
+
+            foreach (var item in value.Split(','))
+            {
+                var playerId = DecodeToken(item);
+                if (!string.IsNullOrWhiteSpace(playerId))
+                    playerIds.Add(playerId);
+            }
+
+            return playerIds;
         }
 
         private static string EncodeBytes(byte[] bytes)

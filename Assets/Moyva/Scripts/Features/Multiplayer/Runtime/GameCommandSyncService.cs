@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
 
@@ -46,7 +47,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             var packet = BuildPacket(type, payload);
             // Надсилання всім пірам без очікування відповіді.
-            _ = _network.SendMessageAsync("*", packet, CancellationToken.None);
+            ObserveSend(_network.SendMessageAsync("*", packet, CancellationToken.None), "*", type);
         }
 
         public void SendCommandToPeer(string peerId, GameCommandType type, byte[] payload)
@@ -57,7 +58,32 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
 
             var packet = BuildPacket(type, payload);
-            _ = _network.SendMessageAsync(peerId, packet, CancellationToken.None);
+            ObserveSend(_network.SendMessageAsync(peerId, packet, CancellationToken.None), peerId, type);
+        }
+
+        private static void ObserveSend(Task send, string target, GameCommandType type)
+        {
+            if (send == null)
+                return;
+
+            if (!send.IsCompleted)
+            {
+                send.ContinueWith(
+                    t => LogSendFailure(t.Exception, target, type),
+                    CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted,
+                    TaskScheduler.Default);
+                return;
+            }
+
+            if (send.IsFaulted)
+                LogSendFailure(send.Exception, target, type);
+        }
+
+        private static void LogSendFailure(Exception exception, string target, GameCommandType type)
+        {
+            UnityEngine.Debug.LogWarning(
+                $"[CommandSync] Command {type} to '{target}' failed: {exception?.GetBaseException().Message}");
         }
 
         public void RegisterHandler(GameCommandType type, Action<string, byte[]> handler)

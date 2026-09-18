@@ -84,7 +84,19 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         {
             if (_state == state) return;
             _state = state;
-            StateChanged?.Invoke(state);
+            MultiplayerThreadContext.Post(() => StateChanged?.Invoke(state));
+        }
+
+        // Lobby callbacks can originate on poll/heartbeat continuations; always
+        // deliver them on Unity's main thread so session state stays single-threaded.
+        private void RaiseLobbyUpdated(LobbyRoom room)
+        {
+            MultiplayerThreadContext.Post(() => LobbyUpdated?.Invoke(room));
+        }
+
+        private void RaiseKickedFromLobby(string reason)
+        {
+            MultiplayerThreadContext.Post(() => KickedFromLobby?.Invoke(reason));
         }
 
         private static bool IsMoyvaRelayLobby(Lobby lobby)

@@ -23,8 +23,13 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 throw new ArgumentNullException(nameof(tick));
 
             DisposeCurrent();
-            _cancellation = CancellationTokenSource.CreateLinkedTokenSource(externalToken);
-            _task = RunAsync(shouldContinue, tick, _cancellation.Token);
+            var cancellation =
+                CancellationTokenSource.CreateLinkedTokenSource(externalToken);
+            _cancellation = cancellation;
+            // Force the loop onto the thread pool so the transport keeps
+            // ticking while the main thread is busy (world generation).
+            _task = Task.Run(
+                () => RunAsync(shouldContinue, tick, cancellation.Token));
         }
 
         public async Task StopAsync()
@@ -52,16 +57,62 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             }
         }
 
+        /// <summary>
+        /// Synchronous bounded stop for dispose paths where awaiting is not
+        /// possible. The pump tick is short (a driver update + flush), so a
+        /// generous timeout still returns quickly in practice.
+        /// </summary>
+        public void Stop(int timeoutMilliseconds = 2000)
+        {
+            CancellationTokenSource cancellation = _cancellation;
+            Task task = _task;
+            _cancellation = null;
+            _task = null;
+
+            if (cancellation == null)
+                return;
+
+            cancellation.Cancel();
+            try
+            {
+                task?.Wait(timeoutMilliseconds);
+            }
+            catch
+            {
+            }
+            finally
+            {
+                cancellation.Dispose();
+            }
+        }
+
         public void Dispose()
-            => DisposeCurrent();
+            => Stop();
 
         private async Task RunAsync(
             Func<bool> shouldContinue,
             Action tick,
             CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested && shouldContinue())
+            while (true)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                bool keepGoing;
+                try
+                {
+                    keepGoing = shouldContinue();
+                }
+                catch (Exception)
+                {
+                    // A dead native driver makes IsCreated throw; treat it as
+                    // a stop signal instead of faulting the task.
+                    return;
+                }
+                if (!keepGoing)
+                    return;
+
                 try
                 {
                     tick();

@@ -67,7 +67,21 @@ namespace Kruty1918.Moyva.Generator
                 $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, world='{GameLaunchContext.WorldName}', " +
                 $"seed={GameLaunchContext.Seed}, size={GameLaunchContext.Size}, " +
                 $"dimensions={GameLaunchContext.Width}x{GameLaunchContext.Height}");
-            _mapVisualInstantiator.BuildWorld();
+            _ = BuildWorldSafelyAsync();
+        }
+
+        // The async build yields between stages so Zenject initialization and
+        // the multiplayer startup barrier are not blocked by generation.
+        private async System.Threading.Tasks.Task BuildWorldSafelyAsync()
+        {
+            try
+            {
+                await _mapVisualInstantiator.BuildWorldAsync();
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogError($"[GeneratorStartup] World build failed: {exception}");
+            }
         }
 
         private static bool ShouldBuildWorldOnStartup(

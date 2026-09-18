@@ -74,8 +74,16 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                             continue;
 
                         RememberDiscoveredRoom(incomingRoom);
-                        if (MergeCurrentRoom(incomingRoom))
-                            LobbyUpdated?.Invoke(_current);
+                        bool merged = MergeCurrentRoom(incomingRoom);
+                        if (DetectLocalKick(incomingRoom))
+                        {
+                            lock (_stateLock) { _current = null; }
+                            RaiseKickedFromLobby("removed");
+                            PublishState(LobbyState.Closed);
+                            continue;
+                        }
+                        if (merged)
+                            RaiseLobbyUpdated(_current);
                     }
                     catch (OperationCanceledException) { break; }
                     catch (ObjectDisposedException) { break; }
@@ -119,7 +127,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var worldSettings = EncodeBytes(_current?.StartedWorldSettingsBytes);
             var configFingerprint = _current?.ConfigFingerprint ?? string.Empty;
             var lobbyCode = _current?.LobbyCode ?? BuildShortLanLobbyCode(roomId);
-            return string.Join('|', PayloadProtocol, roomId, name, max.ToString(), ip, port, hostId, hostName, players, isPrivate, passwordHash, state, worldSettings, configFingerprint, lobbyCode);
+            var banned = SerializePlayerIds(_current?.BannedPlayerIds);
+            return string.Join('|', PayloadProtocol, roomId, name, max.ToString(), ip, port, hostId, hostName, players, isPrivate, passwordHash, state, worldSettings, configFingerprint, lobbyCode, banned);
         }
 
         private static string ResolveAdvertisedTransportIp(LobbyRoom room)

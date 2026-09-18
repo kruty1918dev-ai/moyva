@@ -92,7 +92,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         if (!IsCurrentLobbyOperation(lobbyId, ct))
                             return;
 
-                        LobbyUpdated?.Invoke(_current);
+                        RaiseLobbyUpdated(_current);
                         PublishState(_current.State);
 
                         bool stillIn = false;
@@ -103,7 +103,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         }
                         if (!stillIn)
                         {
-                            KickedFromLobby?.Invoke("removed");
+                            RaiseKickedFromLobby("removed");
                             StopLoops();
                             _lobby = null;
                             _current = null;
@@ -121,7 +121,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 {
                     if (!IsCurrentLobbyOperation(lobbyId, ct))
                         return;
-                    KickedFromLobby?.Invoke("lobby_closed");
+                    RaiseKickedFromLobby("lobby_closed");
                     StopLoops();
                     _lobby = null;
                     _current = null;

@@ -40,7 +40,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 configFingerprint: options.ConfigFingerprint);
 
             StartBroadcastLoop();
-            LobbyUpdated?.Invoke(_current);
+            RaiseLobbyUpdated(_current);
             PublishState(LobbyState.Open);
             return Task.FromResult(_current);
         }
@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 {
                     _current = AddLocalPlayer(cachedRoom, displayName);
                     StartBroadcastLoop();
-                    LobbyUpdated?.Invoke(_current);
+                    RaiseLobbyUpdated(_current);
                     PublishState(_current.State);
                     return _current;
                 }
@@ -74,7 +74,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     {
                         _current = AddLocalPlayer(r, displayName);
                         StartBroadcastLoop();
-                        LobbyUpdated?.Invoke(_current);
+                        RaiseLobbyUpdated(_current);
                         PublishState(_current.State);
                         return _current;
                     }
@@ -82,7 +82,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 if (IsLanJoinCode(value))
                 {
                     _current = CreateDirectJoinRoom(value, displayName);
-                    LobbyUpdated?.Invoke(_current);
+                    RaiseLobbyUpdated(_current);
                     PublishState(_current.State);
                     return _current;
                 }
@@ -115,10 +115,17 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             if (matched == null && IsLanJoinCode(value))
             {
-                // Пряме приєднання без broadcast'у — пароль невідомий, пропускаємо.
-                _current = CreateDirectJoinRoom(value, displayName);
-                LobbyUpdated?.Invoke(_current);
-                return _current;
+                // Direct join: ask the target host for its advertised room so a
+                // password-protected lobby cannot be bypassed by guessing the code.
+                matched = await QueryDirectRoomAsync(value, ct).ConfigureAwait(false);
+                if (matched == null)
+                {
+                    // Host did not answer a discovery query — no password info is
+                    // available; keep the legacy direct-join behaviour.
+                    _current = CreateDirectJoinRoom(value, displayName);
+                    RaiseLobbyUpdated(_current);
+                    return _current;
+                }
             }
 
             if (matched == null)
@@ -133,9 +140,56 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             _current = AddLocalPlayer(matched, displayName);
             StartBroadcastLoop();
-            LobbyUpdated?.Invoke(_current);
+            RaiseLobbyUpdated(_current);
             PublishState(_current.State);
             return _current;
+        }
+
+        // Sends a discovery query straight at a lan:ip:port target so a direct
+        // join can validate the host's password policy before connecting.
+        private async Task<LobbyRoom> QueryDirectRoomAsync(string joinCode, CancellationToken ct)
+        {
+            var parts = joinCode?.Trim().Split(':');
+            if (parts == null || parts.Length < 3
+                || !IPAddress.TryParse(parts[1], out var hostAddress)
+                || hostAddress.AddressFamily != AddressFamily.InterNetwork)
+            {
+                return null;
+            }
+
+            var hostEndPoint = new IPEndPoint(hostAddress, DiscoveryPort);
+            using (var client = CreateQueryClient())
+            {
+                var query = Encoding.UTF8.GetBytes(string.Join('|', PayloadProtocol, DiscoveryQuery));
+                try
+                {
+                    await client.SendAsync(query, query.Length, hostEndPoint).ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+
+                var deadline = DateTime.UtcNow.AddMilliseconds(900);
+                while (DateTime.UtcNow < deadline)
+                {
+                    var result = await ReceiveResultWithTimeoutAsync(
+                        client,
+                        deadline - DateTime.UtcNow,
+                        ct).ConfigureAwait(false);
+                    if (!result.HasValue)
+                        break;
+
+                    var json = Encoding.UTF8.GetString(result.Value.Buffer);
+                    if (IsDiscoveryQuery(json))
+                        continue;
+
+                    if (TryParsePayload(json, out var room, out _, result.Value.RemoteEndPoint))
+                        return room;
+                }
+            }
+
+            return null;
         }
 
         public async Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(CancellationToken ct = default)
@@ -222,9 +276,54 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             PublishState(LobbyState.Closed);
         }
 
-        public Task KickAsync(string playerId, CancellationToken ct = default)
+        public async Task KickAsync(string playerId, CancellationToken ct = default)
         {
-            return Task.CompletedTask;
+            ct.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(playerId))
+                return;
+
+            LobbyRoom updated;
+            lock (_stateLock)
+            {
+                if (_current == null || !IsCurrentLocalHost())
+                    return;
+
+                var trimmed = playerId.Trim();
+                var players = new List<LobbyPlayer>();
+                var removed = false;
+                foreach (var player in _current.Players ?? Array.Empty<LobbyPlayer>())
+                {
+                    if (player != null && string.Equals(player.PlayerId, trimmed, StringComparison.Ordinal))
+                    {
+                        removed = true;
+                        continue;
+                    }
+                    if (player != null)
+                        players.Add(player);
+                }
+
+                if (!removed)
+                    return;
+
+                var banned = new List<string>(_current.BannedPlayerIds ?? Array.Empty<string>());
+                if (!banned.Contains(trimmed))
+                    banned.Add(trimmed);
+
+                _current = new LobbyRoom(_current.LobbyId, _current.LobbyCode, _current.Name, _current.MaxPlayers,
+                    _current.IsPrivate, _current.HostPlayerId, _current.RelayJoinCode, players,
+                    _current.PasswordHash, _current.State, _current.ReconnectRecords,
+                    _current.StartedWorldSettingsBytes, banned,
+                    _current.CapabilityFlags, _current.ConfigFingerprint);
+                updated = _current;
+                RememberDiscoveredRoom(_current);
+            }
+
+            RaiseLobbyUpdated(updated);
+            try
+            {
+                await SendHostDiscoveryPayloadAsync(Encoding.UTF8.GetBytes(BuildPayload())).ConfigureAwait(false);
+            }
+            catch (Exception ex) { LogDiscoveryFailure("kick", ex); }
         }
 
         public Task SetRelayJoinCodeAsync(string relayJoinCode, CancellationToken ct = default)
@@ -238,7 +337,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     _current.StartedWorldSettingsBytes, _current.BannedPlayerIds,
                     _current.CapabilityFlags, _current.ConfigFingerprint);
                 RememberDiscoveredRoom(_current);
-                LobbyUpdated?.Invoke(_current);
+                RaiseLobbyUpdated(_current);
             }
 
             return Task.CompletedTask;
@@ -259,7 +358,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 RememberDiscoveredRoom(_current);
             }
 
-            LobbyUpdated?.Invoke(_current);
+            RaiseLobbyUpdated(_current);
             PublishState(_current.State);
             StartBroadcastLoop();
             return Task.FromResult(true);
@@ -275,7 +374,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     _current.PasswordHash, state, _current.ReconnectRecords,
                     locked ? startedWorldSettingsBytes : null,
                     _current.BannedPlayerIds, _current.CapabilityFlags, _current.ConfigFingerprint);
-                LobbyUpdated?.Invoke(_current);
+                RaiseLobbyUpdated(_current);
             }
             PublishState(state);
             return Task.CompletedTask;

@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     return false;
 
                 var merged = MergeRooms(_current, incomingRoom, preferSecondState: !IsCurrentLocalHost());
+                merged = StripBannedPlayers(merged);
                 if (HaveSameRoomState(_current, merged))
                     return false;
 
@@ -314,6 +315,60 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 reconnectRecords, worldSettings, bannedPlayerIds, capabilityFlags, configFingerprint);
         }
 
+        // Banned players never re-enter the merged roster: without this the
+        // union merge would resurrect a kicked peer from its own broadcasts.
+        private static LobbyRoom StripBannedPlayers(LobbyRoom room)
+        {
+            var banned = room?.BannedPlayerIds;
+            if (room?.Players == null || banned == null || banned.Count == 0)
+                return room;
+
+            var bannedSet = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var id in banned)
+                if (!string.IsNullOrWhiteSpace(id))
+                    bannedSet.Add(id.Trim());
+            if (bannedSet.Count == 0)
+                return room;
+
+            var players = new List<LobbyPlayer>(room.Players.Count);
+            var removed = false;
+            foreach (var player in room.Players)
+            {
+                if (player != null && bannedSet.Contains(player.PlayerId))
+                {
+                    removed = true;
+                    continue;
+                }
+                players.Add(player);
+            }
+
+            if (!removed)
+                return room;
+
+            return new LobbyRoom(room.LobbyId, room.LobbyCode, room.Name, room.MaxPlayers, room.IsPrivate,
+                room.HostPlayerId, room.RelayJoinCode, players, room.PasswordHash, room.State,
+                room.ReconnectRecords, room.StartedWorldSettingsBytes, room.BannedPlayerIds,
+                room.CapabilityFlags, room.ConfigFingerprint);
+        }
+
+        private bool DetectLocalKick(LobbyRoom incomingRoom)
+        {
+            if (incomingRoom == null || _current == null || IsCurrentLocalHost())
+                return false;
+
+            var banned = incomingRoom.BannedPlayerIds;
+            if (banned == null || banned.Count == 0)
+                return false;
+
+            var localId = BuildLocalHostId();
+            foreach (var id in banned)
+            {
+                if (string.Equals(id, localId, StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
+        }
+
         private static void AddPlayers(Dictionary<string, LobbyPlayer> playersById, IReadOnlyList<LobbyPlayer> players)
         {
             if (players == null)
@@ -345,6 +400,9 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             if (first.Players.Count != second.Players.Count)
                 return false;
 
+            if (!HaveSameStrings(first.BannedPlayerIds, second.BannedPlayerIds))
+                return false;
+
             var firstPlayers = new HashSet<string>(StringComparer.Ordinal);
             foreach (var player in first.Players)
                 firstPlayers.Add(player.PlayerId);
@@ -370,6 +428,26 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 if (first[i] != second[i])
                     return false;
             }
+
+            return true;
+        }
+
+        private static bool HaveSameStrings(IReadOnlyList<string> first, IReadOnlyList<string> second)
+        {
+            var firstCount = first?.Count ?? 0;
+            var secondCount = second?.Count ?? 0;
+            if (firstCount != secondCount)
+                return false;
+
+            var set = new HashSet<string>(StringComparer.Ordinal);
+            if (first != null)
+                foreach (var value in first)
+                    set.Add(value);
+
+            if (second != null)
+                foreach (var value in second)
+                    if (!set.Contains(value))
+                        return false;
 
             return true;
         }

@@ -40,16 +40,58 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _lifecycleCts = new CancellationTokenSource();
             _startRequested = false;
 
-            if (_commandSync == null) return;
-            _commandSync.RegisterHandler(GameCommandType.StartGame, OnStartGameCommand);
+            if (_commandSync != null)
+                _commandSync.RegisterHandler(GameCommandType.StartGame, OnStartGameCommand);
+
+            // Fallback: the host persists world settings into the lobby when the
+            // match starts, so a client recovers even if the StartGame command
+            // frame was lost — the lobby poll/broadcast delivers the same data.
+            if (_lobbyService != null)
+            {
+                _lobbyService.LobbyUpdated += OnLobbyUpdated;
+                TryStartFromLobbyState(_lobbyService.Current);
+            }
         }
 
         public void Dispose()
         {
             _commandSync?.RegisterHandler(GameCommandType.StartGame, null);
+            if (_lobbyService != null)
+                _lobbyService.LobbyUpdated -= OnLobbyUpdated;
             _lifecycleCts?.Cancel();
             _lifecycleCts?.Dispose();
             _lifecycleCts = null;
+        }
+
+        private void OnLobbyUpdated(LobbyRoom room)
+        {
+            TryStartFromLobbyState(room);
+        }
+
+        private void TryStartFromLobbyState(LobbyRoom room)
+        {
+            if (_lifecycleCts == null || _lifecycleCts.IsCancellationRequested
+                || _startRequested || _gameStarter == null
+                || room == null || room.State != LobbyState.Started
+                || room.StartedWorldSettingsBytes == null
+                || room.StartedWorldSettingsBytes.Length == 0)
+            {
+                return;
+            }
+
+            string localId = (_lobbyService as ILobbyLocalIdentity)?.LocalPlayerId;
+            if (string.IsNullOrWhiteSpace(localId))
+                localId = _sessionManager?.LocalPlayerId;
+            if (string.IsNullOrWhiteSpace(localId)
+                || string.Equals(localId, room.HostPlayerId, StringComparison.Ordinal)
+                || _sessionManager?.IsLocalPlayerHost == true
+                || _session?.IsHost == true
+                || !WorldSettingsDto.TryFromBytes(room.StartedWorldSettingsBytes, out var dto))
+            {
+                return;
+            }
+
+            BeginClientStart(dto, localId);
         }
 
         private void OnStartGameCommand(string senderId, byte[] payload)
@@ -62,6 +104,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
+            BeginClientStart(dto, localId);
+        }
+
+        private void BeginClientStart(WorldSettingsDto dto, string localId)
+        {
             try
             {
                 _startRequested = true;
@@ -96,7 +143,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             catch (Exception e)
             {
                 _startRequested = false;
-                Debug.LogError($"{Prefix} OnStartGameCommand error: {e}");
+                Debug.LogError($"{Prefix} BeginClientStart error: {e}");
                 _infoPanel?.Show(new InfoMessage("Start Failed", e.Message));
             }
         }
