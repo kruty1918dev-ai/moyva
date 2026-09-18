@@ -338,26 +338,25 @@ MonoBehaviour:
     DefaultGenerateRivers: 1
     DefaultGenerateBiomes: 1
     DefaultApplyWFC: 1
-    PlacementRulesGraph:
-      _connections: []
-      _version: 2
-      _sharedSettings:
-        _mapWidth: 0
-        _mapHeight: 0
-        _gridTopology: 0
-        _projectionMode: 5
-        _renderMode: 3
-        _neighborhoodMode: 0
-      _globalGraphState:
-        _graphId:
-        _layerId:
-        _version: 1
-        _nodeIds: []
-        _connectionIds: []
-      _layers: []
-      _layerGraphStates: []
-      _tileRegistry:
+    PlacementRulesRecipe:
+      Seed: 0
+      SharedSettings:
+        MapWidth: 0
+        MapHeight: 0
+        GridTopology: 0
+        ProjectionMode: 5
+        RenderMode: 3
+        NeighborhoodMode: 0
+      TileRegistry:
         _definitions: []
+      SharedGeneratorSettings:
+        _waterLikeTileIds:
+        - water
+        _riverBaseObjectId: river
+        _separator: 45
+        _matchBaseTypes: 1
+      Layers: []
+      ObjectPlacements: []
     TileRegistry:
       _definitions: []
     BlockedBuildingTileIds: []
@@ -1311,9 +1310,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 2205000000}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d9dba55c2b5d4a11a9538987051d9972, type: 3}
+  m_Script: {fileID: 11500000, guid: 30e775b0afabc8943a485d262b4e1024, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.Runtime.HomeMenuHtmlShellAnchor
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.Runtime.HomeMenuMoyvaUiAnchor
   _mountRoot: {fileID: 2205000001}
   _legacyShell: {fileID: 0}
   _htmlAsset: {fileID: 4900000, guid: 7c0e85809c834aafbec8414241956198, type: 3}

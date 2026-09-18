@@ -19,8 +19,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     public sealed class HomeMenuInstaller : MonoInstaller
     {
-        private const bool UseDynamicMoyvaUi = true;
-
         [SerializeField] private string _lobbyPanelName = "LobbyPanel";
         [SerializeField] private string _worldSetupPanelName = "WorldSetupPanel";
         [SerializeField] private string _createRoomPanelName = "CreateRoomPanel";
@@ -42,7 +40,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public override void InstallBindings()
         {
             var config = _config != null ? _config : MoyvaJsonObjectFactory.Create<HomeMenuConfigSO>();
-            var useMoyvaUi = UseDynamicMoyvaUi;
 
             MenuWorldPreviewKingdomPlacementFeatureBindings.Install(Container);
             MenuWorldPreviewTextureBuilderFeatureBindings.Install(Container);
@@ -54,26 +51,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Container.Bind<INavigation>().To<HomeMenuNavigation>().AsSingle();
             Container.BindInterfacesAndSelfTo<HomeMenuInitializer>().AsSingle();
 
-            if (!useMoyvaUi)
-                BindSharedSceneUi();
             BindCoreServices();
-            BindUiLayer(useMoyvaUi);
+            BindUiLayer();
             BindPanelServices();
             BindPanelNames();
 
             Container.BindInterfacesAndSelfTo<ConnectivityWatchdogService>().AsSingle();
             Container.BindInterfacesAndSelfTo<WorldCreationPanelService>().AsSingle();
-        }
-
-        private void BindSharedSceneUi()
-        {
-            Container.BindInterfacesTo<PlayerNameTextComponent>()
-                .FromComponentsInHierarchy(includeInactive: true)
-                .AsCached();
-
-            Container.BindInterfacesTo<ConfirmButton>()
-                .FromComponentsInHierarchy(includeInactive: true)
-                .AsCached();
         }
 
         private void BindCoreServices()
@@ -91,65 +75,32 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Container.Bind<IUnityHtmlHost>().To<UnityHtmlHost>().AsSingle();
         }
 
-        private void BindUiLayer(bool useMoyvaUi)
+        private void BindUiLayer()
         {
-            if (useMoyvaUi)
-            {
-                Container.Bind<HomeMenuMoyvaUiState>().AsSingle();
+            Container.Bind<HomeMenuMoyvaUiState>().AsSingle();
 
-                Container.BindInterfacesAndSelfTo<HomeMenuMoyvaUiViewController>()
-                    .AsSingle();
+            Container.BindInterfacesAndSelfTo<HomeMenuMoyvaUiViewController>()
+                .AsSingle();
 
-                BindMoyvaUiPanel("PlayModePanel");
-                BindMoyvaUiPanel("ContinuePanel");
-                BindMoyvaUiPanel(_multiplayerTypePanelName);
-                BindMoyvaUiPanel("MultiplayerPanel");
-                BindMoyvaUiPanel("SettingsPanel");
-                BindMoyvaUiPanel(_createRoomPanelName);
-                BindMoyvaUiPanel(_joinRoomPanelName);
-                BindMoyvaUiPanel(_worldSetupPanelName);
-                BindMoyvaUiPanel(_lobbyPanelName);
-                BindMoyvaUiPanel(_kickPlayerPanelName);
-                BindMoyvaUiPanel(_infoPanelName);
+            BindMoyvaUiPanel("PlayModePanel");
+            BindMoyvaUiPanel("ContinuePanel");
+            BindMoyvaUiPanel(_multiplayerTypePanelName);
+            BindMoyvaUiPanel("MultiplayerPanel");
+            BindMoyvaUiPanel("SettingsPanel");
+            BindMoyvaUiPanel(_createRoomPanelName);
+            BindMoyvaUiPanel(_joinRoomPanelName);
+            BindMoyvaUiPanel(_worldSetupPanelName);
+            BindMoyvaUiPanel(_lobbyPanelName);
+            BindMoyvaUiPanel(_kickPlayerPanelName);
+            BindMoyvaUiPanel(_infoPanelName);
 
-                Container.Bind<HomeMenuMoyvaUiAnchor>()
-                    .FromComponentsInHierarchy(includeInactive: true)
-                    .AsCached();
-
-                Container.BindInterfacesAndSelfTo<HomeMenuMoyvaUiPresenter>()
-                    .AsSingle()
-                    .NonLazy();
-                return;
-            }
-
-            HomeMenuRuntimeUiFactory.EnsureRequiredPanels(_infoPanelName);
-            Container.Bind<IOverlayLoader>().To<HomeMenuOverlayLoader>().AsSingle();
-            Container.Bind<OverlayPanelLoader>().FromComponentInHierarchy(includeInactive: true).AsSingle();
-            Container.Bind<IConfiremationPanel>().To<ConfirmationPanel>().FromComponentInHierarchy(includeInactive: true).AsSingle();
-
-            Container.BindInterfacesTo<NavigationPanel>().FromComponentsInHierarchy(includeInactive: true).AsCached();
-            Container.Bind<NavigationButton>().FromComponentsInHierarchy(includeInactive: true).AsCached();
-            Container.Bind<JoinRoomOpenButton>().FromComponentsInHierarchy(includeInactive: true).AsCached();
-
-            Container.Bind<HomeMenuHtmlShellAnchor>()
+            Container.Bind<HomeMenuMoyvaUiAnchor>()
                 .FromComponentsInHierarchy(includeInactive: true)
                 .AsCached();
 
-            Container.BindInterfacesAndSelfTo<HomeMenuHtmlShellPresenter>()
+            Container.BindInterfacesAndSelfTo<HomeMenuMoyvaUiPresenter>()
                 .AsSingle()
                 .NonLazy();
-
-            Container.BindInterfacesTo<ContinueViewController>().FromComponentsInHierarchy(includeInactive: true).AsCached();
-            Container.BindInterfacesTo<CreateRoomViewController>().FromComponentsInHierarchy(includeInactive: true).AsCached();
-            Container.BindInterfacesTo<LobbyPanelViewController>().FromComponentInHierarchy(includeInactive: true).AsCached();
-            Container.BindInterfacesTo<KickPlayerPanelViewController>().FromComponentInHierarchy(includeInactive: true).AsCached();
-            Container.BindInterfacesTo<JoinRoomViewController>().FromComponentsInHierarchy(includeInactive: true).AsCached();
-            Container.BindInterfacesTo<InfoPanelViewController>().FromComponentInHierarchy(includeInactive: true).AsSingle();
-            Container.BindInterfacesTo<PasswordPanelViewController>().FromComponentInHierarchy(includeInactive: true).AsSingle();
-            Container.BindInterfacesTo<GameSettingsViewController>().FromComponentsInHierarchy(includeInactive: true).AsCached();
-            Container.BindInterfacesTo<MultiplayerViewController>().FromComponentsInHierarchy(includeInactive: true).AsCached();
-            Container.BindInterfacesTo<MultiplayerModeViewController>().FromComponentsInHierarchy(includeInactive: true).AsCached();
-            Container.BindInterfacesTo<WorldSetupViewController>().FromComponentsInHierarchy(includeInactive: true).AsCached();
         }
 
         private void BindPanelServices()
@@ -337,18 +288,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     internal sealed class HomeMenuViewportLayoutService : IInitializable, ITickable
     {
         private readonly HomeMenuMoyvaUiAnchor[] _moyvaUiAnchors;
-        private readonly HomeMenuHtmlShellAnchor[] _htmlShellAnchors;
 
         private int _lastScreenWidth = -1;
         private int _lastScreenHeight = -1;
         private Rect _lastSafeArea;
 
         public HomeMenuViewportLayoutService(
-            [InjectOptional] HomeMenuMoyvaUiAnchor[] moyvaUiAnchors = null,
-            [InjectOptional] HomeMenuHtmlShellAnchor[] htmlShellAnchors = null)
+            [InjectOptional] HomeMenuMoyvaUiAnchor[] moyvaUiAnchors = null)
         {
             _moyvaUiAnchors = moyvaUiAnchors ?? Array.Empty<HomeMenuMoyvaUiAnchor>();
-            _htmlShellAnchors = htmlShellAnchors ?? Array.Empty<HomeMenuHtmlShellAnchor>();
         }
 
         public void Initialize() => ApplyLayout();
@@ -397,16 +345,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private static void AddBoundsGuards()
         {
-            var panels = UnityEngine.Object.FindObjectsByType<NavigationPanel>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
-
-            for (var i = 0; i < panels.Length; i++)
-            {
-                if (panels[i] != null && panels[i].transform is RectTransform rect)
-                    HomeMenuScreenBoundsGuard.EnsureClamp(rect, 16f);
-            }
-
             var guards = UnityEngine.Object.FindObjectsByType<HomeMenuScreenBoundsGuard>(
                 FindObjectsInactive.Include,
                 FindObjectsSortMode.None);
@@ -419,9 +357,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             for (var i = 0; i < _moyvaUiAnchors.Length; i++)
                 _moyvaUiAnchors[i]?.ApplyViewportLayoutNow();
-
-            for (var i = 0; i < _htmlShellAnchors.Length; i++)
-                _htmlShellAnchors[i]?.ApplyViewportLayoutNow();
         }
     }
 

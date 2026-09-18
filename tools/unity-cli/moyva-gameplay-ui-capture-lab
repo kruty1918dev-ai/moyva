@@ -154,7 +154,7 @@ if unity command editor_play --project-path="$PROJECT" --format json >"$OUT/data
 
   # Enter Construction through the actual controller / GameMode request path.
   unity command eval --project-path="$PROJECT" \
-    --code 'var go=GameObject.Find("ConstructionUI"); if(go==null) go=GameObject.Find("Canvas/ConstructionUI"); var c=go!=null?go.GetComponent<Kruty1918.Moyva.Construction.UI.ConstructionUIController>():null; if(c!=null){c.EnterConstructionMode(); return "construction-requested";} return "controller-not-found";' \
+    --code 'var ctx=UnityEngine.Object.FindFirstObjectByType<Zenject.SceneContext>(); var c=ctx!=null?ctx.Container.TryResolve<Kruty1918.Moyva.Construction.API.IConstructionSessionCommands>():null; if(c!=null){var q=ctx.Container.TryResolve<Kruty1918.Moyva.Construction.API.IConstructionBootstrapQuery>(); var id=(q!=null&&q.RequiresInitialCastle(c.GetActiveOwner(),out var castle))?castle:"castle"; c.SelectBuilding(id); return "construction-requested";} return "service-not-found";' \
     --timeout 10000 --format json >"$OUT/data/runtime_enter_construction.json" 2>&1 || true
   sleep 4
 
@@ -203,7 +203,7 @@ text = chunk.decode("utf-8", errors="replace")
 
 tile = re.findall(r"\[MOYVA_CHUNK_AUDIT\] ERROR TILE_WITHOUT_OWNER cell=\((\d+),(\d+)\)", text)
 cs = re.findall(r"^.*error CS\d+.*$", text, flags=re.M)
-ui = [line for line in text.splitlines() if re.search(r"ConstructionUI|GameplayUI|EconomyPlayer|GameModeUI|WorldInfoPanel", line, re.I)]
+ui = [line for line in text.splitlines() if re.search(r"GameplayHtml|Construction|Economy|WorldInfoPanel", line, re.I)]
 other_error_lines = []
 for line in text.splitlines():
     if ("Error" in line or "ERROR" in line or "Exception" in line) and "TILE_WITHOUT_OWNER" not in line:
@@ -232,7 +232,7 @@ fi
 mkdir -p "$OUT/source"
 for rel in \
   "Assets/Moyva/Scenes/Gamplay_Scene.unity" \
-  "Assets/Moyva/Scripts/Features/Construction/UI/Controllers/ConstructionUIController.cs" \
+  "Assets/Moyva/Scripts/Features/GameplayHUD/Runtime/GameplayHtmlPresenter.cs" \
   "Assets/Moyva/Scripts/Features/Construction/UI/Panels/BuildingSelectionPanelUI.cs" \
   "Assets/Moyva/Scripts/Features/Construction/UI/Panels/ConstructionActionBarUI.cs" \
   "Assets/Moyva/Scripts/Features/Construction/UI/Panels/ConstructionStatusUI.cs"

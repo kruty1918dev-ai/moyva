@@ -60,7 +60,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IGameplayInputPolicy _inputPolicy;
         private readonly IUiContextStack _uiContexts;
         private readonly IGameModeService _gameModeService;
-        private readonly GameplayTurnHudView _hudView;
         private readonly List<GridActionOverlayCell> _overlayCells = new();
         private readonly MaterialPropertyBlock _previewPropertyBlock = new();
 
@@ -91,7 +90,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IGameplayInputPolicy inputPolicy = null,
             [InjectOptional] IUiContextStack uiContexts = null,
             [InjectOptional] IGameModeService gameModeService = null,
-            [InjectOptional] GameplayTurnHudView hudView = null,
             [InjectOptional] IGameplayProgressClock progressClock = null)
         {
             _signalBus = signalBus;
@@ -108,7 +106,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _inputPolicy = inputPolicy;
             _uiContexts = uiContexts;
             _gameModeService = gameModeService;
-            _hudView = hudView;
         }
 
         public void Initialize()

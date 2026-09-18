@@ -127,7 +127,7 @@ EvaluatePlacement owns placement decisions; SessionStore owns state.
 
 Base: `Features/HomeMenu/Runtime/`
 
-UseDynamicMoyvaUi=true selects MoyvaUI; otherwise UnityHTML.
+UI shell is always MoyvaUI markup mounted through HomeMenuMoyvaUiAnchor.
 
 | Task | Files |
 |---|---|
@@ -135,8 +135,7 @@ UseDynamicMoyvaUi=true selects MoyvaUI; otherwise UnityHTML.
 | Active shell / UI state | `MoyvaUI/HomeMenuMoyvaUiPresenter.cs`; `MoyvaUI/HomeMenuMoyvaUiViewController.cs`; `MoyvaUI/HomeMenuMoyvaUiState.cs` |
 | Active markup / event bridge | `MoyvaUI/HomeMenuMoyvaUiMarkup.cs`; `MoyvaUI/HomeMenuMoyvaUiBridge.cs` |
 | Keyboard editor | `MoyvaUI/HomeMenuControlsMarkup.cs`; `MoyvaUI/HomeMenuControlsEditor.cs` |
-| HTML shell | `UnityHTML/HomeMenuHtmlShellPresenter.cs`; `UnityHTML/HomeMenuHtmlMenuBridge.cs` |
-| Scene UI / navigation | `Shell/HomeMenuInitializer.cs`; `Shell/HomeMenuRuntimeUiFactory.cs`; `Shell/HomeMenuNavigation.cs` |
+| Scene UI / navigation | `Shell/HomeMenuInitializer.cs`; `Shell/HomeMenuNavigation.cs` |
 | Room list | `Lobby/JoinRoomPanelService.cs`; `Lobby/JoinRoomPanelService.RoomList.cs` |
 | Join / transport / cleanup | `Lobby/JoinRoomPanelService.JoinPipeline.cs`; `Lobby/JoinRoomTransportAdapter.cs`; `Lobby/MultiplayerRoomLifecycle.cs` |
 | Target / password / feedback | `Lobby/JoinRoomPanelService.TargetResolution.cs`; `Lobby/JoinRoomPanelService.Feedback.cs`; `Lobby/PasswordPanelService.cs` |
@@ -169,9 +168,6 @@ GameplayHudBindings selects GameplayHtmlPresenter/State.
 | Cargo presentation | `GameplayCargoPanel.cs` |
 | Deployment session | `UnitRecruitmentDeploymentController.cs`; `UnitRecruitmentDeploymentController.Session.cs` |
 | Preview / controls / UI actions | `UnitRecruitmentDeploymentController.Preview.cs`; `UnitRecruitmentDeploymentController.Controls.cs`; `UnitRecruitmentDeploymentController.UiActions.cs` |
-| Alternate presenter lifecycle | `GameplayTurnHudPresenter.cs` |
-| Alternate recruitment / authority | `GameplayTurnHudPresenter.Recruitment.cs`; `GameplayTurnHudPresenter.RecruitmentAuthority.cs` |
-| Alternate queue / selection | `GameplayTurnHudPresenter.RecruitmentQueue.cs`; `GameplayTurnHudPresenter.RecruitmentSelection.cs` |
 
 ## Multiplayer session / commands / transport
 

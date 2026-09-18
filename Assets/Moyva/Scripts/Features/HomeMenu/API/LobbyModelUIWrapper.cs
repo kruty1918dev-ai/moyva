@@ -4,7 +4,7 @@ namespace Kruty1918.Moyva.HomeMenu.API
 {
     /// <summary>
     /// DTO лобі для UI-рівня HomeMenu.
-    /// Залежності: формується lobby сервісами й використовується LobbyPanelViewController та суміжним UI.
+    /// Залежності: формується lobby сервісами й використовується панеллю лобі та суміжним UI.
     /// </summary>
     [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
     public struct LobbyModelUIWrapper

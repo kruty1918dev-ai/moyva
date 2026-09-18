@@ -154,7 +154,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private bool CanMount(HomeMenuMoyvaUiAnchor anchor)
         {
             if (anchor == null)
-                return Fallback("MoyvaUI is enabled, but no HomeMenuMoyvaUiAnchor/HomeMenuHtmlShellAnchor exists in the scene.");
+                return Fallback("MoyvaUI is enabled, but no HomeMenuMoyvaUiAnchor exists in the scene.");
             if (anchor.MountRoot == null)
                 return Fallback("MoyvaUI mount root is not assigned.");
             if (anchor.CssAsset == null || string.IsNullOrWhiteSpace(anchor.CssAsset.text))

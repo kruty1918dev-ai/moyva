@@ -34,7 +34,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IUnitRecruitmentService _recruitment;
         private readonly IUnitClassConfig _unitConfigs;
         private readonly IGridProjection _gridProjection;
-        private readonly GameplayTurnHudView _hudView;
 
         private Canvas _canvas;
         private RectTransform _canvasRect;
@@ -49,15 +48,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             ITurnService turns,
             IUnitRecruitmentService recruitment,
             IUnitClassConfig unitConfigs,
-            IGridProjection gridProjection,
-            [InjectOptional] GameplayTurnHudView hudView = null)
+            IGridProjection gridProjection)
         {
             _signalBus = signalBus;
             _turns = turns;
             _recruitment = recruitment;
             _unitConfigs = unitConfigs;
             _gridProjection = gridProjection;
-            _hudView = hudView;
         }
 
         public void Initialize()
@@ -181,7 +178,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
 
             RecruitmentIndicatorCanvasContainer.TryResolve(
-                _hudView,
+                null,
                 ContainerName,
                 "[UnitRecruitmentReadyIndicator] Gameplay Canvas not found. Ready indicators are disabled.",
                 ref _warnedMissingCanvas,
