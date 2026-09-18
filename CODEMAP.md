@@ -14,6 +14,7 @@ Base: `.`
 | Camera shortcuts | `Shared/PlayerControlBinding.cs`; `Shared/PlayerControlSettingsService.cs` |
 | Audio / graphics / performance / UI | `Shared/SharedInstaller.cs`; `Shared/Audio/AudioContracts.cs`; `Shared/Audio/AudioService.cs`; `Shared/GraphicsSettingsService.cs`; `Shared/Performance/`; `Shared/UI/` |
 | Diagnostic logging | `Shared/Diagnostics/RuntimeDiagnostics.cs` (no DI installer) |
+| Localization | `Shared/Localization/ILocalizationService.cs`; `Shared/Localization/LocalizationService.cs`; `Shared/Localization/LocalizationFontService.cs`; catalogs `Presets/Localization/Resources/MoyvaLocales/{en,uk}.json`; menu switch `Features/HomeMenu/Runtime/Services/LanguageSwitchCoordinator.cs` |
 | JSON / asset catalog | `Jsonization/Runtime/MoyvaJsonRuntime.cs`; `Jsonization/Runtime/MoyvaJsonTypeRegistry.cs`; `Jsonization/Runtime/MoyvaJsonAssetCatalog.cs` |
 
 ## Feature entry points
@@ -63,6 +64,7 @@ Base: `Bootstrap/Runtime/`
 
 | Task | Files |
 |---|---|
+| Boot (scene 0) | `Boot/` |
 | Scene composition | `BootstrapInstaller.cs` |
 | Direct Gameplay / participants | `DirectGameplayLaunchModeInitializer.cs`; `GameplayLaunchTopology.cs` |
 | Spawn / reveal / camera | `StartingPositionInitializer.cs`; `StartingPositionWorkflowService.cs`; `StartingPositionWorkflowService.Client.cs` |
