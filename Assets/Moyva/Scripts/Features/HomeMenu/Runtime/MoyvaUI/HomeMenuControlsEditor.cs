@@ -104,10 +104,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 string result = string.Empty;
                 foreach (var pair in Bindings)
-                    if (IsLive(pair.Value)) result += (result.Length == 0 ? "" : " · ") + ActionLabel(pair.Key);
-                if (Options != null && IsLive(Options.PanBinding)) result += " · Pan";
-                if (Options != null && IsLive(Options.OrbitBinding)) result += " · Orbit";
-                return result.Length == 0 ? "Ready · Try a key, button, stick or gesture" : result;
+                    if (IsLive(pair.Value)) result += (result.Length == 0 ? "" : " · ") + _view.T(ActionLabel(pair.Key));
+                if (Options != null && IsLive(Options.PanBinding)) result += " · " + _view.T("Pan");
+                if (Options != null && IsLive(Options.OrbitBinding)) result += " · " + _view.T("Orbit");
+                return result.Length == 0 ? _view.T("Ready · Try a key, button, stick or gesture") : result;
             }
         }
 
@@ -124,7 +124,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public PlayerControlModifiers Modifiers { get; private set; }
         public PlayerControlAction SelectedAction { get; private set; } = PlayerControlAction.MoveForward;
         public bool IsCapturing { get; private set; }
-        public string Notice { get; private set; } = "Choose a key to explore its bindings.";
+        private string _notice;
+        public string Notice
+        {
+            get => _notice ?? _view.T("Choose a key to explore its bindings.");
+            private set => _notice = value;
+        }
         public string DraftPath => PlayerControlBinding.CreatePath(SelectedKey, Modifiers);
         public string DraftLabel => PlayerControlBinding.TryParse(DraftPath, out var binding) ? binding.DisplayName : SelectedKey.ToUpperInvariant();
         public bool CanApply => !IsCapturing && _view.SettingsInteractable && Conflict.Length == 0 && !IsCurrentBinding;
@@ -135,12 +140,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             get
             {
                 var reserved = ReservedAction(SelectedKey, Modifiers);
-                if (reserved.Length > 0) return "Reserved for " + reserved + ". Choose another shortcut.";
+                if (reserved.Length > 0) return _view.TF("Reserved for {0}. Choose another shortcut.", _view.T(reserved));
                 foreach (var pair in Bindings)
                     if ((GestureSlot > 0 || pair.Key != SelectedAction) && PlayerControlBinding.Conflicts(pair.Value, DraftPath))
-                        return "Already used by " + ActionLabel(pair.Key) + ". Choose another key or add a modifier.";
-                if (GestureSlot != 1 && PlayerControlBinding.Conflicts(Options?.PanBinding, DraftPath)) return "Already used for pan.";
-                if (GestureSlot != 2 && PlayerControlBinding.Conflicts(Options?.OrbitBinding, DraftPath)) return "Already used for orbit.";
+                        return _view.TF("Already used by {0}. Choose another key or add a modifier.", _view.T(ActionLabel(pair.Key)));
+                if (GestureSlot != 1 && PlayerControlBinding.Conflicts(Options?.PanBinding, DraftPath)) return _view.T("Already used for pan.");
+                if (GestureSlot != 2 && PlayerControlBinding.Conflicts(Options?.OrbitBinding, DraftPath)) return _view.T("Already used for orbit.");
                 return string.Empty;
             }
         }
@@ -158,7 +163,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (!PlayerControlBinding.TryParse(PlayerControlBinding.CreatePath(keyName, Modifiers), out var binding)) return;
             SelectedKey = binding.ControlPath.StartsWith("<Keyboard>/", StringComparison.Ordinal) ? binding.ControlPath.Substring("<Keyboard>/".Length) : binding.ControlPath;
             IsCapturing = false;
-            Notice = "Choose an action below, then apply your shortcut.";
+            Notice = _view.T("Choose an action below, then apply your shortcut.");
             var action = BoundAction(SelectedKey, Modifiers);
             if (action.HasValue) { SelectedAction = action.Value; GestureSlot = 0; }
             else if (PlayerControlBinding.Conflicts(Options?.PanBinding, DraftPath)) GestureSlot = 1;
@@ -171,7 +176,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (modifier != (int)PlayerControlModifiers.Ctrl && modifier != (int)PlayerControlModifiers.Shift && modifier != (int)PlayerControlModifiers.Alt) return;
             Modifiers ^= (PlayerControlModifiers)modifier;
             IsCapturing = false;
-            Notice = "Keyboard highlights show bindings for the selected modifiers.";
+            Notice = _view.T("Keyboard highlights show bindings for the selected modifiers.");
             _state.MarkDirty();
         }
 
@@ -186,7 +191,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 SelectedKey = binding.ControlPath.StartsWith("<Keyboard>/", StringComparison.Ordinal) ? binding.ControlPath.Substring("<Keyboard>/".Length) : binding.ControlPath;
                 Modifiers = binding.Modifiers;
             }
-            Notice = "Select a key or record a shortcut for " + ActionLabel(SelectedAction) + ".";
+            Notice = _view.TF("Select a key or record a shortcut for {0}.", _view.T(ActionLabel(SelectedAction)));
             _state.MarkDirty();
         }
 
@@ -197,7 +202,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _captureArmed = false;
             _captureStartFrame = Time.frameCount;
             _captureDeadline = Time.unscaledTime + 15f;
-            Notice = "Press a key or device control. Choose gestures on the diagram. Esc cancels.";
+            Notice = _view.T("Press a key or device control. Choose gestures on the diagram. Esc cancels.");
             _state.MarkDirty();
         }
 
@@ -205,7 +210,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (!IsCapturing) return;
             IsCapturing = false;
-            Notice = "Recording cancelled. Your saved bindings are unchanged.";
+            Notice = _view.T("Recording cancelled. Your saved bindings are unchanged.");
             _state.MarkDirty();
         }
 
@@ -238,13 +243,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 if (!path.StartsWith("<Mouse>", StringComparison.Ordinal) && !path.StartsWith("<Gamepad>", StringComparison.Ordinal)) continue;
                 if (!PlayerControlBinding.TryParse(path, out var candidate) || candidate.ReadValue(0.4f) <= 0f) continue;
                 SelectedKey = path; Modifiers = PlayerControlBinding.ReadModifiers(keyboard);
-                IsCapturing = false; Notice = "Recorded. Apply to save."; _state.MarkDirty(); return;
+                IsCapturing = false; Notice = _view.T("Recorded. Apply to save."); _state.MarkDirty(); return;
             }
             if (keyboard == null) return;
             if (keyboard.escapeKey.wasPressedThisFrame) { CancelCapture(); return; }
             if (keyboard.leftMetaKey.isPressed || keyboard.rightMetaKey.isPressed)
             {
-                Notice = "Use Ctrl, Shift or Alt for shortcuts. Release the system key to continue.";
+                Notice = _view.T("Use Ctrl, Shift or Alt for shortcuts. Release the system key to continue.");
                 _state.MarkDirty();
                 return;
             }
@@ -256,7 +261,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 SelectedKey = binding.ControlPath.StartsWith("<Keyboard>/", StringComparison.Ordinal) ? binding.ControlPath.Substring("<Keyboard>/".Length) : binding.ControlPath;
                 Modifiers = binding.Modifiers;
                 IsCapturing = false;
-                Notice = "Shortcut recorded. Apply to save, or keep editing.";
+                Notice = _view.T("Shortcut recorded. Apply to save, or keep editing.");
                 _state.MarkDirty();
                 break;
             }
@@ -276,7 +281,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 else _settings.TrySetProfileBinding(EditingProfile, SelectedAction, DraftPath, out _);
             }
             else _view.SetControlBinding(SelectedAction, DraftPath);
-            Notice = IsCurrentBinding ? "Saved: " + DraftLabel + " — " + ActionLabel(SelectedAction) + "." : "Could not save this shortcut. Please try again.";
+            Notice = IsCurrentBinding ? _view.TF("Saved: {0} — {1}.", DraftLabel, _view.T(ActionLabel(SelectedAction))) : _view.T("Could not save this shortcut. Please try again.");
             _state.MarkDirty();
         }
 
@@ -287,7 +292,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             SelectedKey = "w";
             Modifiers = PlayerControlModifiers.None;
             SelectedAction = PlayerControlAction.MoveForward;
-            Notice = "Default camera controls restored.";
+            Notice = _view.T("Default camera controls restored.");
             _state.MarkDirty();
         }
 
@@ -301,7 +306,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public string ReservedAction(string key, PlayerControlModifiers modifiers)
         {
-            if (key == "escape") return "Back / pause";
+            if (key == "escape") return _view.T("Back / pause");
             if (!PlayerControlBinding.TryParse(PlayerControlBinding.CreatePath(key, modifiers), out var candidate)) return string.Empty;
             if (candidate.Key == Key.None) return string.Empty;
             var label = string.Empty;
@@ -310,12 +315,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 if (binding.PrimaryKey != candidate.Key && binding.SecondaryKey != candidate.Key) continue;
                 if (binding.Ctrl != modifiers.HasFlag(PlayerControlModifiers.Ctrl) || binding.Shift != modifiers.HasFlag(PlayerControlModifiers.Shift) || binding.Alt != modifiers.HasFlag(PlayerControlModifiers.Alt)) continue;
                 var action = binding.ActionId;
-                var name = action == UiActionIds.Construction.Toggle ? "Construction" :
-                    action == UiActionIds.Construction.RotatePlacement ? "Rotate building" :
-                    action == UiActionIds.Construction.ConfirmPlacement ? "Place building" :
-                    action == UiActionIds.Construction.UndoPlacement ? "Undo placement" :
-                    action == UiActionIds.Construction.RedoPlacement ? "Redo placement" :
-                    action == UiActionIds.Deployment.Confirm ? "Deploy unit" : "Gameplay action";
+                var name = action == UiActionIds.Construction.Toggle ? _view.T("Construction") :
+                    action == UiActionIds.Construction.RotatePlacement ? _view.T("Rotate building") :
+                    action == UiActionIds.Construction.ConfirmPlacement ? _view.T("Place building") :
+                    action == UiActionIds.Construction.UndoPlacement ? _view.T("Undo placement") :
+                    action == UiActionIds.Construction.RedoPlacement ? _view.T("Redo placement") :
+                    action == UiActionIds.Deployment.Confirm ? _view.T("Deploy unit") : _view.T("Gameplay action");
                 label += (label.Length == 0 ? "" : " / ") + name;
             }
             return label;

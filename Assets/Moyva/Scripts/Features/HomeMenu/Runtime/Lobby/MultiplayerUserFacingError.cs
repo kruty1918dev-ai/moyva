@@ -62,16 +62,23 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
         /// <summary>
         /// Зібрати фінальний текст для відображення у UI.
         /// </summary>
-        public string BuildDisplayMessage()
+        public string BuildDisplayMessage(
+            Kruty1918.Moyva.Shared.Localization.ILocalizationService loca = null)
         {
-            // 1: Додаємо trace id лише тоді, коли він реально є, щоб не засмічувати повідомлення.
+            // 1: Повідомлення й порада локалізуються на межі рендеру, якщо сервіс доступний.
+            string userMessage = loca?.T(UserMessage) ?? UserMessage;
+            string actionHint = loca?.T(ActionHint) ?? ActionHint;
+
+            // 2: Додаємо trace id лише тоді, коли він реально є, щоб не засмічувати повідомлення.
             var tracePart = string.IsNullOrWhiteSpace(TraceId) ? string.Empty : $"\nTraceId: {TraceId}";
 
-            // 2: Додаємо action hint тільки для сценаріїв, де є корисна порада користувачу.
-            var hintPart = string.IsNullOrWhiteSpace(ActionHint) ? string.Empty : $"\nHint: {ActionHint}";
+            // 3: Додаємо action hint тільки для сценаріїв, де є корисна порада користувачу.
+            var hintPart = string.IsNullOrWhiteSpace(actionHint)
+                ? string.Empty
+                : (loca?.TF("\nHint: {0}", actionHint) ?? $"\nHint: {actionHint}");
 
-            // 3: Повертаємо один форматований рядок/блок для прямого показу в InfoPanel.
-            return $"[{ErrorCode}] {UserMessage}{hintPart}{tracePart}";
+            // 4: Повертаємо один форматований рядок/блок для прямого показу в InfoPanel.
+            return $"[{ErrorCode}] {userMessage}{hintPart}{tracePart}";
         }
     }
 }

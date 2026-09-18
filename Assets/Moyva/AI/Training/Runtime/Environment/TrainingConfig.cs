@@ -15,8 +15,11 @@ namespace Kruty1918.Moyva.AI.Training
         public bool randomizeWorldSize = true;
         public int minWorldSize = 20;
         public int maxWorldSize = 40;
-        public string generatorGraphId = "testgeneratorgraph";
+        public string generatorRecipeId = "testgeneratorrecipe";
         public string spawnValidationUnitTypeId = "warrior";
+        // Canonical castle building type; scenario scaffolding, placement checks
+        // and operational-castle detection resolve through this one id.
+        public string castleBuildingTypeId = "castle-01";
         public bool deterministicMode = true;
         public bool autoReset = true;
         public int maxTurnsPerEpisode = 200;
@@ -73,6 +76,10 @@ namespace Kruty1918.Moyva.AI.Training
         [NonSerialized] public int evaluationSeedBase;
         [NonSerialized] public string evaluationSeedSetVersion;
         [NonSerialized] public string evaluationProgressPath;
+        // Self-play opponent model injected by the launcher (MOYVA_OPPONENT_MODEL).
+        // Runtime-only: pool membership lives in the curriculum state, and the
+        // launcher resolves the newest verified checkpoint to a file path.
+        [NonSerialized] public string opponentModelPath;
 
         // Runtime-only frozen Model Inspector contract.
         [NonSerialized] public bool inspectorMode;
@@ -113,6 +120,7 @@ namespace Kruty1918.Moyva.AI.Training
             copy.evaluationSeedBase = evaluationSeedBase;
             copy.evaluationSeedSetVersion = evaluationSeedSetVersion;
             copy.evaluationProgressPath = evaluationProgressPath;
+            copy.opponentModelPath = opponentModelPath;
             copy.inspectorMode = inspectorMode;
             copy.inspectorRunId = inspectorRunId;
             copy.inspectorScenarioId = inspectorScenarioId;
@@ -136,6 +144,10 @@ namespace Kruty1918.Moyva.AI.Training
                 curriculum.autonomous.statePath = statePath;
             if (Environment.GetEnvironmentVariable("MOYVA_AUTONOMOUS_TRAINING") == "1" && curriculum?.autonomous != null)
                 curriculum.autonomous.enabled = true;
+
+            string opponentModel = Environment.GetEnvironmentVariable("MOYVA_OPPONENT_MODEL");
+            if (!string.IsNullOrWhiteSpace(opponentModel))
+                opponentModelPath = opponentModel.Trim();
 
             string runtimeJournalPath = Environment.GetEnvironmentVariable("MOYVA_DECISION_JOURNAL_PATH");
             if (!string.IsNullOrWhiteSpace(runtimeJournalPath))
@@ -229,9 +241,10 @@ namespace Kruty1918.Moyva.AI.Training
             if (learnInitialCastle && (int)curriculum.stage < (int)TrainingCurriculumStage.Building)
                 throw new ArgumentException("Initial castle lesson requires Building or later curriculum.");
             if (environmentCount < 1 || maxTurnsPerEpisode < 1 || maxDecisionsPerEpisode < 1
-                || worldSize < 12 || worldSize > 128 || string.IsNullOrWhiteSpace(generatorGraphId)
+                || worldSize < 12 || worldSize > 128 || string.IsNullOrWhiteSpace(generatorRecipeId)
                 || minWorldSize < 12 || maxWorldSize > 128 || minWorldSize > maxWorldSize
                 || string.IsNullOrWhiteSpace(spawnValidationUnitTypeId)
+                || string.IsNullOrWhiteSpace(castleBuildingTypeId)
                 || decisionInterval < 1 || !Finite(trainingTimeScale) || trainingTimeScale <= 0
                 || !Finite(visualTimeScale) || !Finite(headlessTimeScale)
                 || !Finite(visualCameraZoomSensitivity) || !Finite(visualCameraPanSpeed)

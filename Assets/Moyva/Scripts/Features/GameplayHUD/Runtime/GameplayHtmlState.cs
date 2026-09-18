@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Kruty1918.Moyva.Shared.Localization;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
@@ -35,6 +37,29 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
     internal sealed class GameplayHtmlState
     {
+        private readonly ILocalizationService _localization;
+
+        public GameplayHtmlState([InjectOptional] ILocalizationService localization = null)
+        {
+            _localization = localization;
+            if (_localization != null)
+                _localization.LanguageChanged += () => MarkDirty();
+        }
+
+        /// <summary>Локалізує статичний UI-текст; без сервісу повертає source.</summary>
+        internal string T(string key) => _localization?.T(key) ?? key ?? string.Empty;
+
+        /// <summary>Локалізує й форматує {0}..{n} плейсхолдери.</summary>
+        internal string TF(string key, params object[] args) =>
+            _localization?.TF(key, args) ?? key ?? string.Empty;
+
+        /// <summary>Plural-форма для count (one/few/many/other за активною мовою).</summary>
+        internal string TN(string oneKey, string otherKey, int count) =>
+            _localization?.TN(oneKey, otherKey, count) ?? (count == 1 ? oneKey : otherKey);
+
+        /// <summary>Сервіс локалізації для статичних хелперів (time text тощо).</summary>
+        internal ILocalizationService Localization => _localization;
+
         public event Action Changed;
         public bool GamepadAim { get; set; }
         public string ControlHints { get; set; } = string.Empty;

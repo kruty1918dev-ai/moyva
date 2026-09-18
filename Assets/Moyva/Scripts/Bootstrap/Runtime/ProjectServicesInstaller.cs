@@ -28,6 +28,8 @@ namespace Kruty1918.Moyva.Bootstrap
 
             AudioInstaller.Install(Container, _audioRegistry, _musicProfiles, _sceneOverrides);
 
+            Kruty1918.Moyva.GameAudio.Runtime.GameAudioInstaller.InstallShared(Container);
+
             SaveSystemInstaller.Install(Container);
 
             MultiplayerInstaller.Install(Container);

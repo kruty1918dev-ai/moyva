@@ -11,6 +11,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal sealed class JoinRoomTransportAdapter
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         private readonly ILobbyService _lobbyService;
         private readonly INetworkProvider _networkProvider;
         private readonly SwitchableNetworkProvider _switchableNetworkProvider;
@@ -44,13 +48,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var providerType = _providerTypeAccessor();
             if (!await EnsureNetworkProviderMatchesLobbyAsync(providerType, ct))
             {
-                return Result.Fail(DomainErrorCode.Network, $"Could not switch transport provider to {providerType}.");
+                return Result.Fail(DomainErrorCode.Network, TF("Could not switch transport provider to {0}.", providerType));
             }
 
             var joinCode = await ResolveNetworkJoinCodeAsync(room, traceId, providerType, ct);
             if (string.IsNullOrWhiteSpace(joinCode))
             {
-                const string error = "The host has not published the network join code for this room yet.";
+                string error = T("The host has not published the network join code for this room yet.");
                 Debug.LogError($"[JoinRoomPanelService] [{traceId}] {error} LobbyId='{room?.LobbyId}' LobbyCode='{room?.LobbyCode}' Provider='{providerType}'.");
                 await LeaveLobbyAfterFailedTransportJoinAsync(traceId, ct);
                 return Result.Fail(DomainErrorCode.NotFound, error);
@@ -61,7 +65,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 Debug.LogError($"[JoinRoomPanelService] [{traceId}] Resolved transport code '{normalizedJoinCode}' is not a valid Relay join code. LobbyId='{room?.LobbyId}', LobbyCode='{room?.LobbyCode}', RelayJoinCode='{room?.RelayJoinCode}'.");
                 await LeaveLobbyAfterFailedTransportJoinAsync(traceId, ct);
-                return Result.Fail(DomainErrorCode.Validation, "Received an invalid Relay join code.");
+                return Result.Fail(DomainErrorCode.Validation, T("Received an invalid Relay join code."));
             }
             var result = await MultiplayerReliabilityPolicy.RetryWithBackoffAndJitterAsync(
                 async token => await _networkProvider.JoinSessionAsync(normalizedJoinCode, token),
@@ -72,7 +76,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 ct: ct);
             if (result == null || !result.Success)
             {
-                var error = result?.ErrorMessage ?? "Could not connect to the network session.";
+                var error = result?.ErrorMessage ?? T("Could not connect to the network session.");
                 Debug.LogError($"[JoinRoomPanelService] [{traceId}] JoinSessionAsync failed: {error}");
                 await LeaveLobbyAfterFailedTransportJoinAsync(traceId, ct);
                 return Result.Fail(DomainErrorCode.Network, error);

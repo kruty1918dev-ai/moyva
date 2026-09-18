@@ -1,0 +1,236 @@
+{
+  "$schema": "../../Schemas/audio-ambience.schema.json",
+  "schema": "moyva.audio-ambience",
+  "version": 1,
+  "id": "moyvaaudioambience",
+  "model": "audio-ambience",
+  "zoom": {
+    "enabled": true,
+    "smoothing": 5.0,
+    "emitterFadeStart": 0.45,
+    "emitterFadeEnd": 0.9,
+    "nearCutoff": 22000.0,
+    "farCutoff": 900.0
+  },
+  "beds": [
+    {
+      "soundKey": "amb-wind-deep",
+      "volume": 0.6,
+      "nearWeight": 0.0,
+      "farWeight": 1.0,
+      "lowpassWithZoom": true
+    },
+    {
+      "soundKey": "amb-wind-near",
+      "volume": 0.55,
+      "nearWeight": 0.55,
+      "farWeight": 0.8,
+      "lowpassWithZoom": true
+    },
+    {
+      "soundKey": "amb-wind-gusts",
+      "volume": 0.4,
+      "nearWeight": 0.15,
+      "farWeight": 0.7,
+      "lowpassWithZoom": true
+    },
+    {
+      "soundKey": "amb-birds",
+      "volume": 0.5,
+      "nearWeight": 0.9,
+      "farWeight": 0.1,
+      "lowpassWithZoom": true
+    },
+    {
+      "soundKey": "amb-insects",
+      "volume": 0.45,
+      "nearWeight": 0.8,
+      "farWeight": 0.0,
+      "lowpassWithZoom": true
+    }
+  ],
+  "emitters": [
+    {
+      "id": "water",
+      "matchTileTypeId": "water",
+      "soundKey": "amb-water-stream",
+      "volume": 0.9,
+      "minDistance": 2.0,
+      "maxDistance": 14.0,
+      "clusterStep": 4,
+      "maxInstances": 6
+    },
+    {
+      "id": "forest",
+      "matchTileTypeId": "forest",
+      "soundKey": "amb-forest-birds",
+      "volume": 0.6,
+      "minDistance": 3.0,
+      "maxDistance": 18.0,
+      "clusterStep": 8,
+      "maxInstances": 6
+    },
+    {
+      "id": "farm",
+      "matchBuildingId": "farm",
+      "soundKey": "amb-farm",
+      "volume": 0.85,
+      "minDistance": 2.0,
+      "maxDistance": 16.0,
+      "maxInstances": 6
+    },
+    {
+      "id": "barn",
+      "matchBuildingId": "barn",
+      "soundKey": "amb-farm",
+      "volume": 0.8,
+      "minDistance": 2.0,
+      "maxDistance": 14.0,
+      "maxInstances": 4
+    },
+    {
+      "id": "stable",
+      "matchBuildingId": "stable",
+      "soundKey": "amb-farm",
+      "volume": 0.8,
+      "minDistance": 2.0,
+      "maxDistance": 14.0,
+      "maxInstances": 4
+    },
+    {
+      "id": "windmill",
+      "matchBuildingId": "windmill-01",
+      "soundKey": "amb-windmill",
+      "volume": 0.5,
+      "minDistance": 2.0,
+      "maxDistance": 16.0,
+      "maxInstances": 3
+    },
+    {
+      "id": "smelter",
+      "matchBuildingId": "smelter",
+      "soundKey": "amb-forge",
+      "volume": 0.85,
+      "minDistance": 2.0,
+      "maxDistance": 15.0,
+      "maxInstances": 4
+    },
+    {
+      "id": "armor-workshop",
+      "matchBuildingId": "armor-workshop",
+      "soundKey": "amb-forge",
+      "volume": 0.7,
+      "minDistance": 2.0,
+      "maxDistance": 13.0,
+      "maxInstances": 3
+    },
+    {
+      "id": "weapon-workshop",
+      "matchBuildingId": "weapon-workshop",
+      "soundKey": "amb-forge",
+      "volume": 0.7,
+      "minDistance": 2.0,
+      "maxDistance": 13.0,
+      "maxInstances": 3
+    },
+    {
+      "id": "iron-mine",
+      "matchBuildingId": "iron-mine",
+      "soundKey": "amb-quarry",
+      "volume": 0.7,
+      "minDistance": 2.5,
+      "maxDistance": 16.0,
+      "maxInstances": 4
+    },
+    {
+      "id": "stone-quarry",
+      "matchBuildingId": "stone-quarry",
+      "soundKey": "amb-quarry",
+      "volume": 0.7,
+      "minDistance": 2.5,
+      "maxDistance": 16.0,
+      "maxInstances": 4
+    },
+    {
+      "id": "sawmill",
+      "matchBuildingId": "sawmill",
+      "soundKey": "amb-woodworks",
+      "volume": 0.7,
+      "minDistance": 2.0,
+      "maxDistance": 14.0,
+      "maxInstances": 4
+    },
+    {
+      "id": "wood-camp",
+      "matchBuildingId": "wood-camp",
+      "soundKey": "amb-woodworks",
+      "volume": 0.7,
+      "minDistance": 2.0,
+      "maxDistance": 14.0,
+      "maxInstances": 4
+    },
+    {
+      "id": "townhall",
+      "matchBuildingId": "townhall",
+      "soundKey": "amb-village",
+      "volume": 0.8,
+      "minDistance": 3.0,
+      "maxDistance": 20.0,
+      "maxInstances": 4
+    },
+    {
+      "id": "castle",
+      "matchBuildingId": "castle-01",
+      "soundKey": "amb-village",
+      "volume": 0.75,
+      "minDistance": 3.0,
+      "maxDistance": 20.0,
+      "maxInstances": 3
+    },
+    {
+      "id": "house",
+      "matchBuildingId": "house-01",
+      "soundKey": "amb-village",
+      "volume": 0.5,
+      "minDistance": 2.0,
+      "maxDistance": 12.0,
+      "maxInstances": 5
+    },
+    {
+      "id": "barrack",
+      "matchBuildingId": "barrack",
+      "soundKey": "amb-crowd",
+      "volume": 0.6,
+      "minDistance": 2.0,
+      "maxDistance": 14.0,
+      "maxInstances": 3
+    }
+  ],
+  "oneShots": [
+    {
+      "soundKey": "amb-stinger-bird",
+      "volume": 0.55,
+      "minInterval": 4.0,
+      "maxInterval": 14.0,
+      "minZoom": 0.0,
+      "maxZoom": 0.65
+    },
+    {
+      "soundKey": "amb-stinger-critter",
+      "volume": 0.45,
+      "minInterval": 9.0,
+      "maxInterval": 22.0,
+      "minZoom": 0.0,
+      "maxZoom": 0.5
+    },
+    {
+      "soundKey": "amb-stinger-rooster",
+      "volume": 0.4,
+      "minInterval": 40.0,
+      "maxInterval": 95.0,
+      "minZoom": 0.0,
+      "maxZoom": 0.35
+    }
+  ],
+  "maxEmittersTotal": 24
+}

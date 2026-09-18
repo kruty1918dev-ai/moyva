@@ -4,10 +4,8 @@ using Kruty1918.Moyva.Clouds.API;
 using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
-using Kruty1918.Moyva.Generator.Runtime.Nodes;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
-using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
@@ -45,7 +43,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             return previewData.HeightMap[x, y];
         }
 
-        private static Dictionary<string, LivePreviewPrefabMesh> BuildTileLiveMeshCache(TileRegistrySO registry, GraphAsset graph)
+        private static Dictionary<string, LivePreviewPrefabMesh> BuildTileLiveMeshCache(TileRegistrySO registry, GeneratorMapRecipe recipe)
         {
             var cache = new Dictionary<string, LivePreviewPrefabMesh>(StringComparer.OrdinalIgnoreCase);
             if (registry?.Definitions != null)
@@ -58,25 +56,29 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 }
             }
 
-            // Layer outputs use the canonical tile-type ID from their settings node.
+            // Layer outputs use the canonical tile ID resolved from the recipe layer.
             // The legacy registry can contain only aliases for those IDs.
-            if (graph?.Nodes != null)
+            if (recipe?.Layers != null)
             {
-                foreach (var graphNode in graph.Nodes)
+                foreach (var layer in recipe.Layers)
                 {
-                    if (graphNode is not TileSettingsNode tileSettings)
+                    if (layer == null)
                         continue;
 
-                    string id = NormalizePreviewId(tileSettings.TileId);
+                    string id = NormalizePreviewId(layer.ResolveTileId());
                     if (string.IsNullOrEmpty(id))
                         continue;
 
-                    GameObject prefab = tileSettings.TileType?.Visual?.RepresentativePrefab;
-                    if (prefab == null && tileSettings.TilePreset != null)
+                    GameObject prefab = layer.TileType?.Visual?.RepresentativePrefab;
+                    if (prefab == null)
                     {
-                        prefab = tileSettings.UseDualGrid
-                            ? tileSettings.TilePreset.DUALGRD_fillTile
-                            : tileSettings.TilePreset.NRMGRD_fillTile;
+                        var preset = layer.ResolveTileVariants().Find(v => v?.Preset != null)?.Preset;
+                        if (preset != null)
+                        {
+                            prefab = layer.ResolveUseDualGrid()
+                                ? preset.DUALGRD_fillTile
+                                : preset.NRMGRD_fillTile;
+                        }
                     }
 
                     if (TryCollectLivePreviewPrefab(prefab, out var prefabMesh))

@@ -1,111 +1,106 @@
-# Довідка з паралельного навчання Moyva
+# Довідка з навчання Moyva
 
 ## Огляд
-Система підтримує паралельне навчання з кількома аренами для пришвидшення навчання.
 
-## Конфігурація
-Основні налаштування знаходяться в `Assets/Moyva/Presets/AI/MoyvaTrainingConfig.json`:
+Навчання агента керується двома входами:
 
-- `environmentCount`: Кількість паралельних середовищ (8 за замовчуванням)
-- `headlessTimeScale`: Швидкість навчання в headless режимі (20.0 за замовчуванням)
-- `trainingTimeScale`: Загальний множник швидкості (5.0 за замовчуванням)
-- `curriculum.autonomous.enabled`: Вмикає автономний навчальний план
-- `presentationMode`: `HeadlessFast` для максимальної продуктивності
+- `./moyva` — центр керування: статус, запуск, логи, чекпоінти, TensorBoard.
+- `./moyva-train` — прямий launcher (`tools/ai/moyva_train.py`): build/train/resume/watch/inspect/doctor.
 
-## Скрипти для запуску
+Автономний навчальний план (`curriculum.autonomous.enabled`) веде агента сценаріями
+з `Assets/Moyva/Presets/AI/Scenarios/` у порядку `manifest.json` і періодично запускає
+заморожену оцінку чекпоінта окремим процесом.
 
-### 1. Простий запуск
+## Безпечні межі
+
+- **Одна арена з автономним навчальним планом.** `--arenas N > 1` відхиляється,
+  коли `curriculum.autonomous.enabled=true`: усі процеси писали б у спільні файли
+  `curriculum-state.json`, журнал рішень та стан оцінок.
+- **Зупинка лише власних процесів.** `moyva stop <token>` перевіряє PID, час старту
+  та виконуваний файл — жодних `pkill -f` по чужих процесах.
+- **Контракт чекпоінтів.** Запуск, resume та deploy звіряють hash спостережень/дій
+  з `Assets/Moyva/Presets/AI/Resources/MoyvaBotContract.json`. Чекпоінти,
+  навчені під іншим контрактом, не підіймаються мовчки — тренуйте нові.
+
+## Швидкий старт
+
 ```bash
-./tools/ai/train_simple.sh [арени] [швидкість] [макс_кроки]
+./moyva doctor          # перевірка середовища, venv, Unity, дисків
+./moyva-train train --headless --time-scale 5.0 --max-steps 1000000
+./moyva status          # стан supervisor'а та навчання
+./moyva status --watch  # live-рядок прогресу (Ctrl+C — вихід; --interval SECONDS)
+./moyva logs --follow   # live-хвіст логів запуску
 ```
 
-Приклади:
-```bash
-# 8 арен, 5x швидкість, 1M кроків
-./tools/ai/train_simple.sh 8 5.0 1000000
+Перший запуск збирає training player автоматично (`./moyva-train build` — вручну).
 
-# 16 арен, 10x швидкість, 5M кроків
-./tools/ai/train_simple.sh 16 10.0 5000000
+## Налаштування
 
-# 4 арени, 2x швидкість, 500K кроків
-./tools/ai/train_simple.sh 4 2.0 500000
-```
+`Assets/Moyva/Presets/AI/MoyvaTrainingConfig.json` — джерело правди:
 
-### 2. Детальний запуск
-```bash
-./tools/ai/train_parallel.sh
-```
+- `environmentCount`: кількість середовищ (1 — єдине допустиме з автономним планом)
+- `baseSeed`, `worldSize`, `randomizeWorldSize`, `minWorldSize`/`maxWorldSize`
+- `generatorRecipeId`: рецепт генератора карти (`Presets/.../Generator/`)
+- `spawnValidationUnitTypeId`, `castleBuildingTypeId`: канонічні id контенту
+- `headlessTimeScale`, `trainingTimeScale`, `visualTimeScale`
+- `presentationMode`: `HeadlessFast` | `Visual`
+- `curriculum.autonomous.*`: `evaluationEverySteps` (10000), `evaluationEpisodes` (50),
+  `masteryThreshold` (0.80), `regressionThreshold` (0.65), ваги вибору сценаріїв
+- `watchdog*`: стагнація, частка forced-дій, покриття інтентів
+- `observer*`: IPC для live-огляду рішень
 
-Цей скрипт використовує параметри, налаштовані в самому файлі:
-- `ARENAS=8`
-- `TIME_SCALE=5.0`
-- `MAX_STEPS=1000000`
+## Сценарії та навчальний план
 
-### 3. Прямий запуск через moyva_train.py
-```bash
-python3 tools/ai/moyva_train.py train \
-    --arenas 8 \
-    --time-scale 5.0 \
-    --max-steps 1000000 \
-    --headless
-```
+`Assets/Moyva/Presets/AI/Scenarios/`:
 
-## Параметри командного рядка
+- `manifest.json` — єдиний порядок курикулуму (`curriculum: [...]`).
+- Кожен `*.json` — сценарій: кроки, критерії, `availableCapabilities`,
+  `requiredIntents`, `prerequisites`, `fullGame`, `combination`.
 
-### Основні параметри
-- `--arenas N`: Кількість паралельних арен (1-16)
-- `--time-scale X`: Швидкість навчання (0.1-20.0)
-- `--max-steps N`: Максимальна кількість навчальних кроків
-- `--headless`: Режим без графіки (швидше)
-- `--visual`: Візуальний режим (для налагодження)
+Додавання сценарію: створіть JSON, додайте id у `manifest.json` — каталог завантажить,
+завалідує (дублікати, відсутні prereq, покриття інтентів можливостями) і включить
+у вибірку без змін коду. Сценарій оцінки для frozen evaluation береться зі стану
+курикулуму в порядку маніфесту.
 
-### Додаткові параметри
-- `--world-size N`: Розмір світу (12-128)
-- `--stage N`: Етап навчального плану (0-8)
-- `--seed N`: Seed для відтворюваності
-- `--run-id ID`: Ідентифікатор запуску
-- `--resume`: Продовження попереднього запуску
+## Параметри moyva-train
 
-## Поради щодо продуктивності
+- `train [--visual|--headless] [--time-scale X] [--seed N] [--world-size N] [--stage N]`
+- `--max-steps N`, `--checkpoint-interval N`, `--summary-freq N`
+- `--initialize-from <checkpoint>`, `--resume`, `--force`
+- `resume --run-id ID` — продовження (contract hash має збігатися)
+- `watch|inspect --run-id ID [--checkpoint latest|N] [--scenario ID]` —
+  візуальний Model Inspector замороженого чекпоінта (за замовчуванням —
+  перший сценарій маніфесту)
+- `build`, `doctor`, `tensorboard`, `info`
 
-### Оптимальні налаштування
-- **CPU з багатьма ядрами**: Використовуйте 8-16 арен
-- **GPU**: Використовуйте `--time-scale 5.0-10.0`
-- **RAM**: Переконайтеся, що є достатньо пам'яті для паралельних середовищ
+## Моніторинг наживо
 
-### Режими
-- **Найшвидший**: `--headless --arenas 16 --time-scale 10.0`
-- **Збалансований**: `--headless --arenas 8 --time-scale 5.0`
-- **Налагодження**: `--visual --arenas 1 --time-scale 1.0`
+- `./moyva` (без аргументів) — TUI: прогрес, сценарій, метрики, логи.
+- `./moyva logs --follow` — потік логів активного запуску; `--source unity|mlagents|warning|error`.
+- `./moyva logs <run-id>` — логи конкретного запуску.
+- `./moyva-train tensorboard` + `http://localhost:6006` — криві навчання.
+- `Results/MoyvaTraining/<run>/curriculum-state.json` — стан освоєння сценаріїв.
 
-## Моніторинг
+## Результати
 
-Результати навчання зберігаються в `Results/MoyvaTraining/`:
-- `mlagents.log`: Логи ML-Agents
-- `unity.log`: Логи Unity
-- `curriculum-state.json`: Стан навчального плану
-- `MoyvaStrategy/`: Чекпоінти моделі
+`Results/MoyvaTraining/<run-id>/`:
+
+- `mlagents.log`, `unity.log`, `cli.log`
+- `curriculum-state.json` — освоєння сценаріїв, останній чекпоінт
+- `evaluations/` — результати заморожених оцінок з provenance чекпоінта
+- `MoyvaStrategy/` — чекпоінти `.onnx` з метаданими контракту
 
 ## Вимоги
 
-- Python 3.10.1–3.10.12
-- ML-Agents 1.1.0
-- Unity Editor 6000.3.10f1
+- Python 3.10.1–3.10.12 (`./moyva setup` створює `.venv-training`)
+- ML-Agents 1.1.0, Unity Editor 6000.3.10f1
 - Побудований training player (автоматично при першому запуску)
 
 ## Вирішення проблем
 
-### Помилка "environmentCount != 1"
-Це обмеження було знято в останній версії. Якщо виникає, перевірте, що ви використовуєте оновлений `moyva_train.py`.
-
-### Пам'ять
-Якщо не вистачає пам'яті, зменшіть кількість арен:
-```bash
-./tools/ai/train_simple.sh 4 5.0 1000000
-```
-
-### повільне навчання
-Збільшіть `--time-scale` або додайте більше арен:
-```bash
-./tools/ai/train_simple.sh 12 10.0 1000000
-```
+- **`--arenas rejected`**: автономний план вимагає одну арену — приберіть прапорець
+  або вимкніть `curriculum.autonomous.enabled`.
+- **`contract hash mismatch`**: чекпоінт навчено під іншою схемою спостережень —
+  тренуйте новий; `--force-contract-mismatch` лише для налагодження.
+- **`No scenario manifest`**: додайте `manifest.json` або передайте `--scenario`.
+- Логи запуску не з'являються: `./moyva doctor`, потім `./moyva processes`.

@@ -15,6 +15,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal class ContinuePanelService : Kruty1918.Moyva.HomeMenu.API.IContinuePanelService, IInitializable, IDisposable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         [Inject] private IContinueViewController _viewController;
         [Inject] private ISaveService _saveService;
         [Inject] private SignalBus _signalBus;
@@ -111,7 +115,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             int slotIndex = Mathf.Clamp(slot.SlotIndex, 0, 99);
             if (!_saveService.HasSave(slotIndex))
             {
-                _infoPanelService?.Show(new InfoMessage("Save Not Found", $"Slot {slotIndex:D2} no longer exists."));
+                _infoPanelService?.Show(new InfoMessage("Save Not Found", TF("Slot {0:D2} no longer exists.", slotIndex)));
                 RefreshSlotsList();
                 return;
             }

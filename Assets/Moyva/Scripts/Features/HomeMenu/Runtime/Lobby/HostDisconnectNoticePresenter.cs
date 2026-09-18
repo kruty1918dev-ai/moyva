@@ -13,6 +13,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
     /// </summary>
     internal sealed class HostDisconnectNoticePresenter : IInitializable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         [Inject(Optional = true)] private IInfoPanelService _infoPanelService = null;
 
         public void Initialize()
@@ -30,12 +34,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
             }
         }
 
-        private static string BuildMessage(string reason)
+        private string BuildMessage(string reason)
         {
             if (string.IsNullOrWhiteSpace(reason))
-                return "Connection to the host was lost. The game returned to the main menu.";
+                return T("Connection to the host was lost. The game returned to the main menu.");
 
-            return $"Connection to the host was lost ({reason}). The game returned to the main menu.";
+            return TF("Connection to the host was lost ({0}). The game returned to the main menu.", reason);
         }
     }
 }

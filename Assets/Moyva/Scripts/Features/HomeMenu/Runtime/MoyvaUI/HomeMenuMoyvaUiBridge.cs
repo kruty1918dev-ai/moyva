@@ -78,7 +78,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _confirmationService.Show(new ConfirmationRequest
             {
                 LabelText = "Exit Game",
-                MessageText = "Are you sure you want to quit?",
+                MessageText = _view.T("Are you sure you want to quit?"),
                 OnConfirm = Application.Quit
             });
         }
@@ -135,6 +135,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetMapTypeValue(object value) => _view?.SetMapType((MapType)Mathf.Clamp(ToInt(value, 0), 0, 5));
         public void SetDifficultyValue(object value) => _view?.SetDifficulty((Difficulty)Mathf.Clamp(ToInt(value, 1), 0, 3));
         public void SetBotDifficultyValue(object value) => _view?.SetBotDifficultyIndex(ToInt(value, 0));
+        public void SetLanguageValue(object value) => _view?.SetLanguageIndex(ToInt(value, 0));
 
         public void StartGame() => _view?.ClickLobbyStart();
         public void LeaveLobby() => _view?.ClickLobbyBack();
@@ -157,10 +158,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetMusicValue(object value) => _view?.SetMusic(ToFloat(value, _view.MusicVolume));
         public void SetSfxValue(object value) => _view?.SetSfx(ToFloat(value, _view.SfxVolume));
         public void SetUiValue(object value) => _view?.SetUi(ToFloat(value, _view.UiVolume));
+        public void SetAmbienceValue(object value) => _view?.SetAmbience(ToFloat(value, _view.AmbienceVolume));
         public void CommitMasterValue(object value) => Commit(() => SetMasterValue(value));
         public void CommitMusicValue(object value) => Commit(() => SetMusicValue(value));
         public void CommitSfxValue(object value) => Commit(() => SetSfxValue(value));
         public void CommitUiValue(object value) => Commit(() => SetUiValue(value));
+        public void CommitAmbienceValue(object value) => Commit(() => SetAmbienceValue(value));
         public void MasterLow() => _view?.SetMaster(0.35f);
         public void MasterMid() => _view?.SetMaster(0.7f);
         public void MasterHigh() => _view?.SetMaster(1f);
@@ -170,6 +173,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SfxHigh() => _view?.SetSfx(0.9f);
         public void UiLow() => _view?.SetUi(0.35f);
         public void UiHigh() => _view?.SetUi(0.9f);
+        public void AmbienceLow() => _view?.SetAmbience(0.35f);
+        public void AmbienceHigh() => _view?.SetAmbience(0.9f);
         public void ToggleMuted() => _view?.ToggleMuted();
         public void SetMuted(object value) => _view?.SetMuted(ToBool(value));
         public void GraphicsAuto() => _view?.SetGraphicsProfile(GraphicsQualityProfile.Auto);
@@ -222,8 +227,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _view?.Controls.CancelCapture();
             _confirmationService?.Show(new ConfirmationRequest
             {
-                LabelText = "Restore camera controls?",
-                MessageText = "This resets camera shortcuts and sensitivity to their defaults.",
+                LabelText = _view.T("Restore camera controls?"),
+                MessageText = _view.T("This resets camera shortcuts and sensitivity to their defaults."),
                 OnConfirm = () => { _view?.ResetControls(); _view?.Controls.ResetSelection(); }
             });
         }

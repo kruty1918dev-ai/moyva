@@ -266,13 +266,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     ? new UiActionResult(
                         UiActionStatus.Performed,
                         details: string.IsNullOrWhiteSpace(result.Reason)
-                            ? "Settlement captured."
-                            : result.Reason)
+                            ? _state.T("Settlement captured.")
+                            : _state.T(result.Reason))
                     : UiActionResult.Rejected(
                         UiActionReason.ActionUnavailable,
                         string.IsNullOrWhiteSpace(result.Reason)
-                            ? "Settlement capture was rejected."
-                            : result.Reason);
+                            ? _state.T("Settlement capture was rejected.")
+                            : _state.T(result.Reason));
             }
 
             if (request.ActionId == UiActionIds.EndTurn)
@@ -281,20 +281,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     return UiActionResult.Performed();
 
                 if (_turns == null || string.IsNullOrWhiteSpace(_turns.LocalOwnerId))
-                    return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "Local turn owner is unavailable.");
+                    return UiActionResult.Rejected(UiActionReason.ActionUnavailable, _state.T("Local turn owner is unavailable."));
                 if (_roles?.Resolve().Role == LocalGameplayRole.Client)
                 {
                     if (_remoteTurns == null)
-                        return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "Turn transport is unavailable.");
+                        return UiActionResult.Rejected(UiActionReason.ActionUnavailable, _state.T("Turn transport is unavailable."));
                     return _remoteTurns.TryRequestEndTurn(out string remoteReason)
-                        ? new UiActionResult(UiActionStatus.Performed, details: "Waiting for the host to confirm the turn.")
+                        ? new UiActionResult(UiActionStatus.Performed, details: _state.T("Waiting for the host to confirm the turn."))
                         : UiActionResult.Rejected(UiActionReason.ActionUnavailable, remoteReason);
                 }
                 return _turns.TryEndTurn(_turns.LocalOwnerId, out string reason)
                     ? UiActionResult.Performed()
                     : UiActionResult.Rejected(
                         UiActionReason.ActionUnavailable,
-                        string.IsNullOrWhiteSpace(reason) ? "The turn cannot be ended yet." : reason);
+                        string.IsNullOrWhiteSpace(reason) ? _state.T("The turn cannot be ended yet.") : _state.T(reason));
             }
 
             if (request.ActionId == UiActionIds.ClearSelection)
@@ -518,20 +518,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private void OnGameEnded(GameEndedSignal signal) => _state.SetGameResult(true, signal.WinnerId);
         private void OnGameStarted(GameStartedSignal _) => _state.SetGameResult(false, string.Empty);
         private void OnRemoteEndTurnResolved(bool accepted, string reason)
-            => _state.SetFeedback(reason);
+            => _state.SetFeedback(_state.T(reason));
         private void OnNotificationPublished(GameplayNotificationRequest request)
-            => _state.AddNotification(request.Message, request.Kind.ToString());
+            => _state.AddNotification(_state.T(request.Message), request.Kind.ToString());
         private void OnRemoteAttackRejected(CombatRemoteCommandResult result)
             => _state.AddNotification(
                 string.IsNullOrWhiteSpace(result.Reason)
-                    ? "Attack was rejected by host."
-                    : result.Reason,
+                    ? _state.T("Attack was rejected by host.")
+                    : _state.T(result.Reason),
                 GameplayNotificationKind.Error.ToString());
         private void OnRemoteCaptureRejected(SettlementCaptureRemoteResult result)
             => _state.AddNotification(
                 string.IsNullOrWhiteSpace(result.Reason)
-                    ? "Settlement capture was rejected by host."
-                    : result.Reason,
+                    ? _state.T("Settlement capture was rejected by host.")
+                    : _state.T(result.Reason),
                 GameplayNotificationKind.Error.ToString());
         private void OnGameplayChanged(BuildingPlacedSignal _) => _state.MarkDirty();
         private void OnGameplayChanged(BuildingCancelledSignal _) => _state.MarkDirty();
@@ -545,17 +545,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string ownerId = ResolveLocalOwnerId();
             if (string.Equals(signal.NewOwnerId, ownerId, StringComparison.Ordinal))
             {
-                _state.AddNotification("Settlement captured.", GameplayNotificationKind.Success.ToString());
+                _state.AddNotification(_state.T("Settlement captured."), GameplayNotificationKind.Success.ToString());
                 return;
             }
 
             if (string.Equals(signal.PreviousOwnerId, ownerId, StringComparison.Ordinal))
             {
-                _state.AddNotification("A settlement was captured by another kingdom.", GameplayNotificationKind.Warning.ToString());
+                _state.AddNotification(_state.T("A settlement was captured by another kingdom."), GameplayNotificationKind.Warning.ToString());
                 return;
             }
 
-            _state.AddNotification("A settlement changed hands.", GameplayNotificationKind.Info.ToString());
+            _state.AddNotification(_state.T("A settlement changed hands."), GameplayNotificationKind.Info.ToString());
         }
         private void OnGameplayChanged(SettlementResourceChangedSignal _) => _state.MarkDirty();
         private void OnGameplayChanged(UnitCreatedSignal _) => _state.MarkDirty();
@@ -576,23 +576,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             _state.MarkDirty();
             if (signal.OwnerId == ResolveLocalOwnerId())
-                _state.AddNotification($"{signal.UnitTypeId} is ready to deploy.", "Success",
+                _state.AddNotification(_state.TF("{0} is ready to deploy.", _state.T(signal.UnitTypeId)), "Success",
                     signal.BuildingPosition, signal.UnitTypeId, signal.QueueId);
         }
         private void OnBuildingOperational(BuildingOperationalSignal signal)
         {
             _state.MarkDirty();
             if (signal.OwnerId == ResolveLocalOwnerId())
-                _state.AddNotification($"{_readModel.ResolveBuildingDisplayName(signal.BuildingId)} is complete.",
+                _state.AddNotification(_state.TF("{0} is complete.", _state.T(_readModel.ResolveBuildingDisplayName(signal.BuildingId))),
                     "Success", signal.Position, signal.BuildingId);
         }
         private void OnDeliveryCompleted(CaravanDeliveryCompletedSignal signal)
         {
             if (signal.OwnerId != ResolveLocalOwnerId()) return;
-            var details = new StringBuilder("Delivered successfully: ");
+            var details = new StringBuilder(_state.T("Delivered successfully: "));
             foreach (var resource in signal.Resources)
                 details.Append(resource.Key).Append(" +").Append(resource.Value.ToString("0.#")).Append("  ");
-            _state.AddNotification("Wagon delivery complete.", "Success", signal.WarehousePosition,
+            _state.AddNotification(_state.T("Wagon delivery complete."), "Success", signal.WarehousePosition,
                 signal.UnitId, deliveryDetails: details.ToString());
         }
         private void OnGameplayChanged(UnitRecruitmentDeployedSignal _) => _state.MarkDirty();

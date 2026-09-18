@@ -5,6 +5,7 @@
     "Zenject",
     "Unity.InputSystem",
     "Unity.TextMeshPro",
+    "Unity.Newtonsoft.Json",
     "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
   ],
   "includePlatforms": [],

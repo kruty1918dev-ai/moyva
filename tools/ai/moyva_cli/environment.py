@@ -2,7 +2,7 @@ from __future__ import annotations
 import importlib.metadata
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import platform
 import re
 import shutil
@@ -20,10 +20,15 @@ class HostPlatform:
     def target(self): return {"Linux":"linux", "Windows":"windows", "Darwin":"macos"}[self.system]
     @property
     def build_target(self): return {"Linux":"StandaloneLinux64", "Windows":"StandaloneWindows64", "Darwin":"StandaloneOSX"}[self.system]
-    def python(self, venv): return Path(venv) / ("Scripts/python.exe" if self.system == "Windows" else "bin/python")
+    def _path(self, *parts):
+        # A foreign system is modeled, not hosted: use pure paths so layout
+        # strings (bin/python vs Scripts\python.exe) describe the target.
+        if self.system == platform.system(): return Path(*parts)
+        return (PureWindowsPath if self.system == "Windows" else PurePosixPath)(*parts)
+    def python(self, venv): return self._path(venv) / ("Scripts/python.exe" if self.system == "Windows" else "bin/python")
     def player(self, root):
         suffix = {"Linux":".x86_64", "Windows":".exe", "Darwin":".app"}[self.system]
-        return Path(root) / ("Build/Training/MoyvaTraining" + suffix)
+        return self._path(root) / ("Build/Training/MoyvaTraining" + suffix)
     def unity_candidates(self, version):
         home = Path.home()
         if self.system == "Windows":

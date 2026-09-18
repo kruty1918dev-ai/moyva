@@ -4,13 +4,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
     internal sealed class TileStackCell
     {
-        private readonly List<GraphTileLayerSample> _samples = new List<GraphTileLayerSample>(4);
+        private readonly List<TileLayerSample> _samples = new List<TileLayerSample>(4);
 
-        public IReadOnlyList<GraphTileLayerSample> Samples => _samples;
+        public IReadOnlyList<TileLayerSample> Samples => _samples;
         public int Count => _samples.Count;
         public bool IsEmpty => _samples.Count == 0;
 
-        public void Add(GraphTileLayerSample sample)
+        public void Add(TileLayerSample sample)
         {
             _samples.Add(sample);
         }
@@ -20,7 +20,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _samples.Clear();
         }
 
-        public bool TryGetTopCompatibilitySample(out GraphTileLayerSample sample)
+        public bool TryGetTopCompatibilitySample(out TileLayerSample sample)
         {
             sample = default;
             if (_samples.Count == 0)
@@ -29,7 +29,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             int bestIndex = -1;
             for (int i = 0; i < _samples.Count; i++)
             {
-                GraphTileLayerSample candidate = _samples[i];
+                TileLayerSample candidate = _samples[i];
                 if (!candidate.IsTerrainLike
                     || candidate.LayerKind == LayerKind.OverlayTerrain)
                     continue;

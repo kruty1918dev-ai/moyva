@@ -10,6 +10,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal sealed class GameSettingsPanelService : IGameSettingsPanelService, IInitializable, IDisposable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         [InjectOptional] private IGameSettingsViewController _viewController;
         [Inject] private ILocalGameSettingsService _settingsService;
         [InjectOptional] private IConfirmationService _confirmationService;
@@ -42,6 +46,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _viewController.OnSfxVolumeChanged += OnSfxVolumeChanged;
             _viewController.OnUiVolumeChanged -= OnUiVolumeChanged;
             _viewController.OnUiVolumeChanged += OnUiVolumeChanged;
+            _viewController.OnAmbienceVolumeChanged -= OnAmbienceVolumeChanged;
+            _viewController.OnAmbienceVolumeChanged += OnAmbienceVolumeChanged;
             _viewController.OnMutedChanged -= OnMutedChanged;
             _viewController.OnMutedChanged += OnMutedChanged;
             _viewController.OnGraphicsProfileChanged -= OnGraphicsProfileChanged;
@@ -107,6 +113,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _viewController.OnMusicVolumeChanged -= OnMusicVolumeChanged;
                 _viewController.OnSfxVolumeChanged -= OnSfxVolumeChanged;
                 _viewController.OnUiVolumeChanged -= OnUiVolumeChanged;
+                _viewController.OnAmbienceVolumeChanged -= OnAmbienceVolumeChanged;
                 _viewController.OnMutedChanged -= OnMutedChanged;
                 _viewController.OnGraphicsProfileChanged -= OnGraphicsProfileChanged;
                 _viewController.OnTargetFrameRateChanged -= OnTargetFrameRateChanged;
@@ -166,6 +173,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private void OnUiVolumeChanged(float volume)
         {
             _settingsService.SetUiVolume(volume);
+        }
+
+        private void OnAmbienceVolumeChanged(float volume)
+        {
+            _settingsService.SetAmbienceVolume(volume);
         }
 
         private void OnMutedChanged(bool isMuted)
@@ -239,7 +251,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _confirmationService.Show(new ConfirmationRequest
             {
                 LabelText = "Confirmation",
-                MessageText = "Delete all local saves?",
+                MessageText = T("Delete all local saves?"),
                 OnConfirm = _settingsService.DeleteAllSaves,
                 OnCancel = () => { }
             });
@@ -270,8 +282,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 _confirmationService?.Show(new ConfirmationRequest
                 {
-                    LabelText = "Control conflict",
-                    MessageText = $"This key is already assigned to {conflictingAction}.",
+                    LabelText = T("Control conflict"),
+                    MessageText = TF("This key is already assigned to {0}.", conflictingAction),
                     OnConfirm = () => { }
                 });
             }

@@ -48,46 +48,46 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _uiGateway?.OpenJoinPanelForce(joinPanelName);
             });
 
-            _infoPanelService?.Show(new InfoMessage(title, string.IsNullOrWhiteSpace(message) ? "Action: Refresh the room list." : message));
+            _infoPanelService?.Show(new InfoMessage(title, string.IsNullOrWhiteSpace(message) ? T("Action: Refresh the room list.") : T(message)));
         }
 
-        private static string BuildJoinFailureMessage(Exception exception)
+        private string BuildJoinFailureMessage(Exception exception)
         {
             if (exception == null)
-                return "Could not join the lobby. Try again.";
+                return T("Could not join the lobby. Try again.");
 
             var message = exception.Message;
             if (string.IsNullOrWhiteSpace(message))
-                return "Could not join the lobby. Try again.";
+                return T("Could not join the lobby. Try again.");
 
             if (message.IndexOf("relay", StringComparison.OrdinalIgnoreCase) >= 0)
-                return "Could not get or use the room Relay code. Refresh the lobby list and try again.";
+                return T("Could not get or use the room Relay code. Refresh the lobby list and try again.");
 
             if (message.IndexOf("lan", StringComparison.OrdinalIgnoreCase) >= 0)
-                return "Could not connect to the LAN session. Make sure the host is still in the room and try again.";
+                return T("Could not connect to the LAN session. Make sure the host is still in the room and try again.");
 
             return message;
         }
 
-        private static string BuildJoinFailureMessage(DomainError error)
+        private string BuildJoinFailureMessage(DomainError error)
         {
             if (error.IsNone)
-                return "Could not join the lobby. Try again.";
+                return T("Could not join the lobby. Try again.");
 
             if (error.Code == DomainErrorCode.WrongPassword)
-                return "Wrong room password. Try again.";
+                return T("Wrong room password. Try again.");
 
             if (error.Code == DomainErrorCode.NotFound)
-                return "Room was not found or is no longer available. Refresh the list and try again.";
+                return T("Room was not found or is no longer available. Refresh the list and try again.");
 
             if (error.Code == DomainErrorCode.Validation)
                 return string.IsNullOrWhiteSpace(error.Message)
-                    ? "Invalid join data. Check the parameters and try again."
-                    : error.Message;
+                    ? T("Invalid join data. Check the parameters and try again.")
+                    : T(error.Message);
 
             return string.IsNullOrWhiteSpace(error.Message)
-                ? "Could not join the lobby. Try again."
-                : error.Message;
+                ? T("Could not join the lobby. Try again.")
+                : T(error.Message);
         }
 
         private readonly struct ProbeResult

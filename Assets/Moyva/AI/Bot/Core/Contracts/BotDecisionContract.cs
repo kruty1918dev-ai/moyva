@@ -1,6 +1,7 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using UnityEngine;
 
 namespace Kruty1918.Moyva.AI.Bot
 {
@@ -8,23 +9,36 @@ namespace Kruty1918.Moyva.AI.Bot
     public enum BotCapabilityId { Turn = 0, Movement = 1, Combat = 2, Recruitment = 3, Construction = 4, Capture = 5, Economy = 6, Exploration = 7 }
     public static class BotDecisionContract
     {
-        public const int ContractVersion = 2, ObservationSchemaVersion = 2, CandidateSchemaVersion = 2, ActionSchemaVersion = 1;
+        public const int ContractVersion = 2, ObservationSchemaVersion = 3, CandidateSchemaVersion = 2, ActionSchemaVersion = 1;
         public const int MaxCandidateSlots = 128, GlobalFeatureCount = 96, CandidateFeatureCount = 32;
         public const int SpatialSize = 8, SpatialChannels = 10, SpatialFeatureCount = 640;
         public const int ObservationCount = GlobalFeatureCount + SpatialFeatureCount + MaxCandidateSlots * CandidateFeatureCount;
-        public static string Hash { get; } = ComputeHash();
-        private static string ComputeHash()
+        public const string SpecResourceId = "MoyvaBotContract";
+        public static BotContractSpec Spec { get; } = LoadSpec();
+        public static string Hash { get; } = ComputeHash(Spec);
+
+        private static BotContractSpec LoadSpec()
         {
-                using var sha = SHA256.Create();
-                return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(
-                    "MoyvaBot:v2:o2:c2:a1:slots128:global96:spatial8x8x10:candidate32:"
-                    + "global=0active,1round,2phase,3ownUnits,4visibleOtherUnits,5unitsAvailable,6economyAvailable,7spatialAvailable,8visibilityAvailable,"
-                    + "9scenarioGoal,10scenarioStep,11scenarioProgress,12ownSettlements,13visibleEnemySettlements,16capabilities8,"
-                    + "24ownResourcesTotal,25poolResourcesTotal,26resourceKinds,27food,28wood,29stone,30iron,31gold,32productionEstimate,33populationAvailable,"
-                    + "34goalCastle,35goalProduction,36goalEconomy,37goalRecruit,38goalMove,39goalScout,40goalCombat,41goalCapture,42goalWin:"
-                    + "candidate=present,intentOneHot12,distance,cost,ownHp,targetHp,visible,path,complete,buildingType,unitType,purpose,x,y,duration,reserved:"
-                    + "intents=None,EndTurn,Move,Attack,Capture,Recruit,Build,Explore,Defend,Economy,Reposition,Wait")))
-                    .Replace("-", "").ToLowerInvariant();
+            var asset = Resources.Load<TextAsset>(SpecResourceId);
+            var spec = asset != null ? JsonUtility.FromJson<BotContractSpec>(asset.text) : null;
+            if (spec == null)
+                throw new InvalidOperationException("AI contract preset is missing or invalid: Resources/" + SpecResourceId + ".json");
+            spec.Validate();
+            if (spec.contractVersion != ContractVersion || spec.observationSchemaVersion != ObservationSchemaVersion
+                || spec.candidateSchemaVersion != CandidateSchemaVersion || spec.actionSchemaVersion != ActionSchemaVersion
+                || spec.maxCandidateSlots != MaxCandidateSlots || spec.globalFeatureCount != GlobalFeatureCount
+                || spec.candidateFeatureCount != CandidateFeatureCount || spec.spatialSize != SpatialSize
+                || spec.spatialChannels != SpatialChannels || spec.ObservationCount != ObservationCount)
+                throw new InvalidOperationException(
+                    SpecResourceId + ".json drifted from BotDecisionContract constants; update both together.");
+            return spec;
+        }
+
+        private static string ComputeHash(BotContractSpec spec)
+        {
+            using var sha = SHA256.Create();
+            return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(spec.Signature())))
+                .Replace("-", "").ToLowerInvariant();
         }
     }
     public static class BotObservationSchema
@@ -42,6 +56,9 @@ namespace Kruty1918.Moyva.AI.Bot
         public const int GoalCastle = 34, GoalProduction = 35, GoalEconomy = 36;
         public const int GoalRecruit = 37, GoalMove = 38, GoalScout = 39;
         public const int GoalCombat = 40, GoalCapture = 41, GoalWin = 42;
+        // Aggregate tactical metrics for own forces. Distinct from the goal
+        // vector: these carry continuous values, goals carry 0/1 presence flags.
+        public const int TacticalVision = 43, TacticalAttack = 44, TacticalHeight = 45;
         public const int SpatialOffset = 96, CandidateOffset = 736;
         public const int Size = BotDecisionContract.ObservationCount;
     }

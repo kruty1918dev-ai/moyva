@@ -6,7 +6,7 @@ using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
-using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Generator.API;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 {
     /// <summary>
     /// Окремий menu-only компонент для фону головного меню.
-    /// Генерує випадковий світ із GraphAsset і показує його як menu-only фон
+    /// Генерує випадковий світ із GeneratorMapRecipe і показує його як menu-only фон
     /// без впливу на gameplay системи.
     /// </summary>
     [DisallowMultipleComponent]
@@ -29,13 +29,13 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         [Tooltip("RawImage, на який буде встановлено згенеровану текстуру карти.")]
         [SerializeField] private RawImage _targetImage;
 
-        [Tooltip("GraphAsset генератора, з якого будується menu preview.")]
-        [SerializeField] private GraphAsset _graphAsset;
+        [Tooltip("GeneratorMapRecipe рецепт, з якого будується menu preview.")]
+        [SerializeField] private GeneratorMapRecipe _mapRecipe;
 
         [Tooltip("Глобальні Moyva Project Settings, які визначають flat/isometric/hex/3D projection для preview.")]
         [SerializeField] private MoyvaProjectSettingsSO _projectSettings;
 
-        [Tooltip("Опціональний override TileRegistry. Якщо порожньо — береться з GraphAsset.")]
+        [Tooltip("Опціональний override TileRegistry. Якщо порожньо — береться з GeneratorMapRecipe.")]
         [SerializeField] private TileRegistrySO _tileRegistryOverride;
 
         [Tooltip("Реєстр map-об'єктів для overlay шару меню-прев'ю.")]

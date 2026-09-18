@@ -5,6 +5,7 @@
     "legacyStage": 3,
     "learnerBuildsInitialCastle": false,
     "fullGame": false,
+    "combination": true,
     "prerequisites": ["stable-economy", "recruitment"],
     "minMeaningfulCandidates": 2,
     "maxForcedActionRatio": 0.9,

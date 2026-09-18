@@ -34,8 +34,9 @@ namespace GiantGrey.TileWorldCreator
     [InitializeOnLoad]
     public class PaintSceneOverlay : Overlay
     {
-        private const string MoyvaBindingTypeName =
-            "Kruty1918.Moyva.Generator.Runtime.MoyvaTileWorldCreatorGraphBinding";
+        private const string MoyvaInstallerTypeName =
+            "Kruty1918.Moyva.Generator.GeneratorInstaller";
+        private const string MoyvaInstallerManagerFieldName = "_tileWorldCreatorManager";
         private const string MoyvaOverlayBridgeTypeName =
             "Kruty1918.Moyva.Generator.Editor.MoyvaTileWorldCreatorManagerInspectorBridge, Kruty1918.Moyva.Generator.Editor";
         private VisualElement root;
@@ -391,7 +392,7 @@ namespace GiantGrey.TileWorldCreator
                 }
 
                 var managedInfo = new HelpBox(
-                    "This manager is controlled by a Moyva GraphAsset. Painting and native TWC build actions are disabled here so the graph, authoritative heights and chunk-first mesh output cannot become desynchronized.",
+                    "This manager is controlled by a Moyva GeneratorMapRecipe. Painting and native TWC build actions are disabled here so the recipe, authoritative heights and chunk-first mesh output cannot become desynchronized.",
                     HelpBoxMessageType.Info);
                 managedInfo.style.marginTop = 6;
                 root.Add(managedInfo);
@@ -525,18 +526,29 @@ namespace GiantGrey.TileWorldCreator
             if (manager == null)
                 return false;
 
-            MonoBehaviour[] components = manager.GetComponents<MonoBehaviour>();
-            for (int i = 0; i < components.Length; i++)
+            Type installerType = null;
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
             {
-                MonoBehaviour component = components[i];
-                if (component != null
-                    && string.Equals(
-                        component.GetType().FullName,
-                        MoyvaBindingTypeName,
-                        StringComparison.Ordinal))
-                {
+                installerType = assemblies[i].GetType(MoyvaInstallerTypeName, false);
+                if (installerType != null)
+                    break;
+            }
+            if (installerType == null)
+                return false;
+
+            var managerField = installerType.GetField(
+                MoyvaInstallerManagerFieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            if (managerField == null)
+                return false;
+
+            var installers = UnityEngine.Object.FindObjectsByType(
+                installerType, FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < installers.Length; i++)
+            {
+                if (ReferenceEquals(managerField.GetValue(installers[i]), manager))
                     return true;
-                }
             }
 
             return false;
@@ -562,7 +574,7 @@ namespace GiantGrey.TileWorldCreator
                     return;
 
                 ShowMoyvaBridgeError(
-                    "Moyva generation did not complete. Check the GraphAsset validation messages; native TWC generation was not started.");
+                    "Moyva generation did not complete. Check the recipe validation messages; native TWC generation was not started.");
             }
             catch (TargetInvocationException exception)
             {

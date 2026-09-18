@@ -86,6 +86,9 @@ namespace Kruty1918.Moyva.Bootstrap
             GameplayHudBindings.Install(Container);
             CaravanGameplayAccess.Install(Container);
 
+            // Аудіо-шар геймплею: ambient-емітери, zoom-фокус, доменний фідбек.
+            Kruty1918.Moyva.GameAudio.Runtime.GameAudioInstaller.InstallGameplay(Container);
+
             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
             // Виконується після TestUnitSpawner, щоб знати чи є збереження.
             Container.BindInstance(startingPositionSettings).AsSingle();

@@ -84,7 +84,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             [InjectOptional] List<IScenePreActivationInitializer> preActivationInitializers = null,
             [InjectOptional] IServiceModeProfileProvider serviceModeProfileProvider = null,
             [InjectOptional] IMultiplayerStartupBarrier startupBarrier = null,
-            [InjectOptional] ISessionManager networkSession = null)
+            [InjectOptional] ISessionManager networkSession = null,
+            [InjectOptional] Kruty1918.Moyva.Shared.Localization.ILocalizationService localization = null)
         {
             _config = Guard.NotNull(config, nameof(config));
             _overlayLoader = Guard.NotNull(overlayLoader, nameof(overlayLoader));
@@ -94,9 +95,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             _sceneTransitionService = sceneTransitionService;
             _startupBarrier = startupBarrier;
             _networkSession = networkSession;
+            _loca = localization;
             _preActivationInitializers = preActivationInitializers != null ? preActivationInitializers.ToArray() : Array.Empty<IScenePreActivationInitializer>();
             _gameplayProfile = serviceModeProfileProvider?.Get(ServiceRuntimeMode.Gameplay) ?? ServiceModeProfileDefaults.Gameplay;
         }
+
+        private readonly Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+
+        /// <summary>Локалізований статус-рядок під прогресом overlay (ключ = source text).</summary>
+        private void SetStatus(string key) => _overlayLoader?.SetOverlayStatus(_loca?.T(key) ?? key);
 
         /// <summary>
         /// Запустити всі фази переходу в gameplay у фіксованій послідовності.
@@ -164,16 +171,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             // 2: Блокуємо overlay від передчасного закриття і відкриваємо його на нульовому прогресі.
             _overlayLoader.LockOverlay();
             _overlayLoader.LoadOverlay(0f, 100f, "%");
+            SetStatus("Preparing the world…");
             Debug.Log($"{Prefix} Preload started for scene '{_sceneName}'.");
 
             // 3: Попередньо підвантажуємо базові startup-ресурси, від яких залежить сцена.
             await PreloadStartupResourcesAsync(ct);
             _overlayLoader.UpdateOverlay(8f, 100f, "%");
+            SetStatus("Warming up systems…");
 
             // 4: За наявності окремого prewarm сервісу даємо йому прогріти системи до активації сцени.
             if (_startupPrewarmService != null)
                 await _startupPrewarmService.PrewarmAsync(ct);
             _overlayLoader.UpdateOverlay(15f, 100f, "%");
+            SetStatus("Loading the game scene…");
 
             // 5: Починаємо асинхронне завантаження gameplay-сцени в Single-режимі.
             _loadOp = SceneManager.LoadSceneAsync(_sceneName, LoadSceneMode.Single);
@@ -275,6 +285,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
 
             // 4: Після warmup показуємо на overlay повну готовність до активації сцени.
             _overlayLoader.UpdateOverlay(100f, 100f, "%");
+            SetStatus("Almost ready…");
 
             // 5: Опційно даємо невелику паузу перед активацією, щоб згладити UX-перехід.
             if (_config.sceneActivationDelay > 0f)

@@ -1,7 +1,6 @@
 using System;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
-using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using Zenject;
@@ -14,7 +13,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         private readonly Configuration _configuration;
         public MenuWorldPreviewData Data { get; private set; }
-        public OwnedGameplayMap(DiContainer container, GameObject root, GraphAsset graph,
+        public OwnedGameplayMap(DiContainer container, GameObject root, GeneratorMapRecipe recipe,
             TileRegistrySO tiles, MapObjectRegistrySO objects, int size, int seed)
         {
             var manager = root.AddComponent<TileWorldCreatorManager>();
@@ -24,10 +23,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var previousRandom = UnityEngine.Random.state;
             try
             {
-                GeneratorBindingGroups.InstallGraphEvaluation(container, graph, manager, tiles, objects, root);
-                var result = container.Resolve<IGraphTwcMapGenerationPipeline>().Generate(
-                    new GraphTwcMapGenerationRequest(graph, manager, size, size, null, seed));
-                if (result.LogicalMap == null) throw new InvalidOperationException("Production graph pipeline produced no logical world.");
+                GeneratorBindingGroups.InstallMapGeneration(container, recipe, manager, tiles, objects, root);
+                var result = container.Resolve<IMapGenerationPipeline>().Generate(
+                    new MapGenerationRequest(recipe, manager, size, size, null, seed));
+                if (result.LogicalMap == null) throw new InvalidOperationException("Production recipe pipeline produced no logical world.");
                 Data = new MenuWorldPreviewData(result.BiomeMap.GetLength(0), result.BiomeMap.GetLength(1), seed,
                     result.BiomeMap, result.ObjectMap, result.HeightMap, result.BuildingMap);
             }

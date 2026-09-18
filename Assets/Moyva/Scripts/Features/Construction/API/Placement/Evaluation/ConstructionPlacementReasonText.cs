@@ -3,7 +3,7 @@ using System;
 namespace Kruty1918.Moyva.Construction.API
 {
     /// <summary>
-    /// Converts stable placement reason codes to short player-facing Ukrainian text.
+    /// Converts stable placement reason codes to short player-facing source text (localized at render).
     /// Detailed spatial blockers remain available in BuildingPlacementEvaluationResult.
     /// </summary>
     public static class ConstructionPlacementReasonText
@@ -15,35 +15,35 @@ namespace Kruty1918.Moyva.Construction.API
                 case "allowed":
                     return null;
                 case "resources":
-                    return "Недостатньо ресурсів.";
+                    return "Not enough resources.";
                 case "authority":
-                    return "Цю дію може виконати лише власник.";
+                    return "Only the owner can perform this action.";
                 case "occupied-tile":
-                    return "Місце вже зайняте.";
+                    return "The tile is already occupied.";
                 case "spacing":
-                    return "Надто близько до іншої будівлі.";
+                    return "Too close to another building.";
                 case "fog":
-                    return "Спочатку розвідайте цю ділянку.";
+                    return "Scout this area first.";
                 case "influence-required":
-                    return "Потрібна зона впливу поселення.";
+                    return "A settlement influence zone is required.";
                 case "influence-overlap":
-                    return "Зони поселень не можуть перетинатися.";
+                    return "Settlement zones cannot overlap.";
                 case "terrain":
-                    return "Непридатний рельєф для цієї будівлі.";
+                    return "Unsuitable terrain for this building.";
                 case "adjacency":
-                    return "Не виконано вимоги до сусідніх клітинок.";
+                    return "Adjacent tile requirements are not met.";
                 case "prerequisite":
-                    return "Спочатку виконайте вимоги будівлі.";
+                    return "Meet the building requirements first.";
                 case "configuration":
                 case "building-id-empty":
-                    return "Будівля налаштована некоректно.";
+                    return "The building is configured incorrectly.";
                 case "spatial-rules":
-                    return "У цьому місці будувати не можна.";
+                    return "Building is not allowed here.";
                 case "resource-context-deferred":
-                    return "Вартість буде перевірена після вибору місця.";
+                    return "Cost will be checked after choosing a location.";
                 default:
                     return string.IsNullOrWhiteSpace(fallback)
-                        ? "Не виконано умови будівництва."
+                        ? "Construction requirements are not met."
                         : fallback;
             }
         }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.UIActions.API;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.UIActions.Runtime
 {
@@ -9,12 +10,15 @@ namespace Kruty1918.Moyva.UIActions.Runtime
     {
         private readonly Dictionary<UiActionId, IUiActionHandler> _handlers = new();
         private readonly IUiActionJournal _journal;
+        private readonly IUiActionFeedbackSink _feedbackSink;
 
         public UiActionRouter(
             List<IUiActionHandler> handlers,
-            IUiActionJournal journal)
+            IUiActionJournal journal,
+            [InjectOptional] IUiActionFeedbackSink feedbackSink = null)
         {
             _journal = journal;
+            _feedbackSink = feedbackSink;
             RegisterHandlers(handlers ?? new List<IUiActionHandler>());
         }
 
@@ -35,6 +39,7 @@ namespace Kruty1918.Moyva.UIActions.Runtime
         {
             UiActionResult result = ExecuteCore(request);
             _journal?.Record(request, result);
+            _feedbackSink?.OnActionExecuted(request, result);
             return result;
         }
 

@@ -91,6 +91,13 @@
       ],
       "title": "Ui Parameter"
     },
+    "ambienceParameter": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Ambience Parameter"
+    },
     "defaultMaster": {
       "type": "number",
       "title": "Default Master"
@@ -106,6 +113,10 @@
     "defaultUi": {
       "type": "number",
       "title": "Default Ui"
+    },
+    "defaultAmbience": {
+      "type": "number",
+      "title": "Default Ambience"
     }
   }
 }

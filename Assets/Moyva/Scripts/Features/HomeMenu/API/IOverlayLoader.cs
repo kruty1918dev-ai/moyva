@@ -23,6 +23,13 @@ namespace Kruty1918.Moyva.HomeMenu.API
         /// <param name="sufix">Суфікс відображення прогресу.</param>
         void UpdateOverlay(float value, float maxValue = 100, string sufix = "%");
 
+        /// <summary>
+        /// Встановлює текстовий статус (лог-крок) під прогресом оверлею.
+        /// Викликач передає вже локалізований текст; порожній рядок ховає статус.
+        /// </summary>
+        /// <param name="status">Відображуваний статус-рядок.</param>
+        void SetOverlayStatus(string status);
+
         // If forceImmediate == true, the implementation should hide the overlay immediately
         // (skip delayed animation) to guarantee the panel is closed when initialization completes.
         /// <summary>

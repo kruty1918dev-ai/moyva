@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             SignalBus signalBus,
             IMapVisualWorldState state,
             IGridProjection projection,
-            IGraphTwcMapDataDiagnostics graphDiagnostics,
+            IMapGenerationDiagnostics diagnostics,
             IWorldGenerationSignalState signalState,
             ITileWorldCreatorWorldBuildBridge tileWorldCreatorBridge,
             ITileTypeRepository tileTypes)
@@ -25,10 +25,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var tileResolver = new MapVisualTileIdResolver(tileRegistry);
             return new MapVisualWorldBuildOrchestrator(
                 state: state,
-                dataFactory: new MapVisualWorldDataFactory(gridService, projection, mapDataGenerator, graphDiagnostics),
+                dataFactory: new MapVisualWorldDataFactory(gridService, projection, mapDataGenerator, diagnostics),
                 integrity: new GeneratedWorldDataIntegrityService(tileResolver, tileTypes),
                 gridWriter: new MapVisualGridWriter(gridService, tileResolver, tileTypes),
-                signals: new MapVisualWorldSignalPublisher(signalBus, projection, graphDiagnostics, signalState),
+                signals: new MapVisualWorldSignalPublisher(signalBus, projection, diagnostics, signalState),
                 tileWorldCreatorBridge: tileWorldCreatorBridge);
         }
     }

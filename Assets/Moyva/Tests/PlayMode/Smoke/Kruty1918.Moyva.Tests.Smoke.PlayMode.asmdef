@@ -1,0 +1,17 @@
+{
+  "name": "Kruty1918.Moyva.Tests.Smoke.PlayMode",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Smoke.PlayMode",
+  "references": [
+    "Zenject",
+    "Kruty1918.Moyva.HomeMenu"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "autoReferenced": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

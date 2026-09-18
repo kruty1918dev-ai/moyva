@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.Signals
     }
 
     /// <summary>
-    /// Надсилається <see cref="Kruty1918.Moyva.WorldCreation.UI.WorldCreationUIController"/>
+    /// Надсилається шаром налаштування світу
     /// коли гравець натискає «Створити світ» і конфіг пройшов валідацію.
     ///
     /// Отримується: Bootstrap / SceneLoader — щоб ініціалізувати сцену з потрібними

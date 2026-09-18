@@ -16,7 +16,6 @@ using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.GameMode.Runtime;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
-using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
 using Kruty1918.Moyva.Jsonization;
@@ -42,6 +41,7 @@ namespace Kruty1918.Moyva.AI.Training
         private OwnedGameplayMap _world;
         private readonly HashSet<string> _legitimatelyRecruitedUnitIds = new HashSet<string>(StringComparer.Ordinal);
         private readonly Dictionary<string, Vector2Int> _openingAnchors = new Dictionary<string, Vector2Int>(StringComparer.Ordinal);
+        private readonly string _castleBuildingTypeId;
         private bool _disposed;
         private bool _setupPhase = true;
         public bool EconomyInstalled { get; private set; }
@@ -70,18 +70,19 @@ namespace Kruty1918.Moyva.AI.Training
 
         public GameplayTrainingEpisode(TrainingConfig config, TrainingResetContext context)
         {
+            _castleBuildingTypeId = config.castleBuildingTypeId;
             _root = new GameObject("TrainingWorld_" + context.EpisodeId);
             var randomState = UnityEngine.Random.state;
             try
             {
                 UnityEngine.Random.InitState(context.Seed);
                 MoyvaJsonRuntime.EnsureLoaded();
-                var graph = MoyvaJsonRuntime.Get<GraphAsset>(config.generatorGraphId);
+                var recipe = MoyvaJsonRuntime.Get<GeneratorMapRecipe>(config.generatorRecipeId);
                 Install<Kruty1918.Moyva.Signals.SignalBusInstaller>();
-                var tiles = graph.TileRegistry ?? Required<TileRegistrySO>();
+                var tiles = recipe.TileRegistry ?? Required<TileRegistrySO>();
                 int worldSize = context.WorldSize > 0 ? context.WorldSize : config.worldSize;
                 GridInstaller.InstallPreviewBindings(_container, tiles, Required<MoyvaProjectSettingsSO>(), worldSize, worldSize);
-                _world = new OwnedGameplayMap(_container, _root, graph, tiles, Required<MapObjectRegistrySO>(), worldSize, context.Seed);
+                _world = new OwnedGameplayMap(_container, _root, recipe, tiles, Required<MapObjectRegistrySO>(), worldSize, context.Seed);
                 var world = _world.Data;
                 EnrichTrainingBiomes(world, context.Seed);
                 Install<ObjectsMapInstaller>();
@@ -156,7 +157,8 @@ namespace Kruty1918.Moyva.AI.Training
                 // gameplay services while _setupPhase is still true, so nothing
                 // here can produce rewards, progress or mastery.
                 TrainingScenarioScaffolder.Apply(_container, world, _openingAnchors,
-                    context.Scenario, context.LearnInitialCastle);
+                    context.Scenario, context.LearnInitialCastle, config.castleBuildingTypeId,
+                    config.spawnValidationUnitTypeId);
 
                 Gateway = new MoyvaBotTurnAdapter(Turns, _container.Resolve<ITurnAuthorityPolicy>());
                 _container.Bind<IBotOpeningPlacementAnchorSource>().FromInstance(this).AsSingle();
@@ -169,7 +171,8 @@ namespace Kruty1918.Moyva.AI.Training
                 Outcomes = new TrainingGameplayEventBridge(signals, _container.Resolve<ITurnHistoryQuery>(), TrainingGameplayScope.LearnerId,
                     _container.Resolve<IUnitCombatService>(), owners, context.EpisodeId, _container.TryResolve<IBuildingRegistry>());
                 _opponent = new BotDecisionOrchestrator(Gateway, Capabilities, Perception,
-                    TrainingOpponentPolicy.Create(context.Scenario?.startingConditions?.opponent?.archetype),
+                    TrainingOpponentPolicy.Create(context.Scenario?.startingConditions?.opponent?.archetype,
+                        config.opponentModelPath),
                     new BotRuntimeConfig { curriculumStage = (int)TrainingCurriculumStage.FullGame, visibleDelay = 0 },
                     new BotTelemetryHub(4));
                 if (!Turns.CanOwnerAct(TrainingGameplayScope.LearnerId, out var reason))
@@ -226,13 +229,13 @@ namespace Kruty1918.Moyva.AI.Training
                     foreach (var placement in Placements.GetSavedPlacements())
                     {
                         if (!string.Equals(placement.OwnerId, learner, StringComparison.Ordinal)
-                            || !string.Equals(placement.BuildingId, "castle-01", StringComparison.Ordinal))
+                            || !string.Equals(placement.BuildingId, _castleBuildingTypeId, StringComparison.Ordinal))
                             continue;
                         operationalCastles++;
                     }
                 }
                 if (operationalCastles > 0)
-                    operationalByType["castle-01"] = operationalCastles;
+                    operationalByType[_castleBuildingTypeId] = operationalCastles;
 
                 var buildingRegistry = _container.TryResolve<IBuildingRegistry>();
                 var recruitmentQuery = _container.TryResolve<IUnitRecruitmentQuery>();
@@ -343,7 +346,7 @@ namespace Kruty1918.Moyva.AI.Training
                     float noise = Hash01(seed, x, y);
                     bool coast = AdjacentToWater(world, cell);
                     if (coast && height < 0.62f)
-                        world.BiomeMap[x, y] = "sand";
+                        world.BiomeMap[x, y] = "beach";
                     else if (height > 0.82f)
                         world.BiomeMap[x, y] = "mountain";
                     else if (height > 0.68f || noise > 0.86f)

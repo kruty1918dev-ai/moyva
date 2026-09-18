@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.API;
+using Kruty1918.Moyva.Shared.Localization;
 using UnityEngine;
 using UnityHTML.Runtime;
 using Zenject;
@@ -19,9 +20,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly HomeMenuMoyvaUiViewController _view;
         private readonly HomeMenuMoyvaUiBridge _bridge;
         private readonly HomeMenuMoyvaUiAnchor[] _anchors;
+        private readonly ILocalizationService _localization;
+        private readonly LocalizationFontService _localizationFonts;
 
         private HomeMenuMoyvaUiAnchor _mountedAnchor;
         private string _lastViewportClass = string.Empty;
+        private string _mountedViewportClass = string.Empty;
+        private string _lastRouteMarkup;
+        private string _lastBrandMarkup;
+        private string _lastModalsMarkup;
         private bool _loggedFallback;
         private bool _initialized;
         private int _lastStateChangeFrame = -1;
@@ -34,7 +41,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             HomeMenuMoyvaUiState state,
             HomeMenuMoyvaUiViewController view,
             [InjectOptional] ILobbyFlowContext lobbyFlowContext = null,
-            [InjectOptional] HomeMenuMoyvaUiAnchor[] anchors = null)
+            [InjectOptional] HomeMenuMoyvaUiAnchor[] anchors = null,
+            [InjectOptional] ILocalizationService localization = null,
+            [InjectOptional] LocalizationFontService localizationFonts = null)
         {
             _config = config;
             _navigation = navigation;
@@ -44,6 +53,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _view = view;
             _bridge = new HomeMenuMoyvaUiBridge(_navigation, _confirmationService, _view, lobbyFlowContext, _state);
             _anchors = anchors ?? Array.Empty<HomeMenuMoyvaUiAnchor>();
+            _localization = localization;
+            _localizationFonts = localizationFonts;
         }
 
         public void Initialize()
@@ -62,6 +73,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _mountedAnchor.PrepareForMount();
             _mountedAnchor.SetLegacyUiVisible(false);
 
+            // Multilingual fallback chain + glyph warmup must exist before the first mount,
+            // otherwise persisted non-Latin languages render as missing glyphs on frame one.
+            _localizationFonts?.RegisterPrimaryFont(_mountedAnchor.FontAsset);
+            if (_localization != null)
+                _localizationFonts?.Warmup(_localization.CurrentLanguage);
+
             _state.Changed += HandleStateChanged;
             _navigation.OnMenuChanged += HandleMenuChanged;
             RenderIfNeeded(force: true);
@@ -73,7 +90,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
 
             _view.Controls.Tick();
-            _mountedAnchor.ApplyViewportLayoutNow();
             var viewportClass = _mountedAnchor.CurrentViewportClass;
             if (!string.Equals(_lastViewportClass, viewportClass, StringComparison.Ordinal))
             {
@@ -121,9 +137,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             var viewportClass = _mountedAnchor.CurrentViewportClass;
             _lastViewportClass = viewportClass;
-            var html = HomeMenuMoyvaUiMarkup.Build(_state, _view, viewportClass);
-            var css = _mountedAnchor.CssAsset != null ? _mountedAnchor.CssAsset.text : string.Empty;
-            var document = new UnityHtmlDocument(html, css, "MoyvaUI HomeMenu");
             var globals = new Dictionary<string, object>
             {
                 ["moyvaMenu"] = _bridge
@@ -131,6 +144,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (_mountedAnchor.FontAsset != null)
                 globals["moyvaFont"] = _mountedAnchor.FontAsset;
+
+            if (!force && TryApplyRegionalUpdate(viewportClass, globals))
+                return;
+
+            var route = HomeMenuMoyvaUiMarkup.BuildRouteMarkup(_state, _view);
+            var brand = HomeMenuMoyvaUiMarkup.BuildBrandMarkup(_view);
+            var html = HomeMenuMoyvaUiMarkup.Build(_state, _view, viewportClass);
+            var css = _mountedAnchor.CssAsset != null ? _mountedAnchor.CssAsset.text : string.Empty;
+            var document = new UnityHtmlDocument(html, css, "MoyvaUI HomeMenu");
 
             UnityHtmlMountResult result;
             using (HomeMenuUiPerformanceMetrics.HtmlMountMarker.Auto())
@@ -147,8 +169,45 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             _state.IsMounted = true;
+            _mountedViewportClass = viewportClass;
+            _lastRouteMarkup = route;
+            _lastBrandMarkup = brand;
+            _lastModalsMarkup = HomeMenuMoyvaUiMarkup.BuildModalsMarkup(_view);
             _mountedAnchor.SetMoyvaUiVisible(true);
             _mountedAnchor.SetLegacyUiVisible(false);
+        }
+
+        private bool TryApplyRegionalUpdate(string viewportClass, IReadOnlyDictionary<string, object> globals)
+        {
+            if (!_state.IsMounted ||
+                !string.Equals(viewportClass, _mountedViewportClass, StringComparison.Ordinal))
+                return false;
+
+            var modals = HomeMenuMoyvaUiMarkup.BuildModalsMarkup(_view);
+            if (!string.Equals(modals, _lastModalsMarkup, StringComparison.Ordinal))
+                return false;
+
+            var route = HomeMenuMoyvaUiMarkup.BuildRouteMarkup(_state, _view);
+            var brand = HomeMenuMoyvaUiMarkup.BuildBrandMarkup(_view);
+            if (string.Equals(route, _lastRouteMarkup, StringComparison.Ordinal) &&
+                string.Equals(brand, _lastBrandMarkup, StringComparison.Ordinal))
+            {
+                _lastModalsMarkup = modals;
+                return true;
+            }
+
+            var regions = new Dictionary<string, string>
+            {
+                [HomeMenuMoyvaUiMarkup.NavRegionId] = route,
+                [HomeMenuMoyvaUiMarkup.BrandRegionId] = brand
+            };
+            if (!_host.UpdateRegions(regions, globals))
+                return false;
+
+            _lastRouteMarkup = route;
+            _lastBrandMarkup = brand;
+            _lastModalsMarkup = modals;
+            return true;
         }
 
         private bool CanMount(HomeMenuMoyvaUiAnchor anchor)

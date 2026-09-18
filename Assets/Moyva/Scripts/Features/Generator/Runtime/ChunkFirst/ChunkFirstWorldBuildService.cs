@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
-using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.MapChunks.API;
 using UnityEngine;
 
@@ -93,7 +93,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         }
 
         private void ResolveCompositions(
-     GraphLogicalTileMap map,
+     LogicalTileMap map,
      IReadOnlyList<ChunkBuildArea> areas)
         {
             _resolved.Clear();
@@ -129,7 +129,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
         }
 
-        private static float ResolveLowestTerrainHeight(GraphLogicalTileMap map)
+        private static float ResolveLowestTerrainHeight(LogicalTileMap map)
         {
             if (map == null)
                 return 0f;
@@ -243,7 +243,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         }
 
         private static void CollectMappedStackIds(
-            GraphLogicalTileMap map,
+            LogicalTileMap map,
             LayerKind kind,
             TryResolveLayer resolveLayer,
             HashSet<string> ids)
@@ -266,7 +266,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
                         TryCollectSampleId(sample.TileId, resolveLayer, ids);
                         TryCollectSampleId(sample.PresetId, resolveLayer, ids);
-                        TryCollectSampleId(sample.GraphLayerId, resolveLayer, ids);
+                        TryCollectSampleId(sample.LayerId, resolveLayer, ids);
                     }
                 }
         }

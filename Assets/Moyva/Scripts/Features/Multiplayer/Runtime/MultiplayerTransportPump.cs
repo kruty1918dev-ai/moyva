@@ -1,16 +1,32 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Kruty1918.Moyva.Multiplayer.Runtime;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Multiplayer.Networking
 {
+    /// <summary>
+    /// Drives <c>NetworkDriver.ScheduleUpdate</c> on Unity's main thread.
+    /// Unity Transport allocates send buffers with <see cref="Unity.Collections.Allocator.Temp"/>,
+    /// which is only legal on the main thread or inside jobs — a managed
+    /// thread-pool pump throws on every send. Ticking via the main-thread
+    /// synchronization context keeps all driver access legal and still gives
+    /// the pump air between generation stages (BuildWorldAsync yields).
+    /// In environments without a captured Unity context the pump falls back
+    /// to a thread-pool loop (editors/tests always capture one).
+    /// </summary>
     internal sealed class MultiplayerTransportPump : IDisposable
     {
         private const int PumpDelayMilliseconds = 16;
+        private const int StopFallbackTimeoutMilliseconds = 500;
 
         private CancellationTokenSource _cancellation;
         private Task _task;
+        private Func<bool> _shouldContinue;
+        private Action _tick;
+        private volatile bool _running;
+        private int _epoch;
 
         public void Start(
             CancellationToken externalToken,
@@ -26,18 +42,27 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             var cancellation =
                 CancellationTokenSource.CreateLinkedTokenSource(externalToken);
             _cancellation = cancellation;
-            // Force the loop onto the thread pool so the transport keeps
-            // ticking while the main thread is busy (world generation).
-            _task = Task.Run(
-                () => RunAsync(shouldContinue, tick, cancellation.Token));
+            _shouldContinue = shouldContinue;
+            _tick = tick;
+            _running = true;
+            int epoch = ++_epoch;
+
+            if (MultiplayerThreadContext.CanPost)
+            {
+                var stopped = new TaskCompletionSource<bool>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+                _task = stopped.Task;
+                MultiplayerThreadContext.Post(() => TickOnce(epoch, stopped));
+            }
+            else
+            {
+                _task = Task.Run(() => RunAsync(cancellation.Token));
+            }
         }
 
         public async Task StopAsync()
         {
-            CancellationTokenSource cancellation = _cancellation;
-            Task task = _task;
-            _cancellation = null;
-            _task = null;
+            CancellationTokenSource cancellation = Detach();
 
             if (cancellation == null)
                 return;
@@ -45,8 +70,14 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             cancellation.Cancel();
             try
             {
-                if (task != null)
-                    await task;
+                if (_task != null)
+                {
+                    // The main-thread loop completes when the queued tick runs —
+                    // bound the wait so a stalled context cannot hang shutdown.
+                    await Task.WhenAny(
+                        _task,
+                        Task.Delay(StopFallbackTimeoutMilliseconds));
+                }
             }
             catch (OperationCanceledException)
             {
@@ -59,15 +90,12 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         /// <summary>
         /// Synchronous bounded stop for dispose paths where awaiting is not
-        /// possible. The pump tick is short (a driver update + flush), so a
-        /// generous timeout still returns quickly in practice.
+        /// possible. On the main thread the loop ends when the next queued
+        /// tick sees the epoch bump, so there is nothing to wait for here.
         /// </summary>
         public void Stop(int timeoutMilliseconds = 2000)
         {
-            CancellationTokenSource cancellation = _cancellation;
-            Task task = _task;
-            _cancellation = null;
-            _task = null;
+            CancellationTokenSource cancellation = Detach();
 
             if (cancellation == null)
                 return;
@@ -75,7 +103,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             cancellation.Cancel();
             try
             {
-                task?.Wait(timeoutMilliseconds);
+                // Awaiting on the main thread would deadlock: loop completion
+                // is delivered through the main-thread context itself.
+                if (_task != null && !MultiplayerThreadContext.IsMainThread)
+                    _task.Wait(timeoutMilliseconds);
             }
             catch
             {
@@ -89,49 +120,97 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         public void Dispose()
             => Stop();
 
-        private async Task RunAsync(
-            Func<bool> shouldContinue,
-            Action tick,
-            CancellationToken cancellationToken)
+        private CancellationTokenSource Detach()
+        {
+            CancellationTokenSource cancellation = _cancellation;
+            _cancellation = null;
+            _task = null;
+            _running = false;
+            _epoch++;
+            return cancellation;
+        }
+
+        // Runs on Unity's main thread via MultiplayerThreadContext. Each call
+        // performs one pump iteration and re-posts itself, giving one tick per
+        // frame (~16ms at 60 fps) — the cadence the previous delay loop used.
+        private void TickOnce(int epoch, TaskCompletionSource<bool> stopped)
+        {
+            CancellationTokenSource cancellation = _cancellation;
+            if (epoch != _epoch
+                || !_running
+                || cancellation == null
+                || cancellation.IsCancellationRequested)
+            {
+                stopped.TrySetResult(true);
+                return;
+            }
+
+            if (!ContinueTick())
+            {
+                _running = false;
+                stopped.TrySetResult(true);
+                return;
+            }
+
+            // Deferred repost, never inline: an inline invoke on the main
+            // thread would recurse TickOnce -> Post -> TickOnce forever.
+            int capturedEpoch = epoch;
+            MultiplayerThreadContext.PostDeferred(() => TickOnce(capturedEpoch, stopped));
+        }
+
+        // One pump iteration shared by both execution modes.
+        // Returns false when the loop should terminate.
+        private bool ContinueTick()
+        {
+            bool keepGoing;
+            try
+            {
+                keepGoing = _shouldContinue();
+            }
+            catch (Exception)
+            {
+                // A dead native driver makes IsCreated throw; treat it as
+                // a stop signal instead of faulting the task.
+                return false;
+            }
+            if (!keepGoing)
+                return false;
+
+            try
+            {
+                _tick();
+            }
+            catch (Exception exception)
+            {
+                // Teardown race: the native driver can be deallocated between the
+                // IsCreated check above and this tick. Shutdown, not a failure —
+                // a LogError here fails tests and alarms players on quit.
+                if (exception is ObjectDisposedException ||
+                    (exception.Message ?? string.Empty).Contains("deallocated"))
+                {
+                    Debug.LogWarning(
+                        $"[TransportPump] Stopping after driver disposal: {exception.Message}");
+                    return false;
+                }
+                Debug.LogError($"Multiplayer transport update failed: {exception.Message}");
+                return false;
+            }
+
+            return true;
+        }
+
+        // Thread-pool fallback for environments without a captured Unity
+        // synchronization context (plain .NET hosts). Never used inside the
+        // editor or a player, where the main-thread context always exists.
+        private async Task RunAsync(CancellationToken cancellationToken)
         {
             while (true)
             {
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                bool keepGoing;
-                try
-                {
-                    keepGoing = shouldContinue();
-                }
-                catch (Exception)
-                {
-                    // A dead native driver makes IsCreated throw; treat it as
-                    // a stop signal instead of faulting the task.
+                if (!ContinueTick())
                     return;
-                }
-                if (!keepGoing)
-                    return;
-
-                try
-                {
-                    tick();
-                }
-                catch (Exception exception)
-                {
-                    // Teardown race: the native driver can be deallocated between the
-                    // IsCreated check above and this tick. Shutdown, not a failure —
-                    // a LogError here fails tests and alarms players on quit.
-                    if (exception is ObjectDisposedException ||
-                        (exception.Message ?? string.Empty).Contains("deallocated"))
-                    {
-                        Debug.LogWarning(
-                            $"[TransportPump] Stopping after driver disposal: {exception.Message}");
-                        return;
-                    }
-                    Debug.LogError($"Multiplayer transport update failed: {exception.Message}");
-                    return;
-                }
 
                 try
                 {
@@ -157,6 +236,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             _cancellation?.Dispose();
             _cancellation = null;
             _task = null;
+            _running = false;
+            _epoch++;
         }
     }
 }

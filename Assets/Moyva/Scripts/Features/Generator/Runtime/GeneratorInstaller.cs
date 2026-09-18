@@ -1,7 +1,6 @@
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
-using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Jsonization;
 using Kruty1918.Moyva.MapChunks.Runtime;
@@ -16,10 +15,9 @@ namespace Kruty1918.Moyva.Generator
     /// </summary>
     public sealed class GeneratorInstaller : MonoInstaller
     {
-        [Header("Scene Graph Source")]
-        [SerializeField] private MoyvaTileWorldCreatorGraphBinding _graphBinding;
+        [Header("Scene Recipe Source")]
+        [SerializeField] private GeneratorMapRecipe _mapRecipe;
         [SerializeField] private TileWorldCreatorManager _tileWorldCreatorManager;
-        [SerializeField] private GraphAsset _graphAsset;
 
         [Header("Registries")]
         [SerializeField] private TileRegistrySO _tileRegistry;
@@ -38,9 +36,9 @@ namespace Kruty1918.Moyva.Generator
             MapChunkFeatureBindings.Install(Container);
 
             var tileRegistry = ResolveTileRegistry();
-            GeneratorBindingGroups.InstallGraphEvaluation(
+            GeneratorBindingGroups.InstallMapGeneration(
                 Container,
-                _graphAsset,
+                _mapRecipe,
                 _tileWorldCreatorManager,
                 tileRegistry,
                 _mapObjectRegistry,
@@ -71,15 +69,28 @@ namespace Kruty1918.Moyva.Generator
 
         private void ResolveSceneReferences()
         {
-            _graphBinding ??= FindFirst<MoyvaTileWorldCreatorGraphBinding>();
-            if (_graphBinding != null)
-            {
-                _tileWorldCreatorManager ??= _graphBinding.Manager;
-                _graphAsset ??= _graphBinding.GraphAsset;
-            }
-
+            _mapRecipe ??= ResolveFallbackRecipe();
             _tileWorldCreatorManager ??= FindFirst<TileWorldCreatorManager>();
             EnsureRuntimeConfiguration();
+        }
+
+        private static GeneratorMapRecipe ResolveFallbackRecipe()
+        {
+            try
+            {
+                MoyvaJsonRuntime.EnsureLoaded();
+                foreach (var recipe in MoyvaJsonRuntime.GetAll<GeneratorMapRecipe>())
+                {
+                    if (recipe != null)
+                        return recipe;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning(
+                    $"[GeneratorInstaller] Failed to resolve a fallback GeneratorMapRecipe: {ex.Message}");
+            }
+            return null;
         }
 
         private void EnsureRuntimeConfiguration()
@@ -99,8 +110,8 @@ namespace Kruty1918.Moyva.Generator
         {
             if (_tileRegistry != null)
                 return _tileRegistry;
-            if (_graphAsset != null && _graphAsset.TileRegistry != null)
-                return _graphAsset.TileRegistry;
+            if (_mapRecipe != null && _mapRecipe.TileRegistry != null)
+                return _mapRecipe.TileRegistry;
 
             Debug.LogError(
                 "[GeneratorInstaller] TileRegistrySO is missing; using an " +

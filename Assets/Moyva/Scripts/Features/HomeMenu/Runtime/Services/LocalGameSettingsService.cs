@@ -12,15 +12,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     /// <summary>
     /// Зберігає та застосовує локальні налаштування гри: ім'я гравця, гучності та mute.
     /// Гучності маршрутизуються через AudioMixerBindingsSO (за наявності), інакше — лише AudioListener.volume для master.
-    /// Версія файлу = 2 (додані Music/Sfx/Ui/IsMuted).
+    /// Версія файлу = 3 (додана AmbienceVolume; v2 — Music/Sfx/Ui/IsMuted).
     /// </summary>
     internal sealed class LocalGameSettingsService : ILocalGameSettingsService, IInitializable
     {
-        private const int Version = 2;
+        private const int Version = 3;
         private const float DefaultMaster = 1f;
         private const float DefaultMusic = 0.7f;
         private const float DefaultSfx = 0.9f;
         private const float DefaultUi = 0.9f;
+        private const float DefaultAmbience = 0.85f;
 
         private readonly string _filePath;
         private readonly IClientInstanceScope _clientScope;
@@ -36,6 +37,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public float MusicVolume => Settings.MusicVolume;
         public float SfxVolume => Settings.SfxVolume;
         public float UiVolume => Settings.UiVolume;
+        public float AmbienceVolume => Settings.AmbienceVolume;
         public bool IsMuted => Settings.IsMuted;
 
         public LocalGameSettingsService(
@@ -101,6 +103,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             SaveAndNotify();
         }
 
+        public void SetAmbienceVolume(float volume)
+        {
+            var v = Mathf.Clamp01(volume);
+            if (Mathf.Approximately(Settings.AmbienceVolume, v)) return;
+            Settings = Settings.WithAmbience(v);
+            ApplyAll(Settings);
+            SaveAndNotify();
+        }
+
         public void SetMuted(bool isMuted)
         {
             if (Settings.IsMuted == isMuted) return;
@@ -136,7 +147,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     var master = Mathf.Clamp01(reader.ReadSingle());
                     return new LocalGameSettings(name, master, DefaultMusic, DefaultSfx, DefaultUi, false);
                 }
-                if (version == Version)
+                if (version == 2)
                 {
                     var name = NormalizePlayerName(reader.ReadString());
                     var master = Mathf.Clamp01(reader.ReadSingle());
@@ -144,7 +155,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     var sfx = Mathf.Clamp01(reader.ReadSingle());
                     var ui = Mathf.Clamp01(reader.ReadSingle());
                     var muted = reader.ReadBoolean();
-                    return new LocalGameSettings(name, master, music, sfx, ui, muted);
+                    var defAmbience = _mixerBindings != null ? _mixerBindings.defaultAmbience : DefaultAmbience;
+                    return new LocalGameSettings(name, master, music, sfx, ui, defAmbience, muted);
+                }
+                if (version == Version)
+                {
+                    var name = NormalizePlayerName(reader.ReadString());
+                    var master = Mathf.Clamp01(reader.ReadSingle());
+                    var music = Mathf.Clamp01(reader.ReadSingle());
+                    var sfx = Mathf.Clamp01(reader.ReadSingle());
+                    var ui = Mathf.Clamp01(reader.ReadSingle());
+                    var ambience = Mathf.Clamp01(reader.ReadSingle());
+                    var muted = reader.ReadBoolean();
+                    return new LocalGameSettings(name, master, music, sfx, ui, ambience, muted);
                 }
                 return CreateDefaultSettings();
             }
@@ -176,6 +199,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 writer.Write(Mathf.Clamp01(s.MusicVolume));
                 writer.Write(Mathf.Clamp01(s.SfxVolume));
                 writer.Write(Mathf.Clamp01(s.UiVolume));
+                writer.Write(Mathf.Clamp01(s.AmbienceVolume));
                 writer.Write(s.IsMuted);
             }
             catch (Exception e)
@@ -190,12 +214,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var defMusic = _mixerBindings != null ? _mixerBindings.defaultMusic : DefaultMusic;
             var defSfx = _mixerBindings != null ? _mixerBindings.defaultSfx : DefaultSfx;
             var defUi = _mixerBindings != null ? _mixerBindings.defaultUi : DefaultUi;
+            var defAmbience = _mixerBindings != null ? _mixerBindings.defaultAmbience : DefaultAmbience;
             return new LocalGameSettings(
                 _clientScope.CreateDefaultPlayerName(),
                 defMaster,
                 defMusic,
                 defSfx,
                 defUi,
+                defAmbience,
                 false);
         }
 
@@ -219,6 +245,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             ApplyMixerParam(_mixerBindings.musicParameter, s.IsMuted ? 0f : s.MusicVolume);
             ApplyMixerParam(_mixerBindings.sfxParameter, s.IsMuted ? 0f : s.SfxVolume);
             ApplyMixerParam(_mixerBindings.uiParameter, s.IsMuted ? 0f : s.UiVolume);
+            ApplyMixerParam(_mixerBindings.ambienceParameter, s.IsMuted ? 0f : s.AmbienceVolume);
         }
 
         private void ApplyMixerParam(string paramName, float linear01)

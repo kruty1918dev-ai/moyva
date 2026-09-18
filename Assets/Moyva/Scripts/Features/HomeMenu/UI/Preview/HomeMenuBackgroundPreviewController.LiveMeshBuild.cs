@@ -6,7 +6,7 @@ using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
-using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Generator.API;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
@@ -31,7 +31,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 return false;
             }
 
-            var tileMeshCache = BuildTileLiveMeshCache(tileRegistry, _graphAsset);
+            var tileMeshCache = BuildTileLiveMeshCache(tileRegistry, _mapRecipe);
             if (tileMeshCache.Count == 0)
             {
                 failureReason = "The tile registry contains no usable mesh prefabs.";

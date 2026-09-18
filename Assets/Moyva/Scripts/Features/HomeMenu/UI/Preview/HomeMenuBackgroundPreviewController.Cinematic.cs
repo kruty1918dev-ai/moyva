@@ -52,7 +52,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             {
                 _simulationWorld = world;
                 _simulationProjection = GridProjectionFactory.Create(settings);
-                _simulationTiles = BuildTileLiveMeshCache(tiles, _graphAsset);
+                _simulationTiles = BuildTileLiveMeshCache(tiles, _mapRecipe);
                 _simulationBuildings = BuildBuildingLiveMeshCache(_buildingRegistry);
                 _simulationSurfaces.Clear();
                 _simulationTime = 0f;

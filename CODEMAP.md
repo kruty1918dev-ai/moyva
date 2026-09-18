@@ -1,6 +1,6 @@
 # Moyva Code Map
 
-Paths: Assets/Moyva/Scripts + Base + inline path. Rules: AGENTS.md.
+Paths: Assets/Moyva/Scripts + Base. Rules: AGENTS.md.
 
 ## Project / Shared / Infrastructure
 
@@ -14,7 +14,7 @@ Base: `.`
 | Camera shortcuts | `Shared/PlayerControlBinding.cs`; `Shared/PlayerControlSettingsService.cs` |
 | Audio / graphics / performance / UI | `Shared/SharedInstaller.cs`; `Shared/Audio/AudioContracts.cs`; `Shared/Audio/AudioService.cs`; `Shared/GraphicsSettingsService.cs`; `Shared/Performance/`; `Shared/UI/` |
 | Diagnostic logging | `Shared/Diagnostics/RuntimeDiagnostics.cs` (no DI installer) |
-| Localization | `Shared/Localization/ILocalizationService.cs`; `Shared/Localization/LocalizationService.cs`; `Shared/Localization/LocalizationFontService.cs`; catalogs `Presets/Localization/Resources/MoyvaLocales/{en,uk}.json`; menu switch `Features/HomeMenu/Runtime/Services/LanguageSwitchCoordinator.cs` |
+| Localization | `Shared/Localization/`; `Features/HomeMenu/Runtime/Services/LanguageSwitchCoordinator.cs` |
 | JSON / asset catalog | `Jsonization/Runtime/MoyvaJsonRuntime.cs`; `Jsonization/Runtime/MoyvaJsonTypeRegistry.cs`; `Jsonization/Runtime/MoyvaJsonAssetCatalog.cs` |
 
 ## Feature entry points
@@ -41,12 +41,13 @@ Base: `Features/`
 | Tile selection | `Interactions/API/ITileInteractionService.cs`; `Interactions/Runtime/InteractionsInstaller.cs`; `Interactions/Runtime/WorldInfoSelectionCoordinator.cs` |
 | Info panel | `InfoPanel/UI/WorldInfoPanelInstaller.cs` |
 | Notifications | `Notifications/API/IGameplayNotificationService.cs`; `Notifications/Runtime/NotificationsInstaller.cs`; `Notifications/Runtime/GameplayNotificationService.cs` |
+| Game audio layer | `GameAudio/API/AudioAmbienceConfig.cs`; `GameAudio/API/AudioFeedbackConfig.cs`; `GameAudio/Runtime/GameAudioInstaller.cs` (shared → ProjectServicesInstaller, gameplay → BootstrapInstaller); JSON: `Presets/Systems/audio-registry`, `audio-ambience`, `audio-feedback` |
 | Camera | `Camera/API/`; `Camera/Runtime/CameraInstaller.cs`; `Camera/Runtime/CameraMovement.cs`; `Camera/Runtime/CameraZoom.cs` |
 | Movement animation | `Animations/API/IMovementAnimationService.cs`; `Animations/Runtime/AnimationsInstaller.cs`; `Animations/Runtime/MovementAnimationService.cs` |
 | Clouds | `Clouds/API/ICloudsService.cs`; `Clouds/Runtime/CloudsInstaller.cs`; `Clouds/Runtime/CloudsService.cs` |
 | Day/night visuals | `Visuals/Runtime/VisualInstaller.cs`; `Visuals/Runtime/DayNightShaderController.cs` |
 
-## Marketing Content Studio (tooling branch)
+## Marketing Content Studio
 
 Base: `Features/Marketing/`
 
@@ -56,7 +57,7 @@ Base: `Features/Marketing/`
 | Shot planning / golden frames | `Planning/` |
 | Recipe/platform contracts | `Contracts/` |
 
-Editor surface (window, Recorder, CLI): Assets/Moyva/Editor/MarketingStudio/. JSON presets: Assets/Moyva/Presets/Marketing/.
+Editor surface: Assets/Moyva/Editor/MarketingStudio/. JSON presets: Assets/Moyva/Presets/Marketing/.
 
 ## Bootstrap / launch
 
@@ -106,7 +107,7 @@ Base: `Features/Construction/`
 
 Base: `Features/Construction/Runtime/Core/Service/`
 
-EvaluatePlacement owns placement decisions; SessionStore owns state.
+EvaluatePlacement owns decisions; SessionStore owns state.
 
 | Task | Files |
 |---|---|
@@ -129,7 +130,7 @@ EvaluatePlacement owns placement decisions; SessionStore owns state.
 
 Base: `Features/HomeMenu/Runtime/`
 
-UI shell is always MoyvaUI markup mounted through HomeMenuMoyvaUiAnchor.
+UI shell is MoyvaUI markup mounted through HomeMenuMoyvaUiAnchor.
 
 | Task | Files |
 |---|---|
@@ -149,7 +150,7 @@ UI shell is always MoyvaUI markup mounted through HomeMenuMoyvaUiAnchor.
 
 Base: `Features/HomeMenu/UI/Preview/`
 
-Skip this section for lobby/join work.
+Skip for lobby/join work.
 
 | Task | Files |
 |---|---|
@@ -175,7 +176,7 @@ GameplayHudBindings selects GameplayHtmlPresenter/State.
 
 Base: `Features/Multiplayer/`
 
-JoinRoomTransportAdapter → ISessionManager → selected LAN/Relay provider.
+JoinRoomTransportAdapter → ISessionManager → LAN/Relay provider.
 Host authorization → canonical Units/Construction commands.
 
 | Task | Files |
@@ -205,7 +206,7 @@ Base: `Features/FogOfWar/`
 
 Base: `Features/FogOfWar/Runtime/Visual/`
 
-Skip visual leaf algorithms for fog-state/composition tasks.
+Skip for fog-state tasks.
 
 | Task | Files |
 |---|---|

@@ -37,7 +37,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             Debug.LogWarning(
-                "[Generator] GraphAsset or TileWorldCreatorManager is missing. " +
+                "[Generator] GeneratorMapRecipe or TileWorldCreatorManager is missing. " +
                 $"Generated fallback playable map {safeWidth}x{safeHeight}.");
 
             onComplete?.Invoke(

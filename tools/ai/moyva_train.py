@@ -64,21 +64,37 @@ def log(message):
     print(f"[MoyvaTrain] {message}", flush=True)
 
 
+CONTRACT_SPEC = "Assets/Moyva/Presets/AI/Resources/MoyvaBotContract.json"
+
+
+def contract_signature(spec):
+    """Byte-for-byte mirror of BotContractSpec.Signature() in the C# runtime."""
+    layout = ",".join(
+        str(feature["index"]) + feature["name"] + (str(feature.get("count", 1)) if feature.get("count", 1) > 1 else "")
+        for feature in spec["global"])
+    return (f"MoyvaBot:v{spec['contractVersion']}:o{spec['observationSchemaVersion']}"
+            f":c{spec['candidateSchemaVersion']}:a{spec['actionSchemaVersion']}"
+            f":slots{spec['maxCandidateSlots']}:global{spec['globalFeatureCount']}"
+            f":spatial{spec['spatialSize']}x{spec['spatialSize']}x{spec['spatialChannels']}"
+            f":candidate{spec['candidateFeatureCount']}:global={layout}"
+            f":candidate={','.join(spec['candidate'])}:intents={','.join(spec['intents'])}")
+
+
 def contract(root=None):
-    source = ((Path(root) if root else ROOT) / "Assets/Moyva/AI/Bot/Core/Contracts/BotDecisionContract.cs").read_text()
-    signature = source.split("Encoding.UTF8.GetBytes(", 1)[1].split(").Replace", 1)[0]
-    signature = signature.split('.Replace', 1)[0]
-    strings = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', signature)
-    if not strings or not strings[0].startswith("MoyvaBot:"):
-        raise LaunchError("Cannot read BotDecisionContract signature; update the launcher parser.")
-    def constant(name):
-        found = re.search(r"\b" + name + r"\s*=\s*(\d+)", source)
-        if not found: raise LaunchError("Cannot read contract constant: " + name)
-        return int(found.group(1))
-    slots = constant("MaxCandidateSlots")
-    return dict(behavior=BEHAVIOR, version=constant("ContractVersion"),
-                hash=hashlib.sha256("".join(strings).encode()).hexdigest(), candidateSlots=slots,
-                observations=constant("GlobalFeatureCount") + constant("SpatialFeatureCount") + slots * constant("CandidateFeatureCount"))
+    source = (Path(root) if root else ROOT) / CONTRACT_SPEC
+    try:
+        spec = json.loads(source.read_text(encoding="utf-8-sig"))
+        for key in ("contractVersion", "observationSchemaVersion", "candidateSchemaVersion", "actionSchemaVersion",
+                    "maxCandidateSlots", "globalFeatureCount", "candidateFeatureCount",
+                    "spatialSize", "spatialChannels", "global", "candidate", "intents"):
+            spec[key]
+    except (OSError, ValueError, KeyError) as error:
+        raise LaunchError(f"Cannot read AI contract spec {source}: {error}")
+    spatial = spec["spatialSize"] * spec["spatialSize"] * spec["spatialChannels"]
+    return dict(behavior=BEHAVIOR, version=spec["contractVersion"],
+                hash=hashlib.sha256(contract_signature(spec).encode()).hexdigest(),
+                candidateSlots=spec["maxCandidateSlots"],
+                observations=spec["globalFeatureCount"] + spatial + spec["maxCandidateSlots"] * spec["candidateFeatureCount"])
 
 
 def resolve(path):
@@ -255,6 +271,25 @@ def _validated_segment_checkpoint_step(checkpoint_step, target_step, next_evalua
     return actual
 
 
+def _validate_arenas(arenas, autonomous):
+    if not 1 <= arenas <= 16:
+        raise LaunchError("Arenas must be between 1 and 16.")
+    if arenas > 1 and autonomous["enabled"]:
+        raise LaunchError("Autonomous curriculum owns one shared curriculum-state file; --arenas must be 1. "
+                          "Disable curriculum.autonomous.enabled in MoyvaTrainingConfig.json for multi-arena training.")
+
+
+def _inspect_scenario(requested, root):
+    """Interactive inspection scenario: explicit choice or first manifest entry."""
+    if requested:
+        return requested
+    from moyva_cli.evaluation import curriculum_order
+    order = curriculum_order(root)
+    if not order:
+        raise LaunchError("No scenario manifest found; pass --scenario explicitly.")
+    return order[0]
+
+
 def _evaluation_is_overdue(current_step, latest_evaluation, eval_every):
     """True when training crossed an evaluation bucket that has no completed frozen eval."""
     current = int(current_step)
@@ -271,7 +306,7 @@ def train(args):
     import yaml
     from moyva_cli.config import ControlError, atomic_json, utc
     from moyva_cli.evaluation import (EvaluationStore, choose_evaluation_scenario, newest_training_checkpoint,
-                                      run_frozen_evaluation, snapshot_frozen_checkpoint,
+                                      resolve_opponent_model, run_frozen_evaluation, snapshot_frozen_checkpoint,
                                       update_curriculum_latest_checkpoint, verify_resume_checkpoint)
 
     trainer_path = resolve(args.trainer)
@@ -313,8 +348,8 @@ def train(args):
     if not 0.1 <= speed <= 20 or not 12 <= size <= 128 or not 0 <= stage <= 8:
         raise LaunchError("Allowed ranges: time-scale 0.1–20; world-size 12–128; stage 0–8.")
     arenas = getattr(args, "arenas", 1)
-    if not 1 <= arenas <= 16: raise LaunchError("Arenas must be between 1 and 16.")
     autonomous = _autonomous(config)
+    _validate_arenas(arenas, autonomous)
     eval_every = int(autonomous["evaluationEverySteps"])
     eval_episodes = int(autonomous["evaluationEpisodes"])
     if eval_every < 1 or eval_episodes < 1: raise LaunchError("Autonomous evaluation interval/episode count must be positive.")
@@ -380,11 +415,23 @@ def train(args):
     old_autonomous_env = os.environ.get("MOYVA_AUTONOMOUS_TRAINING")
     old_journal_env = os.environ.get("MOYVA_DECISION_JOURNAL_PATH")
     os.environ["MOYVA_CURRICULUM_STATE_PATH"] = str(curriculum_state.resolve())
-    os.environ["MOYVA_DECISION_JOURNAL_PATH"] = str(detailed_telemetry.resolve())
+    if arenas == 1:
+        os.environ["MOYVA_DECISION_JOURNAL_PATH"] = str(detailed_telemetry.resolve())
+    else:
+        # Every Unity worker would append to one shared JSONL file.
+        os.environ.pop("MOYVA_DECISION_JOURNAL_PATH", None)
+        log("Decision journal disabled: multi-arena workers share one file.")
     if autonomous["enabled"]:
         os.environ["MOYVA_AUTONOMOUS_TRAINING"] = "1"
     else:
         os.environ.pop("MOYVA_AUTONOMOUS_TRAINING", None)
+    old_opponent_env = os.environ.get("MOYVA_OPPONENT_MODEL")
+    opponent_model = resolve_opponent_model(curriculum_state, run_dir)
+    if opponent_model:
+        os.environ["MOYVA_OPPONENT_MODEL"] = opponent_model
+        log(f"Self-play opponent model resolved: {opponent_model}")
+    else:
+        os.environ.pop("MOYVA_OPPONENT_MODEL", None)
     telemetry = TrainingTelemetry(run_dir, run_id, BEHAVIOR, overall_max_steps,
                                   detailed_telemetry, compact_telemetry)
     code = 0
@@ -425,7 +472,7 @@ def train(args):
             telemetry.note("EVAL", f"recovery boundary={trigger_boundary} checkpoint={current_step}")
             identity = snapshot_frozen_checkpoint(run_dir, current_step, current["hash"])
             update_curriculum_latest_checkpoint(curriculum_state, identity, current_step)
-            scenario = choose_evaluation_scenario(curriculum_state)
+            scenario = choose_evaluation_scenario(curriculum_state, root=ROOT)
             store = EvaluationStore(run_dir)
             generation = store.next_generation(identity["checkpoint_id"], scenario)
             evaluation = run_frozen_evaluation(ROOT, unity, args.target, run_id, run_dir, identity, scenario, generation,
@@ -482,7 +529,7 @@ def train(args):
             if evaluation_due_after_segment:
                 identity = snapshot_frozen_checkpoint(run_dir, current_step, current["hash"])
                 update_curriculum_latest_checkpoint(curriculum_state, identity, current_step)
-                scenario = choose_evaluation_scenario(curriculum_state)
+                scenario = choose_evaluation_scenario(curriculum_state, root=ROOT)
                 store = EvaluationStore(run_dir)
                 generation = store.next_generation(identity["checkpoint_id"], scenario)
                 log(f"Frozen evaluation: checkpoint={identity['checkpoint_id']} scenario={scenario} episodes={eval_episodes}")
@@ -526,6 +573,8 @@ def train(args):
         else: os.environ["MOYVA_AUTONOMOUS_TRAINING"] = old_autonomous_env
         if old_journal_env is None: os.environ.pop("MOYVA_DECISION_JOURNAL_PATH", None)
         else: os.environ["MOYVA_DECISION_JOURNAL_PATH"] = old_journal_env
+        if old_opponent_env is None: os.environ.pop("MOYVA_OPPONENT_MODEL", None)
+        else: os.environ["MOYVA_OPPONENT_MODEL"] = old_opponent_env
 
 
 
@@ -574,7 +623,7 @@ def watch_model(args):
     checkpoint_pair(run_dir, step)
     identity = snapshot_frozen_checkpoint(run_dir, step, trained_contract or current["hash"])
 
-    scenario = args.scenario
+    scenario = _inspect_scenario(args.scenario, ROOT)
     seed = args.seed if args.seed is not None else int(metadata.get("seed", config.get("baseSeed", 1918)))
     world_size = args.world_size if args.world_size is not None else int(metadata.get("world_size", config.get("worldSize", 24)))
     stage = args.stage if args.stage is not None else int(metadata.get("stage", config["curriculum"]["stage"]))
@@ -692,7 +741,7 @@ def parser():
         if name in ("watch", "inspect"):
             p.add_argument("--run-id", required=True)
             p.add_argument("--checkpoint", default="latest")
-            p.add_argument("--scenario", default="castle")
+            p.add_argument("--scenario", help="Scenario id (default: first scenario in the manifest curriculum)")
             p.add_argument("--time-scale", "--speed", dest="time_scale", type=float, default=1.0)
             p.add_argument("--seed", type=int)
             p.add_argument("--episode", type=int)

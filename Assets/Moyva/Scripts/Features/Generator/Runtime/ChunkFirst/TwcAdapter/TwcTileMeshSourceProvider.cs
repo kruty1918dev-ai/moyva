@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
-using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Generator.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
@@ -287,8 +287,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     template.Mesh,
                     template.ResolveMaterials(materialOverride),
                     rootMatrix * template.ChildMatrix,
-                    sample.GraphLayerId,
-                    sample.GraphLayerName,
+                    sample.LayerId,
+                    sample.LayerName,
                     visibleBottomY,
                     occludedSides,
                     new Vector2(position.x, position.z),
@@ -436,7 +436,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         }
 
         private static float ResolvePlacementHeight(
-            GraphTileLayerSample sample,
+            TileLayerSample sample,
             TilesBuildLayer buildLayer)
         {
             float height = sample.Height;
@@ -928,7 +928,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                && !southMatchesIdentity
                && !southWestMatchesIdentity;
 
-        private TilesBuildLayer ResolveBuildLayer(GraphTileLayerSample sample)
+        private TilesBuildLayer ResolveBuildLayer(TileLayerSample sample)
         {
             if (!string.IsNullOrWhiteSpace(sample.BuildLayerGuid)
                 && _buildLayerByGuid.TryGetValue(sample.BuildLayerGuid, out var cached))
@@ -969,7 +969,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return null;
         }
 
-        private static TilePreset ResolvePreset(TilesBuildLayer buildLayer, GraphTileLayerSample sample, Vector2Int cell, int seed)
+        private static TilePreset ResolvePreset(TilesBuildLayer buildLayer, TileLayerSample sample, Vector2Int cell, int seed)
         {
             if (buildLayer == null)
                 return null;
@@ -1006,7 +1006,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         private static TilePreset ChooseWeightedPreset(
             List<TilesBuildLayer.TilePresetSelection> selections,
-            GraphTileLayerSample sample,
+            TileLayerSample sample,
             Vector2Int cell,
             int seed,
             int tileLayerIndex)
@@ -1027,7 +1027,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             uint hash = ChunkFirstStableHash.TileVariant(
                 seed,
                 cell,
-                sample.GraphLayerId,
+                sample.LayerId,
                 !string.IsNullOrWhiteSpace(sample.PresetId) ? sample.PresetId : sample.TileId,
                 tileLayerIndex,
                 "tile-preset");

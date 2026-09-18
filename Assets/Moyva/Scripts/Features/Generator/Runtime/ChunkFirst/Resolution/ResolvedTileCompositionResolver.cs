@@ -65,7 +65,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (!TryResolveMainTerrain(
                     cell,
                     new TileNeighborhood(cell, null, null, null, null, null, null, null, null),
-                    out GraphTileLayerSample sample))
+                    out TileLayerSample sample))
             {
                 return float.NaN;
             }
@@ -74,7 +74,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         }
 
         private static float ResolveSupportHeight(
-            GraphTileLayerSample main,
+            TileLayerSample main,
             TileStackCell cell,
             float lowestLayerHeight)
         {
@@ -114,10 +114,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return hasUnderlyingTerrain ? supportHeight : fallback;
         }
 
-        private bool TryResolveMainTerrain(TileNeighborhood neighborhood, out GraphTileLayerSample sample)
+        private bool TryResolveMainTerrain(TileNeighborhood neighborhood, out TileLayerSample sample)
             => TryResolveMainTerrain(neighborhood.Center, neighborhood, out sample);
 
-        private bool TryResolveMainTerrain(TileStackCell cell, TileNeighborhood neighborhood, out GraphTileLayerSample sample)
+        private bool TryResolveMainTerrain(TileStackCell cell, TileNeighborhood neighborhood, out TileLayerSample sample)
         {
             sample = default;
             bool hasSample = false;
@@ -140,7 +140,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return hasSample;
         }
 
-        private bool MatchesMain(GraphTileLayerSample main, TileStackCell cell)
+        private bool MatchesMain(TileLayerSample main, TileStackCell cell)
         {
             if (!TryResolveMainTerrain(cell, new TileNeighborhood(cell, null, null, null, null, null, null, null, null), out var other))
                 return false;
@@ -148,19 +148,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return SameTerrainIdentity(main, other);
         }
 
-        private static bool SameTerrainIdentity(GraphTileLayerSample a, GraphTileLayerSample b)
+        private static bool SameTerrainIdentity(TileLayerSample a, TileLayerSample b)
         {
             if (!string.IsNullOrWhiteSpace(a.BuildLayerGuid) && !string.IsNullOrWhiteSpace(b.BuildLayerGuid))
                 return string.Equals(a.BuildLayerGuid, b.BuildLayerGuid, System.StringComparison.Ordinal);
             if (!string.IsNullOrWhiteSpace(a.BlueprintLayerGuid) && !string.IsNullOrWhiteSpace(b.BlueprintLayerGuid))
                 return string.Equals(a.BlueprintLayerGuid, b.BlueprintLayerGuid, System.StringComparison.Ordinal);
-            if (!string.IsNullOrWhiteSpace(a.GraphLayerId) && !string.IsNullOrWhiteSpace(b.GraphLayerId))
-                return string.Equals(a.GraphLayerId, b.GraphLayerId, System.StringComparison.Ordinal);
+            if (!string.IsNullOrWhiteSpace(a.LayerId) && !string.IsNullOrWhiteSpace(b.LayerId))
+                return string.Equals(a.LayerId, b.LayerId, System.StringComparison.Ordinal);
 
             return string.Equals(a.TileId, b.TileId, System.StringComparison.Ordinal);
         }
 
-        private bool TryResolveOverlay(TileNeighborhood neighborhood, out GraphTileLayerSample sample)
+        private bool TryResolveOverlay(TileNeighborhood neighborhood, out TileLayerSample sample)
         {
             sample = default;
             bool hasSample = false;
@@ -182,11 +182,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return hasSample;
         }
 
-        private int Compare(GraphTileLayerSample current, GraphTileLayerSample candidate, TileNeighborhood neighborhood)
+        private int Compare(TileLayerSample current, TileLayerSample candidate, TileNeighborhood neighborhood)
         {
             // The visually highest terrain owns the cell. Without this check,
             // lower BaseTerrain wins by kind rank and hides elevated cliffs.
-            int result = GraphTileLayerSample.CompareVisualElevation(current, candidate);
+            int result = TileLayerSample.CompareVisualElevation(current, candidate);
             if (result != 0)
                 return result;
 
@@ -205,7 +205,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (result != 0)
                 return result;
 
-            result = current.GraphLayerOrder.CompareTo(candidate.GraphLayerOrder);
+            result = current.LayerOrder.CompareTo(candidate.LayerOrder);
             if (result != 0)
                 return result;
 
@@ -213,7 +213,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         }
 
         private static float ResolveAuthoritativeSurfaceHeight(
-            GraphTileLayerSample sample)
+            TileLayerSample sample)
         {
             if (IsFinite(sample.SurfaceHeight))
                 return sample.SurfaceHeight;

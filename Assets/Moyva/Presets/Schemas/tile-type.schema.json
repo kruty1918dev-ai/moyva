@@ -1,114 +1,317 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://moyva.local/schemas/tile-type.schema.json",
-  "title": "Moyva Tile Type",
+  "title": "Moyva — Tile Type Config",
+  "description": "JSON source of truth для Kruty1918.Moyva.Grid.API.TileTypeConfig. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "version", "id", "model", "displayName", "aliases", "tags", "traversalClassId", "visual"],
-  "$defs": {
-    "assetRef": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["$asset"],
-      "properties": {
-        "$asset": { "type": "string", "minLength": 1 },
-        "editorPath": { "type": "string" },
-        "required": { "type": "boolean", "default": true }
-      }
-    },
-    "vector3": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["x", "y", "z"],
-      "properties": {
-        "x": { "type": "number" },
-        "y": { "type": "number" },
-        "z": { "type": "number" }
-      }
-    },
-    "editorMetadata": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "documentLink": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "enabled": { "type": "boolean", "default": true },
-            "path": {
-              "type": "string",
-              "description": "Optional .asset path or folder for MoyvaJsonDocumentLink."
-            }
-          }
-        }
-      }
-    }
-  },
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
   "properties": {
-    "$schema": { "type": "string" },
-    "schema": { "const": "moyva.tile-type" },
-    "version": { "type": "integer", "minimum": 1 },
-    "id": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
-    "model": { "const": "tile-type" },
-    "displayName": { "type": "string", "minLength": 1 },
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.tile-type"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "tile-type"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "displayName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Display Name"
+    },
     "aliases": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": { "type": "string", "minLength": 1 }
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "title": "Aliases"
     },
     "tags": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": { "type": "string", "minLength": 1 }
-    },
-    "traversalClassId": { "type": "string", "minLength": 1 },
-    "visual": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["gridMode"],
-      "properties": {
-        "gridMode": { "type": "string", "enum": ["Normal", "Dual", "Flat"] },
-        "variants": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["preset", "slot", "weight", "tileHeight"],
-            "properties": {
-              "preset": { "$ref": "#/$defs/assetRef", "x-moyva-assetType": "GiantGrey.TileWorldCreator.TilePreset" },
-              "slot": { "type": "string", "enum": ["Top", "Middle", "Bottom"] },
-              "weight": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
-              "tileHeight": { "type": "number", "minimum": 0.0 }
-            }
-          }
-        },
-        "representativePrefab": { "$ref": "#/$defs/assetRef", "x-moyva-assetType": "UnityEngine.GameObject" },
-        "scaleToCellSize": { "type": "boolean" },
-        "layerYOffset": { "type": "number" },
-        "scaleOffset": { "$ref": "#/$defs/vector3" },
-        "surfaceOffset": { "type": "number" },
-        "flatSurfaceMaterial": { "$ref": "#/$defs/assetRef", "x-moyva-assetType": "UnityEngine.Material" },
-        "tileLayerHeightOffset": { "type": "number" },
-        "ignoreFillTiles": { "type": "boolean" },
-        "meshGenerationOverride": { "type": "boolean" },
-        "mergeTiles": { "type": "boolean" },
-        "shadowCastingMode": { "type": "string", "enum": ["Off", "On", "TwoSided", "ShadowsOnly"] },
-        "objectLayer": { "type": ["integer", "object"] },
-        "renderingLayer": { "type": ["integer", "object"] },
-        "colliderType": { "type": "string", "enum": ["none", "meshCollider", "tileCollider"] },
-        "tileColliderHeight": { "type": "number", "minimum": 0.0 },
-        "tileColliderExtrusionHeight": { "type": "number", "minimum": 0.0 },
-        "invertCollisionWalls": { "type": "boolean" }
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
       },
-      "allOf": [
-        {
-          "if": { "properties": { "gridMode": { "const": "Flat" } } },
-          "then": { "required": ["flatSurfaceMaterial"] },
-          "else": { "required": ["variants"] }
-        }
-      ]
+      "title": "Tags"
     },
-    "migration": { "type": "object", "additionalProperties": true },
-    "editor": { "$ref": "#/$defs/editorMetadata" }
+    "traversalClassId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Traversal Class Id"
+    },
+    "visual": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "gridMode": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Normal|Dual|Flat))$",
+          "x-enumNames": [
+            "Normal",
+            "Dual",
+            "Flat"
+          ],
+          "x-flags": false,
+          "title": "Grid Mode"
+        },
+        "variants": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "preset": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Preset"
+              },
+              "slot": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:Top|Middle|Bottom))$",
+                "x-enumNames": [
+                  "Top",
+                  "Middle",
+                  "Bottom"
+                ],
+                "x-flags": false,
+                "title": "Slot"
+              },
+              "weight": {
+                "type": "number",
+                "title": "Weight",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "tileHeight": {
+                "type": "number",
+                "title": "Tile Height",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          },
+          "title": "Variants"
+        },
+        "representativePrefab": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Representative Prefab"
+        },
+        "scaleToCellSize": {
+          "type": "boolean",
+          "title": "Scale To Cell Size"
+        },
+        "layerYOffset": {
+          "type": "number",
+          "title": "Layer Y Offset"
+        },
+        "scaleOffset": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "additionalProperties": false,
+          "title": "Scale Offset"
+        },
+        "surfaceOffset": {
+          "type": "number",
+          "title": "Surface Offset"
+        },
+        "flatSurfaceMaterial": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Flat Surface Material"
+        },
+        "tileLayerHeightOffset": {
+          "type": "number",
+          "title": "Tile Layer Height Offset"
+        },
+        "ignoreFillTiles": {
+          "type": "boolean",
+          "title": "Ignore Fill Tiles"
+        },
+        "meshGenerationOverride": {
+          "type": "boolean",
+          "title": "Mesh Generation Override"
+        },
+        "mergeTiles": {
+          "type": "boolean",
+          "title": "Merge Tiles"
+        },
+        "shadowCastingMode": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Off|On|TwoSided|ShadowsOnly))$",
+          "x-enumNames": [
+            "Off",
+            "On",
+            "TwoSided",
+            "ShadowsOnly"
+          ],
+          "x-flags": false,
+          "title": "Shadow Casting Mode"
+        },
+        "objectLayer": {
+          "type": "integer",
+          "title": "Object Layer"
+        },
+        "renderingLayer": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false,
+          "title": "Rendering Layer"
+        },
+        "colliderType": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:none|meshCollider|tileCollider))$",
+          "x-enumNames": [
+            "none",
+            "meshCollider",
+            "tileCollider"
+          ],
+          "x-flags": false,
+          "title": "Collider Type"
+        },
+        "tileColliderHeight": {
+          "type": "number",
+          "title": "Tile Collider Height",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "tileColliderExtrusionHeight": {
+          "type": "number",
+          "title": "Tile Collider Extrusion Height",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "invertCollisionWalls": {
+          "type": "boolean",
+          "title": "Invert Collision Walls"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Visual"
+    }
   }
 }

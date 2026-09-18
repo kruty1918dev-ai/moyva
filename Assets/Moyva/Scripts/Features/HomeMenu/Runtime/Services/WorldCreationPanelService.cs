@@ -17,6 +17,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal sealed class WorldCreationPanelService : IInitializable, IDisposable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         [Inject] private IWorldSetupViewController _viewController;
         [Inject] private INavigation _navigation;
         [Inject] private IGameplaySession _gameplaySession;
@@ -72,9 +76,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             int saveSlot = 0;
             if (IsSoloFlow() && !TryFindNewSaveSlot(out saveSlot))
             {
-                _infoPanelService?.Show(new InfoMessage("Cannot start game",
-                    _saveService == null ? "The save service is not available. Return to the main menu and try again."
-                    : "No save slot is available. Delete an old save before starting a new world."));
+                _infoPanelService?.Show(new InfoMessage(T("Cannot start game"),
+                    _saveService == null ? T("The save service is not available. Return to the main menu and try again.")
+                    : T("No save slot is available. Delete an old save before starting a new world.")));
                 return;
             }
 

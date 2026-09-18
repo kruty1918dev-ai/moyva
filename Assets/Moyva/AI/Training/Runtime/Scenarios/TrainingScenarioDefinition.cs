@@ -92,7 +92,8 @@ namespace Kruty1918.Moyva.AI.Training
         public string objectiveType;
         public string owner = "opponent";
         // Settlement objectives spawn this building when the owner lacks one.
-        public string buildingTypeId = "castle-01";
+        // Empty resolves to the configured castle building id at scaffolding.
+        public string buildingTypeId = "";
         // Trusted setup weakening so capture/combat scenarios can start near the goal.
         public float healthFraction = 1f;
     }
@@ -314,6 +315,9 @@ namespace Kruty1918.Moyva.AI.Training
         public TrainingCurriculumStage legacyStage = TrainingCurriculumStage.FullGame;
         public bool learnerBuildsInitialCastle;
         public bool fullGame;
+        // Review scenarios combine already-trained skills; the curriculum samples
+        // them through the combination weight, not the main progression order.
+        public bool combination;
         public string[] prerequisites = Array.Empty<string>();
         public TrainingScenarioStartingConditions startingConditions = new TrainingScenarioStartingConditions();
         public string[] availableCapabilities = Array.Empty<string>();
@@ -341,6 +345,8 @@ namespace Kruty1918.Moyva.AI.Training
             {
                 if (string.IsNullOrWhiteSpace(capability) || !capabilities.Add(capability))
                     throw new ArgumentException("Scenario has invalid/duplicate capability: " + id);
+                if (!BotCapabilityMap.TryParse(capability, out _))
+                    throw new ArgumentException($"Scenario {id} has unknown capability '{capability}'.");
             }
             if (generationConstraints == null) throw new ArgumentException("Scenario generationConstraints are required: " + id);
             generationConstraints.Validate(id);
@@ -370,11 +376,60 @@ namespace Kruty1918.Moyva.AI.Training
             if (requiredIntents == null)
                 throw new ArgumentException("Scenario requiredIntents cannot be null: " + id);
             foreach (var intent in requiredIntents)
+            {
                 if (string.IsNullOrWhiteSpace(intent)
-                    || !Enum.TryParse(intent, true, out BotIntentType _))
+                    || !Enum.TryParse(intent, true, out BotIntentType parsed))
                     throw new ArgumentException($"Scenario {id} has unknown requiredIntent '{intent}'.");
+                ValidateIntentProducible(parsed, id);
+            }
             ValidateStartingConditions();
             ValidateSetupDoesNotSatisfySteps();
+            ValidateStepsReachable();
+        }
+
+        // A required intent the scenario can never produce means a permanently
+        // unreachable watchdog contract; reject it at load, not mid-episode.
+        private void ValidateIntentProducible(BotIntentType intent, string context)
+        {
+            var capability = BotCapabilityMap.ForIntent(intent);
+            if (capability == null || capability == BotCapabilityId.Turn) return;
+            if (!Declares(capability.Value))
+                throw new ArgumentException(
+                    $"Scenario {context} requires intent '{intent}' but capability '{capability}' is not in availableCapabilities.");
+        }
+
+        private bool Declares(BotCapabilityId capability)
+        {
+            for (int i = 0; i < availableCapabilities.Length; i++)
+                if (BotCapabilityMap.TryParse(availableCapabilities[i], out var declared) && declared == capability)
+                    return true;
+            return false;
+        }
+
+        private void ValidateStepsReachable()
+        {
+            foreach (var step in steps)
+            {
+                if (step == null) continue;
+                var required = TrainingScenarioContract.RequiredIntentsFor(step.EffectiveCriterion);
+                bool reachable = required.Length == 0;
+                foreach (var intent in required)
+                {
+                    var capability = BotCapabilityMap.ForIntent(intent);
+                    if (capability == null || capability == BotCapabilityId.Turn || Declares(capability.Value))
+                    { reachable = true; break; }
+                }
+                if (!reachable)
+                    throw new ArgumentException(
+                        $"Scenario {id} step {step.id} can never produce a required intent with the declared availableCapabilities.");
+                foreach (var intentName in step.requiredIntents ?? Array.Empty<string>())
+                {
+                    if (string.IsNullOrWhiteSpace(intentName)
+                        || !Enum.TryParse(intentName, true, out BotIntentType parsed))
+                        continue; // Format errors are already reported by step.Validate().
+                    ValidateIntentProducible(parsed, id + "/" + step.id);
+                }
+            }
         }
 
         private void ValidateStartingConditions()
@@ -480,21 +535,11 @@ namespace Kruty1918.Moyva.AI.Training
 
         public bool AllowsIntent(BotIntentType intent)
         {
-            string name = intent.ToString();
-            string capability = null;
-            if (name.IndexOf("Build", StringComparison.OrdinalIgnoreCase) >= 0
-                || name.IndexOf("Construct", StringComparison.OrdinalIgnoreCase) >= 0) capability = "construction";
-            else if (name.IndexOf("Recruit", StringComparison.OrdinalIgnoreCase) >= 0) capability = "recruitment";
-            else if (string.Equals(name, "Move", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(name, "Reposition", StringComparison.OrdinalIgnoreCase)) capability = "movement";
-            else if (name.IndexOf("Explore", StringComparison.OrdinalIgnoreCase) >= 0) capability = "scouting";
-            else if (name.IndexOf("Attack", StringComparison.OrdinalIgnoreCase) >= 0
-                || name.IndexOf("Combat", StringComparison.OrdinalIgnoreCase) >= 0) capability = "combat";
-            else if (name.IndexOf("Capture", StringComparison.OrdinalIgnoreCase) >= 0) capability = "capture";
-            else if (string.Equals(name, "EndTurn", StringComparison.OrdinalIgnoreCase)) capability = "end-turn";
+            var capability = BotCapabilityMap.ForIntent(intent);
             if (capability == null) return true;
             for (int i = 0; i < availableCapabilities.Length; i++)
-                if (string.Equals(availableCapabilities[i], capability, StringComparison.Ordinal)) return true;
+                if (BotCapabilityMap.TryParse(availableCapabilities[i], out var declared) && declared == capability)
+                    return true;
             return false;
         }
 
@@ -507,6 +552,29 @@ namespace Kruty1918.Moyva.AI.Training
                 uint hash = 2166136261;
                 if (!string.IsNullOrEmpty(value)) foreach (char c in value) hash = (hash ^ c) * 16777619;
                 return (hash & 0xffff) / 65535f;
+            }
+        }
+    }
+
+    // Watchdog contract: which intents must be legal for a step criterion to be
+    // satisfiable. Shared by the environment's reachability check and scenario
+    // load-time validation, so a criterion change cannot silently dead-end.
+    public static class TrainingScenarioContract
+    {
+        public static BotIntentType[] RequiredIntentsFor(TrainingScenarioCriterionKind? criterion)
+        {
+            switch (criterion)
+            {
+                case TrainingScenarioCriterionKind.LegalInitialState: return new[] { BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.OperationalCastle: return new[] { BotIntentType.Build };
+                case TrainingScenarioCriterionKind.ResourceProduction: return new[] { BotIntentType.Build, BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.StableResources: return new[] { BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.DeployedUnit: return new[] { BotIntentType.Recruit, BotIntentType.Build, BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.Movement: return new[] { BotIntentType.Move, BotIntentType.Explore, BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.Scouting: return new[] { BotIntentType.Move, BotIntentType.Explore, BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.EnemyDestroyed: return new[] { BotIntentType.Attack, BotIntentType.Move, BotIntentType.EndTurn };
+                case TrainingScenarioCriterionKind.ObjectiveOwned: return new[] { BotIntentType.Capture, BotIntentType.Attack, BotIntentType.Move, BotIntentType.EndTurn };
+                default: return Array.Empty<BotIntentType>();
             }
         }
     }

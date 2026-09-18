@@ -31,7 +31,6 @@ namespace Kruty1918.Moyva.AI.Training
         private const int MaxPlacementScanRadius = 10;
         private const int FootprintMargin = 4;
         private const int VisibilityProbeRange = 2;
-        private const string CastleBuildingId = "castle-01";
 
         // Failures that depend on the generated world are retryable with a new seed.
         internal const string PlacementFailurePrefix = "Scenario setup placement:";
@@ -42,10 +41,16 @@ namespace Kruty1918.Moyva.AI.Training
             MenuWorldPreviewData world,
             IReadOnlyDictionary<string, Vector2Int> anchors,
             TrainingScenarioDefinition scenario,
-            bool learnerMustPlaceCastle = false)
+            bool learnerMustPlaceCastle,
+            string castleBuildingId,
+            string defaultUnitTypeId)
         {
             if (container == null || world == null)
                 throw new InvalidOperationException(ServiceFailurePrefix + " missing container or world.");
+            if (string.IsNullOrWhiteSpace(castleBuildingId))
+                throw new InvalidOperationException(ServiceFailurePrefix + " castle building type id is required.");
+            if (string.IsNullOrWhiteSpace(defaultUnitTypeId))
+                throw new InvalidOperationException(ServiceFailurePrefix + " default unit type id is required.");
 
             var conditions = scenario?.startingConditions ?? new TrainingScenarioStartingConditions();
             if (scenario == null) conditions.learnerMustPlaceCastle = learnerMustPlaceCastle;
@@ -108,7 +113,7 @@ namespace Kruty1918.Moyva.AI.Training
             bool learnerCastle = !conditions.learnerMustPlaceCastle
                 && (conditions.learnerStartsWithCastle || (scenario?.fullGame ?? true) || scenario == null);
             if (learnerCastle)
-                castlePositions[learner] = PlaceCastle(world, anchors, learner,
+                castlePositions[learner] = PlaceCastle(world, anchors, learner, castleBuildingId,
                     buildings, placementQuery, setupApplier, lifecycleRestore);
 
             // Connectivity: enemy-side settlement centers must stay reachable
@@ -128,7 +133,7 @@ namespace Kruty1918.Moyva.AI.Training
             bool opponentCastle = opponentActive
                 && (opponent.startingCastle || scenario == null || (scenario?.fullGame ?? false));
             if (opponentCastle)
-                castlePositions[enemy] = PlaceCastle(world, anchors, enemy,
+                castlePositions[enemy] = PlaceCastle(world, anchors, enemy, castleBuildingId,
                     buildings, placementQuery, setupApplier, lifecycleRestore,
                     reachable != null && reachable.Count > 0 ? reachable : null);
 
@@ -199,7 +204,7 @@ namespace Kruty1918.Moyva.AI.Training
                     if (string.Equals(objective.objectiveType, "settlement", StringComparison.OrdinalIgnoreCase))
                     {
                         string buildingId = string.IsNullOrWhiteSpace(objective.buildingTypeId)
-                            ? CastleBuildingId : objective.buildingTypeId;
+                            ? castleBuildingId : objective.buildingTypeId;
                         if (!castlePositions.TryGetValue(ownerId, out var cell))
                         {
                             Vector2Int anchor = anchors.TryGetValue(ownerId, out var a)
@@ -269,8 +274,8 @@ namespace Kruty1918.Moyva.AI.Training
                     }
                     Vector2Int near = anchors[owner];
                     var allowed = string.Equals(owner, learner, StringComparison.Ordinal) ? learnerUnitArea : null;
-                    Vector2Int unitCell = FindUnitCell(unitPlacement, world, "warrior", near, allowed);
-                    string created = unitFactory.CreateUnit("warrior", unitCell, owner);
+                    Vector2Int unitCell = FindUnitCell(unitPlacement, world, defaultUnitTypeId, near, allowed);
+                    string created = unitFactory.CreateUnit(defaultUnitTypeId, unitCell, owner);
                     if (string.Equals(owner, learner, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(created))
                         learnerUnitCells.Add(unitCell);
                 }
@@ -326,6 +331,7 @@ namespace Kruty1918.Moyva.AI.Training
             MenuWorldPreviewData world,
             IReadOnlyDictionary<string, Vector2Int> anchors,
             string ownerId,
+            string castleBuildingId,
             IBuildingRegistry buildings,
             IConstructionPlacementQuery placementQuery,
             IConstructionSetupPlacementApplier setupApplier,
@@ -334,9 +340,9 @@ namespace Kruty1918.Moyva.AI.Training
         {
             if (!anchors.TryGetValue(ownerId, out var anchor))
                 throw new InvalidOperationException(PlacementFailurePrefix + " no spawn anchor for owner '" + ownerId + "'.");
-            Vector2Int cell = FindBuildingCell(buildings, placementQuery, world, CastleBuildingId, ownerId, anchor,
+            Vector2Int cell = FindBuildingCell(buildings, placementQuery, world, castleBuildingId, ownerId, anchor,
                 requiredNeighborSet);
-            if (!setupApplier.TryApplySetupPlacement(CastleBuildingId, cell, ownerId))
+            if (!setupApplier.TryApplySetupPlacement(castleBuildingId, cell, ownerId))
                 throw new InvalidOperationException(PlacementFailurePrefix
                     + $" castle commit failed at {cell} owner '{ownerId}'.");
             lifecycleRestore?.TryRestoreOperational(cell);

@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         [HideInInspector, SerializeField] private List<Vector2> _positions = new();
 
-        [HideInInspector] public string sourceGraphLayerId;
+        [HideInInspector] public string sourceLayerId;
         [HideInInspector] public string sourceLayerName;
 
         public int PositionCount => _positions?.Count ?? 0;

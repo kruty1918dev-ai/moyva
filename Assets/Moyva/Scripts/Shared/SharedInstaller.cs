@@ -2,6 +2,7 @@ using Kruty1918.Moyva.Shared.Common;
 using Kruty1918.Moyva.Shared.Connectivity;
 using Kruty1918.Moyva.Shared.Diagnostics;
 using Kruty1918.Moyva.Shared.Graphics;
+using Kruty1918.Moyva.Shared.Localization;
 using Kruty1918.Moyva.Shared.Performance;
 using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.UI;
@@ -65,6 +66,10 @@ namespace Kruty1918.Moyva.Shared
             container.BindInterfacesTo<UiMotionService>().AsSingle();
             container.BindInterfacesTo<UiTooltipService>().AsSingle();
             container.BindInterfacesTo<SceneTransitionService>().AsSingle();
+
+            // Localization: project-scope singletons so language state survives scene changes.
+            container.BindInterfacesAndSelfTo<LocalizationService>().AsSingle().NonLazy();
+            container.Bind<LocalizationFontService>().AsSingle();
 
             container.BindInterfacesAndSelfTo<InternetConnectivityHealthReporter>().AsSingle();
             container.Bind<IHealthCheckService>().To<HealthCheckService>().AsSingle().NonLazy();

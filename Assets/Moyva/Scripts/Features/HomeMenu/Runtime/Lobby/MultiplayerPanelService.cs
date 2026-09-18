@@ -11,6 +11,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal sealed class MultiplayerPanelService : IMultiplayerPanelService, IInitializable, IDisposable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         [InjectOptional] private List<IMultiplayerViewController> _viewControllers = new List<IMultiplayerViewController>();
         [Inject] private INavigation _navigation;
         [InjectOptional] private IJoinRoomPanelService _joinRoomPanelService;
@@ -115,11 +119,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
         }
 
-        private static CreateRoomPanelPresentation BuildCreateRoomPresentation(NetworkProviderType provider)
+        private CreateRoomPanelPresentation BuildCreateRoomPresentation(NetworkProviderType provider)
         {
             return provider == NetworkProviderType.Lan
-                ? new CreateRoomPanelPresentation("Create LAN Lobby", "LAN Room Settings", "NEXT")
-                : new CreateRoomPanelPresentation("Create Global Lobby", "Global Room Settings", "NEXT");
+                ? new CreateRoomPanelPresentation(T("Create LAN Lobby"), T("LAN Room Settings"), T("NEXT"))
+                : new CreateRoomPanelPresentation(T("Create Global Lobby"), T("Global Room Settings"), T("NEXT"));
         }
     }
 }

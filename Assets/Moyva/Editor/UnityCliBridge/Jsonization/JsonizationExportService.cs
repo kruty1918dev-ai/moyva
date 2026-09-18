@@ -70,6 +70,63 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             return _projectOwnedConcreteTypes;
         }
 
+        /// <summary>
+        /// Batch entry for `-executeMethod`: regenerates schemas, rebuilds the runtime
+        /// asset catalog and syncs presets into Resources. Exits non-zero on errors.
+        /// Does not re-export ScriptableObjects — JSON presets are authoritative.
+        /// </summary>
+        public static void SyncRuntimeConfigBatch()
+        {
+            try
+            {
+                // Схеми тільки для типів, які реально мають JSON-документи в Presets —
+                // інакше генерація покрила б сотні конфіг-класів без пресетів.
+                var schemaTypes = new HashSet<Type>(JsonizationEditorUtil.ProjectConfigTypes());
+                foreach (string jsonFile in Directory.GetFiles(
+                             JsonizationEditorUtil.PresetsRoot, "*.json", SearchOption.AllDirectories))
+                {
+                    if (jsonFile.Replace('\\', '/').Contains("/Schemas/")) continue;
+                    JObject root;
+                    try { root = JObject.Parse(File.ReadAllText(jsonFile)); }
+                    catch { continue; }
+
+                    Type type = MoyvaJsonTypeRegistry.ResolveConfigModel(
+                        root.Value<string>("model"), root.Value<string>("schema"));
+                    if (type != null)
+                        schemaTypes.Add(type);
+                }
+
+                int schemas = 0;
+                foreach (Type type in schemaTypes)
+                {
+                    try
+                    {
+                        JObject schema = BuildRootSchema(type);
+                        string schemaPath = Path.Combine(
+                            JsonizationEditorUtil.SchemasRoot,
+                            JsonizationEditorUtil.SchemaFileName(type)).Replace('\\', '/');
+                        File.WriteAllText(schemaPath, schema.ToString(Formatting.Indented) + "\n");
+                        schemas++;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[MoyvaJson] Schema failed for {type.FullName}: {ex.Message}");
+                    }
+                }
+                Debug.Log($"[MoyvaJson] Schemas written: {schemas}");
+
+                BuildAssetCatalog("Temp/moyva-json-catalog.json");
+                SyncGeneratedResources("Temp/moyva-json-sync.json");
+                AssetDatabase.SaveAssets();
+                Debug.Log("[MoyvaJson] SyncRuntimeConfigBatch completed.");
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"[MoyvaJson] SyncRuntimeConfigBatch failed: {exception}");
+                EditorApplication.Exit(1);
+            }
+        }
+
         public static string GenerateSchemasAndExport(string reportPath)
         {
             var report = new ExportReport { generatedUtc = DateTime.UtcNow.ToString("O") };
@@ -1158,7 +1215,6 @@ namespace Kruty1918.Moyva.Jsonization.Editor
         {
             string domain = JsonizationEditorUtil.DomainFolder(type);
             if (type.Name == "BuildingDefinitionAsset") return Path.Combine(JsonizationEditorUtil.PresetsRoot, "Buildings", id + ".json").Replace('\\','/');
-            if (type.Name == "GraphAsset") return Path.Combine(JsonizationEditorUtil.PresetsRoot, "Graphs", id + ".json").Replace('\\','/');
             string typeFolder = MoyvaJsonTypeRegistry.StableId(type);
             return Path.Combine(JsonizationEditorUtil.PresetsRoot, domain, typeFolder, id + ".json").Replace('\\','/');
         }

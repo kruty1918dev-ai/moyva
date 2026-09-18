@@ -8,6 +8,7 @@
     "Kruty1918.Moyva.AI.Training",
     "Kruty1918.Moyva.Turns",
     "Unity.ML-Agents",
+    "Unity.InferenceEngine",
     "Kruty1918.Moyva.AI.Bot.Core",
     "Kruty1918.Moyva.Construction",
     "Zenject"

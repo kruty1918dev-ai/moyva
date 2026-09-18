@@ -33,6 +33,43 @@ def status(project):
     return result
 
 
+def status_line(snapshot):
+    stamp=time.strftime("%H:%M:%S")
+    live=[p for p in snapshot.get("processes") or [] if p.get("live")]
+    if live:
+        parts=[]
+        for p in live:
+            label=f"{p.get('kind') or 'task'}#{p.get('pid')}"
+            usage=p.get("usage") or {}
+            if usage.get("cpu_percent") is not None:label+=f" cpu={usage['cpu_percent']:.0f}%"
+            if usage.get("ram_bytes"):label+=f" rss={usage['ram_bytes']/1073741824:.1f}GiB"
+            parts.append(label)
+        activity="+".join(parts)
+    else:
+        activity="idle"
+    run=snapshot.get("latest_run") or {}
+    step=(run.get("latest_checkpoint") or {}).get("step")
+    if step is None:step="-"
+    rate=(run.get("best_verified_checkpoint") or {}).get("success_rate")
+    evaluation=run.get("evaluation") or {}
+    eval_part=f" eval={str(evaluation.get('state') or '').lower()}:{evaluation.get('progress')}" if evaluation.get("state")=="EVALUATING" else ""
+    run_part=f"run={run.get('run_id','-')} state={str(run.get('state') or '-').lower()} step={step}"
+    if rate is not None:run_part+=f" best={rate:.0%}"
+    return f"[{stamp}] {activity} | {run_part}{eval_part} | stage={snapshot.get('stage','?')}"
+
+
+def status_watch(project,interval=5.0):
+    interval=max(0.5,float(interval or 5.0))
+    snapshot={}
+    try:
+        while True:
+            snapshot=status(project)
+            print(status_line(snapshot),flush=True)
+            time.sleep(interval)
+    except KeyboardInterrupt:
+        return {"stopped":True,"snapshot":snapshot}
+
+
 def disk_usage(project):
     targets={"Runs":project.results,"Training build":project.root/"Build/Training","Temp/ai":project.root/"Temp/ai",
              "Training venv":project.root/".venv-training","Unity Library":project.root/"Library"}
@@ -68,7 +105,9 @@ def parser():
     p.add_argument("--json",action="store_true",help="Print structured JSON (commands also return meaningful exit codes).")
     sub=p.add_subparsers(dest="command")
     sub.add_parser("ui",help="Open the interactive terminal control center")
-    sub.add_parser("status",help="Environment, Unity, contract, player, processes and latest run")
+    s=sub.add_parser("status",help="Environment, Unity, contract, player, processes and latest run")
+    s.add_argument("--watch","-w",action="store_true",help="Print a live status line until interrupted (Ctrl+C)")
+    s.add_argument("--interval",type=float,default=5.0,metavar="SECONDS",help="Refresh period for --watch (default 5)")
     sub.add_parser("setup",help="Create/repair the project venv and install repository requirements")
     d=sub.add_parser("doctor",help="Diagnose infrastructure; repairs never alter gameplay")
     d.add_argument("--fix",action="store_true");d.add_argument("--confirm");d.add_argument("--refresh",action="store_true")
@@ -110,6 +149,7 @@ def parser():
     sub.add_parser("processes",help="List owned tasks and recovery state")
     l=sub.add_parser("logs",help="Read current/raw logs without discarding originals")
     l.add_argument("run_id",nargs="?");l.add_argument("--source",choices=["all","unity","mlagents","warning","error"],default="all")
+    l.add_argument("--follow","-f",action="store_true",help="Stream new log lines until interrupted (Ctrl+C)")
     sub.add_parser("disk",help="Measure known project output directories")
     c=sub.add_parser("clean",help="Explicitly clean selected project output; never system caches")
     c.add_argument("area",choices=["temp-ai","training-build"]);c.add_argument("--confirm",required=True)
@@ -199,17 +239,52 @@ def deploy(project, model, difficulty_id, off):
                     "Detach with: moyva deploy --difficulty " + entry["id"] + " --off"}
 
 
-def logs(project,run_id=None,source="all"):
-    from .diagnostics import tail
+def _log_files(project,run_id,source):
     if run_id:
         from .runs import RunStore
         directory=RunStore(project).path(run_id)
-        files=[directory/name for name in (["unity.log"] if source=="unity" else ["mlagents.log"] if source=="mlagents" else ["cli.log","unity.log","mlagents.log"])]
-    else:files=sorted((project.local/"logs").glob("*.log"),key=lambda p:p.stat().st_mtime,reverse=True)[:1]
+        return [directory/name for name in (["unity.log"] if source=="unity" else ["mlagents.log"] if source=="mlagents" else ["cli.log","unity.log","mlagents.log"])]
+    return sorted((project.local/"logs").glob("*.log"),key=lambda p:p.stat().st_mtime,reverse=True)[:1]
+
+def _log_line_matches(line,source):
+    text=line.lower()
+    if source=="warning":return "warning" in text
+    if source=="error":return "error" in text or "exception" in text
+    return True
+
+def follow_log_files(files,source,poll=1.0,window=32000):
+    """tail -f over run logs: prints appended lines until KeyboardInterrupt."""
+    import time
+    offsets={};buffers={}
+    while True:
+        idle=True
+        for path in files:
+            try:size=path.stat().st_size
+            except OSError:continue
+            offset=offsets.get(path)
+            if offset is None:offset=offsets.setdefault(path,max(0,size-window))
+            if size<offset:offset=0;buffers[path]=""
+            if size==offset:continue
+            with path.open("rb") as stream:
+                stream.seek(offset);chunk=stream.read(size-offset)
+            offsets[path]=size;idle=False
+            text=buffers.get(path,"")+chunk.decode("utf-8",errors="replace")
+            parts=text.split("\n")
+            buffers[path]=parts.pop()  # trailing partial line ("" when chunk ended at a boundary)
+            for line in parts:
+                line=line.rstrip("\r")
+                if _log_line_matches(line,source):print(f"[{path.name}] {line}",flush=True)
+        if idle:time.sleep(poll)
+
+def logs(project,run_id=None,source="all",follow=False):
+    from .diagnostics import tail
+    files=_log_files(project,run_id,source)
+    if follow:
+        return follow_log_files(files,source)
     lines=[]
     for path in files:
         for line in tail(path).splitlines()[-150:]:
-            if source in ("warning","error") and source not in line.lower() and (source!="error" or "exception" not in line.lower()):continue
+            if not _log_line_matches(line,source):continue
             lines.append(f"[{path.name}] {line}")
     return "\n".join(lines[-250:]) or "No log data yet."
 
@@ -234,7 +309,7 @@ def dispatch(project,args):
                 setup(project);return {"message":"Environment installed. Run ./moyva again to use its selected venv."}
             raise ControlError("Interface unavailable; status, doctor and setup remain usable.")
         ControlCenter(project).run();return None
-    if cmd=="status":return status(project)
+    if cmd=="status":return status_watch(project,args.interval) if getattr(args,"watch",False) else status(project)
     if cmd=="setup":
         from .environment import setup
         return setup(project)
@@ -338,7 +413,7 @@ def dispatch(project,args):
         return result
     if cmd=="stop":return Supervisor(project).stop(args.token)
     if cmd=="processes":return Supervisor(project).records()
-    if cmd=="logs":return logs(project,args.run_id,args.source)
+    if cmd=="logs":return logs(project,args.run_id,args.source,args.follow)
     if cmd=="disk":return disk_usage(project)
     if cmd=="clean":return cleanup(project,args.area,args.confirm)
     if cmd=="settings":

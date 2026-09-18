@@ -39,134 +39,106 @@
       "additionalProperties": true
     },
     "tileRegistry": {
-      "anyOf": [
-        {
-          "type": "object",
-          "properties": {
-            "$config": {
-              "type": "object",
-              "required": [
-                "id"
-              ],
-              "properties": {
-                "model": {
-                  "type": "string"
-                },
-                "id": {
-                  "type": "string"
-                }
-              },
-              "additionalProperties": true
-            }
-          },
-          "required": [
-            "$config"
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "definitions": {
+          "type": [
+            "array",
+            "null"
           ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "definitions": {
-              "type": [
-                "array",
-                "null"
-              ],
-              "items": {
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Id"
+              },
+              "movementCost": {
+                "type": "number",
+                "title": "Movement Cost"
+              },
+              "tileWorldCreatorPreset": {
                 "type": [
                   "object",
                   "null"
                 ],
+                "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
                 "properties": {
-                  "id": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "title": "Id"
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
                   },
-                  "movementCost": {
-                    "type": "number",
-                    "title": "Movement Cost"
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
                   },
-                  "tileWorldCreatorPreset": {
-                    "type": [
-                      "object",
-                      "null"
-                    ],
-                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
-                    "properties": {
-                      "$asset": {
-                        "type": "string",
-                        "title": "Asset ID"
-                      },
-                      "editorPath": {
-                        "type": "string",
-                        "description": "Editor-only path для діагностики/регенерації catalog."
-                      },
-                      "required": {
-                        "type": "boolean",
-                        "default": true
-                      }
-                    },
-                    "required": [
-                      "$asset"
-                    ],
-                    "title": "Tile World Creator Preset"
-                  },
-                  "tileWorldCreatorBlueprintLayerGuid": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "title": "Tile World Creator Blueprint Layer Guid"
-                  },
-                  "tileWorldCreatorBlueprintLayerName": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "title": "Tile World Creator Blueprint Layer Name"
-                  },
-                  "visualPrefab": {
-                    "type": [
-                      "object",
-                      "null"
-                    ],
-                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
-                    "properties": {
-                      "$asset": {
-                        "type": "string",
-                        "title": "Asset ID"
-                      },
-                      "editorPath": {
-                        "type": "string",
-                        "description": "Editor-only path для діагностики/регенерації catalog."
-                      },
-                      "required": {
-                        "type": "boolean",
-                        "default": true
-                      }
-                    },
-                    "required": [
-                      "$asset"
-                    ],
-                    "title": "Visual Prefab"
+                  "required": {
+                    "type": "boolean",
+                    "default": true
                   }
                 },
-                "additionalProperties": false
+                "required": [
+                  "$asset"
+                ],
+                "title": "Tile World Creator Preset"
               },
-              "title": "Definitions"
-            }
+              "tileWorldCreatorBlueprintLayerGuid": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Tile World Creator Blueprint Layer Guid"
+              },
+              "tileWorldCreatorBlueprintLayerName": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Tile World Creator Blueprint Layer Name"
+              },
+              "visualPrefab": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Visual Prefab"
+              }
+            },
+            "additionalProperties": false
           },
-          "additionalProperties": false
-        },
-        {
-          "type": "null"
+          "title": "Definitions"
         }
-      ],
-      "description": "Реєстр тайлів для WFC. Якщо не вказано — редактор шукає перший TileRegistrySO у проєкті.",
-      "title": "Tile Registry"
+      },
+      "additionalProperties": false,
+      "title": "Tile Registry",
+      "description": "Реєстр тайлів для WFC. Якщо не вказано — редактор шукає перший TileRegistrySO у проєкті."
     },
     "tileRules": {
       "type": [

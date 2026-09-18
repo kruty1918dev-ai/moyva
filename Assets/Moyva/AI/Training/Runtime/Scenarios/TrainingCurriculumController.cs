@@ -99,27 +99,26 @@ namespace Kruty1918.Moyva.AI.Training
                 int roll = _random.Next(Math.Max(1, _config.currentSkillWeight + _config.masteredReviewWeight + _config.combinationWeight));
                 if (roll < _config.currentSkillWeight && firstUnmastered != null) return Select(firstUnmastered);
                 roll -= _config.currentSkillWeight;
-                var mastered = ordered.Where(s => Skill(s.id).mastered && !s.fullGame).ToArray();
+                var mastered = VaryByRecency(ordered.Where(s => Skill(s.id).mastered && !s.fullGame).ToArray());
                 if (roll < _config.masteredReviewWeight && mastered.Length > 0) return Select(mastered[_random.Next(mastered.Length)]);
 
-                var combinations = _catalog.Items
-                    .Where(s => s != null
-                        && s.id.StartsWith("combo-", StringComparison.Ordinal)
-                        && DependenciesMastered(s))
-                    .ToArray();
+                var combinations = VaryByRecency(_catalog.Combinations
+                    .Where(s => s != null && DependenciesMastered(s))
+                    .ToArray());
                 if (combinations.Length > 0)
                     return Select(combinations[_random.Next(combinations.Length)]);
 
-                return Select(firstUnmastered ?? ordered.First());
+                return Select(firstUnmastered ?? ordered.FirstOrDefault() ?? _catalog.Items.First());
             }
             int post = _random.Next(Math.Max(1, _config.fullGameWeightAfterBasics + _config.weakSkillWeightAfterBasics + _config.reviewWeightAfterBasics));
-            var full = _catalog.Get("full-game-autonomous");
+            var full = _catalog.FullGameScenario;
             if (post < _config.fullGameWeightAfterBasics && full != null) return Select(full);
             post -= _config.fullGameWeightAfterBasics;
-            var weak = ordered.Where(s => !s.fullGame).OrderBy(s => Skill(s.id).LastEvaluationRate).FirstOrDefault();
-            if (post < _config.weakSkillWeightAfterBasics && weak != null) return Select(weak);
-            var review = ordered.Where(s => Skill(s.id).mastered).ToArray();
-            return Select(review.Length == 0 ? full : review[_random.Next(review.Length)]);
+            var weak = VaryByRecency(ordered.Where(s => !s.fullGame).OrderBy(s => Skill(s.id).LastEvaluationRate).ToArray());
+            if (post < _config.weakSkillWeightAfterBasics && weak.Length > 0) return Select(weak[0]);
+            var review = VaryByRecency(ordered.Where(s => Skill(s.id).mastered).ToArray());
+            var fallback = full ?? ordered.LastOrDefault() ?? _catalog.Items.First();
+            return Select(review.Length == 0 ? fallback : review[_random.Next(review.Length)]);
         }
 
         public TrainingScenarioDefinition GetScenario(string scenarioId) => _catalog.Get(scenarioId);
@@ -196,8 +195,24 @@ namespace Kruty1918.Moyva.AI.Training
                 _state.bestVerifiedCheckpoint = checkpoint;
                 _state.bestVerifiedCheckpointStep = Math.Max(0, step);
                 _state.bestVerifiedRate = Mathf.Clamp01(successRate);
+                EnrollOpponent(checkpoint);
                 Save();
             }
+        }
+
+        // Verified checkpoints become the self-play opponent pool: newest
+        // verified first, bounded so stale weak opponents age out.
+        private const int MaxOpponentPool = 8;
+
+        private void EnrollOpponent(string checkpoint)
+        {
+            var pool = (_state.opponentPool ?? Array.Empty<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x) && x != checkpoint)
+                .ToList();
+            pool.Insert(0, checkpoint);
+            if (pool.Count > MaxOpponentPool)
+                pool.RemoveRange(MaxOpponentPool, pool.Count - MaxOpponentPool);
+            _state.opponentPool = pool.ToArray();
         }
 
         // Kept for source compatibility. A training checkpoint is never promoted to
@@ -208,11 +223,28 @@ namespace Kruty1918.Moyva.AI.Training
         }
 
         public void SetOpponentPool(IEnumerable<string> checkpoints)
-        { _state.opponentPool = (checkpoints ?? Array.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToArray(); Save(); }
+        {
+            _state.opponentPool = (checkpoints ?? Array.Empty<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x)).Distinct()
+                .Take(MaxOpponentPool).ToArray();
+            Save();
+        }
         public void Dispose() => Save();
 
         private TrainingScenarioDefinition Select(TrainingScenarioDefinition scenario)
         { _state.activeScenarioId = scenario.id; Save(); return scenario; }
+
+        // Anti-repetition: never replay the just-finished scenario when an
+        // alternative exists. Keeps review/combination picks varied without a
+        // separate history structure — activeScenarioId is the last pick.
+        private TrainingScenarioDefinition[] VaryByRecency(TrainingScenarioDefinition[] candidates)
+        {
+            if (candidates == null || candidates.Length <= 1
+                || string.IsNullOrWhiteSpace(_state.activeScenarioId))
+                return candidates;
+            var varied = candidates.Where(s => s.id != _state.activeScenarioId).ToArray();
+            return varied.Length == 0 ? candidates : varied;
+        }
         private TrainingSkillState Skill(string id) => _state.skills.FirstOrDefault(s => s.scenarioId == id);
         private bool RepairBootstrapQualifications()
         {
@@ -259,10 +291,7 @@ namespace Kruty1918.Moyva.AI.Training
         private bool DependenciesMastered(TrainingScenarioDefinition scenario)
             => (scenario.prerequisites ?? Array.Empty<string>()).All(id => Skill(id)?.mastered == true);
         private TrainingScenarioDefinition[] Ordered()
-        {
-            string[] ids = { "foundation-legal-setup", "castle", "production", "stable-economy", "recruitment", "movement-scouting", "combat-defense", "capture", "full-game-autonomous" };
-            return ids.Select(_catalog.Get).Where(x => x != null).ToArray();
-        }
+            => _catalog.Curriculum.ToArray();
         private static string ResolveStatePath(string configured)
         {
             if (!string.IsNullOrWhiteSpace(configured)) return Path.GetFullPath(configured);

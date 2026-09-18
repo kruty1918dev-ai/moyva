@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.AI.Training
     /// </summary>
     internal static class TrainingOpponentPolicy
     {
-        public static IBotPolicyDriver Create(string archetype)
+        public static IBotPolicyDriver Create(string archetype, string opponentModelPath = null)
         {
             switch ((archetype ?? "heuristic").Trim().ToLowerInvariant())
             {
@@ -19,6 +19,13 @@ namespace Kruty1918.Moyva.AI.Training
                 case "none":
                 case "static":
                     return new PassiveOpponentDriver();
+                case "self-play":
+                case "onnx":
+                case "learned":
+                    var driver = SelfPlayOpponentDriver.TryLoad(opponentModelPath, out string reason);
+                    if (driver != null) return driver;
+                    UnityEngine.Debug.LogWarning($"Self-play opponent unavailable ({reason}); falling back to heuristic.");
+                    return new BoundedHeuristicOpponentDriver();
                 default:
                     return new BoundedHeuristicOpponentDriver();
             }

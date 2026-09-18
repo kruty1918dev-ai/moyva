@@ -18,6 +18,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal partial class JoinRoomPanelService : IJoinRoomPanelService, IInitializable, IDisposable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         [Inject] private IJoinRoomViewController _viewController;
         [InjectOptional] private ILobbyService _lobbyService;
         [InjectOptional] private IMultiplayerModeSelector _modeSelector;

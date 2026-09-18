@@ -5,6 +5,7 @@
     "legacyStage": 2,
     "learnerBuildsInitialCastle": false,
     "fullGame": false,
+    "combination": true,
     "prerequisites": ["movement-scouting", "combat-defense"],
     "minMeaningfulCandidates": 2,
     "maxForcedActionRatio": 0.85,

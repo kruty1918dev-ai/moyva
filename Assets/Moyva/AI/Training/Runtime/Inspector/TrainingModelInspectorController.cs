@@ -880,45 +880,15 @@ namespace Kruty1918.Moyva.AI.Training
 
         private static string GlobalName(int i)
         {
-            switch (i)
-            {
-                case 0: return "active";
-                case 1: return "round";
-                case 2: return "phase";
-                case 3: return "ownUnits";
-                case 4: return "visibleOtherUnits";
-                case 5: return "unitsAvailable";
-                case 6: return "economyAvailable";
-                case 7: return "spatialAvailable";
-                case 8: return "visibilityAvailable";
-                case 9: return "scenarioGoal";
-                case 10: return "scenarioStep";
-                case 11: return "scenarioProgress";
-                case 12: return "ownSettlements";
-                case 13: return "visibleEnemySettlements";
-                case 16: return "capability.turn";
-                case 17: return "capability.movement";
-                case 18: return "capability.combat";
-                case 19: return "capability.recruitment";
-                case 20: return "capability.construction";
-                case 21: return "capability.capture";
-                case 22: return "capability.economy";
-                case 23: return "capability.exploration";
-                case 24: return "ownResourcesTotal";
-                case 25: return "poolResourcesTotal";
-                case 26: return "resourceKinds";
-                case 27: return "food";
-                case 28: return "wood";
-                case 29: return "stone";
-                case 30: return "iron";
-                case 31: return "gold";
-                case 32: return "productionEstimate";
-                case 33: return "populationAvailable";
-                case 34: return "unitVisionSummary";
-                case 35: return "unitAttackSummary";
-                case 36: return "unitTerrainSummary";
-                default: return "global." + i;
-            }
+            var feature = BotDecisionContract.Spec.Feature(i);
+            if (feature == null)
+                return "global." + i;
+            if (feature.count <= 1)
+                return BotDecisionContract.Spec.Label(i);
+            if (feature.index == BotObservationSchema.Capabilities
+                && i - feature.index < Enum.GetValues(typeof(BotCapabilityId)).Length)
+                return "capability." + ((BotCapabilityId)(i - feature.index)).ToString().ToLowerInvariant();
+            return feature.name + "." + (i - feature.index);
         }
 
         private static string CandidateFeatureName(int i)

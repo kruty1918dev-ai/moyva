@@ -58,7 +58,9 @@ namespace Kruty1918.Moyva.AI.Bot
         {
             if (Session != null && Session.State != BotOrchestratorState.Idle && Session.State != BotOrchestratorState.Cancelled)
                 throw new InvalidOperationException("Swap policies between turns.");
+            var previous = _policy;
             _policy = policy ?? new HeuristicBotPolicyDriver();
+            if (!ReferenceEquals(previous, _policy)) (previous as IDisposable)?.Dispose();
             Telemetry.PolicyMode = _policy.Mode; Telemetry.ProfileName = profileName;
             Telemetry.FallbackReason = fallbackReason;
         }
@@ -202,6 +204,13 @@ namespace Kruty1918.Moyva.AI.Bot
             _cancellation?.Cancel();
             if (Session != null) Session.State = BotOrchestratorState.Cancelled;
         }
-        public void Dispose() { Cancel(); _cancellation?.Dispose(); _cancellation = null; }
+        public void Dispose()
+        {
+            Cancel();
+            _cancellation?.Dispose();
+            _cancellation = null;
+            (_policy as IDisposable)?.Dispose();
+            _policy = null;
+        }
     }
 }

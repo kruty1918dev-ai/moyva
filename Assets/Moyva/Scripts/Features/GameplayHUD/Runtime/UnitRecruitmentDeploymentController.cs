@@ -36,7 +36,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private const float FallbackPreviewHeight = 0.85f;
         private const int OverlayRenderQueue = 3988;
         private const string TurnBlockReason =
-            "Завершіть або скасуйте розміщення готового юніта.";
+            "Finish or cancel deploying the ready unit.";
 
         private static readonly GameplayInputKind DeploymentInputMask =
             GameplayInputKind.PrimaryPointer

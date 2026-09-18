@@ -1,0 +1,299 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/audio-ambience.schema.json",
+  "title": "Moyva — Audio Ambience Config",
+  "description": "JSON source of truth для Kruty1918.Moyva.GameAudio.API.AudioAmbienceConfig. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.audio-ambience"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "audio-ambience"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "zoom": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "smoothing": {
+          "type": "number",
+          "title": "Smoothing",
+          "minimum": 0.1,
+          "x-moyva-editorMinimum": 0.1
+        },
+        "emitterFadeStart": {
+          "type": "number",
+          "title": "Emitter Fade Start",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "emitterFadeEnd": {
+          "type": "number",
+          "title": "Emitter Fade End",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "nearCutoff": {
+          "type": "number",
+          "title": "Near Cutoff",
+          "minimum": 200.0,
+          "maximum": 22000.0,
+          "x-moyva-editorMinimum": 200.0,
+          "x-moyva-editorMaximum": 22000.0
+        },
+        "farCutoff": {
+          "type": "number",
+          "title": "Far Cutoff",
+          "minimum": 200.0,
+          "maximum": 22000.0,
+          "x-moyva-editorMinimum": 200.0,
+          "x-moyva-editorMaximum": 22000.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Zoom"
+    },
+    "beds": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "soundKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Sound Key"
+          },
+          "volume": {
+            "type": "number",
+            "title": "Volume",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "nearWeight": {
+            "type": "number",
+            "title": "Near Weight",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "farWeight": {
+            "type": "number",
+            "title": "Far Weight",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "lowpassWithZoom": {
+            "type": "boolean",
+            "title": "Lowpass With Zoom"
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Beds"
+    },
+    "emitters": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Id"
+          },
+          "matchTileTypeId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Match Tile Type Id",
+            "description": "TileTypeId тайла, до якого прив'язаний емітер."
+          },
+          "matchBuildingId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Match Building Id",
+            "description": "BuildingId будівлі (точне значення або префікс)."
+          },
+          "soundKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Sound Key"
+          },
+          "volume": {
+            "type": "number",
+            "title": "Volume",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "minDistance": {
+            "type": "number",
+            "title": "Min Distance",
+            "minimum": 0.01,
+            "x-moyva-editorMinimum": 0.01
+          },
+          "maxDistance": {
+            "type": "number",
+            "title": "Max Distance",
+            "minimum": 0.01,
+            "x-moyva-editorMinimum": 0.01
+          },
+          "clusterStep": {
+            "type": "integer",
+            "title": "Cluster Step",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          },
+          "maxInstances": {
+            "type": "integer",
+            "title": "Max Instances",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          },
+          "zoomFadeStart": {
+            "type": "number",
+            "title": "Zoom Fade Start",
+            "description": "<0 → глобальний zoom.emitterFadeStart."
+          },
+          "zoomFadeEnd": {
+            "type": "number",
+            "title": "Zoom Fade End",
+            "description": "<0 → глобальний zoom.emitterFadeEnd."
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Emitters"
+    },
+    "oneShots": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "soundKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Sound Key"
+          },
+          "volume": {
+            "type": "number",
+            "title": "Volume",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "minInterval": {
+            "type": "number",
+            "title": "Min Interval",
+            "minimum": 0.05,
+            "x-moyva-editorMinimum": 0.05
+          },
+          "maxInterval": {
+            "type": "number",
+            "title": "Max Interval",
+            "minimum": 0.05,
+            "x-moyva-editorMinimum": 0.05
+          },
+          "minZoom": {
+            "type": "number",
+            "title": "Min Zoom",
+            "description": "zoomT-діапазон, у якому стингер може звучати.",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "maxZoom": {
+            "type": "number",
+            "title": "Max Zoom",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "One Shots"
+    },
+    "maxEmittersTotal": {
+      "type": "integer",
+      "title": "Max Emitters Total",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    }
+  }
+}

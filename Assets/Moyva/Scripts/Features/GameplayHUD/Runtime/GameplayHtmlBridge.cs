@@ -67,7 +67,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             UiActionResult result = Execute(UiActionIds.Construction.Toggle, "GameplayHTML");
             if (result.Status != UiActionStatus.Performed)
-                SetResult(result, "Construction is unavailable.");
+                SetResult(result, _state.T("Construction is unavailable."));
         }
 
         public void ClosePanel()
@@ -92,7 +92,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             UiActionResult openResult = Execute(UiActionIds.Construction.Open, "GameplayHTML");
             if (openResult.Status == UiActionStatus.Rejected)
             {
-                SetResult(openResult, "Construction is unavailable.");
+                SetResult(openResult, _state.T("Construction is unavailable."));
                 return;
             }
 
@@ -104,11 +104,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (result.Status == UiActionStatus.Performed)
             {
                 string displayName = _readModel.ResolveBuildingDisplayName(buildingId);
-                _state.SetFeedback($"Selected {displayName}. Choose a tile on the map.");
+                _state.SetFeedback(_state.TF("Selected {0}. Choose a tile on the map.", _state.T(displayName)));
                 return;
             }
 
-            SetResult(result, "Building selection was rejected.");
+            SetResult(result, _state.T("Building selection was rejected."));
         }
 
         public void ConfirmPlacement()
@@ -120,14 +120,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (confirmed > 0)
             {
-                _state.SetFeedback($"Placed {confirmed} building(s).");
+                _state.SetFeedback(_state.TF("Placed {0} building(s).", confirmed));
                 return;
             }
 
             if (action.Status == UiActionStatus.Performed
                 && _roles?.Resolve().Role == LocalGameplayRole.Client)
             {
-                _state.SetFeedback("Placement request sent. Waiting for the host.");
+                _state.SetFeedback(_state.T("Placement request sent. Waiting for the host."));
                 return;
             }
 
@@ -136,38 +136,38 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 reason = _construction?.GetLastActionMessage();
             if (string.IsNullOrWhiteSpace(reason))
                 reason = before == 0
-                    ? "Choose a location on the map before confirming."
-                    : "The placement was rejected by gameplay rules.";
-            _state.SetFeedback(reason);
+                    ? _state.T("Choose a location on the map before confirming.")
+                    : _state.T("The placement was rejected by gameplay rules.");
+            _state.SetFeedback(_state.T(reason));
         }
 
         public void CancelPlacement()
         {
             if (IsInitialCastleRequired())
             {
-                _state.SetFeedback("Place your first castle before leaving construction mode.");
+                _state.SetFeedback(_state.T("Place your first castle before leaving construction mode."));
                 return;
             }
 
             SetResult(
                 Execute(UiActionIds.Construction.CancelPlacement, "GameplayHTML/Placement"),
-                "Placement cancelled.");
+                _state.T("Placement cancelled."));
         }
         public void RotatePlacement() => SetResult(
             Execute(UiActionIds.Construction.RotatePlacement, "GameplayHTML/Placement"),
-            "Placement rotated.");
+            _state.T("Placement rotated."));
         public void UndoPlacement() => SetResult(
             Execute(UiActionIds.Construction.UndoPlacement, "GameplayHTML/Placement"),
-            "Placement undone.");
+            _state.T("Placement undone."));
         public void RedoPlacement() => SetResult(
             Execute(UiActionIds.Construction.RedoPlacement, "GameplayHTML/Placement"),
-            "Placement restored.");
+            _state.T("Placement restored."));
         public void ClearSelection() => SetResult(
             Execute(UiActionIds.ClearSelection, "GameplayHTML"),
-            "Selection cleared.");
+            _state.T("Selection cleared."));
         public void EndTurn() => SetResult(
             Execute(UiActionIds.EndTurn, "GameplayHTML"),
-            "Turn ended.");
+            _state.T("Turn ended."));
         public void SandboxSpeed(object value)
         {
             if (_progressClock == null || !_progressClock.IsRealtime)
@@ -198,8 +198,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     { BuildingId = buildingId, Position = item.Position.Value });
                     if (item.QueueId > 0) _state.SetSelectionTab(GameplaySelectionTab.Queue);
                 }
-                else _state.SetFeedback("The source no longer exists. Showing its last known location.");
-                if (!string.IsNullOrWhiteSpace(item.DeliveryDetails)) _state.SetFeedback(item.DeliveryDetails);
+                else _state.SetFeedback(_state.T("The source no longer exists. Showing its last known location."));
+                if (!string.IsNullOrWhiteSpace(item.DeliveryDetails)) _state.SetFeedback(_state.T(item.DeliveryDetails));
                 return;
             }
         }
@@ -256,13 +256,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 CombatCommandResult result = await _readModel.AttackSelectionAsync();
                 _state.SetFeedback(result.Succeeded
                     ? result.DamageApplied > 0
-                        ? $"Attack dealt {result.DamageApplied} damage."
+                        ? _state.TF("Attack dealt {0} damage.", result.DamageApplied)
                         : string.IsNullOrWhiteSpace(result.Reason)
-                            ? "Attack request sent."
-                            : result.Reason
+                            ? _state.T("Attack request sent.")
+                            : _state.T(result.Reason)
                     : string.IsNullOrWhiteSpace(result.Reason)
-                        ? "Attack was rejected."
-                        : result.Reason);
+                        ? _state.T("Attack was rejected.")
+                        : _state.T(result.Reason));
                 if (result.Succeeded && result.DamageApplied > 0)
                 {
                     Vector2Int? position = _readModel.TryGetUnitPosition(result.TargetEntityId, out var targetPosition)
@@ -270,8 +270,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         : null;
                     _state.AddNotification(
                         result.TargetDied
-                            ? $"Attack destroyed {result.TargetEntityId}."
-                            : $"Attack hit {result.TargetEntityId} for {result.DamageApplied}.",
+                            ? _state.TF("Attack destroyed {0}.", result.TargetEntityId)
+                            : _state.TF("Attack hit {0} for {1}.", result.TargetEntityId, result.DamageApplied),
                         result.TargetDied ? "Warning" : "Info",
                         position,
                         result.TargetEntityId);
@@ -287,7 +287,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public void CaptureSelection()
         {
             UiActionResult result = Execute(UiActionIds.Combat.CaptureSelection, "GameplayHTML/Combat");
-            SetResult(result, "Settlement captured.");
+            SetResult(result, _state.T("Settlement captured."));
         }
 
         public void Recruit(object value)
@@ -300,18 +300,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 UiActionSource.Button,
                 "GameplayHTML/Recruitment",
                 unitTypeId);
-            SetResult(result, $"{unitTypeId} added to the recruitment queue.");
+            SetResult(result, _state.TF("{0} added to the recruitment queue.", _state.T(unitTypeId)));
         }
 
         public void CancelRecruitment(object value)
             => SetResult(_actions.Value.Execute(UiActionIds.Recruitment.Cancel,
                 UiActionSource.Button, "GameplayHTML/Recruitment", value?.ToString()),
-                "Training cancelled. Resources returned.");
+                _state.T("Training cancelled. Resources returned."));
 
         public void DeployRecruitment(object value)
             => SetResult(_actions.Value.Execute(UiActionIds.Recruitment.Deploy,
                 UiActionSource.Button, "GameplayHTML/Recruitment", value?.ToString()),
-                "Choose a deployment tile.");
+                _state.T("Choose a deployment tile."));
 
         public void FocusWarehouse(object x, object y, object targetId)
         {
@@ -329,7 +329,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 ExitMatchResult result = await _exit.ExitToMenuAsync();
                 if (!result.Succeeded && !result.Cancelled)
-                    _state.SetFeedback(string.IsNullOrWhiteSpace(result.Error) ? "Could not leave the session." : result.Error);
+                    _state.SetFeedback(string.IsNullOrWhiteSpace(result.Error) ? _state.T("Could not leave the session.") : _state.T(result.Error));
             }
             catch (Exception exception)
             {
@@ -373,11 +373,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             _state.SetFeedback(result.Status == UiActionStatus.Performed
                 ? string.IsNullOrWhiteSpace(result.Details)
-                    ? success
-                    : result.Details
+                    ? _state.T(success)
+                    : _state.T(result.Details)
                 : string.IsNullOrWhiteSpace(result.Details)
-                    ? result.Reason.ToString()
-                    : result.Details);
+                    ? _state.T(result.Reason.ToString())
+                    : _state.T(result.Details));
         }
 
         private static int ToInt(object value)

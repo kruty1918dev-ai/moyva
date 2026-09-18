@@ -6,7 +6,6 @@ using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
-using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
@@ -30,7 +29,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 return;
             }
 
-            if (_graphAsset == null)
+            if (_mapRecipe == null)
             {
                 return;
             }
@@ -44,7 +43,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             Vector2Int mapSize = ResolveMapSize();
             int seed = Guid.NewGuid().GetHashCode();
 
-            if (!MenuWorldPreviewGenerator.TryGenerate(_graphAsset, mapSize.x, mapSize.y, seed, out var previewData, out var errorMessage))
+            if (!MenuWorldPreviewGenerator.TryGenerate(_mapRecipe, mapSize.x, mapSize.y, seed, out var previewData, out var errorMessage))
             {
                 return;
             }
@@ -148,8 +147,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_mapTileCount.x > 0 && _mapTileCount.y > 0)
                 return new Vector2Int(_mapTileCount.x, _mapTileCount.y);
 
-            if (_graphAsset != null && _graphAsset.SharedSettings != null && _graphAsset.SharedSettings.HasMapSize)
-                return _graphAsset.SharedSettings.MapSize;
+            if (_mapRecipe != null && _mapRecipe.SharedSettings != null && _mapRecipe.SharedSettings.HasMapSize)
+                return _mapRecipe.SharedSettings.MapSize;
 
             return new Vector2Int(128, 72);
         }
@@ -159,7 +158,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_tileRegistryOverride != null)
                 return _tileRegistryOverride;
 
-            return _graphAsset != null ? _graphAsset.TileRegistry : null;
+            return _mapRecipe != null ? _mapRecipe.TileRegistry : null;
         }
 
         [ContextMenu("Validate Kingdom Placement Rules")]

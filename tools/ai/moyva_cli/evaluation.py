@@ -405,10 +405,71 @@ def update_curriculum_latest_checkpoint(state_path: Path, identity: dict, traini
     atomic_json(state_path, state)
 
 
-def choose_evaluation_scenario(state_path: Path) -> str:
+def resolve_opponent_model(state_path: Path, run_dir: Path) -> str | None:
+    """Resolve the newest verified self-play checkpoint to a frozen ONNX path.
+
+    Pool entries are checkpoint identities (hash:step:checksum); a frozen
+    checkpoint is only trusted when its provenance file repeats the exact id,
+    which embeds the file's sha256. Returns None when no verified opponent is
+    resolvable — the Unity side then keeps the scripted heuristic opponent.
+    """
+    try:
+        state = json.loads(Path(state_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    for checkpoint_id in state.get("opponentPool") or []:
+        if not isinstance(checkpoint_id, str):
+            continue
+        parts = checkpoint_id.split(":")
+        if len(parts) < 3:
+            continue
+        try:
+            step = int(parts[1])
+        except ValueError:
+            continue
+        frozen_dir = Path(run_dir) / "evaluations" / "frozen" / str(step)
+        # Runtime self-play loads the .sentis serialization — ONNX conversion
+        # is editor-only. Frozen checkpoints produced before the exporter was
+        # added simply lack the file and are skipped.
+        model = frozen_dir / "MoyvaStrategy.sentis"
+        provenance = frozen_dir / "checkpoint.json"
+        if not (model.is_file() and provenance.is_file()):
+            continue
+        try:
+            identity = json.loads(provenance.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if identity.get("checkpoint_id") == checkpoint_id:
+            return str(model.resolve())
+    return None
+
+
+SCENARIO_MANIFEST = "Assets/Moyva/Presets/AI/Scenarios/manifest.json"
+
+
+def curriculum_order(root: Path) -> list[str]:
+    """Progression order from the scenario manifest; empty when absent."""
+    directory = Path(os.environ["MOYVA_SCENARIO_DIR"]) if os.environ.get("MOYVA_SCENARIO_DIR") \
+        else Path(root) / "Assets/Moyva/Presets/AI/Scenarios"
+    manifest = read_json(directory / "manifest.json", None)
+    if not manifest or int(manifest.get("version", 0) or 0) != 1:
+        return []
+    return [entry for entry in manifest.get("curriculum") or [] if isinstance(entry, str) and entry]
+
+
+def choose_evaluation_scenario(state_path: Path, root: Path = None) -> str:
     state = read_json(Path(state_path), {})
     scenario = state.get("activeScenarioId")
-    if not scenario:
-        skills = state.get("skills") or []
-        scenario = next((skill.get("scenarioId") for skill in skills if not skill.get("mastered")), None)
-    return scenario or "castle"
+    if scenario:
+        return scenario
+    skills = {skill.get("scenarioId"): skill for skill in state.get("skills") or []}
+    order = curriculum_order(root) if root else []
+    # First unmastered scenario in curriculum order; capstone once all pass.
+    scenario = next((entry for entry in order if entry in skills and not skills[entry].get("mastered")), None)
+    if scenario is None:
+        scenario = next((skill.get("scenarioId") for skill in state.get("skills") or [] if not skill.get("mastered")), None)
+    if scenario is None and order:
+        scenario = order[-1]
+    if scenario is None:
+        raise ControlError("Cannot choose an evaluation scenario: curriculum state and manifest are both empty.")
+    return scenario

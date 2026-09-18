@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Jsonization;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
@@ -334,16 +334,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
             for (int i = 0; i < count; i++)
             {
                 CompiledLayerMap layer = layers[i] ?? new CompiledLayerMap();
-                context.Writer.Write(layer.GraphLayerId ?? string.Empty);
+                context.Writer.Write(layer.LayerId ?? string.Empty);
                 context.Writer.Write(layer.GridTileId ?? string.Empty);
                 context.Writer.Write(layer.BlueprintLayerGuid ?? string.Empty);
                 context.Writer.Write(layer.LayerName ?? string.Empty);
                 context.Writer.Write(layer.SortingOrder);
-                context.Writer.Write(layer.GraphLayerOrder);
+                context.Writer.Write(layer.LayerOrder);
                 context.Writer.Write(layer.TerrainPriority);
                 context.Writer.Write(layer.BuildLayerGuid ?? string.Empty);
                 context.Writer.Write(layer.PresetId ?? string.Empty);
-                context.Writer.Write(layer.SourceNodeId ?? string.Empty);
+                context.Writer.Write(layer.SourceLayerId ?? string.Empty);
                 context.Writer.Write(layer.HasRenderableTileOutput);
             }
         }
@@ -359,16 +359,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 layers.Add(new CompiledLayerMap
                 {
-                    GraphLayerId = context.Reader.ReadString(),
+                    LayerId = context.Reader.ReadString(),
                     GridTileId = context.Reader.ReadString(),
                     BlueprintLayerGuid = context.Reader.ReadString(),
                     LayerName = context.Reader.ReadString(),
                     SortingOrder = context.Reader.ReadInt32(),
-                    GraphLayerOrder = context.Reader.ReadInt32(),
+                    LayerOrder = context.Reader.ReadInt32(),
                     TerrainPriority = context.Reader.ReadInt32(),
                     BuildLayerGuid = context.Reader.ReadString(),
                     PresetId = context.Reader.ReadString(),
-                    SourceNodeId = context.Reader.ReadString(),
+                    SourceLayerId = context.Reader.ReadString(),
                     HasRenderableTileOutput = context.Reader.ReadBoolean(),
                 });
             }
@@ -376,7 +376,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return layers;
         }
 
-        private static void WriteLogicalTileMap(ISaveContext context, GraphLogicalTileMap map, int width, int height)
+        private static void WriteLogicalTileMap(ISaveContext context, LogicalTileMap map, int width, int height)
         {
             bool hasMap = map != null && map.Width == width && map.Height == height;
             context.Writer.Write(hasMap);
@@ -385,19 +385,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             context.Writer.Write(map.Width);
             context.Writer.Write(map.Height);
-            List<GraphTileLayerSample> uniqueSamples = CollectLogicalSamples(map, width, height);
+            List<TileLayerSample> uniqueSamples = CollectLogicalSamples(map, width, height);
             context.Writer.Write(uniqueSamples.Count);
             for (int i = 0; i < uniqueSamples.Count; i++)
                 WriteSample(context, uniqueSamples[i]);
 
-            var sampleIndex = new Dictionary<GraphTileLayerSample, int>(uniqueSamples.Count);
+            var sampleIndex = new Dictionary<TileLayerSample, int>(uniqueSamples.Count);
             for (int i = 0; i < uniqueSamples.Count; i++)
                 sampleIndex[uniqueSamples[i]] = i;
 
             for (int x = 0; x < width; x++)
                 for (int y = 0; y < height; y++)
                 {
-                    IReadOnlyList<GraphTileLayerSample> samples = map.GetCellStack(x, y)?.Samples;
+                    IReadOnlyList<TileLayerSample> samples = map.GetCellStack(x, y)?.Samples;
                     int count = samples?.Count ?? 0;
                     context.Writer.Write(count);
                     for (int i = 0; i < count; i++)
@@ -405,7 +405,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 }
         }
 
-        private static GraphLogicalTileMap ReadLogicalTileMap(ISaveContext context, int width, int height)
+        private static LogicalTileMap ReadLogicalTileMap(ISaveContext context, int width, int height)
         {
             if (!context.Reader.ReadBoolean())
                 return null;
@@ -420,11 +420,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (uniqueCount < 0 || uniqueCount > maxUniqueCount)
                 throw new InvalidDataException("Invalid saved logical tile sample dictionary size.");
 
-            var uniqueSamples = new GraphTileLayerSample[uniqueCount];
+            var uniqueSamples = new TileLayerSample[uniqueCount];
             for (int i = 0; i < uniqueCount; i++)
                 uniqueSamples[i] = ReadSample(context);
 
-            var map = new GraphLogicalTileMap(width, height);
+            var map = new LogicalTileMap(width, height);
             for (int x = 0; x < width; x++)
                 for (int y = 0; y < height; y++)
                 {
@@ -444,7 +444,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return map;
         }
 
-        private static GraphLogicalTileMap ReadLogicalTileMapV3(ISaveContext context, int width, int height)
+        private static LogicalTileMap ReadLogicalTileMapV3(ISaveContext context, int width, int height)
         {
             if (!context.Reader.ReadBoolean())
                 return null;
@@ -454,7 +454,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (savedWidth != width || savedHeight != height)
                 throw new InvalidDataException("Saved logical tile map dimensions do not match world dimensions.");
 
-            var map = new GraphLogicalTileMap(width, height);
+            var map = new LogicalTileMap(width, height);
             for (int x = 0; x < width; x++)
                 for (int y = 0; y < height; y++)
                 {
@@ -469,17 +469,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return map;
         }
 
-        private static List<GraphTileLayerSample> CollectLogicalSamples(
-            GraphLogicalTileMap map,
+        private static List<TileLayerSample> CollectLogicalSamples(
+            LogicalTileMap map,
             int width,
             int height)
         {
-            var samples = new List<GraphTileLayerSample>();
-            var seen = new Dictionary<GraphTileLayerSample, int>();
+            var samples = new List<TileLayerSample>();
+            var seen = new Dictionary<TileLayerSample, int>();
             for (int x = 0; x < width; x++)
                 for (int y = 0; y < height; y++)
                 {
-                    IReadOnlyList<GraphTileLayerSample> stack = map.GetCellStack(x, y)?.Samples;
+                    IReadOnlyList<TileLayerSample> stack = map.GetCellStack(x, y)?.Samples;
                     if (stack == null)
                         continue;
 
@@ -496,26 +496,26 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return samples;
         }
 
-        private static void WriteSample(ISaveContext context, GraphTileLayerSample sample)
+        private static void WriteSample(ISaveContext context, TileLayerSample sample)
         {
-            context.Writer.Write(sample.GraphLayerId ?? string.Empty);
-            context.Writer.Write(sample.GraphLayerName ?? string.Empty);
+            context.Writer.Write(sample.LayerId ?? string.Empty);
+            context.Writer.Write(sample.LayerName ?? string.Empty);
             context.Writer.Write(sample.BlueprintLayerGuid ?? string.Empty);
             context.Writer.Write(sample.BuildLayerGuid ?? string.Empty);
             context.Writer.Write(sample.TileId ?? string.Empty);
             context.Writer.Write(sample.PresetId ?? string.Empty);
             context.Writer.Write((int)sample.LayerKind);
             context.Writer.Write(sample.SortingOrder);
-            context.Writer.Write(sample.GraphLayerOrder);
+            context.Writer.Write(sample.LayerOrder);
             context.Writer.Write(sample.TerrainPriority);
             context.Writer.Write(sample.Height);
             context.Writer.Write(sample.SurfaceHeight);
-            context.Writer.Write(sample.SourceNodeId ?? string.Empty);
+            context.Writer.Write(sample.SourceLayerId ?? string.Empty);
             context.Writer.Write((int)sample.TileGeometryMode);
             context.Writer.Write((int)sample.AuthoredClosurePolicy);
         }
 
-        private static GraphTileLayerSample ReadSample(ISaveContext context)
+        private static TileLayerSample ReadSample(ISaveContext context)
         {
             string graphLayerId = context.Reader.ReadString();
             string graphLayerName = context.Reader.ReadString();
@@ -523,19 +523,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
             string buildLayerGuid = context.Reader.ReadString();
             string tileId = context.Reader.ReadString();
             string presetId = context.Reader.ReadString();
-            LayerKind layerKind = ReadEnum<LayerKind>(context, nameof(GraphTileLayerSample.LayerKind));
+            LayerKind layerKind = ReadEnum<LayerKind>(context, nameof(TileLayerSample.LayerKind));
             int sortingOrder = context.Reader.ReadInt32();
             int graphLayerOrder = context.Reader.ReadInt32();
             int terrainPriority = context.Reader.ReadInt32();
-            float height = ReadFiniteFloat(context, nameof(GraphTileLayerSample.Height));
-            float surfaceHeight = ReadFiniteFloat(context, nameof(GraphTileLayerSample.SurfaceHeight));
-            string sourceNodeId = context.Reader.ReadString();
+            float height = ReadFiniteFloat(context, nameof(TileLayerSample.Height));
+            float surfaceHeight = ReadFiniteFloat(context, nameof(TileLayerSample.SurfaceHeight));
+            string sourceLayerId = context.Reader.ReadString();
             TileGeometryMode tileGeometryMode =
-                ReadEnum<TileGeometryMode>(context, nameof(GraphTileLayerSample.TileGeometryMode));
+                ReadEnum<TileGeometryMode>(context, nameof(TileLayerSample.TileGeometryMode));
             AuthoredClosurePolicy authoredClosurePolicy =
-                ReadEnum<AuthoredClosurePolicy>(context, nameof(GraphTileLayerSample.AuthoredClosurePolicy));
+                ReadEnum<AuthoredClosurePolicy>(context, nameof(TileLayerSample.AuthoredClosurePolicy));
 
-            return new GraphTileLayerSample(
+            return new TileLayerSample(
                 graphLayerId,
                 graphLayerName,
                 blueprintLayerGuid,
@@ -548,7 +548,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 terrainPriority,
                 height,
                 surfaceHeight,
-                sourceNodeId,
+                sourceLayerId,
                 tileGeometryMode,
                 authoredClosurePolicy);
         }

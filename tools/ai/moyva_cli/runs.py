@@ -106,7 +106,7 @@ class RunStore:
                 if not path.resolve().is_relative_to(root.resolve()): continue
                 # Frozen evaluation copies are provenance artifacts, not resumable trainer checkpoints.
                 if "evaluations" in path.relative_to(root).parts: continue
-                relative = str(path.relative_to(self.project.results))
+                relative = path.relative_to(self.project.results).as_posix()
                 numbers = re.findall(r"(?:-|_)(\d+)(?=\D|$)", path.stem)
                 stat = path.stat()
                 result.append({"path":str(path), "relative":relative, "run_id":root.name, "kind":path.suffix[1:],
@@ -120,10 +120,12 @@ class RunStore:
         if item is None: raise ControlError("Checkpoint not found or outside the results directory.")
         return item
     def label(self, relative, label=None, favorite=None):
-        self.checkpoint(relative)
+        item = self.checkpoint(relative)
         path = self.project.local / "checkpoint-labels.json"
         values = read_json(path, {})
-        entry = values.setdefault(relative, {})
+        # Store under the checkpoint's canonical relative key so labels resolve
+        # regardless of which path separator the caller used.
+        entry = values.setdefault(item["relative"], {})
         if label is not None: entry["label"] = label[:120]
         if favorite is not None: entry["favorite"] = bool(favorite)
         atomic_json(path, values)

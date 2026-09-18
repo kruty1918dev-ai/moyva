@@ -28,7 +28,7 @@ class ProjectFixture(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.root=Path(self.temp.name)
         for relative in ["tools/ai/moyva-cli.json","Assets/Moyva/Presets/AI/MoyvaTrainingConfig.json",
-                "Assets/Moyva/AI/Bot/Core/Contracts/BotDecisionContract.cs",
+                "Assets/Moyva/Presets/AI/Resources/MoyvaBotContract.json",
                 "Assets/Moyva/AI/Training/Runtime/Curriculum/TrainingCurriculumConfig.cs",
                 "Assets/Moyva/AI/Training/Config/moyva_ppo.yaml"]:
             target=self.root/relative;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(ROOT/relative,target)
@@ -139,7 +139,7 @@ class ProjectFixture(unittest.TestCase):
         with self.assertRaises(ControlError):self.store.path("link")
     def test_atomic_json_handles_unicode_and_replacement(self):
         target=self.root/"дані.json";atomic_json(target,{"x":1});atomic_json(target,{"x":"тест"})
-        self.assertEqual("тест",json.loads(target.read_text())["x"])
+        self.assertEqual("тест",json.loads(target.read_text(encoding="utf-8"))["x"])
     def test_platform_executable_layouts(self):
         self.assertEqual("MoyvaTraining.exe",HostPlatform("Windows").player(self.root).name)
         self.assertEqual("MoyvaTraining.app",HostPlatform("Darwin").player(self.root).name)
@@ -226,3 +226,35 @@ class CurriculumPreviewTests(unittest.TestCase):
         self.assertEqual(4,len(rects))
         self.assertEqual(4,len({(r["x"],r["y"]) for r in rects}))
         self.assertTrue(all(r["width"]==960 and r["height"]==540 for r in rects))
+
+
+class StatusLineTests(unittest.TestCase):
+    def test_status_line_compacts_live_snapshot(self):
+        from moyva_cli.commands import status_line
+        snapshot={"processes":[{"kind":"player","pid":42,"live":True,
+                                "usage":{"cpu_percent":37.0,"ram_bytes":2147483648}}],
+                  "latest_run":{"run_id":"run-9","state":"RUNNING",
+                                "latest_checkpoint":{"step":150000},
+                                "best_verified_checkpoint":{"success_rate":0.83},
+                                "evaluation":{"state":"EVALUATING","progress":"17 / 50"}},
+                  "stage":5}
+        line=status_line(snapshot)
+        self.assertIn("player#42",line)
+        self.assertIn("cpu=37%",line)
+        self.assertIn("run=run-9",line)
+        self.assertIn("step=150000",line)
+        self.assertIn("best=83%",line)
+        self.assertIn("eval=evaluating:17 / 50",line)
+        self.assertIn("stage=5",line)
+
+    def test_status_line_handles_idle_and_missing_data(self):
+        from moyva_cli.commands import status_line
+        line=status_line({"processes":[],"latest_run":None,"stage":1})
+        self.assertIn("idle",line)
+        self.assertIn("run=-",line)
+        self.assertIn("step=-",line)
+
+    def test_status_parser_accepts_watch_options(self):
+        args=parser().parse_args(["status","--watch","--interval","2.5"])
+        self.assertTrue(args.watch)
+        self.assertEqual(2.5,args.interval)

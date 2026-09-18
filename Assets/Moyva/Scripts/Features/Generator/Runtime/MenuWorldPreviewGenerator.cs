@@ -1,22 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Kruty1918.Moyva.Generator.API;
-using Kruty1918.Moyva.Generator.Runtime.Nodes;
-using Kruty1918.Moyva.GraphSystem.API;
-using Kruty1918.Moyva.GraphSystem.Runtime;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
     /// <summary>
-    /// Окремий menu-only utility для виконання GraphAsset без запуску повної побудови світу.
-    /// Повертає лише фінальні карти, придатні для рендера у Texture2D.
+    /// Menu-only utility that evaluates a <see cref="GeneratorMapRecipe"/> without
+    /// running a full world build. Returns final maps suitable for rendering into
+    /// a preview Texture2D.
     /// </summary>
     public static class MenuWorldPreviewGenerator
     {
         public static bool TryGenerate(
-            GraphAsset graphAsset,
+            GeneratorMapRecipe recipe,
             int width,
             int height,
             int seed,
@@ -26,13 +23,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             previewData = null;
             errorMessage = null;
 
-            if (graphAsset == null)
+            if (recipe == null)
             {
-                errorMessage = "GraphAsset is not assigned.";
+                errorMessage = "GeneratorMapRecipe is not assigned.";
                 return false;
             }
 
-            Vector2Int mapSize = ResolveMapSize(graphAsset, width, height);
+            Vector2Int mapSize = ResolveMapSize(recipe, width, height);
             int previousSeed = GlobalSeed.Current;
             var previousRandomState = UnityEngine.Random.state;
 
@@ -41,69 +38,34 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 GlobalSeed.Set(seed);
                 UnityEngine.Random.InitState(seed);
 
-                var layerDataList = new List<WorldLayerData>();
-                var snapshot = GraphEvaluationPipeline.Evaluate(
-                    graphAsset,
-                    seed,
+                var validation = GeneratorMapRecipeValidator.Validate(recipe);
+                if (validation.HasGlobalErrors)
+                {
+                    errorMessage = string.Join("; ", validation.GlobalErrors);
+                    return false;
+                }
+
+                var masks = GeneratorMaskEvaluator.EvaluateMasks(
+                    recipe,
+                    GlobalSeed.Normalize(seed),
                     mapSize,
-                    configureContext: context =>
-                    {
-                        RegisterContextData(context, graphAsset);
-                        context.RegisterService(layerDataList);
-                    });
-                var result = snapshot.ExecutionResult;
-                if (result == null)
-                {
-                    errorMessage = snapshot.Diagnostics ?? "Graph execution produced no result.";
-                    return false;
-                }
-                if (!result.Success)
-                {
-                    errorMessage = string.IsNullOrWhiteSpace(result.ErrorMessage)
-                        ? "Graph execution failed."
-                        : result.ErrorMessage;
-                    return false;
-                }
+                    validation.SkippedLayerIds);
 
-                var outputNode = graphAsset.Nodes
-                    .OfType<OutputNode>()
-                    .FirstOrDefault();
-
-                if (outputNode == null)
-                {
-                    errorMessage = "OutputNode was not found in the graph.";
-                    return false;
-                }
-
-                var output =
-                    snapshot.GetNodeArtifact<LayerOutputSnapshot>(
-                        outputNode.NodeId);
-                if (output == null)
-                {
-                    errorMessage = "Graph did not produce any output maps.";
-                    return false;
-                }
-
-                var biomeMap = NormalizeStringMap(output.BiomeMap, mapSize.x, mapSize.y);
-                var objectMap = NormalizeStringMap(output.ObjectMap, mapSize.x, mapSize.y);
-                var heightMap = NormalizeFloatMap(output.HeightMap, mapSize.x, mapSize.y);
-                var buildingMap = NormalizeStringMap(output.BuildingMap, mapSize.x, mapSize.y);
-
-                if (layerDataList.Count > 0)
-                {
-                    var layerBiome = BuildBiomeMapFromLayers(layerDataList, mapSize.x, mapSize.y);
-                    MergeEmptyBiomeCells(biomeMap, layerBiome, mapSize.x, mapSize.y);
-                }
+                BuildPreviewMaps(
+                    recipe,
+                    masks,
+                    mapSize,
+                    out var biomeMap,
+                    out var heightMap);
 
                 previewData = new MenuWorldPreviewData(
                     mapSize.x,
                     mapSize.y,
                     seed,
                     biomeMap,
-                    objectMap,
+                    new string[mapSize.x, mapSize.y],
                     heightMap,
-                    buildingMap);
-
+                    new string[mapSize.x, mapSize.y]);
                 return true;
             }
             catch (Exception ex)
@@ -118,123 +80,59 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
         }
 
-        private static void RegisterContextData(NodeContext context, GraphAsset graphAsset)
+        /// <summary>
+        /// Composites the preview maps from evaluated layer masks: for each cell
+        /// the enabled Tiles layer with the highest sorting order wins; its tile
+        /// id feeds the biome map and its height feeds the height map.
+        /// </summary>
+        private static void BuildPreviewMaps(
+            GeneratorMapRecipe recipe,
+            IReadOnlyDictionary<string, bool[,]> masks,
+            Vector2Int mapSize,
+            out string[,] biomeMap,
+            out float[,] heightMap)
         {
-            if (graphAsset.SharedSettings != null)
-            {
-                context.ApplySharedSettings(graphAsset.SharedSettings);
-                context.RegisterService(graphAsset.SharedSettings);
-            }
+            biomeMap = new string[mapSize.x, mapSize.y];
+            heightMap = new float[mapSize.x, mapSize.y];
 
-            if (graphAsset.TileRegistry != null)
-                context.RegisterService(graphAsset.TileRegistry);
+            var layers = GeneratorMaskEvaluator.OrderedLayers(recipe, null);
+            for (int i = 0; i < layers.Count; i++)
+            {
+                var layer = layers[i];
+                if (layer.OutputKind != LayerOutputKind.Tiles)
+                    continue;
+                if (!masks.TryGetValue(layer.Id, out var mask) || mask == null)
+                    continue;
+
+                string tileId = ResolvePreviewTileId(layer);
+                int w = Mathf.Min(mapSize.x, mask.GetLength(0));
+                int h = Mathf.Min(mapSize.y, mask.GetLength(1));
+                for (int x = 0; x < w; x++)
+                for (int y = 0; y < h; y++)
+                {
+                    if (!mask[x, y])
+                        continue;
+                    biomeMap[x, y] = tileId;
+                    heightMap[x, y] = layer.DefaultHeight;
+                }
+            }
         }
 
-        private static Vector2Int ResolveMapSize(GraphAsset graphAsset, int width, int height)
+        private static string ResolvePreviewTileId(GeneratorMapLayer layer)
+        {
+            string tileId = layer?.ResolveTileId();
+            return !string.IsNullOrWhiteSpace(tileId) ? tileId : layer?.Id;
+        }
+
+        private static Vector2Int ResolveMapSize(GeneratorMapRecipe recipe, int width, int height)
         {
             if (width > 0 && height > 0)
                 return new Vector2Int(width, height);
 
-            if (graphAsset?.SharedSettings != null && graphAsset.SharedSettings.HasMapSize)
-                return graphAsset.SharedSettings.MapSize;
+            if (recipe?.SharedSettings != null && recipe.SharedSettings.HasMapSize)
+                return recipe.SharedSettings.MapSize;
 
             return new Vector2Int(Mathf.Max(1, width), Mathf.Max(1, height));
-        }
-
-        private static string[,] NormalizeStringMap(string[,] source, int width, int height)
-        {
-            var result = new string[width, height];
-            if (source == null)
-                return result;
-
-            int copyWidth = Mathf.Min(width, source.GetLength(0));
-            int copyHeight = Mathf.Min(height, source.GetLength(1));
-            for (int x = 0; x < copyWidth; x++)
-            for (int y = 0; y < copyHeight; y++)
-                result[x, y] = source[x, y];
-
-            return result;
-        }
-
-        private static float[,] NormalizeFloatMap(float[,] source, int width, int height)
-        {
-            var result = new float[width, height];
-            if (source == null)
-                return result;
-
-            int copyWidth = Mathf.Min(width, source.GetLength(0));
-            int copyHeight = Mathf.Min(height, source.GetLength(1));
-            for (int x = 0; x < copyWidth; x++)
-            for (int y = 0; y < copyHeight; y++)
-                result[x, y] = source[x, y];
-
-            return result;
-        }
-
-        private static string[,] BuildBiomeMapFromLayers(List<WorldLayerData> layers, int mapWidth, int mapHeight)
-        {
-            var biomeMap = new string[mapWidth, mapHeight];
-            if (layers == null || layers.Count == 0)
-                return biomeMap;
-
-            var sorted = new List<WorldLayerData>(layers);
-            sorted.Sort((a, b) => b.SortingOrder.CompareTo(a.SortingOrder));
-
-            var pixelCache = new Color[sorted.Count][];
-            var texWidths = new int[sorted.Count];
-            var texHeights = new int[sorted.Count];
-
-            for (int layerIndex = 0; layerIndex < sorted.Count; layerIndex++)
-            {
-                var texture = sorted[layerIndex].TileTexture;
-                if (texture == null)
-                    continue;
-
-                texWidths[layerIndex] = texture.width;
-                texHeights[layerIndex] = texture.height;
-                pixelCache[layerIndex] = texture.GetPixels();
-            }
-
-            for (int x = 0; x < mapWidth; x++)
-            {
-                for (int y = 0; y < mapHeight; y++)
-                {
-                    for (int layerIndex = 0; layerIndex < sorted.Count; layerIndex++)
-                    {
-                        var pixels = pixelCache[layerIndex];
-                        if (pixels == null)
-                            continue;
-
-                        int textureWidth = texWidths[layerIndex];
-                        int textureHeight = texHeights[layerIndex];
-                        int textureX = Mathf.Clamp((x * textureWidth) / mapWidth, 0, textureWidth - 1);
-                        int textureY = Mathf.Clamp((y * textureHeight) / mapHeight, 0, textureHeight - 1);
-
-                        if (pixels[textureY * textureWidth + textureX].a <= 0f)
-                            continue;
-
-                        biomeMap[x, y] = sorted[layerIndex].LayerTileID;
-                        break;
-                    }
-                }
-            }
-
-            return biomeMap;
-        }
-
-        private static void MergeEmptyBiomeCells(string[,] target, string[,] source, int mapWidth, int mapHeight)
-        {
-            if (target == null || source == null)
-                return;
-
-            for (int x = 0; x < mapWidth; x++)
-            {
-                for (int y = 0; y < mapHeight; y++)
-                {
-                    if (string.IsNullOrEmpty(target[x, y]) && !string.IsNullOrEmpty(source[x, y]))
-                        target[x, y] = source[x, y];
-                }
-            }
         }
     }
 }

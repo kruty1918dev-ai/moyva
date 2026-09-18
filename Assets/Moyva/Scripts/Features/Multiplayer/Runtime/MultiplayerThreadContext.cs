@@ -27,6 +27,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             => _context == null
                || Thread.CurrentThread.ManagedThreadId == _mainThreadId;
 
+        /// <summary>True when a Unity synchronization context was captured and
+        /// <see cref="Post"/> can defer work to the main thread.</summary>
+        public static bool CanPost => _context != null;
+
         public static void Post(Action action)
         {
             if (action == null)
@@ -34,6 +38,26 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             var context = _context;
             if (context == null || Thread.CurrentThread.ManagedThreadId == _mainThreadId)
+            {
+                InvokeSafe(action);
+                return;
+            }
+
+            context.Post(_ => InvokeSafe(action), null);
+        }
+
+        /// <summary>
+        /// Always defers to the next context pump, even when already on the
+        /// main thread. Use for self-reposting loops where inline execution
+        /// would recurse unboundedly.
+        /// </summary>
+        public static void PostDeferred(Action action)
+        {
+            if (action == null)
+                return;
+
+            var context = _context;
+            if (context == null)
             {
                 InvokeSafe(action);
                 return;

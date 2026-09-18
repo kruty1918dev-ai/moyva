@@ -1,0 +1,119 @@
+{
+  "schema": "moyva.generator-recipe",
+  "model": "generator-map-recipe",
+  "version": 1,
+  "id": "testgeneratorrecipe",
+  "seed": 0,
+  "sharedSettings": {
+    "mapWidth": 0,
+    "mapHeight": 0,
+    "gridTopology": "Orthogonal",
+    "projectionMode": "Orthographic3D",
+    "renderMode": "Mesh3D",
+    "neighborhoodMode": "Auto"
+  },
+  "tileRegistry": {
+    "$config": {
+      "model": "tile-registry",
+      "id": "tile3dregistry"
+    }
+  },
+  "sharedGeneratorSettings": {
+    "$config": {
+      "model": "shared-generator-settings",
+      "id": "sharedgeneratorsettings"
+    }
+  },
+  "layers": [
+    {
+      "id": "b47a1390-a46d-4999-9780-f5e2769e8668",
+      "name": "_baseLayer",
+      "sortingOrder": -20,
+      "enabled": true,
+      "defaultHeight": 0.2,
+      "outputKind": "Masks",
+      "steps": [
+        {
+          "$type": "perlin-noise-mask-step",
+          "scale": 30.0,
+          "octaves": 5,
+          "persistence": 0.683,
+          "lacunarity": 2.0,
+          "offset": { "x": 0.0, "y": 0.0 },
+          "threshold": 0.468
+        },
+        {
+          "$type": "twc-modifier-mask-step",
+          "modifierTypeName": "GiantGrey.TileWorldCreator.CellularAutomata",
+          "combine": "Add"
+        }
+      ]
+    },
+    {
+      "id": "1d3eead6-7c79-4cf9-99b0-2fbeabc8333b",
+      "name": "Water",
+      "sortingOrder": -10,
+      "enabled": true,
+      "outputKind": "Tiles",
+      "tileGeometryMode": "SurfaceOnly",
+      "tileType": {
+        "$config": {
+          "model": "tile-type",
+          "id": "water"
+        }
+      },
+      "steps": [
+        {
+          "$type": "bool-value-mask-step",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "78af69b7-740e-4a85-bad4-866f58c4c7c7",
+      "name": "Sand",
+      "sortingOrder": -9,
+      "enabled": true,
+      "outputKind": "Tiles",
+      "tileType": {
+        "$config": {
+          "model": "tile-type",
+          "id": "sand"
+        }
+      },
+      "steps": [
+        {
+          "$type": "layer-mask-reference-step",
+          "sourceLayerId": "b47a1390-a46d-4999-9780-f5e2769e8668"
+        }
+      ]
+    },
+    {
+      "id": "f904bc0b-b8b6-4fdc-b371-76921129c59b",
+      "name": "Grass",
+      "sortingOrder": -8,
+      "enabled": true,
+      "defaultHeight": 0.0,
+      "outputKind": "Tiles",
+      "tileType": {
+        "$config": {
+          "model": "tile-type",
+          "id": "grass"
+        }
+      },
+      "steps": [
+        {
+          "$type": "layer-mask-reference-step",
+          "sourceLayerId": "b47a1390-a46d-4999-9780-f5e2769e8668"
+        },
+        {
+          "$type": "mask-morphology-step",
+          "operation": "Erode",
+          "radius": 1,
+          "iterations": 2
+        }
+      ]
+    }
+  ],
+  "objectPlacements": []
+}

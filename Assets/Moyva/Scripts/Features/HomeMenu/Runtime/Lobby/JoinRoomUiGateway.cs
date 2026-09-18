@@ -8,6 +8,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
 {
     internal sealed class JoinRoomUiGateway : IJoinRoomUiGateway
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         [Inject] private INavigation _navigation;
         [Inject] private ILobbyPanelViewController _lobbyPanelViewController;
         [Inject(Id = "LobbyPanelName")] private string _lobbyPanelName;
@@ -34,8 +38,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
             try
             {
                 var label = _lobbyFlowContext?.Provider == Kruty1918.Moyva.Multiplayer.Networking.NetworkProviderType.Lan
-                    ? "LAN Join Code"
-                    : "Invite Code";
+                    ? T("LAN Join Code")
+                    : T("Invite Code");
                 var provider = _lobbyFlowContext?.Provider ?? Kruty1918.Moyva.Multiplayer.Networking.NetworkProviderType.Relay;
                 _lobbyPanelViewController?.SetInviteCode(_lobbyService?.Current != null
                     ? LobbyInviteCodeResolver.Resolve(_lobbyService.Current, provider)

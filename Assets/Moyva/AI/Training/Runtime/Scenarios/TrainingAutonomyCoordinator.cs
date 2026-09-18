@@ -278,6 +278,19 @@ namespace Kruty1918.Moyva.AI.Training
                 var model = AssetDatabase.LoadMainAssetAtPath(temporaryModel);
                 if (model == null) throw new InvalidOperationException("Unity could not import the frozen ONNX as a model asset.");
 
+                // Runtime self-play reads .sentis (ONNX conversion is editor-only);
+                // write it next to the frozen checkpoint so verified checkpoints
+                // become loadable opponents without an extra editor launch.
+                try
+                {
+                    string sentisPath = Path.ChangeExtension(modelSource, ".sentis");
+                    Unity.InferenceEngine.ModelWriter.Save(sentisPath, model as Unity.InferenceEngine.ModelAsset);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[MoyvaTraining] Sentis export for self-play pool failed: " + e.Message);
+                }
+
                 string directory = Path.GetDirectoryName(output);
                 if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
                 var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions

@@ -19,6 +19,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal sealed class LobbyPanelService : ILobbyPanelService, IInitializable, IDisposable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         #region Поля і залежності
         // --- Інжектовані залежності (зв'язок із UI та мережевими сервісами)
         [Inject] private ILobbyPanelViewController _lobbyPanelViewController;
@@ -266,7 +270,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (!_rateLimiter.Allow("start-game", TimeSpan.FromSeconds(1)))
             {
-                _infoPanelService?.Show(new InfoMessage("Please Wait", "Start is being requested too often."));
+                _infoPanelService?.Show(new InfoMessage(T("Please Wait"), T("Start is being requested too often.")));
                 return;
             }
 
@@ -277,7 +281,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (readiness.IsFailure)
             {
                 var readinessError = MultiplayerUserFacingError.FromDomainError(readiness.Error, MoyvaId.NewTraceId());
-                _infoPanelService?.Show(new InfoMessage("Session readiness", readinessError.BuildDisplayMessage()));
+                _infoPanelService?.Show(new InfoMessage(T("Session readiness"), readinessError.BuildDisplayMessage(_loca)));
                 return;
             }
 
@@ -288,7 +292,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (!IsHost(_currentLobby)) return;
             if (!CanStartGame(_currentLobby))
             {
-                _infoPanelService?.Show(new InfoMessage("Start Unavailable", "At least two players must be in the room to start the game."));
+                _infoPanelService?.Show(new InfoMessage(T("Start Unavailable"), T("At least two players must be in the room to start the game.")));
                 UpdateViewFromLobby(_currentLobby);
                 return;
             }
@@ -474,7 +478,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             try
             {
-                _infoPanelService?.Show(new InfoMessage("Removed from Lobby", BuildLobbyExitMessage(reason)));
+                _infoPanelService?.Show(new InfoMessage(T("Removed from Lobby"), BuildLobbyExitMessage(reason)));
             }
             catch (Exception)
             {
@@ -496,18 +500,18 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 : _localGameSettings.PlayerName;
         }
 
-        private static string BuildLobbyExitMessage(string reason)
+        private string BuildLobbyExitMessage(string reason)
         {
             if (string.IsNullOrWhiteSpace(reason))
-                return "Connection to the lobby was lost. Choose another room or try again.";
+                return T("Connection to the lobby was lost. Choose another room or try again.");
 
             if (string.Equals(reason, "removed", StringComparison.OrdinalIgnoreCase))
-                return "The lobby was removed. Choose another room or try again.";
+                return T("The lobby was removed. Choose another room or try again.");
 
             if (string.Equals(reason, "lobby_closed", StringComparison.OrdinalIgnoreCase))
-                return "The lobby is closed or the game has already started. Choose another room.";
+                return T("The lobby is closed or the game has already started. Choose another room.");
 
-            return $"Connection to the lobby was lost: {reason}";
+            return TF("Connection to the lobby was lost: {0}", reason);
         }
 
         /// <summary>
@@ -528,7 +532,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return true;
             if (_confirmationService == null)
             {
-                _infoPanelService?.Show(new InfoMessage("Leave unavailable", "The confirmation dialog is unavailable."));
+                _infoPanelService?.Show(new InfoMessage(T("Leave unavailable"), T("The confirmation dialog is unavailable.")));
                 return true;
             }
             _leavePromptOpen = true;
@@ -551,11 +555,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private string BuildLeaveLobbyConfirmationMessage(LobbyRoom lobby, bool host)
         {
             if (!host)
-                return "Leave this lobby and disconnect from its participants?";
+                return T("Leave this lobby and disconnect from its participants?");
 
             return CountOtherConnectedPlayers(lobby) > 0
-                ? "Leave the lobby? Host will transfer to another player before you disconnect."
-                : "Leave the lobby? The lobby will close because no other players are connected.";
+                ? T("Leave the lobby? Host will transfer to another player before you disconnect.")
+                : T("Leave the lobby? The lobby will close because no other players are connected.");
         }
 
         private async Task LeaveLobbyAndNavigateBackAsync(Action continuation)
@@ -578,7 +582,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             catch (Exception exception)
             {
                 await MainThreadDispatcher.EnqueueAsync(() =>
-                    _infoPanelService?.Show(new InfoMessage("Could not leave lobby", exception.Message)));
+                    _infoPanelService?.Show(new InfoMessage(T("Could not leave lobby"), T(exception.Message))));
             }
             finally
             {

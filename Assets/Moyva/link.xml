@@ -22,7 +22,6 @@
   <assembly fullname="Kruty1918.Moyva.FogOfWar" preserve="all"/>
   <assembly fullname="Kruty1918.Moyva.GameMode" preserve="all"/>
   <assembly fullname="Kruty1918.Moyva.Generator" preserve="all"/>
-  <assembly fullname="Kruty1918.Moyva.GraphSystem" preserve="all"/>
   <assembly fullname="Kruty1918.Moyva.Grid" preserve="all"/>
   <assembly fullname="Kruty1918.Moyva.HomeMenu" preserve="all"/>
   <assembly fullname="Kruty1918.Moyva.InfoPanel" preserve="all"/>

@@ -46,8 +46,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (_passwordPanelService == null)
             {
-                _infoPanelService?.Show(new InfoMessage("Private Room", "This room requires a password, but the password panel is unavailable."));
-                return Result<LobbyRoom>.Fail(DomainErrorCode.Validation, "Password panel is unavailable.");
+                _infoPanelService?.Show(new InfoMessage(T("Private Room"), T("This room requires a password, but the password panel is unavailable.")));
+                return Result<LobbyRoom>.Fail(DomainErrorCode.Validation, T("Password panel is unavailable."));
             }
 
             string error = null;
@@ -55,7 +55,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 var prompt = await _passwordPanelService.RequestPasswordAsync(probe.DisplayName, error, ct);
                 if (!prompt.Confirmed)
-                    return Result<LobbyRoom>.Fail(DomainErrorCode.Cancelled, "Password entry was cancelled.");
+                    return Result<LobbyRoom>.Fail(DomainErrorCode.Cancelled, T("Password entry was cancelled."));
 
                 var room = await JoinTargetResultAsync(target, prompt.Password, ct);
                 if (room.IsSuccess)
@@ -63,20 +63,20 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
                 if (room.Error.Code == DomainErrorCode.WrongPassword)
                 {
-                    error = "Wrong password. Try again.";
+                    error = T("Wrong password. Try again.");
                     continue;
                 }
 
                 return room;
             }
 
-            return Result<LobbyRoom>.Fail(DomainErrorCode.WrongPassword, "Wrong room password.");
+            return Result<LobbyRoom>.Fail(DomainErrorCode.WrongPassword, T("Wrong room password."));
         }
 
         private async Task<Result<LobbyRoom>> JoinTargetResultAsync(JoinRoomTarget target, string password = null, CancellationToken ct = default)
         {
             if (!target.IsValid)
-                return Result<LobbyRoom>.Fail(DomainErrorCode.Validation, "Join target is invalid.");
+                return Result<LobbyRoom>.Fail(DomainErrorCode.Validation, T("Join target is invalid."));
 
             var room = await JoinExactTargetAsync(target, password, ct);
             // An alias can resolve a missing room, but cannot repair a rejected
@@ -111,7 +111,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 {
                     return Result<LobbyRoom>.Fail(
                         DomainErrorCode.NotFound,
-                        $"Room '{target.Value}' was not found or is unavailable.");
+                        TF("Room '{0}' was not found or is unavailable.", target.Value));
                 }
 
                 return Result<LobbyRoom>.Success(room);
@@ -141,7 +141,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private async Task<Result<LobbyRoom>> JoinByIdWithOptionalPasswordAsync(string lobbyId, string password, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(lobbyId))
-                return Result<LobbyRoom>.Fail(DomainErrorCode.Validation, "LobbyId is empty.");
+                return Result<LobbyRoom>.Fail(DomainErrorCode.Validation, T("LobbyId is empty."));
 
             var normalizedLobbyId = lobbyId.Trim();
             var room = await _lobbyService.JoinByIdAsync(normalizedLobbyId, GetPlayerName(), ct);
@@ -165,14 +165,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 {
                     return Result<LobbyRoom>.Fail(
                         DomainErrorCode.NotFound,
-                        $"Room with lobbyId '{normalizedLobbyId}' was not found or is closed.");
+                        TF("Room with lobbyId '{0}' was not found or is closed.", normalizedLobbyId));
                 }
             }
 
             if (!string.IsNullOrEmpty(password) && room.HasPassword && !LobbyPasswordHasher.Verify(password, room.PasswordHash))
             {
                 try { await _lobbyService.LeaveAsync(ct); } catch { }
-                return Result<LobbyRoom>.Fail(DomainErrorCode.WrongPassword, "Wrong room password.");
+                return Result<LobbyRoom>.Fail(DomainErrorCode.WrongPassword, T("Wrong room password."));
             }
 
             return Result<LobbyRoom>.Success(room);

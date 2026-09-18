@@ -14,6 +14,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal sealed class KickPlayerPanelService : IKickPlayerPanelService, IInitializable, IDisposable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         [InjectOptional] private IKickPlayerPanelViewController _viewController;
         [Inject] private ILobbyService _lobbyService;
         [Inject] private INavigation _navigation;
@@ -89,7 +93,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 _currentLobby = null;
                 _viewController?.ClearPlayers();
-                _viewController?.SetStatus("You were removed from the lobby.");
+                _viewController?.SetStatus(T("You were removed from the lobby."));
             });
         }
 
@@ -108,7 +112,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (!playerInfo.CanKick)
             {
-                _viewController?.SetStatus("This player cannot be kicked.");
+                _viewController?.SetStatus(T("This player cannot be kicked."));
                 return;
             }
 
@@ -121,7 +125,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _confirmationService.Show(new ConfirmationRequest
             {
                 LabelText = "Kick Player",
-                MessageText = $"Remove {playerInfo.DisplayName} from the room?",
+                MessageText = TF("Remove {0} from the room?", playerInfo.DisplayName),
                 OnConfirm = () => _ = KickPlayerAsync(playerInfo),
                 OnCancel = () => { }
             });
@@ -134,7 +138,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             _isKicking = true;
             _viewController?.SetInteractable(false);
-            _viewController?.SetStatus("Removing player...");
+            _viewController?.SetStatus(T("Removing player..."));
 
             try
             {
@@ -143,7 +147,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception exception)
             {
-                _viewController?.SetStatus($"Kick failed: {exception.Message}");
+                _viewController?.SetStatus(TF("Kick failed: {0}", exception.Message));
             }
             finally
             {
@@ -319,24 +323,24 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 : _localGameSettings.PlayerName;
         }
 
-        private static string BuildStatusText(LobbyRoom lobby, bool canManageLobby, List<KickPlayerInfo> players)
+        private string BuildStatusText(LobbyRoom lobby, bool canManageLobby, List<KickPlayerInfo> players)
         {
             if (lobby == null)
-                return "Lobby has not been created yet.";
+                return T("Lobby has not been created yet.");
 
             if (!canManageLobby)
-                return "Only the host can kick players.";
+                return T("Only the host can kick players.");
 
             foreach (var player in players)
             {
                 if (player.CanKick)
-                    return "Select a player to kick them from the room.";
+                    return T("Select a player to kick them from the room.");
             }
 
-            return "There are no players that can be kicked.";
+            return T("There are no players that can be kicked.");
         }
 
-        private static string BuildPlayerStatus(bool isHost, bool isLocalPlayer, bool canKick)
+        private string BuildPlayerStatus(bool isHost, bool isLocalPlayer, bool canKick)
         {
             if (isHost)
                 return "Host";

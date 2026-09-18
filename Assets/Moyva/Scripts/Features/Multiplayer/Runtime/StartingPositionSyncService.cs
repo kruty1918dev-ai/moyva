@@ -211,6 +211,13 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 if (count <= 0)
                     return Array.Empty<SpawnPositionAssignment>();
 
+                // Bound the count against the bytes actually available so a
+                // malformed packet cannot force a giant allocation up front.
+                const int minEntryBytes = 4 + 1 + 1 + 4 + 4; // slot + strlen + bool + x + y
+                if (count > (stream.Length - stream.Position) / minEntryBytes
+                    || count > 4096)
+                    return null;
+
                 var assignments = new SpawnPositionAssignment[count];
                 for (int index = 0; index < count; index++)
                 {

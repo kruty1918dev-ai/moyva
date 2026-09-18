@@ -23,7 +23,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public float[,] HeightMap;
         public int[,] TerrainLevelMap;
         public string[,] BuildingMap;
-        public GraphLogicalTileMap LogicalTileMap;
+        public LogicalTileMap LogicalTileMap;
         public System.Collections.Generic.IReadOnlyList<CompiledLayerMap> CompiledLayers;
         public bool ForceChunkFirstCompositeBuild;
         public float CellSize = 1f;

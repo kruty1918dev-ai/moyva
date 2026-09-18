@@ -305,10 +305,22 @@ namespace Kruty1918.Moyva.Tests.Performance
         {
             const string C = "menu-preview";
             GeneratorMapRecipe recipe = null;
-            try { recipe = MoyvaJsonRuntime.GetAll<GeneratorMapRecipe>().FirstOrDefault(); } catch { }
+            IReadOnlyList<GeneratorMapRecipe> recipes = null;
+            try { recipes = MoyvaJsonRuntime.GetAll<GeneratorMapRecipe>(); } catch { }
             MenuWorldPreviewData data = null;
+            foreach (var r in recipes ?? (IReadOnlyList<GeneratorMapRecipe>)Array.Empty<GeneratorMapRecipe>())
+            {
+                string probeError = null;
+                if (r != null && MenuWorldPreviewGenerator.TryGenerate(r, 64, 64, 12345, out var probe, out probeError))
+                {
+                    recipe = r;
+                    data = probe;
+                    break;
+                }
+                Rows.Add(new Row { Category = C, Name = $"MenuWorldPreviewGenerator probe {r?.JsonId}", Error = probeError ?? "returned false" });
+            }
             if (recipe == null)
-                Rows.Add(new Row { Category = C, Name = "MenuWorldPreviewGenerator", Error = "recipe null (no GeneratorMapRecipe presets at HEAD)" });
+                Rows.Add(new Row { Category = C, Name = "MenuWorldPreviewGenerator", Error = "no working recipe preset" });
             else
             {
                 Measure(C, "MenuWorldPreviewGenerator 192x108", 5,

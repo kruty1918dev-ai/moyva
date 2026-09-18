@@ -52,6 +52,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly ILocalGameplayRoleResolver _roleResolver;
         private readonly IGameplayProgressClock _progressClock;
         private readonly GameplayCargoPanel _cargoPanel;
+        private readonly Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
         private readonly Dictionary<int, Sprite> _prefabSpriteCache = new();
         private readonly Dictionary<string, Sprite> _icons = new(StringComparer.Ordinal);
         private readonly HashSet<string> _reportedMissingIcons = new(StringComparer.Ordinal);
@@ -65,6 +66,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private string _lastPreviewMessage = string.Empty;
 
         public bool HasSelection => _selectionKind != WorldInfoSelectionKind.None;
+
+        /// <summary>Локалізує source text; без сервісу повертає source.</summary>
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+
+        /// <summary>Локалізує й форматує {0}..{n}.</summary>
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
 
         public GameplayHudReadModel(
             ITurnService turns,
@@ -90,8 +97,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] EconomyDatabaseSO economyDatabase = null,
             [InjectOptional] GameplayCargoPanel cargoPanel = null,
             [InjectOptional] IConstructionLifecycle lifecycle = null,
-            [InjectOptional] IEconomyInfoMediator population = null)
+            [InjectOptional] IEconomyInfoMediator population = null,
+            [InjectOptional] Kruty1918.Moyva.Shared.Localization.ILocalizationService localization = null)
         {
+            _loca = localization;
             _turns = turns;
             _economy = economy;
             _construction = construction;
@@ -146,10 +155,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _lastPreviewState = signal.PreviewState;
             _lastPreviewMessage = signal.PreviewState switch
             {
-                BuildingPreviewState.Valid => "Valid location. Ready to confirm.",
-                BuildingPreviewState.Blocked => "This location is blocked.",
-                BuildingPreviewState.Unaffordable => "The kingdom cannot afford this placement.",
-                _ => "Choose a location on the map.",
+                BuildingPreviewState.Valid => T("Valid location. Ready to confirm."),
+                BuildingPreviewState.Blocked => T("This location is blocked."),
+                BuildingPreviewState.Unaffordable => T("The kingdom cannot afford this placement."),
+                _ => T("Choose a location on the map."),
             };
             return previousState != _lastPreviewState
                 || !string.Equals(previousMessage, _lastPreviewMessage, StringComparison.Ordinal);
@@ -271,16 +280,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             BuildingDefinition definition = _buildings?.GetById(buildingId.Trim());
             return string.IsNullOrWhiteSpace(definition?.DisplayName)
-                ? Display(buildingId)
-                : definition.DisplayName.Trim();
+                ? T(Display(buildingId))
+                : T(definition.DisplayName.Trim());
         }
 
         public Task<CombatCommandResult> AttackSelectionAsync()
         {
             if (string.IsNullOrWhiteSpace(_commandUnitId))
-                return Task.FromResult(CombatCommandResult.Rejected(string.Empty, _selectionId, "Select one of your units first."));
+                return Task.FromResult(CombatCommandResult.Rejected(string.Empty, _selectionId, T("Select one of your units first.")));
             if (_selectionKind == WorldInfoSelectionKind.None || string.IsNullOrWhiteSpace(_selectionId))
-                return Task.FromResult(CombatCommandResult.Rejected(_commandUnitId, string.Empty, "Select a target first."));
+                return Task.FromResult(CombatCommandResult.Rejected(_commandUnitId, string.Empty, T("Select a target first.")));
 
             string ownerId = ResolveOwnerId();
             string targetId = ResolveCombatTargetId(
@@ -310,19 +319,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         targetId,
                         0,
                         false,
-                        "Attack request sent. Waiting for host."));
+                        T("Attack request sent. Waiting for host.")));
                 }
 
                 return Task.FromResult(CombatCommandResult.Rejected(
                     _commandUnitId,
                     targetId,
                     string.IsNullOrWhiteSpace(remoteReason)
-                        ? "Combat authority is unavailable."
+                        ? T("Combat authority is unavailable.")
                         : remoteReason));
             }
 
             if (_combat == null)
-                return Task.FromResult(CombatCommandResult.Rejected(_commandUnitId, targetId, "Combat command service is unavailable."));
+                return Task.FromResult(CombatCommandResult.Rejected(_commandUnitId, targetId, T("Combat command service is unavailable.")));
 
             return _combat.ExecuteAsync(ownerId, _commandUnitId, targetId);
         }
@@ -349,18 +358,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         string.Empty,
                         target.OwnerId,
                         ownerId,
-                        "Capture request sent. Waiting for host.");
+                        T("Capture request sent. Waiting for host."));
                 }
 
                 return SettlementCaptureResult.Rejected(
                     string.Empty,
                     string.IsNullOrWhiteSpace(remoteReason)
-                        ? "Settlement capture authority is unavailable."
+                        ? T("Settlement capture authority is unavailable.")
                         : remoteReason);
             }
 
             if (_settlementCapture == null)
-                return SettlementCaptureResult.Rejected(string.Empty, "Settlement capture service is unavailable.");
+                return SettlementCaptureResult.Rejected(string.Empty, T("Settlement capture service is unavailable."));
 
             return _settlementCapture.CaptureWithUnit(ownerId, _commandUnitId, target.EntityId, target.Position);
         }
@@ -383,20 +392,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (string.IsNullOrWhiteSpace(_commandUnitId))
             {
-                reason = "Select one of your units first.";
+                reason = T("Select one of your units first.");
                 return false;
             }
 
             if (_selectionKind != WorldInfoSelectionKind.Building
                 || string.IsNullOrWhiteSpace(_selectionId))
             {
-                reason = "Select a settlement center to capture.";
+                reason = T("Select a settlement center to capture.");
                 return false;
             }
 
             if (_settlementCapture == null)
             {
-                reason = "Settlement capture service is unavailable.";
+                reason = T("Settlement capture service is unavailable.");
                 return false;
             }
             return _settlementCapture.TryEvaluateCapture(ownerId, _commandUnitId,
@@ -427,8 +436,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         if (!string.IsNullOrWhiteSpace(status.ErrorMessage))
                             return status.ErrorMessage;
                         if (!status.IsAffordable)
-                            return "The kingdom cannot afford this placement.";
-                        return "Valid location. Ready to confirm.";
+                            return T("The kingdom cannot afford this placement.");
+                        return T("Valid location. Ready to confirm.");
                     }
                 }
             }
@@ -437,7 +446,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!string.IsNullOrWhiteSpace(actionMessage))
                 return actionMessage;
             return string.IsNullOrWhiteSpace(_lastPreviewMessage)
-                ? "Choose a location on the map."
+                ? T("Choose a location on the map.")
                 : _lastPreviewMessage;
         }
 
@@ -489,8 +498,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         ResolveBuildingIcon(definition),
                         availability.CanSelect,
                         string.IsNullOrWhiteSpace(availability.Reason)
-                            ? "Unavailable under current construction rules."
-                            : availability.Reason,
+                            ? T("Unavailable under current construction rules.")
+                            : T(availability.Reason),
                         definition.BuildTurns);
                 })
                 .ToArray();
@@ -499,18 +508,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public UiActionResult TryRecruitSelected(string unitTypeId)
         {
             if (_selectionKind != WorldInfoSelectionKind.Building)
-                return UiActionResult.Rejected(UiActionReason.WrongContext, "Select a recruitment building first.");
+                return UiActionResult.Rejected(UiActionReason.WrongContext, T("Select a recruitment building first."));
             if (string.IsNullOrWhiteSpace(unitTypeId))
-                return UiActionResult.Rejected(UiActionReason.NoSelection, "Select a unit to recruit.");
+                return UiActionResult.Rejected(UiActionReason.NoSelection, T("Select a unit to recruit."));
             if (_recruitment == null)
-                return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "Recruitment service is unavailable.");
+                return UiActionResult.Rejected(UiActionReason.ActionUnavailable, T("Recruitment service is unavailable."));
 
             string ownerId = ResolveOwnerId();
             if (!_recruitment.TryEnqueue(ownerId, _selectionPosition, unitTypeId.Trim(), out string reason))
             {
                 return UiActionResult.Rejected(
                     UiActionReason.ActionUnavailable,
-                    string.IsNullOrWhiteSpace(reason) ? "Recruitment could not be started." : reason);
+                    string.IsNullOrWhiteSpace(reason) ? T("Recruitment could not be started.") : T(reason));
             }
 
             return UiActionResult.Performed();
@@ -610,7 +619,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         return new GameplayRecruitmentRecipeSnapshot(
                             unitTypeId,
                             string.IsNullOrWhiteSpace(config?.DisplayName) ? Display(unitTypeId) : config.DisplayName,
-                            config?.Role.ToString() ?? "Unit",
+                            T(config?.Role.ToString() ?? "Unit"),
                             config?.CombatType.ToString() ?? string.Empty,
                             FormatResourceCost(recipe.Costs),
                             recipe.TrainingTurns,
@@ -619,7 +628,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                             config?.ResolveCustomSprite(),
                             canRecruit && (_population?.GetRecruitmentPopulation(ownerId, _selectionPosition).Available ?? 0) >= Math.Max(1, recipe.PopulationCost),
                             !canRecruit ? unavailableReason
-                                : $"Requires {Math.Max(1, recipe.PopulationCost)} available residents.",
+                                : TF("Requires {0} available residents.", Math.Max(1, recipe.PopulationCost)),
                             recipe.TrainingSeconds > 0f ? recipe.TrainingSeconds
                                 : recipe.TrainingTurns * (_progressClock?.SandboxRoundSeconds ?? 10f),
                             Math.Max(1, recipe.PopulationCost));
@@ -658,12 +667,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!IsSelectionKnownThroughFog(ownerId, ownedByLocal))
             {
                 snapshot.SelectionOwnedByLocalPlayer = false;
-                snapshot.SelectionTitle = "Unknown contact";
-                snapshot.SelectionSubtitle = "This tile is outside your kingdom's known view.";
+                snapshot.SelectionTitle = T("Unknown contact");
+                snapshot.SelectionSubtitle = T("This tile is outside your kingdom's known view.");
                 facts.Add(new GameplayFactSnapshot(
-                    "Visibility",
-                    "Unexplored",
-                    "Scout this area to identify the target"));
+                    T("Visibility"),
+                    T("Unexplored"),
+                    T("Scout this area to identify the target")));
                 snapshot.SelectionFacts = facts.ToArray();
                 return;
             }
@@ -678,41 +687,41 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         : definition.DisplayName.Trim();
                     snapshot.SelectionSubtitle = definition?.Description ?? string.Empty;
                     facts.Add(new GameplayFactSnapshot(
-                        "Ownership",
-                        snapshot.SelectionOwnedByLocalPlayer ? "Your kingdom" : "Another kingdom",
-                        "Command authority"));
+                        T("Ownership"),
+                        snapshot.SelectionOwnedByLocalPlayer ? T("Your kingdom") : T("Another kingdom"),
+                        T("Command authority")));
                     facts.Add(new GameplayFactSnapshot(
-                        "Build time",
+                        T("Build time"),
                         GameplayProgressTimeText.BuildDuration(definition?.BuildTurns ?? 0, _progressClock),
-                        "Construction duration"));
+                        T("Construction duration")));
                     if (_lifecycle != null
                         && _lifecycle.TryGetProgress(_selectionPosition, out int completed, out int required)
                         && completed < required)
                     {
-                        string progressLabel = $"Under construction {completed}/{required}";
-                        string remainingLabel = GameplayProgressTimeText.Remaining(required - completed, _progressClock);
+                        string progressLabel = TF("Under construction {0}/{1}", completed, required);
+                        string remainingLabel = GameplayProgressTimeText.Remaining(required - completed, _progressClock, _loca);
                         if (_lifecycle is IConstructionRealtimeProgress realtime
                             && realtime.TryGetRealtimeProgress(_selectionPosition, out float progress, out float seconds))
                         {
-                            progressLabel = $"Under construction {progress:P0}";
+                            progressLabel = TF("Under construction {0:P0}", progress);
                             remainingLabel = GameplayProgressTimeText.Duration(seconds);
                         }
-                        facts.Add(new GameplayFactSnapshot("Status", progressLabel, remainingLabel + " remaining"));
+                        facts.Add(new GameplayFactSnapshot(T("Status"), progressLabel, remainingLabel + " " + T("remaining")));
                     }
                     else
                     {
                         facts.Add(new GameplayFactSnapshot(
-                            "Status",
-                            snapshot.SelectionOperational ? "Operational" : "Unavailable",
-                            "Current building state"));
+                            T("Status"),
+                            snapshot.SelectionOperational ? T("Operational") : T("Unavailable"),
+                            T("Current building state")));
                     }
                     if (snapshot.SelectionOwnedByLocalPlayer && _population != null)
                     {
                         var residents = _population.GetRecruitmentPopulation(ownerId, _selectionPosition);
-                        facts.Add(new GameplayFactSnapshot("Population", residents.Total.ToString(),
-                            $"{residents.Available} available · {residents.Training} training/ready · {residents.Military} military"));
-                        facts.Add(new GameplayFactSnapshot("Construction workforce", $"{residents.ConstructionSpeed:P0}",
-                            "Speed updates with available adult population"));
+                        facts.Add(new GameplayFactSnapshot(T("Population"), residents.Total.ToString(),
+                            TF("{0} available · {1} training/ready · {2} military", residents.Available, residents.Training, residents.Military)));
+                        facts.Add(new GameplayFactSnapshot(T("Construction workforce"), $"{residents.ConstructionSpeed:P0}",
+                            T("Speed updates with available adult population")));
                     }
                     break;
                 }
@@ -735,48 +744,48 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     if (snapshot.SelectionOwnedByLocalPlayer)
                         _commandUnitId = _selectionId;
                     snapshot.SelectionSubtitle = config == null
-                        ? "Selected unit"
-                        : $"{config.Role} / {config.CombatType}";
+                        ? T("Selected unit")
+                        : $"{T(config.Role.ToString())} / {T(config.CombatType.ToString())}";
                     facts.Add(new GameplayFactSnapshot(
-                        "Ownership",
-                        snapshot.SelectionOwnedByLocalPlayer ? "Your kingdom" : "Another kingdom",
-                        "Unit command authority"));
+                        T("Ownership"),
+                        snapshot.SelectionOwnedByLocalPlayer ? T("Your kingdom") : T("Another kingdom"),
+                        T("Unit command authority")));
                     if (_units != null)
                     {
                         facts.Add(new GameplayFactSnapshot(
-                            "Stamina",
+                            T("Stamina"),
                             $"{_units.GetStamina(_selectionId):0.#} / {config?.BaseStamina ?? 0f:0.#}",
-                            "Movement resource"));
+                            T("Movement resource")));
                     }
                     if (config != null)
                     {
-                        facts.Add(new GameplayFactSnapshot("Hit points", config.HitPoints.ToString(CultureInfo.InvariantCulture), "Base unit profile"));
-                        facts.Add(new GameplayFactSnapshot("Movement", config.MovementPointsPerTurn.ToString("0.#", CultureInfo.InvariantCulture), "Points per turn"));
-                        facts.Add(new GameplayFactSnapshot("Attack range", config.AttackRange.ToString(CultureInfo.InvariantCulture), "Grid tiles"));
+                        facts.Add(new GameplayFactSnapshot(T("Hit points"), config.HitPoints.ToString(CultureInfo.InvariantCulture), T("Base unit profile")));
+                        facts.Add(new GameplayFactSnapshot(T("Movement"), config.MovementPointsPerTurn.ToString("0.#", CultureInfo.InvariantCulture), T("Points per turn")));
+                        facts.Add(new GameplayFactSnapshot(T("Attack range"), config.AttackRange.ToString(CultureInfo.InvariantCulture), T("Grid tiles")));
                     }
                     break;
                 }
                 default:
                     snapshot.SelectionTitle = Display(_selectionId);
-                    snapshot.SelectionSubtitle = "Selected map object";
+                    snapshot.SelectionSubtitle = T("Selected map object");
                     break;
             }
 
             snapshot.SelectionFacts = facts.ToArray();
         }
 
-        private static string ResolveRecruitmentUnavailableReason(
+        private string ResolveRecruitmentUnavailableReason(
             GameplayHtmlSnapshot snapshot,
             bool queueFull)
         {
             if (!snapshot.SelectionOwnedByLocalPlayer)
-                return "Recruitment is available only in your own building.";
+                return T("Recruitment is available only in your own building.");
             if (!snapshot.SelectionOperational)
-                return "This building is still under construction.";
+                return T("This building is still under construction.");
             if (!snapshot.CanIssueLocalCommands)
-                return "Recruitment is available only during your turn.";
+                return T("Recruitment is available only during your turn.");
             if (queueFull)
-                return $"Recruitment queue is full ({snapshot.RecruitmentQueueCapacity}/{snapshot.RecruitmentQueueCapacity}).";
+                return TF("Recruitment queue is full ({0}/{1}).", snapshot.RecruitmentQueueCapacity, snapshot.RecruitmentQueueCapacity);
             return string.Empty;
         }
 
@@ -797,7 +806,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (_combat == null)
             {
-                snapshot.AttackUnavailableReason = "Combat command service is unavailable.";
+                snapshot.AttackUnavailableReason = T("Combat command service is unavailable.");
                 return;
             }
 
@@ -815,13 +824,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 snapshot.CanAttackSelection = true;
                 snapshot.AttackPreview = preview.TargetWouldDie
-                    ? $"{preview.ExpectedDamage} damage, target will fall"
-                    : $"{preview.ExpectedDamage} damage";
+                    ? TF("{0} damage, target will fall", preview.ExpectedDamage)
+                    : TF("{0} damage", preview.ExpectedDamage);
                 return;
             }
 
             snapshot.AttackUnavailableReason = string.IsNullOrWhiteSpace(reason)
-                ? "Selected target cannot be attacked."
+                ? T("Selected target cannot be attacked.")
                 : reason;
         }
 
@@ -843,25 +852,25 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 if (_remoteSettlementCapture == null)
                 {
-                    snapshot.CaptureUnavailableReason = "Settlement capture authority is unavailable.";
+                    snapshot.CaptureUnavailableReason = T("Settlement capture authority is unavailable.");
                     return;
                 }
             }
             else if (_settlementCapture == null)
             {
-                snapshot.CaptureUnavailableReason = "Settlement capture service is unavailable.";
+                snapshot.CaptureUnavailableReason = T("Settlement capture service is unavailable.");
                 return;
             }
 
             if (TryEvaluateCaptureSelection(ownerId, out _, out string reason))
             {
                 snapshot.CanCaptureSelection = true;
-                snapshot.CapturePreview = "Settlement center can be captured";
+                snapshot.CapturePreview = T("Settlement center can be captured");
                 return;
             }
 
             snapshot.CaptureUnavailableReason = string.IsNullOrWhiteSpace(reason)
-                ? "Selected building cannot be captured."
+                ? T("Selected building cannot be captured.")
                 : reason;
         }
 
@@ -882,7 +891,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_ownerFog.IsVisible(ownerId, _selectionPosition))
                 return true;
 
-            reason = "Target is outside your current vision.";
+            reason = T("Target is outside your current vision.");
             return false;
         }
 
@@ -1016,7 +1025,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     pair.Key,
                     _buildings?.GetById(pair.Key)?.DisplayName ?? Display(pair.Key),
                     pair.Value,
-                    "Kingdom total"))
+                    T("Kingdom total")))
                 .ToArray();
         }
 
@@ -1042,7 +1051,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             count = grouped.Values.Sum();
             return grouped
                 .OrderBy(pair => pair.Key, StringComparer.Ordinal)
-                .Select(pair => new GameplayGroupSnapshot(pair.Key, Display(pair.Key), pair.Value, "Active units"))
+                .Select(pair => new GameplayGroupSnapshot(pair.Key, T(Display(pair.Key)), pair.Value, T("Active units")))
                 .ToArray();
         }
 
@@ -1124,41 +1133,41 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return result;
         }
 
-        private static string FormatCost(IReadOnlyList<BuildingDefinition.BuildingConstructionCostEntry> cost)
+        private string FormatCost(IReadOnlyList<BuildingDefinition.BuildingConstructionCostEntry> cost)
         {
             if (cost == null || cost.Count == 0)
                 return string.Empty;
             return string.Join(" / ", cost
                 .Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.ResourceId))
-                .Select(entry => $"{DisplayResource(entry.ResourceId)} {entry.Amount}"));
+                .Select(entry => $"{T(DisplayResource(entry.ResourceId))} {entry.Amount}"));
         }
 
-        private static string FormatResourceCost(IReadOnlyList<BuildingResourceAmount> cost)
+        private string FormatResourceCost(IReadOnlyList<BuildingResourceAmount> cost)
         {
             if (cost == null || cost.Count == 0)
                 return string.Empty;
             return string.Join(" / ", cost
                 .Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.ResourceId))
-                .Select(entry => $"{DisplayResource(entry.ResourceId)} {entry.Amount}"));
+                .Select(entry => $"{T(DisplayResource(entry.ResourceId))} {entry.Amount}"));
         }
 
-        private static string ResolveKingdomName(string ownerId)
+        private string ResolveKingdomName(string ownerId)
             => string.Equals(ownerId, "player_0", StringComparison.OrdinalIgnoreCase)
-                ? "Your Kingdom"
+                ? T("Your Kingdom")
                 : Display(ownerId);
 
-        private static string Display(string value)
+        private string Display(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
-                return "Unknown";
+                return T("Unknown");
             return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(
                 value.Replace('-', ' ').Replace('_', ' ').ToLowerInvariant());
         }
 
-        private static string DisplayResource(string value)
+        private string DisplayResource(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
-                return "Unknown";
+                return T("Unknown");
 
             string normalized = value.Trim();
             if (CanonicalResourceLabels.TryGetValue(normalized, out string label))

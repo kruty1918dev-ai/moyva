@@ -129,8 +129,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             _state.AddNotification(
                 string.IsNullOrWhiteSpace(result.Reason)
-                    ? "Logistics command was rejected by host."
-                    : result.Reason,
+                    ? _state.T("Logistics command was rejected by host.")
+                    : _state.T(result.Reason),
                 GameplayNotificationKind.Error.ToString());
         }
 
@@ -224,7 +224,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 var action = request.ActionId == UiActionIds.Logistics.StartRoute
                     ? _caravans.SetRoute(BuildRouteRequest(LocalOwner)) : _caravans.StopRoute(LocalOwner, _unitId);
                 _state.SetFeedback(action.Succeeded ? request.ActionId == UiActionIds.Logistics.StartRoute
-                    ? "Delivery route scheduled." : "Route stopped. Cargo remains on the wagon." : action.Reason);
+                    ? _state.T("Delivery route scheduled.") : _state.T("Route stopped. Cargo remains on the wagon.") : _state.T(action.Reason));
                 return action.Succeeded ? UiActionResult.Performed()
                     : UiActionResult.Rejected(UiActionReason.ActionUnavailable, action.Reason);
             }
@@ -234,22 +234,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     return remoteResult;
                 var action = _caravans.FoundSettlement(LocalOwner, _unitId, "townhall");
                 _state.SetFeedback(action.Succeeded
-                    ? "Settlement founded. Remaining cargo moved to the Town Hall stockpile."
-                    : action.Reason);
+                    ? _state.T("Settlement founded. Remaining cargo moved to the Town Hall stockpile.")
+                    : _state.T(action.Reason));
                 return action.Succeeded ? UiActionResult.Performed()
                     : UiActionResult.Rejected(UiActionReason.ActionUnavailable, action.Reason);
             }
             if (request.ActionId != UiActionIds.Logistics.Transfer)
-                return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "Unknown cargo action.");
+                return UiActionResult.Rejected(UiActionReason.ActionUnavailable, _state.T("Unknown cargo action."));
             if (TryRequestRemote(request.ActionId, out var transferRemoteResult))
                 return transferRemoteResult;
             var result = _caravans.Execute(BuildRequest(LocalOwner));
             _state.SetFeedback(result.Succeeded ? _operation switch
             {
-                CaravanCargoOperation.Load => "Cargo loaded onto the wagon.",
-                CaravanCargoOperation.Unload => "Cargo delivered to the warehouse.",
-                _ => "Cargo recovered from the ground.",
-            } : result.Reason);
+                CaravanCargoOperation.Load => _state.T("Cargo loaded onto the wagon."),
+                CaravanCargoOperation.Unload => _state.T("Cargo delivered to the warehouse."),
+                _ => _state.T("Cargo recovered from the ground."),
+            } : _state.T(result.Reason));
             return result.Succeeded ? UiActionResult.Performed()
                 : UiActionResult.Rejected(UiActionReason.ActionUnavailable, result.Reason);
         }
@@ -263,7 +263,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_remoteCommands == null)
             {
                 result = UiActionResult.Rejected(UiActionReason.ActionUnavailable,
-                    "Network logistics endpoint is not connected.");
+                    _state.T("Network logistics endpoint is not connected."));
                 return true;
             }
 
@@ -278,7 +278,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             else
                 sent = _remoteCommands.TryRequestExecute(BuildRequest(LocalOwner), out reason);
 
-            _state.SetFeedback(sent ? "Logistics request sent. Waiting for the host." : reason);
+            _state.SetFeedback(sent ? _state.T("Logistics request sent. Waiting for the host.") : _state.T(reason));
             result = sent ? UiActionResult.Performed()
                 : UiActionResult.Rejected(UiActionReason.ActionUnavailable, reason);
             return true;

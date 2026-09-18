@@ -14,6 +14,7 @@ from moyva_cli.evaluation import (
     evaluation_player_path,
     evaluation_seed_base,
     held_out_seeds,
+    resolve_opponent_model,
     run_frozen_evaluation,
     snapshot_frozen_checkpoint,
     training_seeds,
@@ -140,6 +141,31 @@ class FrozenEvaluationTests(unittest.TestCase):
         self.assertTrue(_evaluation_is_overdue(10060, {}, 10000))
         self.assertFalse(_evaluation_is_overdue(10060, {"state": "COMPLETED", "checkpoint_step": 10060}, 10000))
         self.assertTrue(_evaluation_is_overdue(20060, {"state": "COMPLETED", "checkpoint_step": 10060}, 10000))
+
+    def test_opponent_model_resolves_pool_checkpoint_to_frozen_sentis(self):
+        frozen_dir = self.run / "evaluations" / "frozen" / "10000"
+        sentis = frozen_dir / "MoyvaStrategy.sentis"
+        sentis.write_bytes(b"sentis-serialized-model")
+        state = self.run / "curriculum-state.json"
+        state.write_text(json.dumps({"opponentPool": [self.identity["checkpoint_id"]]}), encoding="utf-8")
+        resolved = resolve_opponent_model(state, self.run)
+        self.assertEqual(str(sentis.resolve()), resolved)
+
+    def test_opponent_model_skips_checkpoints_without_sentis_export(self):
+        state = self.run / "curriculum-state.json"
+        state.write_text(json.dumps({"opponentPool": [self.identity["checkpoint_id"]]}), encoding="utf-8")
+        self.assertIsNone(resolve_opponent_model(state, self.run))
+
+    def test_opponent_model_rejects_mismatched_provenance(self):
+        state = self.run / "curriculum-state.json"
+        state.write_text(json.dumps({"opponentPool": ["badhash:10000:deadbeef"]}), encoding="utf-8")
+        self.assertIsNone(resolve_opponent_model(state, self.run))
+
+    def test_opponent_model_returns_none_without_verified_pool(self):
+        state = self.run / "curriculum-state.json"
+        state.write_text("{}", encoding="utf-8")
+        self.assertIsNone(resolve_opponent_model(state, self.run))
+        self.assertIsNone(resolve_opponent_model(self.run / "missing.json", self.run))
 
 
 if __name__ == "__main__":

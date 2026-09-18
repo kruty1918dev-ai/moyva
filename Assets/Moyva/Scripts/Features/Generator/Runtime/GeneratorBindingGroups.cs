@@ -2,7 +2,6 @@ using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
-using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
@@ -12,9 +11,9 @@ namespace Kruty1918.Moyva.Generator
 {
     internal static class GeneratorBindingGroups
     {
-        public static void InstallGraphEvaluation(
+        public static void InstallMapGeneration(
             DiContainer container,
-            GraphAsset graph,
+            GeneratorMapRecipe recipe,
             TileWorldCreatorManager twcManager,
             TileRegistrySO tileRegistry,
             MapObjectRegistrySO objectRegistry,
@@ -42,27 +41,24 @@ namespace Kruty1918.Moyva.Generator
                 .To<TileWorldCreatorTerrainBuildPolicyService>()
                 .AsSingle();
 
-            GraphLogicalTileMapFeatureBindings.Install(container);
-            GraphCompilerFeatureBindings.Install(container);
-            GraphTwcMapDataFeatureBindings.Install(container);
-            MoyvaTwcGraphBindingFeatureBindings.Install(container);
+            RecipeFeatureBindings.Install(container);
 
-            if (graph != null && twcManager != null)
+            if (recipe != null && twcManager != null)
             {
-                container.Bind<IGraphTwcMapDataEnvironment>()
-                    .FromInstance(new GraphTwcMapDataEnvironment(graph, twcManager))
+                container.Bind<IMapGenerationEnvironment>()
+                    .FromInstance(new MapGenerationEnvironment(recipe, twcManager))
                     .AsSingle();
-                container.BindInterfacesAndSelfTo<GraphTwcMapDataState>()
+                container.BindInterfacesAndSelfTo<MapGenerationState>()
                     .AsSingle();
-                container.Bind<GraphTwcMapDataGenerator>().AsSingle();
+                container.Bind<RecipeMapDataGenerator>().AsSingle();
                 container.Bind<IMapDataGenerator>()
-                    .To<GraphTwcMapDataGenerator>()
+                    .To<RecipeMapDataGenerator>()
                     .FromResolve();
                 return;
             }
 
             Debug.LogError(
-                "[GeneratorInstaller] GraphAsset or TileWorldCreatorManager is " +
+                "[GeneratorInstaller] GeneratorMapRecipe or TileWorldCreatorManager is " +
                 "missing; map generation uses the disabled provider.",
                 errorContext);
             container.Bind<IMapDataGenerator>()

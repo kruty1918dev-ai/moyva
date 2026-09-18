@@ -335,21 +335,7 @@ namespace Kruty1918.Moyva.AI.Training
         private int ScenarioCapabilityMask()
         {
             var caps = _scenario?.availableCapabilities;
-            if (caps == null || caps.Length == 0) return -1;
-            int mask = 1; // Turn/EndTurn always remains legal.
-            foreach (var cap in caps)
-            {
-                if (string.Equals(cap, "turn", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(cap, "end-turn", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Turn;
-                else if (string.Equals(cap, "movement", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Movement;
-                else if (string.Equals(cap, "combat", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Combat;
-                else if (string.Equals(cap, "recruitment", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Recruitment;
-                else if (string.Equals(cap, "construction", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Construction;
-                else if (string.Equals(cap, "capture", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Capture;
-                else if (string.Equals(cap, "economy", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Economy;
-                else if (string.Equals(cap, "scouting", StringComparison.OrdinalIgnoreCase)) mask |= 1 << (int)BotCapabilityId.Exploration;
-            }
-            return mask;
+            return caps == null || caps.Length == 0 ? -1 : BotCapabilityMap.Mask(caps);
         }
 
         public bool Step(int actionIndex)
@@ -575,21 +561,7 @@ namespace Kruty1918.Moyva.AI.Training
         }
 
         private static BotIntentType[] RequiredIntentsFor(TrainingScenarioCriterionKind? criterion)
-        {
-            switch (criterion)
-            {
-                case TrainingScenarioCriterionKind.LegalInitialState: return new[] { BotIntentType.EndTurn };
-                case TrainingScenarioCriterionKind.OperationalCastle: return new[] { BotIntentType.Build };
-                case TrainingScenarioCriterionKind.ResourceProduction: return new[] { BotIntentType.Build, BotIntentType.EndTurn };
-                case TrainingScenarioCriterionKind.StableResources: return new[] { BotIntentType.EndTurn };
-                case TrainingScenarioCriterionKind.DeployedUnit: return new[] { BotIntentType.Recruit, BotIntentType.Build, BotIntentType.EndTurn };
-                case TrainingScenarioCriterionKind.Movement: return new[] { BotIntentType.Move, BotIntentType.Explore, BotIntentType.EndTurn };
-                case TrainingScenarioCriterionKind.Scouting: return new[] { BotIntentType.Move, BotIntentType.Explore, BotIntentType.EndTurn };
-                case TrainingScenarioCriterionKind.EnemyDestroyed: return new[] { BotIntentType.Attack, BotIntentType.Move, BotIntentType.EndTurn };
-                case TrainingScenarioCriterionKind.ObjectiveOwned: return new[] { BotIntentType.Capture, BotIntentType.Attack, BotIntentType.Move, BotIntentType.EndTurn };
-                default: return Array.Empty<BotIntentType>();
-            }
-        }
+            => TrainingScenarioContract.RequiredIntentsFor(criterion);
 
         private string FormatCandidateCounts()
         {

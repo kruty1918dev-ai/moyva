@@ -1,0 +1,214 @@
+{
+  "contractVersion": 2,
+  "observationSchemaVersion": 3,
+  "candidateSchemaVersion": 2,
+  "actionSchemaVersion": 1,
+  "maxCandidateSlots": 128,
+  "globalFeatureCount": 96,
+  "candidateFeatureCount": 32,
+  "spatialSize": 8,
+  "spatialChannels": 10,
+  "global": [
+    {
+      "index": 0,
+      "name": "active"
+    },
+    {
+      "index": 1,
+      "name": "round"
+    },
+    {
+      "index": 2,
+      "name": "phase"
+    },
+    {
+      "index": 3,
+      "name": "ownUnits"
+    },
+    {
+      "index": 4,
+      "name": "visibleOtherUnits"
+    },
+    {
+      "index": 5,
+      "name": "unitsAvailable"
+    },
+    {
+      "index": 6,
+      "name": "economyAvailable"
+    },
+    {
+      "index": 7,
+      "name": "spatialAvailable"
+    },
+    {
+      "index": 8,
+      "name": "visibilityAvailable"
+    },
+    {
+      "index": 9,
+      "name": "scenarioGoal"
+    },
+    {
+      "index": 10,
+      "name": "scenarioStep"
+    },
+    {
+      "index": 11,
+      "name": "scenarioProgress"
+    },
+    {
+      "index": 12,
+      "name": "ownSettlements"
+    },
+    {
+      "index": 13,
+      "name": "visibleEnemySettlements"
+    },
+    {
+      "index": 16,
+      "name": "capabilities",
+      "count": 8
+    },
+    {
+      "index": 24,
+      "name": "ownResourcesTotal"
+    },
+    {
+      "index": 25,
+      "name": "poolResourcesTotal"
+    },
+    {
+      "index": 26,
+      "name": "resourceKinds"
+    },
+    {
+      "index": 27,
+      "name": "resourceFood",
+      "aliases": [
+        "food",
+        "grain",
+        "wheat"
+      ]
+    },
+    {
+      "index": 28,
+      "name": "resourceWood",
+      "aliases": [
+        "wood",
+        "lumber"
+      ]
+    },
+    {
+      "index": 29,
+      "name": "resourceStone",
+      "aliases": [
+        "stone"
+      ]
+    },
+    {
+      "index": 30,
+      "name": "resourceIron",
+      "aliases": [
+        "iron",
+        "ore"
+      ]
+    },
+    {
+      "index": 31,
+      "name": "resourceGold",
+      "aliases": [
+        "gold",
+        "coin"
+      ]
+    },
+    {
+      "index": 32,
+      "name": "productionEstimate"
+    },
+    {
+      "index": 33,
+      "name": "populationAvailable"
+    },
+    {
+      "index": 34,
+      "name": "goalCastle"
+    },
+    {
+      "index": 35,
+      "name": "goalProduction"
+    },
+    {
+      "index": 36,
+      "name": "goalEconomy"
+    },
+    {
+      "index": 37,
+      "name": "goalRecruit"
+    },
+    {
+      "index": 38,
+      "name": "goalMove"
+    },
+    {
+      "index": 39,
+      "name": "goalScout"
+    },
+    {
+      "index": 40,
+      "name": "goalCombat"
+    },
+    {
+      "index": 41,
+      "name": "goalCapture"
+    },
+    {
+      "index": 42,
+      "name": "goalWin"
+    },
+    {
+      "index": 43,
+      "name": "tacticalVision"
+    },
+    {
+      "index": 44,
+      "name": "tacticalAttack"
+    },
+    {
+      "index": 45,
+      "name": "tacticalHeight"
+    }
+  ],
+  "candidate": [
+    "present",
+    "intentOneHot12",
+    "distance",
+    "cost",
+    "ownHp",
+    "targetHp",
+    "visible",
+    "path",
+    "complete",
+    "buildingType",
+    "unitType",
+    "purpose",
+    "x",
+    "y",
+    "duration",
+    "reserved"
+  ],
+  "intents": [
+    "None",
+    "EndTurn",
+    "Move",
+    "Attack",
+    "Capture",
+    "Recruit",
+    "Build",
+    "Explore",
+    "Defend",
+    "Economy",
+    "Reposition",
+    "Wait"
+  ]
+}

@@ -70,9 +70,9 @@ namespace Kruty1918.Moyva.AI.Bot
                 }
             result.Global[BotObservationSchema.OwnUnits] = own / (float)(own + 100);
             result.Global[BotObservationSchema.VisibleOtherUnits] = visibleOther / (float)(visibleOther + 100);
-            result.Global[34] = Normalize(visionTotal, own * 12f);
-            result.Global[35] = Normalize(attackTotal, own * 30f);
-            result.Global[36] = Normalize(heightTotal, own * 4f);
+            result.Global[BotObservationSchema.TacticalVision] = Normalize(visionTotal, own * 12f);
+            result.Global[BotObservationSchema.TacticalAttack] = Normalize(attackTotal, own * 30f);
+            result.Global[BotObservationSchema.TacticalHeight] = Normalize(heightTotal, own * 4f);
             result.Global[BotObservationSchema.EconomyAvailable] = _economy != null ? 1 : 0;
             if (_economy != null)
             {
@@ -86,11 +86,11 @@ namespace Kruty1918.Moyva.AI.Bot
                 result.Global[BotObservationSchema.OwnResourcesTotal] = Normalize(total, 1000);
                 result.Global[BotObservationSchema.PoolResourcesTotal] = Normalize(pool, 1000);
                 result.Global[BotObservationSchema.ResourceKinds] = (resources?.Count ?? 0) / (float)((resources?.Count ?? 0) + 32);
-                result.Global[BotObservationSchema.ResourceFood] = Resource(resources, "food", "grain", "wheat");
-                result.Global[BotObservationSchema.ResourceWood] = Resource(resources, "wood", "lumber");
-                result.Global[BotObservationSchema.ResourceStone] = Resource(resources, "stone");
-                result.Global[BotObservationSchema.ResourceIron] = Resource(resources, "iron", "ore");
-                result.Global[BotObservationSchema.ResourceGold] = Resource(resources, "gold", "coin");
+                result.Global[BotObservationSchema.ResourceFood] = Resource(resources, BotDecisionContract.Spec.Aliases(BotObservationSchema.ResourceFood));
+                result.Global[BotObservationSchema.ResourceWood] = Resource(resources, BotDecisionContract.Spec.Aliases(BotObservationSchema.ResourceWood));
+                result.Global[BotObservationSchema.ResourceStone] = Resource(resources, BotDecisionContract.Spec.Aliases(BotObservationSchema.ResourceStone));
+                result.Global[BotObservationSchema.ResourceIron] = Resource(resources, BotDecisionContract.Spec.Aliases(BotObservationSchema.ResourceIron));
+                result.Global[BotObservationSchema.ResourceGold] = Resource(resources, BotDecisionContract.Spec.Aliases(BotObservationSchema.ResourceGold));
             }
             return result;
         }

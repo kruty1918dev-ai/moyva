@@ -14,7 +14,6 @@
         "Kruty1918.Moyva.Calendar",
         "Kruty1918.Moyva.GameMode",
         "Kruty1918.Moyva.Generator",
-        "Kruty1918.Moyva.GraphSystem",
         "Kruty1918.Moyva.Grid",
         "Kruty1918.Moyva.Jsonization",
         "Kruty1918.Moyva.ObjectsMap",
@@ -24,7 +23,8 @@
         "Kruty1918.Moyva.Construction",
         "Kruty1918.Moyva.Economy",
         "Kruty1918.Moyva.Bootstrap",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "Unity.InferenceEngine"
     ],
     "autoReferenced": false
 }

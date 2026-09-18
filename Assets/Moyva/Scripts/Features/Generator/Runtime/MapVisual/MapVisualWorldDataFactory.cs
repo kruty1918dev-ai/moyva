@@ -11,18 +11,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IGridService _gridService;
         private readonly IGridProjection _projection;
         private readonly IMapDataGenerator _generator;
-        private readonly IGraphTwcMapDataDiagnostics _graphDiagnostics;
+        private readonly IMapGenerationDiagnostics _diagnostics;
 
         public MapVisualWorldDataFactory(
             IGridService gridService,
             IGridProjection projection,
             IMapDataGenerator generator,
-            [InjectOptional] IGraphTwcMapDataDiagnostics graphDiagnostics = null)
+            [InjectOptional] IMapGenerationDiagnostics diagnostics = null)
         {
             _gridService = gridService;
             _projection = projection;
             _generator = generator;
-            _graphDiagnostics = graphDiagnostics;
+            _diagnostics = diagnostics;
         }
 
         public GeneratedWorldData Generate()
@@ -55,11 +55,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ObjectMap = objectMap,
                 HeightMap = heightMap,
                 BuildingMap = buildingMap,
-                LogicalTileMap = _graphDiagnostics?.LastLogicalMap,
-                CompiledLayers = _graphDiagnostics?.LastCompiledLayers,
-                CellSize = _graphDiagnostics?.LastCellSize ?? 1f
+                LogicalTileMap = _diagnostics?.LastLogicalMap,
+                CompiledLayers = _diagnostics?.LastCompiledLayers,
+                CellSize = _diagnostics?.LastCellSize ?? 1f
             };
-            if (_graphDiagnostics != null && _graphDiagnostics.TryGetLastBaseMapWorldBounds(out var bounds))
+            if (_diagnostics != null && _diagnostics.TryGetLastBaseMapWorldBounds(out var bounds))
             {
                 data.HasBaseMapWorldBounds = true;
                 data.BaseMapWorldBounds = bounds;

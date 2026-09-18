@@ -49,6 +49,41 @@ namespace Kruty1918.Moyva.Audio.API
         [Range(0f, 1f)] public float ChorusDepth = 0.03f;
     }
 
+    /// <summary>
+    /// Іменований канал всередині bus — "локальна група" гучності.
+    /// Звук може вказати channel; ефективна гучність = bus * channel * sound.
+    /// </summary>
+    [Serializable]
+    public sealed class AudioChannelDefinition
+    {
+        public string Key;
+        public AudioBus Bus = AudioBus.Sfx;
+        [Range(0f, 1f)] public float Volume = 1f;
+    }
+
+    /// <summary>Дефолтний роутинг bus → AudioMixerGroup, якщо звук не задає власну групу.</summary>
+    [Serializable]
+    public sealed class AudioBusGroupBinding
+    {
+        public AudioBus Bus = AudioBus.Sfx;
+        public AudioMixerGroup MixerGroup;
+    }
+
+    /// <summary>
+    /// Приглушення іншого bus на час відтворення цього звуку.
+    /// amount=0.25 → цільовий bus падає до 25% гучності.
+    /// </summary>
+    [Serializable]
+    public sealed class AudioDuckSettings
+    {
+        public bool Enabled;
+        public AudioBus TargetBus = AudioBus.Ambience;
+        [Range(0f, 1f)] public float Amount = 0.4f;
+        [Min(0f)] public float Attack = 0.08f;
+        [Min(0f)] public float Hold = 0.4f;
+        [Min(0f)] public float Release = 0.6f;
+    }
+
     [Serializable]
     public sealed class AudioSoundDefinition
     {
@@ -62,6 +97,10 @@ namespace Kruty1918.Moyva.Audio.API
         public AudioClip[] Variants = Array.Empty<AudioClip>();
 
         public AudioBus Bus = AudioBus.Sfx;
+
+        [Tooltip("Іменований канал у bus (див. registry.channels). Порожньо — без каналу.")]
+        public string Channel = string.Empty;
+
         public AudioMixerGroup MixerGroup;
 
         [Range(0f, 1f)] public float Volume = 1f;
@@ -72,10 +111,19 @@ namespace Kruty1918.Moyva.Audio.API
         [Range(0f, 5f)] public float DopplerLevel = 0f;
         [Range(0f, 1.1f)] public float ReverbZoneMix = 1f;
         [Range(0, 256)] public int Priority = 128;
+
+        [Tooltip("3D-відстані для spatialBlend>0. 0 → дефолти Unity.")]
+        [Min(0f)] public float MinDistance = 0f;
+        [Min(0f)] public float MaxDistance = 0f;
+        public AudioRolloffMode RolloffMode = AudioRolloffMode.Logarithmic;
+
         public bool Loop;
         [Min(0)] public int PoolWarmup = 1;
         [Min(1)] public int MaxSimultaneous = 8;
         public AudioEffectSettings Effects = new AudioEffectSettings();
+
+        [Tooltip("При відтворенні приглушити цільовий bus (музика/амбієнт під час бою тощо).")]
+        public AudioDuckSettings Duck;
     }
 
     public readonly struct AudioPlayOptions
@@ -128,6 +176,27 @@ namespace Kruty1918.Moyva.Audio.API
         AudioSource GetConfiguredSource(string key, Transform parent = null);
         void SetBusVolume(AudioBus bus, float volume);
         float GetBusVolume(AudioBus bus);
+
+        /// <summary>Гучність іменованого каналу (локальна група всередині bus).</summary>
+        void SetChannelVolume(string channelKey, float volume);
+        float GetChannelVolume(string channelKey);
+
+        /// <summary>
+        /// Програмно приглушити bus: гучність bus падає до targetVolume за attack сек,
+        /// тримається hold сек і повертається за release сек.
+        /// </summary>
+        void DuckBus(AudioBus bus, float targetVolume, float attack, float hold, float release);
+
+        /// <summary>Поточний duck-множник bus (1 = немає приглушення).</summary>
+        float GetBusDuckMultiplier(AudioBus bus);
+
+        /// <summary>
+        /// Runtime-масштаб гучності конкретного активного відтворення
+        /// (zoom-гейтинг емітерів, ваги ambient-шарів). Множиться поверх bus/channel/duck.
+        /// </summary>
+        void SetPlaybackScale(AudioHandle handle, float scale);
+        float GetPlaybackScale(AudioHandle handle);
+
         void StopByKey(string key);
         void StopAll(AudioBus? bus = null);
         string[] GetKeys();

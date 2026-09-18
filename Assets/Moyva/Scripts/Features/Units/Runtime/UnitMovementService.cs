@@ -317,7 +317,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 		{
 			if (_activeMovements.Count > 0)
 			{
-				reason = "Дочекайтеся завершення руху юніта.";
+				reason = "Wait for the unit movement to finish.";
 				return true;
 			}
 

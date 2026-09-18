@@ -5,6 +5,7 @@
     "legacyStage": 4,
     "learnerBuildsInitialCastle": true,
     "fullGame": false,
+    "combination": true,
     "prerequisites": ["castle", "production"],
     "minMeaningfulCandidates": 2,
     "maxForcedActionRatio": 0.9,

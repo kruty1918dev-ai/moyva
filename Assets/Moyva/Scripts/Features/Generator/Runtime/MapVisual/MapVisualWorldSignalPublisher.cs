@@ -10,18 +10,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         private readonly SignalBus _signalBus;
         private readonly IGridProjection _projection;
-        private readonly IGraphTwcMapDataDiagnostics _graphDiagnostics;
+        private readonly IMapGenerationDiagnostics _diagnostics;
         private readonly IWorldGenerationSignalState _signalState;
 
         public MapVisualWorldSignalPublisher(
             SignalBus signalBus,
             IGridProjection projection,
-            [InjectOptional] IGraphTwcMapDataDiagnostics graphDiagnostics = null,
+            [InjectOptional] IMapGenerationDiagnostics diagnostics = null,
             [InjectOptional] IWorldGenerationSignalState signalState = null)
         {
             _signalBus = signalBus;
             _projection = projection;
-            _graphDiagnostics = graphDiagnostics;
+            _diagnostics = diagnostics;
             _signalState = signalState;
         }
 
@@ -93,13 +93,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return true;
             }
 
-            if (_graphDiagnostics != null && _graphDiagnostics.TryGetLastBaseMapWorldBounds(out bounds))
+            if (_diagnostics != null && _diagnostics.TryGetLastBaseMapWorldBounds(out bounds))
                 return true;
             bounds = _projection.GetWorldBounds(worldData.Width, worldData.Height);
             return true;
         }
 
-        private float ResolveCellSize() => _graphDiagnostics?.LastCellSize > 0.0001f ? _graphDiagnostics.LastCellSize : 1f;
+        private float ResolveCellSize() => _diagnostics?.LastCellSize > 0.0001f ? _diagnostics.LastCellSize : 1f;
 
         private static WorldGeneratedDataSource ResolveSource(string source) => source switch
         {

@@ -61,7 +61,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
         }
 
-        private int SpawnStacks(GraphLogicalTileMap map, int seed)
+        private int SpawnStacks(LogicalTileMap map, int seed)
         {
             int spawned = 0;
             for (int x = 0; x < map.Width; x++)
@@ -87,7 +87,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return spawned;
         }
 
-        private bool TrySpawnSample(GraphTileLayerSample sample, Vector2Int cell, int seed, int candidateIndex)
+        private bool TrySpawnSample(TileLayerSample sample, Vector2Int cell, int seed, int candidateIndex)
         {
             if (!TryResolvePrefab(sample, out string resolvedId, out var mapping))
                 return false;
@@ -98,7 +98,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             uint hash = ChunkFirstStableHash.ObjectVariant(
                 seed,
                 cell,
-                !string.IsNullOrWhiteSpace(sample.GraphLayerId) ? sample.GraphLayerId : resolvedId,
+                !string.IsNullOrWhiteSpace(sample.LayerId) ? sample.LayerId : resolvedId,
                 candidateIndex,
                 mapping.RegistryVisualPrefab.name);
             var instance = Object.Instantiate(mapping.RegistryVisualPrefab, root, false);
@@ -163,7 +163,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         }
 
         private bool TryResolvePrefab(
-            GraphTileLayerSample sample,
+            TileLayerSample sample,
             out string resolvedId,
             out TileWorldCreatorIdMappingSO.LayerMapping mapping)
         {
@@ -184,7 +184,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             if (TryResolveId(resolver, sample.TileId, out resolvedId, out mapping)
                 || TryResolveId(resolver, sample.PresetId, out resolvedId, out mapping)
-                || TryResolveId(resolver, sample.GraphLayerId, out resolvedId, out mapping))
+                || TryResolveId(resolver, sample.LayerId, out resolvedId, out mapping))
             {
                 return mapping?.RegistryVisualPrefab != null;
             }

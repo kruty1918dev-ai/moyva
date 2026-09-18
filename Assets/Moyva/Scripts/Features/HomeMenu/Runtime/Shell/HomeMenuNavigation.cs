@@ -10,6 +10,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal class HomeMenuNavigation : INavigation
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         private readonly Stack<string> _menuStack = new Stack<string>();
         private readonly Dictionary<string, INavigationPanel> _panelsByName = new Dictionary<string, INavigationPanel>(StringComparer.Ordinal);
         private readonly Stack<string> _closedStack = new Stack<string>();
@@ -127,7 +131,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _confirmationService.Show(new ConfirmationRequest
                 {
                     LabelText = "Confirmation",
-                    MessageText = "Are you sure you want to go back?",
+                    MessageText = T("Are you sure you want to go back?"),
                     OnConfirm = () => DoClose(menuName),
                     OnCancel = () => LogInfo($"Close of '{menuName}' was cancelled by user.")
                 });
@@ -177,7 +181,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _confirmationService.Show(new ConfirmationRequest
                 {
                     LabelText = "Confirmation",
-                    MessageText = "Are you sure you want to go back?",
+                    MessageText = T("Are you sure you want to go back?"),
                     OnConfirm = () => DoClose(menuName),
                     OnCancel = () => LogInfo($"CloseLast of '{menuName}' was cancelled by user.")
                 });

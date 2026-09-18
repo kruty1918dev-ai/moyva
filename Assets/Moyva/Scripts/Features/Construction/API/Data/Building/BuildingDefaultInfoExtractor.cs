@@ -20,7 +20,8 @@ namespace Kruty1918.Moyva.Construction.API
         public static bool AppendMeaningfulFacts(
             BuildingDefinition definition,
             StringBuilder output,
-            Func<string, string> resourceDisplayNameResolver = null)
+            Func<string, string> resourceDisplayNameResolver = null,
+            Kruty1918.Moyva.Shared.Localization.ILocalizationService loca = null)
         {
             if (definition == null || output == null)
                 return false;
@@ -43,34 +44,37 @@ namespace Kruty1918.Moyva.Construction.API
             bool disablesEconomyService = isWall || isCentral;
 
             if (isTownHall)
-                output.AppendLine("Тип: ратуша");
+                output.AppendLine(L(loca, "Type: town hall"));
 
             if (isCastle)
-                output.AppendLine("Тип: замок");
+                output.AppendLine(L(loca, "Type: castle"));
 
             if (isWarehouse && !disablesEconomyService)
-                output.AppendLine("Призначення: зберігання ресурсів");
+                output.AppendLine(L(loca, "Purpose: resource storage"));
 
             if (isHousing && !disablesEconomyService)
-                output.AppendLine("Призначення: житло");
+                output.AppendLine(L(loca, "Purpose: housing"));
 
             if (TryGetMaintenanceFlag(definition, out var requiresMaintenance))
-                output.AppendLine($"Потребує обслуговування: {(disablesEconomyService ? "ні" : (requiresMaintenance ? "так" : "ні"))}");
+            {
+                string flag = disablesEconomyService ? L(loca, "no") : (requiresMaintenance ? L(loca, "yes") : L(loca, "no"));
+                output.AppendLine(LF(loca, "Requires maintenance: {0}", flag));
+            }
 
             if (!disablesEconomyService && requiredWorkers > 0)
-                output.AppendLine($"Потрібно робітників: {requiredWorkers}");
+                output.AppendLine(LF(loca, "Workers required: {0}", requiredWorkers));
 
             if (!disablesEconomyService && isHousing && housingCapacity > 0)
-                output.AppendLine($"Житло: +{housingCapacity}");
+                output.AppendLine(LF(loca, "Housing: +{0}", housingCapacity));
 
             if (!disablesEconomyService && !string.IsNullOrWhiteSpace(industrialResourceId))
-                output.AppendLine($"Виробляє: {ResolveResourceDisplayName(industrialResourceId, resourceDisplayNameResolver)}");
+                output.AppendLine(LF(loca, "Produces: {0}", ResolveResourceDisplayName(industrialResourceId, resourceDisplayNameResolver)));
 
             if (!disablesEconomyService)
             {
                 if (constructionCost != null && constructionCost.Count > 0)
                 {
-                    output.AppendLine($"Вартість будівництва: {constructionCost.Count} ресурс(ів)");
+                    output.AppendLine(LF(loca, "Construction cost: {0} resource(s)", constructionCost.Count));
                     for (int i = 0; i < constructionCost.Count; i++)
                     {
                         var cost = constructionCost[i];
@@ -82,15 +86,15 @@ namespace Kruty1918.Moyva.Construction.API
                 }
                 else
                 {
-                    output.AppendLine("Вартість будівництва: безкоштовно");
+                    output.AppendLine(L(loca, "Construction cost: free"));
                 }
             }
 
             if (definition.RequireTownHallInRange)
-                output.AppendLine("Потрібна ратуша поблизу.");
+                output.AppendLine(L(loca, "Requires a town hall nearby."));
 
             if (definition.BlockIfTownHallAlreadyInRange)
-                output.AppendLine("Не можна будувати поруч з іншим центром поселення.");
+                output.AppendLine(L(loca, "Cannot build near another settlement center."));
 
             if (!disablesEconomyService && requiresTiles)
             {
@@ -116,14 +120,20 @@ namespace Kruty1918.Moyva.Construction.API
                     if (validCount > 0)
                     {
                         output.AppendLine(validCount == 1
-                            ? "Потрібна відповідна місцевість поблизу."
-                            : $"Потрібно відповідних ділянок місцевості: {validCount}.");
+                            ? L(loca, "Requires suitable terrain nearby.")
+                            : LF(loca, "Requires suitable terrain tiles: {0}.", validCount));
                     }
                 }
             }
 
             return output.Length > startLength;
         }
+
+        private static string L(Kruty1918.Moyva.Shared.Localization.ILocalizationService loca, string key)
+            => loca?.T(key) ?? key;
+
+        private static string LF(Kruty1918.Moyva.Shared.Localization.ILocalizationService loca, string key, params object[] args)
+            => loca?.TF(key, args) ?? string.Format(System.Globalization.CultureInfo.CurrentCulture, key, args);
 
         private static string ResolveResourceDisplayName(string resourceId, Func<string, string> resolver)
         {

@@ -24,6 +24,17 @@ namespace Kruty1918.Moyva.Audio.Runtime
         private const string DefaultRegistryResourcePath = "MoyvaAudioRegistry";
         private const string RootName = "MoyvaAudioPool";
 
+        private sealed class BusDuck
+        {
+            public AudioBus Bus;
+            public float Target;
+            public float Attack;
+            public float Hold;
+            public float Release;
+            public float Elapsed;
+            public float StartMultiplier;
+        }
+
         private readonly AudioRegistrySO _registry;
         private readonly SceneAudioOverridesSO _sceneOverrides;
         private readonly Queue<AudioSource> _available = new Queue<AudioSource>();
@@ -32,6 +43,11 @@ namespace Kruty1918.Moyva.Audio.Runtime
         private readonly Dictionary<string, int> _activeCountByKey = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<AudioSource, AudioBus> _activeBusBySource = new Dictionary<AudioSource, AudioBus>();
         private readonly Dictionary<AudioSource, float> _activeBaseVolumeBySource = new Dictionary<AudioSource, float>();
+        private readonly Dictionary<AudioSource, string> _activeChannelBySource = new Dictionary<AudioSource, string>();
+        private readonly Dictionary<AudioSource, float> _activeScaleBySource = new Dictionary<AudioSource, float>();
+        private readonly Dictionary<string, float> _channelVolumes = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+        private readonly List<BusDuck> _ducks = new List<BusDuck>();
+        private readonly HashSet<string> _warnedMissingKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly List<AudioSource> _awakeSources = new List<AudioSource>();
         private readonly float[] _busVolumes = { 1f, 1f, 1f, 1f, 1f };
 
@@ -64,6 +80,16 @@ namespace Kruty1918.Moyva.Audio.Runtime
             for (int i = 0; i < poolSize; i++)
                 _available.Enqueue(CreateSource());
 
+            if (_registry != null && _registry.Channels != null)
+            {
+                for (int i = 0; i < _registry.Channels.Length; i++)
+                {
+                    var channel = _registry.Channels[i];
+                    if (channel != null && !string.IsNullOrWhiteSpace(channel.Key))
+                        _channelVolumes[channel.Key.Trim()] = Mathf.Clamp01(channel.Volume);
+                }
+            }
+
             UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
 
             // Перша сцена вже завантажена до Initialize() — запустити auto-play вручну.
@@ -75,6 +101,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
         public void Tick()
         {
             RefreshAutoPlayForCurrentScene();
+            TickDucks(Time.unscaledDeltaTime);
 
             for (int i = _active.Count - 1; i >= 0; i--)
             {
@@ -103,6 +130,9 @@ namespace Kruty1918.Moyva.Audio.Runtime
             _active.Clear();
             _activeKeys.Clear();
             _activeCountByKey.Clear();
+            _activeChannelBySource.Clear();
+            _activeScaleBySource.Clear();
+            _ducks.Clear();
             _awakeSources.Clear();
         }
 
@@ -136,15 +166,177 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
             _busVolumes[busIndex] = clampedVolume;
             ApplyBusVolumeToActiveSources(bus);
+
+            // Master впливає на всі bus — перерахувати решту активних сорсів.
+            if (bus == AudioBus.Master)
+            {
+                for (int i = 0; i < _active.Count; i++)
+                {
+                    var src = _active[i];
+                    if (src == null)
+                        continue;
+                    if (_activeBusBySource.TryGetValue(src, out var srcBus)
+                        && srcBus != AudioBus.Master
+                        && _activeBaseVolumeBySource.TryGetValue(src, out float srcBase))
+                        ApplyBusVolume(src, srcBus, srcBase);
+                }
+            }
         }
 
         public float GetBusVolume(AudioBus bus)
             => _busVolumes[GetBusIndex(bus)];
 
+        public void SetChannelVolume(string channelKey, float volume)
+        {
+            if (string.IsNullOrWhiteSpace(channelKey))
+                return;
+
+            string key = channelKey.Trim();
+            float clamped = Mathf.Clamp01(volume);
+            if (_channelVolumes.TryGetValue(key, out float existing) && Mathf.Approximately(existing, clamped))
+                return;
+
+            _channelVolumes[key] = clamped;
+
+            for (int i = 0; i < _active.Count; i++)
+            {
+                var source = _active[i];
+                if (source == null)
+                    continue;
+
+                if (!_activeChannelBySource.TryGetValue(source, out var channel)
+                    || !string.Equals(channel, key, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (!_activeBusBySource.TryGetValue(source, out var bus)
+                    || !_activeBaseVolumeBySource.TryGetValue(source, out float baseVolume))
+                    continue;
+
+                ApplyBusVolume(source, bus, baseVolume);
+            }
+        }
+
+        public float GetChannelVolume(string channelKey)
+        {
+            if (string.IsNullOrWhiteSpace(channelKey))
+                return 1f;
+
+            return _channelVolumes.TryGetValue(channelKey.Trim(), out float volume) ? volume : 1f;
+        }
+
+        public void DuckBus(AudioBus bus, float targetVolume, float attack, float hold, float release)
+        {
+            _ducks.Add(new BusDuck
+            {
+                Bus = bus,
+                Target = Mathf.Clamp01(targetVolume),
+                Attack = Mathf.Max(0f, attack),
+                Hold = Mathf.Max(0f, hold),
+                Release = Mathf.Max(0.01f, release),
+                Elapsed = 0f,
+                StartMultiplier = GetBusDuckMultiplier(bus),
+            });
+        }
+
+        public float GetBusDuckMultiplier(AudioBus bus)
+        {
+            float multiplier = 1f;
+            for (int i = 0; i < _ducks.Count; i++)
+            {
+                var duck = _ducks[i];
+                if (duck.Bus != bus)
+                    continue;
+
+                float value = EvaluateDuck(duck);
+                if (value < multiplier)
+                    multiplier = value;
+            }
+            return multiplier;
+        }
+
+        public void SetPlaybackScale(AudioHandle handle, float scale)
+        {
+            var source = handle.Source;
+            if (source == null || !_active.Contains(source))
+                return;
+
+            float clamped = Mathf.Clamp01(scale);
+            if (_activeScaleBySource.TryGetValue(source, out float existing)
+                && Mathf.Approximately(existing, clamped))
+                return;
+
+            _activeScaleBySource[source] = clamped;
+            if (_activeBusBySource.TryGetValue(source, out var bus)
+                && _activeBaseVolumeBySource.TryGetValue(source, out float baseVolume))
+                ApplyBusVolume(source, bus, baseVolume);
+        }
+
+        public float GetPlaybackScale(AudioHandle handle)
+        {
+            var source = handle.Source;
+            if (source == null)
+                return 1f;
+
+            return _activeScaleBySource.TryGetValue(source, out float scale) ? scale : 1f;
+        }
+
+        private void TickDucks(float dt)
+        {
+            if (_ducks.Count == 0)
+                return;
+
+            bool changed = false;
+            for (int i = _ducks.Count - 1; i >= 0; i--)
+            {
+                var duck = _ducks[i];
+                duck.Elapsed += dt;
+                if (duck.Elapsed >= duck.Attack + duck.Hold + duck.Release)
+                    _ducks.RemoveAt(i);
+                changed = true;
+            }
+
+            if (!changed)
+                return;
+
+            // Оновити гучність усіх активних сорсів (duck-множники змінилися).
+            for (int i = 0; i < _active.Count; i++)
+            {
+                var source = _active[i];
+                if (source == null)
+                    continue;
+
+                if (_activeBusBySource.TryGetValue(source, out var bus)
+                    && _activeBaseVolumeBySource.TryGetValue(source, out float baseVolume))
+                {
+                    ApplyBusVolume(source, bus, baseVolume);
+                }
+            }
+        }
+
+        private static float EvaluateDuck(BusDuck duck)
+        {
+            float t = duck.Elapsed;
+            if (t < duck.Attack)
+            {
+                float k = duck.Attack <= 0f ? 1f : t / duck.Attack;
+                return Mathf.Lerp(duck.StartMultiplier, duck.Target, k);
+            }
+
+            t -= duck.Attack;
+            if (t < duck.Hold)
+                return duck.Target;
+
+            t -= duck.Hold;
+            float releaseK = duck.Release <= 0f ? 1f : Mathf.Clamp01(t / duck.Release);
+            return Mathf.Lerp(duck.Target, 1f, releaseK);
+        }
+
         private AudioHandle PlayInternal(string key, AudioPlayOptions options, string sceneNameForOverrides)
         {
             if (!TryGetSound(key, out var sound))
             {
+                if (!string.IsNullOrWhiteSpace(key) && _warnedMissingKeys.Add(key))
+                    Debug.LogWarning($"[AudioService] Unknown sound key '{key}'.");
                 return default;
             }
 
@@ -197,7 +389,12 @@ namespace Kruty1918.Moyva.Audio.Runtime
             }
 
             ApplyBusVolume(source, sound.Bus, baseVolume);
-            RegisterActive(source, sound.Key, sound.Bus, baseVolume);
+            RegisterActive(source, sound.Key, sound.Bus, baseVolume, sound.Channel);
+
+            var duck = sound.Duck;
+            if (duck != null && duck.Enabled)
+                DuckBus(duck.TargetBus, duck.Amount, duck.Attack, duck.Hold, duck.Release);
+
             source.Play();
             return new AudioHandle(source);
         }
@@ -346,11 +543,21 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
         private void ConfigureSource(AudioSource source, AudioSoundDefinition sound)
         {
-            source.outputAudioMixerGroup = sound.MixerGroup;
+            source.outputAudioMixerGroup = sound.MixerGroup != null
+                ? sound.MixerGroup
+                : (_registry != null ? _registry.GetBusGroup(sound.Bus) : null);
             source.priority = Mathf.Clamp(sound.Priority, 0, 256);
             source.spatialBlend = Mathf.Clamp01(sound.SpatialBlend);
             source.dopplerLevel = Mathf.Max(0f, sound.DopplerLevel);
             source.reverbZoneMix = Mathf.Clamp(sound.ReverbZoneMix, 0f, 1.1f);
+
+            if (sound.SpatialBlend > 0f)
+            {
+                source.rolloffMode = sound.RolloffMode;
+                if (sound.MinDistance > 0f) source.minDistance = sound.MinDistance;
+                if (sound.MaxDistance > 0f) source.maxDistance = sound.MaxDistance;
+            }
+
             ApplyEffects(source.gameObject, sound.Effects);
         }
 
@@ -501,13 +708,28 @@ namespace Kruty1918.Moyva.Audio.Runtime
             if (source == null)
                 return;
 
-            source.volume = Mathf.Clamp01(baseVolume * GetBusVolume(bus));
+            float channelVolume = 1f;
+            if (_activeChannelBySource.TryGetValue(source, out var channel)
+                && !string.IsNullOrEmpty(channel))
+            {
+                channelVolume = GetChannelVolume(channel);
+            }
+
+            float playbackScale = _activeScaleBySource.TryGetValue(source, out float scale)
+                ? scale
+                : 1f;
+
+            float masterScale = bus == AudioBus.Master ? 1f : GetBusVolume(AudioBus.Master);
+
+            source.volume = Mathf.Clamp01(
+                baseVolume * masterScale * GetBusVolume(bus)
+                * GetBusDuckMultiplier(bus) * channelVolume * playbackScale);
         }
 
         private int GetBusIndex(AudioBus bus)
             => Mathf.Clamp((int)bus, 0, _busVolumes.Length - 1);
 
-        private void RegisterActive(AudioSource source, string key, AudioBus bus, float baseVolume)
+        private void RegisterActive(AudioSource source, string key, AudioBus bus, float baseVolume, string channel = null)
         {
             if (!_active.Contains(source))
                 _active.Add(source);
@@ -515,8 +737,13 @@ namespace Kruty1918.Moyva.Audio.Runtime
             _activeKeys[source] = key;
             _activeBusBySource[source] = bus;
             _activeBaseVolumeBySource[source] = Mathf.Clamp01(baseVolume);
+            if (string.IsNullOrWhiteSpace(channel))
+                _activeChannelBySource.Remove(source);
+            else
+                _activeChannelBySource[source] = channel.Trim();
             _activeCountByKey.TryGetValue(key, out int count);
             _activeCountByKey[key] = count + 1;
+            _activeScaleBySource[source] = 1f;
         }
 
         private void Release(AudioSource source)
@@ -538,6 +765,8 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
             _activeBusBySource.Remove(source);
             _activeBaseVolumeBySource.Remove(source);
+            _activeChannelBySource.Remove(source);
+            _activeScaleBySource.Remove(source);
 
             source.Stop();
             source.clip = null;
@@ -560,6 +789,10 @@ namespace Kruty1918.Moyva.Audio.Runtime
             source.dopplerLevel = 0f;
             source.reverbZoneMix = 1f;
             source.priority = 128;
+            source.rolloffMode = AudioRolloffMode.Logarithmic;
+            source.minDistance = 1f;
+            source.maxDistance = 500f;
+            source.outputAudioMixerGroup = null;
         }
     }
 

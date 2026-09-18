@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.MapChunks.API;
 using Unity.Collections;
 using UnityEngine;

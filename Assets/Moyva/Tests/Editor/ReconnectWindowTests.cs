@@ -13,10 +13,23 @@ namespace Kruty1918.Moyva.Tests.Startup
     {
         private const float ToleranceSeconds = 120f;
 
-        private static readonly MethodInfo IsReconnectAllowed =
-            typeof(LobbyRoom).Assembly
-                .GetType("Kruty1918.Moyva.HomeMenu.Runtime.Services.MultiplayerRoomLifecycle")
-                ?.GetMethod("IsReconnectAllowed", BindingFlags.Public | BindingFlags.Static);
+        private static readonly MethodInfo IsReconnectAllowed = FindMethod();
+
+        private static MethodInfo FindMethod()
+        {
+            // The lifecycle class lives in the HomeMenu assembly (internal),
+            // not in LobbyRoom's Multiplayer assembly — search loaded domains.
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var type = assembly.GetType(
+                    "Kruty1918.Moyva.HomeMenu.Runtime.Services.MultiplayerRoomLifecycle");
+                var method = type?.GetMethod(
+                    "IsReconnectAllowed", BindingFlags.Public | BindingFlags.Static);
+                if (method != null)
+                    return method;
+            }
+            return null;
+        }
 
         private static LobbyRoom RoomWithRecord(string name, long playerLocalTicks, long hostUtcTicks)
         {

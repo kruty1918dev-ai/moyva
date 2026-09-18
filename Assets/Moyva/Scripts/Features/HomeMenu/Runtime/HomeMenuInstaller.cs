@@ -65,9 +65,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Container.BindInterfacesAndSelfTo<ConformationService>().AsSingle();
             Container.BindInterfacesAndSelfTo<LocalGameSettingsService>().AsSingle();
             Container.BindInterfacesAndSelfTo<AudioSettingsRuntimeSyncService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<LanguageSwitchCoordinator>().AsSingle().NonLazy();
 
-            if (_audioMixerBindings != null)
-                Container.BindInstance(_audioMixerBindings).AsSingle();
+            var mixerBindings = _audioMixerBindings != null && _audioMixerBindings.mixer != null
+                ? _audioMixerBindings
+                : MoyvaJsonRuntime.GetLegacyResource<AudioMixerBindingsSO>("audio-mixer-bindings");
+            if (mixerBindings != null)
+                Container.BindInstance(mixerBindings).AsSingle();
 
             if (_worldCreationDefaults != null)
                 Container.BindInstance(_worldCreationDefaults).AsSingle();

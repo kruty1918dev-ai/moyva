@@ -5,17 +5,17 @@
   "id": "globalmusicprofile",
   "model": "scene-music-profile",
   "targetScenes": [],
-  "isGlobal": false,
+  "isGlobal": true,
   "defaultMusic": {
     "clip": {
-      "$asset": "",
-      "editorPath": "",
-      "required": false
+      "$asset": "asset.audio-clip.tavern-music-loop.1155955e",
+      "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Bonus Music/Tavern Music Loop.wav",
+      "required": true
     },
     "mixerGroup": {
-      "$asset": "",
-      "editorPath": "",
-      "required": false
+      "$asset": "asset.audio-mixer-group-controller.music.35a28e1f",
+      "editorPath": "Assets/Moyva/Audio/MoyvaMixer.mixer",
+      "required": true
     },
     "volume": 0.7,
     "loop": true,
@@ -26,14 +26,14 @@
   },
   "epicMusic": {
     "clip": {
-      "$asset": "",
-      "editorPath": "",
-      "required": false
+      "$asset": "asset.audio-clip.epic-combat-music-loop.05c2e7af",
+      "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Bonus Music/Epic Combat Music Loop.wav",
+      "required": true
     },
     "mixerGroup": {
-      "$asset": "",
-      "editorPath": "",
-      "required": false
+      "$asset": "asset.audio-mixer-group-controller.music.35a28e1f",
+      "editorPath": "Assets/Moyva/Audio/MoyvaMixer.mixer",
+      "required": true
     },
     "volume": 0.7,
     "loop": true,
@@ -42,7 +42,7 @@
     "fadeOutDuration": 1.5,
     "useCrossfade": true
   },
-  "preserveMusicBetweenScenes": false,
+  "preserveMusicBetweenScenes": true,
   "sceneTransitionDuration": 2.0,
   "migration": {
     "sourceAssetGuid": "b4b6ba523a1ba1e8da7ce4eddbade8e8",

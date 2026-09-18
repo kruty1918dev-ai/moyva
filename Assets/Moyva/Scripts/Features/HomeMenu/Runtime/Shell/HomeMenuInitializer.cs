@@ -17,6 +17,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal class HomeMenuInitializer : IInitializable, IDisposable
     {
+        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
+        private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
         private const string Prefix = "[HomeMenuInitializer]";
         private readonly IMultiplayerState _multiplayerState;
         private readonly IGameplaySession _gameplaySession;
@@ -134,7 +138,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _confirmationService.Show(new ConfirmationRequest
                 {
                     LabelText = "Offline Mode",
-                    MessageText = "Multiplayer services are unavailable. You can continue offline without interaction with other players. Do you want to continue?",
+                    MessageText = T("Multiplayer services are unavailable. You can continue offline without interaction with other players. Do you want to continue?"),
                     OnConfirm = () => LogWithPrefix("Player acknowledged offline mode."),
                     OnCancel = () =>
                     {

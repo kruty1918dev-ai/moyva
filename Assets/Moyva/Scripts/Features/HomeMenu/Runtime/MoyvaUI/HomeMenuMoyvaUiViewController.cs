@@ -8,6 +8,7 @@ using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.Graphics;
+using Kruty1918.Moyva.Shared.Localization;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
 using UnityEngine.UI;
@@ -33,6 +34,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         IOverlayLoader
     {
         private readonly HomeMenuMoyvaUiState _state;
+        private readonly ILocalizationService _localization;
         private readonly List<GameObject> _ownedObjects = new();
         private readonly List<GameSlotInfo> _slots = new();
         private readonly List<RoomInfo> _rooms = new();
@@ -54,9 +56,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public HomeMenuMoyvaUiViewController(HomeMenuMoyvaUiState state,
             [Zenject.InjectOptional] Kruty1918.Moyva.UIActions.API.IUiHotkeyService hotkeys = null,
             [Zenject.InjectOptional] IPlayerControlSettingsService controlSettings = null,
-            [Zenject.InjectOptional] IInputDeviceContext devices = null)
+            [Zenject.InjectOptional] IInputDeviceContext devices = null,
+            [Zenject.InjectOptional] ILocalizationService localization = null)
         {
             _state = state;
+            _localization = localization;
             Controls = new HomeMenuControlsEditor(state, this, hotkeys, controlSettings, devices);
             _botDifficulties = BotDifficultyRegistry.Load();
             _createRoomNextButton = CreateHiddenButton("MoyvaUI_CreateRoom_Next");
@@ -96,6 +100,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public bool OverlayVisible => _overlayResult != null && _overlayResult.IsLoading;
         public float OverlayProgress => _overlayResult?.Progress ?? 0f;
         public string OverlaySuffix { get; private set; } = "%";
+        public string OverlayStatus { get; private set; } = string.Empty;
         public bool ConfirmationVisible { get; private set; }
         public ConfirmationRequest? CurrentConfirmation { get; private set; }
         public bool InfoVisible { get; private set; }
@@ -135,6 +140,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public float MusicVolume { get; set; }
         public float SfxVolume { get; set; }
         public float UiVolume { get; set; }
+        public float AmbienceVolume { get; set; }
         public bool IsMuted { get; set; }
         public GraphicsQualityProfile GraphicsProfile { get; set; }
         public int TargetFrameRate { get; set; }
@@ -186,6 +192,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public event Action<float> OnMusicVolumeChanged;
         public event Action<float> OnSfxVolumeChanged;
         public event Action<float> OnUiVolumeChanged;
+        public event Action<float> OnAmbienceVolumeChanged;
         public event Action<bool> OnMutedChanged;
         public event Action<GraphicsQualityProfile> OnGraphicsProfileChanged;
         public event Action<int> OnTargetFrameRateChanged;
@@ -219,14 +226,64 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public event Action<NetworkProviderType> OnJoinRoomClicked;
         public event Action<string> OnConfirmed;
         public event Action OnCancelled;
+        /// <summary>Спрацьовує коли користувач обирає мову в Settings (index у SupportedLanguages).</summary>
+        public event Action<int> OnLanguageSelected;
 
         public Action OnConfirme { get; set; }
         public Action OnCancled { get; set; }
 
-        public void Initialize() => _state.MarkDirty();
+        public void Initialize()
+        {
+            if (_localization != null)
+                _localization.LanguageChanged += OnLanguageChanged;
+            _state.MarkDirty();
+        }
+
+        private void OnLanguageChanged() => _state.MarkDirty();
+
+        /// <summary>Локалізує статичний текст; без сервісу повертає source.</summary>
+        internal string T(string key) => _localization?.T(key) ?? key ?? string.Empty;
+
+        /// <summary>Локалізує й форматує {0}..{n} плейсхолдери.</summary>
+        internal string TF(string key, params object[] args) =>
+            _localization?.TF(key, args) ?? key ?? string.Empty;
+
+        /// <summary>Локалізує pipe-delimited options для &lt;select&gt; компонентів.</summary>
+        internal string TOptions(string pipeDelimitedOptions)
+        {
+            if (string.IsNullOrEmpty(pipeDelimitedOptions) || _localization == null)
+                return pipeDelimitedOptions ?? string.Empty;
+            var parts = pipeDelimitedOptions.Split('|');
+            for (var i = 0; i < parts.Length; i++)
+                parts[i] = _localization.T(parts[i]);
+            return string.Join("|", parts);
+        }
+
+        /// <summary>Pipe-delimited список мов для select у Settings.</summary>
+        public string LanguageOptions
+        {
+            get
+            {
+                if (_localization == null) return string.Empty;
+                return string.Join("|", _localization.SupportedLanguages.Select(l => l.DisplayName));
+            }
+        }
+
+        public int LanguageIndex => _localization?.CurrentLanguageIndex ?? 0;
+
+        public void SetLanguageIndex(int index)
+        {
+            if (_localization == null ||
+                index < 0 || index >= _localization.SupportedLanguages.Count ||
+                index == _localization.CurrentLanguageIndex)
+                return;
+            OnLanguageSelected?.Invoke(index);
+        }
 
         public void Dispose()
         {
+            if (_localization != null)
+                _localization.LanguageChanged -= OnLanguageChanged;
             StopOverlay(true);
             for (int i = 0; i < _ownedObjects.Count; i++)
             {
@@ -294,6 +351,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             MusicVolume = settings.MusicVolume;
             SfxVolume = settings.SfxVolume;
             UiVolume = settings.UiVolume;
+            AmbienceVolume = settings.AmbienceVolume;
             IsMuted = settings.IsMuted;
             _state.MarkDirty();
         }
@@ -508,6 +566,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             OverlaySuffix = string.IsNullOrEmpty(sufix) ? "%" : sufix;
             var progress = maxValue <= 0f ? 0f : Mathf.Clamp01(value / maxValue) * 100f;
             _overlayResult.SetLoading(true, progress);
+            _state.MarkDirty();
+        }
+
+        /// <summary>Встановлює вже локалізований статус-рядок під прогресом оверлею.</summary>
+        public void SetOverlayStatus(string status)
+        {
+            OverlayStatus = status ?? string.Empty;
             _state.MarkDirty();
         }
 
@@ -802,6 +867,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        public void SetAmbience(float value)
+        {
+            value = Mathf.Clamp01(value);
+            if (Mathf.Approximately(AmbienceVolume, value)) return;
+            AmbienceVolume = value;
+            OnAmbienceVolumeChanged?.Invoke(value);
+            _state.MarkDirty();
+        }
+
         public void ToggleMuted() => SetMuted(!IsMuted);
         public void SetMuted(bool value)
         {
@@ -1003,6 +1077,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             MusicVolume = 0.7f;
             SfxVolume = 0.9f;
             UiVolume = 0.9f;
+            AmbienceVolume = 0.85f;
             GraphicsProfile = GraphicsQualityProfile.Auto;
             TargetFrameRate = 60;
             RenderScale = 1f;

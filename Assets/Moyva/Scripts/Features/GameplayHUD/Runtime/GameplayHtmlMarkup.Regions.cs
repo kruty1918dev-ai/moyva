@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             AppendContextPanel(html, snapshot, state);
             regions[ContextRegion] = html.ToString();
             html.Clear();
-            AppendCommandBar(html, snapshot);
+            AppendCommandBar(html, snapshot, state);
             regions[CommandsRegion] = html.ToString();
             html.Clear();
             if (!string.IsNullOrWhiteSpace(state.Feedback) && !snapshot.RequiresFirstCastle)
@@ -39,7 +39,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (state.IsGameOver)
                 AppendGameOver(html, snapshot, state);
             else if (state.IsPaused)
-                AppendPause(html);
+                AppendPause(html, state);
             regions[OverlayRegion] = html.ToString();
             return regions;
         }
