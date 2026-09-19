@@ -41,7 +41,14 @@ namespace UnityHTML.Runtime
                 return UnityHtmlMountResult.Failure($"HTML document '{document.SourceName}' is empty or missing.");
 
             if (CanUpdateMountedDocument(root, document))
-                return UpdateMountedDocument(document, globals);
+            {
+                UnityHtmlMountResult updated = UpdateMountedDocument(document, globals);
+                if (updated.Succeeded)
+                    return updated;
+                // The reconcile path can die on stale TMP font/material references
+                // still held by pooled components; retry once on a fresh context
+                // instead of reporting a mount failure.
+            }
 
             Unmount();
             ClearDetachedEditorElements();
@@ -134,14 +141,25 @@ namespace UnityHTML.Runtime
             IReadOnlyDictionary<string, object> globals = null)
         {
             if (_tree == null || regions == null) return false;
-            UpdateGlobals(globals);
-            if (!_tree.UpdateRegions(regions, out bool changed)) return false;
-            if (changed || _layoutSize != _root.rect.size)
+            try
             {
-                CompleteLayoutPass();
-                _motion.ApplyDeclaredMotions();
+                UpdateGlobals(globals);
+                if (!_tree.UpdateRegions(regions, out bool changed)) return false;
+                if (changed || _layoutSize != _root.rect.size)
+                {
+                    CompleteLayoutPass();
+                    _motion.ApplyDeclaredMotions();
+                }
+                return true;
             }
-            return true;
+            catch (Exception)
+            {
+                // Reconcile/layout may touch a destroyed TMP resource (e.g. a font
+                // asset reimported by the editor while mounted text references it).
+                // Report failure so the caller can fall back to a full Mount
+                // instead of surfacing a frame-loop exception.
+                return false;
+            }
         }
         public bool SetValue(string elementId, string value) => _tree?.SetValue(elementId, value) == true;
 

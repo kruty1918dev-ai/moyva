@@ -26,6 +26,12 @@ namespace Kruty1918.Moyva.Shared.Localization
         /// <summary>
         /// Підключає primary font asset до multilingual fallback-ланцюга.
         /// Викликається presenter-ами для шрифту, який передається у UnityHtmlHost.
+        /// The dynamic fallback must come FIRST: serialized fallback entries such as
+        /// TMP's "LiberationSans SDF - Fallback" are persistent dynamic font assets —
+        /// when TMP grows their atlas at runtime, the editor reimports the asset and
+        /// destroys the live object, leaving MissingReferenceException in every text
+        /// component that still references it. The non-persistent runtime asset is
+        /// never reimported, so routing glyph lookups through it first is safe.
         /// </summary>
         public void RegisterPrimaryFont(TMP_FontAsset primary)
         {
@@ -33,8 +39,8 @@ namespace Kruty1918.Moyva.Shared.Localization
             TMP_FontAsset fallback = EnsureFallbackFont();
             if (fallback == null || primary == fallback) return;
             primary.fallbackFontAssetTable ??= new List<TMP_FontAsset>();
-            if (!primary.fallbackFontAssetTable.Contains(fallback))
-                primary.fallbackFontAssetTable.Add(fallback);
+            primary.fallbackFontAssetTable.Remove(fallback);
+            primary.fallbackFontAssetTable.Insert(0, fallback);
         }
 
         /// <summary>
@@ -67,8 +73,13 @@ namespace Kruty1918.Moyva.Shared.Localization
             _fallback = TMP_FontAsset.CreateFontAsset(source);
             _fallback.name = "LocalizationFallback (Dynamic)";
             _fallback.hideFlags = HideFlags.HideAndDontSave;
-            if (TMP_Settings.instance != null && !TMP_Settings.fallbackFontAssets.Contains(_fallback))
-                TMP_Settings.fallbackFontAssets.Add(_fallback);
+            if (TMP_Settings.instance != null && TMP_Settings.fallbackFontAssets != null)
+            {
+                // First position here too: glyph searches must reach the
+                // non-persistent fallback before any persistent dynamic asset.
+                TMP_Settings.fallbackFontAssets.Remove(_fallback);
+                TMP_Settings.fallbackFontAssets.Insert(0, _fallback);
+            }
             if (TMP_Settings.defaultFontAsset != null)
                 RegisterPrimaryFont(TMP_Settings.defaultFontAsset);
             return _fallback;
