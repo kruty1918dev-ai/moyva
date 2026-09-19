@@ -236,7 +236,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 // A deferred route swap lands here, not in Mount() below. Sync the
                 // rendered-route cache and replay the enter motion: a finished
-                // exit fade leaves the region CanvasGroup at alpha 0 (blank panel).
+                // exit fade leaves the region CanvasGroup at alpha 0 (blank panel),
+                // and a stale cache re-arms the exit fade on every later
+                // same-route change such as settings tab switches.
                 _lastRenderedRoute = route;
                 PlayRouteEnter(previousRoute, routeExitPlayed);
                 return;
@@ -305,7 +307,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             // Region swaps only replace region children; they cannot retarget the
             // shell root classes (route-*, controls-page, reduced-motion). A changed
-            // root class must take the full document path or scoped CSS goes stale.
+            // root class must take the full document path or scoped CSS goes stale —
+            // e.g. the Controls tab would render without its controls-page layout.
             if (!string.Equals(
                     HomeMenuMoyvaUiMarkup.BuildRootClass(_state, viewportClass),
                     _mountedRootClass,
@@ -339,7 +342,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             catch (Exception exception)
             {
                 // A reconcile that throws may have already removed children;
-                // fall back to a full mount instead of leaving a blank region.
+                // fall back to a full mount instead of leaving a half-swapped,
+                // invisible region.
                 Debug.LogWarning($"{Prefix} Region update failed ({exception.GetBaseException().Message}); remounting document.");
                 return false;
             }
