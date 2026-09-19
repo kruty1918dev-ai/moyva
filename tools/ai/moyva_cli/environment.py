@@ -57,7 +57,8 @@ def find_unity(project):
             version = expected if expected in path.parts else None
             if version is None:
                 try:
-                    r = subprocess.run([str(path), "-version"], capture_output=True, text=True, timeout=20)
+                    r = subprocess.run([str(path), "-version"], capture_output=True, text=True,
+                                       encoding="utf-8", errors="replace", timeout=20)
                     found = re.search(r"\b\d+\.\d+\.\d+[abfp]\d+\b", r.stdout + r.stderr)
                     version = found.group(0) if found else None
                 except (OSError, subprocess.TimeoutExpired): pass
@@ -67,7 +68,7 @@ def find_unity(project):
 def python_info(executable):
     try:
         result = subprocess.run([str(executable), "-c", "import sys,json;print(json.dumps(list(sys.version_info[:3])))"],
-                                capture_output=True, text=True, timeout=10)
+                                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
         version = tuple(json.loads(result.stdout)) if result.returncode == 0 else ()
         return version, (3,10,1) <= version <= (3,10,12)
     except (OSError, ValueError, subprocess.TimeoutExpired): return (), False
@@ -81,7 +82,8 @@ def choose_python(project, supported=False):
     candidates = [HostPlatform().python(project.root / ".venv-training"), sys.executable, shutil.which("python3.10")]
     if os.name == "nt" and shutil.which("py"):
         try:
-            selected = subprocess.run(["py", "-3.10", "-c", "import sys;print(sys.executable)"],capture_output=True,text=True,timeout=10)
+            selected = subprocess.run(["py", "-3.10", "-c", "import sys;print(sys.executable)"],capture_output=True,
+                                      text=True, encoding="utf-8", errors="replace", timeout=10)
             if selected.returncode == 0: candidates.append(selected.stdout.strip())
         except (OSError,subprocess.TimeoutExpired): pass
     candidates += sorted((Path.home()/".pyenv/versions").glob("3.10.*/bin/python"),reverse=True)
@@ -108,7 +110,8 @@ try:
 except Exception as e:r["torch_error"]=str(e)
 print(json.dumps(r))'''
     try:
-        run = subprocess.run([executable, "-c", script], capture_output=True, text=True, timeout=45)
+        run = subprocess.run([executable, "-c", script], capture_output=True, text=True,
+                             encoding="utf-8", errors="replace", timeout=45)
         data = json.loads(run.stdout.splitlines()[-1]) if run.returncode == 0 else {"error":run.stderr[-1000:]}
     except (OSError, ValueError, IndexError, subprocess.TimeoutExpired) as error: data = {"error":str(error)}
     data.update(python=executable, checked=utc())

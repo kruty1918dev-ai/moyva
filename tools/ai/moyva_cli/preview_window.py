@@ -42,7 +42,8 @@ class Monitor:
 
 def _run(command, timeout=3):
     try:
-        return subprocess.run(command, capture_output=True, text=True, timeout=timeout, check=False)
+        return subprocess.run(command, capture_output=True, text=True, encoding="utf-8",
+                              errors="replace", timeout=timeout, check=False)
     except (OSError, subprocess.SubprocessError):
         return None
 
