@@ -1,6 +1,6 @@
 {
   "name": "Kruty1918.Moyva.Shared.Localization.Tests",
-  "references": ["Kruty1918.Moyva.Shared", "Unity.Newtonsoft.Json"],
+  "references": ["Kruty1918.Moyva.Shared", "Unity.Newtonsoft.Json", "Unity.TextMeshPro"],
   "includePlatforms": ["Editor"],
   "optionalUnityReferences": ["TestAssemblies"]
 }

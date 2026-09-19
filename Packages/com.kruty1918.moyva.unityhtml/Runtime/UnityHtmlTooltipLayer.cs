@@ -21,10 +21,12 @@ namespace UnityHTML.Runtime
         private Vector2 _size;
         private float _width;
         private TMPro.TMP_FontAsset _font;
+        private bool _measureFailed;
 
         public void Bind(UGUIContext context, RectTransform root)
         {
             _root = root;
+            _measureFailed = false;
             _panel = (UGUIComponent)context.CreateComponent("view", string.Empty);
             _panel.Id = "unityhtml-tooltip-layer";
             _panel.Style["position"] = "absolute";
@@ -83,7 +85,16 @@ namespace UnityHTML.Runtime
 
         private void LateUpdate()
         {
-            if (_owner == null || !_owner.isActiveAndEnabled || _owner.Source.Destroyed)
+            // Destroyed-reference guard: during a context remount or a font asset
+            // reimport the pooled/destroyed components below may still be wired here
+            // for a frame or two. Bail out instead of touching dead Unity objects.
+            if (_measureFailed || _root == null ||
+                _panel == null || _panel.Destroyed || _panel.RectTransform == null ||
+                _label == null || _label.Destroyed || _label.Text == null)
+            { Hide(_owner); return; }
+            if (_owner == null || !_owner.isActiveAndEnabled ||
+                _owner.Source == null || _owner.Source.Destroyed ||
+                _owner.Source.RectTransform == null)
             { Hide(_owner); return; }
             string text = _owner.Tooltip;
             if (string.IsNullOrWhiteSpace(text)) { Hide(_owner); return; }
@@ -95,12 +106,25 @@ namespace UnityHTML.Runtime
             float maxWidth = Mathf.Max(40, Mathf.Min(300, bounds.width - 16));
             if (_text != text || _width != maxWidth || _font != _label.Text.font)
             {
-                _text = text;
-                _width = maxWidth;
-                _font = _label.Text.font;
-                _label.SetText(text);
-                Vector2 preferred = _label.Text.GetPreferredValues(text, maxWidth - 20, Mathf.Infinity);
-                _size = new Vector2(Mathf.Min(maxWidth, preferred.x + 20), preferred.y + 16);
+                try
+                {
+                    _text = text;
+                    _width = maxWidth;
+                    _font = _label.Text.font;
+                    _label.SetText(text);
+                    Vector2 preferred = _label.Text.GetPreferredValues(text, maxWidth - 20, Mathf.Infinity);
+                    _size = new Vector2(Mathf.Min(maxWidth, preferred.x + 20), preferred.y + 16);
+                }
+                catch (System.Exception)
+                {
+                    // A TMP font asset in the fallback chain may have been destroyed
+                    // mid-frame (e.g. editor reimport of a persistent dynamic font
+                    // asset while its atlas grows). MissingReferenceException inside
+                    // TMP_MaterialManager would otherwise repeat every LateUpdate.
+                    _measureFailed = true;
+                    Hide(_owner);
+                    return;
+                }
             }
             Vector2 size = _size;
             _owner.Source.RectTransform.GetWorldCorners(_corners);

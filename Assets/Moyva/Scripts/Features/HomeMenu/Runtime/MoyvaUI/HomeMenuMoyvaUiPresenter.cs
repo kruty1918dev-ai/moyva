@@ -38,6 +38,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private string _lastModalsMarkup;
         private bool _loggedFallback;
         private bool _initialized;
+        private bool _pendingRemount;
         private int _lastStateChangeFrame = -1;
         private string _lastRenderedRoute = string.Empty;
         private float _pendingRenderAt = -1f;
@@ -93,6 +94,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             _state.Changed += HandleStateChanged;
             _navigation.OnMenuChanged += HandleMenuChanged;
+            if (_localization != null)
+                _localization.LanguageChanged += HandleLanguageChanged;
             RenderIfNeeded(force: true);
         }
 
@@ -131,6 +134,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_navigation != null)
                 _navigation.OnMenuChanged -= HandleMenuChanged;
 
+            if (_localization != null)
+                _localization.LanguageChanged -= HandleLanguageChanged;
+
             if (_mountedAnchor != null)
             {
                 _mountedAnchor.SetMoyvaUiVisible(false);
@@ -145,6 +151,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private void HandleStateChanged() => _lastStateChangeFrame = Time.frameCount;
 
         private void HandleMenuChanged(NavigationChangeEventArgs _) => _state.MarkDirty();
+
+        private void HandleLanguageChanged()
+        {
+            // A language switch swaps the whole glyph set, so the fallback chain and
+            // per-component TMP font caches (m_currentFontAsset, m_Ellipsis.fontAsset
+            // and the pooled text components kept by ReactUnity) all become stale.
+            // Force the next render through a fresh context instead of a regional
+            // update that would keep those references alive.
+            _pendingRemount = true;
+            _state.MarkDirty();
+        }
 
         private void RenderIfNeeded(bool force)
         {
@@ -179,6 +196,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private void MountDocument(bool force)
         {
             _state.ConsumeDirty();
+            if (_pendingRemount)
+            {
+                // Tear down the old ReactUnity context (and its pooled TMP text
+                // components) so nothing keeps stale font/material references.
+                _pendingRemount = false;
+                _host.Unmount();
+                _state.IsMounted = false;
+            }
+
             var previousRoute = _lastRenderedRoute;
             var viewportClass = _mountedAnchor.CurrentViewportClass;
             _lastViewportClass = viewportClass;
