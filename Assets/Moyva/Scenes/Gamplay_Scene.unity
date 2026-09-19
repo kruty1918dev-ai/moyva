@@ -318,8 +318,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -641,8 +641,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -839,8 +839,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -1259,8 +1259,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -1608,8 +1608,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -1846,6 +1846,9 @@ MonoBehaviour:
         _allowSettlementWithoutPopulation: 0
         _deactivateSettlementWhenPopulationIsZero: 1
       _population:
+        _initialResidents: 15
+        _constructionWorkersForFullSpeed: 10
+        _minimumConstructionSpeed: 0.25
         _newResidentsArrivalIntervalTurns: 10
         _requireHousingForFamilyCreation: 1
         _enableWarMortality: 1
@@ -2156,8 +2159,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -2716,8 +2719,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -2931,10 +2934,6 @@ MonoBehaviour:
     ConfigType: Kruty1918.Moyva.Grid.API.MoyvaProjectSettingsSO
     ConfigId: moyvaprojectsettings
   - Target: {fileID: 782056239}
-    PropertyPath: _graphAsset
-    ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
-    ConfigId: testgeneratorgraph
-  - Target: {fileID: 782056239}
     PropertyPath: _tileRegistry
     ConfigType: Kruty1918.Moyva.Grid.API.TileRegistrySO
     ConfigId: tile3dregistry
@@ -2994,10 +2993,6 @@ MonoBehaviour:
     PropertyPath: _settings
     ConfigType: Kruty1918.Moyva.Clouds.API.CloudsSettings
     ConfigId: cloudssettings
-  - Target: {fileID: 1744875389}
-    PropertyPath: _graphAsset
-    ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
-    ConfigId: testgeneratorgraph
   - Target: {fileID: 1575837378}
     PropertyPath: _systemProfile
     ConfigType: Kruty1918.Moyva.Construction.API.ConstructionSystemProfileSO
@@ -3716,6 +3711,76 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 0
   m_Mesh: {fileID: 2046634415}
+--- !u!1 &499472643
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 499472644}
+  m_Layer: 5
+  m_Name: '[Offscreen]'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &499472644
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 499472643}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2147000001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0, y: 1}
+--- !u!1 &501765216
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 501765217}
+  m_Layer: 5
+  m_Name: '[Pool]'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &501765217
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 501765216}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2147000001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0, y: 1}
 --- !u!1 &505970279
 GameObject:
   m_ObjectHideFlags: 0
@@ -4029,8 +4094,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -4346,8 +4411,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -4647,8 +4712,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -4840,8 +4905,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -5233,28 +5298,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8237c731023c8c1268f52ccaa7bbc048, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.GeneratorInstaller
-  _graphBinding: {fileID: 1744875389}
-  _tileWorldCreatorManager: {fileID: 1744875390}
-  _graphAsset:
-    _connections: []
-    _version: 2
-    _sharedSettings:
-      _mapWidth: 0
-      _mapHeight: 0
-      _gridTopology: 0
-      _projectionMode: 5
-      _renderMode: 3
-      _neighborhoodMode: 0
-    _globalGraphState:
-      _graphId: 
-      _layerId: 
-      _version: 1
-      _nodeIds: []
-      _connectionIds: []
-    _layers: []
-    _layerGraphStates: []
-    _tileRegistry:
+  _mapRecipe:
+    Seed: 0
+    SharedSettings:
+      MapWidth: 0
+      MapHeight: 0
+      GridTopology: 0
+      ProjectionMode: 5
+      RenderMode: 3
+      NeighborhoodMode: 0
+    TileRegistry:
       _definitions: []
+    SharedGeneratorSettings:
+      _waterLikeTileIds:
+      - water
+      _riverBaseObjectId: river
+      _separator: 45
+      _matchBaseTypes: 1
+    Layers: []
+    ObjectPlacements: []
+  _tileWorldCreatorManager: {fileID: 1744875390}
   _tileRegistry:
     _definitions: []
   _mapObjectRegistry:
@@ -5587,8 +5650,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -5895,8 +5958,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -6098,8 +6161,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -6296,8 +6359,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -6875,8 +6938,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -7229,8 +7292,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -8118,8 +8181,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -8316,8 +8379,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -8583,8 +8646,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -8932,8 +8995,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -9235,8 +9298,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -9581,8 +9644,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -10127,8 +10190,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -10335,8 +10398,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -11276,8 +11339,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -11662,8 +11725,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -12374,8 +12437,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -13025,8 +13088,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -13370,8 +13433,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -13719,8 +13782,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -13917,8 +13980,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -14339,8 +14402,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -14542,8 +14605,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -14750,8 +14813,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -15113,32 +15176,19 @@ MonoBehaviour:
     DefaultGenerateRivers: 1
     DefaultGenerateBiomes: 1
     DefaultApplyWFC: 1
-    PlacementRulesGraph:
-      _connections: []
-      _version: 2
-      _sharedSettings:
-        _mapWidth: 0
-        _mapHeight: 0
-        _gridTopology: 0
-        _projectionMode: 5
-        _renderMode: 3
-        _neighborhoodMode: 0
-      _globalGraphState:
-        _graphId: 
-        _layerId: 
-        _version: 1
-        _nodeIds: []
-        _connectionIds: []
-      _layers: []
-      _layerGraphStates: []
-      _tileRegistry:
-        _definitions: []
+    PlacementRulesRecipe:
+      rid: -2
     TileRegistry:
       _definitions: []
     BlockedBuildingTileIds: []
     BlockedBuildingHillLevelRanges: []
     BlockedUnitTileIds: []
     BlockedUnitHillLevelRanges: []
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
 --- !u!1 &2086613746
 GameObject:
   m_ObjectHideFlags: 0
@@ -15307,6 +15357,9 @@ MonoBehaviour:
         DurationSeconds: 0.8
         StartDelaySeconds: 0.05
         StartAlpha: 1
+      SandboxProgress:
+        RoundSeconds: 10
+        InitialSpeed: 1
     _startingPositionSettings:
       minMarginFromBorder: 5
       relativeMarginFactor: 0.1667
@@ -15364,6 +15417,9 @@ MonoBehaviour:
       DurationSeconds: 0.8
       StartDelaySeconds: 0.05
       StartAlpha: 1
+    SandboxProgress:
+      RoundSeconds: 10
+      InitialSpeed: 1
   _legacyStartingPositionSettings:
     minMarginFromBorder: 5
     relativeMarginFactor: 0.1667
@@ -15469,26 +15525,8 @@ MonoBehaviour:
     DefaultGenerateRivers: 1
     DefaultGenerateBiomes: 1
     DefaultApplyWFC: 1
-    PlacementRulesGraph:
-      _connections: []
-      _version: 2
-      _sharedSettings:
-        _mapWidth: 0
-        _mapHeight: 0
-        _gridTopology: 0
-        _projectionMode: 5
-        _renderMode: 3
-        _neighborhoodMode: 0
-      _globalGraphState:
-        _graphId: 
-        _layerId: 
-        _version: 1
-        _nodeIds: []
-        _connectionIds: []
-      _layers: []
-      _layerGraphStates: []
-      _tileRegistry:
-        _definitions: []
+    PlacementRulesRecipe:
+      rid: -2
     TileRegistry:
       _definitions: []
     BlockedBuildingTileIds: []
@@ -15514,6 +15552,11 @@ MonoBehaviour:
       _alignment: 1
       _sortingLayerName: Default
       _sortingOrder: 100
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
 --- !u!114 &2100979367
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15542,6 +15585,9 @@ MonoBehaviour:
         _allowSettlementWithoutPopulation: 0
         _deactivateSettlementWhenPopulationIsZero: 1
       _population:
+        _initialResidents: 15
+        _constructionWorkersForFullSpeed: 10
+        _minimumConstructionSpeed: 0.25
         _newResidentsArrivalIntervalTurns: 10
         _requireHousingForFamilyCreation: 1
         _enableWarMortality: 1
@@ -15852,8 +15898,8 @@ Mesh:
   m_CookingOptions: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
   m_MeshOptimizationFlags: 1
   m_StreamData:
     serializedVersion: 2
@@ -15924,6 +15970,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2147000001}
   - component: {fileID: 2147000002}
+  - component: {fileID: 2147000003}
   m_Layer: 5
   m_Name: GameplayHTML
   m_TagString: Untagged
@@ -15942,7 +15989,9 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 501765217}
+  - {fileID: 499472644}
   m_Father: {fileID: 599193028}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -15967,9 +16016,21 @@ MonoBehaviour:
   _fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   _notificationsIcon: {fileID: 4171222922481396494, guid: 56222fc8d2f8cc8a6b7593bd13f563ed, type: 3}
   _menuIcon: {fileID: -1562683298794129838, guid: 31070b65e51cf0d3689bab229b21b172, type: 3}
-  _legacyScreenRoots: 
+  _legacyScreenRoots: []
   _editorLivePreview: 1
   _editorPreviewScreen: 1
+--- !u!114 &2147000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2dbe1ec66e6fd2d45b20d3ae706d1ff0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ReactUnity.UGUI::ReactUnity.UGUI.Behaviours.ResponsiveElement
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

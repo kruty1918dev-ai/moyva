@@ -48,6 +48,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var route = ResolveRoute(state);
             var sb = new StringBuilder(16000);
             AppendRoute(sb, state, route, view, !string.Equals(route, "Main", StringComparison.Ordinal));
+            sb.Append("</scroll>");
             return sb.ToString();
         }
 

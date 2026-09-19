@@ -324,11 +324,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea688967269dbc51aa030e7381716f56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Jsonization::Kruty1918.Moyva.Jsonization.MoyvaJsonBindingMarker
-  _bindings:
-  - Target: {fileID: 1943245940}
-    PropertyPath: _graphAsset
-    ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
-    ConfigId: testgeneratorgraph
+  _bindings: []
 --- !u!4 &1424675796
 Transform:
   m_ObjectHideFlags: 0

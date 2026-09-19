@@ -113,23 +113,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 await Task.Yield();
                 Canvas.ForceUpdateCanvases();
 
-                // 2: Одразу починаємо фонове завантаження сцени меню без активації.
-                var loadOp = SceneManager.LoadSceneAsync(_nextSceneName, LoadSceneMode.Single);
-                if (loadOp == null)
-                    throw new InvalidOperationException(
-                        $"{Prefix} SceneManager returned null for '{_nextSceneName}'. Ensure the scene is in Build Settings.");
-                loadOp.allowSceneActivation = false;
-
-                // 3: Ініціалізуємо project-контейнер: усі міжсценові сервіси створюються тут.
+                // 2: Ініціалізуємо project-контейнер: усі міжсценові сервіси створюються тут.
                 SetStage("Initializing services");
                 _view.SetProgressTarget(0.10f);
                 ISceneTransitionService transition = InitializeProjectContext(ct);
                 _view.SetProgressTarget(0.16f);
 
-                // 4: Прогріваємо стартові ресурси, які знадобляться меню та грі.
+                // 3: Прогріваємо стартові ресурси, які знадобляться меню та грі.
+                //    Resources.LoadAsync має завершитись ДО старту завантаження сцени:
+                //    поки активна AsyncOperation сцени з allowSceneActivation=false,
+                //    ресурсні запити, видані пізніше, стоять у черзі за нею й не завершуються.
                 SetStage("Loading resources");
                 await PreloadResourcesAsync(ct);
                 _view.SetProgressTarget(0.24f);
+
+                // 4: Починаємо фонове завантаження сцени меню без активації.
+                var loadOp = SceneManager.LoadSceneAsync(_nextSceneName, LoadSceneMode.Single);
+                if (loadOp == null)
+                    throw new InvalidOperationException(
+                        $"{Prefix} SceneManager returned null for '{_nextSceneName}'. Ensure the scene is in Build Settings.");
+                loadOp.allowSceneActivation = false;
 
                 // 5: Чекаємо завантаження сцени до межі pre-activation (0.9 у Unity).
                 SetStage("Loading the main menu");

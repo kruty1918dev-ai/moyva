@@ -36,7 +36,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly SignalBus _signals;
         private readonly LazyInject<ICaravanGameplayAccess> _gameplay;
         private readonly IUnitService _units;
-        private readonly ICaravanRemoteCommandRequester _remote;
+        private readonly LazyInject<ICaravanRemoteCommandRequester> _remote;
         private readonly Dictionary<Vector2Int, SupplyOrder> _ordersByPosition = new();
         private int _orderSequence;
         private bool _disposed;
@@ -74,7 +74,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             SignalBus signals,
             LazyInject<ICaravanGameplayAccess> gameplay,
             [InjectOptional] IUnitService units = null,
-            [InjectOptional] ICaravanRemoteCommandRequester remote = null)
+            [InjectOptional] LazyInject<ICaravanRemoteCommandRequester> remote = null)
         {
             _settlements = settlements;
             _economy = economy;
@@ -181,7 +181,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 // reserves the source stock and starts the route authoritatively.
                 string remoteReason = null;
                 return _remote != null
-                    && _remote.TryRequestSupplyDispatch(request, requiredCosts, out remoteReason)
+                    && _remote.Value.TryRequestSupplyDispatch(request, requiredCosts, out remoteReason)
                     ? CaravanTransferResult.Success()
                     : CaravanTransferResult.Rejected(remoteReason
                         ?? "The wagon could not start the supply route.");
@@ -238,7 +238,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (!_ordersByPosition.TryGetValue(position, out var order))
                 return;
             if (notifyRemote && !_gameplay.Value.IsAuthoritative)
-                _remote?.TryRequestCancelSupply(order.OwnerId, position, out _);
+                _remote?.Value.TryRequestCancelSupply(order.OwnerId, position, out _);
             var settlement = _settlements.GetSettlement(order.SettlementId);
             if (settlement != null)
                 foreach (var pair in order.Delivered)

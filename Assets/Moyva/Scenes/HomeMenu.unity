@@ -146,13 +146,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ea688967269dbc51aa030e7381716f56, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Jsonization::Kruty1918.Moyva.Jsonization.MoyvaJsonBindingMarker
   _bindings:
-  - Target: {fileID: 678375842}
-    PropertyPath: _graphAsset
-    ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
-    ConfigId: testgeneratorgraph
   - Target: {fileID: 678375842}
     PropertyPath: _projectSettings
     ConfigType: Kruty1918.Moyva.Grid.API.MoyvaProjectSettingsSO
@@ -173,10 +169,6 @@ MonoBehaviour:
     PropertyPath: _cloudsSettings
     ConfigType: Kruty1918.Moyva.Clouds.API.CloudsSettings
     ConfigId: cloudssettings
-  - Target: {fileID: 610174634}
-    PropertyPath: _audioMixerBindings
-    ConfigType: Kruty1918.Moyva.HomeMenu.Runtime.AudioMixerBindingsSO
-    ConfigId: moyvaaudiomixerbindings
   - Target: {fileID: 610174634}
     PropertyPath: _config
     ConfigType: Kruty1918.Moyva.HomeMenu.Runtime.HomeMenuConfigSO
@@ -242,7 +234,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5df92b84da5214298b4e53450923b1bd, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Signals::Kruty1918.Moyva.Signals.SignalBusInstaller
 --- !u!1 &610174632
 GameObject:
@@ -286,7 +278,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6b0100000000000000001, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.Runtime.HomeMenuInstaller
   _lobbyPanelName: LobbyPanel
   _worldSetupPanelName: WorldSetupPanel
@@ -301,15 +293,30 @@ MonoBehaviour:
     musicParameter: MusicVolume
     sfxParameter: SfxVolume
     uiParameter: UiVolume
+    ambienceParameter: AmbienceVolume
     defaultMaster: 0.8
     defaultMusic: 0.7
     defaultSfx: 0.9
     defaultUi: 0.9
+    defaultAmbience: 0.85
   _config:
     gameplaySceneName: Gamplay_Scene
     homeMenuSceneName: HomeMenu
     minPreloadSeconds: 0.2
     sceneActivationDelay: 0
+    useUnityHtmlShell: 0
+    menuSimulation:
+      enabled: 1
+      mapSide: 36
+      mobileMapSide: 24
+      textureEdge: 960
+      mobileTextureEdge: 640
+      framesPerSecond: 24
+      mobileFramesPerSecond: 18
+      maxUnits: 10
+      turnSeconds: 2.4
+      shotSeconds: 5.5
+      cycleSeconds: 105
   _worldCreationDefaults:
     DefaultWorldName: "\u041C\u0456\u0439 \u0441\u0432\u0456\u0442"
     AppendIndexWhenSaveExists: 1
@@ -339,24 +346,7 @@ MonoBehaviour:
     DefaultGenerateBiomes: 1
     DefaultApplyWFC: 1
     PlacementRulesRecipe:
-      Seed: 0
-      SharedSettings:
-        MapWidth: 0
-        MapHeight: 0
-        GridTopology: 0
-        ProjectionMode: 5
-        RenderMode: 3
-        NeighborhoodMode: 0
-      TileRegistry:
-        _definitions: []
-      SharedGeneratorSettings:
-        _waterLikeTileIds:
-        - water
-        _riverBaseObjectId: river
-        _separator: 45
-        _matchBaseTypes: 1
-      Layers: []
-      ObjectPlacements: []
+      rid: -2
     TileRegistry:
       _definitions: []
     BlockedBuildingTileIds: []
@@ -369,6 +359,11 @@ MonoBehaviour:
     DurationSeconds: 0.8
     StartDelaySeconds: 0.05
     StartAlpha: 1
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
 --- !u!1 &678375838
 GameObject:
   m_ObjectHideFlags: 0
@@ -425,29 +420,28 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1ce6e202695ddc4db2dc87648832fc0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.HomeMenuBackgroundPreviewController
   _targetImage: {fileID: 678375843}
-  _graphAsset:
-    _connections: []
-    _version: 2
-    _sharedSettings:
-      _mapWidth: 0
-      _mapHeight: 0
-      _gridTopology: 0
-      _projectionMode: 5
-      _renderMode: 3
-      _neighborhoodMode: 0
-    _globalGraphState:
-      _graphId:
-      _layerId:
-      _version: 1
-      _nodeIds: []
-      _connectionIds: []
-    _layers: []
-    _layerGraphStates: []
-    _tileRegistry:
+  _mapRecipe:
+    Seed: 0
+    SharedSettings:
+      MapWidth: 0
+      MapHeight: 0
+      GridTopology: 0
+      ProjectionMode: 5
+      RenderMode: 3
+      NeighborhoodMode: 0
+    TileRegistry:
       _definitions: []
+    SharedGeneratorSettings:
+      _waterLikeTileIds:
+      - water
+      _riverBaseObjectId: river
+      _separator: 45
+      _matchBaseTypes: 1
+    Layers: []
+    ObjectPlacements: []
   _projectSettings:
     ProjectVisualMode: 0
     UseAdvancedProjectSettings: 0
@@ -818,7 +812,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -863,7 +857,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01614664b831546d2ae94a42149d80ac, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
   m_SendPointerHoverToParent: 1
   m_MoveRepeatDelay: 0.5
@@ -894,7 +888,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
   m_FirstSelected: {fileID: 0}
   m_sendNavigationEvents: 1
@@ -941,7 +935,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 89715ad69b973a14899afa2c6730b30b, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Zenject::Zenject.SceneContext
   _scriptableObjectInstallers: []
   _monoInstallers:
@@ -1010,7 +1004,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
@@ -1027,7 +1021,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
   m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
@@ -1113,7 +1107,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
@@ -1263,7 +1257,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 33b9af57437955cca120cab2e88c5395, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.SaveSystem::Kruty1918.Moyva.SaveSystem.SaveSystemInstaller
 --- !u!1 &2205000000
 GameObject:
@@ -1275,6 +1269,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2205000001}
   - component: {fileID: 2205000002}
+  - component: {fileID: 2205000003}
   m_Layer: 5
   m_Name: UnityHTMLShellAnchor
   m_TagString: Untagged
@@ -1299,7 +1294,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: -0.00015258789, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2205000002
 MonoBehaviour:
@@ -1311,15 +1306,30 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30e775b0afabc8943a485d262b4e1024, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.Runtime.HomeMenuMoyvaUiAnchor
   _mountRoot: {fileID: 2205000001}
   _legacyShell: {fileID: 0}
+  _legacyUiRoots: []
   _htmlAsset: {fileID: 4900000, guid: 7c0e85809c834aafbec8414241956198, type: 3}
   _cssAsset: {fileID: 4900000, guid: 98ef98ad1ba2411c8f6a522c6070d64c, type: 3}
   _fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   _editorLivePreview: 1
   _editorPreviewRoute: 0
+  _editorPreviewSettingsSection: 0
+  _editorPreviewPlayFlow: 0
+--- !u!114 &2205000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2205000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2dbe1ec66e6fd2d45b20d3ae706d1ff0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ReactUnity.UGUI::ReactUnity.UGUI.Behaviours.ResponsiveElement
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

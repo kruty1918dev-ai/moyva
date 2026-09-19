@@ -69,7 +69,11 @@ namespace Kruty1918.Moyva.Generator
 
         private void ResolveSceneReferences()
         {
-            _mapRecipe ??= ResolveFallbackRecipe();
+            // A serialized inline recipe without layers is a stale stub left by an older
+            // scene serialization (e.g. migrated graph-era data). JSON presets are the
+            // source of truth, so treat the stub as missing and resolve from JSON.
+            if (_mapRecipe == null || _mapRecipe.Layers == null || _mapRecipe.Layers.Count == 0)
+                _mapRecipe = ResolveFallbackRecipe();
             _tileWorldCreatorManager ??= FindFirst<TileWorldCreatorManager>();
             EnsureRuntimeConfiguration();
         }
