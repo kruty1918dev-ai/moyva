@@ -23,13 +23,22 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public const string NavRegionId = "moyva-nav";
         public const string BrandRegionId = "moyva-brand";
 
+        /// <summary>Root chrome classes that regional updates cannot retarget.</summary>
+        public static string BuildRootClass(HomeMenuMoyvaUiState state, string viewportClass)
+        {
+            var route = ResolveRoute(state);
+            var sb = new StringBuilder(64);
+            sb.Append(viewportClass).Append(' ').Append(RouteClass(route));
+            if (route == "SettingsPanel" && state.SettingsSection == HomeMenuSettingsSection.Controls)
+                sb.Append(" controls-page");
+            return sb.ToString();
+        }
+
         public static string Build(HomeMenuMoyvaUiState state, HomeMenuMoyvaUiViewController view, string viewportClass)
         {
             var route = ResolveRoute(state);
             var sb = new StringBuilder(18000);
-            sb.Append("<view className=\"moyva-ui-app ").Append(E(viewportClass)).Append(' ').Append(RouteClass(route));
-            if (route == "SettingsPanel" && state.SettingsSection == HomeMenuSettingsSection.Controls) sb.Append(" controls-page");
-            sb.Append("\">");
+            sb.Append("<view className=\"moyva-ui-app ").Append(E(BuildRootClass(state, viewportClass))).Append("\">");
             sb.Append("<view className=\"background-veil\"></view><view className=\"shell-content\">");
             sb.Append("<view id=\"").Append(BrandRegionId).Append("\" className=\"brand-panel\">");
             AppendBrandContent(sb, view);

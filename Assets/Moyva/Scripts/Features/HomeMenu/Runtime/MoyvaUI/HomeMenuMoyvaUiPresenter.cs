@@ -33,6 +33,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private HomeMenuMoyvaUiAnchor _mountedAnchor;
         private string _lastViewportClass = string.Empty;
         private string _mountedViewportClass = string.Empty;
+        private string _mountedRootClass = string.Empty;
         private string _lastRouteMarkup;
         private string _lastBrandMarkup;
         private string _lastModalsMarkup;
@@ -107,7 +108,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_pendingRenderAt >= 0f && Time.unscaledTime >= _pendingRenderAt)
             {
                 _pendingRenderAt = -1f;
-                MountDocument(force: false);
+                MountDocument(force: false, routeExitPlayed: true);
             }
 
             var viewportClass = _mountedAnchor.CurrentViewportClass;
@@ -173,13 +174,29 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
-            MountDocument(force);
+            MountDocument(force, routeExitPlayed: false);
         }
 
-        private void MountDocument(bool force)
+        private void PlayRouteEnter(string previousRoute, bool routeExitPlayed)
+        {
+            var routeChanged = !string.Equals(previousRoute, _lastRenderedRoute, StringComparison.Ordinal);
+            // When an exit ran but the swap landed back on the same route (rapid
+            // back-and-forth inside the exit window), still replay the enter
+            // motion: the region is mid-fade and would otherwise stay transparent.
+            if (!routeChanged && !routeExitPlayed)
+                return;
+
+            if (!_state.ReducedMotion)
+                _host.Motion?.Play(RouteRootId, "slide-up", RouteEnterSeconds, 0f);
+            else
+                _host.Motion?.Stop(RouteRootId); // restore alpha if a fade-out was interrupted
+        }
+
+        private void MountDocument(bool force, bool routeExitPlayed)
         {
             _state.ConsumeDirty();
             var previousRoute = _lastRenderedRoute;
+            var route = ResolveRoute();
             var viewportClass = _mountedAnchor.CurrentViewportClass;
             _lastViewportClass = viewportClass;
             var globals = new Dictionary<string, object>
@@ -191,9 +208,18 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 globals["moyvaFont"] = _mountedAnchor.FontAsset;
 
             if (!force && TryApplyRegionalUpdate(viewportClass, globals))
+            {
+                // A deferred route swap lands here, not in Mount() below. Sync the
+                // rendered-route cache and replay the enter motion: a finished
+                // exit fade leaves the region CanvasGroup at alpha 0 (blank panel),
+                // and a stale cache re-arms the exit fade on every later
+                // same-route change such as settings tab switches.
+                _lastRenderedRoute = route;
+                PlayRouteEnter(previousRoute, routeExitPlayed);
                 return;
+            }
 
-            var route = HomeMenuMoyvaUiMarkup.BuildRouteMarkup(_state, _view);
+            var routeMarkup = HomeMenuMoyvaUiMarkup.BuildRouteMarkup(_state, _view);
             var brand = HomeMenuMoyvaUiMarkup.BuildBrandMarkup(_view);
             var html = HomeMenuMoyvaUiMarkup.Build(_state, _view, viewportClass);
             var css = _mountedAnchor.CssAsset != null ? _mountedAnchor.CssAsset.text : string.Empty;
@@ -215,15 +241,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             _state.IsMounted = true;
             _mountedViewportClass = viewportClass;
-            _lastRouteMarkup = route;
+            _mountedRootClass = HomeMenuMoyvaUiMarkup.BuildRootClass(_state, viewportClass);
+            _lastRouteMarkup = routeMarkup;
             _lastBrandMarkup = brand;
             _lastModalsMarkup = HomeMenuMoyvaUiMarkup.BuildModalsMarkup(_state, _view);
-            _lastRenderedRoute = ResolveRoute();
+            _lastRenderedRoute = route;
             _mountedAnchor.SetMoyvaUiVisible(true);
             _mountedAnchor.SetLegacyUiVisible(false);
 
-            if (!_state.ReducedMotion && !string.Equals(previousRoute, _lastRenderedRoute, StringComparison.Ordinal))
-                _host.Motion?.Play(RouteRootId, "slide-up", RouteEnterSeconds, 0f);
+            PlayRouteEnter(previousRoute, routeExitPlayed);
         }
 
         private string ResolveRoute()
@@ -254,6 +280,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 !string.Equals(viewportClass, _mountedViewportClass, StringComparison.Ordinal))
                 return false;
 
+            // Region swaps only replace region children; they cannot retarget the
+            // shell root classes (route-*, controls-page). A changed root class
+            // must take the full document path or scoped CSS goes stale — e.g. the
+            // Controls tab would render without its controls-page layout.
+            if (!string.Equals(
+                    HomeMenuMoyvaUiMarkup.BuildRootClass(_state, viewportClass),
+                    _mountedRootClass,
+                    StringComparison.Ordinal))
+                return false;
+
             var modals = HomeMenuMoyvaUiMarkup.BuildModalsMarkup(_state, _view);
             if (!string.Equals(modals, _lastModalsMarkup, StringComparison.Ordinal))
                 return false;
@@ -272,7 +308,22 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 [HomeMenuMoyvaUiMarkup.NavRegionId] = route,
                 [HomeMenuMoyvaUiMarkup.BrandRegionId] = brand
             };
-            if (!_host.UpdateRegions(regions, globals))
+
+            bool updated;
+            try
+            {
+                updated = _host.UpdateRegions(regions, globals);
+            }
+            catch (Exception exception)
+            {
+                // A reconcile that throws may have already removed children;
+                // log it and fall back to a full mount instead of leaving a
+                // half-swapped, invisible region.
+                Debug.LogWarning($"{Prefix} Region update failed ({exception.GetBaseException().Message}); remounting document.");
+                return false;
+            }
+
+            if (!updated)
                 return false;
 
             _lastRouteMarkup = route;

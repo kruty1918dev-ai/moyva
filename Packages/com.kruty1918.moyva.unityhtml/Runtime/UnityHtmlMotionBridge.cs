@@ -336,7 +336,7 @@ namespace UnityHTML.Runtime
                 Position = target.anchoredPosition;
                 Scale = target.localScale;
                 Rotation = target.localEulerAngles;
-                Alpha = group != null ? group.alpha : 1f;
+                Alpha = ResolveRestingAlpha(target, group);
             }
 
             public RectTransform Target { get; }
@@ -357,6 +357,15 @@ namespace UnityHTML.Runtime
                 }
                 if (Group != null)
                     Group.alpha = Alpha;
+            }
+
+            // A finished tween (e.g. fade-out) can leave the CanvasGroup at alpha 0,
+            // so the resting alpha is the element's computed opacity when available.
+            private static float ResolveRestingAlpha(RectTransform target, CanvasGroup group)
+            {
+                UGUIComponent component = target != null ? target.GetComponent<ReactElement>()?.Component : null;
+                var style = component != null && !component.Destroyed ? component.ComputedStyle : null;
+                return style != null ? Mathf.Clamp01(style.opacity) : group != null ? group.alpha : 1f;
             }
         }
     }
