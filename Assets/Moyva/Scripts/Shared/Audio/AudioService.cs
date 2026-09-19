@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
         public void Initialize()
         {
             _root = new GameObject(RootName);
-            if (_registry == null || _registry.PersistAcrossScenes)
+            if (Application.isPlaying && (_registry == null || _registry.PersistAcrossScenes))
                 UnityEngine.Object.DontDestroyOnLoad(_root);
 
             int poolSize = _registry != null ? _registry.DefaultPoolSize : 12;
@@ -124,7 +124,12 @@ namespace Kruty1918.Moyva.Audio.Runtime
             UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
 
             if (_root != null)
-                UnityEngine.Object.Destroy(_root);
+            {
+                if (Application.isPlaying)
+                    UnityEngine.Object.Destroy(_root);
+                else
+                    UnityEngine.Object.DestroyImmediate(_root);
+            }
 
             _available.Clear();
             _active.Clear();

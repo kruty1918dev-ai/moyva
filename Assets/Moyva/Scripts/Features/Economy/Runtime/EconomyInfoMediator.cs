@@ -14,12 +14,12 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         private readonly EconomyManager _economyManager;
         private readonly EconomyDatabaseSO _database;
-        private readonly IConstructionSupplyService _supply;
+        private readonly LazyInject<IConstructionSupplyService> _supply;
 
         public EconomyInfoMediator(
             EconomyManager economyManager,
             [InjectOptional] EconomyDatabaseSO database,
-            [InjectOptional] IConstructionSupplyService supply)
+            [InjectOptional] LazyInject<IConstructionSupplyService> supply)
         {
             _economyManager = economyManager;
             _database = database;
@@ -125,11 +125,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
             => _economyManager?.GetSettlementAvailableResourceTotals(settlementId) ?? EmptyResources;
 
         public void ReleaseConstructionSupplyReservations(Vector2Int placementPosition)
-            => _supply?.CancelOrderAt(placementPosition);
+            => _supply?.Value.CancelOrderAt(placementPosition);
 
         public IReadOnlyDictionary<string, float> GetSettlementResourcesForPlacement(
             string settlementId, Vector2Int placementPosition)
-            => _supply?.GetResourcesForPlacement(settlementId, placementPosition)
+            => _supply?.Value.GetResourcesForPlacement(settlementId, placementPosition)
                ?? GetSettlementResourceTotals(settlementId);
 
         public IReadOnlyDictionary<string, float> GetOwnerPoolResourceTotals(string ownerId)

@@ -135,7 +135,8 @@ namespace Kruty1918.Moyva.Audio.Runtime
         public void Initialize()
         {
             _root = new GameObject("[MoyvaMusic]");
-            UnityEngine.Object.DontDestroyOnLoad(_root);
+            if (Application.isPlaying)
+                UnityEngine.Object.DontDestroyOnLoad(_root);
 
             _sourceA = AddSource(_root);
             _sourceB = AddSource(_root);
@@ -156,7 +157,12 @@ namespace Kruty1918.Moyva.Audio.Runtime
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             if (_root != null)
-                UnityEngine.Object.Destroy(_root);
+            {
+                if (Application.isPlaying)
+                    UnityEngine.Object.Destroy(_root);
+                else
+                    UnityEngine.Object.DestroyImmediate(_root);
+            }
         }
 
         // ── IMusicService ──────────────────────────────────────────────────

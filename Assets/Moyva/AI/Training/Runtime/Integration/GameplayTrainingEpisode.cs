@@ -94,6 +94,7 @@ namespace Kruty1918.Moyva.AI.Training
                 UnitsInstaller.InstallSimulationBindings(_container, Required<UnitRegistrySO>());
                 FogOfWarInstaller.InstallSimulationBindings(_container);
                 GameModeInstaller.InstallSimulationBindings(_container);
+                _container.Bind<ICaravanGameplayAccess>().To<TrainingCaravanGameplayAccess>().AsSingle();
                 var economy = Required<EconomyDatabaseSO>();
                 EconomyInstaller.InstallSimulationBindings(_container, economy);
                 ConstructionInstaller.InstallSimulationBindings(_container, Required<BuildingRegistrySO>(),
@@ -603,5 +604,18 @@ namespace Kruty1918.Moyva.AI.Training
             }
         }
         private sealed class TrainingTurnAuthority : ITurnAuthorityPolicy { public bool IsAuthoritative => true; }
+
+        private sealed class TrainingCaravanGameplayAccess : ICaravanGameplayAccess
+        {
+            public event Action ProgressAvailable { add { } remove { } }
+            public bool IsAuthoritative => true;
+            public bool TryGetWagon(string unitId, out CaravanUnitSnapshot unit) { unit = default; return false; }
+            public bool CanCommand(string ownerId, string unitId, out string reason) { reason = string.Empty; return true; }
+            public bool CanAccessWarehouse(string unitId, Vector2Int origin, out string reason) { reason = string.Empty; return true; }
+            public System.Threading.Tasks.Task<CaravanTransferResult> MoveToWarehouseAsync(
+                string unitId, Vector2Int origin, System.Threading.CancellationToken token)
+                => System.Threading.Tasks.Task.FromResult(
+                    CaravanTransferResult.Rejected("No wagons in training simulation."));
+        }
     }
 }

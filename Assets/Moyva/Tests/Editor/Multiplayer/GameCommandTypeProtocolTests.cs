@@ -30,11 +30,12 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             Assert.AreEqual(14, (int)GameCommandType.CaravanCommand);
             Assert.AreEqual(15, (int)GameCommandType.CombatCommand);
             Assert.AreEqual(16, (int)GameCommandType.SettlementCaptureCommand);
-            Assert.AreEqual(17, (int)GameCommandType.UnitVanish);
-            Assert.AreEqual(18, (int)GameCommandType.UnitGroupCommand);
-            Assert.AreEqual(19, (int)GameCommandType.UnitGroupSync);
-            Assert.AreEqual(20, (int)GameCommandType.UnitRecruitmentCommand);
-            Assert.AreEqual(21, (int)GameCommandType.UnitRecruitmentSync);
+            Assert.AreEqual(17, (int)GameCommandType.WorldStateSnapshotChunk);
+            Assert.AreEqual(18, (int)GameCommandType.UnitVanish);
+            Assert.AreEqual(19, (int)GameCommandType.UnitGroupCommand);
+            Assert.AreEqual(20, (int)GameCommandType.UnitGroupSync);
+            Assert.AreEqual(21, (int)GameCommandType.UnitRecruitmentCommand);
+            Assert.AreEqual(22, (int)GameCommandType.UnitRecruitmentSync);
         }
     }
 }

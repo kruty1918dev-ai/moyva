@@ -31,10 +31,13 @@ namespace Kruty1918.Moyva.Economy
             container.Bind<IEconomyTurnProcessor>().To<EconomyTurnProcessorService>().AsSingle();
             container.Bind<IEconomyInfoMediator>().To<EconomyInfoMediator>().AsSingle();
             container.Bind<IEconomyRuntimeApi>().To<EconomyRuntimeApi>().AsSingle();
+            if (!container.HasBinding<ICaravanService>())
+            {
+                container.BindInterfacesAndSelfTo<CaravanService>().AsSingle().NonLazy();
+            }
             if (!container.HasBinding<IConstructionSupplyService>())
             {
                 container.BindInterfacesAndSelfTo<ConstructionSupplyService>().AsSingle().NonLazy();
-                container.BindInterfacesTo<SaveModuleRegistrar<ConstructionSupplyService>>().AsSingle().NonLazy();
             }
             InstallCaptureBindings(container);
         }

@@ -44,7 +44,7 @@ namespace Kruty1918.Moyva.Audio.API
         [Range(0f, 1f)] public float ChorusWetMix1 = 0.5f;
         [Range(0f, 1f)] public float ChorusWetMix2 = 0.5f;
         [Range(0f, 1f)] public float ChorusWetMix3 = 0.5f;
-        [Range(0f, 20f)] public float ChorusDelay = 40f;
+        [Range(0f, 100f)] public float ChorusDelay = 40f;
         [Range(0f, 20f)] public float ChorusRate = 0.8f;
         [Range(0f, 1f)] public float ChorusDepth = 0.03f;
     }
