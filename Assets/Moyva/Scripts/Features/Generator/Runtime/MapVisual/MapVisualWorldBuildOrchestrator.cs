@@ -442,6 +442,21 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private bool HasStartableLand(GeneratedWorldData data)
         {
+            bool hasHeights = data.HeightMap != null
+                && data.HeightMap.GetLength(0) == data.Width
+                && data.HeightMap.GetLength(1) == data.Height;
+
+            // The water line is derived from the data: HeightMap units differ
+            // between producers (normalized 0..1 geography heights vs
+            // world-space recipe layer heights), so a fixed threshold cannot
+            // tell submerged cells from dry land.
+            float waterLevel = float.NegativeInfinity;
+            if (hasHeights)
+                for (int x = 0; x < data.Width; x++)
+                for (int y = 0; y < data.Height; y++)
+                    if (IsWaterTileId(data.GameplayTileMap[x, y]))
+                        waterLevel = Mathf.Max(waterLevel, data.HeightMap[x, y]);
+
             for (int x = 0; x < data.Width; x++)
             for (int y = 0; y < data.Height; y++)
             {
@@ -449,10 +464,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 if (string.IsNullOrWhiteSpace(tileId) || IsWaterTileId(tileId))
                     continue;
 
-                if (data.HeightMap != null
-                    && data.HeightMap.GetLength(0) == data.Width
-                    && data.HeightMap.GetLength(1) == data.Height
-                    && data.HeightMap[x, y] < 0.35f)
+                if (waterLevel > float.NegativeInfinity
+                    && data.HeightMap[x, y] < waterLevel - 0.001f)
                 {
                     continue;
                 }

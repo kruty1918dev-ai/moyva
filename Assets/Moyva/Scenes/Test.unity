@@ -487,7 +487,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1943245939}
   - component: {fileID: 1943245938}
-  - component: {fileID: 1943245940}
   m_Layer: 0
   m_Name: TileWorldCreatorManager
   m_TagString: Untagged
@@ -524,42 +523,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1943245940
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1943245937}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4600d3c7896d1b4ad9e0fa798ff1bb84, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.MoyvaTileWorldCreatorGraphBinding
-  _manager: {fileID: 1943245938}
-  _graphAsset:
-    _connections: []
-    _version: 2
-    _sharedSettings:
-      _mapWidth: 0
-      _mapHeight: 0
-      _gridTopology: 0
-      _projectionMode: 5
-      _renderMode: 3
-      _neighborhoodMode: 0
-    _globalGraphState:
-      _graphId: 
-      _layerId: 
-      _version: 1
-      _nodeIds: []
-      _connectionIds: []
-    _layers: []
-    _layerGraphStates: []
-    _tileRegistry:
-      _definitions: []
-  _editorSeed: 1
-  _compileBeforeGenerate: 1
-  _generateBuildLayersAfterCompile: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

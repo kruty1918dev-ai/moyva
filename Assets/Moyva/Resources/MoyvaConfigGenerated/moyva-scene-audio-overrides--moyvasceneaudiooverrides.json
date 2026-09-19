@@ -7,7 +7,7 @@
   "overrides": [
     {
       "sceneName": "HomeMenu",
-      "soundKey": "tavern-music-loop",
+      "soundKey": "music-tavern",
       "overrideVolume": false,
       "volume": 1.0,
       "overridePitch": false,
@@ -28,7 +28,7 @@
     },
     {
       "sceneName": "Gamplay_Scene",
-      "soundKey": "tavern-music-loop",
+      "soundKey": "music-tavern",
       "overrideVolume": true,
       "volume": 0.343,
       "overridePitch": false,

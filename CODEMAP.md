@@ -41,7 +41,7 @@ Base: `Features/`
 | Tile selection | `Interactions/API/ITileInteractionService.cs`; `Interactions/Runtime/InteractionsInstaller.cs`; `Interactions/Runtime/WorldInfoSelectionCoordinator.cs` |
 | Info panel | `InfoPanel/UI/WorldInfoPanelInstaller.cs` |
 | Notifications | `Notifications/API/IGameplayNotificationService.cs`; `Notifications/Runtime/NotificationsInstaller.cs`; `Notifications/Runtime/GameplayNotificationService.cs` |
-| Game audio layer | `GameAudio/API/AudioAmbienceConfig.cs`; `GameAudio/API/AudioFeedbackConfig.cs`; `GameAudio/Runtime/GameAudioInstaller.cs` (shared → ProjectServicesInstaller, gameplay → BootstrapInstaller); JSON: `Presets/Systems/audio-registry`, `audio-ambience`, `audio-feedback` |
+| Game audio layer | `GameAudio/API/AudioAmbienceConfig.cs`; `GameAudio/API/AudioFeedbackConfig.cs`; `GameAudio/Runtime/GameAudioInstaller.cs` (shared→ProjectServices, gameplay→Bootstrap installers); presets: Presets/Systems/audio-* |
 | Camera | `Camera/API/`; `Camera/Runtime/CameraInstaller.cs`; `Camera/Runtime/CameraMovement.cs`; `Camera/Runtime/CameraZoom.cs` |
 | Movement animation | `Animations/API/IMovementAnimationService.cs`; `Animations/Runtime/AnimationsInstaller.cs`; `Animations/Runtime/MovementAnimationService.cs` |
 | Clouds | `Clouds/API/ICloudsService.cs`; `Clouds/Runtime/CloudsInstaller.cs`; `Clouds/Runtime/CloudsService.cs` |
@@ -57,7 +57,7 @@ Base: `Features/Marketing/`
 | Shot planning / golden frames | `Planning/` |
 | Recipe/platform contracts | `Contracts/` |
 
-Editor surface: Assets/Moyva/Editor/MarketingStudio/. JSON presets: Assets/Moyva/Presets/Marketing/.
+Editor: Assets/Moyva/Editor/MarketingStudio/. Presets: Assets/Moyva/Presets/Marketing/.
 
 ## Bootstrap / launch
 
@@ -71,8 +71,7 @@ Base: `Bootstrap/Runtime/`
 | Spawn / reveal / camera | `StartingPositionInitializer.cs`; `StartingPositionWorkflowService.cs`; `StartingPositionWorkflowService.Client.cs` |
 | Initial save | `InitialWorldSaveService.cs` |
 
-Menu: GameplaySession → GameplayStartupPipeline → GameLaunchContext → scene.
-World/spawn signals → starting-position workflow → Turns ready.
+Menu: GameplaySession → GameplayStartupPipeline → GameLaunchContext → scene; world/spawn signals → starting-position workflow → Turns ready.
 
 ## Units / movement / recruitment / combat
 
@@ -107,7 +106,7 @@ Base: `Features/Construction/`
 
 Base: `Features/Construction/Runtime/Core/Service/`
 
-EvaluatePlacement owns decisions; SessionStore owns state.
+EvaluatePlacement = decisions; SessionStore = state.
 
 | Task | Files |
 |---|---|
@@ -130,7 +129,7 @@ EvaluatePlacement owns decisions; SessionStore owns state.
 
 Base: `Features/HomeMenu/Runtime/`
 
-Dynamic MoyvaUI is the single production shell, mounted through HomeMenuMoyvaUiAnchor.
+Dynamic MoyvaUI = single production shell via HomeMenuMoyvaUiAnchor.
 
 | Task | Files |
 |---|---|
@@ -162,7 +161,7 @@ Skip for lobby/join work.
 
 Base: `Features/GameplayHUD/Runtime/`
 
-GameplayHudBindings selects GameplayHtmlPresenter/State.
+GameplayHudBindings → presenter/state.
 
 | Task | Files |
 |---|---|
@@ -177,8 +176,7 @@ GameplayHudBindings selects GameplayHtmlPresenter/State.
 
 Base: `Features/Multiplayer/`
 
-JoinRoomTransportAdapter → ISessionManager → LAN/Relay provider.
-Host authorization → canonical Units/Construction commands.
+JoinRoomTransportAdapter → ISessionManager → LAN/Relay provider; host authorization → canonical Units/Construction commands.
 
 | Task | Files |
 |---|---|
@@ -192,7 +190,7 @@ Host authorization → canonical Units/Construction commands.
 | Sync / authorization | `Runtime/GameCommandSyncService.cs`; `Runtime/MultiplayerAuthorityService.cs`; `Runtime/MultiplayerAuthorityService.Authorization.cs` |
 | Construction / Units commands | `Runtime/MultiplayerAuthorityService.ConstructionCommands.cs`; `Runtime/MultiplayerAuthorityService.UnitCommands.cs` |
 | Frame / pump lifecycle | `Runtime/MultiplayerFrameCodec.cs`; `Runtime/MultiplayerTransportPump.cs` |
-| Host readiness / client loading barrier | `API/IMultiplayerStartupBarrier.cs`; `Runtime/MultiplayerStartupBarrier.cs`; `Runtime/StartingPositionSyncService.cs` |
+| Host readiness / loading barrier | `API/IMultiplayerStartupBarrier.cs`; `Runtime/MultiplayerStartupBarrier.cs`; `Runtime/StartingPositionSyncService.cs` |
 
 ## FogOfWar state / composition
 
@@ -211,10 +209,8 @@ Skip for fog-state tasks.
 
 | Task | Files |
 |---|---|
-| Screen-space lifecycle / texture state | `ScreenSpace/FogScreenSpaceTextureUpdater.cs`; `ScreenSpace/FogScreenSpaceTextureUpdater.Lifecycle.cs`; `ScreenSpace/FogScreenSpaceTextureUpdater.StateBuffer.cs` |
-| Shader / world transform | `ScreenSpace/FogScreenSpaceTextureUpdater.ShaderPublisher.cs`; `ScreenSpace/FogScreenSpaceTextureUpdater.Transform.cs` |
-| Curtain geometry / calibration | `ScreenSpace/FogBoundaryCurtainRenderer.Geometry.cs`; `ScreenSpace/FogBoundaryCurtainRenderer.SurfaceCalibration.cs`; `ScreenSpace/FogBoundaryCurtainRenderer.SurfaceGrid.cs` |
-| Curtain material / top cap | `ScreenSpace/FogBoundaryCurtainRenderer.Presentation.cs`; `ScreenSpace/FogBoundaryCurtainRenderer.TopCap.cs` |
+| Screen-space lifecycle / texture / shader / transform | `ScreenSpace/FogScreenSpaceTextureUpdater.cs` + Lifecycle/StateBuffer/ShaderPublisher/Transform partials |
+| Curtain geometry / material / top cap | `ScreenSpace/` FogBoundaryCurtainRenderer partials |
 | Renderer culling | `Culling/FogRendererCullingEngine.cs` |
 | Shared visual context / height | `FogWorldVisualContextFactory.cs`; `FogVolumeHeightSampler.cs` |
 
@@ -231,5 +227,5 @@ World build: generate/restore → Grid → signals.
 | Recipe model / pipeline | `API/GeneratorMapRecipe.cs`; `Runtime/MapData/RecipeMapDataGenerator.cs`; `Runtime/Recipe/RecipeToConfigurationCompilerService.cs` |
 | Recipe semantics / masks | `Runtime/Recipe/GeneratorMapRecipeValidator.cs`; `Runtime/Recipe/GeneratorMaskEvaluator.cs` |
 | Logical tile map | `Runtime/LogicalMap/LogicalTileMapBuilderService.cs`; `Runtime/LogicalTileMap.cs` |
-| Geography engine (deterministic world gen) | `Runtime/Geography/`; `API/WorldGenerationConfig.cs` |
+| Geography engine | `Runtime/Geography/`; `API/WorldGenerationConfig.cs` |
 | Chunk-first terrain mesh | `Runtime/ChunkFirst/Mesh/`; `Runtime/ChunkFirst/TwcAdapter/TwcTileMeshSourceProvider.cs` |

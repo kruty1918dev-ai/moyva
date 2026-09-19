@@ -55,8 +55,12 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
                 var entry = new Bed { Config = bed, Handle = handle };
                 if (bed.lowpassWithZoom)
                 {
-                    entry.LowPass = handle.Source.GetComponent<AudioLowPassFilter>()
-                        ?? handle.Source.gameObject.AddComponent<AudioLowPassFilter>();
+                    // GetComponent may return Unity's fake-null object; '??' does
+                    // not catch it and the .enabled setter throws. '==' does.
+                    var lowPass = handle.Source.GetComponent<AudioLowPassFilter>();
+                    if (lowPass == null)
+                        lowPass = handle.Source.gameObject.AddComponent<AudioLowPassFilter>();
+                    entry.LowPass = lowPass;
                     entry.LowPass.enabled = true;
                 }
 

@@ -96,7 +96,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private static void AppendLogistics(StringBuilder html, GameplayHtmlSnapshot snapshot)
         {
-            html.Append("<text className=\"section-title\">ACTIVE ROUTES & SUPPLY ORDERS</text><view className=\"building-list\">");
+            html.Append("<text className=\"section-title\">ACTIVE ROUTES &amp; SUPPLY ORDERS</text><view className=\"building-list\">");
             for (int index = 0; index < snapshot.Logistics.Length; index++)
             {
                 var entry = snapshot.Logistics[index];

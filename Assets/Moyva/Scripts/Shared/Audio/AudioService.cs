@@ -811,14 +811,18 @@ namespace Kruty1918.Moyva.Audio.Runtime
         {
             if (!container.HasBinding<AudioRegistrySO>())
             {
-                registry ??= MoyvaJsonRuntime.GetLegacyResource<AudioRegistrySO>(DefaultRegistryResourcePath);
+                // Serialized plain-class config fields deserialize as non-null but empty,
+                // which would shadow the JSON source of truth — prefer JSON when present.
+                AudioRegistrySO jsonRegistry = MoyvaJsonRuntime.GetLegacyResource<AudioRegistrySO>(DefaultRegistryResourcePath);
+                registry = jsonRegistry ?? registry;
                 if (registry != null)
                     container.BindInstance(registry).AsSingle();
             }
 
             if (!container.HasBinding<SceneAudioOverridesSO>())
             {
-                sceneOverrides ??= MoyvaJsonRuntime.GetLegacyResource<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
+                SceneAudioOverridesSO jsonOverrides = MoyvaJsonRuntime.GetLegacyResource<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
+                sceneOverrides = jsonOverrides ?? sceneOverrides;
                 if (sceneOverrides != null)
                     container.BindInstance(sceneOverrides).AsSingle();
             }

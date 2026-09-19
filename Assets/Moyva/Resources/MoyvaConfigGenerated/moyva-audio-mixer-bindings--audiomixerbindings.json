@@ -5,7 +5,7 @@
   "id": "audiomixerbindings",
   "model": "audio-mixer-bindings",
   "mixer": {
-    "$asset": "asset.audio-mixer-controller.moyva-mixer.35a28e1f",
+    "$asset": "asset.audio-mixer-controller.moyvamixer.35a28e1f",
     "editorPath": "Assets/Moyva/Audio/MoyvaMixer.mixer",
     "required": true
   },

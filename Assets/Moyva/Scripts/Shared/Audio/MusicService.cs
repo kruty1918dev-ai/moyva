@@ -476,7 +476,10 @@ namespace Kruty1918.Moyva.Audio.Runtime
             if (container.HasBinding<IMusicService>()) return;
 
             var list = new List<SceneMusicProfileSO>(profiles ?? Array.Empty<SceneMusicProfileSO>());
-            // Знайти всі профілі в Resources якщо список порожній
+            // Serialized plain-class entries can be empty stubs (no clips); drop them so
+            // they don't shadow the JSON source of truth.
+            list.RemoveAll(p => p == null
+                || (p.DefaultMusic?.Clip == null && p.EpicMusic?.Clip == null));
             if (list.Count == 0)
             {
                 var found = MoyvaJsonRuntime.GetAllLegacyResources<SceneMusicProfileSO>("MusicProfiles");

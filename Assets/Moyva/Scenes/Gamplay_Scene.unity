@@ -3711,76 +3711,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 0
   m_Mesh: {fileID: 2046634415}
---- !u!1 &499472643
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 499472644}
-  m_Layer: 5
-  m_Name: '[Offscreen]'
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!224 &499472644
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 499472643}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2147000001}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0, y: 1}
---- !u!1 &501765216
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 501765217}
-  m_Layer: 5
-  m_Name: '[Pool]'
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!224 &501765217
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 501765216}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2147000001}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0, y: 1}
 --- !u!1 &505970279
 GameObject:
   m_ObjectHideFlags: 0
@@ -5449,7 +5379,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f7b00ebf6e54691a496067487d6750a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.MapChunks::Kruty1918.Moyva.MapChunks.Runtime.MapChunkSceneSettings
-  chunkSize: 16
   enableCameraCulling: 1
   cameraCullingIntervalSeconds: 0.08
   cameraCullingPaddingCells: 1
@@ -12153,7 +12082,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1744875391}
   - component: {fileID: 1744875390}
-  - component: {fileID: 1744875389}
   m_Layer: 0
   m_Name: TileWorldCreatorManager
   m_TagString: Untagged
@@ -12161,42 +12089,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1744875389
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1744875388}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4600d3c7896d1b4ad9e0fa798ff1bb84, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.MoyvaTileWorldCreatorGraphBinding
-  _manager: {fileID: 1744875390}
-  _graphAsset:
-    _connections: []
-    _version: 2
-    _sharedSettings:
-      _mapWidth: 0
-      _mapHeight: 0
-      _gridTopology: 0
-      _projectionMode: 5
-      _renderMode: 3
-      _neighborhoodMode: 0
-    _globalGraphState:
-      _graphId: 
-      _layerId: 
-      _version: 1
-      _nodeIds: []
-      _connectionIds: []
-    _layers: []
-    _layerGraphStates: []
-    _tileRegistry:
-      _definitions: []
-  _editorSeed: 1
-  _compileBeforeGenerate: 1
-  _generateBuildLayersAfterCompile: 1
 --- !u!114 &1744875390
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15989,9 +15881,7 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 501765217}
-  - {fileID: 499472644}
+  m_Children: []
   m_Father: {fileID: 599193028}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}

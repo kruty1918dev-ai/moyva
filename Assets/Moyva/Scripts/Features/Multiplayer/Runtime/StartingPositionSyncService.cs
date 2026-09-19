@@ -148,9 +148,15 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private bool ShouldBroadcastFromThisPeer()
         {
             if (_sessionManager == null)
-                return true;
+                return false;
 
             if (string.IsNullOrEmpty(_sessionManager.LocalPlayerId))
+                return false;
+
+            // Solo/fallback sessions contain only the local host — no remote
+            // peer exists to receive the broadcast, and the transport is offline.
+            IReadOnlyList<Participant> participants = _sessionManager.Participants;
+            if (participants == null || participants.Count < 2)
                 return false;
 
             return _sessionManager.IsLocalPlayerHost;

@@ -23,19 +23,19 @@
       "id": "normal",
       "displayName": "Нормально",
       "description": "Стандартний бот. За замовчуванням heuristic, поки не призначена сумісна модель.",
-      "policyMode": 2,
+      "policyMode": 0,
       "visibleDelay": 0.35,
       "modelProfile": {
-        "enabled": true,
+        "enabled": false,
         "modelName": "smoke-10k-v2",
         "modelResourcePath": "AI/Models/MoyvaStrategy_Normal",
         "trainingRunId": "smoke-10k-v2",
         "curriculumStage": 8,
-        "notes": "Deployed by moyva deploy from smoke-10k-v2.",
+        "notes": "Deployed by moyva deploy from smoke-10k-v2; disabled: contract hash drifted since deploy. Redeploy a compatible model to re-enable MLAgentsInference.",
         "contractVersion": 2,
         "contractHash": "459f56a85539648b64fb8b71b29b286df862952c7204a22660943dacde78f964"
       },
-      "policyModeName": "MLAgentsInference"
+      "policyModeName": "Heuristic"
     },
     {
       "id": "hard",

@@ -50,6 +50,14 @@ namespace UnityHTML.Runtime
             {
                 RegisterMoyvaComponents();
                 _root = root;
+                var guard = _root.gameObject.GetComponent<UnityHtmlReplacedElementGuard>();
+                if (guard == null)
+                    guard = _root.gameObject.AddComponent<UnityHtmlReplacedElementGuard>();
+#if UNITY_EDITOR
+                // Edit-mode preview roots must not gain a serialized component.
+                if (!Application.isPlaying)
+                    guard.hideFlags = HideFlags.DontSaveInEditor;
+#endif
                 _mountedCss = document.Css ?? string.Empty;
                 ClearRootChildren(_root);
                 var globalRecord = CreateGlobals(globals);
@@ -210,7 +218,29 @@ namespace UnityHTML.Runtime
             Canvas.ForceUpdateCanvases();
             RestoreRenderedScrollPositions(scrollPositions);
             _tooltips?.RefreshTargets();
+#if UNITY_EDITOR
+            MarkEditorPreviewObjectsDontSave(_root);
+#endif
         }
+
+#if UNITY_EDITOR
+        // Edit-mode preview mounts build a live DOM under the host root. Those
+        // generated objects must never serialize into the scene — saving with
+        // them present leaks the whole preview tree into the .unity file.
+        private static void MarkEditorPreviewObjectsDontSave(RectTransform root)
+        {
+            if (Application.isPlaying || root == null)
+                return;
+            var children = root.GetComponentsInChildren<Transform>(true);
+            for (var i = 0; i < children.Length; i++)
+            {
+                var child = children[i];
+                if (child == null || child == root)
+                    continue;
+                child.gameObject.hideFlags |= HideFlags.DontSaveInEditor;
+            }
+        }
+#endif
 
         private static List<RenderedScrollPosition> CaptureRenderedScrollPositions(RectTransform root)
         {
@@ -1228,6 +1258,43 @@ namespace UnityHTML.Runtime
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.offsetMin = new Vector2(left, bottom);
             rect.offsetMax = new Vector2(-right, -top);
+        }
+    }
+
+    // ReactReplacedElement.LateUpdate dereferences Layout before the vendor
+    // component's Start can disable it (Layout == null), and keeps throwing
+    // every frame once the assigned YogaNode is disposed by DOM pooling while
+    // the GameObject survives. Runs before the vendor component (-20) and
+    // disables elements whose layout access would throw.
+    [ExecuteAlways]
+    [DefaultExecutionOrder(-30)]
+    [AddComponentMenu("")]
+    internal sealed class UnityHtmlReplacedElementGuard : MonoBehaviour
+    {
+        private readonly List<ReactReplacedElement> _elements = new List<ReactReplacedElement>();
+
+        private void LateUpdate()
+        {
+            _elements.Clear();
+            GetComponentsInChildren(false, _elements);
+            for (var i = 0; i < _elements.Count; i++)
+            {
+                var element = _elements[i];
+                if (element == null || !element.enabled)
+                    continue;
+                try
+                {
+                    var layout = element.Layout;
+                    if (layout == null || element.Measurer == null)
+                        element.enabled = false;
+                    else
+                        _ = layout.HasNewLayout;
+                }
+                catch (Exception)
+                {
+                    element.enabled = false;
+                }
+            }
         }
     }
 }
