@@ -52,34 +52,65 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
                 Assert.AreEqual(1, host.MountCalls, "Initial document mount did not happen.");
 
                 // Main -> SettingsPanel: the exit fade defers the document swap.
+                // The route-* shell class changes, so the swap must take the full
+                // document path (regional updates cannot retarget root classes).
                 state.Open("SettingsPanel");
                 yield return null; // let Time.frameCount move past the change frame
-                presenter.Tick();
-                yield return new WaitForSecondsRealtime(0.3f);
+                ClearStateChangeFrame(presenter); // Time.frameCount may not advance in edit mode
                 presenter.Tick();
 
-                Assert.AreEqual(1, host.MountCalls, "Route swap should reuse the mounted document.");
-                Assert.GreaterOrEqual(host.UpdateRegionsCalls, 1, "Route swap should take the regional update path.");
+                Assert.AreEqual(1, CountPlays(host, "fade-out"), "Expected exactly one route exit fade.");
+
+                // Pump ticks until the deferred swap lands. Time.unscaledTime may
+                // not advance in edit mode, so expire the defer window directly.
+                var deadline = Time.realtimeSinceStartup + 2f;
+                while (host.MountCalls < 2 && Time.realtimeSinceStartup < deadline)
+                {
+                    ExpirePendingRender(presenter);
+                    presenter.Tick();
+                    yield return null;
+                }
+
+                Assert.AreEqual(2, host.MountCalls, "Route swap remounts the document for the new shell class.");
                 Assert.AreEqual(1, CountPlays(host, "fade-out"), "Expected exactly one route exit fade.");
                 Assert.AreEqual(2, CountPlays(host, "fade"),
                     "The enter motion must replay after the deferred swap (initial mount + route enter).");
 
-                // A section switch on the same route must not re-arm the exit fade.
+                // A section switch on the same route must not re-arm the exit fade
+                // and stays on the regional update path.
                 state.SetSettingsSection(HomeMenuSettingsSection.Audio);
                 yield return null;
+                ClearStateChangeFrame(presenter);
                 presenter.Tick();
                 yield return null;
+                ClearStateChangeFrame(presenter);
                 presenter.Tick();
 
                 Assert.AreEqual(1, CountPlays(host, "fade-out"),
                     "A same-route section switch must not trigger another route exit fade.");
-                Assert.AreEqual(1, host.MountCalls, "Section switch should stay on the regional update path.");
+                Assert.AreEqual(2, host.MountCalls, "Section switch should stay on the regional update path.");
+                Assert.GreaterOrEqual(host.UpdateRegionsCalls, 1,
+                    "A same-route section switch should use the regional update path.");
             }
             finally
             {
                 presenter.Dispose();
                 Object.DestroyImmediate(anchorGo);
             }
+        }
+
+        private static void ExpirePendingRender(HomeMenuMoyvaUiPresenter presenter)
+        {
+            typeof(HomeMenuMoyvaUiPresenter)
+                .GetField("_pendingRenderAt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?.SetValue(presenter, 0f);
+        }
+
+        private static void ClearStateChangeFrame(HomeMenuMoyvaUiPresenter presenter)
+        {
+            typeof(HomeMenuMoyvaUiPresenter)
+                .GetField("_lastStateChangeFrame", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?.SetValue(presenter, -1);
         }
 
         private static int CountPlays(RecordingHost host, string preset)
