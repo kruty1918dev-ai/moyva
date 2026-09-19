@@ -1428,3 +1428,42 @@
   font-weight: 700;
   line-height: 1.2em;
 }
+
+/* Shared motion scale: 120ms color fades on interactive state changes,
+   keeping hover/focus/checked feedback uniform instead of instant snaps.
+   Color properties only — layout properties stay instant to avoid reflows. */
+.menu-button,
+.action-button,
+.compact-button,
+.top-back-button,
+.settings-tab,
+.profile-chip,
+.keyboard-key,
+.menu-toggle,
+.modifier-switch,
+.shortcut-button,
+.binding-card,
+.device-choice,
+.device-control,
+.menu-input,
+.menu-select {
+  transition: background-color 0.12s ease-out, border-color 0.12s ease-out, color 0.12s ease-out;
+}
+
+.reduced-motion .menu-button,
+.reduced-motion .action-button,
+.reduced-motion .compact-button,
+.reduced-motion .top-back-button,
+.reduced-motion .settings-tab,
+.reduced-motion .profile-chip,
+.reduced-motion .keyboard-key,
+.reduced-motion .menu-toggle,
+.reduced-motion .modifier-switch,
+.reduced-motion .shortcut-button,
+.reduced-motion .binding-card,
+.reduced-motion .device-choice,
+.reduced-motion .device-control,
+.reduced-motion .menu-input,
+.reduced-motion .menu-select {
+  transition: none;
+}

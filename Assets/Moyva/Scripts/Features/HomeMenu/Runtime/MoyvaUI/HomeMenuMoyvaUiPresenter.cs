@@ -26,13 +26,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly ILocalizationService _localization;
         private readonly LocalizationFontService _localizationFonts;
 
-        private const float RouteExitSeconds = 0.11f;
+        private const float RouteExitSeconds = 0.12f;
         private const float RouteEnterSeconds = 0.2f;
         private const string RouteRootId = HomeMenuMoyvaUiMarkup.NavRegionId;
 
         private HomeMenuMoyvaUiAnchor _mountedAnchor;
         private string _lastViewportClass = string.Empty;
         private string _mountedViewportClass = string.Empty;
+        private string _mountedRootClass = string.Empty;
         private string _lastRouteMarkup;
         private string _lastBrandMarkup;
         private string _lastModalsMarkup;
@@ -107,7 +108,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_pendingRenderAt >= 0f && Time.unscaledTime >= _pendingRenderAt)
             {
                 _pendingRenderAt = -1f;
-                MountDocument(force: false);
+                MountDocument(force: false, routeExitPlayed: true);
             }
 
             var viewportClass = _mountedAnchor.CurrentViewportClass;
@@ -173,10 +174,24 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
-            MountDocument(force);
+            MountDocument(force, routeExitPlayed: false);
         }
 
-        private void MountDocument(bool force)
+        private void PlayRouteEnter(string previousRoute, bool routeExitPlayed)
+        {
+            var routeChanged = !string.Equals(previousRoute, _lastRenderedRoute, StringComparison.Ordinal);
+            // When an exit ran but the swap landed back on the same route (rapid
+            // back-and-forth inside the exit window), still fade back in: the panel
+            // is mid-fade and would otherwise stay transparent.
+            if (!routeChanged && !routeExitPlayed)
+                return;
+            if (!_state.ReducedMotion)
+                _host.Motion?.Play(RouteRootId, "fade", RouteEnterSeconds, 0f);
+            else
+                _host.Motion?.Stop(RouteRootId); // restore alpha if a fade-out was interrupted
+        }
+
+        private void MountDocument(bool force, bool routeExitPlayed)
         {
             _state.ConsumeDirty();
             var previousRoute = _lastRenderedRoute;
@@ -191,7 +206,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 globals["moyvaFont"] = _mountedAnchor.FontAsset;
 
             if (!force && TryApplyRegionalUpdate(viewportClass, globals))
+            {
+                // Regional swaps are still route changes: keep the rendered-route
+                // tracker current or every later in-panel edit would replay the
+                // route exit, and play the matched enter fade here.
+                _lastRenderedRoute = ResolveRoute();
+                PlayRouteEnter(previousRoute, routeExitPlayed);
                 return;
+            }
 
             var route = HomeMenuMoyvaUiMarkup.BuildRouteMarkup(_state, _view);
             var brand = HomeMenuMoyvaUiMarkup.BuildBrandMarkup(_view);
@@ -215,6 +237,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             _state.IsMounted = true;
             _mountedViewportClass = viewportClass;
+            _mountedRootClass = HomeMenuMoyvaUiMarkup.BuildRootClass(_state, viewportClass);
             _lastRouteMarkup = route;
             _lastBrandMarkup = brand;
             _lastModalsMarkup = HomeMenuMoyvaUiMarkup.BuildModalsMarkup(_state, _view);
@@ -222,8 +245,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _mountedAnchor.SetMoyvaUiVisible(true);
             _mountedAnchor.SetLegacyUiVisible(false);
 
-            if (!_state.ReducedMotion && !string.Equals(previousRoute, _lastRenderedRoute, StringComparison.Ordinal))
-                _host.Motion?.Play(RouteRootId, "slide-up", RouteEnterSeconds, 0f);
+            PlayRouteEnter(previousRoute, routeExitPlayed);
         }
 
         private string ResolveRoute()
@@ -252,6 +274,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (!_state.IsMounted ||
                 !string.Equals(viewportClass, _mountedViewportClass, StringComparison.Ordinal))
+                return false;
+
+            // Region swaps only replace region children; they cannot retarget the
+            // shell root classes (route-*, controls-page, reduced-motion). A changed
+            // root class must take the full document path or scoped CSS goes stale.
+            if (!string.Equals(
+                    HomeMenuMoyvaUiMarkup.BuildRootClass(_state, viewportClass),
+                    _mountedRootClass,
+                    StringComparison.Ordinal))
                 return false;
 
             var modals = HomeMenuMoyvaUiMarkup.BuildModalsMarkup(_state, _view);

@@ -25,8 +25,12 @@ namespace UnityHTML.Runtime
             if (!Application.isPlaying || !TryFindTarget(targetId, out RectTransform target))
                 return;
 
-            Play(targetId, target, preset, duration, delay, DefaultDistance, Ease.OutCubic);
+            Play(targetId, target, preset, duration, delay, DefaultDistance, DefaultEase(preset));
         }
+
+        // Exits accelerate out (ease-in); entrances decelerate in (ease-out).
+        private static Ease DefaultEase(string preset)
+            => string.Equals(preset, "fade-out", StringComparison.OrdinalIgnoreCase) ? Ease.InQuad : Ease.OutCubic;
 
         public void Stop(string targetId)
         {
@@ -320,7 +324,10 @@ namespace UnityHTML.Runtime
             return (value ?? string.Empty).Trim().ToLowerInvariant() switch
             {
                 "linear" => Ease.Linear,
+                "in-quad" => Ease.InQuad,
+                "in-cubic" => Ease.InCubic,
                 "out-quad" => Ease.OutQuad,
+                "out-cubic" => Ease.OutCubic,
                 "in-out-quad" => Ease.InOutQuad,
                 "out-back" => Ease.OutBack,
                 _ => Ease.OutCubic,
