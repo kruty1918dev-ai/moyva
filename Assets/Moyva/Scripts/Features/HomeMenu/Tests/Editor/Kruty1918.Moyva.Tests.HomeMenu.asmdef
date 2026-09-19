@@ -5,6 +5,7 @@
     "Kruty1918.Moyva.HomeMenu",
     "Kruty1918.Moyva.UIActions",
     "Kruty1918.Moyva.Shared",
+    "UnityHTML.Runtime",
     "Zenject"
   ],
   "includePlatforms": ["Editor"],

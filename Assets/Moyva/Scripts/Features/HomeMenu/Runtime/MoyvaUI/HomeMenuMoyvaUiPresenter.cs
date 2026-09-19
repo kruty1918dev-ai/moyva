@@ -195,6 +195,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             _state.ConsumeDirty();
             var previousRoute = _lastRenderedRoute;
+            var route = ResolveRoute();
             var viewportClass = _mountedAnchor.CurrentViewportClass;
             _lastViewportClass = viewportClass;
             var globals = new Dictionary<string, object>
@@ -207,15 +208,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (!force && TryApplyRegionalUpdate(viewportClass, globals))
             {
-                // Regional swaps are still route changes: keep the rendered-route
-                // tracker current or every later in-panel edit would replay the
-                // route exit, and play the matched enter fade here.
-                _lastRenderedRoute = ResolveRoute();
+                // A deferred route swap lands here, not in Mount() below. Sync the
+                // rendered-route cache and replay the enter motion: a finished
+                // exit fade leaves the region CanvasGroup at alpha 0 (blank panel).
+                _lastRenderedRoute = route;
                 PlayRouteEnter(previousRoute, routeExitPlayed);
                 return;
             }
 
-            var route = HomeMenuMoyvaUiMarkup.BuildRouteMarkup(_state, _view);
+            var routeMarkup = HomeMenuMoyvaUiMarkup.BuildRouteMarkup(_state, _view);
             var brand = HomeMenuMoyvaUiMarkup.BuildBrandMarkup(_view);
             var html = HomeMenuMoyvaUiMarkup.Build(_state, _view, viewportClass);
             var css = _mountedAnchor.CssAsset != null ? _mountedAnchor.CssAsset.text : string.Empty;
@@ -238,10 +239,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.IsMounted = true;
             _mountedViewportClass = viewportClass;
             _mountedRootClass = HomeMenuMoyvaUiMarkup.BuildRootClass(_state, viewportClass);
-            _lastRouteMarkup = route;
+            _lastRouteMarkup = routeMarkup;
             _lastBrandMarkup = brand;
             _lastModalsMarkup = HomeMenuMoyvaUiMarkup.BuildModalsMarkup(_state, _view);
-            _lastRenderedRoute = ResolveRoute();
+            _lastRenderedRoute = route;
             _mountedAnchor.SetMoyvaUiVisible(true);
             _mountedAnchor.SetLegacyUiVisible(false);
 
@@ -303,7 +304,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 [HomeMenuMoyvaUiMarkup.NavRegionId] = route,
                 [HomeMenuMoyvaUiMarkup.BrandRegionId] = brand
             };
-            if (!_host.UpdateRegions(regions, globals))
+
+            bool updated;
+            try
+            {
+                updated = _host.UpdateRegions(regions, globals);
+            }
+            catch (Exception exception)
+            {
+                // A reconcile that throws may have already removed children;
+                // fall back to a full mount instead of leaving a blank region.
+                Debug.LogWarning($"{Prefix} Region update failed ({exception.GetBaseException().Message}); remounting document.");
+                return false;
+            }
+
+            if (!updated)
                 return false;
 
             _lastRouteMarkup = route;
