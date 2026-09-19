@@ -22,14 +22,35 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public const string NavRegionId = "moyva-nav";
         public const string BrandRegionId = "moyva-brand";
+        public const string SettingsContentId = "settings-content";
+
+        // Shared motion scale: keep every declared duration/delay inside these
+        // bands so entrances, fades and staggers feel like one system.
+        private const string MotionFadeSeconds = "0.14";   // in-panel crossfades, scrims
+        private const string MotionEnterSeconds = "0.2";   // modal cards
+        private const string MotionItemSeconds = "0.16";   // list rows, menu buttons
+        private const string MotionItemDistance = "10";    // px rise for entering items
+        private const float MotionStaggerStepSeconds = 0.03f;
+        private const int MotionStaggerMaxSteps = 4;       // stagger tail capped at 0.12s
+
+        /// <summary>Root chrome classes that regional updates cannot retarget.</summary>
+        public static string BuildRootClass(HomeMenuMoyvaUiState state, string viewportClass)
+        {
+            var route = ResolveRoute(state);
+            var sb = new StringBuilder(64);
+            sb.Append(viewportClass).Append(' ').Append(RouteClass(route));
+            if (route == "SettingsPanel" && state.SettingsSection == HomeMenuSettingsSection.Controls)
+                sb.Append(" controls-page");
+            if (state.ReducedMotion)
+                sb.Append(" reduced-motion");
+            return sb.ToString();
+        }
 
         public static string Build(HomeMenuMoyvaUiState state, HomeMenuMoyvaUiViewController view, string viewportClass)
         {
             var route = ResolveRoute(state);
             var sb = new StringBuilder(18000);
-            sb.Append("<view className=\"moyva-ui-app ").Append(E(viewportClass)).Append(' ').Append(RouteClass(route));
-            if (route == "SettingsPanel" && state.SettingsSection == HomeMenuSettingsSection.Controls) sb.Append(" controls-page");
-            sb.Append("\">");
+            sb.Append("<view className=\"moyva-ui-app ").Append(E(BuildRootClass(state, viewportClass))).Append("\">");
             sb.Append("<view className=\"background-veil\"></view><view className=\"shell-content\">");
             sb.Append("<view id=\"").Append(BrandRegionId).Append("\" className=\"brand-panel\">");
             AppendBrandContent(sb, view);
@@ -136,8 +157,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                             $"{room.CurrentPlayers}/{room.MaxPlayers} - {view.T(room.DisplayIdentifier)}{lockLabel}",
                             $"Globals.moyvaMenu.SelectRoom({i})",
                             id: $"room-{i}",
-                            motion: i < 8 && !state.ReducedMotion,
-                            delay: Math.Min(i, 8) * 0.03f,
+                            motion: !state.ReducedMotion,
+                            delay: Math.Min(i, MotionStaggerMaxSteps) * MotionStaggerStepSeconds,
                             enabled: view.RoomListState != RoomListStatus.Joining);
                     }
                     sb.Append("</view>");
@@ -217,7 +238,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     {
                         var player = view.KickPlayers[i];
                         var badge = player.IsHost ? view.T("HOST") : player.IsLocalPlayer ? view.T("YOU") : player.CanKick ? view.T("KICK") : "···";
-                        Button(sb, badge, player.DisplayName, view.T(player.StatusLabel), $"Globals.moyvaMenu.KickPlayer({i})", false, view.KickInteractable && player.CanKick, id: $"kick-{i}", motion: !state.ReducedMotion, delay: Math.Min(i, 8) * 0.03f);
+                        Button(sb, badge, player.DisplayName, view.T(player.StatusLabel), $"Globals.moyvaMenu.KickPlayer({i})", false, view.KickInteractable && player.CanKick, id: $"kick-{i}", motion: !state.ReducedMotion, delay: Math.Min(i, MotionStaggerMaxSteps) * MotionStaggerStepSeconds);
                     }
                     sb.Append("<view className=\"inline-actions\">");
                     CompactButton(sb, view.T("REFRESH"), "Globals.moyvaMenu.RefreshKickPlayers()");
@@ -225,9 +246,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     sb.Append("</view>");
                     break;
                 case "SettingsPanel":
-                    Header(sb, view.T("SETTINGS"), view.T("Game preferences"), showBack, view);
+                    Header(sb, view.T("SETTINGS"), view.T("Game preferences"), showBack, view, state.SettingsSection.ToString());
                     SettingsTabs(sb, state.SettingsSection, view);
-                    AppendSettings(sb, state.SettingsSection, view);
+                    AppendSettings(sb, state, view);
                     break;
                 default:
                     Header(sb, view.T("MAIN MENU"), view.T("A realm awaits"), false, view);
@@ -235,15 +256,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         .Append(E(ProfileInitial(view.PlayerName))).Append("</text></view><view className=\"button-content\"><text className=\"button-title\">")
                         .Append(E(view.PlayerName)).Append("</text><text className=\"button-copy\">").Append(view.T("Signed in — tap to change your display name.")).Append("</text></view><text className=\"button-arrow\">></text></button>");
                     Button(sb, "01", view.T("PLAY"), view.T("Choose a mode and start a realm."), "Globals.moyvaMenu.Play()", true, id: "main-1", motion: !state.ReducedMotion, delay: 0f);
-                    Button(sb, "02", view.T("SETTINGS"), view.T("Audio, graphics and player profile."), "Globals.moyvaMenu.Settings()", id: "main-2", motion: !state.ReducedMotion, delay: 0.04f);
-                    Button(sb, "03", view.T("QUIT"), view.T("Close Moyva."), "Globals.moyvaMenu.Exit()", id: "main-3", motion: !state.ReducedMotion, delay: 0.08f);
+                    Button(sb, "02", view.T("SETTINGS"), view.T("Audio, graphics and player profile."), "Globals.moyvaMenu.Settings()", id: "main-2", motion: !state.ReducedMotion, delay: MotionStaggerStepSeconds);
+                    Button(sb, "03", view.T("QUIT"), view.T("Close Moyva."), "Globals.moyvaMenu.Exit()", id: "main-3", motion: !state.ReducedMotion, delay: MotionStaggerStepSeconds * 2f);
                     break;
             }
         }
 
-        private static void AppendSettings(StringBuilder sb, HomeMenuSettingsSection section, HomeMenuMoyvaUiViewController view)
+        private static void AppendSettings(StringBuilder sb, HomeMenuMoyvaUiState state, HomeMenuMoyvaUiViewController view)
         {
-            sb.Append("<view className=\"settings-content\">");
+            var section = state.SettingsSection;
+            // The scroll key carries the section, so this element is recreated on
+            // every tab switch and the declared fade becomes the crossfade.
+            sb.Append("<view id=\"").Append(SettingsContentId).Append("\" className=\"settings-content\"");
+            if (!state.ReducedMotion)
+                sb.Append(" data-motion=\"fade\" data-motion-duration=\"").Append(MotionFadeSeconds).Append('"');
+            sb.Append(">");
             switch (section)
             {
                 case HomeMenuSettingsSection.Audio:
@@ -311,9 +338,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (view.OverlayVisible)
             {
                 sb.Append("<view id=\"overlay-scrim\" className=\"modal-scrim\"");
-                if (motion) sb.Append(" data-motion=\"fade\" data-motion-duration=\"0.14\"");
+                if (motion) sb.Append(" data-motion=\"fade\" data-motion-duration=\"").Append(MotionFadeSeconds).Append('"');
                 sb.Append("><view id=\"overlay-card\" className=\"modal-card overlay-card\"");
-                if (motion) sb.Append(" data-motion=\"scale\" data-motion-duration=\"0.18\" data-motion-ease=\"out-back\"");
+                if (motion) sb.Append(" data-motion=\"scale\" data-motion-duration=\"").Append(MotionEnterSeconds).Append("\" data-motion-ease=\"out-back\"");
                 sb.Append("><view id=\"overlay-spinner\" className=\"overlay-spinner\"");
                 if (motion) sb.Append(" data-motion=\"spin\" data-motion-duration=\"0.9\"");
                 sb.Append("></view><text className=\"modal-title\">").Append(view.T("PLEASE WAIT")).Append("</text><text className=\"modal-copy\">")
@@ -325,9 +352,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (view.InfoVisible)
             {
                 sb.Append("<view id=\"info-scrim\" className=\"modal-scrim\"");
-                if (motion) sb.Append(" data-motion=\"fade\" data-motion-duration=\"0.14\"");
+                if (motion) sb.Append(" data-motion=\"fade\" data-motion-duration=\"").Append(MotionFadeSeconds).Append('"');
                 sb.Append("><view id=\"info-card\" className=\"modal-card\"");
-                if (motion) sb.Append(" data-motion=\"scale\" data-motion-duration=\"0.18\" data-motion-ease=\"out-back\"");
+                if (motion) sb.Append(" data-motion=\"scale\" data-motion-duration=\"").Append(MotionEnterSeconds).Append("\" data-motion-ease=\"out-back\"");
                 sb.Append("><text className=\"modal-title\">").Append(E(view.T(view.CurrentInfo.Title))).Append("</text><text className=\"modal-copy\">")
                     .Append(E(view.T(view.CurrentInfo.Message))).Append("</text>").Append(ModalButton(view.T("OK"), "Globals.moyvaMenu.AcknowledgeInfo()"))
                     .Append("</view></view>");
@@ -336,9 +363,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (view.PasswordVisible)
             {
                 sb.Append("<view id=\"password-scrim\" className=\"modal-scrim\"");
-                if (motion) sb.Append(" data-motion=\"fade\" data-motion-duration=\"0.14\"");
+                if (motion) sb.Append(" data-motion=\"fade\" data-motion-duration=\"").Append(MotionFadeSeconds).Append('"');
                 sb.Append("><view id=\"password-card\" className=\"modal-card\"");
-                if (motion) sb.Append(" data-motion=\"scale\" data-motion-duration=\"0.18\" data-motion-ease=\"out-back\"");
+                if (motion) sb.Append(" data-motion=\"scale\" data-motion-duration=\"").Append(MotionEnterSeconds).Append("\" data-motion-ease=\"out-back\"");
                 sb.Append("><text className=\"modal-title\">").Append(view.T("PASSWORD")).Append("</text><text className=\"modal-copy\">")
                     .Append(E(view.PasswordRoomDisplayName)).Append("</text>")
                     .Append(InputMarkup(view.T("Password"), view.PasswordValue, view.T("Password"), "Globals.moyvaMenu.PreviewPasswordValue(event)", "Globals.moyvaMenu.CommitPasswordValue(event)", 48, true, "Password", "full"))
@@ -352,9 +379,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 var request = view.CurrentConfirmation.Value;
                 sb.Append("<view id=\"confirm-scrim\" className=\"modal-scrim\"");
-                if (motion) sb.Append(" data-motion=\"fade\" data-motion-duration=\"0.14\"");
+                if (motion) sb.Append(" data-motion=\"fade\" data-motion-duration=\"").Append(MotionFadeSeconds).Append('"');
                 sb.Append("><view id=\"confirm-card\" className=\"modal-card\"");
-                if (motion) sb.Append(" data-motion=\"scale\" data-motion-duration=\"0.16\" data-motion-ease=\"out-back\"");
+                if (motion) sb.Append(" data-motion=\"scale\" data-motion-duration=\"").Append(MotionEnterSeconds).Append("\" data-motion-ease=\"out-back\"");
                 sb.Append("><text className=\"modal-title\">")
                     .Append(E(view.T(request.LabelText))).Append("</text><text className=\"modal-copy\">")
                     .Append(E(view.T(request.MessageText))).Append("</text><view className=\"modal-actions\">")
@@ -364,14 +391,20 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
         }
 
-        private static void Header(StringBuilder sb, string kicker, string title, bool showBack, HomeMenuMoyvaUiViewController view)
+        private static void Header(StringBuilder sb, string kicker, string title, bool showBack, HomeMenuMoyvaUiViewController view, string scrollScope = null)
         {
             sb.Append("<view className=\"navigation-heading\"><view className=\"navigation-heading-row\"><view className=\"navigation-heading-copy\"><text className=\"navigation-kicker\">")
                 .Append(E(kicker)).Append("</text><text className=\"navigation-title\">").Append(E(title)).Append("</text></view>");
             if (showBack)
                 sb.Append("<button className=\"top-back-button\" onClick=\"Globals.moyvaMenu.Back()\"><text className=\"top-back-label\">").Append(view.T("BACK")).Append("</text></button>");
+            // scrollScope (e.g. the settings section) forces a fresh scroll element
+            // per sub-page, so switching tabs resets the scroll offset instead of
+            // carrying it into different-height content.
             sb.Append("</view></view><scroll className=\"navigation-list\" direction=\"vertical\" data-key=\"scroll-")
-                .Append(E(kicker)).Append('-').Append(E(title)).Append("\" sensitivity=\"24\">");
+                .Append(E(kicker)).Append('-').Append(E(title));
+            if (!string.IsNullOrWhiteSpace(scrollScope))
+                sb.Append('-').Append(E(scrollScope));
+            sb.Append("\" sensitivity=\"24\">");
         }
 
         private static void Button(
@@ -396,7 +429,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             sb.Append('"');
             if (motion)
             {
-                sb.Append(" data-motion=\"slide-up\" data-motion-duration=\"0.18\" data-motion-distance=\"14\"");
+                sb.Append(" data-motion=\"slide-up\" data-motion-duration=\"").Append(MotionItemSeconds)
+                    .Append("\" data-motion-distance=\"").Append(MotionItemDistance).Append('"');
                 if (delay > 0f)
                     sb.Append(" data-motion-delay=\"").Append(delay.ToString("0.##", CultureInfo.InvariantCulture)).Append('"');
             }
@@ -420,8 +454,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             sb.Append('"');
             if (!state.ReducedMotion)
             {
-                sb.Append(" data-motion=\"slide-up\" data-motion-duration=\"0.16\" data-motion-distance=\"10\"");
-                var delay = Math.Min(index, 8) * 0.03f;
+                sb.Append(" data-motion=\"slide-up\" data-motion-duration=\"").Append(MotionItemSeconds)
+                    .Append("\" data-motion-distance=\"").Append(MotionItemDistance).Append('"');
+                var delay = Math.Min(index, MotionStaggerMaxSteps) * MotionStaggerStepSeconds;
                 if (delay > 0f)
                     sb.Append(" data-motion-delay=\"").Append(delay.ToString("0.##", CultureInfo.InvariantCulture)).Append('"');
             }
