@@ -6,7 +6,6 @@ using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
-using Kruty1918.Moyva.Generator.API;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;

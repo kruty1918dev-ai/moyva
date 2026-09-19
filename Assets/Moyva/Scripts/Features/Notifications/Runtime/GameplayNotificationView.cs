@@ -110,7 +110,7 @@ namespace Kruty1918.Moyva.Notifications.Runtime
 
             _messageText = textObject.GetComponent<TMP_Text>();
             _messageText.alignment = TextAlignmentOptions.Center;
-            _messageText.enableWordWrapping = true;
+            _messageText.textWrappingMode = TextWrappingModes.Normal;
             _messageText.overflowMode = TextOverflowModes.Ellipsis;
             _messageText.fontSize = 32f;
             _messageText.fontStyle = FontStyles.Bold;

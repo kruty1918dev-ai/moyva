@@ -273,8 +273,14 @@ namespace Kruty1918.Moyva.Tests.HomeMenu.PlayMode
                 return;
             }
 
-            UnityEngine.InputSystem.InputSystem.QueueDeltaStateEvent(keyboard.escapeKey, 1f);
-            UnityEngine.InputSystem.InputSystem.QueueDeltaStateEvent(keyboard.escapeKey, 0f);
+            // Bitfield key controls reject delta state events; send a full
+            // keyboard state snapshot instead so real devices accept it too.
+            UnityEngine.InputSystem.InputSystem.QueueStateEvent(
+                keyboard,
+                new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.Escape));
+            UnityEngine.InputSystem.InputSystem.QueueStateEvent(
+                keyboard,
+                new UnityEngine.InputSystem.LowLevel.KeyboardState());
         }
 
         private void AssertCurrentRoute(string expected)

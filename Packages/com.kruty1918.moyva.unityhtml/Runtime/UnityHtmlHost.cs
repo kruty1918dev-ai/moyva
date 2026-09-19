@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
 using ReactUnity;
 using ReactUnity.Helpers;
 using ReactUnity.Scheduling;
@@ -83,7 +84,9 @@ namespace UnityHTML.Runtime
             {
                 Unmount();
                 ClearDetachedEditorElements();
-                return UnityHtmlMountResult.Failure($"{document.SourceName}: {exception.GetBaseException().Message}");
+                var baseException = exception.GetBaseException();
+                return UnityHtmlMountResult.Failure(
+                    $"{document.SourceName}: {baseException.Message}\n{baseException.StackTrace}");
             }
         }
 
@@ -160,7 +163,9 @@ namespace UnityHTML.Runtime
             {
                 Unmount();
                 ClearDetachedEditorElements();
-                return UnityHtmlMountResult.Failure($"{document.SourceName}: {exception.GetBaseException().Message}");
+                var baseException = exception.GetBaseException();
+                return UnityHtmlMountResult.Failure(
+                    $"{document.SourceName}: {baseException.Message}\n{baseException.StackTrace}");
             }
         }
 
@@ -209,7 +214,9 @@ namespace UnityHTML.Runtime
 
         private static List<RenderedScrollPosition> CaptureRenderedScrollPositions(RectTransform root)
         {
-            if (root == null)
+            // ScrollRect caches its content/bounds in Awake/OnEnable, which never
+            // run for edit-mode mounts; normalizedPosition throws there.
+            if (root == null || !Application.isPlaying)
                 return null;
 
             var scrollRects = root.GetComponentsInChildren<ScrollRect>(true);
@@ -376,7 +383,52 @@ namespace UnityHTML.Runtime
 
             if (!UGUIContext.ComponentCreators.ContainsKey("select"))
                 UGUIContext.ComponentCreators["select"] = (_, _, context) => new UnityHtmlSelectComponent(context);
+
+#if UNITY_EDITOR
+            PatchEditorScrollResizerCreator();
+#endif
         }
+
+#if UNITY_EDITOR
+        // ScrollContentResizer caches its RectTransform in OnEnable, which Unity
+        // never invokes for components created outside play mode (the script has
+        // no ExecuteAlways). Setting the scroll 'direction' property then throws
+        // inside RecalculateSize. Initialize the field after creation so edit-mode
+        // preview mounts behave like play mode.
+        private static void PatchEditorScrollResizerCreator()
+        {
+            if (!UGUIContext.ComponentCreators.TryGetValue("scroll", out var creator))
+                return;
+            if (creator.Method?.DeclaringType == typeof(UnityHtmlHost))
+                return;
+
+            UGUIContext.ComponentCreators["scroll"] = (tag, text, context) =>
+            {
+                var component = creator(tag, text, context);
+                if (!Application.isPlaying)
+                    InitializeEditorScrollResizers(component);
+                return component;
+            };
+        }
+
+        private static void InitializeEditorScrollResizers(IReactComponent component)
+        {
+            if (component is not UGUIComponent ugui || ugui.GameObject == null)
+                return;
+
+            var field = typeof(ScrollContentResizer)
+                .GetField("rt", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (field == null)
+                return;
+
+            foreach (var resizer in ugui.GameObject
+                .GetComponentsInChildren<ScrollContentResizer>(true))
+            {
+                if (resizer != null && field.GetValue(resizer) == null)
+                    field.SetValue(resizer, resizer.GetComponent<RectTransform>());
+            }
+        }
+#endif
 
         private static void ConfigureRenderedInputs(RectTransform root)
         {

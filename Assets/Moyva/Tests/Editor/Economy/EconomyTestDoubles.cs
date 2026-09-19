@@ -10,6 +10,9 @@ using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
 
+// Test doubles declare interface events they never raise.
+#pragma warning disable CS0067
+
 namespace Kruty1918.Moyva.Tests.Economy
 {
     internal sealed class FakeUnitService : IUnitService

@@ -8,10 +8,6 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
     [AddComponentMenu("Moyva/Map Chunks/Map Chunk Scene Settings")]
     public sealed class MapChunkSceneSettings : MonoBehaviour, IMapChunkSettingsProvider
     {
-        [Header("Chunk Layout")]
-        [Tooltip("Розмір чанка у grid-тайлах: 16 означає 16x16 тайлів. Якщо розмір карти не кратний chunkSize, +X/+Z край автоматично обрізається до останнього повного чанка.")]
-        [SerializeField, Min(1)] private int chunkSize = 16;
-
         [Header("Camera Culling")]
         [SerializeField] private bool enableCameraCulling = true;
         [SerializeField, Min(0.02f)] private float cameraCullingIntervalSeconds = 0.08f;
@@ -37,11 +33,6 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         [SerializeField, Min(0.1f)] private float visualPartitionDurationSeconds = 2f;
         [SerializeField] private LayerMask visualDiscoveryLayerMask = ~0;
         [SerializeField] private string[] ignoredRendererNameTokens = { "Fog", "Canvas", "UI", "Camera", "Light" };
-
-        private void OnValidate()
-        {
-            chunkSize = MapChunkSizePolicy.ChunkSize;
-        }
 
         public int ChunkSize => MapChunkSizePolicy.ChunkSize;
         public bool EnableCameraCulling => enableCameraCulling;
