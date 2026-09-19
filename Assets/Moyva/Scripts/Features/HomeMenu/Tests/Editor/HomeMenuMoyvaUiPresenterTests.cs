@@ -11,18 +11,21 @@ using UnityHTML.Runtime;
 namespace Kruty1918.Moyva.Tests.HomeMenu
 {
     /// <summary>
-    /// Regression coverage for the empty-panel bug: a deferred route swap that
-    /// lands on the regional-update path must resync the rendered-route cache
-    /// and replay the enter motion. Otherwise a finished exit fade leaves the
-    /// navigation region at alpha 0 and every later same-route change re-arms
-    /// the exit fade, so the panel can stay invisible while mounted.
+    /// Regression coverage for the empty-panel bug and the dead Controls tab.
+    /// A deferred route swap must resync the rendered-route cache and replay the
+    /// enter motion — otherwise a finished exit fade leaves the navigation region
+    /// at alpha 0 (blank panel) and a stale route cache re-arms the exit fade on
+    /// every later same-route change such as settings tab switches. Switching
+    /// into Controls additionally changes the shell root class (controls-page),
+    /// which a regional update cannot retarget, so it must take the full document
+    /// mount for the scoped CSS to apply.
     /// </summary>
     public sealed class HomeMenuMoyvaUiPresenterTests
     {
         private const string NavRegion = HomeMenuMoyvaUiMarkup.NavRegionId;
 
         [UnityTest]
-        public IEnumerator DeferredRouteSwap_PlaysEnterMotionAndResyncsRenderedRoute()
+        public IEnumerator DeferredRouteSwap_ResyncsRenderedRoute_AndControlsTabMounts()
         {
             var state = new HomeMenuMoyvaUiState();
             var view = new HomeMenuMoyvaUiViewController(state);
@@ -82,15 +85,40 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
                 yield return null;
                 ClearStateChangeFrame(presenter);
                 presenter.Tick();
+
+                Assert.AreEqual(1, CountPlays(host, "fade-out"),
+                    "A same-route section switch must not trigger another route exit fade.");
+                Assert.AreEqual(2, host.MountCalls, "Same-route section switch must not remount.");
+                Assert.AreEqual(1, host.UpdateRegionsCalls,
+                    "Same-route section switch should reuse the regional update path.");
+
+                // Controls is the only section that also changes the shell root
+                // class (controls-page). The regional path cannot retarget the
+                // root element, so this switch must take the full mount path.
+                state.SetSettingsSection(HomeMenuSettingsSection.Controls);
                 yield return null;
                 ClearStateChangeFrame(presenter);
                 presenter.Tick();
 
                 Assert.AreEqual(1, CountPlays(host, "fade-out"),
-                    "A same-route section switch must not trigger another route exit fade.");
-                Assert.AreEqual(2, host.MountCalls, "Section switch should stay on the regional update path.");
-                Assert.GreaterOrEqual(host.UpdateRegionsCalls, 1,
-                    "A same-route section switch should use the regional update path.");
+                    "Selecting Controls must not re-arm the route exit fade.");
+                Assert.AreEqual(3, host.MountCalls,
+                    "Entering Controls must mount the document so the controls-page root class applies.");
+                Assert.IsTrue(host.LastHtml.Contains("controls-page"),
+                    "Mounted Controls document must carry the controls-page root class.");
+                Assert.IsTrue(host.LastHtml.Contains("keyboard-board"),
+                    "Mounted Controls document must contain the controls workspace markup.");
+
+                // Leaving Controls restores the base settings root class.
+                state.SetSettingsSection(HomeMenuSettingsSection.General);
+                yield return null;
+                ClearStateChangeFrame(presenter);
+                presenter.Tick();
+
+                Assert.AreEqual(4, host.MountCalls,
+                    "Leaving Controls must remount to drop the controls-page root class.");
+                Assert.IsFalse(host.LastHtml.Contains("controls-page"),
+                    "Leaving Controls must drop the controls-page root class.");
             }
             finally
             {
@@ -148,6 +176,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             private readonly RecordingMotion _motion;
             public int MountCalls;
             public int UpdateRegionsCalls;
+            public string LastHtml = string.Empty;
 
             public RecordingHost() => _motion = new RecordingMotion(MotionLog);
             public IUnityHtmlMotion Motion => _motion;
@@ -158,6 +187,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
                 IReadOnlyDictionary<string, object> globals = null)
             {
                 MountCalls++;
+                LastHtml = document.Html ?? string.Empty;
                 return UnityHtmlMountResult.Success();
             }
 
@@ -169,6 +199,8 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
                 IReadOnlyDictionary<string, object> globals = null)
             {
                 UpdateRegionsCalls++;
+                if (regions != null && regions.TryGetValue(NavRegion, out var nav))
+                    LastHtml = nav ?? string.Empty;
                 return true;
             }
 
