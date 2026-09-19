@@ -14,19 +14,25 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     {
         private const int FormatVersionWithFixedVisionAreas = -2;
         private const int FormatVersionWithOwnerSnapshots = -3;
+        private const int FormatVersionWithIntel = -4;
 
         private readonly IFogExplorationSnapshotStore _fogSnapshotStore;
         private readonly IFogOwnerExplorationSnapshotStore _ownerSnapshotStore;
         private readonly FogOfWarService _runtimeFogOfWarService;
+        private readonly IFogIntelSnapshotStore _intelStore;
         /// <summary>
         /// Створює save module для поточного gameplay fog service.
         /// </summary>
         /// <param name="fogOfWarService">Fog service, з якого читається і в який завантажується save state.</param>
-        public FogOfWarSaveModule(IFogExplorationSnapshotStore fogSnapshotStore)
+        /// <param name="intelStore">Per-owner remembered-entity intel store.</param>
+        public FogOfWarSaveModule(
+            IFogExplorationSnapshotStore fogSnapshotStore,
+            [Zenject.InjectOptional] IFogIntelSnapshotStore intelStore = null)
         {
             _fogSnapshotStore = fogSnapshotStore;
             _ownerSnapshotStore = fogSnapshotStore as IFogOwnerExplorationSnapshotStore;
             _runtimeFogOfWarService = fogSnapshotStore as FogOfWarService;
+            _intelStore = intelStore;
         }
 
         /// <summary>
@@ -35,7 +41,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// <param name="context">Поточний save context з writer-ом.</param>
         public void OnSave(ISaveContext context)
         {
-            context.Writer.Write(FormatVersionWithOwnerSnapshots);
+            context.Writer.Write(FormatVersionWithIntel);
 
             bool[,] snapshot = _fogSnapshotStore.GetExploredSnapshot();
             if (snapshot == null)
@@ -44,6 +50,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 context.Writer.Write(0);
                 WriteFixedVisionAreas(context);
                 WriteOwnerSnapshots(context);
+                WriteIntelSnapshots(context);
                 return;
             }
 
@@ -59,6 +66,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             WriteFixedVisionAreas(context);
             WriteOwnerSnapshots(context);
+            WriteIntelSnapshots(context);
         }
 
         /// <summary>
@@ -100,7 +108,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private void ReadVersioned(ISaveContext context, int version)
         {
             if (version != FormatVersionWithFixedVisionAreas
-                && version != FormatVersionWithOwnerSnapshots)
+                && version != FormatVersionWithOwnerSnapshots
+                && version != FormatVersionWithIntel)
             {
                 return;
             }
@@ -114,8 +123,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             int fixedAreaCount = context.Reader.ReadInt32();
             if (fixedAreaCount <= 0)
             {
-                if (version == FormatVersionWithOwnerSnapshots)
-                    ReadOwnerSnapshots(context);
+                ReadVersionedTail(context, version);
                 return;
             }
 
@@ -135,25 +143,29 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 areas[validCount++] = new FogFixedVisionAreaSnapshot(areaId, new Vector2Int(x, y), visionRange, shape);
             }
 
-            if (_runtimeFogOfWarService == null || validCount == 0)
+            if (_runtimeFogOfWarService != null && validCount != 0)
             {
-                if (version == FormatVersionWithOwnerSnapshots)
-                    ReadOwnerSnapshots(context);
-                return;
+                if (validCount != areas.Length)
+                {
+                    var compacted = new FogFixedVisionAreaSnapshot[validCount];
+                    for (int index = 0; index < validCount; index++)
+                        compacted[index] = areas[index];
+
+                    areas = compacted;
+                }
+
+                _runtimeFogOfWarService.LoadFixedVisionAreasSnapshot(areas);
             }
 
-            if (validCount != areas.Length)
-            {
-                var compacted = new FogFixedVisionAreaSnapshot[validCount];
-                for (int index = 0; index < validCount; index++)
-                    compacted[index] = areas[index];
+            ReadVersionedTail(context, version);
+        }
 
-                areas = compacted;
-            }
-
-            _runtimeFogOfWarService.LoadFixedVisionAreasSnapshot(areas);
-            if (version == FormatVersionWithOwnerSnapshots)
+        private void ReadVersionedTail(ISaveContext context, int version)
+        {
+            if (version <= FormatVersionWithOwnerSnapshots)
                 ReadOwnerSnapshots(context);
+            if (version <= FormatVersionWithIntel)
+                ReadIntelSnapshots(context);
         }
 
         private void WriteOwnerSnapshots(ISaveContext context)
@@ -212,6 +224,141 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         snapshot[x, y] = context.Reader.ReadBoolean();
 
                 _ownerSnapshotStore.LoadFromSnapshot(ownerId, snapshot);
+            }
+        }
+
+        private void WriteIntelSnapshots(ISaveContext context)
+        {
+            if (_intelStore == null)
+            {
+                context.Writer.Write(0);
+                return;
+            }
+
+            var owners = _intelStore.GetIntelOwnerIds();
+            var payloads =
+                new System.Collections.Generic.List<(string OwnerId, FogIntelSnapshot Snapshot)>();
+            if (owners != null)
+            {
+                foreach (string ownerId in owners)
+                {
+                    if (string.IsNullOrWhiteSpace(ownerId))
+                        continue;
+                    payloads.Add((ownerId.Trim(), _intelStore.CaptureSnapshot(ownerId)));
+                }
+            }
+
+            context.Writer.Write(payloads.Count);
+            for (int index = 0; index < payloads.Count; index++)
+            {
+                var payload = payloads[index];
+                context.Writer.Write(payload.OwnerId);
+                FogIntelSnapshot snapshot = payload.Snapshot;
+
+                int unitCount = snapshot?.Units?.Count ?? 0;
+                context.Writer.Write(unitCount);
+                for (int u = 0; u < unitCount; u++)
+                {
+                    FogIntelUnitRecord record = snapshot.Units[u];
+                    context.Writer.Write(record.UnitId ?? string.Empty);
+                    context.Writer.Write(record.TypeId ?? string.Empty);
+                    context.Writer.Write(record.OwnerId ?? string.Empty);
+                    context.Writer.Write(record.LastKnownPosition.x);
+                    context.Writer.Write(record.LastKnownPosition.y);
+                    context.Writer.Write(record.LastSeenSequence);
+                }
+
+                int buildingCount = snapshot?.Buildings?.Count ?? 0;
+                context.Writer.Write(buildingCount);
+                for (int b = 0; b < buildingCount; b++)
+                {
+                    FogIntelBuildingRecord record = snapshot.Buildings[b];
+                    context.Writer.Write(record.BuildingId ?? string.Empty);
+                    context.Writer.Write(record.OwnerId ?? string.Empty);
+                    context.Writer.Write(record.Position.x);
+                    context.Writer.Write(record.Position.y);
+                    context.Writer.Write(record.RotationQuarterTurns);
+                    context.Writer.Write(record.LastSeenSequence);
+                }
+            }
+        }
+
+        private void ReadIntelSnapshots(ISaveContext context)
+        {
+            int count = context.Reader.ReadInt32();
+            if (count <= 0 || _intelStore == null)
+            {
+                for (int index = 0; index < count; index++)
+                    SkipIntelSnapshot(context);
+                return;
+            }
+
+            for (int index = 0; index < count; index++)
+            {
+                string ownerId = context.Reader.ReadString();
+                var snapshot = new FogIntelSnapshot();
+
+                int unitCount = context.Reader.ReadInt32();
+                for (int u = 0; u < unitCount; u++)
+                {
+                    var record = new FogIntelUnitRecord
+                    {
+                        UnitId = context.Reader.ReadString(),
+                        TypeId = context.Reader.ReadString(),
+                        OwnerId = context.Reader.ReadString(),
+                        LastKnownPosition = new Vector2Int(
+                            context.Reader.ReadInt32(),
+                            context.Reader.ReadInt32()),
+                        LastSeenSequence = context.Reader.ReadInt64(),
+                    };
+                    if (!string.IsNullOrWhiteSpace(record.UnitId))
+                        snapshot.Units.Add(record);
+                }
+
+                int buildingCount = context.Reader.ReadInt32();
+                for (int b = 0; b < buildingCount; b++)
+                {
+                    var record = new FogIntelBuildingRecord
+                    {
+                        BuildingId = context.Reader.ReadString(),
+                        OwnerId = context.Reader.ReadString(),
+                        Position = new Vector2Int(
+                            context.Reader.ReadInt32(),
+                            context.Reader.ReadInt32()),
+                        RotationQuarterTurns = context.Reader.ReadInt32(),
+                        LastSeenSequence = context.Reader.ReadInt64(),
+                    };
+                    snapshot.Buildings.Add(record);
+                }
+
+                if (!string.IsNullOrWhiteSpace(ownerId))
+                    _intelStore.LoadSnapshot(ownerId.Trim(), snapshot);
+            }
+        }
+
+        private static void SkipIntelSnapshot(ISaveContext context)
+        {
+            context.Reader.ReadString();
+            int unitCount = context.Reader.ReadInt32();
+            for (int u = 0; u < unitCount; u++)
+            {
+                context.Reader.ReadString();
+                context.Reader.ReadString();
+                context.Reader.ReadString();
+                context.Reader.ReadInt32();
+                context.Reader.ReadInt32();
+                context.Reader.ReadInt64();
+            }
+
+            int buildingCount = context.Reader.ReadInt32();
+            for (int b = 0; b < buildingCount; b++)
+            {
+                context.Reader.ReadString();
+                context.Reader.ReadString();
+                context.Reader.ReadInt32();
+                context.Reader.ReadInt32();
+                context.Reader.ReadInt32();
+                context.Reader.ReadInt64();
             }
         }
 

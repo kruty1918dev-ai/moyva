@@ -66,6 +66,10 @@ namespace Kruty1918.Moyva.Construction.API
         ConstructionResourceProjection GetResourceProjection(
             Vector2Int position);
 
+        /// <summary>Construction resource costs of a single building type.</summary>
+        IReadOnlyDictionary<string, float> GetBuildingResourceCosts(
+            string buildingId);
+
         void Confirm();
         void Cancel();
         void UndoLast();

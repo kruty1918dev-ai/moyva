@@ -1,6 +1,5 @@
 using UnityEngine;
 using Zenject;
-using Kruty1918.Moyva.Signals.DomainEvents;
 
 namespace Kruty1918.Moyva.Signals
 {
@@ -11,8 +10,7 @@ namespace Kruty1918.Moyva.Signals
             Zenject.SignalBusInstaller.Install(Container);
 
             DeclareLegacySignals();
-            DeclareDomainEventSignals();
-            BindDomainEventBridge();
+            BindWorldGenerationSignalState();
         }
 
         private void DeclareLegacySignals()
@@ -51,6 +49,11 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<ShowWallHandlesSignal>();
             Container.DeclareSignal<PlaceBuildingConfirmRequestSignal>().OptionalSubscriber();
             Container.DeclareSignal<MoveUnitRequestSignal>().OptionalSubscriber();
+            Container.DeclareSignal<MoveGroupRequestSignal>().OptionalSubscriber();
+            Container.DeclareSignal<UnitMoveRejectedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<UnitGroupChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<UnitGroupCommandRejectedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<UnitRecruitmentCommandRejectedSignal>().OptionalSubscriber();
 
             // Unit recruitment
             Container.DeclareSignal<UnitRecruitmentQueueChangedSignal>().OptionalSubscriber();
@@ -73,6 +76,8 @@ namespace Kruty1918.Moyva.Signals
 
             // Economy
             Container.DeclareSignal<CaravanDeliveryCompletedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<ConstructionSupplyReadySignal>().OptionalSubscriber();
+            Container.DeclareSignal<ConstructionSupplyOrderClosedSignal>().OptionalSubscriber();
             Container.DeclareSignal<SettlementPopulationChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<EconomyTickCompletedSignal>().OptionalSubscriber();
             Container.DeclareSignal<SettlementCreatedSignal>().OptionalSubscriber();
@@ -100,29 +105,8 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<WorldCreationCancelledSignal>().OptionalSubscriber();
         }
 
-        private void DeclareDomainEventSignals()
+        private void BindWorldGenerationSignalState()
         {
-            // Domain events layer (gameplay state transitions)
-            Container.DeclareSignal<UnitCreatedDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<UnitMovedDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<UnitDestroyedDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<WorldBuiltDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<GameModeChangedDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<BuildingPlacedDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<BuildingDemolishedDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<EconomyTickCompletedDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<SettlementCreatedDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<SettlementDeactivatedDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<SettlementResourceChangedDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<ResourceDeficitDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<GameStartedDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<GameEndedDomainEvent>().OptionalSubscriber();
-            Container.DeclareSignal<GamePausedDomainEvent>().OptionalSubscriber();
-        }
-
-        private void BindDomainEventBridge()
-        {
-            Container.BindInterfacesAndSelfTo<SignalDomainEventBridge>().AsSingle().NonLazy();
             Container.Bind<IWorldGenerationSignalState>().To<WorldGenerationSignalState>().AsSingle();
         }
     }

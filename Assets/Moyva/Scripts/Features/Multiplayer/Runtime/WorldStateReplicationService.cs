@@ -30,7 +30,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// </summary>
     internal sealed class WorldStateReplicationService : IInitializable, ITickable, IDisposable
     {
-        private const byte SchemaVersion = 4;
+        private const byte SchemaVersion = 5;
         private const int MaxStatePayloadBytes =
             16 * 1024 * 1024;
         private const int MaxUnitSnapshotCount = 100000;
@@ -81,6 +81,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private readonly IConstructionSessionCommands _constructionSession;
         private readonly EconomyManager _economyManager;
         private readonly IFogOwnerStateReader _ownerFog;
+        private readonly IFogIntelReader _intelReader;
+        private readonly IFogIntelReplicationSink _intelSink;
+        private readonly IFogOwnerExplorationSnapshotStore _ownerSnapshots;
         private readonly IUnitService _unitService;
         private readonly IUnitFactory _unitFactory;
         private readonly IUnitOwnershipQuery _unitOwnership;
@@ -101,6 +104,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             IConstructionSessionCommands constructionSession,
             [InjectOptional] EconomyManager economyManager = null,
             [InjectOptional] IFogOwnerStateReader ownerFog = null,
+            [InjectOptional] IFogIntelReader intelReader = null,
+            [InjectOptional] IFogIntelReplicationSink intelSink = null,
+            [InjectOptional] IFogOwnerExplorationSnapshotStore ownerSnapshots = null,
             [InjectOptional] IUnitService unitService = null,
             [InjectOptional] IUnitFactory unitFactory = null,
             [InjectOptional] IUnitOwnershipQuery unitOwnership = null,
@@ -118,6 +124,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _constructionSession = constructionSession;
             _economyManager = economyManager;
             _ownerFog = ownerFog;
+            _intelReader = intelReader;
+            _intelSink = intelSink;
+            _ownerSnapshots = ownerSnapshots;
             _unitService = unitService;
             _unitFactory = unitFactory;
             _unitOwnership = unitOwnership;
@@ -309,7 +318,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var visiblePositions = new HashSet<Vector2Int>();
             foreach (var building in visibleBuildings) visiblePositions.Add(building.Position);
             WriteConstructionModuleStates(writer, targetOwnerId, visiblePositions);
-            WriteUnitSnapshots(writer, targetOwnerId);
+            List<UnitSnapshotRecord> visibleUnits =
+                WriteUnitSnapshots(writer, targetOwnerId);
 
             // Economy
             Dictionary<string, Dictionary<string, float>> pools =
@@ -332,18 +342,131 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 }
             }
 
+            // Schema v5: last-known intel + explored-bitmap for the receiving
+            // owner. Everything below is filtered through the same per-owner
+            // legitimacy rules — only remembered state is shipped.
+            WriteIntelSection(writer, targetOwnerId, visibleUnits);
+            WriteExploredSection(writer, targetOwnerId);
+
             writer.Flush();
             return stream.ToArray();
         }
 
-        private void WriteUnitSnapshots(
+        private void WriteIntelSection(
+            BinaryWriter writer,
+            string targetOwnerId,
+            List<UnitSnapshotRecord> visibleUnits)
+        {
+            IReadOnlyCollection<FogIntelUnitRecord> rememberedUnits =
+                _intelReader?.GetRememberedUnits(targetOwnerId);
+            IReadOnlyCollection<FogIntelBuildingRecord> rememberedBuildings =
+                _intelReader?.GetRememberedBuildings(targetOwnerId);
+
+            var liveUnitIds = new HashSet<string>(StringComparer.Ordinal);
+            if (visibleUnits != null)
+            {
+                for (int index = 0; index < visibleUnits.Count; index++)
+                    liveUnitIds.Add(visibleUnits[index].UnitId);
+            }
+
+            var intelUnits = new List<FogIntelUnitRecord>();
+            if (rememberedUnits != null)
+            {
+                foreach (FogIntelUnitRecord record in rememberedUnits)
+                {
+                    // Units shipped as live entities need no separate memory.
+                    if (record != null
+                        && !string.IsNullOrWhiteSpace(record.UnitId)
+                        && !liveUnitIds.Contains(record.UnitId))
+                    {
+                        intelUnits.Add(record);
+                    }
+                }
+            }
+
+            var intelBuildings = new List<FogIntelBuildingRecord>();
+            if (rememberedBuildings != null)
+            {
+                foreach (FogIntelBuildingRecord record in rememberedBuildings)
+                {
+                    if (record == null)
+                        continue;
+                    // A remembered building whose cell is currently visible is
+                    // authoritative truth — it already shipped as a placement.
+                    if (_ownerFog != null
+                        && _ownerFog.IsVisible(targetOwnerId, record.Position))
+                    {
+                        continue;
+                    }
+                    intelBuildings.Add(record);
+                }
+            }
+
+            writer.Write(intelUnits.Count);
+            foreach (FogIntelUnitRecord record in intelUnits)
+            {
+                writer.Write(record.UnitId ?? string.Empty);
+                writer.Write(record.TypeId ?? string.Empty);
+                writer.Write(record.OwnerId ?? string.Empty);
+                writer.Write(record.LastKnownPosition.x);
+                writer.Write(record.LastKnownPosition.y);
+                writer.Write(record.LastSeenSequence);
+            }
+
+            writer.Write(intelBuildings.Count);
+            foreach (FogIntelBuildingRecord record in intelBuildings)
+            {
+                writer.Write(record.BuildingId ?? string.Empty);
+                writer.Write(record.OwnerId ?? string.Empty);
+                writer.Write(record.Position.x);
+                writer.Write(record.Position.y);
+                writer.Write(record.RotationQuarterTurns);
+                writer.Write(record.LastSeenSequence);
+            }
+        }
+
+        private void WriteExploredSection(
+            BinaryWriter writer,
+            string targetOwnerId)
+        {
+            bool[,] explored =
+                _ownerSnapshots?.GetExploredSnapshot(targetOwnerId);
+            if (explored == null)
+            {
+                writer.Write(0);
+                writer.Write(0);
+                writer.Write(0);
+                return;
+            }
+
+            int width = explored.GetLength(0);
+            int height = explored.GetLength(1);
+            int byteCount = (width * height + 7) / 8;
+            var packed = new byte[byteCount];
+            int bitIndex = 0;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++, bitIndex++)
+                {
+                    if (explored[x, y])
+                        packed[bitIndex >> 3] |= (byte)(1 << (bitIndex & 7));
+                }
+            }
+
+            writer.Write(width);
+            writer.Write(height);
+            writer.Write(packed.Length);
+            writer.Write(packed);
+        }
+
+        private List<UnitSnapshotRecord> WriteUnitSnapshots(
             BinaryWriter writer,
             string targetOwnerId)
         {
             if (_unitService == null)
             {
                 writer.Write(0);
-                return;
+                return new List<UnitSnapshotRecord>(0);
             }
 
             IReadOnlyCollection<string> unitIds =
@@ -351,7 +474,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             if (unitIds == null || unitIds.Count == 0)
             {
                 writer.Write(0);
-                return;
+                return new List<UnitSnapshotRecord>(0);
             }
 
             string ownerId = NormalizeOwnerId(targetOwnerId);
@@ -410,6 +533,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 writer.Write(unit.Stamina);
                 writer.Write(unit.CurrentHp);
             }
+
+            return visibleUnits;
         }
 
         private bool CanIncludeUnitForOwner(
@@ -417,8 +542,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             string unitOwnerId,
             Vector2Int position)
         {
+            // Fail closed: an unresolved receiving owner means we cannot prove
+            // legitimacy — ship no unit state at all.
             if (string.IsNullOrWhiteSpace(targetOwnerId))
-                return true;
+                return false;
 
             if (!string.IsNullOrWhiteSpace(unitOwnerId)
                 && string.Equals(
@@ -433,6 +560,86 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                    && _ownerFog.IsVisible(
                        targetOwnerId,
                        position);
+        }
+
+        private void ReadIntelSection(
+            BinaryReader reader,
+            string localOwnerId)
+        {
+            int unitCount = Math.Max(0, reader.ReadInt32());
+            if (unitCount > MaxUnitSnapshotCount)
+                throw new InvalidDataException(
+                    $"Invalid intel unit count {unitCount}.");
+
+            for (int index = 0; index < unitCount; index++)
+            {
+                var record = new FogIntelUnitRecord
+                {
+                    UnitId = reader.ReadString(),
+                    TypeId = reader.ReadString(),
+                    OwnerId = reader.ReadString(),
+                    LastKnownPosition = new Vector2Int(
+                        reader.ReadInt32(),
+                        reader.ReadInt32()),
+                    LastSeenSequence = reader.ReadInt64(),
+                };
+                if (!string.IsNullOrWhiteSpace(record.UnitId))
+                    _intelSink?.ApplyReplicatedUnit(localOwnerId, record);
+            }
+
+            int buildingCount = Math.Max(0, reader.ReadInt32());
+            if (buildingCount > MaxStatePayloadBytes / 16)
+                throw new InvalidDataException(
+                    $"Invalid intel building count {buildingCount}.");
+
+            for (int index = 0; index < buildingCount; index++)
+            {
+                var record = new FogIntelBuildingRecord
+                {
+                    BuildingId = reader.ReadString(),
+                    OwnerId = reader.ReadString(),
+                    Position = new Vector2Int(
+                        reader.ReadInt32(),
+                        reader.ReadInt32()),
+                    RotationQuarterTurns = reader.ReadInt32(),
+                    LastSeenSequence = reader.ReadInt64(),
+                };
+                _intelSink?.ApplyReplicatedBuilding(localOwnerId, record);
+            }
+        }
+
+        private void ReadExploredSection(
+            BinaryReader reader,
+            string localOwnerId)
+        {
+            int width = Math.Max(0, reader.ReadInt32());
+            int height = Math.Max(0, reader.ReadInt32());
+            int byteCount = Math.Max(0, reader.ReadInt32());
+            if (width == 0 || height == 0 || byteCount == 0)
+                return;
+            if (width > 4096 || height > 4096
+                || byteCount != (width * height + 7) / 8)
+            {
+                throw new InvalidDataException(
+                    $"Invalid explored bitmap {width}x{height} ({byteCount} bytes).");
+            }
+
+            byte[] packed = reader.ReadBytes(byteCount);
+            if (packed.Length != byteCount)
+                throw new EndOfStreamException("Explored bitmap truncated.");
+
+            var explored = new bool[width, height];
+            int bitIndex = 0;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++, bitIndex++)
+                {
+                    explored[x, y] =
+                        (packed[bitIndex >> 3] & (1 << (bitIndex & 7))) != 0;
+                }
+            }
+
+            _ownerSnapshots?.LoadFromSnapshot(localOwnerId, explored);
         }
 
         private string ResolvePeerOwnerId(
@@ -518,17 +725,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             string ownerId = NormalizeOwnerId(targetOwnerId);
             if (string.IsNullOrWhiteSpace(ownerId))
             {
-                foreach (var pair in pools)
-                {
-                    if (pair.Value != null && pair.Value.Count > 0)
-                    {
-                        result[NormalizeOwnerId(pair.Key)] =
-                            new Dictionary<string, float>(
-                                pair.Value,
-                                StringComparer.Ordinal);
-                    }
-                }
-
+                // Fail closed: an unresolved receiving owner gets no economy
+                // data — broadcasting every player's pool leaks hidden info.
                 return result;
             }
 
@@ -884,6 +1082,19 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
 
             _economyManager?.RestoreOwnerResourcePools(restored);
+
+            if (version >= 5 && stream.Position < stream.Length)
+            {
+                string localOwnerId =
+                    string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId)
+                        ? string.Empty
+                        : _sessionManager.LocalPlayerId.Trim();
+                if (!string.IsNullOrWhiteSpace(localOwnerId))
+                {
+                    ReadIntelSection(reader, localOwnerId);
+                    ReadExploredSection(reader, localOwnerId);
+                }
+            }
         }
 
         private void ReadUnitSnapshots(

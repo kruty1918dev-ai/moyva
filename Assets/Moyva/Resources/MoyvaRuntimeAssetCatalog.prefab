@@ -481,6 +481,20 @@ MonoBehaviour:
     Asset: {fileID: 8675221335883316037, guid: 22f390a138009184aabdcb6016b86f6f, type: 3}
   - Key: asset.game-object.palm-tree-stump-object-001.dc40df1c
     Asset: {fileID: 3736118700552317784, guid: dc40df1cefde25f47b8c8a6d8ca15b0d, type: 3}
+  - Key: asset.game-object.resource-lumber.efb59c89
+    Asset: {fileID: 919132149155446097, guid: efb59c890715e994da507eec02be8012, type: 3}
+  - Key: asset.game-object.resource-stone.774c7262
+    Asset: {fileID: 919132149155446097, guid: 774c72624d7d3db419fd30cc72115046, type: 3}
+  - Key: asset.game-object.rock-single-a.ac00d45c
+    Asset: {fileID: 919132149155446097, guid: ac00d45c584c97642bfb929c43833eef, type: 3}
+  - Key: asset.game-object.rock-single-b.fd5838d3
+    Asset: {fileID: 919132149155446097, guid: fd5838d34ccc20640908e94d8a9a0cdf, type: 3}
+  - Key: asset.game-object.rock-single-c.849a20ae
+    Asset: {fileID: 919132149155446097, guid: 849a20ae5eb5cdd4387a7194ef88f544, type: 3}
+  - Key: asset.game-object.rock-single-d.b86d4e06
+    Asset: {fileID: 919132149155446097, guid: b86d4e060f43ad445a5a1d904bc5e639, type: 3}
+  - Key: asset.game-object.rock-single-e.ee27ebc1
+    Asset: {fileID: 919132149155446097, guid: ee27ebc1c48f94744ad1b89ea4a9cc69, type: 3}
   - Key: asset.game-object.sand-coast-down-left-corner-tile-001.4d212fd8
     Asset: {fileID: 5016236995402878324, guid: 4d212fd84281f6b48af0921ef8441776, type: 3}
   - Key: asset.game-object.sand-coast-down-left-tile-001.b4bbc204
@@ -757,6 +771,22 @@ MonoBehaviour:
     Asset: {fileID: 5752514224038322538, guid: 703ea30507380d53b9e66396536e548f, type: 3}
   - Key: asset.game-object.tree-pine.6a6b29fc
     Asset: {fileID: 4608864207072105692, guid: 6a6b29fc17c7903caa206b7db9c123c1, type: 3}
+  - Key: asset.game-object.tree-single-a.174ef685
+    Asset: {fileID: 919132149155446097, guid: 174ef68548ea1174a97d647c0b4ef52b, type: 3}
+  - Key: asset.game-object.tree-single-b.4ec7db67
+    Asset: {fileID: 919132149155446097, guid: 4ec7db679b433fe42ab8f66d353a117b, type: 3}
+  - Key: asset.game-object.trees-a-large.a52a501f
+    Asset: {fileID: 919132149155446097, guid: a52a501f336ddaf4498a899e60f47e21, type: 3}
+  - Key: asset.game-object.trees-a-medium.01f219b3
+    Asset: {fileID: 919132149155446097, guid: 01f219b3ae4f09b439903835ef8433a7, type: 3}
+  - Key: asset.game-object.trees-a-small.9ea9c5cf
+    Asset: {fileID: 919132149155446097, guid: 9ea9c5cf8bdbfe24995c0d32fb548f62, type: 3}
+  - Key: asset.game-object.trees-b-large.f2347796
+    Asset: {fileID: 919132149155446097, guid: f2347796c9d8876439f49f3ae51ca11f, type: 3}
+  - Key: asset.game-object.trees-b-medium.1a19cb43
+    Asset: {fileID: 919132149155446097, guid: 1a19cb43ba63ceb448a301b1b37694f3, type: 3}
+  - Key: asset.game-object.trees-b-small.d82cb8d5
+    Asset: {fileID: 919132149155446097, guid: d82cb8d5548e1d74a91fd42751d24c41, type: 3}
   - Key: asset.game-object.wall-stone-collection-0-corner-ne.9221769d
     Asset: {fileID: 2798815301503560846, guid: 9221769dcedc85a49bc9e5f189344ee2, type: 3}
   - Key: asset.game-object.wall-stone-collection-0-corner-nw.f0bc445a
@@ -1057,6 +1087,12 @@ MonoBehaviour:
     Asset: {fileID: 11400000, guid: 70f407af31fda74b78b3e1c7eacd41a4, type: 2}
   - Key: asset.tile-preset.02-dual-grid-grass-kaykit-style.05593a2d
     Asset: {fileID: 11400000, guid: 05593a2d3b3281533bb6570af5a1c1b4, type: 2}
+  - Key: asset.tile-preset.03-dual-grid-dirt-kaykit-style.a1f74cca
+    Asset: {fileID: 11400000, guid: a1f74cca071a2014f8fff9173a86fff8, type: 2}
+  - Key: asset.tile-preset.04-dual-grid-snow-kaykit-style.55a8688c
+    Asset: {fileID: 11400000, guid: 55a8688c0a8ebd22e9f324454145f473, type: 2}
+  - Key: asset.tile-preset.08-dual-grid-stone-kaykit-style.ae428398
+    Asset: {fileID: 11400000, guid: ae4283986bead68fcb639557e32bfc88, type: 2}
   - Key: asset.tile-preset.baseblockpresetblue.74d92dbb
     Asset: {fileID: 11400000, guid: 74d92dbbf6842b44cbaeb45c41d71898, type: 2}
   - Key: asset.tile-preset.baseblockpresetgreenramp.53689e49

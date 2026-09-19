@@ -67,6 +67,32 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         }
         public void BackForce() => _navigation?.CloseLastForce();
 
+        // Escape key routing: unfocus/cancel layers first, navigate back last.
+        public void HandleEscape()
+        {
+            if (_view == null)
+            {
+                _navigation?.CloseLast();
+                return;
+            }
+            if (_view.Controls.IsCapturing) { _view.Controls.CancelCapture(); return; }
+            if (_view.ConfirmationVisible) { _view.CancelModal(); return; }
+            if (_view.PasswordVisible) { _view.CancelPassword(); return; }
+            if (_view.InfoVisible) { _view.AcknowledgeInfo(); return; }
+            if (_view.OverlayVisible) return;
+            _navigation?.CloseLast();
+        }
+
+        public void OpenKickPlayers() => Open("KickPlayerPanel");
+        public void CopyInviteCode() => _view?.CopyInviteCode();
+        public void OpenPlayerSettings()
+        {
+            _state?.SetSettingsSection(HomeMenuSettingsSection.General);
+            Open(SettingsPanel);
+        }
+        public void SetReducedMotion(object value) => _view?.SetReducedMotion(ToBool(value));
+        public void ToggleReducedMotion() => _view?.SetReducedMotion(!(_view?.ReducedMotion ?? false));
+
         public void Exit()
         {
             if (_confirmationService == null)

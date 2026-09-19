@@ -288,9 +288,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     out string targetOwnerId,
                     out Vector2Int targetPosition))
             {
-                _syncService.SendCommand(
-                    GameCommandType.CombatCommand,
-                    payload.ToBytes());
+                // Fail closed: when combat scope cannot be resolved we cannot
+                // determine legitimate observers. Only the requester — whose
+                // action this confirms — receives the result.
+                SendCombatConfirmationToRequester(payload);
                 return;
             }
 
@@ -300,6 +301,44 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 attackerPosition,
                 targetOwnerId,
                 targetPosition);
+        }
+
+        private void SendCombatConfirmationToRequester(
+            CombatCommandPayload payload)
+        {
+            string requesterOwnerId =
+                NormalizeOwnerId(payload.RequesterOwnerId);
+            if (string.IsNullOrWhiteSpace(requesterOwnerId))
+                return;
+
+            // The host's own action already applied locally — only a remote
+            // requester needs the confirmation.
+            if (string.Equals(
+                    requesterOwnerId,
+                    NormalizeOwnerId(_sessionManager?.LocalPlayerId),
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var participants = _sessionManager?.Participants;
+            if (participants == null)
+                return;
+
+            for (int index = 0; index < participants.Count; index++)
+            {
+                if (string.Equals(
+                        NormalizeOwnerId(participants[index]?.Identity?.PlayerId),
+                        requesterOwnerId,
+                        StringComparison.Ordinal))
+                {
+                    _syncService.SendCommandToPeer(
+                        requesterOwnerId,
+                        GameCommandType.CombatCommand,
+                        payload.ToBytes());
+                    return;
+                }
+            }
         }
 
         private void SendCombatConfirmationToObservers(
@@ -318,9 +357,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 _sessionManager?.Participants;
             if (participants == null || participants.Count == 0)
             {
-                _syncService.SendCommand(
-                    GameCommandType.CombatCommand,
-                    combatBytes);
+                SendCombatConfirmationToRequester(payload);
                 return;
             }
 

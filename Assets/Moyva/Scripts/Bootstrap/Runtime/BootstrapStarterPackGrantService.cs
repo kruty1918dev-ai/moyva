@@ -33,9 +33,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public bool TryGrant(string settlementId, string ownerId)
         {
-            if (string.IsNullOrWhiteSpace(settlementId))
+            if (string.IsNullOrWhiteSpace(ownerId))
             {
-                Debug.LogWarning($"{StarterPackLogTag} Starter resources require a settlement target; owner-pool grants are rejected.");
+                Debug.LogWarning($"{StarterPackLogTag} Starter resources require an owner; grant skipped.");
                 return false;
             }
 
@@ -72,10 +72,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 OwnerId = ownerId,
                 Entries = payload.ToArray(),
             });
-
-            string target = string.IsNullOrWhiteSpace(settlementId)
-                ? "owner pool"
-                : $"settlement='{settlementId}'";
 
             return true;
         }

@@ -10,8 +10,8 @@
       "blueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
       "blueprintLayerName": "Water",
       "tilePreset": {
-        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "$asset": "asset.tile-preset.tilewater.dfeb07ab",
+        "editorPath": "Assets/Moyva/TileWater.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -82,8 +82,8 @@
       "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
       "blueprintLayerName": "Grass",
       "tilePreset": {
-        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "$asset": "asset.tile-preset.02-dual-grid-grass-kaykit-style.05593a2d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/02_dual_grid_grass_kaykit_style.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -100,8 +100,8 @@
       "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
       "blueprintLayerName": "Grass",
       "tilePreset": {
-        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "$asset": "asset.tile-preset.02-dual-grid-grass-kaykit-style.05593a2d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/02_dual_grid_grass_kaykit_style.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -118,8 +118,8 @@
       "blueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
       "blueprintLayerName": "Sand",
       "tilePreset": {
-        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "$asset": "asset.tile-preset.01-dual-grid-sand-kaykit-style.70f407af",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/01_dual_grid_sand_kaykit_style.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -136,8 +136,8 @@
       "blueprintLayerGuid": "4b3b8cd0-44ae-4923-aadb-bc49251bbc6b",
       "blueprintLayerName": "Snow",
       "tilePreset": {
-        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "$asset": "asset.tile-preset.04-dual-grid-snow-kaykit-style.55a8688c",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/04_dual_grid_snow_kaykit_style.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -154,8 +154,8 @@
       "blueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
       "blueprintLayerName": "Water",
       "tilePreset": {
-        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "$asset": "asset.tile-preset.tilewater.dfeb07ab",
+        "editorPath": "Assets/Moyva/TileWater.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -172,8 +172,8 @@
       "blueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
       "blueprintLayerName": "Water",
       "tilePreset": {
-        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "$asset": "asset.tile-preset.tilewater.dfeb07ab",
+        "editorPath": "Assets/Moyva/TileWater.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -190,8 +190,8 @@
       "blueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
       "blueprintLayerName": "Water",
       "tilePreset": {
-        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "$asset": "asset.tile-preset.tilewater.dfeb07ab",
+        "editorPath": "Assets/Moyva/TileWater.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -208,8 +208,8 @@
       "blueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
       "blueprintLayerName": "Sand",
       "tilePreset": {
-        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "$asset": "asset.tile-preset.01-dual-grid-sand-kaykit-style.70f407af",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/01_dual_grid_sand_kaykit_style.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -226,8 +226,8 @@
       "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
       "blueprintLayerName": "Grass",
       "tilePreset": {
-        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "$asset": "asset.tile-preset.02-dual-grid-grass-kaykit-style.05593a2d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/02_dual_grid_grass_kaykit_style.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -244,8 +244,8 @@
       "blueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
       "blueprintLayerName": "Grass",
       "tilePreset": {
-        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "$asset": "asset.tile-preset.02-dual-grid-grass-kaykit-style.05593a2d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/02_dual_grid_grass_kaykit_style.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -262,8 +262,8 @@
       "blueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
       "blueprintLayerName": "Hill",
       "tilePreset": {
-        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "$asset": "asset.tile-preset.03-dual-grid-dirt-kaykit-style.a1f74cca",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/03_dual_grid_dirt_kaykit_style.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -280,8 +280,8 @@
       "blueprintLayerGuid": "3e238af7-89df-4ad7-a35a-1869f9321613",
       "blueprintLayerName": "Mountain",
       "tilePreset": {
-        "$asset": "asset.tile-preset.baseblockpresetgreenramp.53689e49",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetGreenRamp.asset",
+        "$asset": "asset.tile-preset.08-dual-grid-stone-kaykit-style.ae428398",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/08_dual_grid_stone_kaykit_style.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -298,8 +298,8 @@
       "blueprintLayerGuid": "4b3b8cd0-44ae-4923-aadb-bc49251bbc6b",
       "blueprintLayerName": "Snow",
       "tilePreset": {
-        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "$asset": "asset.tile-preset.04-dual-grid-snow-kaykit-style.55a8688c",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/04_dual_grid_snow_kaykit_style.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -316,8 +316,8 @@
       "blueprintLayerGuid": "3c608b14-579d-43b1-bb78-04b76e1609a5",
       "blueprintLayerName": "Forest",
       "tilePreset": {
-        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "$asset": "asset.tile-preset.02-dual-grid-grass-kaykit-style.05593a2d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/02_dual_grid_grass_kaykit_style.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -334,8 +334,8 @@
       "blueprintLayerGuid": "3c608b14-579d-43b1-bb78-04b76e1609a5",
       "blueprintLayerName": "Forest",
       "tilePreset": {
-        "$asset": "asset.tile-preset.grasstobeach.ea0b1522",
-        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/GrassToBeach.asset",
+        "$asset": "asset.tile-preset.02-dual-grid-grass-kaykit-style.05593a2d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/02_dual_grid_grass_kaykit_style.asset",
         "required": true
       },
       "useDualGrid": true,
@@ -456,7 +456,36 @@
       "movementCost": 1.0
     }
   ],
-  "objectLayers": [],
+  "objectLayers": [
+    {
+      "idPattern": "resource-lumber",
+      "blueprintLayerGuid": null,
+      "blueprintLayerName": "Objects",
+      "tilePreset": null,
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.resource-lumber.efb59c89",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/props/resource_lumber.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    },
+    {
+      "idPattern": "resource-stone",
+      "blueprintLayerGuid": null,
+      "blueprintLayerName": "Objects",
+      "tilePreset": null,
+      "useDualGrid": true,
+      "scaleTileToCellSize": true,
+      "registryVisualPrefab": {
+        "$asset": "asset.game-object.resource-stone.774c7262",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/props/resource_stone.prefab",
+        "required": true
+      },
+      "movementCost": 1.0
+    }
+  ],
   "buildingLayers": [],
   "migration": {
     "sourceAssetGuid": "a45823eb63d12f8b5a4e688262ed4fca",

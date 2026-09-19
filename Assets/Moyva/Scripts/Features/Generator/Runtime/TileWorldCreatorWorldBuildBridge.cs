@@ -151,6 +151,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (options.ApplyIntegerTerrainHeights)
                 _terrainLevels.Ensure(worldData);
 
+            // Geography output already carries authored integer levels, beach
+            // bands and river cells. The legacy normaliser and shore-band
+            // expander would flatten that data, so they only run on
+            // graph-produced worlds.
+            if (worldData.HasAuthoredGeography)
+                return;
+
             if (options.NormalizeTerrainLevelsForTileWorldCreator)
             {
                 _terrainLevels.NormalizeForTileWorldCreator(worldData);

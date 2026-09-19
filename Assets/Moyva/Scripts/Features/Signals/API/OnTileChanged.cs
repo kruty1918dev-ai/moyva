@@ -104,6 +104,56 @@ namespace Kruty1918.Moyva.Signals
     }
 
     /// <summary>
+    /// Надсилається коли гравець наказує групі юнітів рухатись до тайлу.
+    /// MultiplayerAuthorityService маршрутизує так само, як MoveUnitRequestSignal.
+    /// </summary>
+    public struct MoveGroupRequestSignal
+    {
+        public string GroupId;
+        public Vector2Int TargetPosition;
+        public string RequesterOwnerId;
+    }
+
+    /// <summary>
+    /// Надсилається UnitMovementService, коли канонічний рух юніта відхилено.
+    /// UI підписується, щоб показати причину гравцю.
+    /// </summary>
+    public struct UnitMoveRejectedSignal
+    {
+        public string UnitId;
+        public Vector2Int TargetPosition;
+        public string Reason;
+    }
+
+    public enum UnitGroupChangeKind : byte
+    {
+        Formed = 0,
+        MembersChanged = 1,
+        Disbanded = 2,
+    }
+
+    /// <summary>
+    /// Надсилається IUnitGroupService після кожної зміни складу групи.
+    /// MemberUnitIds містить актуальний впорядкований склад (порожній для Disbanded).
+    /// </summary>
+    public struct UnitGroupChangedSignal
+    {
+        public string GroupId;
+        public string OwnerId;
+        public UnitGroupChangeKind Kind;
+        public string[] MemberUnitIds;
+    }
+
+    /// <summary>
+    /// Надсилається, коли команду групи відхилено авторитетною стороною
+    /// (локально або хостом у мультиплеєрі). UI показує причину гравцю.
+    /// </summary>
+    public struct UnitGroupCommandRejectedSignal
+    {
+        public string Reason;
+    }
+
+    /// <summary>
     /// Надсилається MapVisualInstantiator після спавну статичного обʼєкта карти (гора, річка, ліс…)
     /// </summary>
     public struct OnMapObjectSpawnedSignal
@@ -180,6 +230,11 @@ namespace Kruty1918.Moyva.Signals
         public string[,] ObjectMap;
         public float[,] HeightMap;
         public int[,] TerrainLevelMap;
+        /// <summary>
+        /// Fairness-validated spawn cells proposed by the geography engine.
+        /// Null/empty means the consumer selects starts on its own.
+        /// </summary>
+        public Vector2Int[] SpawnHints;
     }
 
     public struct SpawnPositionAssignment

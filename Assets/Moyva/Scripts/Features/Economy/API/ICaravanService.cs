@@ -91,6 +91,7 @@ namespace Kruty1918.Moyva.Economy.API
         CaravanTransferResult CanSetRoute(CaravanRouteRequest request);
         CaravanTransferResult StopRoute(string ownerId, string unitId);
         bool TryGetRoute(string ownerId, string unitId, out CaravanRouteSnapshot snapshot);
+        IReadOnlyList<CaravanRouteSnapshot> GetRoutes(string ownerId);
         CaravanTransferResult CanFoundSettlement(string ownerId, string unitId, string buildingId, out Vector2Int position);
         CaravanTransferResult FoundSettlement(string ownerId, string unitId, string buildingId);
         CaravanTransferResult ApplyConfirmedTransfer(CaravanCargoRequest request);
@@ -108,6 +109,9 @@ namespace Kruty1918.Moyva.Economy.API
         bool TryRequestSetRoute(CaravanRouteRequest request, out string reason);
         bool TryRequestStopRoute(string ownerId, string unitId, out string reason);
         bool TryRequestFoundSettlement(string ownerId, string unitId, string buildingId, out string reason);
+        bool TryRequestSupplyDispatch(ConstructionSupplyDispatchRequest request,
+            IReadOnlyDictionary<string, float> requiredCosts, out string reason);
+        bool TryRequestCancelSupply(string ownerId, Vector2Int position, out string reason);
     }
 
     public readonly struct CaravanRemoteCommandResult
@@ -139,5 +143,7 @@ namespace Kruty1918.Moyva.Economy.API
         StartRoute = 1,
         StopRoute = 2,
         FoundSettlement = 3,
+        SupplyDispatch = 4,
+        CancelSupply = 5,
     }
 }

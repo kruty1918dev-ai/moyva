@@ -4,6 +4,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Signals;
@@ -86,6 +87,29 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             UpdateConfirmInteractable();
             try
             {
+                if (_roleResolver?.Resolve().Role == LocalGameplayRole.Client)
+                {
+                    // Client: host executes deploy and replicates the queue table.
+                    // OnRecruitmentQueueChanged ends the session once the ready
+                    // item disappears from the synced queue.
+                    string remoteReason = null;
+                    bool requested = _remoteRecruitment != null
+                        && _remoteRecruitment.TryRequestDeploy(
+                            session.OwnerId,
+                            session.RecruitingBuildingPosition,
+                            session.QueueId,
+                            target,
+                            out remoteReason);
+
+                    if (!requested)
+                    {
+                        Debug.LogWarning(
+                            $"{LogTag} Deploy request could not be sent: {remoteReason}");
+                        RefreshDeploymentTiles();
+                    }
+                    return;
+                }
+
                 bool deployed = _recruitment.TryDeployReady(
                     session.OwnerId,
                     session.RecruitingBuildingPosition,

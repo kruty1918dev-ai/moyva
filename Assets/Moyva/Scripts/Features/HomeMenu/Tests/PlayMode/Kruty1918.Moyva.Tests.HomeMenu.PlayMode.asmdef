@@ -1,0 +1,15 @@
+{
+  "name": "Kruty1918.Moyva.Tests.HomeMenu.PlayMode",
+  "rootNamespace": "Kruty1918.Moyva.Tests.HomeMenu.PlayMode",
+  "references": [
+    "Kruty1918.Moyva.HomeMenu",
+    "Kruty1918.Moyva.UIActions",
+    "Kruty1918.Moyva.Shared",
+    "Kruty1918.Moyva.Multiplayer",
+    "UnityHTML.Runtime",
+    "Zenject",
+    "Unity.InputSystem"
+  ],
+  "autoReferenced": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

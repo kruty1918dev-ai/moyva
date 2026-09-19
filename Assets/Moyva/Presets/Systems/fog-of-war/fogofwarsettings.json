@@ -4,50 +4,13 @@
   "version": 1,
   "id": "fogofwarsettings",
   "model": "fog-of-war",
-  "unexploredColor": {
-    "r": 1.0,
-    "g": 1.0,
-    "b": 1.0,
-    "a": 1.0
-  },
   "exploredColor": {
     "r": 1.0,
     "g": 1.0,
     "b": 1.0,
     "a": 0.4627451
   },
-  "fogTileSprite": {
-    "$asset": "asset.sprite.fog-of-war.55b14f33",
-    "editorPath": "Assets/Moyva/Art/fog-of-war.png",
-    "required": true
-  },
-  "fogTileSpritePixelSize": {
-    "x": 64,
-    "y": 64
-  },
-  "fogTileSizeInCells": {
-    "x": 2.0,
-    "y": 2.0
-  },
-  "fogTileSeamOverlapPixels": 1.0,
-  "fogMapEdgePaddingPixels": 5.0,
-  "fogMapEdgeOverhangCells": 5.0,
-  "fogTileTiling": 1.0,
   "fogIconSprites": [],
-  "fogIconSpritePixelSize": {
-    "x": 16,
-    "y": 16
-  },
-  "fogIconGridSize": {
-    "x": 30,
-    "y": 30
-  },
-  "fogIconScale": 1.0,
-  "centerIcon": true,
-  "fullyTransparentWhenVisible": true,
-  "fog3DTopClearance": 0.08,
-  "enableShaderFogCulling": true,
-  "shaderFogCullThreshold": 0.01,
   "enableRendererCulling": true,
   "requireOpaqueUnexploredForCulling": true,
   "rendererCullingLayerMask": 503,
@@ -159,82 +122,11 @@
   "minVisionRange": 1,
   "maxVisionRange": 12,
   "volume": {
-    "updateMode": "DebouncePerFrame",
-    "rebuildIntervalSeconds": 0.1,
-    "useClusteredRuntimeFogRenderer": false,
-    "clusterSize": 16,
-    "clusterPaddingCells": 1,
-    "horizontalTileOverlap": 0.03,
     "verticalLayerSpacing": 0.0,
-    "allowFullRebuildFallback": true,
-    "fullRebuildDirtyClusterRatioThreshold": 0.35,
     "topClearance": 0.08,
-    "useWorldCellSize": false,
-    "cellSizeOverride": 1.0,
     "heightSource": "HeightMapThenTerrainLevelMap",
     "terrainLevelHeightStep": 1.0,
-    "heightLayerSnap": 0.01,
-    "clearPreviewOnRuntimeStart": true,
-    "previewFallbackWidth": 16,
-    "previewFallbackHeight": 16,
-    "unexplored": {
-      "enabled": true,
-      "layerName": "Fog_Unexplored",
-      "tileVariants": [
-        {
-          "preset": {
-            "$asset": "asset.tile-preset.baseblockpresetblue.74d92dbb",
-            "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetBlue.asset",
-            "required": true
-          },
-          "slot": "Top",
-          "weight": 1.0,
-          "tileHeight": 0.0
-        }
-      ],
-      "layerYOffset": 0.0,
-      "scaleOffset": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "shadowCastingMode": "Off",
-      "objectLayer": 0,
-      "renderingLayer": {},
-      "colliderType": "none",
-      "tileColliderHeight": 0.0,
-      "tileColliderExtrusionHeight": 0.0,
-      "invertCollisionWalls": false
-    },
-    "explored": {
-      "enabled": true,
-      "layerName": "Fog_Explored",
-      "tileVariants": [
-        {
-          "preset": {
-            "$asset": "asset.tile-preset.baseblockpresetblue.74d92dbb",
-            "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetBlue.asset",
-            "required": true
-          },
-          "slot": "Top",
-          "weight": 1.0,
-          "tileHeight": 0.0
-        }
-      ],
-      "layerYOffset": 0.02,
-      "scaleOffset": {
-        "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
-      },
-      "shadowCastingMode": "Off",
-      "objectLayer": 0,
-      "renderingLayer": {},
-      "colliderType": "none",
-      "tileColliderHeight": 0.0,
-      "tileColliderExtrusionHeight": 0.0,
-      "invertCollisionWalls": false
-    }
+    "heightLayerSnap": 0.01
   },
   "migration": {
     "sourceAssetGuid": "cb6a4d88617863cf7ba7852a8ed5bbab",

@@ -10,11 +10,6 @@ namespace Kruty1918.Moyva.FogOfWar.API
         /// Screen-space fog, який накладається на готовий кадр
         /// з урахуванням camera depth і world position.
         /// </summary>
-        ScreenSpace = 0,
-
-        /// <summary>
-        /// Старий TWC volume path із фізичними fog meshes.
-        /// </summary>
-        LegacyTwcVolume = 1
+        ScreenSpace = 0
     }
 }

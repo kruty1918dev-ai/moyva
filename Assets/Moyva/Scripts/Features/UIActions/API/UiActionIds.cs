@@ -52,6 +52,15 @@ namespace Kruty1918.Moyva.UIActions.API
                 new("ui.combat.capture-selection");
         }
 
+        public static class UnitGroup
+        {
+            public static readonly UiActionId ToggleMerge =
+                new("ui.unit-group.toggle-merge");
+
+            public static readonly UiActionId Disband =
+                new("ui.unit-group.disband");
+        }
+
         public static class Deployment
         {
             public static readonly UiActionId Confirm =
@@ -67,6 +76,7 @@ namespace Kruty1918.Moyva.UIActions.API
             public static readonly UiActionId StartRoute = new("ui.logistics.route.start");
             public static readonly UiActionId StopRoute = new("ui.logistics.route.stop");
             public static readonly UiActionId FoundSettlement = new("ui.logistics.found-settlement");
+            public static readonly UiActionId Supply = new("ui.logistics.supply");
         }
 
         public static class Pause

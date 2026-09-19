@@ -38,7 +38,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         IUnitCommandAuthorityEndpointRegistry,
         ICaravanRemoteCommandRequester,
         ICombatRemoteCommandRequester,
-        ISettlementCaptureRemoteCommandRequester
+        ISettlementCaptureRemoteCommandRequester,
+        IUnitGroupRemoteCommandRequester,
+        IUnitRecruitmentRemoteCommandRequester
     {
         private readonly IGameCommandSyncService _syncService;
         private readonly ISessionManager         _sessionManager;
@@ -50,13 +52,24 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private IUnitOwnershipQuery _unitOwnershipQuery;
         private readonly IUnitFactory            _unitFactory;
         private readonly ICaravanService _caravanService;
+        private readonly IConstructionSupplyService _constructionSupply;
         private readonly ICombatCommandService _combatCommandService;
         private readonly IHealthRegistry _healthRegistry;
         private readonly ISettlementCaptureService _settlementCaptureService;
         private readonly IConstructionBuildingCombatTargetQuery _buildingTargetQuery;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IFogOwnerStateReader _ownerFog;
+        private readonly IFogOwnerVisibilityFeed _ownerVisibilityFeed;
+        private readonly IFogIntelReader _intelReader;
+        private readonly IFogIntelReplicationSink _intelSink;
+        private readonly IConstructionSaveSnapshotSource _placementSnapshots;
+        private readonly IUnitGroupService _unitGroupService;
+        private readonly IUnitGroupStateStore _unitGroupStateStore;
+        private readonly IUnitRecruitmentService _recruitmentService;
+        private readonly IUnitRecruitmentStateStore _recruitmentStateStore;
         private readonly Dictionary<string, HashSet<string>> _knownUnitsByPeer =
+            new(StringComparer.Ordinal);
+        private readonly Dictionary<string, HashSet<Vector2Int>> _knownBuildingsByPeer =
             new(StringComparer.Ordinal);
         private readonly Dictionary<string, Vector2Int> _replicatedUnitPositions =
             new(StringComparer.Ordinal);
@@ -76,13 +89,22 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery = null,
             [InjectOptional] IUnitFactory unitFactory = null,
             [InjectOptional] ICaravanService caravanService = null,
+            [InjectOptional] IConstructionSupplyService constructionSupply = null,
             [InjectOptional] ICombatCommandService combatCommandService = null,
             [InjectOptional] IHealthRegistry healthRegistry = null,
             [InjectOptional] ISettlementCaptureService settlementCaptureService = null,
             [InjectOptional] IConstructionBuildingCombatTargetQuery buildingTargetQuery = null,
             [InjectOptional] IBuildingRegistry buildingRegistry = null,
             [InjectOptional] IFogOwnerStateReader ownerFog = null,
-            [InjectOptional] IConstructionService constructionService = null)
+            [InjectOptional] IFogOwnerVisibilityFeed ownerVisibilityFeed = null,
+            [InjectOptional] IFogIntelReader intelReader = null,
+            [InjectOptional] IFogIntelReplicationSink intelSink = null,
+            [InjectOptional] IConstructionSaveSnapshotSource placementSnapshots = null,
+            [InjectOptional] IConstructionService constructionService = null,
+            [InjectOptional] IUnitGroupService unitGroupService = null,
+            [InjectOptional] IUnitGroupStateStore unitGroupStateStore = null,
+            [InjectOptional] IUnitRecruitmentService recruitmentService = null,
+            [InjectOptional] IUnitRecruitmentStateStore recruitmentStateStore = null)
         {
             _syncService         = syncService;
             _sessionManager      = sessionManager;
@@ -93,13 +115,22 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _unitOwnershipQuery = unitOwnershipQuery;
             _unitFactory         = unitFactory;
             _caravanService = caravanService;
+            _constructionSupply = constructionSupply;
             _combatCommandService = combatCommandService;
             _healthRegistry = healthRegistry;
             _settlementCaptureService = settlementCaptureService;
             _buildingTargetQuery = buildingTargetQuery;
             _buildingRegistry = buildingRegistry;
             _ownerFog = ownerFog;
+            _ownerVisibilityFeed = ownerVisibilityFeed;
+            _intelReader = intelReader;
+            _intelSink = intelSink;
+            _placementSnapshots = placementSnapshots;
             _constructionService = constructionService;
+            _unitGroupService = unitGroupService;
+            _unitGroupStateStore = unitGroupStateStore;
+            _recruitmentService = recruitmentService;
+            _recruitmentStateStore = recruitmentStateStore;
         }
 
         // ─── Lifecycle ───────────────────────────────────────────────────────────
@@ -110,13 +141,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             if (constructionService == null)
                 throw new ArgumentNullException(nameof(constructionService));
-
-            if (_constructionService != null
-                && !ReferenceEquals(
-                    _constructionService,
-                    constructionService))
-            {
-            }
 
             _constructionService = constructionService;
         }
@@ -163,6 +187,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 throw new InvalidOperationException("Multiplayer gameplay authority must be installed in the Gameplay scene with its gameplay services.");
             // Локальні дії гравця: перехоплення перед виконанням
             _signalBus.Subscribe<MoveUnitRequestSignal>(OnLocalMoveUnitRequest);
+            _signalBus.Subscribe<MoveGroupRequestSignal>(OnLocalMoveGroupRequest);
 
             // Хост: слухає локальні результати і транслює іншим клієнтам
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlacedLocally);
@@ -170,6 +195,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _signalBus.Subscribe<UnitMovedSignal>(OnUnitMovedLocally);
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreatedLocally);
             _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyedLocally);
+            _signalBus.Subscribe<ConstructionSupplyOrderClosedSignal>(OnConstructionSupplyOrderClosed);
+            _signalBus.Subscribe<UnitGroupChangedSignal>(OnUnitGroupChangedBroadcast);
+            _signalBus.Subscribe<UnitRecruitmentQueueChangedSignal>(OnRecruitmentQueueChangedBroadcast);
             if (_caravanService != null)
                 _caravanService.RouteTransferCommitted += OnRouteTransferCommittedLocally;
 
@@ -181,6 +209,13 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _syncService.RegisterHandler(GameCommandType.CaravanCommand,   OnNetworkCaravanCommand);
             _syncService.RegisterHandler(GameCommandType.CombatCommand,    OnNetworkCombatCommand);
             _syncService.RegisterHandler(GameCommandType.SettlementCaptureCommand, OnNetworkSettlementCaptureCommand);
+            _syncService.RegisterHandler(GameCommandType.UnitVanish,       OnNetworkUnitVanish);
+            _syncService.RegisterHandler(GameCommandType.UnitGroupCommand, OnNetworkUnitGroupCommand);
+            _syncService.RegisterHandler(GameCommandType.UnitGroupSync,    OnNetworkUnitGroupSync);
+            _syncService.RegisterHandler(GameCommandType.UnitRecruitmentCommand, OnNetworkUnitRecruitmentCommand);
+            _syncService.RegisterHandler(GameCommandType.UnitRecruitmentSync,    OnNetworkUnitRecruitmentSync);
+            if (_ownerVisibilityFeed != null)
+                _ownerVisibilityFeed.CellsBecameVisible += OnPeerCellsBecameVisible;
         }
 
         public void Dispose()
@@ -196,12 +231,23 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _syncService.RegisterHandler(GameCommandType.CaravanCommand, null);
             _syncService.RegisterHandler(GameCommandType.CombatCommand, null);
             _syncService.RegisterHandler(GameCommandType.SettlementCaptureCommand, null);
+            _syncService.RegisterHandler(GameCommandType.UnitVanish, null);
+            _syncService.RegisterHandler(GameCommandType.UnitGroupCommand, null);
+            _syncService.RegisterHandler(GameCommandType.UnitGroupSync, null);
+            _syncService.RegisterHandler(GameCommandType.UnitRecruitmentCommand, null);
+            _syncService.RegisterHandler(GameCommandType.UnitRecruitmentSync, null);
+            if (_ownerVisibilityFeed != null)
+                _ownerVisibilityFeed.CellsBecameVisible -= OnPeerCellsBecameVisible;
             _signalBus.TryUnsubscribe<MoveUnitRequestSignal>(OnLocalMoveUnitRequest);
+            _signalBus.TryUnsubscribe<MoveGroupRequestSignal>(OnLocalMoveGroupRequest);
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlacedLocally);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolishedLocally);
             _signalBus.TryUnsubscribe<UnitMovedSignal>(OnUnitMovedLocally);
             _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreatedLocally);
             _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyedLocally);
+            _signalBus.TryUnsubscribe<ConstructionSupplyOrderClosedSignal>(OnConstructionSupplyOrderClosed);
+            _signalBus.TryUnsubscribe<UnitGroupChangedSignal>(OnUnitGroupChangedBroadcast);
+            _signalBus.TryUnsubscribe<UnitRecruitmentQueueChangedSignal>(OnRecruitmentQueueChangedBroadcast);
             if (_caravanService != null)
                 _caravanService.RouteTransferCommitted -= OnRouteTransferCommittedLocally;
             _lifetime.Dispose();
@@ -213,19 +259,17 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             string ownerId,
             Vector2Int position)
         {
+            // Fail closed: when the participant roster is unavailable we cannot
+            // determine who may observe the event, so nothing is sent.
             IReadOnlyList<Participant> participants =
                 _sessionManager?.Participants;
             if (participants == null || participants.Count == 0)
-            {
-                _syncService.SendCommand(type, payload);
                 return;
-            }
 
             string normalizedOwnerId =
                 NormalizeOwnerId(ownerId);
             string localPlayerId =
                 NormalizeOwnerId(_sessionManager.LocalPlayerId);
-            bool sent = false;
 
             for (int index = 0;
                  index < participants.Count;
@@ -251,15 +295,41 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     continue;
                 }
 
+                TrackKnownBuildingForPeer(type, participantId, position);
                 _syncService.SendCommandToPeer(
                     participantId,
                     type,
                     payload);
-                sent = true;
+            }
+        }
+
+        private void TrackKnownBuildingForPeer(
+            GameCommandType type,
+            string peerId,
+            Vector2Int position)
+        {
+            if (type != GameCommandType.BuildingPlace
+                && type != GameCommandType.BuildingDemolish)
+            {
+                return;
             }
 
-            if (!sent && participants.Count == 1)
-                _syncService.SendCommand(type, payload);
+            if (!_knownBuildingsByPeer.TryGetValue(
+                    peerId,
+                    out HashSet<Vector2Int> cells)
+                && type == GameCommandType.BuildingPlace)
+            {
+                cells = new HashSet<Vector2Int>();
+                _knownBuildingsByPeer[peerId] = cells;
+            }
+
+            if (cells == null)
+                return;
+
+            if (type == GameCommandType.BuildingPlace)
+                cells.Add(position);
+            else
+                cells.Remove(position);
         }
 
         private void SendRequestToHost(
@@ -291,22 +361,15 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             string normalizedOwnerId =
                 NormalizeOwnerId(ownerId);
             if (string.IsNullOrWhiteSpace(normalizedOwnerId))
-            {
-                _syncService.SendCommand(type, payload);
                 return;
-            }
 
             IReadOnlyList<Participant> participants =
                 _sessionManager?.Participants;
             if (participants == null || participants.Count == 0)
-            {
-                _syncService.SendCommand(type, payload);
                 return;
-            }
 
             string localPlayerId =
                 NormalizeOwnerId(_sessionManager.LocalPlayerId);
-            bool sent = false;
             for (int index = 0;
                  index < participants.Count;
                  index++)
@@ -330,11 +393,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     participantId,
                     type,
                     payload);
-                sent = true;
             }
-
-            if (!sent && participants.Count == 1)
-                _syncService.SendCommand(type, payload);
         }
 
         private string ResolveHostPeerId()
@@ -376,8 +435,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 return true;
             }
 
-            return _ownerFog == null
-                   || _ownerFog.IsVisible(
+            // Fail closed: without owner fog we cannot prove the peer observes
+            // the event position, so only same-owner events are replicated.
+            return _ownerFog != null
+                   && _ownerFog.IsVisible(
                        normalizedPeerOwnerId,
                        position);
         }

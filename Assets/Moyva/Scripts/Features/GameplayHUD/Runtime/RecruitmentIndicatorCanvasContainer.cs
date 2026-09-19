@@ -5,7 +5,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     internal static class RecruitmentIndicatorCanvasContainer
     {
         public static bool TryResolve(
-            Component hudView,
+            Component anchor,
             string containerName,
             string missingCanvasWarning,
             ref bool warningLogged,
@@ -14,8 +14,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             out RectTransform container,
             out bool createdContainer)
         {
-            canvas = hudView != null
-                ? hudView.GetComponentInParent<Canvas>(true)
+            canvas = anchor != null
+                ? anchor.GetComponentInParent<Canvas>(true)
                 : null;
             canvas ??= Object.FindFirstObjectByType<Canvas>(
                 FindObjectsInactive.Include);

@@ -159,22 +159,79 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _lobbyPanelViewController.ClearLobbyInvateCode();
                 if (_lobbyPanelViewController.StartGameButton != null)
                     _lobbyPanelViewController.StartGameButton.interactable = false;
+                (_lobbyPanelViewController as ILobbyStatusView)?.SetLobbyStatus(default);
                 return;
             }
 
-            _lobbyPanelViewController.SetInviteCode(LobbyInviteCodeResolver.Resolve(lobby, ResolveProvider()));
+            var provider = ResolveProvider();
+            _lobbyPanelViewController.SetInviteCode(LobbyInviteCodeResolver.Resolve(lobby, provider));
 
+            var localId = ResolveLocalPlayerId(lobby);
             int idx = 0;
             foreach (var p in lobby.Players)
             {
-                _lobbyPanelViewController.AddNewUser(new LobbyUserInfo { UserName = p.DisplayName, UserId = idx++ });
+                if (p == null)
+                {
+                    idx++;
+                    continue;
+                }
+                _lobbyPanelViewController.AddNewUser(new LobbyUserInfo
+                {
+                    UserName = p.DisplayName,
+                    UserId = idx++,
+                    IsHost = p.IsHost || string.Equals(p.PlayerId, lobby.HostPlayerId, StringComparison.Ordinal),
+                    IsLocal = !string.IsNullOrWhiteSpace(localId) && string.Equals(p.PlayerId, localId, StringComparison.Ordinal)
+                });
             }
             _lobbyPanelViewController.RefreshUserList();
 
             bool isHost = IsHost(lobby);
             bool canStart = CanStartGame(lobby);
+            var startInteractable = !_isStartingGame && isHost && canStart;
             if (_lobbyPanelViewController.StartGameButton != null)
-                _lobbyPanelViewController.StartGameButton.interactable = !_isStartingGame && isHost && canStart;
+                _lobbyPanelViewController.StartGameButton.interactable = startInteractable;
+
+            (_lobbyPanelViewController as ILobbyStatusView)?.SetLobbyStatus(new LobbyStatusInfo
+            {
+                IsHost = isHost,
+                CanManagePlayers = isHost && lobby.CapabilityFlags.HasFlag(RoomCapabilityFlags.KickPlayers),
+                CanStart = startInteractable,
+                StartReason = BuildStartReason(lobby, isHost, canStart),
+                RoomName = lobby.Name,
+                NetworkLabel = provider == NetworkProviderType.Lan ? "Local network (LAN)" : "Online (Relay)",
+                PrivacyLabel = lobby.IsPrivate ? "Private — password required" : "Public",
+                PlayerCount = CountConnectedPlayers(lobby),
+                MaxPlayers = lobby.MaxPlayers,
+                WorldSummary = BuildWorldSummary()
+            });
+        }
+
+        private string BuildStartReason(LobbyRoom lobby, bool isHost, bool canStart)
+        {
+            if (_isStartingGame)
+                return "Starting the game...";
+            if (!isHost)
+                return "Only the host can start. Waiting for the host.";
+            if (lobby == null || lobby.State != LobbyState.Open)
+                return "The lobby is locked.";
+            if (!canStart)
+                return "Waiting for players — at least 2 required to start.";
+            return "All set — lock the lobby and launch.";
+        }
+
+        private string BuildWorldSummary()
+        {
+            try
+            {
+                var world = BuildWorldSettingsDto();
+                if (string.IsNullOrWhiteSpace(world.WorldName))
+                    return string.Empty;
+                return $"{world.WorldName} — {world.MapType}, {world.Difficulty}";
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
         }
         #endregion
 
@@ -305,14 +362,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_lobbyPanelViewController.StartGameButton != null)
                 _lobbyPanelViewController.StartGameButton.interactable = false;
 
-            try { _overlayLoader?.LoadOverlay(0f, 100f, "%"); } catch { }
+            OverlayLoaderResult startOverlay = null;
+            try { startOverlay = _overlayLoader?.LoadOverlay(0f, 100f, "%"); } catch { }
 
             try
             {
+                startOverlay?.SetStatus("Locking the lobby...");
                 var worldSettings = BuildWorldSettingsDto();
                 var worldSettingsBytes = worldSettings.ToBytes();
                 await _lobbyService.LockAsync(true, worldSettingsBytes, ct);
                 _gameCommandSync?.SendCommand(GameCommandType.StartGame, worldSettingsBytes);
+                startOverlay?.SetStatus("Launching the world...");
 
                 var localPlayerId = ApplyGameplaySession(worldSettings);
                 GameLaunchContext.ConfigureMenuMultiplayerGame(

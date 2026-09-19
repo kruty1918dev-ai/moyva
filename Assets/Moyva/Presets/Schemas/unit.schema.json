@@ -81,6 +81,12 @@
       "type": "number",
       "title": "Base Stamina"
     },
+    "canTransportCargo": {
+      "type": "boolean",
+      "default": false,
+      "title": "Can Transport Cargo",
+      "description": "Transport-only unit (wagon/caravan): carries resources but cannot attack or capture."
+    },
     "cargoCapacity": {
       "type": "number",
       "title": "Cargo Capacity",

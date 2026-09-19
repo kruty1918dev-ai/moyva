@@ -12,6 +12,7 @@ using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Interactions.API;
 using Kruty1918.Moyva.Jsonization;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Notifications.API;
@@ -40,6 +41,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             UiActionIds.Recruitment.Cancel,
             UiActionIds.Recruitment.Deploy,
             UiActionIds.Combat.CaptureSelection,
+            UiActionIds.UnitGroup.ToggleMerge,
+            UiActionIds.UnitGroup.Disband,
             UiActionIds.EndTurn,
             UiActionIds.ClearSelection,
         };
@@ -66,6 +69,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly ISettlementCaptureRemoteCommandRequester _remoteSettlementCapture;
         private readonly IGameResultStateStore _gameResult;
         private readonly ITurnRemoteCommandRequester _remoteTurns;
+        private readonly ITileInteractionService _tileInteraction;
 
         private GameplayHtmlAnchor _anchor;
         private IDisposable _panelContext;
@@ -93,12 +97,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] GameplayHtmlAnchor[] anchors = null,
             [InjectOptional] GameplayCargoPanel cargo = null,
+            [InjectOptional] GameplaySupplyPanel supply = null,
             [InjectOptional] ICombatRemoteCommandRequester remoteCombat = null,
             [InjectOptional] ISettlementCaptureRemoteCommandRequester remoteSettlementCapture = null,
             [InjectOptional] IGameResultStateStore gameResult = null,
             [InjectOptional] ITurnRemoteCommandRequester remoteTurns = null,
             [InjectOptional] IInputDeviceContext inputDevices = null,
-            [InjectOptional] IPlayerControlSettingsService controlSettings = null)
+            [InjectOptional] IPlayerControlSettingsService controlSettings = null,
+            [InjectOptional] ITileInteractionService tileInteraction = null)
         {
             _inputDevices = inputDevices; _controlSettings = controlSettings;
             if (_controlSettings != null) _controlSettings.OnSettingsChanged += OnControlSettingsChanged;
@@ -118,7 +124,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _remoteSettlementCapture = remoteSettlementCapture;
             _gameResult = gameResult;
             _remoteTurns = remoteTurns;
-            _bridge = new GameplayHtmlBridge(state, readModel, actions, construction, roles, cameraFocus, exit, progressClock, cargo, signals);
+            _tileInteraction = tileInteraction;
+            _bridge = new GameplayHtmlBridge(state, readModel, actions, construction, roles, cameraFocus, exit, progressClock, cargo, supply, signals);
         }
 
         public IReadOnlyCollection<UiActionId> ActionIds => HandledActions;
@@ -273,6 +280,24 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         string.IsNullOrWhiteSpace(result.Reason)
                             ? _state.T("Settlement capture was rejected.")
                             : _state.T(result.Reason));
+            }
+
+            if (request.ActionId == UiActionIds.UnitGroup.ToggleMerge)
+            {
+                if (_tileInteraction == null)
+                    return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "Unit commands are unavailable.");
+                return _tileInteraction.ToggleGroupMergeArm()
+                    ? UiActionResult.Performed()
+                    : UiActionResult.Rejected(UiActionReason.NoSelection, "Select one of your units first.");
+            }
+
+            if (request.ActionId == UiActionIds.UnitGroup.Disband)
+            {
+                if (_tileInteraction == null)
+                    return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "Unit commands are unavailable.");
+                return _tileInteraction.TryDisbandSelectedGroup()
+                    ? UiActionResult.Performed()
+                    : UiActionResult.Rejected(UiActionReason.ActionUnavailable, "The selected unit is not in a group.");
             }
 
             if (request.ActionId == UiActionIds.EndTurn)
@@ -455,6 +480,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.Subscribe<BuildingSelectionChangedSignal>(OnGameplayChanged);
             _signals.Subscribe<BuildingOperationalSignal>(OnBuildingOperational);
             _signals.Subscribe<CaravanDeliveryCompletedSignal>(OnDeliveryCompleted);
+            _signals.Subscribe<ConstructionSupplyReadySignal>(OnSupplyReady);
             _signals.Subscribe<BuildingDemolishedSignal>(OnGameplayChanged);
             _signals.Subscribe<EconomyTickCompletedSignal>(OnGameplayChanged);
             _signals.Subscribe<SettlementCreatedSignal>(OnGameplayChanged);
@@ -468,6 +494,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.Subscribe<UnitRecruitmentQueueChangedSignal>(OnGameplayChanged);
             _signals.Subscribe<UnitRecruitmentReadySignal>(OnGameplayChanged);
             _signals.Subscribe<UnitRecruitmentDeployedSignal>(OnGameplayChanged);
+            _signals.Subscribe<UnitGroupChangedSignal>(OnGameplayChanged);
             _signals.Subscribe<WorldInfoSelectionChangedSignal>(OnSelectionChanged);
             _signals.Subscribe<GamePausedSignal>(OnPauseChanged);
             _signals.Subscribe<GameEndedSignal>(OnGameEnded);
@@ -482,6 +509,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.TryUnsubscribe<BuildingSelectionChangedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<BuildingOperationalSignal>(OnBuildingOperational);
             _signals.TryUnsubscribe<CaravanDeliveryCompletedSignal>(OnDeliveryCompleted);
+            _signals.TryUnsubscribe<ConstructionSupplyReadySignal>(OnSupplyReady);
             _signals.TryUnsubscribe<BuildingDemolishedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<EconomyTickCompletedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<SettlementCreatedSignal>(OnGameplayChanged);
@@ -495,6 +523,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.TryUnsubscribe<UnitRecruitmentQueueChangedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<UnitRecruitmentReadySignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<UnitRecruitmentDeployedSignal>(OnGameplayChanged);
+            _signals.TryUnsubscribe<UnitGroupChangedSignal>(OnGameplayChanged);
             _signals.TryUnsubscribe<WorldInfoSelectionChangedSignal>(OnSelectionChanged);
             _signals.TryUnsubscribe<GamePausedSignal>(OnPauseChanged);
             _signals.TryUnsubscribe<GameEndedSignal>(OnGameEnded);
@@ -596,6 +625,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 signal.UnitId, deliveryDetails: details.ToString());
         }
         private void OnGameplayChanged(UnitRecruitmentDeployedSignal _) => _state.MarkDirty();
+        private void OnSupplyReady(ConstructionSupplyReadySignal signal)
+        {
+            _state.MarkDirty();
+            if (signal.OwnerId == ResolveLocalOwnerId())
+                _state.AddNotification(
+                    $"{_readModel.ResolveBuildingDisplayName(signal.BuildingId)} is fully supplied in {signal.SettlementName}.",
+                    "Success", signal.Position, signal.BuildingId);
+        }
+        private void OnGameplayChanged(UnitGroupChangedSignal _) => _state.MarkDirty();
 
         private string ResolveLocalOwnerId()
         {

@@ -1,0 +1,13 @@
+{
+  "name": "Kruty1918.Moyva.Tests.HomeMenu",
+  "rootNamespace": "Kruty1918.Moyva.Tests.HomeMenu",
+  "references": [
+    "Kruty1918.Moyva.HomeMenu",
+    "Kruty1918.Moyva.UIActions",
+    "Kruty1918.Moyva.Shared",
+    "Zenject"
+  ],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

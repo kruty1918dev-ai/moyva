@@ -267,9 +267,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var participants = _sessionManager?.Participants;
             if (participants == null || participants.Count == 0)
             {
-                _syncService.SendCommand(
-                    GameCommandType.SettlementCaptureCommand,
-                    bytes);
+                // Fail closed: no roster, no way to prove observers. The
+                // requester still needs the confirmation to resolve the action.
+                SendSettlementCaptureToRequester(payload);
                 return;
             }
 
@@ -321,6 +321,42 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     peerId,
                     GameCommandType.SettlementCaptureCommand,
                     bytes);
+            }
+        }
+
+        private void SendSettlementCaptureToRequester(
+            SettlementCaptureCommandPayload payload)
+        {
+            string requesterOwnerId =
+                NormalizeOwnerId(payload.RequesterOwnerId);
+            if (string.IsNullOrWhiteSpace(requesterOwnerId))
+                return;
+
+            if (string.Equals(
+                    requesterOwnerId,
+                    NormalizeOwnerId(_sessionManager?.LocalPlayerId),
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var participants = _sessionManager?.Participants;
+            if (participants == null)
+                return;
+
+            for (int index = 0; index < participants.Count; index++)
+            {
+                if (string.Equals(
+                        NormalizeOwnerId(participants[index]?.Identity?.PlayerId),
+                        requesterOwnerId,
+                        StringComparison.Ordinal))
+                {
+                    _syncService.SendCommandToPeer(
+                        requesterOwnerId,
+                        GameCommandType.SettlementCaptureCommand,
+                        payload.ToBytes());
+                    return;
+                }
             }
         }
 

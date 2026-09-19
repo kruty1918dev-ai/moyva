@@ -1,0 +1,132 @@
+{
+  "shots": [
+    {
+      "shotId": "beat-hook-1",
+      "category": 6,
+      "rig": 11,
+      "motion": 0,
+      "transitionIn": 2,
+      "subject": {
+        "contentId": "spearman",
+        "instanceId": "spearman_01_3478",
+        "worldX": 27.0,
+        "worldY": 2.20308375,
+        "worldZ": 29.0,
+        "approximateRadius": 0.5
+      },
+      "durationSec": 2.39999986,
+      "motionSpeed": 0.5,
+      "seed": 300916503,
+      "beat": "Hook",
+      "textClaimId": "",
+      "aspectIntent": 0.5625
+    },
+    {
+      "shotId": "beat-world-1",
+      "category": 0,
+      "rig": 1,
+      "motion": 1,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "terrain",
+        "instanceId": "tile-37-1",
+        "worldX": 37.0,
+        "worldY": 0.0,
+        "worldZ": 1.0,
+        "approximateRadius": 4.0
+      },
+      "durationSec": 4.8,
+      "motionSpeed": 0.5,
+      "seed": 1713695479,
+      "beat": "World",
+      "textClaimId": "",
+      "aspectIntent": 0.5625
+    },
+    {
+      "shotId": "beat-build-1",
+      "category": 1,
+      "rig": 14,
+      "motion": 4,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "world",
+        "instanceId": "",
+        "worldX": 31.5,
+        "worldY": 0.0,
+        "worldZ": 31.5,
+        "approximateRadius": 32.0
+      },
+      "durationSec": 6.0,
+      "motionSpeed": 0.5,
+      "seed": 967202125,
+      "beat": "Build",
+      "textClaimId": "",
+      "aspectIntent": 0.5625
+    },
+    {
+      "shotId": "beat-tension-1",
+      "category": 5,
+      "rig": 15,
+      "motion": 0,
+      "transitionIn": 1,
+      "subject": {
+        "contentId": "spearman",
+        "instanceId": "spearman_02_3520",
+        "worldX": 28.0,
+        "worldY": 2.20308375,
+        "worldZ": 30.0,
+        "approximateRadius": 0.5
+      },
+      "durationSec": 4.8,
+      "motionSpeed": 0.5,
+      "seed": 1751132390,
+      "beat": "Tension",
+      "textClaimId": "",
+      "aspectIntent": 0.5625
+    },
+    {
+      "shotId": "beat-action-1",
+      "category": 6,
+      "rig": 9,
+      "motion": 0,
+      "transitionIn": 0,
+      "subject": {
+        "contentId": "spearman",
+        "instanceId": "spearman_02_3520",
+        "worldX": 28.0,
+        "worldY": 2.20308375,
+        "worldZ": 30.0,
+        "approximateRadius": 0.5
+      },
+      "durationSec": 7.199999,
+      "motionSpeed": 0.5,
+      "seed": 1209342210,
+      "beat": "Action",
+      "textClaimId": "",
+      "aspectIntent": 0.5625
+    },
+    {
+      "shotId": "beat-end-1",
+      "category": 10,
+      "rig": 0,
+      "motion": 0,
+      "transitionIn": 3,
+      "subject": {
+        "contentId": "world",
+        "instanceId": "",
+        "worldX": 31.5,
+        "worldY": 0.0,
+        "worldZ": 31.5,
+        "approximateRadius": 32.0
+      },
+      "durationSec": 4.800001,
+      "motionSpeed": 0.5,
+      "seed": 1243388468,
+      "beat": "End",
+      "textClaimId": "",
+      "aspectIntent": 0.5625
+    }
+  ],
+  "seed": 1889439098,
+  "recipeId": "shorts-30"
+}

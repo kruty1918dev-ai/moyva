@@ -4,6 +4,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Signals;
@@ -50,6 +51,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly ITurnService _turns;
         private readonly IGameplayProgressClock _progressClock;
         private readonly IUnitRecruitmentService _recruitment;
+        private readonly IUnitRecruitmentRemoteCommandRequester _remoteRecruitment;
+        private readonly ILocalGameplayRoleResolver _roleResolver;
         private readonly IUnitClassConfig _unitConfigs;
         private readonly IGridProjection _gridProjection;
         private readonly IGridService _grid;
@@ -90,12 +93,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IGameplayInputPolicy inputPolicy = null,
             [InjectOptional] IUiContextStack uiContexts = null,
             [InjectOptional] IGameModeService gameModeService = null,
-            [InjectOptional] IGameplayProgressClock progressClock = null)
+            [InjectOptional] IGameplayProgressClock progressClock = null,
+            [InjectOptional] IUnitRecruitmentRemoteCommandRequester remoteRecruitment = null,
+            [InjectOptional] ILocalGameplayRoleResolver roleResolver = null)
         {
             _signalBus = signalBus;
             _turns = turns;
             _progressClock = progressClock;
             _recruitment = recruitment;
+            _remoteRecruitment = remoteRecruitment;
+            _roleResolver = roleResolver;
             _unitConfigs = unitConfigs;
             _gridProjection = gridProjection;
             _grid = grid;

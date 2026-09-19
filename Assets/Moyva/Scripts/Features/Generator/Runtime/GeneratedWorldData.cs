@@ -26,6 +26,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public LogicalTileMap LogicalTileMap;
         public System.Collections.Generic.IReadOnlyList<CompiledLayerMap> CompiledLayers;
         public bool ForceChunkFirstCompositeBuild;
+        /// <summary>
+        /// True when the world was produced by the deterministic geography
+        /// engine. Authored terrain levels/biomes must not be re-normalised by
+        /// legacy TWC post-processing.
+        /// </summary>
+        public bool HasAuthoredGeography;
+        /// <summary>Fairness-validated spawn cells proposed by the geography engine.</summary>
+        public Vector2Int[] SpawnHints;
         public float CellSize = 1f;
         public bool HasBaseMapWorldBounds;
         public Bounds BaseMapWorldBounds;
@@ -61,6 +69,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 LogicalTileMap = LogicalTileMap,
                 CompiledLayers = CompiledLayers,
                 ForceChunkFirstCompositeBuild = ForceChunkFirstCompositeBuild,
+                HasAuthoredGeography = HasAuthoredGeography,
+                SpawnHints = SpawnHints != null ? (Vector2Int[])SpawnHints.Clone() : null,
                 CellSize = CellSize,
                 HasBaseMapWorldBounds = HasBaseMapWorldBounds,
                 BaseMapWorldBounds = BaseMapWorldBounds,

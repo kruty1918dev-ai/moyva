@@ -80,8 +80,15 @@ namespace Kruty1918.Moyva.Bootstrap
                 .AsSingle();
             Kruty1918.Moyva.AI.Bot.BotRuntimeInstaller.Install(Container);
 
-            Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
-            Container.BindExecutionOrder<TestUnitSpawner>(100);
+            // Pushes the resolved local owner into fog so the shared grid
+            // becomes the local player's perspective before units spawn.
+            Container.BindInterfacesTo<FogLocalPerspectiveInitializer>()
+                .AsSingle()
+                .NonLazy();
+            Container.BindExecutionOrder<FogLocalPerspectiveInitializer>(89);
+
+            Container.BindInterfacesTo<SaveAutoLoadInitializer>().AsSingle().NonLazy();
+            Container.BindExecutionOrder<SaveAutoLoadInitializer>(100);
 
             GameplayHudBindings.Install(Container);
             CaravanGameplayAccess.Install(Container);
@@ -90,7 +97,7 @@ namespace Kruty1918.Moyva.Bootstrap
             Kruty1918.Moyva.GameAudio.Runtime.GameAudioInstaller.InstallGameplay(Container);
 
             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
-            // Виконується після TestUnitSpawner, щоб знати чи є збереження.
+            // Виконується після SaveAutoLoadInitializer, щоб знати чи є збереження.
             Container.BindInstance(startingPositionSettings).AsSingle();
             BindStartingPositionServices();
             Container.BindInterfacesTo<StartingPositionInitializer>().AsSingle().NonLazy();

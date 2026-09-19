@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
@@ -71,10 +72,6 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
                         ? _unitOwnershipQuery?.GetUnitOwnerId(
                             signal.UnitId)
                         : signal.SourceFactionId);
-            bool hadPreviousPosition =
-                _replicatedUnitPositions.TryGetValue(
-                    signal.UnitId,
-                    out Vector2Int previousPosition);
 
             var payload = new UnitMovePayload(
                 GameActionMessageKind.Confirmed,
@@ -84,21 +81,12 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
             SendUnitMoveOrRevealToVisiblePeers(
                 payload,
                 unitOwnerId,
-                hadPreviousPosition
-                    ? previousPosition
-                    : signal.NewPosition,
                 signal.NewPosition);
-
-            _replicatedUnitPositions[signal.UnitId] =
-                signal.NewPosition;
         }
 
         private void OnUnitCreatedLocally(UnitCreatedSignal signal)
         {
             if (_applyingNetworkEvent || !IsOfflineOrHost()) return;
-
-            _replicatedUnitPositions[signal.UnitId] =
-                signal.Position;
 
             var payload = new UnitSpawnPayload(
                 GameActionMessageKind.Confirmed,
@@ -114,9 +102,9 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
             if (string.IsNullOrWhiteSpace(signal.UnitId))
                 return;
 
-            _replicatedUnitPositions.Remove(signal.UnitId);
-            foreach (var pair in _knownUnitsByPeer)
-                pair.Value?.Remove(signal.UnitId);
+            // The unit stays marked as peer-known: peers that did not observe
+            // the death keep last-known intel, and the visibility-feed
+            // reconcile sends UnitVanish once they re-scout the cell.
         }
 
         private void OnNetworkUnitMove(string senderId, byte[] body)
@@ -238,15 +226,12 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
                         peerId,
                         GameCommandType.UnitSpawn,
                         payload.ToBytes());
-                },
-                payload.ToBytes(),
-                GameCommandType.UnitSpawn);
+                });
         }
 
         private void SendUnitMoveOrRevealToVisiblePeers(
             UnitMovePayload movePayload,
             string unitOwnerId,
-            Vector2Int previousPosition,
             Vector2Int newPosition)
         {
             byte[] moveBytes =
@@ -254,69 +239,57 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
             SendUnitCommandToPeers(
                 peerId =>
                 {
+                    // Fog-of-war rule: a hidden destination never leaves the
+                    // host. Peers that can see the new cell get a spawn payload
+                    // (discovers unknown units and re-syncs remembered ones);
+                    // everyone else keeps their last-known memory until they
+                    // legitimately re-observe the unit.
+                    if (!CanPeerObserveWorldEvent(
+                            peerId,
+                            unitOwnerId,
+                            newPosition))
+                    {
+                        return;
+                    }
+
                     bool known =
                         IsUnitKnownByPeer(
                             peerId,
                             movePayload.UnitId);
-                    bool canSeeNew =
-                        CanPeerObserveWorldEvent(
-                            peerId,
+                    if (TryCreateUnitSpawnPayload(
+                            movePayload.UnitId,
                             unitOwnerId,
-                            newPosition);
-                    bool canSeePrevious =
-                        CanPeerObserveWorldEvent(
-                            peerId,
-                            unitOwnerId,
-                            previousPosition);
-
-                    if (!known && canSeeNew)
+                            newPosition,
+                            out UnitSpawnPayload spawnPayload))
                     {
-                        if (TryCreateUnitSpawnPayload(
-                                movePayload.UnitId,
-                                unitOwnerId,
-                                newPosition,
-                                out UnitSpawnPayload spawnPayload))
-                        {
-                            MarkUnitKnownByPeer(
-                                peerId,
-                                movePayload.UnitId);
-                            _syncService.SendCommandToPeer(
-                                peerId,
-                                GameCommandType.UnitSpawn,
-                                spawnPayload.ToBytes());
-                        }
-
+                        MarkUnitKnownByPeer(
+                            peerId,
+                            movePayload.UnitId);
+                        _syncService.SendCommandToPeer(
+                            peerId,
+                            GameCommandType.UnitSpawn,
+                            spawnPayload.ToBytes());
                         return;
                     }
 
-                    if (!known
-                        || (!canSeePrevious && !canSeeNew))
+                    if (known)
                     {
-                        return;
+                        _syncService.SendCommandToPeer(
+                            peerId,
+                            GameCommandType.UnitMove,
+                            moveBytes);
                     }
-
-                    _syncService.SendCommandToPeer(
-                        peerId,
-                        GameCommandType.UnitMove,
-                        moveBytes);
-                },
-                moveBytes,
-                GameCommandType.UnitMove);
+                });
         }
 
         private void SendUnitCommandToPeers(
-            Action<string> sendToPeer,
-            byte[] fallbackPayload,
-            GameCommandType fallbackType)
+            Action<string> sendToPeer)
         {
             var participants =
                 _sessionManager?.Participants;
             if (participants == null
                 || participants.Count == 0)
             {
-                _syncService.SendCommand(
-                    fallbackType,
-                    fallbackPayload);
                 return;
             }
 
@@ -340,6 +313,268 @@ private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
                 }
 
                 sendToPeer(peerId);
+            }
+        }
+
+        private void OnNetworkUnitVanish(string senderId, byte[] body)
+        {
+            var data = UnitMovePayload.FromBytes(body);
+            if (data.Kind != GameActionMessageKind.Confirmed
+                || IsOfflineOrHost()
+                || !IsAuthorizedHostSender(senderId)
+                || string.IsNullOrWhiteSpace(data.UnitId))
+            {
+                return;
+            }
+
+            _applyingNetworkEvent = true;
+            try
+            {
+                string localOwnerId =
+                    NormalizeOwnerId(
+                        _roleResolver?.Resolve().PlayerId
+                        ?? _sessionManager?.LocalPlayerId);
+                _intelSink?.RemoveReplicatedUnit(localOwnerId, data.UnitId.Trim());
+
+                // The remembered entity is gone: tear down any stale local
+                // replica so it stops occupying the cell.
+                if (_unitService != null
+                    && _unitService.TryGetUnitPosition(data.UnitId, out _))
+                {
+                    _signalBus.Fire(new UnitDestroyedSignal
+                    {
+                        UnitId = data.UnitId,
+                    });
+                }
+            }
+            finally
+            {
+                _applyingNetworkEvent = false;
+            }
+        }
+
+        private void OnPeerCellsBecameVisible(
+            string ownerId,
+            IReadOnlyCollection<Vector2Int> cells)
+        {
+            if (!IsOfflineOrHost()
+                || _applyingNetworkEvent
+                || cells == null
+                || cells.Count == 0)
+            {
+                return;
+            }
+
+            string peerId = NormalizeOwnerId(ownerId);
+            if (string.IsNullOrWhiteSpace(peerId)
+                || string.Equals(
+                    peerId,
+                    NormalizeOwnerId(_sessionManager?.LocalPlayerId),
+                    StringComparison.Ordinal)
+                || !IsRemoteParticipant(peerId))
+            {
+                return;
+            }
+
+            var cellSet =
+                cells as HashSet<Vector2Int>
+                ?? new HashSet<Vector2Int>(cells);
+
+            ReconcilePeerUnits(peerId, cellSet);
+            ReconcilePeerBuildings(peerId, cellSet);
+        }
+
+        private bool IsRemoteParticipant(string peerId)
+        {
+            var participants = _sessionManager?.Participants;
+            if (participants == null)
+                return false;
+
+            for (int index = 0; index < participants.Count; index++)
+            {
+                if (string.Equals(
+                        NormalizeOwnerId(participants[index]?.Identity?.PlayerId),
+                        peerId,
+                        StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void ReconcilePeerUnits(
+            string peerId,
+            HashSet<Vector2Int> revealedCells)
+        {
+            // Units standing on freshly revealed cells: spawn (or re-sync) any
+            // unit whose last-known state no longer matches reality.
+            IReadOnlyCollection<string> unitIds =
+                _unitService?.GetAllUnitIds();
+            if (unitIds != null)
+            {
+                foreach (string unitId in unitIds)
+                {
+                    if (string.IsNullOrWhiteSpace(unitId)
+                        || !_unitService.TryGetUnitPosition(
+                            unitId,
+                            out Vector2Int position)
+                        || !revealedCells.Contains(position))
+                    {
+                        continue;
+                    }
+
+                    // Garrisoned units have no world entity at the cell — the
+                    // intel store already handled observers of the garrison.
+                    if (_unitService is IConstructionUnitGarrisonRuntime garrison
+                        && garrison.IsGarrisoned(unitId))
+                    {
+                        continue;
+                    }
+
+                    string unitOwnerId =
+                        NormalizeOwnerId(
+                            _unitOwnershipQuery?.GetUnitOwnerId(unitId));
+                    if (string.Equals(
+                            unitOwnerId,
+                            peerId,
+                            StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    bool known =
+                        IsUnitKnownByPeer(peerId, unitId);
+                    bool memoryIsStale =
+                        _intelReader != null
+                        && _intelReader.TryGetRememberedUnit(
+                            peerId,
+                            unitId,
+                            out FogIntelUnitRecord memory)
+                        && memory.LastKnownPosition != position;
+                    if (known && !memoryIsStale)
+                        continue;
+
+                    if (TryCreateUnitSpawnPayload(
+                            unitId,
+                            unitOwnerId,
+                            position,
+                            out UnitSpawnPayload spawnPayload))
+                    {
+                        MarkUnitKnownByPeer(peerId, unitId);
+                        _syncService.SendCommandToPeer(
+                            peerId,
+                            GameCommandType.UnitSpawn,
+                            spawnPayload.ToBytes());
+                    }
+                }
+            }
+
+            // Known units that no longer exist: forget them only once the peer
+            // re-observes the cell where it last saw them.
+            if (!_knownUnitsByPeer.TryGetValue(
+                    peerId,
+                    out HashSet<string> knownUnits)
+                || knownUnits.Count == 0)
+            {
+                return;
+            }
+
+            foreach (string unitId in new List<string>(knownUnits))
+            {
+                if (_unitService == null
+                    || _unitService.TryGetUnitPosition(unitId, out _))
+                {
+                    continue;
+                }
+
+                // No intel record → the peer either watched the death (its
+                // replica already died) or never built a memory — either way a
+                // vanish is safe cleanup. With a record, vanish only once the
+                // peer re-observes the last-known cell.
+                bool rememberedCellRevealed =
+                    _intelReader == null
+                    || !_intelReader.TryGetRememberedUnit(
+                            peerId,
+                            unitId,
+                            out FogIntelUnitRecord memory)
+                    || revealedCells.Contains(memory.LastKnownPosition);
+                if (!rememberedCellRevealed)
+                    continue;
+
+                var vanish = new UnitMovePayload(
+                    GameActionMessageKind.Confirmed,
+                    unitId,
+                    default);
+                _syncService.SendCommandToPeer(
+                    peerId,
+                    GameCommandType.UnitVanish,
+                    vanish.ToBytes());
+                knownUnits.Remove(unitId);
+            }
+        }
+
+        private void ReconcilePeerBuildings(
+            string peerId,
+            HashSet<Vector2Int> revealedCells)
+        {
+            IReadOnlyList<ConstructionSavedPlacement> placements =
+                _placementSnapshots?.GetSavedPlacements();
+            var authoritative = new Dictionary<Vector2Int, ConstructionSavedPlacement>();
+            if (placements != null)
+            {
+                for (int index = 0; index < placements.Count; index++)
+                {
+                    ConstructionSavedPlacement placement = placements[index];
+                    if (revealedCells.Contains(placement.Position))
+                        authoritative[placement.Position] = placement;
+                }
+            }
+
+            _knownBuildingsByPeer.TryGetValue(
+                peerId,
+                out HashSet<Vector2Int> knownCells);
+
+            foreach (Vector2Int cell in revealedCells)
+            {
+                bool hasAuthoritative = authoritative.TryGetValue(
+                    cell,
+                    out ConstructionSavedPlacement placement);
+                bool known = knownCells != null && knownCells.Contains(cell);
+
+                if (hasAuthoritative && !known)
+                {
+                    var payload = new BuildingPlacePayload(
+                        GameActionMessageKind.Confirmed,
+                        placement.BuildingId,
+                        placement.Position,
+                        placement.OwnerId,
+                        placement.OwnerId,
+                        rotation: placement.Rotation);
+                    _syncService.SendCommandToPeer(
+                        peerId,
+                        GameCommandType.BuildingPlace,
+                        payload.ToBytes());
+                    if (knownCells == null)
+                    {
+                        knownCells = new HashSet<Vector2Int>();
+                        _knownBuildingsByPeer[peerId] = knownCells;
+                    }
+                    knownCells.Add(cell);
+                }
+                else if (!hasAuthoritative && known)
+                {
+                    var payload = new BuildingDemolishPayload(
+                        GameActionMessageKind.Confirmed,
+                        cell,
+                        string.Empty);
+                    _syncService.SendCommandToPeer(
+                        peerId,
+                        GameCommandType.BuildingDemolish,
+                        payload.ToBytes());
+                    knownCells.Remove(cell);
+                }
             }
         }
 

@@ -97,6 +97,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                  positionIndex++)
             {
                 var result = new SelectionResult();
+
+                // Geography-engine spawn hints are already fairness-validated
+                // (separation, opportunity parity, mutual connectivity). Accept
+                // them when they still pass the local hard gates.
+                if (TryUseSpawnHint(signal, positions, positionIndex, result))
+                {
+                    positions.Add(result.Position);
+                    continue;
+                }
+
                 foreach (var step in SelectCandidate(signal, positions, attempts, result))
                     yield return step;
                 if (result.Found)
@@ -128,6 +138,31 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     $"#{positionIndex + 1}/{positionsCount}.");
             }
 
+        }
+
+        private bool TryUseSpawnHint(
+            WorldGeneratedDataSignal signal,
+            IReadOnlyList<Vector2Int> existingPositions,
+            int positionIndex,
+            SelectionResult result)
+        {
+            var hints = signal.SpawnHints;
+            if (hints == null || positionIndex >= hints.Length)
+                return false;
+
+            Vector2Int candidate = hints[positionIndex];
+            Vector2Int baseMapSize = StartingPositionMapUtility.ResolveBaseMapSize(signal);
+            if (!IsInsideStartBounds(candidate, baseMapSize.x, baseMapSize.y)
+                || !IsValidStartHeight(signal, candidate)
+                || ContainsPosition(existingPositions, candidate))
+                return false;
+
+            if (!_terrain.Evaluate(signal, candidate).HardValid)
+                return false;
+
+            result.Position = candidate;
+            result.Found = true;
+            return true;
         }
 
         public bool TryPickStartingPosition(

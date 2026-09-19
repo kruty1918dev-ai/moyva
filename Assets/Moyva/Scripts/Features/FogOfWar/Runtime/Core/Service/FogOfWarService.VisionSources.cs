@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (!_initialized)
             {
                 if (_pendingUnits.TryGetValue(unitId, out var pending))
-                    _pendingUnits[unitId] = (pending.Position, clampedRange, pending.Shape, pending.Modifiers);
+                    _pendingUnits[unitId] = (pending.Position, clampedRange, pending.Shape, pending.Modifiers, pending.OwnerId);
                 else
                     _unitVisionRange[unitId] = clampedRange;
                 return;
@@ -37,11 +37,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _unitVisionRange[unitId] = clampedRange;
 
             RemoveVisibleTiles(unitId);
-            var tiles = ComputeVisibleTiles(unitId, position, clampedRange);
-            _unitVisibleTiles[unitId] = tiles;
 
-            foreach (var tile in tiles)
-                AddVisibleTile(tile);
+            if (SourceContributesToLocalGrid(unitId))
+            {
+                var tiles = ComputeVisibleTiles(unitId, position, clampedRange);
+                _unitVisibleTiles[unitId] = tiles;
+
+                foreach (var tile in tiles)
+                    AddVisibleTile(tile);
+            }
 
             FlushVisual();
         }
@@ -49,12 +53,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         public void RegisterFixedVisionArea(string areaId, Vector2Int position, int visionRange, FogRevealShape shape)
             => RegisterVisionArea(areaId, position, visionRange, shape);
 
+        /// <summary>
+        /// Registers a vision source in the global catalog. The source only
+        /// contributes tiles to the local grid when its owner is the local
+        /// perspective owner (or unowned).
+        /// </summary>
         private void RegisterVisionArea(
             string unitId,
             Vector2Int position,
             int visionRange,
             FogRevealShape? shape,
-            FogVisionModifiers modifiers = default)
+            FogVisionModifiers modifiers = default,
+            string ownerId = null)
         {
             if (string.IsNullOrWhiteSpace(unitId))
                 return;
@@ -62,10 +72,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (!_initialized)
             {
                 _pendingUnits[unitId] =
-                    (position, visionRange, shape, modifiers);
+                    (position, visionRange, shape, modifiers, ownerId);
                 return;
             }
 
+            TrackSourceOwner(unitId, ownerId);
             RemoveVisibleTiles(unitId);
 
             visionRange = ClampVisionRange(visionRange);
@@ -78,15 +89,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             else
                 _fixedVisionShapes.Remove(unitId);
 
-            IReadOnlyList<Vector2Int> tiles =
-                ComputeInitialVisibleTiles(
-                    unitId,
-                    position,
-                    visionRange);
-            _unitVisibleTiles[unitId] = tiles;
+            if (SourceContributesToLocalGrid(unitId))
+            {
+                IReadOnlyList<Vector2Int> tiles =
+                    ComputeInitialVisibleTiles(
+                        unitId,
+                        position,
+                        visionRange);
+                _unitVisibleTiles[unitId] = tiles;
 
-            foreach (Vector2Int tile in tiles)
-                AddVisibleTile(tile);
+                foreach (Vector2Int tile in tiles)
+                    AddVisibleTile(tile);
+            }
 
             FlushVisual();
         }
@@ -102,30 +116,35 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 FogRevealShape? shape = _fixedVisionShapes.TryGetValue(unitId, out var storedShape)
                     ? storedShape
                     : null;
-                _pendingUnits[unitId] = (newPosition, pendingRange, shape, ResolveUnitVisionModifiers(unitId));
+                string pendingOwner = _pendingUnits.TryGetValue(unitId, out var pending)
+                    ? pending.OwnerId
+                    : GetSourceOwner(unitId);
+                _pendingUnits[unitId] = (newPosition, pendingRange, shape, ResolveUnitVisionModifiers(unitId), pendingOwner);
                 return;
             }
 
-            if (!_unitVisibleTiles.TryGetValue(unitId, out var oldTiles))
+            // Unknown global sources are never created from a position update:
+            // a source enters the local grid only through registration.
+            if (!_unitPositions.ContainsKey(unitId))
+                return;
+
+            if (_unitVisibleTiles.TryGetValue(unitId, out var oldTiles))
             {
-                int fallbackRange = _unitVisionRange.TryGetValue(unitId, out int storedRange)
-                    ? storedRange
-                    : _defaultVisionRange;
-
-                RegisterVisionArea(unitId, newPosition, fallbackRange, null, ResolveUnitVisionModifiers(unitId));
-                return;
+                foreach (var t in oldTiles)
+                    RemoveVisibleTile(t);
             }
-
-            foreach (var t in oldTiles)
-                RemoveVisibleTile(t);
 
             int range = _unitVisionRange.TryGetValue(unitId, out int r) ? r : _defaultVisionRange;
             _unitPositions[unitId] = newPosition;
-            var newTiles = ComputeVisibleTiles(unitId, newPosition, range);
-            _unitVisibleTiles[unitId] = newTiles;
 
-            foreach (var t in newTiles)
-                AddVisibleTile(t);
+            if (SourceContributesToLocalGrid(unitId))
+            {
+                var newTiles = ComputeVisibleTiles(unitId, newPosition, range);
+                _unitVisibleTiles[unitId] = newTiles;
+
+                foreach (var t in newTiles)
+                    AddVisibleTile(t);
+            }
 
             FlushVisual();
         }
@@ -142,16 +161,20 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _unitPositions.Remove(unitId);
                 _fixedVisionShapes.Remove(unitId);
                 _unitVisionModifiers.Remove(unitId);
+                _sourceOwners.Remove(unitId);
                 return;
             }
 
-            if (!RemoveVisibleTiles(unitId))
-                return;
+            bool hadLocalTiles = RemoveVisibleTiles(unitId);
 
             _unitVisionRange.Remove(unitId);
             _unitPositions.Remove(unitId);
             _fixedVisionShapes.Remove(unitId);
             _unitVisionModifiers.Remove(unitId);
+            _sourceOwners.Remove(unitId);
+
+            if (!hadLocalTiles)
+                return;
 
             FlushVisual();
         }

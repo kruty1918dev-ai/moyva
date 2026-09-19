@@ -152,8 +152,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (_starterPackGrantEnabled && !_starterPackState.HasGranted(activeOwnerId))
             {
-                _grantService.TryGrant(string.Empty, activeOwnerId);
-                _persistenceService.TryPersistStarterGrant(slot, activeOwnerId, "після видачі стартових ресурсів", _grantService.HasStarterPackEntries());
+                // Marking on a failed grant deadlocks the player: the settlement
+                // grant path is skipped and no later trigger exists.
+                if (_grantService.TryGrant(string.Empty, activeOwnerId))
+                    _persistenceService.TryPersistStarterGrant(slot, activeOwnerId, "після видачі стартових ресурсів", _grantService.HasStarterPackEntries());
             }
 
             TryGrantParticipantStarterPacks();

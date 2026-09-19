@@ -20,6 +20,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 .AsSingle();
             container.BindInterfacesAndSelfTo<GameplayCargoPanel>()
                 .AsSingle().NonLazy();
+            container.BindInterfacesAndSelfTo<GameplaySupplyPanel>()
+                .AsSingle().NonLazy();
             container.BindInterfacesAndSelfTo<GameplayCameraFocusService>()
                 .AsSingle();
             container.BindInterfacesAndSelfTo<GameplayWorldFocusPingPresenter>()

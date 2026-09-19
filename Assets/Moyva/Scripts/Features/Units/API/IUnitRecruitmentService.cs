@@ -173,4 +173,32 @@ namespace Kruty1918.Moyva.Units.API
         IReadOnlyList<UnitRecruitmentQueueItemSnapshot> CaptureState();
         void RestoreState(IReadOnlyList<UnitRecruitmentQueueItemSnapshot> items);
     }
+
+    /// <summary>
+    /// Client-side boundary for recruitment commands in multiplayer sessions.
+    /// A client never mutates local queue state directly; the host executes the
+    /// canonical <see cref="IUnitRecruitmentService"/> and broadcasts the queue
+    /// table so every peer converges on the authoritative state.
+    /// </summary>
+    public interface IUnitRecruitmentRemoteCommandRequester
+    {
+        bool TryRequestEnqueue(
+            string ownerId,
+            Vector2Int recruitingBuildingPosition,
+            string unitTypeId,
+            out string reason);
+
+        bool TryRequestCancel(
+            string ownerId,
+            Vector2Int recruitingBuildingPosition,
+            long queueId,
+            out string reason);
+
+        bool TryRequestDeploy(
+            string ownerId,
+            Vector2Int recruitingBuildingPosition,
+            long queueId,
+            Vector2Int targetPosition,
+            out string reason);
+    }
 }

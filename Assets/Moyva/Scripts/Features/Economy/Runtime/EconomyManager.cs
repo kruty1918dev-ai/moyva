@@ -410,10 +410,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 if (pair.Value <= 0f)
                     continue;
 
-                float currentAmount = state.GetResource(pair.Key);
+                float currentAmount = state.GetAvailableResource(pair.Key);
                 if (currentAmount + 0.0001f < pair.Value)
                 {
-                    errorMessage = $"Недостатньо ресурсу '{ResolveResourceDisplayName(pair.Key)}' у поселенні '{GetSettlementNameOrFallback(settlementId)}': потрібно {pair.Value:0.#}, зараз {currentAmount:0.#}.";
+                    errorMessage = $"Недостатньо ресурсу '{ResolveResourceDisplayName(pair.Key)}' у поселенні '{GetSettlementNameOrFallback(settlementId)}': потрібно {pair.Value:0.#}, доступно {currentAmount:0.#}.";
                     return false;
                 }
             }
@@ -586,6 +586,37 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return new Dictionary<string, float>(state.ResourcePool, StringComparer.Ordinal);
         }
 
+        public Dictionary<string, float> GetSettlementReservedResourceTotals(string settlementId)
+        {
+            if (string.IsNullOrWhiteSpace(settlementId))
+                return new Dictionary<string, float>(StringComparer.Ordinal);
+
+            var state = _settlementRegistry.GetSettlement(settlementId);
+            if (state == null)
+                return new Dictionary<string, float>(StringComparer.Ordinal);
+
+            return state.GetReservedSnapshot();
+        }
+
+        public Dictionary<string, float> GetSettlementAvailableResourceTotals(string settlementId)
+        {
+            if (string.IsNullOrWhiteSpace(settlementId))
+                return new Dictionary<string, float>(StringComparer.Ordinal);
+
+            var state = _settlementRegistry.GetSettlement(settlementId);
+            if (state == null)
+                return new Dictionary<string, float>(StringComparer.Ordinal);
+
+            var result = new Dictionary<string, float>(StringComparer.Ordinal);
+            foreach (var pair in state.ResourcePool)
+            {
+                float available = Math.Max(0f, pair.Value - state.GetTotalReservedResource(pair.Key));
+                if (available > 0.0001f)
+                    result[pair.Key] = available;
+            }
+            return result;
+        }
+
         public Dictionary<string, float> GetOwnerPoolResourceTotals(string ownerId)
         {
             return _ownerResourcePoolService.GetOwnerPoolResourceTotals(ownerId);
@@ -673,6 +704,25 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     }
                     saved.Warehouses[
                         warehouse.Key] = pool;
+                }
+
+                foreach (var reserved
+                         in state.WarehouseReservedPools)
+                {
+                    var pool =
+                        new Dictionary<string, float>(
+                            StringComparer.Ordinal);
+                    if (reserved.Value != null)
+                    {
+                        foreach (var resource
+                                 in reserved.Value)
+                        {
+                            pool[resource.Key] =
+                                resource.Value;
+                        }
+                    }
+                    saved.ReservedWarehouses[
+                        reserved.Key] = pool;
                 }
 
                 foreach (var assignment
@@ -873,6 +923,16 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     warehouse.Key] =
                     new Dictionary<string, float>(
                         warehouse.Value,
+                        StringComparer.Ordinal);
+            }
+
+            state.WarehouseReservedPools.Clear();
+            foreach (var reserved in saved.ReservedWarehouses)
+            {
+                state.WarehouseReservedPools[
+                    reserved.Key] =
+                    new Dictionary<string, float>(
+                        reserved.Value,
                         StringComparer.Ordinal);
             }
 

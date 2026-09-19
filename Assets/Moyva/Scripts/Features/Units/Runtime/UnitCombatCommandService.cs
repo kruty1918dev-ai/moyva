@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
@@ -21,6 +22,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly ITurnService _turns;
         private readonly IGameplayProgressClock _progressClock;
         private readonly IUnitTurnActionStateService _actionState;
+        private readonly IFogOwnerStateReader _ownerFog;
 
         [Inject]
         public UnitCombatCommandService(
@@ -32,7 +34,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             [InjectOptional] IUnitOwnershipQuery ownership = null,
             [InjectOptional] ITurnService turns = null,
             [InjectOptional] IGameplayProgressClock progressClock = null,
-            [InjectOptional] IUnitTurnActionStateService actionState = null)
+            [InjectOptional] IUnitTurnActionStateService actionState = null,
+            [InjectOptional] IFogOwnerStateReader ownerFog = null)
         {
             _combat = combat;
             _units = units;
@@ -43,6 +46,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _turns = turns;
             _progressClock = progressClock;
             _actionState = actionState;
+            _ownerFog = ownerFog;
         }
 
         public bool TryPreview(
@@ -230,11 +234,23 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
             }
 
+            if (_ownerFog != null && !_ownerFog.IsVisible(attackerOwner, target.Position))
+            {
+                reason = "Target is outside your current vision.";
+                return false;
+            }
+
             string unitTypeId = _units.GetUnitTypeId(attackerEntityId);
             UnitClassConfig attacker = _unitClasses.GetConfig(unitTypeId);
             if (attacker == null)
             {
                 reason = "Attacker combat profile is unavailable.";
+                return false;
+            }
+
+            if (attacker.CanTransportCargo)
+            {
+                reason = "Transport units cannot attack.";
                 return false;
             }
 

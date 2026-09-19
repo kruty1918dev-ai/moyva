@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         [InjectOptional] private IUnitService _units;
         [InjectOptional] private IUnitOwnershipQuery _owners;
+        [InjectOptional] private IUnitClassConfig _unitConfigs;
         [InjectOptional] private ITurnService _turns;
         [InjectOptional] private ITurnAuthorityPolicy _authority;
         [InjectOptional] private IFogOwnerStateReader _fog;
@@ -40,6 +41,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
             reason = "Only an existing owned unit can capture a settlement.";
             if (string.IsNullOrWhiteSpace(unitId) || _owners.GetUnitOwnerId(unitId) != ownerId
                 || !_units.TryGetUnitPosition(unitId, out var position)) return false;
+            reason = "Only a military unit can capture a settlement.";
+            UnitClassConfig unitConfig = _unitConfigs?.GetConfig(_units.GetUnitTypeId(unitId));
+            if (unitConfig != null && (unitConfig.Role != UnitRole.Military || unitConfig.CanTransportCargo))
+                return false;
             // Check visibility before resolving any enemy building or settlement state.
             reason = "Target is outside your current vision.";
             if (!_fog.IsVisible(ownerId, targetPosition)) return false;

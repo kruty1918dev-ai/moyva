@@ -36,7 +36,7 @@ Base: `Features/`
 | Game mode / pause / exit | `GameMode/API/`; `GameMode/Runtime/GameModeInstaller.cs`; `GameMode/Runtime/GameModeService.cs`; `GameMode/Runtime/GameStateService.cs`; `GameMode/Runtime/ExitMatchCoordinator.cs` |
 | Save / restore / launch options | `SaveSystem/API/`; `SaveSystem/Runtime/SaveSystemInstaller.cs`; `SaveSystem/Runtime/SaveService.cs`; `SaveSystem/Runtime/SaveModuleRegistry.cs`; `SaveSystem/Runtime/SavePlayModeOptions.cs` |
 | World settings | `WorldCreation/API/IWorldCreationService.cs`; `WorldCreation/Runtime/WorldCreationInstaller.cs`; `WorldCreation/Runtime/WorldCreationService.cs` |
-| Signals / events | `Signals/API/`; `Signals/Runtime/SignalBusInstaller.cs`; `Signals/Runtime/SignalDomainEventBridge.cs` |
+| Signals / events | `Signals/API/`; `Signals/Runtime/SignalBusInstaller.cs`; `Signals/Runtime/WorldGenerationSignalState.cs` |
 | UI actions | `UIActions/API/`; `UIActions/Runtime/UiActionsInstaller.cs`; `UIActions/Runtime/UiActionRouter.cs` |
 | Tile selection | `Interactions/API/ITileInteractionService.cs`; `Interactions/Runtime/InteractionsInstaller.cs`; `Interactions/Runtime/WorldInfoSelectionCoordinator.cs` |
 | Info panel | `InfoPanel/UI/WorldInfoPanelInstaller.cs` |
@@ -130,7 +130,7 @@ EvaluatePlacement owns decisions; SessionStore owns state.
 
 Base: `Features/HomeMenu/Runtime/`
 
-UI shell is MoyvaUI markup mounted through HomeMenuMoyvaUiAnchor.
+Dynamic MoyvaUI is the single production shell, mounted through HomeMenuMoyvaUiAnchor.
 
 | Task | Files |
 |---|---|
@@ -171,6 +171,7 @@ GameplayHudBindings selects GameplayHtmlPresenter/State.
 | Cargo presentation | `GameplayCargoPanel.cs` |
 | Deployment session | `UnitRecruitmentDeploymentController.cs`; `UnitRecruitmentDeploymentController.Session.cs` |
 | Preview / controls / UI actions | `UnitRecruitmentDeploymentController.Preview.cs`; `UnitRecruitmentDeploymentController.Controls.cs`; `UnitRecruitmentDeploymentController.UiActions.cs` |
+| Recruitment indicators / canvas | `UnitRecruitmentReadyIndicatorPresenter.cs`; `UnitRecruitmentProgressIndicatorPresenter.cs`; `RecruitmentIndicatorCanvasContainer.cs` |
 
 ## Multiplayer session / commands / transport
 
@@ -214,9 +215,8 @@ Skip for fog-state tasks.
 | Shader / world transform | `ScreenSpace/FogScreenSpaceTextureUpdater.ShaderPublisher.cs`; `ScreenSpace/FogScreenSpaceTextureUpdater.Transform.cs` |
 | Curtain geometry / calibration | `ScreenSpace/FogBoundaryCurtainRenderer.Geometry.cs`; `ScreenSpace/FogBoundaryCurtainRenderer.SurfaceCalibration.cs`; `ScreenSpace/FogBoundaryCurtainRenderer.SurfaceGrid.cs` |
 | Curtain material / top cap | `ScreenSpace/FogBoundaryCurtainRenderer.Presentation.cs`; `ScreenSpace/FogBoundaryCurtainRenderer.TopCap.cs` |
-| Volume host / scene context | `Volume/Controller/FogOfWarVolumeController.cs`; `Volume/Context/FogVolumeSceneContextBuilder.cs` |
-| Volume lifecycle / scheduling | `Volume/Build/FogVolumeVisualUpdateEngine.Lifecycle.cs`; `Volume/Build/FogVolumeVisualUpdateEngine.Scheduling.cs` |
-| TWC runtime layers / build | `Volume/Build/FogVolumeVisualUpdateEngine.RuntimeLayers.cs`; `Volume/Build/FogVolumeVisualUpdateEngine.TwcBuild.cs`; `Volume/Build/FogVolumeVisualUpdateEngine.Height.cs` |
+| Renderer culling | `Culling/FogRendererCullingEngine.cs` |
+| Shared visual context / height | `FogWorldVisualContextFactory.cs`; `FogVolumeHeightSampler.cs` |
 
 ## Generator / world build
 
@@ -231,4 +231,5 @@ World build: generate/restore → Grid → signals.
 | Recipe model / pipeline | `API/GeneratorMapRecipe.cs`; `Runtime/MapData/RecipeMapDataGenerator.cs`; `Runtime/Recipe/RecipeToConfigurationCompilerService.cs` |
 | Recipe semantics / masks | `Runtime/Recipe/GeneratorMapRecipeValidator.cs`; `Runtime/Recipe/GeneratorMaskEvaluator.cs` |
 | Logical tile map | `Runtime/LogicalMap/LogicalTileMapBuilderService.cs`; `Runtime/LogicalTileMap.cs` |
+| Geography engine (deterministic world gen) | `Runtime/Geography/`; `API/WorldGenerationConfig.cs` |
 | Chunk-first terrain mesh | `Runtime/ChunkFirst/Mesh/`; `Runtime/ChunkFirst/TwcAdapter/TwcTileMeshSourceProvider.cs` |

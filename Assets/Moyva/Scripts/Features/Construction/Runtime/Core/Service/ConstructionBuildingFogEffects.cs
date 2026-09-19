@@ -91,6 +91,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string areaId =
                 GetBuildingFogVisionAreaId(position);
 
+            // RegisterOwnedFixedVisionArea feeds the owner's grid and the
+            // local-perspective catalog in one call; the local grid only gains
+            // tiles while the owner is the local perspective owner.
             if (radius <= 0)
             {
                 _fogOfWarService.UnregisterUnit(areaId);
@@ -100,12 +103,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (!hasFogModule)
             {
-                _fogOfWarService.RegisterFixedVisionArea(
-                    areaId,
-                    position,
-                    radius,
-                    FogRevealShape.PixelCircle);
-                _ownerVision?.RegisterFixedVisionArea(
+                _ownerVision?.RegisterOwnedFixedVisionArea(
                     ownerId,
                     areaId,
                     position,
@@ -116,12 +114,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (fogReveal.RevealWhileActive)
             {
-                _fogOfWarService.RegisterFixedVisionArea(
-                    areaId,
-                    position,
-                    radius,
-                    fogReveal.Shape);
-                _ownerVision?.RegisterFixedVisionArea(
+                _ownerVision?.RegisterOwnedFixedVisionArea(
                     ownerId,
                     areaId,
                     position,
@@ -135,12 +128,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (fogReveal.RevealOnBuilt)
             {
-                _fogOfWarService.RevealArea(
-                    position,
-                    radius,
-                    fogReveal.Shape,
-                    keepVisible: false,
-                    areaId);
+                if (_fogOfWarService.IsLocalPerspectiveOwner(ownerId))
+                    _fogOfWarService.RevealArea(
+                        position,
+                        radius,
+                        fogReveal.Shape,
+                        keepVisible: false,
+                        areaId);
                 _ownerVision?.RevealArea(
                     ownerId,
                     position,
@@ -154,6 +148,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public void Remove(Vector2Int position, string ownerId = null)
         {
             string areaId = GetBuildingFogVisionAreaId(position);
+            // The global catalog may hold an owner-tagged entry for this
+            // building regardless of perspective — always clean it.
             _fogOfWarService?.UnregisterUnit(areaId);
             _ownerVision?.UnregisterUnit(ownerId, areaId);
         }

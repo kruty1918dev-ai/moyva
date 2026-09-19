@@ -37,6 +37,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IExitMatchCoordinator _exit;
         private readonly IGameplayProgressClock _progressClock;
         private readonly GameplayCargoPanel _cargo;
+        private readonly GameplaySupplyPanel _supply;
         private readonly SignalBus _notificationSignals;
 
         public GameplayHtmlBridge(
@@ -49,6 +50,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IExitMatchCoordinator exit,
             IGameplayProgressClock progressClock = null,
             GameplayCargoPanel cargo = null,
+            GameplaySupplyPanel supply = null,
             SignalBus notificationSignals = null)
         {
             _state = state;
@@ -60,6 +62,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _exit = exit;
             _progressClock = progressClock;
             _cargo = cargo;
+            _supply = supply;
             _notificationSignals = notificationSignals;
         }
         public void Kingdom() => OpenOverlayPanel(GameplayHtmlPanel.Kingdom);
@@ -217,6 +220,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public void ShowBuildings() => _state.SetDashboardTab(KingdomDashboardTab.Buildings);
         public void ShowUnits() => _state.SetDashboardTab(KingdomDashboardTab.Units);
         public void ShowTurns() => _state.SetDashboardTab(KingdomDashboardTab.Turns);
+        public void ShowLogistics() => _state.SetDashboardTab(KingdomDashboardTab.Logistics);
+        public void OpenSupply(object x, object y, object buildingId)
+        {
+            if (_state.OpenPanelId == GameplayHtmlPanel.Construction)
+            {
+                UiActionResult closeResult = Execute(UiActionIds.Construction.Close, "GameplayHTML");
+                if (closeResult.Status == UiActionStatus.Rejected) return;
+            }
+            _state.OpenSupplyPanel(new Vector2Int(ToInt(x), ToInt(y)), buildingId?.ToString());
+        }
+        public void SetSupplySource(object value) => _supply?.SetSource(ToInt(value));
+        public void SetSupplyWagon(object value) => _supply?.SetWagon(ToInt(value));
+        public void DispatchSupply()
+        {
+            var result = Execute(UiActionIds.Logistics.Supply, "GameplayHTML/Supply");
+            if (result.Status != UiActionStatus.Performed) SetResult(result, string.Empty);
+        }
         public void ShowSelectionDetails() => _state.SetSelectionTab(GameplaySelectionTab.Details);
         public void ShowRecruitment() => _state.SetSelectionTab(GameplaySelectionTab.Recruit);
         public void ShowRecruitmentQueue() => _state.SetSelectionTab(GameplaySelectionTab.Queue);
@@ -288,6 +308,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             UiActionResult result = Execute(UiActionIds.Combat.CaptureSelection, "GameplayHTML/Combat");
             SetResult(result, _state.T("Settlement captured."));
+        }
+
+        public void GroupMergeToggle()
+        {
+            UiActionResult result = Execute(UiActionIds.UnitGroup.ToggleMerge, "GameplayHTML/Units");
+            if (result.Status != UiActionStatus.Performed)
+                SetResult(result, "Group merge toggled.");
+            else
+                _state.MarkDirty();
+        }
+
+        public void GroupDisband()
+        {
+            UiActionResult result = Execute(UiActionIds.UnitGroup.Disband, "GameplayHTML/Units");
+            SetResult(result, "Group disbanded.");
         }
 
         public void Recruit(object value)

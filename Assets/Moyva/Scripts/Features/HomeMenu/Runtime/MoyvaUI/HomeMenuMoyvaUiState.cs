@@ -30,6 +30,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public bool IsInteractionActive => _interactionDepth > 0;
         public bool IsMounted { get; set; }
         public bool IsFallback { get; set; }
+        public bool ReducedMotion { get; private set; }
+
+        public void SetReducedMotion(bool reduced)
+        {
+            if (ReducedMotion == reduced)
+                return;
+
+            ReducedMotion = reduced;
+            MarkDirty();
+        }
 
         public void Open(string route)
         {

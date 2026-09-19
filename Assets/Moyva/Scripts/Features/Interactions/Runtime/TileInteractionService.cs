@@ -1,5 +1,7 @@
 using Kruty1918.Moyva.Interactions.API;
+using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Generator.API;
@@ -35,6 +37,11 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly IUnitMovementQuery _unitMovementQuery;
         private readonly IUnitOwnershipQuery _unitOwnershipQuery;
         private readonly IUnitCombatService _unitCombatService;
+        private readonly IUnitGroupService _unitGroupService;
+        private readonly IUnitGroupRemoteCommandRequester _remoteGroups;
+        private readonly ICombatCommandService _combatCommandService;
+        private readonly ICombatRemoteCommandRequester _remoteCombat;
+        private readonly ILocalGameplayRoleResolver _roleResolver;
         private readonly IConstructionSessionCommands _constructionService;
         private readonly IConstructionLifecycle _constructionLifecycle;
         private readonly IGameplayNotificationService _notifications;
@@ -43,6 +50,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private GameModeType _currentMode = GameModeType.Normal;
 
         private string _selectedUnitId;
+        private bool _groupMergeArmed;
         private CancellationTokenSource _moveCts;
         // Tracks what the WorldInfoPanel is currently showing (synced via signal).
         private WorldInfoSelectionKind _inspectedKind;
@@ -62,6 +70,11 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             [InjectOptional] IUnitMovementQuery unitMovementQuery,
             [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery,
             [InjectOptional] IUnitCombatService unitCombatService,
+            [InjectOptional] IUnitGroupService unitGroupService,
+            [InjectOptional] IUnitGroupRemoteCommandRequester remoteGroups,
+            [InjectOptional] ICombatCommandService combatCommandService,
+            [InjectOptional] ICombatRemoteCommandRequester remoteCombat,
+            [InjectOptional] ILocalGameplayRoleResolver roleResolver,
             [InjectOptional] IConstructionSessionCommands constructionService,
             [InjectOptional] ITurnService turns,
             [InjectOptional] IConstructionLifecycle constructionLifecycle,
@@ -77,6 +90,11 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _unitMovementQuery = unitMovementQuery;
             _unitOwnershipQuery = unitOwnershipQuery;
             _unitCombatService = unitCombatService;
+            _unitGroupService = unitGroupService;
+            _remoteGroups = remoteGroups;
+            _combatCommandService = combatCommandService;
+            _remoteCombat = remoteCombat;
+            _roleResolver = roleResolver;
             _constructionService = constructionService;
             _turns = turns;
             _constructionLifecycle = constructionLifecycle;
@@ -90,6 +108,9 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
             _signalBus.Subscribe<WorldInfoSelectionChangedSignal>(OnWorldInfoSelectionChanged);
             _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.Subscribe<UnitMoveRejectedSignal>(OnUnitMoveRejected);
+            _signalBus.Subscribe<UnitGroupCommandRejectedSignal>(OnUnitGroupCommandRejected);
+            _signalBus.Subscribe<UnitRecruitmentCommandRejectedSignal>(OnUnitRecruitmentCommandRejected);
         }
 
         public void Dispose()
@@ -98,7 +119,44 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
             _signalBus.TryUnsubscribe<WorldInfoSelectionChangedSignal>(OnWorldInfoSelectionChanged);
             _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.TryUnsubscribe<UnitMoveRejectedSignal>(OnUnitMoveRejected);
+            _signalBus.TryUnsubscribe<UnitGroupCommandRejectedSignal>(OnUnitGroupCommandRejected);
+            _signalBus.TryUnsubscribe<UnitRecruitmentCommandRejectedSignal>(OnUnitRecruitmentCommandRejected);
             CancelMovement(MovementCancelReason.Dispose);
+        }
+
+        private void OnUnitMoveRejected(UnitMoveRejectedSignal signal)
+        {
+            // Only surface rejections for units the local player could command.
+            if (!CanCommandUnit(signal.UnitId))
+                return;
+
+            _notifications?.Show(
+                string.IsNullOrWhiteSpace(signal.Reason)
+                    ? "Рух неможливий"
+                    : signal.Reason,
+                GameplayNotificationKind.Warning,
+                dedupKey: "unit-move-rejected");
+        }
+
+        private void OnUnitGroupCommandRejected(UnitGroupCommandRejectedSignal signal)
+        {
+            _notifications?.Show(
+                string.IsNullOrWhiteSpace(signal.Reason)
+                    ? "Команду групи відхилено"
+                    : signal.Reason,
+                GameplayNotificationKind.Warning,
+                dedupKey: "unit-group-rejected");
+        }
+
+        private void OnUnitRecruitmentCommandRejected(UnitRecruitmentCommandRejectedSignal signal)
+        {
+            _notifications?.Show(
+                string.IsNullOrWhiteSpace(signal.Reason)
+                    ? "Команду найму відхилено"
+                    : signal.Reason,
+                GameplayNotificationKind.Warning,
+                dedupKey: "unit-recruitment-rejected");
         }
 
         private void OnGameModeChanged(GameModeChangedSignal signal)
@@ -106,6 +164,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _currentMode = signal.NewMode;
             if (!CanSelectUnit())
                 ClearSelectedUnit();
+            else
+                _groupMergeArmed = false;
 
             if (signal.NewMode != GameModeType.Normal)
             {
@@ -227,6 +287,9 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 if (!canSelectUnit)
                     return;
 
+                if (TryHandleGroupMergeClick(occupantId))
+                    return;
+
                 if (TryHandleAttackClick(occupantId))
                     return;
 
@@ -260,6 +323,150 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             }
         }
 
+        public bool IsGroupMergeArmed => _groupMergeArmed;
+
+        public bool ToggleGroupMergeArm()
+        {
+            if (!CanCommandUnit(_selectedUnitId))
+            {
+                _groupMergeArmed = false;
+                _notifications?.Show(
+                    "Спочатку виберіть власного юніта",
+                    GameplayNotificationKind.Warning,
+                    dedupKey: "unit-group-merge-no-unit");
+                return false;
+            }
+
+            _groupMergeArmed = !_groupMergeArmed;
+            if (_groupMergeArmed)
+            {
+                _notifications?.Show(
+                    "Клікніть на іншого свого юніта, щоб об'єднати їх у групу",
+                    GameplayNotificationKind.Info,
+                    dedupKey: "unit-group-merge-armed");
+            }
+            return true;
+        }
+
+        public bool TryDisbandSelectedGroup()
+        {
+            if (!CanCommandUnit(_selectedUnitId) || _unitGroupService == null)
+                return false;
+
+            string groupId = _unitGroupService.GetGroupIdOfUnit(_selectedUnitId);
+            if (string.IsNullOrEmpty(groupId))
+            {
+                _notifications?.Show(
+                    "Вибраний юніт не належить до групи",
+                    GameplayNotificationKind.Warning,
+                    dedupKey: "unit-group-disband-none");
+                return false;
+            }
+
+            string ownerId = GetLocalOwnerId();
+            string reason = null;
+            bool requested;
+            if (IsLocalClient())
+            {
+                requested = _remoteGroups != null
+                    && _remoteGroups.TryRequestDisbandGroup(ownerId, groupId, out reason);
+            }
+            else
+            {
+                requested = _unitGroupService.TryDisbandGroup(ownerId, groupId, out reason);
+            }
+            if (!requested)
+                FailGroupCommand(reason);
+            return requested;
+        }
+
+        private bool TryHandleGroupMergeClick(string targetUnitId)
+        {
+            if (!_groupMergeArmed || _unitGroupService == null
+                || string.IsNullOrWhiteSpace(_selectedUnitId)
+                || string.IsNullOrWhiteSpace(targetUnitId)
+                || string.Equals(_selectedUnitId, targetUnitId, StringComparison.Ordinal)
+                || !CanCommandUnit(_selectedUnitId))
+            {
+                return false;
+            }
+
+            // Merge only targets own units; clicking an enemy stays an attack.
+            if (!CanCommandUnit(targetUnitId))
+                return false;
+
+            _groupMergeArmed = false;
+            string ownerId = GetLocalOwnerId();
+            string targetGroupId = _unitGroupService?.GetGroupIdOfUnit(targetUnitId);
+            string selectedGroupId = _unitGroupService?.GetGroupIdOfUnit(_selectedUnitId);
+            bool requested;
+
+            if (!string.IsNullOrEmpty(selectedGroupId)
+                && string.Equals(selectedGroupId, targetGroupId, StringComparison.Ordinal))
+            {
+                _notifications?.Show(
+                    "Юніти вже в одній групі",
+                    GameplayNotificationKind.Warning,
+                    dedupKey: "unit-group-merge-same");
+                return true;
+            }
+
+            string reason = null;
+            if (!string.IsNullOrEmpty(targetGroupId))
+            {
+                requested = IsLocalClient()
+                    ? _remoteGroups != null
+                      && _remoteGroups.TryRequestAddUnit(
+                          ownerId, targetGroupId, _selectedUnitId, out reason)
+                    : _unitGroupService.TryAddUnit(
+                          ownerId, targetGroupId, _selectedUnitId, out reason);
+            }
+            else if (!string.IsNullOrEmpty(selectedGroupId))
+            {
+                requested = IsLocalClient()
+                    ? _remoteGroups != null
+                      && _remoteGroups.TryRequestAddUnit(
+                          ownerId, selectedGroupId, targetUnitId, out reason)
+                    : _unitGroupService.TryAddUnit(
+                          ownerId, selectedGroupId, targetUnitId, out reason);
+            }
+            else
+            {
+                var members = new[] { _selectedUnitId, targetUnitId };
+                requested = IsLocalClient()
+                    ? _remoteGroups != null
+                      && _remoteGroups.TryRequestCreateGroup(
+                          ownerId, members, out reason)
+                    : _unitGroupService.TryCreateGroup(
+                          ownerId, members, out _, out reason);
+            }
+            if (!requested)
+                FailGroupCommand(reason);
+
+            if (requested)
+            {
+                _notifications?.Show(
+                    "Групу оновлено",
+                    GameplayNotificationKind.Info,
+                    dedupKey: "unit-group-merged");
+            }
+            return true;
+        }
+
+        private bool IsLocalClient()
+            => _roleResolver?.Resolve().Role == LocalGameplayRole.Client;
+
+        private bool FailGroupCommand(string reason)
+        {
+            _notifications?.Show(
+                string.IsNullOrWhiteSpace(reason)
+                    ? "Команду групи відхилено"
+                    : reason,
+                GameplayNotificationKind.Warning,
+                dedupKey: "unit-group-rejected");
+            return false;
+        }
+
         private bool TryHandleAttackClick(string targetUnitId)
         {
             if (_unitCombatService == null || string.IsNullOrWhiteSpace(_selectedUnitId)
@@ -279,13 +486,46 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             {
                 if (rejectReason == UnitAttackRejectReason.TargetOutOfRange)
                     _notifications?.Show("Ціль поза дальністю атаки", GameplayNotificationKind.Warning, dedupKey: "unit-attack-out-of-range");
+                else if (rejectReason == UnitAttackRejectReason.TargetNotVisible)
+                    _notifications?.Show("Ціль поза зоною видимості", GameplayNotificationKind.Warning, dedupKey: "unit-attack-not-visible");
                 else if (rejectReason == UnitAttackRejectReason.AttackUnavailable)
                     _notifications?.Show("Цей юніт зараз не може атакувати", GameplayNotificationKind.Warning, dedupKey: "unit-attack-unavailable");
                 return true;
             }
 
-            UnitAttackResult result;
-            _unitCombatService.TryAttack(_selectedUnitId, targetUnitId, out result);
+            if (_roleResolver?.Resolve().Role == LocalGameplayRole.Client)
+            {
+                string remoteReason = null;
+                if (_remoteCombat != null
+                    && _remoteCombat.TryRequestAttack(
+                        attackerOwner,
+                        _selectedUnitId,
+                        targetUnitId,
+                        out remoteReason))
+                {
+                    return true;
+                }
+
+                _notifications?.Show(
+                    string.IsNullOrWhiteSpace(remoteReason)
+                        ? "Атака недоступна"
+                        : remoteReason,
+                    GameplayNotificationKind.Warning,
+                    dedupKey: "unit-attack-remote");
+                return true;
+            }
+
+            if (_combatCommandService != null)
+            {
+                _ = _combatCommandService.ExecuteAsync(
+                    attackerOwner,
+                    _selectedUnitId,
+                    targetUnitId);
+            }
+            else
+            {
+                _unitCombatService.TryAttack(_selectedUnitId, targetUnitId, out _);
+            }
             return true;
         }
 
@@ -358,6 +598,20 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _activeMoveUnitId = unitId;
             _activeMoveTarget = target;
             _cancelReason = MovementCancelReason.None;
+
+            string groupId = _unitGroupService?.GetGroupIdOfUnit(unitId);
+            if (!string.IsNullOrEmpty(groupId)
+                && _unitGroupService.TryGetGroup(groupId, out var group)
+                && group.Count > 1)
+            {
+                _signalBus.Fire(new MoveGroupRequestSignal
+                {
+                    GroupId = groupId,
+                    TargetPosition = target,
+                    RequesterOwnerId = GetLocalOwnerId(),
+                });
+                return;
+            }
 
             var request = new MoveUnitRequestSignal
             {
@@ -435,6 +689,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         }
         private void ClearSelectedUnit(Vector2Int? knownPosition = null)
         {
+            _groupMergeArmed = false;
             if (string.IsNullOrWhiteSpace(_selectedUnitId))
             {
                 _selectedUnitId = null;

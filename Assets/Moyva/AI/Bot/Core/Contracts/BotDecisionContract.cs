@@ -47,6 +47,10 @@ namespace Kruty1918.Moyva.AI.Bot
         public const int UnitsAvailable = 5, EconomyAvailable = 6, SpatialAvailable = 7, VisibilityAvailable = 8;
         public const int ScenarioGoal = 9, ScenarioStep = 10, ScenarioProgress = 11;
         public const int OwnSettlements = 12, VisibleEnemySettlements = 13;
+        /// <summary>Last-known hostile units still remembered through fog.</summary>
+        public const int RememberedEnemyUnits = 14;
+        /// <summary>Last-known hostile buildings still remembered through fog.</summary>
+        public const int RememberedEnemyBuildings = 15;
         public const int Capabilities = 16;
         public const int OwnResourcesTotal = 24, PoolResourcesTotal = 25, ResourceKinds = 26;
         public const int ResourceFood = 27, ResourceWood = 28, ResourceStone = 29, ResourceIron = 30, ResourceGold = 31;
