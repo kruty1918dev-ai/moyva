@@ -20,12 +20,18 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         /// <summary>Швидкість fade-переходу при зміні фази доби (повний перехід ~2с).</summary>
         private const float PhaseFadeSpeed = 0.5f;
 
+        /// <summary>Стан однієї амбієнтної бази: конфіг, хендл відтворення, фільтр і масштаби гучності.</summary>
         private sealed class Bed
         {
+            /// <summary>Конфігурація бази.</summary>
             public AudioAmbienceBed Config;
+            /// <summary>Хендл активного відтворення.</summary>
             public AudioHandle Handle;
+            /// <summary>Lowpass-фільтр на еміттері бази.</summary>
             public AudioLowPassFilter LowPass;
+            /// <summary>Поточний масштаб гучності бази.</summary>
             public float CurrentScale = 1f;
+            /// <summary>Масштаб гучності за фазою дня.</summary>
             public float PhaseScale = 1f;
         }
 
@@ -38,6 +44,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         private DayPhase _phase = DayPhase.Day;
         private bool _hasPhaseGatedBeds;
 
+        /// <summary>Створює сервіс із залежностями аудіо та зуму.</summary>
         public AmbienceBedService(
             [InjectOptional] IAudioService audio,
             [InjectOptional] AudioAmbienceConfig config,
@@ -50,6 +57,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             _calendar = calendar;
         }
 
+        /// <summary>Запускає амбієнтні бази з конфігурації.</summary>
         public void Initialize()
         {
             if (_calendar != null)
@@ -97,6 +105,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             ApplyWeights(force: true);
         }
 
+        /// <summary>Оновлює гучність і фільтри баз за зумом та фазою дня.</summary>
         public void Tick()
         {
             if (_beds.Count == 0)
@@ -115,6 +124,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             ApplyWeights(force: false);
         }
 
+        /// <summary>Зупиняє всі бази та звільняє ресурси.</summary>
         public void Dispose()
         {
             if (_calendar != null)

@@ -12,6 +12,7 @@ using Kruty1918.Moyva.Units.API;
 
 namespace Kruty1918.Moyva.Bootstrap
 {
+    /// <summary>Кореневий Zenject-інсталер bootstrap-сцени: делегує фічевим інсталерам.</summary>
     public class BootstrapInstaller : MonoInstaller
     {
         [SerializeField] private BootstrapInstallerConfigSO _config;
@@ -20,6 +21,7 @@ namespace Kruty1918.Moyva.Bootstrap
         [SerializeField, HideInInspector] private BootstrapGameSettings _legacyGameSettings = new();
         [SerializeField, HideInInspector] private StartingPositionInitializerSettings _legacyStartingPositionSettings = new();
 
+        /// <summary>Реєструє bootstrap-біндінги.</summary>
         public override void InstallBindings()
         {
             UiActionsInstaller.Install(Container);

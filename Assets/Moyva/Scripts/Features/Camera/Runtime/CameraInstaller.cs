@@ -14,6 +14,7 @@ using UnityEditor;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
+    /// <summary>Zenject-інсталер камери: біндить стан зуму, сервіси керування та адаптер налаштувань проєкту.</summary>
     public class CameraInstaller : MonoInstaller
     {
         private static readonly Vector3 ReflectionReadyEuler = new(50f, 45f, 0f);
@@ -33,6 +34,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private const string DefaultCameraInputAssetPath = "Assets/Moyva/Data/ScriptableObjects/Input/InputSystem_Actions.inputactions";
         private CameraSettingsSO _runtimeFallbackSettings;
 
+        /// <summary>Реєструє біндінги камери в контейнері.</summary>
         public override void InstallBindings()
         {
             InputRoutingBindings.Install(Container);
@@ -164,6 +166,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         }
     }
 
+    /// <summary>Адаптує налаштування камери під конфігурацію проєкту при старті.</summary>
     internal sealed class CameraProjectSettingsAdapter : IInitializable
     {
         private readonly UnityEngine.Camera _camera;
@@ -172,6 +175,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly IGridProjection _gridProjection;
         private readonly IGridService _gridService;
 
+        /// <summary>Створює адаптер із налаштуваннями та камерою.</summary>
         public CameraProjectSettingsAdapter(
             UnityEngine.Camera camera,
             CameraSettingsSO cameraSettings,
@@ -186,6 +190,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _gridService = gridService;
         }
 
+        /// <summary>Застосовує налаштування до камери сцени.</summary>
         public void Initialize()
         {
             if (_camera == null || _cameraSettings == null)

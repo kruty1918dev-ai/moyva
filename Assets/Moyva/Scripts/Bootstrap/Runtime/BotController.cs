@@ -8,6 +8,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
+    /// <summary>Контролер бот-опонента: визначає ходи бота через телеметрію та політику вводу, виконує їх у хід бота.</summary>
     internal sealed class BotController : IInitializable, ITickable, IDisposable
     {
         private readonly ITurnService _turns;
@@ -20,6 +21,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private long _observedTurn = -1;
         private float _delay;
 
+        /// <summary>Створює контролер із сервісом ходів, політикою вводу та пайплайном бота.</summary>
         public BotController(ITurnService turns, IGameplayInputPolicy input,
             [InjectOptional] ITurnAuthorityPolicy authority = null,
             [InjectOptional] Func<IBotDecisionOrchestrator> orchestratorProvider = null,
@@ -32,12 +34,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _presentationDelay = config?.visibleDelay ?? 0.35f;
         }
 
+        /// <summary>Ініціалізує контролер бота.</summary>
         public void Initialize()
         {
             _turns.StateChanged += RefreshControl;
             RefreshControl();
         }
 
+        /// <summary>Прокачує логіку бота в хід його ходу.</summary>
         public void Tick()
         {
             if (Time.timeScale > 0f)
@@ -86,6 +90,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
         }
 
+        /// <summary>Звільняє ресурси контролера.</summary>
         public void Dispose()
         {
             _orchestrator?.Cancel();

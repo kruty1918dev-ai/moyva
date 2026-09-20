@@ -6,17 +6,11 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Visuals
 {
-    /// <summary>
-    /// Publishes far-view atmosphere shader globals from the shared camera
-    /// zoom state (<see cref="ICameraZoomState.FarViewWeight"/>) and the JSON
-    /// <see cref="FarViewAtmosphereConfig"/>. The renderer feature only reads
-    /// globals; all artistic parameters live in the JSON preset.
-    /// Quality tier maps GraphicsQualityProfile onto the shader keyword
-    /// MOYVA_FARVIEW_QUALITY_LOW (fewer taps / single noise octave).
-    /// </summary>
+    /// <summary>Драйвер далекої атмосфери: читає вагу far-view зі стану зуму та штовхає параметри в шейдер і рендерер-фічу.</summary>
     public sealed class FarViewAtmosphereDriver
         : IInitializable, ITickable, IDisposable
     {
+        /// <summary>Ключове слово шейдера для спрощеної якості.</summary>
         public const string LowQualityKeyword = "MOYVA_FARVIEW_QUALITY_LOW";
         private const float PushEpsilon = 0.0005f;
         private const float DitherAmount = 1.5f / 255f;
@@ -51,6 +45,7 @@ namespace Kruty1918.Moyva.Visuals
         private float _lastPushedWeight = float.NaN;
         private bool _disposed;
 
+        /// <summary>Створює драйвер із станом зуму, конфігурацією та рендерер-фічею.</summary>
         public FarViewAtmosphereDriver(
             [InjectOptional] ICameraZoomState zoomState = null,
             [InjectOptional] FarViewAtmosphereConfig config = null,
@@ -61,6 +56,7 @@ namespace Kruty1918.Moyva.Visuals
             _graphicsSettings = graphicsSettings;
         }
 
+        /// <summary>Ініціалізує драйвер і застосовує стартові параметри.</summary>
         public void Initialize()
         {
             PushStaticParameters();
@@ -69,6 +65,7 @@ namespace Kruty1918.Moyva.Visuals
                 _graphicsSettings.OnSettingsChanged += OnGraphicsSettingsChanged;
         }
 
+        /// <summary>Оновлює параметри атмосфери за поточною вагою far-view.</summary>
         public void Tick()
         {
             if (_disposed)
@@ -82,6 +79,7 @@ namespace Kruty1918.Moyva.Visuals
             _lastPushedWeight = weight;
         }
 
+        /// <summary>Вимикає атмосферу та звільняє ресурси.</summary>
         public void Dispose()
         {
             _disposed = true;

@@ -2,31 +2,37 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Animations.API
 {
-    /// <summary>
-    /// Canonical easing vocabulary for gameplay presentation transitions.
-    /// One shared set for units, construction and world feedback so the motion
-    /// language stays coherent instead of ad-hoc tween calls per feature.
-    /// </summary>
+    /// <summary>Види easing-кривих для gameplay-рухів.</summary>
     public enum MotionEaseKind
     {
+        /// <summary>Лінійна інтерполяція.</summary>
         Linear = 0,
+        /// <summary>Плавний крок (smoothstep).</summary>
         SmoothStep = 1,
+        /// <summary>Квадратичне прискорення.</summary>
         InQuad = 2,
+        /// <summary>Квадратичне сповільнення.</summary>
         OutQuad = 3,
+        /// <summary>Квадратичне прискорення-сповільнення.</summary>
         InOutQuad = 4,
+        /// <summary>Кубічне прискорення.</summary>
         InCubic = 5,
+        /// <summary>Кубічне сповільнення.</summary>
         OutCubic = 6,
+        /// <summary>Кубічне прискорення-сповільнення.</summary>
         InOutCubic = 7,
 
-        /// <summary>Weak overshoot only — Moyva must not feel like a casual UI game.</summary>
+        /// <summary>М'який overshoot-вихід.</summary>
         OutBackSoft = 8
     }
 
+    /// <summary>Обчислювач easing-кривих для gameplay-рухів.</summary>
     public static class MotionEaseEvaluator
     {
         /// <summary>Overshoot coefficient for <see cref="MotionEaseKind.OutBackSoft"/> (≈ half of the standard back ease).</summary>
         private const float SoftBackOvershoot = 0.9f;
 
+        /// <summary>Обчислює eased-значення t для вказаної кривої.</summary>
         public static float Evaluate(MotionEaseKind kind, float t)
         {
             t = Mathf.Clamp01(t);

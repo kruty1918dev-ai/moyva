@@ -4,13 +4,10 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Vfx.Runtime
 {
-    /// <summary>
-    /// Resolved per-quality-profile VFX parameters: how many effects may be
-    /// active, how much particle emission is scaled and how aggressively
-    /// distance/zoom culls low-priority effects.
-    /// </summary>
+    /// <summary>Знімок якісного стану VFX: ліміти активних ефектів, масштаби кількості, дистанції відсікання.</summary>
     public readonly struct VfxQualityState
     {
+        /// <summary>Створює стан якості з явними лімітами.</summary>
         public VfxQualityState(
             int maxActive,
             float countScale,
@@ -25,12 +22,18 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             MaxSpawnsPerFrame = Mathf.Max(1, maxSpawnsPerFrame);
         }
 
+        /// <summary>Максимум активних ефектів.</summary>
         public int MaxActive { get; }
+        /// <summary>Масштаб кількості частинок.</summary>
         public float CountScale { get; }
+        /// <summary>Дистанція відсікання ефектів.</summary>
         public float CullDistance { get; }
+        /// <summary>Максимальний орто-розмір для низькопріоритетних ефектів.</summary>
         public float LowPriorityMaxOrthoSize { get; }
+        /// <summary>Максимум спавнів за кадр.</summary>
         public int MaxSpawnsPerFrame { get; }
 
+        /// <summary>Будує стан якості для вказаного профілю.</summary>
         public static VfxQualityState ForProfile(
             GraphicsQualityProfile profile,
             VfxBudgetSettings budget)

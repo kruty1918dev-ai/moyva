@@ -8,20 +8,10 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Animations.Runtime
 {
-    /// <summary>
-    /// Drives unit world movement as one continuous velocity-profile traversal
-    /// (accelerate → cruise → brake) instead of per-tile linear lerps with
-    /// dwell between tiles. Facing follows travel direction; bob rides on speed.
-    ///
-    /// Authority ordering is preserved from the legacy implementation:
-    /// <see cref="PathAnimationSettings.CanPerformStep"/> for tile i+1 is
-    /// evaluated when the unit reaches tile i, and
-    /// <see cref="PathAnimationSettings.OnStepCompleted"/> fires on arrival.
-    /// Cancellation snaps the transform back to the last confirmed tile so the
-    /// visual never stays on an authoritative-invalid position.
-    /// </summary>
+    /// <summary>Сервіс анімації переміщення: прокачує шлях юніта через PathTraversalMotion із завершенням у Task.</summary>
     internal sealed class MovementAnimationService : IMovementAnimationService
     {
+        /// <summary>Анімовано переміщує юніта шляхом до цілі.</summary>
         public async Task MoveAlongPathAsync(
             Transform target,
             IReadOnlyList<Vector2Int> path,

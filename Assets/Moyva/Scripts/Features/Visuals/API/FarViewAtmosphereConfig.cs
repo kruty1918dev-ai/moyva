@@ -13,15 +13,22 @@ namespace Kruty1918.Moyva.Visuals
     [Serializable]
     public sealed class FarViewAtmosphereConfig : MoyvaJsonConfigObject
     {
+        /// <summary>Чи ввімкнена далека атмосфера.</summary>
         public bool enabled = true;
+        /// <summary>Налаштування шару haze.</summary>
         public FarViewHazeSettings haze = new FarViewHazeSettings();
+        /// <summary>Налаштування сплющення геометрії на дальності.</summary>
         public FarViewFlattenSettings flatten = new FarViewFlattenSettings();
+        /// <summary>Налаштування шару veil (серпанок).</summary>
         public FarViewVeilSettings veil = new FarViewVeilSettings();
+        /// <summary>Налаштування палітри атмосфери.</summary>
         public FarViewPaletteSettings palette = new FarViewPaletteSettings();
+        /// <summary>Налаштування крайового затемнення.</summary>
         public FarViewEdgeSettings edge = new FarViewEdgeSettings();
+        /// <summary>Налаштування якості атмосфери.</summary>
         public FarViewQualitySettings quality = new FarViewQualitySettings();
 
-        /// <summary>Clamp/validate all ranges; returns normalized copy.</summary>
+        /// <summary>Повертає нормалізовану копію конфігурації з клампнутими значеннями.</summary>
         public FarViewAtmosphereConfig Normalize()
         {
             haze = (haze ?? new FarViewHazeSettings()).Normalize();
@@ -34,12 +41,14 @@ namespace Kruty1918.Moyva.Visuals
         }
     }
 
-    /// <summary>Depth-aware aerial-perspective haze.</summary>
+    /// <summary>Налаштування шару далекого серпанку haze.</summary>
     [Serializable]
     public sealed class FarViewHazeSettings
     {
+        /// <summary>Колір атмосферного серпанку.</summary>
         [Tooltip("Холодне світле повітря на далеких поверхнях.")]
         public Color atmosphereColor = new Color(0.62f, 0.72f, 0.84f, 1f);
+        /// <summary>Колір неба на дальності.</summary>
         [Tooltip("Колір для неба/нескінченності та краю мапи.")]
         public Color skyColor = new Color(0.70f, 0.79f, 0.90f, 1f);
         [Range(0f, 1f)] public float strength = 0.85f;
@@ -50,6 +59,7 @@ namespace Kruty1918.Moyva.Visuals
         [Tooltip("Наскільки небо (far depth) заповнюється атмосферою при full weight.")]
         [Range(0f, 1f)] public float skyFill = 0.75f;
 
+        /// <summary>Повертає нормалізовану копію налаштувань haze.</summary>
         public FarViewHazeSettings Normalize()
         {
             strength = Mathf.Clamp01(strength);
@@ -72,6 +82,7 @@ namespace Kruty1918.Moyva.Visuals
         [Tooltip("Радіус локального середнього в пікселях (при renderScale=1).")]
         [Range(0.25f, 4f)] public float radiusPixels = 1.25f;
 
+        /// <summary>Повертає нормалізовану копію налаштувань сплющення.</summary>
         public FarViewFlattenSettings Normalize()
         {
             strength = Mathf.Clamp01(strength);
@@ -84,6 +95,7 @@ namespace Kruty1918.Moyva.Visuals
     [Serializable]
     public sealed class FarViewVeilSettings
     {
+        /// <summary>Напрямок вітру для дрейфу серпанку.</summary>
         [Range(0f, 1f)] public float strength = 0.30f;
         [Tooltip("Просторовий масштаб шару у світових одиницях (більше = дрібніше).")]
         [Min(0.001f)] public float scale = 0.045f;
@@ -96,6 +108,7 @@ namespace Kruty1918.Moyva.Visuals
         [Tooltip("Напрямок дрейфу у world XZ (нормалізується).")]
         public Vector2 windDirection = new Vector2(0.8f, 0.6f);
 
+        /// <summary>Повертає нормалізовану копію налаштувань veil.</summary>
         public FarViewVeilSettings Normalize()
         {
             strength = Mathf.Clamp01(strength);
@@ -123,6 +136,7 @@ namespace Kruty1918.Moyva.Visuals
         [Tooltip("Компресія яскравих хайлайтів.")]
         [Range(0f, 0.8f)] public float highlightCompress = 0.20f;
 
+        /// <summary>Повертає нормалізовану копію палітри.</summary>
         public FarViewPaletteSettings Normalize()
         {
             saturation = Mathf.Clamp(saturation, 0f, 1.5f);
@@ -140,6 +154,7 @@ namespace Kruty1918.Moyva.Visuals
         [Range(0f, 1f)] public float vignetteStrength = 0.16f;
         [Range(0.5f, 2.5f)] public float vignetteRadius = 1.15f;
 
+        /// <summary>Повертає нормалізовану копію налаштувань країв.</summary>
         public FarViewEdgeSettings Normalize()
         {
             vignetteStrength = Mathf.Clamp01(vignetteStrength);
@@ -152,14 +167,17 @@ namespace Kruty1918.Moyva.Visuals
     [Serializable]
     public sealed class FarViewQualitySettings
     {
+        /// <summary>Чи використовувати спрощене сплющення на слабких пристроях.</summary>
         [Range(1, 3)] public int performanceVeilOctaves = 1;
         [Range(1, 3)] public int balancedVeilOctaves = 2;
         [Range(1, 3)] public int qualityVeilOctaves = 2;
         [Tooltip("Performance tier: простіший flatten (без зонда-семплів).")]
         public bool performanceSimplifiedFlatten = true;
+        /// <summary>Чи ввімкнено дизеринг атмосфери.</summary>
         [Tooltip("Dither для боротьби з banding на градієнтах.")]
         public bool ditherEnabled = true;
 
+        /// <summary>Повертає нормалізовану копію налаштувань якості.</summary>
         public FarViewQualitySettings Normalize()
         {
             performanceVeilOctaves = Mathf.Clamp(performanceVeilOctaves, 1, 3);

@@ -18,6 +18,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
+	/// <summary>Сервіс руху юнітів: прокачує шляхи через PathTraversalMotion, блокує хід під час переміщень.</summary>
 	internal sealed class UnitMovementService : IUnitMovementService, ITurnBlocker, IInitializable, IDisposable
 	{
 		private readonly IUnitService _unitService;
@@ -43,6 +44,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 		private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
 
+		/// <summary>Створює сервіс із залежностями юнітів, сітки та руху.</summary>
 		public UnitMovementService(
 			IUnitService unitService,
 			IPathfinder pathfinder,
@@ -87,6 +89,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_visualMotion = visualMotion;
 		}
 
+		/// <summary>Підписує сервіс на сигнали руху.</summary>
 		public void Initialize()
 		{
 			_signalBus.Subscribe<InterruptMovementSignal>(OnInterruptRequested);
@@ -95,6 +98,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
 		}
 
+		/// <summary>Відписує сервіс і скасовує активні переміщення.</summary>
 		public void Dispose()
 		{
 			_signalBus.TryUnsubscribe<InterruptMovementSignal>(OnInterruptRequested);
@@ -162,6 +166,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 				cts.Cancel();
 		}
 
+		/// <summary>Переміщує юніта до цільової позиції шляхом з анімацією.</summary>
 		public async Task MoveUnitAsync(string unitId, Vector2Int targetPosition, CancellationToken externalToken = default)
 		{
 			if (string.IsNullOrEmpty(unitId))
@@ -354,6 +359,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 				_turns?.TryRecordAction(ownerId, "unit-move");
 		}
 
+		/// <summary>Повідомляє, чи заблоковано завершення ходу активним переміщенням.</summary>
 		public bool IsTurnBlocked(out string reason)
 		{
 			if (_activeMovements.Count > 0)

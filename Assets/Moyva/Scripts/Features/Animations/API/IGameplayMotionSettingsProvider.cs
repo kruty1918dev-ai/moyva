@@ -1,26 +1,25 @@
 namespace Kruty1918.Moyva.Animations.API
 {
-    /// <summary>
-    /// Resolves gameplay motion tuning from <see cref="GameplayMotionConfig"/>,
-    /// the user Reduce Motion flag and the active graphics quality profile.
-    /// Presentation services consume this instead of hardcoding durations.
-    /// </summary>
+    /// <summary>Провайдер налаштувань gameplay-рухів з урахуванням доступності та якості.</summary>
     public interface IGameplayMotionSettingsProvider
     {
+        /// <summary>Профіль локомоції юнітів.</summary>
         UnitLocomotionMotionProfile UnitLocomotion { get; }
+        /// <summary>Профіль переходів юнітів.</summary>
         UnitTransitionMotionProfile UnitTransitions { get; }
+        /// <summary>Профіль рухів будівель.</summary>
         BuildingMotionProfile Building { get; }
 
-        /// <summary>User Reduced Motion preference (shared with UI motion).</summary>
+        /// <summary>Чи ввімкнено режим зменшеного руху.</summary>
         bool ReducedMotion { get; }
 
-        /// <summary>0..1 — secondary motion strength (bob, shake, overshoot) for the active quality tier.</summary>
+        /// <summary>Масштаб вторинного руху за рівнем якості.</summary>
         float SecondaryMotionScale { get; }
 
-        /// <summary>Applies Reduce Motion shortening to a transition duration.</summary>
+        /// <summary>Масштабує тривалість відповідно до Reduced Motion.</summary>
         float ScaleDuration(float seconds);
 
-        /// <summary>Applies quality/reduced-motion scaling to secondary amplitudes (bob, recoil, shake).</summary>
+        /// <summary>Масштабує амплітуду вторинного руху за рівнем якості.</summary>
         float ScaleSecondaryAmplitude(float amplitude);
     }
 }

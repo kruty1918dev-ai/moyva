@@ -7,12 +7,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    /// <summary>
-    /// Maps a building owner id to a stable palette key and resolves the
-    /// matching prefab variant declared on the building definition.
-    /// The palette index follows the turn-faction order so owner colors stay
-    /// consistent across local play, multiplayer replicas and restores.
-    /// </summary>
+    /// <summary>Резолвер палітр власника: підбирає префаби-варіанти будівель за фракцією-власником.</summary>
     internal sealed class ConstructionOwnerPaletteResolver
     {
         internal const string DefaultPaletteKey = "blue";
@@ -28,6 +23,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private readonly ITurnService _turnService;
 
+        /// <summary>Створює резолвер із джерелом палітр фракцій.</summary>
         [Inject]
         public ConstructionOwnerPaletteResolver(
             [InjectOptional] ITurnService turnService = null)
@@ -35,6 +31,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _turnService = turnService;
         }
 
+        /// <summary>Розв'язує префаб розміщеної будівлі за визначенням і власником.</summary>
         public GameObject ResolvePlacedPrefab(BuildingDefinition definition, string ownerId)
         {
             GameObject fallback = definition?.Prefab;
@@ -52,6 +49,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 : fallback;
         }
 
+        /// <summary>Розв'язує preview-префаб за визначенням і власником.</summary>
         public GameObject ResolvePreviewPrefab(BuildingDefinition definition, string ownerId)
         {
             GameObject explicitPreview = definition?.Presentation?.PreviewPrefab;
@@ -60,6 +58,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 : ResolvePlacedPrefab(definition, ownerId);
         }
 
+        /// <summary>Розв'язує ключ палітри для власника.</summary>
         public string ResolvePaletteKey(string ownerId)
         {
             int index = ResolveOwnerIndex(ownerId);

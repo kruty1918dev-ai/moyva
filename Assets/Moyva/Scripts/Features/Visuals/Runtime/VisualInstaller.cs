@@ -4,8 +4,10 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Visuals
 {
+    /// <summary>Zenject-інсталер візуального модуля.</summary>
     public class VisualInstaller : MonoInstaller
     {
+        /// <summary>Реєструє біндінги візуального модуля.</summary>
         public override void InstallBindings()
         {
             CalendarInstaller.InstallDefaultIfMissing(Container);

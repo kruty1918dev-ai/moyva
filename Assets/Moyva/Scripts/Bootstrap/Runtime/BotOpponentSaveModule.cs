@@ -3,12 +3,7 @@ using Kruty1918.Moyva.SaveSystem;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
-    /// <summary>
-    /// Persists the bot opponent identity into the save file so a loaded
-    /// bot match keeps its AI player instead of reverting to all-human.
-    /// Writes empty fields for human-only games; the block is skipped
-    /// entirely on saves that predate this module.
-    /// </summary>
+    /// <summary>Save-модуль бот-опонента: персистить ідентичність бота в збереження та відновлює її при завантаженні.</summary>
     [SaveModuleId("Kruty1918.Moyva.Bootstrap.Runtime.BotOpponentSaveModule")]
     internal sealed class BotOpponentSaveModule : ISaveModule
     {
@@ -16,6 +11,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private const int SaveVersion = 1;
         private const int MaxIdLength = 256;
 
+        /// <summary>Записує дані бот-опонента в контекст збереження.</summary>
         public void OnSave(ISaveContext context)
         {
             context.Writer.Write(SaveMagic);
@@ -28,6 +24,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 : string.Empty);
         }
 
+        /// <summary>Відновлює дані бот-опонента з контексту завантаження.</summary>
         public void OnLoad(ISaveContext context)
         {
             if (context.Reader.ReadInt32() != SaveMagic)

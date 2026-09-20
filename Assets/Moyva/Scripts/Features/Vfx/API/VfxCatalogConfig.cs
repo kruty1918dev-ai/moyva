@@ -28,8 +28,11 @@ namespace Kruty1918.Moyva.Vfx.API
     [Serializable]
     public sealed class VfxEffectRule
     {
+        /// <summary>Назва події, на яку реагує правило.</summary>
         public string eventName;
+        /// <summary>Контекстний фільтр правила (порожній — будь-який).</summary>
         public string context = string.Empty;
+        /// <summary>Префаб ефекту для спавну.</summary>
         public GameObject prefab;
 
         [Tooltip("0 = low (ambient/dust), 1 = normal, 2 = critical (kill/capture).")]
@@ -41,6 +44,7 @@ namespace Kruty1918.Moyva.Vfx.API
         [Tooltip("Кількість інстансів для прогріву пулу на Initialize.")]
         [Min(0)] public int prewarm;
 
+        /// <summary>Тривалість ефекту в секундах.</summary>
         [Tooltip("Тривалість до auto-return. <=0 — взяти duration із VfxEffect на префабі.")]
         public float duration;
 
@@ -50,6 +54,7 @@ namespace Kruty1918.Moyva.Vfx.API
         [Tooltip("Мінімальний інтервал між спавнами з тим самим dedupeKey (наприклад unitId). 0 = без троттлингу.")]
         [Min(0f)] public float cooldownPerKey;
 
+        /// <summary>Чи тінтити ефект кольором фракції.</summary>
         [Tooltip("Підфарбувати tint-системи ефекту кольором фракції власника.")]
         public bool factionTint;
 

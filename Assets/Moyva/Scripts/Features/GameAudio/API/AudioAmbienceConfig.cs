@@ -12,9 +12,13 @@ namespace Kruty1918.Moyva.GameAudio.API
     [Serializable]
     public sealed class AudioAmbienceConfig : MoyvaJsonConfigObject
     {
+        /// <summary>Налаштування реакції амбієнсу на зум.</summary>
         public AudioAmbienceZoom zoom = new AudioAmbienceZoom();
+        /// <summary>Амбієнтні бази (beds), що звучать безперервно.</summary>
         public AudioAmbienceBed[] beds = Array.Empty<AudioAmbienceBed>();
+        /// <summary>Точкові еміттери амбієнсу на карті.</summary>
         public AudioAmbienceEmitter[] emitters = Array.Empty<AudioAmbienceEmitter>();
+        /// <summary>Разові амбієнтні звуки.</summary>
         public AudioAmbienceOneShot[] oneShots = Array.Empty<AudioAmbienceOneShot>();
         [Min(0)] public int maxEmittersTotal = 24;
     }
@@ -26,6 +30,7 @@ namespace Kruty1918.Moyva.GameAudio.API
     [Serializable]
     public sealed class AudioAmbienceZoom
     {
+        /// <summary>Чи ввімкнена ця амбієнтна база.</summary>
         public bool enabled = true;
 
         /// <summary>Швидкість згладжування zoom-фактора (більше = швидше).</summary>
@@ -48,7 +53,9 @@ namespace Kruty1918.Moyva.GameAudio.API
     [Serializable]
     public sealed class AudioAmbienceBed
     {
+        /// <summary>Ключ звуку амбієнтної бази.</summary>
         public string soundKey;
+        /// <summary>Чи застосовувати lowpass-фільтр зі зумом.</summary>
         [Range(0f, 1f)] public float volume = 0.5f;
         [Range(0f, 1f)] public float nearWeight = 1f;
         [Range(0f, 1f)] public float farWeight = 0f;
@@ -70,12 +77,17 @@ namespace Kruty1918.Moyva.GameAudio.API
     [Serializable]
     public sealed class AudioAmbienceEmitter
     {
+        /// <summary>Ідентифікатор еміттера.</summary>
         public string id;
+        /// <summary>Ідентифікатор типу тайла, до якого прив'язаний еміттер.</summary>
         [Tooltip("TileTypeId тайла, до якого прив'язаний емітер.")]
         public string matchTileTypeId;
+        /// <summary>Ідентифікатор будівлі, до якої прив'язаний еміттер.</summary>
         [Tooltip("BuildingId будівлі (точне значення або префікс).")]
         public string matchBuildingId;
+        /// <summary>Ключ звуку еміттера.</summary>
         public string soundKey;
+        /// <summary>Початок затихання за зумом (-1 — за замовчуванням).</summary>
         [Range(0f, 1f)] public float volume = 1f;
         [Min(0.01f)] public float minDistance = 2f;
         [Min(0.01f)] public float maxDistance = 14f;
@@ -83,6 +95,7 @@ namespace Kruty1918.Moyva.GameAudio.API
         [Min(1)] public int maxInstances = 8;
         [Tooltip("<0 → глобальний zoom.emitterFadeStart.")]
         public float zoomFadeStart = -1f;
+        /// <summary>Кінець затихання за зумом (-1 — за замовчуванням).</summary>
         [Tooltip("<0 → глобальний zoom.emitterFadeEnd.")]
         public float zoomFadeEnd = -1f;
     }
@@ -91,6 +104,7 @@ namespace Kruty1918.Moyva.GameAudio.API
     [Serializable]
     public sealed class AudioAmbienceOneShot
     {
+        /// <summary>Ключ звуку разового амбієнту.</summary>
         public string soundKey;
         [Range(0f, 1f)] public float volume = 0.6f;
         [Min(0.05f)] public float minInterval = 4f;

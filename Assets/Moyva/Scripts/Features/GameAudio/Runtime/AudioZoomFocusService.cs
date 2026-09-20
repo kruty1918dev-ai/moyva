@@ -23,6 +23,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         private float _zoomT;
         private bool _hasCamera;
 
+        /// <summary>Створює сервіс із станом зуму та конфігурацією амбієнсу.</summary>
         public AudioZoomFocusService(
             [InjectOptional] AudioAmbienceConfig config,
             [InjectOptional] ICameraZoomState zoomState = null,
@@ -38,12 +39,14 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         /// <summary>0 = близько, 1 = далеко.</summary>
         public float ZoomT => _zoomT;
 
+        /// <summary>Ініціалізує сервіс фокусу зуму.</summary>
         public void Initialize()
         {
             _hasCamera = _camera != null;
             _zoomT = EvaluateRawZoomT();
         }
 
+        /// <summary>Оновлює гучність амбієнтних шарів за зумом.</summary>
         public void Tick()
         {
             if (_zoomState != null)
@@ -83,10 +86,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             return Mathf.Lerp(_config.zoom.nearCutoff, _config.zoom.farCutoff, t);
         }
 
-        /// <summary>
-        /// Per-bed lowpass: beds with <c>lowpassWithZoom</c> keep the shared
-        /// cutoff; explicit far cutoffs can darken a bed further.
-        /// </summary>
+        /// <summary>Обчислює відсікання бази за зумом із урахуванням її far-cutoff.</summary>
         public float EvaluateBedCutoff(float bedFarCutoff)
         {
             float shared = EvaluateBedCutoff();

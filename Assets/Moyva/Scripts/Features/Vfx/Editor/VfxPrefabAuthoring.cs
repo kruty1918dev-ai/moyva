@@ -11,15 +11,7 @@ using Object = UnityEngine.Object;
 
 namespace Kruty1918.Moyva.Vfx.EditorTools
 {
-    /// <summary>
-    /// Reproducible authoring for all Moyva gameplay VFX assets: particle
-    /// textures, materials, debris meshes and pooled effect prefabs.
-    /// Editor-only construction — runtime code only ever instantiates the
-    /// serialized prefabs. Idempotent: rebuild overwrites the same paths.
-    ///
-    /// Entry point: Moyva → VFX → Rebuild VFX Assets, or
-    /// <see cref="BuildAll"/> from the CLI bridge eval command.
-    /// </summary>
+    /// <summary>Editor-утиліта authoring'у VFX-префабів: генерує префаби ефектів із каталогу.</summary>
     public static class VfxPrefabAuthoring
     {
         private const string TextureRoot = "Assets/Moyva/Art/VFX/Textures";
@@ -32,9 +24,11 @@ namespace Kruty1918.Moyva.Vfx.EditorTools
         private static readonly Color SparkAmber = new Color(1.00f, 0.72f, 0.30f, 1f);
         private static readonly Color Tintable = new Color(1f, 1f, 1f, 1f);
 
+        /// <summary>Menu-item: генерує всі VFX-префаби та логує результат.</summary>
         [MenuItem("Moyva/VFX/Rebuild VFX Assets")]
         public static void BuildAllMenu() => Debug.Log(BuildAll());
 
+        /// <summary>Генерує всі VFX-префаби з каталогу; повертає звіт.</summary>
         public static string BuildAll()
         {
             TintMarks.Clear();
@@ -605,6 +599,7 @@ namespace Kruty1918.Moyva.Vfx.EditorTools
             return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 
+        /// <summary>Режим блендингу ефекту.</summary>
         private enum BlendMode { Alpha, Additive }
 
         private static Material WriteParticleMaterial(
