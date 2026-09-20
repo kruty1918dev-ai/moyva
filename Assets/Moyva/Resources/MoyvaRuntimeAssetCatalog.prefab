@@ -47,6 +47,14 @@ MonoBehaviour:
   _entries:
   - Key: asset.audio-clip.animal-rooster-01.d9cc0181
     Asset: {fileID: 8300000, guid: d9cc018128a794a2c80f40951e1bfa59, type: 3}
+  - Key: asset.audio-clip.arrow-shot-1-1.979c8088
+    Asset: {fileID: 8300000, guid: 979c8088438b44b45a63851c8e2398e8, type: 3}
+  - Key: asset.audio-clip.arrow-shot-2-2.9924fb62
+    Asset: {fileID: 8300000, guid: 9924fb62bdbd741308bb5278d167b5ef, type: 3}
+  - Key: asset.audio-clip.arrow-shot-2-3.03fb839f
+    Asset: {fileID: 8300000, guid: 03fb839fbb1e9407ca26976646527368, type: 3}
+  - Key: asset.audio-clip.arrow-shot-3-1.731128ab
+    Asset: {fileID: 8300000, guid: 731128ab60cff4dea9ba967489fe8d1b, type: 3}
   - Key: asset.audio-clip.bird-chirp-06.fb6efcbb
     Asset: {fileID: 8300000, guid: fb6efcbb5fc044607b90035dc1636209, type: 3}
   - Key: asset.audio-clip.birds-loop-02.879f50f2
@@ -65,12 +73,36 @@ MonoBehaviour:
     Asset: {fileID: 8300000, guid: 737dfcf79f9b149e3a54c3093a8e3dc8, type: 3}
   - Key: asset.audio-clip.body-fall-2-2.44fe65f2
     Asset: {fileID: 8300000, guid: 44fe65f2a20874a56b08ee97c3f81a63, type: 3}
+  - Key: asset.audio-clip.book-pages-2-1.c6293fea
+    Asset: {fileID: 8300000, guid: c6293fea4e12d49a9ab22b3a33bd3dd5, type: 3}
+  - Key: asset.audio-clip.coins-2-1.41397868
+    Asset: {fileID: 8300000, guid: 413978681ba504872a49af5e347e931c, type: 3}
+  - Key: asset.audio-clip.coins-2-7.e8838d11
+    Asset: {fileID: 8300000, guid: e8838d119ec4146d7864ecb83c3fa47c, type: 3}
+  - Key: asset.audio-clip.crickets-loop-01.9403a52c
+    Asset: {fileID: 8300000, guid: 9403a52ce609f40309ebb06e6dc86ec3, type: 3}
   - Key: asset.audio-clip.critter-01.2723e452
     Asset: {fileID: 8300000, guid: 2723e45241952436c8df008ed0bf966e, type: 3}
   - Key: asset.audio-clip.critter-03.4e921b58
     Asset: {fileID: 8300000, guid: 4e921b58a4c0e4bd6ac05e29e0d70732, type: 3}
   - Key: asset.audio-clip.crowd-loop-01.18d7d1e6
     Asset: {fileID: 8300000, guid: 18d7d1e633bf042f4bba0620e240a0b0, type: 3}
+  - Key: asset.audio-clip.dirt-walk-surface-1-1.e41c85ca
+    Asset: {fileID: 8300000, guid: e41c85ca70984485eb74b2b9e0db09d8, type: 3}
+  - Key: asset.audio-clip.dirt-walk-surface-1-2.2cb51228
+    Asset: {fileID: 8300000, guid: 2cb512287f328441c82e6d9e1b513c74, type: 3}
+  - Key: asset.audio-clip.dirt-walk-surface-1-3.40cc95e8
+    Asset: {fileID: 8300000, guid: 40cc95e835e5346e28b6f74a3758a214, type: 3}
+  - Key: asset.audio-clip.dirt-walk-surface-1-4.0e4826fc
+    Asset: {fileID: 8300000, guid: 0e4826fc285f847bf8f8618c35e5153f, type: 3}
+  - Key: asset.audio-clip.door-close-6-1.7bbc3e3a
+    Asset: {fileID: 8300000, guid: 7bbc3e3ad82e44a658e7ba5349de64b5, type: 3}
+  - Key: asset.audio-clip.door-close-7-1.b8c34bf5
+    Asset: {fileID: 8300000, guid: b8c34bf5ed2a1404ebd97ea471982038, type: 3}
+  - Key: asset.audio-clip.door-open-6-1.7cfe4007
+    Asset: {fileID: 8300000, guid: 7cfe40079ce8b4d98bbafd6b0471e4a6, type: 3}
+  - Key: asset.audio-clip.door-open-7-1.4a23e699
+    Asset: {fileID: 8300000, guid: 4a23e699aed134c5faf4e6565275e29c, type: 3}
   - Key: asset.audio-clip.epic-combat-music-loop.05c2e7af
     Asset: {fileID: 8300000, guid: 05c2e7afe9a55438eb204af13aab6ade, type: 3}
   - Key: asset.audio-clip.fantasy-interface-05-4.78be9394
@@ -81,12 +113,16 @@ MonoBehaviour:
     Asset: {fileID: 8300000, guid: b1c0e0cf9ab214e00a308f29ecdacff6, type: 3}
   - Key: asset.audio-clip.fantasy-interface-07-3.a8246111
     Asset: {fileID: 8300000, guid: a824611168db44a19acab714d3ed1024, type: 3}
+  - Key: asset.audio-clip.fantasy-interface-08-4.42b6ab4f
+    Asset: {fileID: 8300000, guid: 42b6ab4f1ac75481baa9e4585ba438ab, type: 3}
   - Key: asset.audio-clip.fantasy-interface-09-2.40ed7183
     Asset: {fileID: 8300000, guid: 40ed7183af25d4c85b382d8018c7bdce, type: 3}
   - Key: asset.audio-clip.fantasy-interface-09-3.5b4a9bf4
     Asset: {fileID: 8300000, guid: 5b4a9bf472cff4c878ff5ce7e0281556, type: 3}
   - Key: asset.audio-clip.fantasy-interface-11-1.26e8d81e
     Asset: {fileID: 8300000, guid: 26e8d81ed861742f0b7df9b9461cb685, type: 3}
+  - Key: asset.audio-clip.fantasy-interface-11-2.83cd9c90
+    Asset: {fileID: 8300000, guid: 83cd9c90f3e284b008f50ed54cbec1e5, type: 3}
   - Key: asset.audio-clip.fantasy-interface-12-1.77371dd5
     Asset: {fileID: 8300000, guid: 77371dd5feff842e0aa428f500fc0987, type: 3}
   - Key: asset.audio-clip.fantasy-interface-3-3.324c6dda
@@ -113,12 +149,40 @@ MonoBehaviour:
     Asset: {fileID: 8300000, guid: 3b038fe42061242c2b545ccbeb6a1325, type: 3}
   - Key: asset.audio-clip.grass-walk-surface-1-7.eb71f68f
     Asset: {fileID: 8300000, guid: eb71f68f7cea341779307a3a4bc8d127, type: 3}
+  - Key: asset.audio-clip.henhouse-loop.cfc068b2
+    Asset: {fileID: 8300000, guid: cfc068b2075bd4c4dacfd320d901c2fc, type: 3}
+  - Key: asset.audio-clip.horse-gallop-grass-slow-1-1.9feba6bf
+    Asset: {fileID: 8300000, guid: 9feba6bf6d8864159bcbcdf182e4bea7, type: 3}
+  - Key: asset.audio-clip.horse-gallop-grass-slow-1-2.1c4ca1ab
+    Asset: {fileID: 8300000, guid: 1c4ca1abf5b8f42b5ba3d285fa085a64, type: 3}
+  - Key: asset.audio-clip.horse-gallop-grass-slow-1-3.999a8b45
+    Asset: {fileID: 8300000, guid: 999a8b45d25b14ff78b55c74da0c7c8d, type: 3}
+  - Key: asset.audio-clip.horse-gallop-grass-slow-1-4.27d48e9b
+    Asset: {fileID: 8300000, guid: 27d48e9b1d705407dab4c6ab94758d19, type: 3}
+  - Key: asset.audio-clip.horse-gallop-gravel-slow-1-1.455438f6
+    Asset: {fileID: 8300000, guid: 455438f6f39f04971aba027f1485f8ac, type: 3}
+  - Key: asset.audio-clip.horse-gallop-gravel-slow-1-2.20aade69
+    Asset: {fileID: 8300000, guid: 20aade695e40a451fb51f79f770b1591, type: 3}
+  - Key: asset.audio-clip.horse-gallop-gravel-slow-1-3.999474d9
+    Asset: {fileID: 8300000, guid: 999474d9f02864aac84ae174d62760f0, type: 3}
+  - Key: asset.audio-clip.horse-gallop-gravel-slow-1-4.df21d036
+    Asset: {fileID: 8300000, guid: df21d036a78cf4318a6e34c13a342cb1, type: 3}
   - Key: asset.audio-clip.insects-loop-1.2d1c4036
     Asset: {fileID: 8300000, guid: 2d1c40362fb0646f19f9c45c23b06de0, type: 3}
+  - Key: asset.audio-clip.magic-chimes-1-6.09293c5a
+    Asset: {fileID: 8300000, guid: 09293c5ae0da849fca0b7c49c92d0b37, type: 3}
+  - Key: asset.audio-clip.male-grunt-01.4f272867
+    Asset: {fileID: 8300000, guid: 4f2728670c70e4d189b2f93f4bc4982a, type: 3}
+  - Key: asset.audio-clip.male-grunt-02.f15fd98a
+    Asset: {fileID: 8300000, guid: f15fd98abcf634294a1d8ac78acaad5e, type: 3}
+  - Key: asset.audio-clip.male-grunt-04.f01557d0
+    Asset: {fileID: 8300000, guid: f01557d0774f04ff9949e1f2796ac884, type: 3}
   - Key: asset.audio-clip.metallic-gear-2-loop.6b1e3ee2
     Asset: {fileID: 8300000, guid: 6b1e3ee2d75ed45bda6be13ae0eeda9b, type: 3}
   - Key: asset.audio-clip.minimalist1.d8f42014
     Asset: {fileID: 8300000, guid: d8f42014edbccc0439ea92b410ad4557, type: 3}
+  - Key: asset.audio-clip.minimalist2.deff2fb5
+    Asset: {fileID: 8300000, guid: deff2fb538f3b7a44aa556210c060408, type: 3}
   - Key: asset.audio-clip.minimalist6.dde559ac
     Asset: {fileID: 8300000, guid: dde559ace49168e4d8e75f0f395c8900, type: 3}
   - Key: asset.audio-clip.minimalist7.0a41a68b
@@ -127,8 +191,18 @@ MonoBehaviour:
     Asset: {fileID: 8300000, guid: 101f204092fa54e48b66d52b74776e6c, type: 3}
   - Key: asset.audio-clip.modern16.158bcd8f
     Asset: {fileID: 8300000, guid: 158bcd8f1d5db764c878f62c516414e3, type: 3}
+  - Key: asset.audio-clip.nail-wood-1-2.ee66394b
+    Asset: {fileID: 8300000, guid: ee66394b1fbbf4da5b8f888791839890, type: 3}
   - Key: asset.audio-clip.nail-wood-3-loop-1.d32b7e50
     Asset: {fileID: 8300000, guid: d32b7e5085f3d4190b528c4dd442e747, type: 3}
+  - Key: asset.audio-clip.negative-effect-2-1.c7bdc810
+    Asset: {fileID: 8300000, guid: c7bdc8104972b47359a60d473149fe98, type: 3}
+  - Key: asset.audio-clip.negative-effect-7-1.5e0c71a0
+    Asset: {fileID: 8300000, guid: 5e0c71a0cf6a84486b343fdaedfffebe, type: 3}
+  - Key: asset.audio-clip.objects-small-1-3.0fb8789a
+    Asset: {fileID: 8300000, guid: 0fb8789a74dd24223b40b455d3747af6, type: 3}
+  - Key: asset.audio-clip.objects-small-1-5.00d06014
+    Asset: {fileID: 8300000, guid: 00d06014e9ac8478d8ace7abeec3fac2, type: 3}
   - Key: asset.audio-clip.positive-effect-3-2.241d9602
     Asset: {fileID: 8300000, guid: 241d96029b46f41c1b741f6021b5a0e9, type: 3}
   - Key: asset.audio-clip.rock-large-debris-1-1.882f5943
@@ -149,6 +223,16 @@ MonoBehaviour:
     Asset: {fileID: 8300000, guid: 1155955e306f54181935f3ac9156a5eb, type: 3}
   - Key: asset.audio-clip.village-amb-loop-01.26a3a102
     Asset: {fileID: 8300000, guid: 26a3a102f4cfd47b8b529036b6eaacc6, type: 3}
+  - Key: asset.audio-clip.water-movement-2-1.cf5f058b
+    Asset: {fileID: 8300000, guid: cf5f058b618c946ba98620b2a06c4e29, type: 3}
+  - Key: asset.audio-clip.water-splash-1-1.16ab2edc
+    Asset: {fileID: 8300000, guid: 16ab2edc37cd743f2ba4dddfa87ac107, type: 3}
+  - Key: asset.audio-clip.water-splash-2-2.08dfff1e
+    Asset: {fileID: 8300000, guid: 08dfff1eea8c84e558b16b8351b034f3, type: 3}
+  - Key: asset.audio-clip.water-splash-3-1.41da645d
+    Asset: {fileID: 8300000, guid: 41da645dc0924428ebf8146f4b0f4f69, type: 3}
+  - Key: asset.audio-clip.water-splash-6-2.a56b9a40
+    Asset: {fileID: 8300000, guid: a56b9a40eec804861a40c651211b17c8, type: 3}
   - Key: asset.audio-clip.water-stream-calm-1.69095914
     Asset: {fileID: 8300000, guid: 690959147432d4186a426744a96c9965, type: 3}
   - Key: asset.audio-clip.whoosh-2-1.90341784
@@ -169,6 +253,10 @@ MonoBehaviour:
     Asset: {fileID: 8300000, guid: 03896c38c68756541a2d951b5bf85b43, type: 3}
   - Key: asset.audio-clip.wind-gusts-loop.08d41df3
     Asset: {fileID: 8300000, guid: 08d41df3761dd8d4881277e2f59e04a8, type: 3}
+  - Key: asset.audio-clip.wind-loop-2.36ed7745
+    Asset: {fileID: 8300000, guid: 36ed7745bf4004c32bcf9a5c7fb14585, type: 3}
+  - Key: asset.audio-clip.wind-loop-7.d6d24ac5
+    Asset: {fileID: 8300000, guid: d6d24ac5b06f74fed9511dbc00660cc1, type: 3}
   - Key: asset.audio-clip.wind-soft-loop.3d810496
     Asset: {fileID: 8300000, guid: 3d8104967381b5145b75fb729949d195, type: 3}
   - Key: asset.audio-clip.wood-10-1.9e802a6e

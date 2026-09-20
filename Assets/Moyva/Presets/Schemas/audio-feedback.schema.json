@@ -63,6 +63,14 @@
             ],
             "title": "Sound Key"
           },
+          "context": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Context",
+            "description": "Контекст події: 'unit:<unitTypeId>' або 'tile:<tileTypeId>'. Порожньо — будь-який."
+          },
           "volumeScale": {
             "type": "number",
             "title": "Volume Scale",
@@ -204,6 +212,16 @@
         "null"
       ],
       "title": "Notification Error"
+    },
+    "combatMusicEnabled": {
+      "type": "boolean",
+      "title": "Combat Music Enabled"
+    },
+    "combatMusicQuietSeconds": {
+      "type": "number",
+      "title": "Combat Music Quiet Seconds",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
     }
   }
 }
