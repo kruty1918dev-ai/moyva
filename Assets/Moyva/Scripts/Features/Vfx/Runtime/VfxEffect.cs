@@ -3,19 +3,14 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Vfx.Runtime
 {
-    /// <summary>
-    /// Authored component on every pooled VFX prefab root. Captures the
-    /// prefab's baseline particle state once, applies per-spawn parameters
-    /// (position, rotation, scale, faction tint, quality count scale,
-    /// optional deterministic seed) and restores the baseline on Stop so a
-    /// pooled instance never carries stale visual state.
-    /// </summary>
+    /// <summary>Екземпляр VFX-ефекту на сцені: керує часом життя, тінтом частинок та поверненням у пул.</summary>
     [DisallowMultipleComponent]
     public sealed class VfxEffect : MonoBehaviour
     {
         [Tooltip("Seconds until the pool auto-returns this effect. Authored to cover the longest child system.")]
         [Min(0.05f)] public float duration = 1f;
 
+        /// <summary>Частинки, що отримують тінт фракції.</summary>
         [Tooltip("Particle systems tinted by faction color when the rule requests it.")]
         public ParticleSystem[] tintTargets = Array.Empty<ParticleSystem>();
 
@@ -27,11 +22,13 @@ namespace Kruty1918.Moyva.Vfx.Runtime
         private Vector3 _baseLocalScale;
         private bool _captured;
 
-        /// <summary>Prefab asset this instance was spawned from; set by the pool for release routing.</summary>
+        /// <summary>Префаб-джерело цього інстанса.</summary>
         public GameObject SourcePrefab { get; internal set; }
 
+        /// <summary>Тривалість ефекту в секундах.</summary>
         public float Duration => duration;
 
+        /// <summary>Запускає ефект із параметрами запиту.</summary>
         public void Play(in API.VfxSpawnRequest request)
         {
             Capture();
@@ -98,7 +95,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             }
         }
 
-        /// <summary>Stops every system and restores the captured baseline.</summary>
+        /// <summary>Зупиняє ефект і готує до повернення в пул.</summary>
         public void Stop()
         {
             if (!_captured)

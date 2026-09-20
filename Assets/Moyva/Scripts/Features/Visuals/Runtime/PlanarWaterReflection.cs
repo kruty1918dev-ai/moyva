@@ -4,6 +4,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace Kruty1918.Moyva.Visuals
 {
+    /// <summary>Планарне відбиття води: рендерить віддзеркалену камеру в текстуру для водних матеріалів.</summary>
     [ExecuteAlways]
     [DisallowMultipleComponent]
     public sealed class PlanarWaterReflection : MonoBehaviour
@@ -13,9 +14,11 @@ namespace Kruty1918.Moyva.Visuals
         private static readonly int ReflectionVerticalFlipId = Shader.PropertyToID("_ReflectionVerticalFlip");
         private static bool _isRenderingReflection;
 
+        /// <summary>Площина водної поверхні.</summary>
         [Tooltip("Plane used for mirroring the camera. Leave empty to use this transform.")]
         public Transform waterPlane;
 
+        /// <summary>Шари, що потрапляють у відбиття.</summary>
         [Tooltip("Layers rendered into the water reflection. The Water layer is always excluded at render time.")]
         public LayerMask reflectionMask = ~0;
 
@@ -25,12 +28,15 @@ namespace Kruty1918.Moyva.Visuals
         [Tooltip("Small offset for the reflection clip plane to avoid artifacts at the water surface.")]
         [Min(0f)] public float clipPlaneOffset = 0.07f;
 
+        /// <summary>Чи відбивати скайбокс.</summary>
         [Tooltip("When enabled, the reflection camera uses the source camera skybox/background.")]
         public bool reflectSkybox = true;
 
+        /// <summary>Чи відображати відбиття вертикально.</summary>
         [Tooltip("Turn this on if the reflection texture appears vertically inverted on the current graphics API.")]
         public bool verticalFlip;
 
+        /// <summary>Матеріали води, що отримують текстуру відбиття.</summary>
         [Tooltip("Water materials that should receive the reflection texture. Materials on this renderer are also updated.")]
         public Material[] targetWaterMaterials;
 

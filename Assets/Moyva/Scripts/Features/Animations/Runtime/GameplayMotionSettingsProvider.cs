@@ -5,17 +5,14 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Animations.Runtime
 {
-    /// <summary>
-    /// Resolves <see cref="GameplayMotionConfig"/> values against the user's
-    /// Reduce Motion preference (shared with <see cref="IUiMotionService"/>)
-    /// and the active <see cref="GraphicsQualityProfile"/>.
-    /// </summary>
+    /// <summary>Адаптер конфігурації gameplay-рухів: віддає профілі з GameplayMotionConfig з урахуванням доступності та якості.</summary>
     internal sealed class GameplayMotionSettingsProvider : IGameplayMotionSettingsProvider
     {
         private readonly GameplayMotionConfig _config;
         private readonly IUiMotionService _uiMotion;
         private readonly IGraphicsSettingsService _graphics;
 
+        /// <summary>Створює провайдера з конфігурацією та джерелом UI-налаштувань руху.</summary>
         [Inject]
         public GameplayMotionSettingsProvider(
             [InjectOptional] GameplayMotionConfig config = null,
@@ -27,12 +24,17 @@ namespace Kruty1918.Moyva.Animations.Runtime
             _graphics = graphics;
         }
 
+        /// <summary>Профіль локомоції юнітів.</summary>
         public UnitLocomotionMotionProfile UnitLocomotion => _config.unitLocomotion;
+        /// <summary>Профіль переходів юнітів.</summary>
         public UnitTransitionMotionProfile UnitTransitions => _config.unitTransitions;
+        /// <summary>Профіль рухів будівель.</summary>
         public BuildingMotionProfile Building => _config.building;
 
+        /// <summary>Чи ввімкнено режим зменшеного руху.</summary>
         public bool ReducedMotion => _uiMotion?.ReducedMotion ?? false;
 
+        /// <summary>Масштаб вторинного руху за рівнем якості.</summary>
         public float SecondaryMotionScale
         {
             get
@@ -55,6 +57,7 @@ namespace Kruty1918.Moyva.Animations.Runtime
             }
         }
 
+        /// <summary>Масштабує тривалість відповідно до Reduced Motion.</summary>
         public float ScaleDuration(float seconds)
         {
             if (seconds <= 0f)
@@ -64,6 +67,7 @@ namespace Kruty1918.Moyva.Animations.Runtime
                 : seconds;
         }
 
+        /// <summary>Масштабує амплітуду вторинного руху за рівнем якості.</summary>
         public float ScaleSecondaryAmplitude(float amplitude)
             => amplitude * SecondaryMotionScale;
     }

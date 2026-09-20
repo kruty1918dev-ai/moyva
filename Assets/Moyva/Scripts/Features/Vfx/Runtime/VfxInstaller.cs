@@ -10,6 +10,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
     /// </summary>
     public static class VfxInstaller
     {
+        /// <summary>Реєструє VFX-сервіси в контейнері.</summary>
         public static void Install(DiContainer container)
         {
             if (!container.HasBinding<VfxCatalogConfig>())

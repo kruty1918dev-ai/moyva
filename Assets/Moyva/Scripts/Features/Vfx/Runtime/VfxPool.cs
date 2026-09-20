@@ -5,16 +5,15 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Vfx.Runtime
 {
-    /// <summary>
-    /// Prefab-instance pool for VFX. Acquire → place → play → time-based
-    /// auto-return on Tick. Keeps zero managed allocations on the hot path
-    /// after warm-up (struct active list, queues reused per prefab).
-    /// </summary>
+    /// <summary>Пул VFX-ефектів: переuse інстансів префабів, ліміти активних ефектів, витіснення найстаріших.</summary>
     public sealed class VfxPool : IVfxSpawner, IDisposable
     {
+        /// <summary>Запис про активний ефект у пулі.</summary>
         private struct ActiveEntry
         {
+            /// <summary>Екземпляр ефекту.</summary>
             public VfxEffect Effect;
+            /// <summary>Час повернення ефекту в пул.</summary>
             public float ReleaseAt;
         }
 
@@ -28,15 +27,19 @@ namespace Kruty1918.Moyva.Vfx.Runtime
 
         private int _dropped;
 
+        /// <summary>Створює пул із коренем для інстансів і опційним джерелом часу.</summary>
         public VfxPool(Transform root, Func<float> clock = null)
         {
             _root = root;
             _clock = clock ?? (() => Time.time);
         }
 
+        /// <summary>Кількість активних ефектів.</summary>
         public int ActiveCount => _active.Count;
+        /// <summary>Загальна кількість відкинутих спавнів.</summary>
         public int TotalDropped => _dropped;
 
+        /// <summary>Намагається заспавнити ефект за правилом і запитом.</summary>
         public bool TrySpawn(VfxEffectRule rule, in VfxSpawnRequest request)
         {
             if (rule == null || rule.prefab == null || _root == null)
@@ -58,14 +61,14 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             return true;
         }
 
-        /// <summary>Active instances spawned from a specific prefab (per-rule budget checks).</summary>
+        /// <summary>Кількість активних ефектів для конкретного префаба.</summary>
         public int ActiveCountForPrefab(GameObject prefab)
             => prefab != null
                && _activePerPrefab.TryGetValue(prefab, out int count)
                 ? count
                 : 0;
 
-        /// <summary>Returns finished effects to their free queues. Call once per frame.</summary>
+        /// <summary>Повертає в пул ефекти, чий час вийшов.</summary>
         public void Tick()
         {
             float now = _clock();
@@ -79,7 +82,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             }
         }
 
-        /// <summary>Drops the oldest active instance (used when the global budget is hit).</summary>
+        /// <summary>Витісняє найстаріший активний ефект у пул.</summary>
         public void EvictOldest()
         {
             if (_active.Count == 0)
@@ -90,7 +93,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             Release(effect);
         }
 
-        /// <summary>Pre-instantiates pooled instances so first gameplay spawns do not hitch.</summary>
+        /// <summary>Попередньо прогріває пул заданою кількістю інстансів.</summary>
         public void Prewarm(GameObject prefab, int count)
         {
             if (prefab == null || count <= 0)
@@ -105,7 +108,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             }
         }
 
-        /// <summary>Stops everything and destroys pooled objects (scene unload / dispose).</summary>
+        /// <summary>Знищує всі інстанси пула.</summary>
         public void Dispose()
         {
             for (int i = 0; i < _active.Count; i++)

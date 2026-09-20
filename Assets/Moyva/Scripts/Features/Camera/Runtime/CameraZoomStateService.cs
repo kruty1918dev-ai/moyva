@@ -4,12 +4,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
-    /// <summary>
-    /// Single authoritative publisher of normalized camera-distance state.
-    /// Reads the live camera once per frame (LateTick, after CameraZoom applied
-    /// the smoothed zoom) and exposes raw/smoothed normalized zoom plus the
-    /// shared FarViewWeight for visuals and audio.
-    /// </summary>
+    /// <summary>Реалізація ICameraZoomState: слідкує за камерою, нормалізує та згладжує зум, обчислює вагу far-view.</summary>
     internal sealed class CameraZoomStateService
         : ICameraZoomState, IInitializable, ILateTickable
     {
@@ -24,6 +19,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private float _farViewWeight;
         private bool _isPerspective;
 
+        /// <summary>Створює сервіс із джерелом камери та налаштуваннями.</summary>
         public CameraZoomStateService(
             UnityEngine.Camera camera,
             CameraSettingsSO settings)
@@ -32,14 +28,22 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _settings = settings;
         }
 
+        /// <summary>Поточний зум камери.</summary>
         public float CurrentZoom => _currentZoom;
+        /// <summary>Мінімальний зум.</summary>
         public float MinZoom => _minZoom;
+        /// <summary>Максимальний зум.</summary>
         public float MaxZoom => _maxZoom;
+        /// <summary>Нормалізований зум у [0,1].</summary>
         public float NormalizedZoom => _normalizedZoom;
+        /// <summary>Згладжений нормалізований зум.</summary>
         public float SmoothedNormalizedZoom => _smoothedNormalizedZoom;
+        /// <summary>Вага far-view вікна.</summary>
         public float FarViewWeight => _farViewWeight;
+        /// <summary>Чи є камера перспективною.</summary>
         public bool IsPerspective => _isPerspective;
 
+        /// <summary>Ініціалізує стан зуму з поточної камери.</summary>
         public void Initialize()
         {
             SampleRaw();
@@ -48,6 +52,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _farViewWeight = EvaluateWeight(_smoothedNormalizedZoom);
         }
 
+        /// <summary>Оновлює згладжений зум після руху камери.</summary>
         public void LateTick()
         {
             SampleRaw();

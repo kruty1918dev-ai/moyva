@@ -5,13 +5,13 @@ using UnityEngine;
 namespace Kruty1918.Moyva.Animations.Runtime.Motion
 {
     /// <summary>
-    /// Canonical per-entity presentation motion. Replaces scattered tween calls:
-    /// exponential follow, eased moves (with optional lift arc), yaw easing,
-    /// additive punch impulses, scale easing and fully custom evaluators.
-    /// Channels are mutually owned — starting a base-position motion cancels the
-    /// previous one, so retargeting never produces duplicate writers.
-    /// Pure presentation: cancelling, fast-forwarding or snapping must never
-    /// affect authoritative gameplay state.
+    /// Канонічний presentation-motion для сутності. Замінює розкидані tween-виклики:
+    /// експоненційне слідкування, eased-переміщення (з опційною дугою підйому),
+    /// easing повороту yaw, адитивні punch-імпульси, easing масштабу та повністю
+    /// кастомні евалюатори. Канали взаємовиключні — запуск нового руху базової
+    /// позиції скасовує попередній, тому ретаргетинг ніколи не створює дублікатів
+    /// писачів. Чиста презентація: скасування, перемотка чи snap ніколи не впливають
+    /// на авторитетний gameplay-стан.
     /// </summary>
     public sealed class EntityMotion : MonoBehaviour
     {
@@ -25,12 +25,15 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
         private readonly ActiveMotion[] _slots = new ActiveMotion[SlotCount];
         private ActiveMotion _custom;
 
-        /// <summary>Any channel currently animating.</summary>
+        /// <summary>Чи анімується зараз хоча б один канал.</summary>
         public bool IsAnimating => _custom != null || HasAnySlot();
 
-        /// <summary>Base-position channel is owned by follow or an eased move.</summary>
+        /// <summary>Чи зайнятий канал базової позиції follow- або eased-рухом.</summary>
         public bool HasBasePositionMotion => _slots[SlotFollow] != null || _slots[SlotEase] != null;
 
+        /// <summary>
+        /// Повертає наявний компонент <see cref="EntityMotion"/> на цілі або додає новий.
+        /// </summary>
         public static EntityMotion AttachOrUpdate(GameObject target)
         {
             if (target == null)
@@ -42,7 +45,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
 
         // ── Base position: exponential follow ────────────────────────────────
 
-        /// <summary>Continuously eases position toward <paramref name="target"/>; retargets in place.</summary>
+        /// <summary>Безперервно підтягує позицію до <paramref name="target"/>; ретаргетиться на місці.</summary>
         public void FollowTo(Vector3 target, float sharpness)
         {
             if (sharpness <= 0f)
@@ -58,16 +61,16 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             Enable();
         }
 
-        /// <summary>Stops the follow channel at the current position.</summary>
+        /// <summary>Зупиняє канал follow на поточній позиції.</summary>
         public void StopFollow() => CancelSlot(SlotFollow);
 
         // ── Base position: eased move ────────────────────────────────────────
 
-        /// <summary>Eases from the current position to <paramref name="target"/> over <paramref name="duration"/>.</summary>
+        /// <summary>Плавно переводить позицію з поточної до <paramref name="target"/> за <paramref name="duration"/>.</summary>
         public void EaseTo(Vector3 target, float duration, MotionEaseKind ease, Action onComplete = null)
             => EaseToWithLift(target, duration, ease, 0f, onComplete);
 
-        /// <summary>Eased move with a small parabolic lift — used for relocation travel.</summary>
+        /// <summary>Eased-переміщення з малою параболічною дугою підйому — для переїзду юніта.</summary>
         public void EaseToWithLift(
             Vector3 target,
             float duration,
@@ -91,11 +94,11 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
 
         // ── Rotation ─────────────────────────────────────────────────────────
 
-        /// <summary>Eases yaw from the current value toward <paramref name="targetYawDeg"/>.</summary>
+        /// <summary>Плавно повертає yaw з поточного значення до <paramref name="targetYawDeg"/>.</summary>
         public void RotateYawTo(float targetYawDeg, float duration, MotionEaseKind ease)
             => RotateYawFromTo(transform.eulerAngles.y, targetYawDeg, duration, ease);
 
-        /// <summary>Eases yaw between explicit angles; takes the shortest arc.</summary>
+        /// <summary>Плавно повертає yaw між явними кутами; обирає найкоротшу дугу.</summary>
         public void RotateYawFromTo(float fromYawDeg, float toYawDeg, float duration, MotionEaseKind ease)
         {
             if (duration <= 0f)
@@ -113,7 +116,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
 
         // ── Scale ────────────────────────────────────────────────────────────
 
-        /// <summary>Eases localScale from the current value toward <paramref name="targetScale"/>.</summary>
+        /// <summary>Плавно змінює localScale з поточного значення до <paramref name="targetScale"/>.</summary>
         public void ScaleTo(Vector3 targetScale, float duration, MotionEaseKind ease, Action onComplete = null)
         {
             if (duration <= 0f)
@@ -132,8 +135,8 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
         // ── Additive punch ───────────────────────────────────────────────────
 
         /// <summary>
-        /// Out-and-back positional impulse (hit recoil, attack lunge, blocked shake).
-        /// Composes additively on top of any base-position motion.
+        /// Позиційний імпульс "туди-назад" (віддача влучання, ривок атаки, тремтіння блоку).
+        /// Накладається адитивно поверх будь-якого руху базової позиції.
         /// </summary>
         public void PunchPosition(Vector3 worldOffset, float duration, MotionEaseKind ease, Action onComplete = null)
         {
@@ -151,9 +154,10 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
         // ── Fully custom evaluator ───────────────────────────────────────────
 
         /// <summary>
-        /// Single generic channel: <paramref name="apply"/> receives eased t in [0,1]
-        /// and may drive any transform properties (death tilt+sink, garrison shrink).
-        /// Only one custom motion at a time — starting a new one cancels the old.
+        /// Єдиний загальний канал: <paramref name="apply"/> отримує eased t у [0,1]
+        /// і може керувати будь-якими властивостями трансформа (нахил+занурення смерті,
+        /// стискання гарнізону). Одночасно активний лише один custom-рух — запуск
+        /// нового скасовує старий.
         /// </summary>
         public void PlayCustom(float duration, MotionEaseKind ease, Action<float> apply, Action onComplete = null)
         {
@@ -176,7 +180,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
 
         // ── Authority snaps / cancellation ───────────────────────────────────
 
-        /// <summary>Cancels all position channels and snaps to <paramref name="position"/>.</summary>
+        /// <summary>Скасовує всі позиційні канали та миттєво ставить <paramref name="position"/>.</summary>
         public void SnapTo(Vector3 position)
         {
             CancelSlot(SlotFollow);
@@ -185,7 +189,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             transform.position = position;
         }
 
-        /// <summary>Full cancel + snap — used for server corrections, restore, resync.</summary>
+        /// <summary>Повне скасування + snap — для серверних корекцій, restore, resync.</summary>
         public void SnapPose(Vector3 position, Quaternion rotation, Vector3 scale)
         {
             CancelAll();
@@ -193,7 +197,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             transform.localScale = scale;
         }
 
-        /// <summary>Cancels every channel without invoking completion callbacks.</summary>
+        /// <summary>Скасовує всі канали без виклику completion-колбеків.</summary>
         public void CancelAll()
         {
             for (int i = 0; i < SlotCount; i++)
@@ -201,7 +205,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             CancelCustom();
         }
 
-        /// <summary>Frame driver. Called by Update; public so EditMode tests can pump it.</summary>
+        /// <summary>Кадровий драйвер. Викликається з Update; public, щоб EditMode-тести могли його прокачувати.</summary>
         public void Tick(float deltaTime)
         {
             if (deltaTime <= 0f)
@@ -258,13 +262,19 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
 
         // ── Motion primitives ────────────────────────────────────────────────
 
+        /// <summary>
+        /// Базовий примітив активного руху в каналі <see cref="EntityMotion"/>.
+        /// </summary>
         private abstract class ActiveMotion
         {
+            /// <summary>Колбек, що викликається після завершення руху.</summary>
             public Action OnComplete;
-            /// <summary>Returns true when finished (completion callback already fired).</summary>
+            /// <summary>Повертає true після завершення (completion-колбек уже викликано).</summary>
             public abstract bool Tick(EntityMotion owner, float deltaTime);
+            /// <summary>Реакція на скасування каналу; за замовчуванням нічого не робить.</summary>
             public virtual void OnCancelled(EntityMotion owner) { }
 
+            /// <summary>Завершує рух і викликає відкладений completion-колбек.</summary>
             protected void Complete()
             {
                 Action callback = OnComplete;
@@ -273,11 +283,17 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             }
         }
 
+        /// <summary>
+        /// Експоненційне слідкування за цільовою позицією з заданою різкістю.
+        /// </summary>
         private sealed class FollowMotion : ActiveMotion
         {
+            /// <summary>Цільова позиція слідкування.</summary>
             public Vector3 Target;
+            /// <summary>Різкість експоненційного наближення.</summary>
             public float Sharpness;
 
+            /// <summary>Крокує позицію до цілі; повертає true при досягненні.</summary>
             public override bool Tick(EntityMotion owner, float deltaTime)
             {
                 Transform t = owner.transform;
@@ -294,6 +310,9 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             }
         }
 
+        /// <summary>
+        /// Eased-переміщення між двома позиціями з опційною параболічною дугою підйому.
+        /// </summary>
         private sealed class PositionEaseMotion : ActiveMotion
         {
             private Vector3 _from;
@@ -303,6 +322,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             private float _elapsed;
             private MotionEaseKind _ease;
 
+            /// <summary>Перезапускає рух із новими параметрами.</summary>
             public void Restart(Vector3 from, Vector3 to, float duration, MotionEaseKind ease, float lift, Action onComplete)
             {
                 _from = from;
@@ -314,6 +334,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
                 OnComplete = onComplete;
             }
 
+            /// <summary>Інтерполює позицію; повертає true по завершенні.</summary>
             public override bool Tick(EntityMotion owner, float deltaTime)
             {
                 _elapsed += deltaTime;
@@ -333,6 +354,9 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             }
         }
 
+        /// <summary>
+        /// Eased-обертання yaw між двома кутами по найкоротшій дузі.
+        /// </summary>
         private sealed class YawEaseMotion : ActiveMotion
         {
             private float _fromDeg;
@@ -341,6 +365,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             private float _elapsed;
             private MotionEaseKind _ease;
 
+            /// <summary>Перезапускає обертання з новими параметрами.</summary>
             public void Restart(float fromDeg, float toDeg, float duration, MotionEaseKind ease)
             {
                 _fromDeg = fromDeg;
@@ -350,6 +375,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
                 _elapsed = 0f;
             }
 
+            /// <summary>Інтерполює кут yaw; повертає true по завершенні.</summary>
             public override bool Tick(EntityMotion owner, float deltaTime)
             {
                 _elapsed += deltaTime;
@@ -366,6 +392,9 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             }
         }
 
+        /// <summary>
+        /// Eased-зміна localScale між двома значеннями.
+        /// </summary>
         private sealed class ScaleEaseMotion : ActiveMotion
         {
             private Vector3 _from;
@@ -374,6 +403,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             private float _elapsed;
             private MotionEaseKind _ease;
 
+            /// <summary>Перезапускає зміну масштабу з новими параметрами.</summary>
             public void Restart(Vector3 from, Vector3 to, float duration, MotionEaseKind ease, Action onComplete)
             {
                 _from = from;
@@ -384,6 +414,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
                 OnComplete = onComplete;
             }
 
+            /// <summary>Інтерполює масштаб; повертає true по завершенні.</summary>
             public override bool Tick(EntityMotion owner, float deltaTime)
             {
                 _elapsed += deltaTime;
@@ -399,6 +430,9 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             }
         }
 
+        /// <summary>
+        /// Адитивний позиційний імпульс "туди-назад" із гарантованим нульовим залишком.
+        /// </summary>
         private sealed class PunchMotion : ActiveMotion
         {
             private Vector3 _offset;
@@ -407,6 +441,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             private float _applied;
             private MotionEaseKind _ease;
 
+            /// <summary>Перезапускає імпульс з новими параметрами.</summary>
             public void Restart(Vector3 offset, float duration, MotionEaseKind ease, Action onComplete)
             {
                 _offset = offset;
@@ -417,6 +452,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
                 OnComplete = onComplete;
             }
 
+            /// <summary>Накладає дельту імпульсу; повертає true по завершенні.</summary>
             public override bool Tick(EntityMotion owner, float deltaTime)
             {
                 _elapsed += deltaTime;
@@ -436,6 +472,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
                 return false;
             }
 
+            /// <summary>Знімає ще-застосований залишок, щоб скасування не лишало дрейфу.</summary>
             public override void OnCancelled(EntityMotion owner)
             {
                 // Remove the still-applied residual so cancellation never leaves drift.
@@ -445,13 +482,21 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             }
         }
 
+        /// <summary>
+        /// Канал повністю кастомного руху з довільним евалюатором за eased t.
+        /// </summary>
         private sealed class CustomMotion : ActiveMotion
         {
+            /// <summary>Тривалість руху в секундах.</summary>
             public float Duration;
+            /// <summary>Накопичений час руху.</summary>
             public float Elapsed;
+            /// <summary>Крива easing для цього руху.</summary>
             public MotionEaseKind Ease;
+            /// <summary>Евалюатор, що застосовує eased t до трансформа.</summary>
             public Action<float> Apply;
 
+            /// <summary>Викликає евалюатор; повертає true по завершенні.</summary>
             public override bool Tick(EntityMotion owner, float deltaTime)
             {
                 Elapsed += deltaTime;

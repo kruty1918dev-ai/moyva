@@ -2,8 +2,10 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
+    /// <summary>Реєстратор біндінгів візуального шару будівництва.</summary>
     internal static class ConstructionVisualBindingsInstaller
     {
+        /// <summary>Реєструє візуальні сервіси та обробники будівництва в контейнері.</summary>
         public static void Install(DiContainer container)
         {
             container.Bind<BuildModeGridStateController>().AsSingle();

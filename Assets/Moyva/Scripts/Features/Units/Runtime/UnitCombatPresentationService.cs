@@ -10,6 +10,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
+    /// <summary>Presentation-сервіс бойових реакцій юнітів: відкат при влучанні та ривок атаки через EntityMotion.</summary>
     internal sealed class UnitCombatPresentationService : IInitializable, IDisposable
     {
         private readonly SignalBus _signals;
@@ -26,6 +27,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private string _selectedUnitId;
         private GameModeType _mode = GameModeType.Normal;
 
+        /// <summary>Створює сервіс із провайдером налаштувань руху.</summary>
         public UnitCombatPresentationService(
             SignalBus signals,
             IUnitCombatService combat,
@@ -42,6 +44,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _motion = motion;
         }
 
+        /// <summary>Підписує сервіс на бойові події.</summary>
         public void Initialize()
         {
             _signals.Subscribe<LocalUnitSelectionChangedSignal>(OnSelectionChanged);
@@ -53,6 +56,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _combat.AttackResolved += OnAttackResolved;
         }
 
+        /// <summary>Відписує сервіс.</summary>
         public void Dispose()
         {
             _signals.TryUnsubscribe<LocalUnitSelectionChangedSignal>(OnSelectionChanged);

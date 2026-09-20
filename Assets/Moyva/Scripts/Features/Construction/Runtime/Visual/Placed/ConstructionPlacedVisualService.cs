@@ -8,6 +8,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
+    /// <summary>Керує візуалами розміщених будівель: створення, заміна префабів за власником, вибір, стилі станів (demolition/construction/operational).</summary>
     internal sealed class ConstructionPlacedVisualService :
         IConstructionPlacedVisualLookup
     {
@@ -29,6 +30,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private Vector2Int? _selectedPosition;
 
+        /// <summary>Створює сервіс із залежностями візуального шару будівель.</summary>
         [Inject]
         public ConstructionPlacedVisualService(
             ConstructionVisualRootService roots,
@@ -44,6 +46,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _settingsProvider = settingsProvider;
         }
 
+        /// <summary>Замінює або створює візуал будівлі у вказаній позиції.</summary>
         public void Replace(
             Vector2Int position,
             string buildingId,
@@ -92,6 +95,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _selectionHighlighter.Apply(instance);
         }
 
+        /// <summary>Замінює візуал, відновлюючи збережену позу (позицію/поворот/масштаб).</summary>
         public void ReplaceWithStoredPose(
             Vector2Int position,
             GameObject prefab,
@@ -122,6 +126,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ownerId: owner);
         }
 
+        /// <summary>Призначає власника будівлі та перемальовує під палітру фракції.</summary>
         public void SetOwner(Vector2Int position, string ownerId)
         {
             if (string.IsNullOrEmpty(ownerId))
@@ -130,12 +135,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _ownerIdByPosition[position] = ownerId;
         }
 
+        /// <summary>Намагається отримати власника будівлі за позицією.</summary>
         public bool TryGetOwner(Vector2Int position, out string ownerId)
         {
             return _ownerIdByPosition.TryGetValue(position, out ownerId)
                    && !string.IsNullOrEmpty(ownerId);
         }
 
+        /// <summary>Видаляє візуал будівлі у позиції.</summary>
         public void Remove(Vector2Int position)
         {
             if (!_placedByPosition.TryGetValue(position, out GameObject instance))
@@ -153,6 +160,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _underConstructionPositions.Remove(position);
         }
 
+        /// <summary>Позначає будівлю вибраною.</summary>
         public void Select(Vector2Int position)
         {
             _selectedPosition = position;
@@ -162,12 +170,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _selectionHighlighter.Apply(instance);
         }
 
+        /// <summary>Знімає виділення з поточної будівлі.</summary>
         public void ClearSelection()
         {
             _selectedPosition = null;
             _selectionHighlighter.Clear();
         }
 
+        /// <summary>Знімає виділення, якщо воно відповідає позиції.</summary>
         public bool ClearSelectionIfMatches(Vector2Int position)
         {
             if (!_selectedPosition.HasValue || _selectedPosition.Value != position)
@@ -177,6 +187,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return true;
         }
 
+        /// <summary>Позначає будівлю як кандидата на знесення.</summary>
         public void MarkDemolitionPreview(Vector2Int position)
         {
             if (!_placedByPosition.TryGetValue(position, out GameObject instance) || instance == null)
@@ -186,6 +197,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _styleService.ApplyGhostStyle(instance, false);
         }
 
+        /// <summary>Переводить візуал у стан будівництва.</summary>
         public void MarkUnderConstruction(Vector2Int position)
         {
             if (!_placedByPosition.TryGetValue(position, out GameObject instance) || instance == null)
@@ -199,6 +211,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
+        /// <summary>Переводить візуал у робочий стан.</summary>
         public void MarkOperational(Vector2Int position)
         {
             _underConstructionPositions.Remove(position);
@@ -210,6 +223,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
+        /// <summary>Відновлює стиль будівлі після скасування знесення.</summary>
         public void RestoreDemolitionPreview(Vector2Int position)
         {
             _demolitionPreviewPositions.Remove(position);
@@ -218,6 +232,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ApplyPersistentStyle(position, instance);
         }
 
+        /// <summary>Очищає всі стилі попереднього перегляду знесення.</summary>
         public void ClearDemolitionPreviewStyles()
         {
             foreach (Vector2Int position in _demolitionPreviewPositions)
@@ -229,6 +244,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _demolitionPreviewPositions.Clear();
         }
 
+        /// <summary>Видаляє всі розміщені візуали.</summary>
         public void Clear()
         {
             foreach (KeyValuePair<Vector2Int, GameObject> pair in _placedByPosition)
@@ -247,6 +263,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ClearSelection();
         }
 
+        /// <summary>Намагається отримати візуал будівлі за позицією.</summary>
         public bool TryGetPlacedVisual(Vector2Int position, out GameObject visual)
         {
             if (_placedByPosition.TryGetValue(position, out visual) && visual != null)

@@ -9,13 +9,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
-    /// <summary>
-    /// Presentation-only unit lifecycle transitions: recruitment deployment
-    /// emerge, garrison enter/exit and death follow-through. Authoritative
-    /// state is already committed by the domain services before these run —
-    /// every transition can be cancelled, fast-forwarded or skipped without
-    /// gameplay consequences.
-    /// </summary>
+    /// <summary>Presentation-сервіс візуальних переходів юнітів: гарнізон вхід/вихід, смерть — через EntityMotion канали.</summary>
     internal sealed class UnitVisualMotionService : IInitializable, IDisposable
     {
         private readonly SignalBus _signals;
@@ -25,6 +19,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IUnitWorldPositionResolver _worldPositionResolver;
         private readonly HashSet<GameObject> _dying = new();
 
+        /// <summary>Створює сервіс із провайдером налаштувань руху та резолвером позицій.</summary>
         public UnitVisualMotionService(
             SignalBus signals,
             IUnitService units,
@@ -39,11 +34,13 @@ namespace Kruty1918.Moyva.Units.Runtime
             _worldPositionResolver = worldPositionResolver;
         }
 
+        /// <summary>Підписує сервіс на події юнітів.</summary>
         public void Initialize()
         {
             _signals.Subscribe<UnitRecruitmentDeployedSignal>(HandleDeployed);
         }
 
+        /// <summary>Відписує сервіс.</summary>
         public void Dispose()
         {
             _signals.TryUnsubscribe<UnitRecruitmentDeployedSignal>(HandleDeployed);
@@ -83,10 +80,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         // ── Garrison ─────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Visual enter: unit slides toward the building and shrinks away.
-        /// Returns true when the presentation owns the deactivation.
-        /// </summary>
+        /// <summary>Програє вхід юніта в гарнізон: стискання і занурення у будівлю.</summary>
         public bool TryPlayGarrisonEnter(GameObject unitObject, Vector2Int buildingPosition)
         {
             if (unitObject == null || !unitObject.activeSelf)
@@ -122,12 +116,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             return true;
         }
 
-        /// <summary>
-        /// Visual exit: unit emerges at the building edge, grows back and slides
-        /// to the target tile. <paramref name="finalizePose"/> applies canonical
-        /// presentation transform once the motion lands.
-        /// Returns true when the presentation owns the positioning.
-        /// </summary>
+        /// <summary>Програє вихід юніта з гарнізону: розгортання до повного масштабу.</summary>
         public bool TryPlayGarrisonExit(
             GameObject unitObject,
             Vector2Int buildingPosition,
@@ -172,12 +161,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         // ── Death ────────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Death follow-through: recoil, tilt, sink — then the object is
-        /// destroyed. Gameplay never waits on this; the unit is already gone
-        /// from registries before this runs.
-        /// Returns true when the presentation owns the destruction.
-        /// </summary>
+        /// <summary>Програє смерть юніта: нахил, занурення і затихання.</summary>
         public bool TryPlayDeath(GameObject unitObject, string unitTypeId)
         {
             if (unitObject == null || !unitObject.activeSelf || _dying.Contains(unitObject))

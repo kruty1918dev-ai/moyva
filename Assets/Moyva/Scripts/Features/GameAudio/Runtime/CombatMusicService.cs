@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         private float _quietAt;
         private bool _armed;
 
+        /// <summary>Створює сервіс бойової музики із залежностями аудіо та стану бою.</summary>
         public CombatMusicService(
             [InjectOptional] IMusicService music,
             [InjectOptional] AudioFeedbackConfig config,
@@ -36,6 +37,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             _signalBus = signalBus;
         }
 
+        /// <summary>Підписує сервіс на бойові події.</summary>
         public void Initialize()
         {
             if (_music == null || _combat == null
@@ -48,6 +50,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             _signalBus?.Subscribe<GameEndedDomainEvent>(OnGameEnded);
         }
 
+        /// <summary>Оновлює бойову музику за станом бою.</summary>
         public void Tick()
         {
             if (!_armed || !_music.IsEpicActive)
@@ -57,6 +60,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
                 _music.DisableEpicMusic();
         }
 
+        /// <summary>Зупиняє бойову музику та звільняє ресурси.</summary>
         public void Dispose()
         {
             if (!_armed)

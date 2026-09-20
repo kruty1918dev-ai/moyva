@@ -22,6 +22,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
 
         private DayPhase _phase = DayPhase.Day;
 
+        /// <summary>Створює сервіс разових амбієнтних звуків із залежностями аудіо.</summary>
         public AmbienceOneShotService(
             [InjectOptional] IAudioService audio,
             [InjectOptional] AudioAmbienceConfig config,
@@ -34,6 +35,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             _calendar = calendar;
         }
 
+        /// <summary>Підписує сервіс на розклад амбієнтних подій.</summary>
         public void Initialize()
         {
             if (_calendar != null)
@@ -50,12 +52,14 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
                 _nextAt[i] = Time.unscaledTime + NextDelay(_config.oneShots[i]);
         }
 
+        /// <summary>Відписує сервіс.</summary>
         public void Dispose()
         {
             if (_calendar != null)
                 _calendar.OnDayPhaseChanged -= OnDayPhaseChanged;
         }
 
+        /// <summary>Програє заплановані разові звуки.</summary>
         public void Tick()
         {
             if (_nextAt == null || _audio == null)

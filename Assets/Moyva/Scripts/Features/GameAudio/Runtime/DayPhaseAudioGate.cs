@@ -9,6 +9,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
     /// </summary>
     internal static class DayPhaseAudioGate
     {
+        /// <summary>Перевіряє, чи дозволений звук у поточну фазу дня.</summary>
         public static bool Allows(string[] dayPhases, DayPhase current)
         {
             if (dayPhases == null || dayPhases.Length == 0)

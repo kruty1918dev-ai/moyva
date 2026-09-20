@@ -4,10 +4,7 @@ using Kruty1918.Moyva.Vfx.API;
 
 namespace Kruty1918.Moyva.Vfx.Runtime
 {
-    /// <summary>
-    /// Frozen lookup "eventName|context" → rule. Context rules win over the base
-    /// event rule, same convention as the audio feedback layer.
-    /// </summary>
+    /// <summary>Реєстр правил VFX-ефектів: резолвить подію+контекст у правило спавну.</summary>
     public sealed class VfxDefinitionRegistry
     {
         private readonly Dictionary<string, VfxEffectRule> _rules =
@@ -15,8 +12,10 @@ namespace Kruty1918.Moyva.Vfx.Runtime
 
         private VfxDefinitionRegistry() { }
 
+        /// <summary>Усі зареєстровані правила.</summary>
         public IReadOnlyCollection<VfxEffectRule> Rules => _rules.Values;
 
+        /// <summary>Будує реєстр із каталогу конфігурації.</summary>
         public static VfxDefinitionRegistry Build(VfxCatalogConfig config)
         {
             var registry = new VfxDefinitionRegistry();
@@ -33,6 +32,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             return registry;
         }
 
+        /// <summary>Резолвить правило за подією та контекстом.</summary>
         public VfxEffectRule Resolve(string eventName, string context = null)
         {
             if (string.IsNullOrWhiteSpace(eventName))
@@ -47,6 +47,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
                 : null;
         }
 
+        /// <summary>Намагається резолвити правило за подією та контекстом.</summary>
         public bool TryResolve(string eventName, string context, out VfxEffectRule rule)
         {
             rule = Resolve(eventName, context);
