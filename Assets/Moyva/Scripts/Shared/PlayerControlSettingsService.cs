@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Shared.Controls
         ZoomOut,
         PrimarySelect,
         SecondarySelect,
+        /// <summary>Варіант FocusSelected.</summary>
         FocusSelected
     }
 
@@ -28,11 +29,17 @@ namespace Kruty1918.Moyva.Shared.Controls
         public float MovementSpeed;
         public float OrbitSpeed;
         public float ZoomSpeed;
+        /// <summary>камери ефектів — bool.</summary>
         public bool CameraEffects;
+        /// <summary>камери тряски Intensity — float.</summary>
         public float CameraShakeIntensity;
+        /// <summary>плавного камери фокус — bool.</summary>
         public bool SmoothCameraFocus;
+        /// <summary>автоматичного камери фокус — bool.</summary>
         public bool AutomaticCameraFocus;
+        /// <summary>Reduce камери руху — bool.</summary>
         public bool ReduceCameraMotion;
+        /// <summary>зум Toward пальців — bool.</summary>
         public bool ZoomTowardFingers;
         public Dictionary<PlayerControlAction, string> Bindings;
         public ProfileDocument Devices;
@@ -172,11 +179,17 @@ namespace Kruty1918.Moyva.Shared.Controls
         void SetMovementSpeed(float value);
         void SetOrbitSpeed(float value);
         void SetZoomSpeed(float value);
+        /// <summary>Встановлює камери ефектів.</summary>
         void SetCameraEffects(bool value);
+        /// <summary>Встановлює камери тряски Intensity.</summary>
         void SetCameraShakeIntensity(float value);
+        /// <summary>Встановлює плавного камери фокус.</summary>
         void SetSmoothCameraFocus(bool value);
+        /// <summary>Встановлює автоматичного камери фокус.</summary>
         void SetAutomaticCameraFocus(bool value);
+        /// <summary>Встановлює Reduce камери руху.</summary>
         void SetReduceCameraMotion(bool value);
+        /// <summary>Встановлює зум Toward пальців.</summary>
         void SetZoomTowardFingers(bool value);
         void ResetToDefaults();
         void ConfigureDevices(ControlProfile selection, PointerInterpretation pointerMode);
@@ -244,6 +257,7 @@ namespace Kruty1918.Moyva.Shared.Controls
             Update(next);
         }
 
+        /// <summary>Встановлює камери ефектів.</summary>
         public void SetCameraEffects(bool value)
         {
             var next = Clone(Settings);
@@ -251,6 +265,7 @@ namespace Kruty1918.Moyva.Shared.Controls
             Update(next);
         }
 
+        /// <summary>Встановлює камери тряски Intensity.</summary>
         public void SetCameraShakeIntensity(float value)
         {
             var next = Clone(Settings);
@@ -258,6 +273,7 @@ namespace Kruty1918.Moyva.Shared.Controls
             Update(next);
         }
 
+        /// <summary>Встановлює плавного камери фокус.</summary>
         public void SetSmoothCameraFocus(bool value)
         {
             var next = Clone(Settings);
@@ -265,6 +281,7 @@ namespace Kruty1918.Moyva.Shared.Controls
             Update(next);
         }
 
+        /// <summary>Встановлює автоматичного камери фокус.</summary>
         public void SetAutomaticCameraFocus(bool value)
         {
             var next = Clone(Settings);
@@ -272,6 +289,7 @@ namespace Kruty1918.Moyva.Shared.Controls
             Update(next);
         }
 
+        /// <summary>Встановлює Reduce камери руху.</summary>
         public void SetReduceCameraMotion(bool value)
         {
             var next = Clone(Settings);
@@ -279,6 +297,7 @@ namespace Kruty1918.Moyva.Shared.Controls
             Update(next);
         }
 
+        /// <summary>Встановлює зум Toward пальців.</summary>
         public void SetZoomTowardFingers(bool value)
         {
             var next = Clone(Settings);

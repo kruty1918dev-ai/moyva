@@ -4,18 +4,14 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
-    /// <summary>
-    /// Single entry point for gameplay systems that want camera attention.
-    /// Translates requests into optional focus suggestions and impulse accents;
-    /// never takes control away — focus suggestions require the player's
-    /// Automatic Camera Focus setting and remain interruptible.
-    /// </summary>
+    /// <summary>CameraAttentionService — class: камери уваги сервісу.</summary>
     internal sealed class CameraAttentionService : ICameraAttentionService
     {
         private readonly ICameraFocusService _focus;
         private readonly ICameraFeedbackService _feedback;
         private readonly IPlayerControlSettingsService _controlSettings;
 
+        /// <summary>Виконує CameraAttentionService.</summary>
         public CameraAttentionService(
             [InjectOptional] ICameraFocusService focus = null,
             [InjectOptional] ICameraFeedbackService feedback = null,
@@ -26,6 +22,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _controlSettings = controlSettings;
         }
 
+        /// <summary>Надсилає Submit.</summary>
         public void Submit(CameraAttentionRequest request)
         {
             if (request.SuggestedImpulse.HasValue && _feedback != null)

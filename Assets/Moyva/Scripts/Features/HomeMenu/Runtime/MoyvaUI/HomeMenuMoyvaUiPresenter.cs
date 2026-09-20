@@ -11,18 +11,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
-    /// <summary>
-    /// Renders the Home Menu by applying a small state machine, not a pile of caches:
-    ///
-    ///   State (authoritative) -> snapshot -> plan operation -> apply -> snapshot committed
-    ///
-    /// Route changes run through <see cref="HomeMenuRenderPhase.ExitingRoute"/>: the exit
-    /// fade is armed once, and the deadline handler always renders the *latest* desired
-    /// snapshot, so rapid navigation can never apply a stale intermediate route.
-    /// Nothing in this class tracks "what was requested" — it only diffs what is
-    /// mounted against what is desired, which is why cancelled/stale work cannot
-    /// mutate a page that was rendered after it.
-    /// </summary>
+    /// <summary>HomeMenuMoyvaUiPresenter — class: головного меню Moyva UI презентера.</summary>
     internal sealed class HomeMenuMoyvaUiPresenter : IInitializable, ITickable, IDisposable
     {
         private const string Prefix = "[HomeMenuMoyvaUI]";
@@ -62,6 +51,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         /// <summary>Current transition phase (test seam).</summary>
         internal HomeMenuRenderPhase Phase => _phase;
 
+        /// <summary>Виконує HomeMenuMoyvaUiPresenter.</summary>
         public HomeMenuMoyvaUiPresenter(
             HomeMenuConfigSO config,
             INavigation navigation,
@@ -86,6 +76,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _localizationFonts = localizationFonts;
         }
 
+        /// <summary>Ініціалізує компонент і підписує на події.</summary>
         public void Initialize()
         {
             _initialized = true;
@@ -115,6 +106,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             RenderIfNeeded();
         }
 
+        /// <summary>Оновлює стан за тік.</summary>
         public void Tick()
         {
             if (!_initialized || _mountedAnchor == null || _state.IsFallback)
@@ -145,6 +137,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             RenderIfNeeded();
         }
 
+        /// <summary>Звільняє ресурси та відписує від подій.</summary>
         public void Dispose()
         {
             _view.Controls.CancelCapture();

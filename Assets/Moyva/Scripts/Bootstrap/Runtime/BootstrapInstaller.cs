@@ -12,6 +12,7 @@ using Kruty1918.Moyva.Units.API;
 
 namespace Kruty1918.Moyva.Bootstrap
 {
+    /// <summary>Кореневий Zenject-інсталер bootstrap-сцени: делегує фічевим інсталерам.</summary>
     public class BootstrapInstaller : MonoInstaller
     {
         [SerializeField] private BootstrapInstallerConfigSO _config;
@@ -20,6 +21,7 @@ namespace Kruty1918.Moyva.Bootstrap
         [SerializeField, HideInInspector] private BootstrapGameSettings _legacyGameSettings = new();
         [SerializeField, HideInInspector] private StartingPositionInitializerSettings _legacyStartingPositionSettings = new();
 
+        /// <summary>Реєструє bootstrap-біндінги.</summary>
         public override void InstallBindings()
         {
             UiActionsInstaller.Install(Container);
@@ -75,6 +77,8 @@ namespace Kruty1918.Moyva.Bootstrap
                 .NonLazy();
             Container.BindExecutionOrder<GameplayProgressClockConfigurator>(91);
             Container.BindInterfacesTo<BotController>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<BotOpponentSaveModule>().AsSingle();
+            Container.BindInterfacesTo<SaveModuleRegistrar<BotOpponentSaveModule>>().AsSingle().NonLazy();
             Container.Bind<Kruty1918.Moyva.AI.Bot.IBotPolicyDriverFactory>()
                 .To<Kruty1918.Moyva.AI.Bot.MoyvaMlAgentsPolicyDriverFactory>()
                 .AsSingle();

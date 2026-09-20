@@ -34,6 +34,28 @@
         "$asset": "asset.game-object.building-scaffolding.07c8416d",
         "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
         "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-lumbermill-blue.81e5f8fe",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_lumbermill_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-lumbermill-green.e41fe8f1",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_lumbermill_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-lumbermill-red.bb9d4809",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_lumbermill_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-lumbermill-yellow.4c8163c0",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_lumbermill_yellow.prefab",
+          "required": true
+        }
       }
     },
     "uiTint": {
@@ -155,4 +177,4 @@
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/sawmill.asset",
     "sourceHash": "31e0c342b14358c4b9f693ff5b550471dd0a4c9cdecda868af8e9e8bd30bf0f1"
   }
-}
+}

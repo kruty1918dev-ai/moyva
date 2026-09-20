@@ -6,12 +6,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
-    /// <summary>
-    /// Interruptible camera focus transitions. Steers the navigation target
-    /// and zoom along an eased curve; any player navigation input cancels the
-    /// transition immediately (player input always wins). When Smooth Camera
-    /// Focus is disabled the transition applies instantly.
-    /// </summary>
+    /// <summary>CameraFocusService — class: камери фокус сервісу.</summary>
     internal sealed class CameraFocusService : ICameraFocusService, ILateTickable, IDisposable
     {
         private readonly CameraMovement _movement;
@@ -29,6 +24,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private float _startZoom;
         private float _endZoom;
 
+        /// <summary>Виконує CameraFocusService.</summary>
         public CameraFocusService(
             CameraMovement movement,
             CameraZoom zoom,
@@ -48,14 +44,17 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _zoom.ManualControlRequested += OnManualControlRequested;
         }
 
+        /// <summary>Чи фокус активної — IsFocusActive.</summary>
         public bool IsFocusActive => _active;
 
+        /// <summary>Звільняє ресурси та відписує від подій.</summary>
         public void Dispose()
         {
             _movement.ManualControlRequested -= OnManualControlRequested;
             _zoom.ManualControlRequested -= OnManualControlRequested;
         }
 
+        /// <summary>Фокусує світу точки.</summary>
         public void FocusWorldPoint(Vector3 worldPoint, CameraFocusRequest request = default)
         {
             if (_camera == null)
@@ -65,6 +64,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             BeginTransition(worldPoint, targetZoom, request);
         }
 
+        /// <summary>Фокусує межі.</summary>
         public void FocusBounds(Bounds worldBounds, CameraFocusRequest request = default)
         {
             if (_camera == null)
@@ -100,6 +100,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             BeginTransition(worldBounds.center, targetZoom, request);
         }
 
+        /// <summary>Фокусує обʼєкта.</summary>
         public void FocusObject(GameObject target, CameraFocusRequest request = default)
         {
             if (target == null)
@@ -117,6 +118,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             FocusWorldPoint(target.transform.position, request);
         }
 
+        /// <summary>Скасовує фокус.</summary>
         public void CancelFocus()
         {
             if (!_active)
@@ -127,6 +129,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _zoom.SetTargetZoom(_zoom.CurrentZoom);
         }
 
+        /// <summary>Виконує LateTick.</summary>
         public void LateTick()
         {
             if (!_active)

@@ -4,14 +4,12 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
-    /// <summary>
-    /// Turn processor: orchestrates economy tick for all settlements each turn.
-    /// </summary>
+    /// <summary>EconomyTurnProcessorService — class: економіки ходу Processor сервісу.</summary>
     internal sealed class EconomyTurnProcessorService
     {
         private readonly EconomyTickOrchestrator _orchestrator = new EconomyTickOrchestrator();
 
-        /// <summary>Process one economy turn for all active settlements.</summary>
+        /// <summary>Виконує ProcessTurn.</summary>
         public void ProcessTurn(EconomySettlementRegistryService registry, SignalBus signalBus, EconomyDatabaseSO database, float turnDurationSeconds)
         {
             if (database == null || database.RulesConfig == null)

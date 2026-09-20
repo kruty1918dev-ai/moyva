@@ -4,6 +4,7 @@ using UnityEngine.Serialization;
 using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Camera.API
 {
+    /// <summary>CameraControlProfile — struct: камери керування профілю.</summary>
     [System.Serializable]
     public struct CameraControlProfile
     {
@@ -23,6 +24,7 @@ namespace Kruty1918.Moyva.Camera.API
         [Min(0.1f)] public float minZoom;
         [Min(0.2f)] public float maxZoom;
 
+        /// <summary>Чи негайного дотику жестів — useImmediateTouchGestures.</summary>
         [Min(0.01f)] public float touchMoveSpeed;
         [Min(0.01f)] public float touchPinchZoomSensitivity;
         [Min(0f)] public float touchDragDeadZonePixels;
@@ -35,8 +37,10 @@ namespace Kruty1918.Moyva.Camera.API
         [Tooltip("Frames of one-finger pan ignored after a multi-touch gesture ends.")]
         [Range(0, 8)] public int touchSettleFrames;
         public bool useImmediateTouchGestures;
+        /// <summary>Чи pinch фокус під пальців — keepPinchFocusUnderFingers.</summary>
         public bool keepPinchFocusUnderFingers;
 
+        /// <summary>Нормалізує значення в допустимі межі.</summary>
         public CameraControlProfile Normalize()
         {
             float normalizedMinZoom = Mathf.Max(0.1f, minZoom);
@@ -70,6 +74,7 @@ namespace Kruty1918.Moyva.Camera.API
             };
         }
 
+        /// <summary>Створює мʼякий профіль типових значень керування.</summary>
         public static CameraControlProfile CreateGentleDefaults()
         {
             return new CameraControlProfile
@@ -101,6 +106,7 @@ namespace Kruty1918.Moyva.Camera.API
         }
     }
 
+    /// <summary>CameraFarViewSettings — struct: камери дальнього виду налаштування.</summary>
     [System.Serializable]
     public struct CameraFarViewSettings
     {
@@ -109,6 +115,7 @@ namespace Kruty1918.Moyva.Camera.API
         [Min(0.05f)] public float smoothing;
         [Range(0.2f, 3f)] public float shape;
 
+        /// <summary>Створює екземпляр із типовими значеннями.</summary>
         public static CameraFarViewSettings CreateDefault()
         {
             return new CameraFarViewSettings
@@ -120,6 +127,7 @@ namespace Kruty1918.Moyva.Camera.API
             };
         }
 
+        /// <summary>Нормалізує значення в допустимі межі.</summary>
         public CameraFarViewSettings Normalize()
         {
             float s = Mathf.Clamp01(start);
@@ -133,10 +141,7 @@ namespace Kruty1918.Moyva.Camera.API
         }
     }
 
-    /// <summary>
-    /// Interruptible camera-focus transition tuning. Distances are world units
-    /// on the navigation plane; duration is derived from travel distance.
-    /// </summary>
+    /// <summary>CameraFocusSettings — struct: камери фокус налаштування.</summary>
     [System.Serializable]
     public struct CameraFocusSettings
     {
@@ -151,6 +156,7 @@ namespace Kruty1918.Moyva.Camera.API
         [Tooltip("Duration multiplier applied when Reduce Camera Motion is enabled.")]
         [Range(0.1f, 1f)] public float reducedMotionDurationScale;
 
+        /// <summary>Створює екземпляр із типовими значеннями.</summary>
         public static CameraFocusSettings CreateDefault()
         {
             return new CameraFocusSettings
@@ -164,6 +170,7 @@ namespace Kruty1918.Moyva.Camera.API
             };
         }
 
+        /// <summary>Нормалізує значення в допустимі межі.</summary>
         public CameraFocusSettings Normalize()
         {
             float min = Mathf.Max(0.05f, minDuration);
@@ -179,10 +186,7 @@ namespace Kruty1918.Moyva.Camera.API
         }
     }
 
-    /// <summary>
-    /// Camera impulse ("shake") budget, falloff and clamps. Amplitudes authored
-    /// per request are scaled by these caps plus the player's settings.
-    /// </summary>
+    /// <summary>CameraImpulseSettings — struct: камери імпульсу налаштування.</summary>
     [System.Serializable]
     public struct CameraImpulseSettings
     {
@@ -200,6 +204,7 @@ namespace Kruty1918.Moyva.Camera.API
         [Tooltip("Default distance falloff radius in world units for positional impulses.")]
         [Min(1f)] public float defaultFalloffRadius;
 
+        /// <summary>Створює екземпляр із типовими значеннями.</summary>
         public static CameraImpulseSettings CreateDefault()
         {
             return new CameraImpulseSettings
@@ -214,6 +219,7 @@ namespace Kruty1918.Moyva.Camera.API
             };
         }
 
+        /// <summary>Нормалізує значення в допустимі межі.</summary>
         public CameraImpulseSettings Normalize()
         {
             return new CameraImpulseSettings
@@ -229,13 +235,16 @@ namespace Kruty1918.Moyva.Camera.API
         }
     }
 
+    /// <summary>CameraSettingsSO — class: камери налаштування SO.</summary>
     [System.Serializable]
     public class CameraSettingsSO : MoyvaJsonConfigObject
     {
+        /// <summary>керування профілю — CameraControlProfile.</summary>
         [Header("Control Profile")]
         [FormerlySerializedAs("desktopProfile")]
         public CameraControlProfile controlProfile = CameraControlProfile.CreateGentleDefaults();
 
+        /// <summary>межі переповнення тайлів — Vector2.</summary>
         [Header("World Bounds")]
         [Tooltip("How many tile units the camera viewport is allowed to go outside map bounds.")]
         public Vector2 boundsOverflowTiles = Vector2.zero;
@@ -250,37 +259,47 @@ namespace Kruty1918.Moyva.Camera.API
         [Min(0.1f)] public float touchDpiScaleMin = 0.75f;
         [Min(0.1f)] public float touchDpiScaleMax = 2.5f;
 
+        /// <summary>фокус — CameraFocusSettings.</summary>
         [Header("Focus Transitions")]
         public CameraFocusSettings focus = CameraFocusSettings.CreateDefault();
 
+        /// <summary>імпульсу — CameraImpulseSettings.</summary>
         [Header("Impulse / Shake")]
         public CameraImpulseSettings impulse = CameraImpulseSettings.CreateDefault();
 
+        /// <summary>типового камери Z — float.</summary>
         [Header("Shared")]
         [HideInInspector]
         public float defaultCameraZ = -10f;
 
+        /// <summary>адаптації  Project3 D режим — bool.</summary>
         [Header("3D Project Adaptation")]
         public bool adaptToProject3DMode = true;
+        /// <summary>Чи ортографічного камери In3 D — useOrthographicCameraIn3D.</summary>
         public bool useOrthographicCameraIn3D = false;
+        /// <summary>orthographic3 D Ейлера — Vector3.</summary>
         [Min(0.1f)] public float default3DCameraDistance = 20f;
         [Min(0.1f)] public float default3DOrthographicSize = 20f;
         [Range(1f, 179f)] public float default3DFieldOfView = 30f;
         public Vector3 orthographic3DEuler = new Vector3(90f, 0f, 0f);
+        /// <summary>isometric3 D Ейлера — Vector3.</summary>
         public Vector3 isometric3DEuler = new Vector3(50f, 45f, 0f);
 
+        /// <summary>поворот півоту шарів — LayerMask.</summary>
         [Header("Rotation Pivot")]
         [Tooltip("Maximum distance for the forward ray used to find the camera rotation pivot.")]
         [Min(0.1f)] public float rotationPivotRaycastDistance = 1000f;
         [Tooltip("Physics layers that can provide a camera rotation pivot. Falls back to the grid plane when nothing is hit.")]
         public LayerMask rotationPivotLayers = Physics.DefaultRaycastLayers;
 
+        /// <summary>краю прокручування увімкненої — bool.</summary>
         [Header("PC Edge Scroll")]
         [Tooltip("Disabled by default. Can be exposed by the gameplay controls settings UI.")]
         public bool edgeScrollEnabled;
         [Min(1f)] public float edgeScrollMarginPixels = 12f;
         [Min(0.01f)] public float edgeScrollSpeedMultiplier = 1f;
 
+        /// <summary>Чи автоматичного mip зсув — enableAutomaticMipBias.</summary>
         [Header("Shader / Mip Bias")]
         [Tooltip("Applies global automatic mip bias for zoom. Disable to avoid tile atlas artifacts/bleeding on zoom-out.")]
         [HideInInspector]
@@ -288,83 +307,137 @@ namespace Kruty1918.Moyva.Camera.API
         [HideInInspector]
         [Range(0f, 3f)] public float automaticMipBiasMax = 0.75f;
 
+        /// <summary>дальнього виду — CameraFarViewSettings.</summary>
         [Header("Far View Window")]
         [Tooltip("Shared normalized-zoom window where the world reads as distant/high-altitude. Consumed by far-view visuals and zoom-driven audio.")]
         public CameraFarViewSettings farView = CameraFarViewSettings.CreateDefault();
 
+        /// <summary>карти рендер маски увімкненої — bool.</summary>
         [Header("Map Render Mask")]
         [HideInInspector]
         public bool mapRenderMaskEnabled = true;
+        /// <summary>карти маски шарів — LayerMask.</summary>
         [HideInInspector]
         [Min(0.05f)] public float mapMaskRefreshSeconds = 0.5f;
         [HideInInspector]
         public LayerMask mapMaskLayers = ~0;
+        /// <summary>карти маски сортування шару назву — string.</summary>
         [HideInInspector]
         public string mapMaskSortingLayerName = "Default";
+        /// <summary>ручного карти маски центру — Vector2.</summary>
         [HideInInspector]
         [Range(-32768, 32767)] public int mapMaskBackSortingOrder = -32768;
         [HideInInspector]
         [Range(-32768, 32767)] public int mapMaskFrontSortingOrder = 32767;
         [HideInInspector]
         public Vector2 manualMapMaskCenter = new Vector2(4.5f, 4.5f);
+        /// <summary>ручного карти маски розміру — Vector2.</summary>
         [HideInInspector]
         public Vector2 manualMapMaskSize = new Vector2(10f, 10f);
 
+        /// <summary>Повертає активної профілю.</summary>
         public CameraControlProfile ResolveActiveProfile()
         {
             return controlProfile.Normalize();
         }
 
+        /// <summary>Повертає переміщення швидкість.</summary>
         public float ResolveMoveSpeed() => ResolveActiveProfile().moveSpeed;
+        /// <summary>Повертає плавного часу.</summary>
         public float ResolveSmoothTime() => ResolveActiveProfile().smoothTime;
+        /// <summary>Повертає зум швидкість.</summary>
         public float ResolveZoomSpeed() => ResolveActiveProfile().zoomSpeed;
+        /// <summary>Повертає поворот швидкість.</summary>
         public float ResolveRotationSpeed() => ResolveActiveProfile().rotationSpeed;
+        /// <summary>Повертає поворот прискорення.</summary>
         public float ResolveRotationAcceleration() => ResolveActiveProfile().rotationAcceleration;
+        /// <summary>Повертає поворот сповільнення.</summary>
         public float ResolveRotationDeceleration() => ResolveActiveProfile().rotationDeceleration;
+        /// <summary>Повертає курсора орбіти чутливість.</summary>
         public float ResolvePointerOrbitSensitivity() => ResolveActiveProfile().pointerOrbitSensitivity;
+        /// <summary>Повертає закриття зум поворот множника.</summary>
         public float ResolveCloseZoomRotationMultiplier() => ResolveActiveProfile().closeZoomRotationMultiplier;
+        /// <summary>Повертає дальнього зум поворот множника.</summary>
         public float ResolveFarZoomRotationMultiplier() => ResolveActiveProfile().farZoomRotationMultiplier;
+        /// <summary>Повертає закриття зум переміщення множника.</summary>
         public float ResolveCloseZoomMoveMultiplier() => ResolveActiveProfile().closeZoomMoveMultiplier;
+        /// <summary>Повертає дальнього зум переміщення множника.</summary>
         public float ResolveFarZoomMoveMultiplier() => ResolveActiveProfile().farZoomMoveMultiplier;
+        /// <summary>Повертає мінімум зум.</summary>
         public float ResolveMinZoom() => ResolveActiveProfile().minZoom;
+        /// <summary>Повертає максимум зум.</summary>
         public float ResolveMaxZoom() => ResolveActiveProfile().maxZoom;
+        /// <summary>Повертає дотику переміщення швидкість.</summary>
         public float ResolveTouchMoveSpeed() => ResolveActiveProfile().touchMoveSpeed;
+        /// <summary>Повертає дотику pinch зум чутливість.</summary>
         public float ResolveTouchPinchZoomSensitivity() => ResolveActiveProfile().touchPinchZoomSensitivity;
+        /// <summary>Повертає дотику перетягування мертвої зони у пікселях.</summary>
         public float ResolveTouchDragDeadZonePixels() => ResolveActiveProfile().touchDragDeadZonePixels;
+        /// <summary>Повертає дотику pinch мертвої зони у пікселях.</summary>
         public float ResolveTouchPinchDeadZonePixels() => ResolveActiveProfile().touchPinchDeadZonePixels;
+        /// <summary>Повертає максимум дотику дельти у пікселях.</summary>
         public float ResolveMaxTouchDeltaPixels() => ResolveActiveProfile().maxTouchDeltaPixels;
+        /// <summary>Повертає дотику pinch домінування у пікселях.</summary>
         public float ResolveTouchPinchDominancePixels() => ResolveActiveProfile().touchPinchDominancePixels;
+        /// <summary>Повертає дотику twist домінування у градусах.</summary>
         public float ResolveTouchTwistDominanceDegrees() => ResolveActiveProfile().touchTwistDominanceDegrees;
+        /// <summary>Повертає дотику осідання кадрів.</summary>
         public int ResolveTouchSettleFrames() => ResolveActiveProfile().touchSettleFrames;
+        /// <summary>Повертає використання негайного дотику жестів.</summary>
         public bool ResolveUseImmediateTouchGestures() => ResolveActiveProfile().useImmediateTouchGestures;
+        /// <summary>Повертає збереження pinch фокус під пальців.</summary>
         public bool ResolveKeepPinchFocusUnderFingers() => ResolveActiveProfile().keepPinchFocusUnderFingers;
+        /// <summary>Повертає адаптації  Project3 D режим.</summary>
         public bool ResolveAdaptToProject3DMode() => adaptToProject3DMode;
+        /// <summary>Повертає використання ортографічного камери In3 D.</summary>
         public bool ResolveUseOrthographicCameraIn3D() => useOrthographicCameraIn3D;
+        /// <summary>Повертає Default3 D камери відстані.</summary>
         public float ResolveDefault3DCameraDistance() => Mathf.Max(0.1f, default3DCameraDistance);
+        /// <summary>Повертає Default3 D ортографічного розміру.</summary>
         public float ResolveDefault3DOrthographicSize() => Mathf.Max(ResolveMinZoom(), default3DOrthographicSize);
+        /// <summary>Повертає Default3 D поля  виду.</summary>
         public float ResolveDefault3DFieldOfView() => Mathf.Clamp(default3DFieldOfView, 1f, 179f);
+        /// <summary>Повертає поворот півоту рейкасту відстані.</summary>
         public float ResolveRotationPivotRaycastDistance() => Mathf.Max(0.1f, rotationPivotRaycastDistance);
+        /// <summary>Повертає поворот півоту шару маски.</summary>
         public int ResolveRotationPivotLayerMask() => rotationPivotLayers.value;
+        /// <summary>Повертає краю прокручування увімкненої.</summary>
         public bool ResolveEdgeScrollEnabled() => edgeScrollEnabled;
+        /// <summary>Повертає краю прокручування відступу у пікселях.</summary>
         public float ResolveEdgeScrollMarginPixels()
             => Mathf.Max(1f, edgeScrollMarginPixels);
+        /// <summary>Повертає краю прокручування швидкість множника.</summary>
         public float ResolveEdgeScrollSpeedMultiplier()
             => Mathf.Max(0.01f, edgeScrollSpeedMultiplier);
+        /// <summary>Повертає межі переповнення світу одиниць.</summary>
         public Vector2 ResolveBoundsOverflowWorldUnits() => new Vector2(
             Mathf.Max(0f, boundsOverflowTiles.x),
             Mathf.Max(0f, boundsOverflowTiles.y));
+        /// <summary>Повертає Enable автоматичного mip зсув.</summary>
         public bool ResolveEnableAutomaticMipBias() => enableAutomaticMipBias;
+        /// <summary>Повертає автоматичного mip зсув максимум.</summary>
         public float ResolveAutomaticMipBiasMax() => Mathf.Clamp(automaticMipBiasMax, 0f, 3f);
+        /// <summary>Повертає межі мʼякої відступу.</summary>
         public float ResolveBoundsSoftMargin() => Mathf.Max(0f, boundsSoftMargin);
+        /// <summary>Повертає межі мʼякої повернення швидкість.</summary>
         public float ResolveBoundsSoftReturnSpeed() => Mathf.Max(0.1f, boundsSoftReturnSpeed);
+        /// <summary>Повертає дотику DPI референсу.</summary>
         public float ResolveTouchDpiReference() => Mathf.Max(1f, touchDpiReference);
+        /// <summary>Повертає дотику DPI масштаб мінімум.</summary>
         public float ResolveTouchDpiScaleMin() => Mathf.Max(0.1f, touchDpiScaleMin);
+        /// <summary>Повертає дотику DPI масштаб максимум.</summary>
         public float ResolveTouchDpiScaleMax() => Mathf.Max(ResolveTouchDpiScaleMin(), touchDpiScaleMax);
+        /// <summary>Повертає фокус.</summary>
         public CameraFocusSettings ResolveFocus() => focus.Normalize();
+        /// <summary>Повертає імпульсу.</summary>
         public CameraImpulseSettings ResolveImpulse() => impulse.Normalize();
+        /// <summary>Повертає дальнього виду початку.</summary>
         public float ResolveFarViewStart() => farView.Normalize().start;
+        /// <summary>Повертає дальнього виду повного.</summary>
         public float ResolveFarViewFull() => farView.Normalize().full;
+        /// <summary>Повертає дальнього виду згладжування.</summary>
         public float ResolveFarViewSmoothing() => farView.Normalize().smoothing;
+        /// <summary>Повертає дальнього виду Shape.</summary>
         public float ResolveFarViewShape() => farView.Normalize().shape;
 
         private void OnValidate()

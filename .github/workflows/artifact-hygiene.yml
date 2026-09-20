@@ -1,0 +1,23 @@
+name: Artifact Hygiene
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-artifact-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reject generated artifacts in PR
+        run: |
+          chmod +x tools/quality/check-artifact-hygiene.sh
+          tools/quality/check-artifact-hygiene.sh \
+            --base-ref "origin/${{ github.base_ref }}"

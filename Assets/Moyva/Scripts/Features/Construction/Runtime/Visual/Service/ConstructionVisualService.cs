@@ -6,6 +6,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
+    /// <summary>Координатор візуального шару будівництва: послідовно оновлює preview та placed сервіси.</summary>
     internal sealed class ConstructionVisualService : IInitializable, IDisposable, ITickable
     {
         private readonly SignalBus _signalBus;
@@ -23,6 +24,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private int _localGridInvalidationRadius;
         private string _selectedBuildingId;
 
+        /// <summary>Створює координатор із обробниками сигналів і сервісами візуалів.</summary>
         [Inject]
         public ConstructionVisualService(
             SignalBus signalBus,
@@ -50,6 +52,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placementRules = placementRules;
         }
 
+        /// <summary>Підписує обробники на сигнали будівництва.</summary>
         public void Initialize()
         {
             _rootService.EnsureRoots();
@@ -59,6 +62,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             SubscribeSignals();
         }
 
+        /// <summary>Відписує обробники та звільняє сервіси.</summary>
         public void Dispose()
         {
             UnsubscribeSignals();
@@ -70,6 +74,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _buildGridOverlay.Dispose();
         }
 
+        /// <summary>Прокачує візуальні сервіси будівництва.</summary>
         public void Tick()
         {
             _blockedFlashService?.Tick();
@@ -96,6 +101,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus.Subscribe<BuildingDemolishedSignal>(HandleBuildGridStateChanged);
             _signalBus.Subscribe<BuildingOperationalSignal>(_placedSignals.Handle);
             _signalBus.Subscribe<BuildingOperationalSignal>(HandleBuildGridStateChanged);
+            _signalBus.Subscribe<BuildingOwnershipTransferredSignal>(_placedSignals.Handle);
             _signalBus.Subscribe<WorldInfoSelectionChangedSignal>(_placedSignals.Handle);
             _signalBus.Subscribe<GameModeChangedSignal>(_placedSignals.Handle);
             _signalBus.Subscribe<WorldGeneratedDataSignal>(HandleWorldGenerated);
@@ -120,6 +126,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(HandleBuildGridStateChanged);
             _signalBus.TryUnsubscribe<BuildingOperationalSignal>(_placedSignals.Handle);
             _signalBus.TryUnsubscribe<BuildingOperationalSignal>(HandleBuildGridStateChanged);
+            _signalBus.TryUnsubscribe<BuildingOwnershipTransferredSignal>(_placedSignals.Handle);
             _signalBus.TryUnsubscribe<WorldInfoSelectionChangedSignal>(_placedSignals.Handle);
             _signalBus.TryUnsubscribe<GameModeChangedSignal>(_placedSignals.Handle);
             _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(HandleWorldGenerated);

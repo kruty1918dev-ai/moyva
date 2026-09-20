@@ -2,41 +2,34 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
+    /// <summary>CameraTouchMath — class: камери дотику Math.</summary>
     internal static class CameraTouchMath
     {
-        /// <summary>
-        /// Scales pixel-based gesture thresholds for the device DPI.
-        /// Returns 1 when the platform does not report a meaningful DPI.
-        /// </summary>
+        /// <summary>Повертає DPI масштаб.</summary>
         public static float ResolveDpiScale(float screenDpi, float referenceDpi, float minScale, float maxScale)
             => screenDpi > 20f
                 ? Mathf.Clamp(screenDpi / Mathf.Max(1f, referenceDpi), minScale, maxScale)
                 : 1f;
     }
 
-    /// <summary>Result of two-finger gesture arbitration for one frame.</summary>
+    /// <summary>CameraGestureSample — struct: камери жесту семплу.</summary>
     internal struct CameraGestureSample
     {
-        /// <summary>Pan delta in pixels beyond the drag dead zone.</summary>
+        /// <summary>Pan дельти у пікселях — Vector2.</summary>
         public Vector2 PanDeltaPixels;
-        /// <summary>Pinch delta in pixels beyond the pinch dead zone.</summary>
+        /// <summary>pinch дельти у пікселях — float.</summary>
         public float PinchDeltaPixels;
-        /// <summary>Twist in degrees beyond the per-frame twist threshold.</summary>
+        /// <summary>twist у градусах — float.</summary>
         public float TwistDegrees;
+        /// <summary>Чи Pan — HasPan.</summary>
         public bool HasPan;
+        /// <summary>Чи pinch — HasPinch.</summary>
         public bool HasPinch;
+        /// <summary>Чи twist — HasTwist.</summary>
         public bool HasTwist;
     }
 
-    /// <summary>
-    /// Arbiters competing two-finger gestures (pan / pinch / twist) per
-    /// continuous touch gesture. Dominance latches for the whole gesture:
-    /// once the accumulated pinch exceeds its dominance threshold twist is
-    /// suppressed (no accidental rotation while zooming); once accumulated
-    /// twist exceeds its threshold pinch is suppressed. Also suppresses
-    /// one-finger pan for a few frames after a multi-touch gesture ends so
-    /// releasing the second finger does not cause a jump.
-    /// </summary>
+    /// <summary>CameraGestureArbiter — class: камери жесту арбітра.</summary>
     internal sealed class CameraGestureArbiter
     {
         private const float PerFrameTwistThresholdDegrees = 0.5f;
@@ -49,15 +42,16 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private bool _pinchDominant;
         private bool _twistDominant;
 
+        /// <summary>Виконує CameraGestureArbiter.</summary>
         public CameraGestureArbiter(int settleFrames)
         {
             _settleFrames = Mathf.Max(0, settleFrames);
         }
 
-        /// <summary>True while one-finger pan should be ignored after a gesture.</summary>
+        /// <summary>Кадри осідання, що лишились після завершення жесту.</summary>
         public bool SuppressSingleFingerPan => _settleFramesRemaining > 0;
 
-        /// <summary>Call once per frame with the active pressed-touch count.</summary>
+        /// <summary>Повідомляє дотику кількості.</summary>
         public void NotifyTouchCount(int touchCount)
         {
             if (touchCount == _lastTouchCount)
@@ -77,13 +71,14 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _lastTouchCount = touchCount;
         }
 
-        /// <summary>Call once per frame to age the post-gesture settle window.</summary>
+        /// <summary>Оновлює стан за тік осідання.</summary>
         public void TickSettle()
         {
             if (_settleFramesRemaining > 0)
                 _settleFramesRemaining--;
         }
 
+        /// <summary>Обчислює Two Finger.</summary>
         public CameraGestureSample EvaluateTwoFinger(
             Vector2 centerDeltaPixels,
             float pinchDeltaPixels,

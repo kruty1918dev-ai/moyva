@@ -21,6 +21,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly EconomyDatabaseSO _database;
         private readonly EconomyRulesConfiguration _rulesTemplate;
 
+        /// <summary>Виконує EconomyRuntimeApi.</summary>
         public EconomyRuntimeApi(
             EconomyManager economyManager,
             EconomyDatabaseSO database,
@@ -31,6 +32,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _rulesTemplate = rulesTemplate;
         }
 
+        /// <summary>Повертає поселення Ids For власника.</summary>
         public IReadOnlyList<string> GetSettlementIdsForOwner(string ownerId)
         {
             var normalizedOwnerId = NormalizeOwnerId(ownerId);
@@ -51,6 +53,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return result;
         }
 
+        /// <summary>Повертає власника категорії підсумки.</summary>
         public EconomyCategoryTotals GetOwnerCategoryTotals(string ownerId)
         {
             var normalizedOwnerId = NormalizeOwnerId(ownerId);
@@ -66,6 +69,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return new EconomyCategoryTotals(food, materials, money);
         }
 
+        /// <summary>Повертає Formatted власника категорії підсумки.</summary>
         public EconomyFormattedCategoryTotals GetFormattedOwnerCategoryTotals(string ownerId)
         {
             var totals = GetOwnerCategoryTotals(ownerId);
@@ -75,6 +79,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 FormatMoney(totals.MoneyTotal));
         }
 
+        /// <summary>Повертає власника ресурсу підсумки.</summary>
         public Dictionary<string, float> GetOwnerResourceTotals(string ownerId)
         {
             var normalizedOwnerId = NormalizeOwnerId(ownerId);
@@ -84,6 +89,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 ?? new Dictionary<string, float>(StringComparer.Ordinal);
         }
 
+        /// <summary>Повертає поселення категорії підсумки.</summary>
         public EconomyCategoryTotals GetSettlementCategoryTotals(string settlementId)
         {
             var state = _economyManager.GetSettlement(settlementId);
@@ -97,6 +103,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return new EconomyCategoryTotals(food, materials, money);
         }
 
+        /// <summary>Повертає Formatted поселення категорії підсумки.</summary>
         public EconomyFormattedCategoryTotals GetFormattedSettlementCategoryTotals(string settlementId)
         {
             var totals = GetSettlementCategoryTotals(settlementId);
@@ -106,6 +113,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 FormatMoney(totals.MoneyTotal));
         }
 
+        /// <summary>Повертає поселення ресурсу підсумки.</summary>
         public Dictionary<string, float> GetSettlementResourceTotals(string settlementId)
         {
             var state = _economyManager.GetSettlement(settlementId);
@@ -118,6 +126,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return totals;
         }
 
+        /// <summary>Повертає власника складу Snapshots.</summary>
         public IReadOnlyList<EconomyWarehouseSnapshot> GetOwnerWarehouseSnapshots(string ownerId)
         {
             string normalizedOwnerId = NormalizeOwnerId(ownerId);
@@ -182,6 +191,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return result;
         }
 
+        /// <summary>Повертає власника поселення Snapshots.</summary>
         public IReadOnlyList<EconomySettlementSnapshot> GetOwnerSettlementSnapshots(string ownerId)
         {
             string normalizedOwnerId = NormalizeOwnerId(ownerId);
@@ -215,6 +225,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return result;
         }
 
+        /// <summary>Повертає власника виробництва знімка.</summary>
         public EconomyProductionReadSnapshot GetOwnerProductionSnapshot(string ownerId)
         {
             return EconomyProductionReadModel.Capture(_economyManager?.Settlements, ownerId);

@@ -20,6 +20,7 @@ namespace Kruty1918.Moyva.Economy
     /// </summary>
     public sealed class EconomyInstaller : MonoInstaller
     {
+        /// <summary>Встановлює Simulation Bindings.</summary>
         public static void InstallSimulationBindings(DiContainer container, EconomyDatabaseSO database)
         {
             if (database?.RulesConfig == null) throw new System.InvalidOperationException("Economy rules are missing.");
@@ -58,6 +59,7 @@ namespace Kruty1918.Moyva.Economy
         [Tooltip("Шаблон параметрів Economy Hub (EconomyRulesConfiguration). Використовується runtime API для централізованого форматування UI-даних.")]
         private EconomyRulesConfiguration _rulesTemplate;
 
+        /// <summary>Встановлює Bindings.</summary>
         public override void InstallBindings()
         {
             if (_database == null)

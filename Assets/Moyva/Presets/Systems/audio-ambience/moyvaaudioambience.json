@@ -18,7 +18,7 @@
       "volume": 0.6,
       "nearWeight": 0.0,
       "farWeight": 1.0,
-      "lowpassWithZoom": false
+      "lowpassWithZoom": true
     },
     {
       "soundKey": "amb-wind-near",
@@ -41,6 +41,11 @@
       "nearWeight": 0.9,
       "farWeight": 0.1,
       "lowpassWithZoom": true,
+      "dayPhases": [
+        "dawn",
+        "day",
+        "dusk"
+      ],
       "farCutoff": 2500.0
     },
     {
@@ -49,7 +54,22 @@
       "nearWeight": 0.8,
       "farWeight": 0.0,
       "lowpassWithZoom": true,
+      "dayPhases": [
+        "day",
+        "dusk"
+      ],
       "farCutoff": 1500.0
+    },
+    {
+      "soundKey": "amb-night-crickets",
+      "volume": 0.45,
+      "nearWeight": 0.85,
+      "farWeight": 0.15,
+      "lowpassWithZoom": true,
+      "dayPhases": [
+        "dusk",
+        "night"
+      ]
     }
   ],
   "emitters": [
@@ -74,6 +94,36 @@
       "maxInstances": 6
     },
     {
+      "id": "mountain",
+      "matchTileTypeId": "mountain",
+      "soundKey": "amb-mountain-wind",
+      "volume": 0.65,
+      "minDistance": 4.0,
+      "maxDistance": 22.0,
+      "clusterStep": 5,
+      "maxInstances": 5
+    },
+    {
+      "id": "snow",
+      "matchTileTypeId": "snow",
+      "soundKey": "amb-desert-wind",
+      "volume": 0.5,
+      "minDistance": 3.0,
+      "maxDistance": 18.0,
+      "clusterStep": 6,
+      "maxInstances": 4
+    },
+    {
+      "id": "sand",
+      "matchTileTypeId": "sand",
+      "soundKey": "amb-desert-wind",
+      "volume": 0.45,
+      "minDistance": 2.5,
+      "maxDistance": 15.0,
+      "clusterStep": 6,
+      "maxInstances": 4
+    },
+    {
       "id": "farm",
       "matchBuildingId": "farm",
       "soundKey": "amb-farm",
@@ -85,8 +135,8 @@
     {
       "id": "barn",
       "matchBuildingId": "barn",
-      "soundKey": "amb-farm",
-      "volume": 0.8,
+      "soundKey": "amb-henhouse",
+      "volume": 0.75,
       "minDistance": 2.0,
       "maxDistance": 14.0,
       "maxInstances": 4
@@ -207,6 +257,24 @@
       "minDistance": 2.0,
       "maxDistance": 14.0,
       "maxInstances": 3
+    },
+    {
+      "id": "caravan-depot",
+      "matchBuildingId": "caravan-depot",
+      "soundKey": "amb-crowd",
+      "volume": 0.55,
+      "minDistance": 2.0,
+      "maxDistance": 15.0,
+      "maxInstances": 3
+    },
+    {
+      "id": "engineers-guild",
+      "matchBuildingId": "engineers-guild",
+      "soundKey": "amb-forge",
+      "volume": 0.65,
+      "minDistance": 2.0,
+      "maxDistance": 14.0,
+      "maxInstances": 3
     }
   ],
   "oneShots": [
@@ -216,7 +284,12 @@
       "minInterval": 4.0,
       "maxInterval": 14.0,
       "minZoom": 0.0,
-      "maxZoom": 0.65
+      "maxZoom": 0.65,
+      "dayPhases": [
+        "dawn",
+        "day",
+        "dusk"
+      ]
     },
     {
       "soundKey": "amb-stinger-critter",
@@ -224,7 +297,11 @@
       "minInterval": 9.0,
       "maxInterval": 22.0,
       "minZoom": 0.0,
-      "maxZoom": 0.5
+      "maxZoom": 0.5,
+      "dayPhases": [
+        "day",
+        "dusk"
+      ]
     },
     {
       "soundKey": "amb-stinger-rooster",
@@ -232,8 +309,12 @@
       "minInterval": 40.0,
       "maxInterval": 95.0,
       "minZoom": 0.0,
-      "maxZoom": 0.35
+      "maxZoom": 0.35,
+      "dayPhases": [
+        "dawn",
+        "day"
+      ]
     }
   ],
-  "maxEmittersTotal": 24
+  "maxEmittersTotal": 30
 }

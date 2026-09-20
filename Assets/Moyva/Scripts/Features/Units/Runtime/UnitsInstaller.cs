@@ -9,11 +9,13 @@ using Kruty1918.Moyva.WorldCreation.API;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
+    /// <summary>Zenject-інсталер юнітів: preview- та simulation-біндінги для різних контекстів сцени.</summary>
     public class UnitsInstaller : MonoInstaller
     {
         [SerializeField] private UnitRegistrySO _unitRegistry;
         [SerializeField] private WorldCreationDefaultsSO _worldDefaults;
 
+        /// <summary>Реєструє preview-біндінги юнітів у вказаному контейнері.</summary>
         public static void InstallPreviewBindings(DiContainer container, UnitRegistrySO registry)
         {
             container.BindInstance(registry);
@@ -27,6 +29,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             container.BindInterfacesAndSelfTo<UnitCombatService>().AsSingle();
         }
 
+        /// <summary>Реєструє simulation-біндінги юнітів у вказаному контейнері.</summary>
         public static void InstallSimulationBindings(DiContainer container, UnitRegistrySO registry)
         {
             InstallPreviewBindings(container, registry);
@@ -41,6 +44,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             container.Bind<ICombatCommandService>().To<UnitCombatCommandService>().AsSingle();
         }
 
+        /// <summary>Реєструє біндінги юнітів у контейнері сцени.</summary>
         public override void InstallBindings()
         {
             Container.BindInstance(_unitRegistry).AsSingle();

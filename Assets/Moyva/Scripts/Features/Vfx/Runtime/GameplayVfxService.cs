@@ -12,14 +12,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Vfx.Runtime
 {
-    /// <summary>
-    /// Canonical gameplay VFX layer. Subscribes to authoritative domain
-    /// signals and maps them to catalogued, pooled effects. Read-only on
-    /// gameplay state — it never mutates HP, ownership or construction.
-    ///
-    /// Gating order per request: registry rule → fog visibility → cooldown →
-    /// camera distance/zoom → per-frame spawn cap → global budget → pool.
-    /// </summary>
+    /// <summary>Канонічний VFX-сервіс gameplay: подія-визначення-пул пайплайн, якісні ліміти та спавн-контроль.</summary>
     public sealed class GameplayVfxService
         : IVfxService, IInitializable, ITickable, IDisposable
     {
@@ -46,6 +39,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
         private int _spawnsThisFrame;
         private UnityEngine.Camera _resolvedCamera;
 
+        /// <summary>Створює сервіс із реєстром правил, пулом і джерелами подій.</summary>
         public GameplayVfxService(
             SignalBus signals,
             [InjectOptional] VfxCatalogConfig config,
@@ -76,10 +70,12 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             _flash = new VfxRendererFlash(_clock);
         }
 
-        /// <summary>Resolved quality values — visible for diagnostics/tests.</summary>
+        /// <summary>Поточний стан якості VFX.</summary>
         public VfxQualityState Quality => _quality;
+        /// <summary>Кількість спавнів у цьому кадрі.</summary>
         public int SpawnsThisFrame => _spawnsThisFrame;
 
+        /// <summary>Підписує сервіс на gameplay-події.</summary>
         public void Initialize()
         {
             _registry = VfxDefinitionRegistry.Build(_config);
@@ -108,6 +104,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             }
         }
 
+        /// <summary>Прокачує пул і лічильники кадру.</summary>
         public void Tick()
         {
             _spawnsThisFrame = 0;
@@ -115,6 +112,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             _flash.Tick();
         }
 
+        /// <summary>Відписує сервіс і звільняє пул.</summary>
         public void Dispose()
         {
             if (_graphics != null)
@@ -146,9 +144,11 @@ namespace Kruty1918.Moyva.Vfx.Runtime
 
         // ---- IVfxService (tooling/test entry point) ----
 
+        /// <summary>Відтворює ефект за назвою події у світовій позиції.</summary>
         public bool Play(string eventName, Vector3 worldPosition)
             => Play(eventName, worldPosition, null, null);
 
+        /// <summary>Відтворює ефект із контекстом і тінтом фракції.</summary>
         public bool Play(
             string eventName,
             Vector3 worldPosition,

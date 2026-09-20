@@ -6,27 +6,19 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
-    /// <summary>
-    /// Camera impulse ("shake") layer. Impulses are additive offsets composed
-    /// on top of the navigation pose every frame; they never modify the
-    /// canonical camera target, and the pose returns cleanly when they end.
-    ///
-    /// Scaling chain per frame:
-    ///   request amplitude
-    ///   × distance falloff (positional impulses)
-    ///   × zoom falloff (far zoom dampens shake)
-    ///   × player settings (Camera Effects, Shake Intensity, Reduce Motion)
-    ///   × mobile scale
-    ///   then clamped to the configured position/rotation caps.
-    /// </summary>
+    /// <summary>CameraImpulseService — class: камери імпульсу сервісу.</summary>
     internal sealed class CameraImpulseService : ICameraFeedbackService, ILateTickable, IDisposable
     {
         private const float KickAttackFraction = 0.06f;
 
+        /// <summary>ActiveImpulse — struct: активної імпульсу.</summary>
         private struct ActiveImpulse
         {
+            /// <summary>запиту — CameraImpulseRequest.</summary>
             public CameraImpulseRequest Request;
+            /// <summary>Час, що минув з початку імпульсу.</summary>
             public float Elapsed;
+            /// <summary>Зерно генератора для детермінованої тряски.</summary>
             public float Seed;
         }
 
@@ -38,6 +30,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private Vector3 _positionOffset;
         private Quaternion _appliedRotationOffset = Quaternion.identity;
 
+        /// <summary>Виконує CameraImpulseService.</summary>
         public CameraImpulseService(
             UnityEngine.Camera camera,
             CameraSettingsSO settings,
@@ -53,8 +46,10 @@ namespace Kruty1918.Moyva.Camera.Runtime
         /// </summary>
         internal Vector3 PositionOffset => _positionOffset;
 
+        /// <summary>Чи імпульсу активної — IsImpulseActive.</summary>
         public bool IsImpulseActive => _active.Count > 0;
 
+        /// <summary>Запитує імпульсу.</summary>
         public void RequestImpulse(CameraImpulseRequest request)
         {
             if (_camera == null)
@@ -99,9 +94,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
             });
         }
 
+        /// <summary>Запитує імпульсу.</summary>
         public void RequestImpulse(CameraImpulseProfile profile, Vector3 worldPosition)
             => RequestImpulse(CameraImpulseProfiles.At(profile, worldPosition));
 
+        /// <summary>Скасовує All Impulses.</summary>
         public void CancelAllImpulses()
         {
             _active.Clear();
@@ -109,6 +106,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             RemoveRotationOffset();
         }
 
+        /// <summary>Виконує LateTick.</summary>
         public void LateTick()
         {
             if (_camera == null)
@@ -185,6 +183,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             }
         }
 
+        /// <summary>Звільняє ресурси та відписує від подій.</summary>
         public void Dispose()
         {
             _active.Clear();

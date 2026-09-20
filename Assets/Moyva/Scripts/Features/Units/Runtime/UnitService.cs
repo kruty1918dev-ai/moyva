@@ -12,6 +12,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
+    /// <summary>Канонічний сервіс юнітів: реєстр, позиції, стаміна, гарнізони та взаємодія з клітинками будівель.</summary>
     internal sealed class UnitService :
         IUnitService,
         IUnitOwnershipQuery,
@@ -42,6 +43,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         // Система здоров'я юнітів
         private readonly IHealthRegistry _healthRegistry;
 
+        /// <summary>Створює сервіс із повним набором залежностей.</summary>
         public UnitService(
             SignalBus signalBus,
             IGridService gridService,
@@ -52,6 +54,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         {
         }
 
+        /// <summary>Створює сервіс із скороченим набором залежностей для тестів.</summary>
         public UnitService(
             SignalBus signalBus,
             IGridService gridService,
@@ -63,6 +66,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         {
         }
 
+        /// <summary>Створює сервіс із мінімальним набором залежностей.</summary>
         [Inject]
         public UnitService(
             SignalBus signalBus,
@@ -86,6 +90,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _visualMotion = visualMotion;
         }
 
+        /// <summary>Підписує сервіс на gameplay-сигнали та події.</summary>
         public void Initialize()
         {
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreated);
@@ -93,6 +98,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
         }
 
+        /// <summary>Відписує сервіс і звільняє ресурси.</summary>
         public void Dispose()
         {
             _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreated);
@@ -205,6 +211,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         // --- API методи ---
 
+        /// <summary>Повертає GameObject юніта за ідентифікатором.</summary>
         public GameObject GetUnitObject(string unitId)
         {
             if (_unitObjects.TryGetValue(unitId, out var unitObj))
@@ -214,8 +221,10 @@ namespace Kruty1918.Moyva.Units.Runtime
             return null; // --- IGNORE ---
         }
 
+        /// <summary>Повертає поточну стаміну юніта.</summary>
         public float GetStamina(string unitId) => _unitStamina.GetValueOrDefault(unitId, 0);
 
+        /// <summary>Встановлює стаміну юніта.</summary>
         public void SetStamina(string unitId, float stamina)
         {
             if (string.IsNullOrEmpty(unitId) || !_unitStamina.ContainsKey(unitId))
@@ -234,15 +243,19 @@ namespace Kruty1918.Moyva.Units.Runtime
                 : Mathf.Clamp(stamina, 0f, cap);
         }
 
+        /// <summary>Намагається отримати позицію юніта на сітці.</summary>
         public bool TryGetUnitPosition(string unitId, out Vector2Int position)
             => _unitPositions.TryGetValue(unitId, out position);
 
+        /// <summary>Повертає всі відомі ідентифікатори юнітів.</summary>
         public IReadOnlyCollection<string> GetAllUnitIds()
             => _unitPositions.Keys;
 
+        /// <summary>Повертає ідентифікатор типу юніта.</summary>
         public string GetUnitTypeId(string unitId)
             => _unitTypeIds.TryGetValue(unitId, out var typeId) ? typeId : null;
 
+        /// <summary>Намагається ввести юніта в гарнізон будівлі.</summary>
         public bool TryEnterGarrison(
             string unitId,
             Vector2Int buildingPosition,
@@ -326,6 +339,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             return true;
         }
 
+        /// <summary>Намагається відновити стан гарнізону після завантаження.</summary>
         public bool TryRestoreGarrison(
             string unitId,
             Vector2Int buildingPosition,
@@ -402,6 +416,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             return true;
         }
 
+        /// <summary>Намагається вивести юніта з гарнізону.</summary>
         public bool TryExitGarrison(
             string unitId,
             Vector2Int targetPosition,
@@ -461,6 +476,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             return true;
         }
 
+        /// <summary>Намагається вивести юніта з гарнізону поблизу вказаної позиції.</summary>
         public bool TryExitGarrisonNear(
             string unitId,
             Vector2Int origin,
@@ -544,16 +560,19 @@ namespace Kruty1918.Moyva.Units.Runtime
             return false;
         }
 
+        /// <summary>Перевіряє, чи перебуває юніт у гарнізоні.</summary>
         public bool IsGarrisoned(string unitId)
             => !string.IsNullOrWhiteSpace(unitId)
                && _garrisonedUnitPositions.ContainsKey(unitId);
 
+        /// <summary>Повертає ідентифікатор власника юніта.</summary>
         public string GetUnitOwnerId(string unitId)
             => !string.IsNullOrWhiteSpace(unitId)
                && _unitOwnerIds.TryGetValue(unitId, out string ownerId)
                 ? ownerId
                 : "player_0";
 
+        /// <summary>Перевіряє, чи може юніт пройти клітинкою, зайнятою будівлею.</summary>
         public bool CanTraverseOccupiedConstructionCell(
             string unitId,
             Vector2Int position,

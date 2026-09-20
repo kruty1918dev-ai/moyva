@@ -7,6 +7,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
+    /// <summary>Обробник сигналів для preview-візуалів будівництва: показ, рух, drag, hover сітки, скасування.</summary>
     internal sealed class ConstructionPreviewVisualSignalHandler {
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly LazyInject<IConstructionSessionCommands> _constructionService;
@@ -18,6 +19,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionBlockedFlashService _blockedFlashService;
         private readonly int _townHallBuildRadius;
 
+        /// <summary>Створює обробника із сервісом preview-візуалів.</summary>
         [Inject]
         public ConstructionPreviewVisualSignalHandler(
             IBuildingRegistry buildingRegistry,
@@ -41,6 +43,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _townHallBuildRadius = Mathf.Max(0, townHallBuildRadius);
         }
 
+        /// <summary>Обробляє сигнал зміни preview будівлі.</summary>
         public void Handle(BuildingPreviewChangedSignal signal)
         {
             if (_constructionService.Value.IsDemolishMode)
@@ -67,7 +70,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 bool existed = _previewVisuals.TryGet(signal.Position, out GameObject existing);
                 Quaternion previous = existed && existing != null ? existing.transform.rotation : Quaternion.identity;
-                GameObject preview = _previewVisuals.Show(signal, def);
+                GameObject preview = _previewVisuals.Show(
+                    signal,
+                    def,
+                    _constructionService.Value.GetActiveOwner());
                 ApplyRotation(
                     preview,
                     signal.RotationQuarterTurns,
@@ -83,6 +89,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
+        /// <summary>Обробляє сигнал переміщення preview.</summary>
         public void Handle(BuildingPreviewMovedSignal signal)
         {
             if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
@@ -127,6 +134,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ConstructionRotationUtility.Normalize(
                     rotationQuarterTurns));
 
+        /// <summary>Обробляє сигнал drag-візуала preview.</summary>
         public void Handle(BuildingPreviewDragVisualSignal signal)
         {
             if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
@@ -143,6 +151,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ResolveBaseRotation(signal.RotationQuarterTurns));
         }
 
+        /// <summary>Обробляє зміну hover-клітинки сітки будівництва.</summary>
         public void Handle(BuildGridHoverChangedSignal signal)
         {
             if (signal.HasTile)
@@ -151,6 +160,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _previewVisuals.ClearGridHover();
         }
 
+        /// <summary>Обробляє скасування будівництва.</summary>
         public void Handle(BuildingCancelledSignal signal)
         {
             _previewVisuals.Clear();

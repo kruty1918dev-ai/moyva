@@ -2,84 +2,88 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Camera.API
 {
-    /// <summary>Named impulse feel presets; use instead of raw amplitudes.</summary>
+    /// <summary>CameraImpulseProfile — enum: камери імпульсу профілю.</summary>
     public enum CameraImpulseProfile
     {
-        /// <summary>Subtle accent, e.g. a small impact near the player.</summary>
+        /// <summary>Варіант Tiny.</summary>
         Tiny,
-        /// <summary>Noticeable jolt, e.g. standard combat impact or capture.</summary>
+        /// <summary>Варіант Light.</summary>
         Light,
-        /// <summary>Strong shake, e.g. demolition or siege hit.</summary>
+        /// <summary>Варіант Heavy.</summary>
         Heavy,
-        /// <summary>Global-scale event accent (wonder, realm-defining moment).</summary>
+        /// <summary>Варіант Strategic.</summary>
         Strategic,
     }
 
-    /// <summary>Request importance; lowest-priority impulses are evicted first.</summary>
+    /// <summary>CameraImpulsePriority — enum: камери імпульсу пріоритету.</summary>
     public enum CameraImpulsePriority
     {
+        /// <summary>Варіант Low.</summary>
         Low,
+        /// <summary>Варіант Medium.</summary>
         Medium,
+        /// <summary>Варіант High.</summary>
         High,
+        /// <summary>Варіант Critical.</summary>
         Critical,
     }
 
-    /// <summary>Semantic source category for documentation and profiling.</summary>
+    /// <summary>CameraImpulseCategory — enum: камери імпульсу категорії.</summary>
     public enum CameraImpulseCategory
     {
+        /// <summary>Варіант Generic.</summary>
         Generic,
+        /// <summary>Варіант CombatImpact.</summary>
         CombatImpact,
+        /// <summary>Варіант SiegeImpact.</summary>
         SiegeImpact,
+        /// <summary>Варіант Demolition.</summary>
         Demolition,
+        /// <summary>Варіант ConstructionSettle.</summary>
         ConstructionSettle,
+        /// <summary>Варіант Capture.</summary>
         Capture,
+        /// <summary>Варіант GameEvent.</summary>
         GameEvent,
     }
 
-    /// <summary>
-    /// One-shot camera impulse request. Amplitudes are pre-falloff world
-    /// values; the service applies distance falloff, zoom falloff, player
-    /// settings scaling and absolute clamps.
-    /// </summary>
+    /// <summary>CameraImpulseRequest — struct: камери імпульсу запиту.</summary>
     public struct CameraImpulseRequest
     {
-        /// <summary>Peak positional offset in world units.</summary>
+        /// <summary>позицію амплітуди — float.</summary>
         public float PositionAmplitude;
 
-        /// <summary>Peak rotational offset in degrees.</summary>
+        /// <summary>поворот амплітуди — float.</summary>
         public float RotationAmplitude;
 
-        /// <summary>Total lifetime in seconds (attack + decay).</summary>
+        /// <summary>тривалості — float.</summary>
         public float Duration;
 
-        /// <summary>Noise frequency in Hz for the positional tremor.</summary>
+        /// <summary>частоти — float.</summary>
         public float Frequency;
 
-        /// <summary>World position for distance falloff; ignored when HasWorldPosition is false.</summary>
+        /// <summary>світу позицію — Vector3.</summary>
         public Vector3 WorldPosition;
 
-        /// <summary>Whether WorldPosition participates in distance falloff.</summary>
+        /// <summary>Чи світу позицію — HasWorldPosition.</summary>
         public bool HasWorldPosition;
 
-        /// <summary>
-        /// Falloff radius in world units; 0 uses the configured default radius.
-        /// Only meaningful when HasWorldPosition is set.
-        /// </summary>
+        /// <summary>затухання радіуса — float.</summary>
         public float FalloffRadius;
 
-        /// <summary>
-        /// Optional one-shot kick direction in world space (normalized inside).
-        /// Zero gives a pure omni-directional tremor.
-        /// </summary>
+        /// <summary>викиду напрямку — Vector3.</summary>
         public Vector3 KickDirection;
 
+        /// <summary>пріоритету — CameraImpulsePriority.</summary>
         public CameraImpulsePriority Priority;
+        /// <summary>категорії — CameraImpulseCategory.</summary>
         public CameraImpulseCategory Category;
     }
 
-    /// <summary>Amplitude presets tuned for restrained strategy-camera feedback.</summary>
+    /// <summary>CameraImpulseProfiles — class: камери імпульсу профілів.</summary>
     public static class CameraImpulseProfiles
     {
+        /// <summary>Створює Create.</summary>
         public static CameraImpulseRequest Create(CameraImpulseProfile profile)
         {
             switch (profile)
@@ -132,7 +136,7 @@ namespace Kruty1918.Moyva.Camera.API
             }
         }
 
-        /// <summary>Profile request anchored at a world position for distance falloff.</summary>
+        /// <summary>Виконує At.</summary>
         public static CameraImpulseRequest At(CameraImpulseProfile profile, Vector3 worldPosition)
         {
             var request = Create(profile);
@@ -142,21 +146,18 @@ namespace Kruty1918.Moyva.Camera.API
         }
     }
 
-    /// <summary>
-    /// Camera impulse ("shake") service. Impulses are additive presentation
-    /// offsets composed on top of the navigation pose; they never modify the
-    /// canonical camera target, and the pose returns cleanly when they end.
-    /// Player settings (Camera Effects, Shake Intensity, Reduce Motion) scale
-    /// or disable all output.
-    /// </summary>
+    /// <summary>ICameraFeedbackService — interface: I камери відгуку сервісу.</summary>
     public interface ICameraFeedbackService
     {
+        /// <summary>Чи імпульсу активної — IsImpulseActive.</summary>
         bool IsImpulseActive { get; }
 
+        /// <summary>Запитує імпульсу.</summary>
         void RequestImpulse(CameraImpulseRequest request);
+        /// <summary>Запитує імпульсу.</summary>
         void RequestImpulse(CameraImpulseProfile profile, Vector3 worldPosition);
 
-        /// <summary>Cancels every active impulse and removes residual offsets.</summary>
+        /// <summary>Скасовує All Impulses.</summary>
         void CancelAllImpulses();
     }
 }

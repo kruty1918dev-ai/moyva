@@ -5,6 +5,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
+    /// <summary>CameraMovement — class: камери руху.</summary>
     internal sealed class CameraMovement : ICameraMovement, IInitializable, ILateTickable
     {
         private const float RotationEpsilon = 0.0001f;
@@ -26,12 +27,14 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private bool _hasOrbitPivot;
         private Vector3 _orbitPivot;
 
+        /// <summary>ручного керування запитаного.</summary>
         public event System.Action ManualControlRequested;
 
         /// <summary>Unscaled time of the most recent player navigation intent.</summary>
         internal float LastManualControlTime { get; private set; } = float.NegativeInfinity;
 
         // Zenject автоматично підставить активну камеру та налаштування
+        /// <summary>Виконує CameraMovement.</summary>
         public CameraMovement(
             UnityEngine.Camera camera,
             CameraSettingsSO settings,
@@ -46,6 +49,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _impulse = impulse;
         }
 
+        /// <summary>Ініціалізує компонент і підписує на події.</summary>
         public void Initialize()
         {
             // На старті синхронізуємо цільову позицію з поточною, щоб камера не відлітала
@@ -54,6 +58,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             ClampTargetToBounds();
         }
 
+        /// <summary>Переміщує камери.</summary>
         public void MoveCamera(Vector3 delta) // delta — це чисті пікселі з Action Map
         {
             if (delta.sqrMagnitude <= RotationEpsilon)
@@ -63,6 +68,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             ApplyScreenDelta(delta, _settings.ResolveMoveSpeed(), immediate: false);
         }
 
+        /// <summary>Переміщує камери клавіатури.</summary>
         public void MoveCameraKeyboard(Vector2 direction, float unscaledDeltaTime)
         {
             if (direction.sqrMagnitude <= RotationEpsilon)
@@ -85,6 +91,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             ApplyNavigationDelta(worldDelta);
         }
 
+        /// <summary>Переміщує камери негайного.</summary>
         public void MoveCameraImmediate(Vector3 delta, float speedMultiplier)
         {
             if (delta.sqrMagnitude <= RotationEpsilon)
@@ -94,6 +101,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             ApplyScreenDelta(delta, speedMultiplier, immediate: true);
         }
 
+        /// <summary>Обертає камери Around фокус точки.</summary>
         public void RotateCameraAroundFocusPoint(float angleDegrees)
         {
             if (_camera == null
@@ -111,6 +119,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             ApplyOrbitAngle(angleDegrees);
         }
 
+        /// <summary>Встановлює камери орбіти вводу.</summary>
         public void SetCameraOrbitInput(float normalizedInput)
         {
             _keyboardOrbitInput = Mathf.Clamp(normalizedInput, -1f, 1f);
@@ -121,6 +130,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             }
         }
 
+        /// <summary>Починає курсора орбіти.</summary>
         public void BeginPointerOrbit()
         {
             _pointerOrbitActive = EnsureOrbitPivot();
@@ -128,6 +138,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 NotifyManualControl();
         }
 
+        /// <summary>Обертає курсора орбіти.</summary>
         public void RotatePointerOrbit(float horizontalScreenDelta)
         {
             if (!_pointerOrbitActive || Mathf.Abs(horizontalScreenDelta) <= RotationEpsilon)
@@ -140,6 +151,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             ApplyOrbitAngle(angle);
         }
 
+        /// <summary>Завершує курсора орбіти.</summary>
         public void EndPointerOrbit()
         {
             _pointerOrbitActive = false;
@@ -165,6 +177,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             ClampTargetToBounds();
         }
 
+        /// <summary>Виконує ShiftCameraWorld.</summary>
         public void ShiftCameraWorld(Vector3 worldDelta, bool immediate)
         {
             NotifyManualControl();
@@ -183,6 +196,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             WriteCameraPosition(_targetPosition);
         }
 
+        /// <summary>Переміщує камери фокус  світу точки.</summary>
         public void MoveCameraFocusToWorldPoint(Vector3 focusPoint, bool immediate)
         {
             if (_camera == null)
@@ -202,6 +216,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             WriteCameraPosition(_targetPosition);
         }
 
+        /// <summary>Встановлює камери відстані  Navigation площини.</summary>
         public void SetCameraDistanceToNavigationPlane(float distance, bool immediate)
         {
             if (_camera == null)
@@ -239,6 +254,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             WriteCameraPosition(_targetPosition);
         }
 
+        /// <summary>Примусово задає переміщення камери  позицію.</summary>
         public void ForceMoveCameraToPosition(Vector3 position)
         {
             // Programmatic steer toward a position. Player input always wins —
@@ -248,6 +264,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             ClampTargetToBounds();
         }
 
+        /// <summary>Виконує TeleportCamera.</summary>
         public void TeleportCamera(Vector3 position)
         {
             _targetPosition = position;
@@ -257,6 +274,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             WriteCameraPosition(_targetPosition);
         }
 
+        /// <summary>Виконує TeleportCameraToFocusPoint.</summary>
         public void TeleportCameraToFocusPoint(Vector3 focusPoint, float distance)
         {
             float resolvedDistance = Mathf.Max(0.1f, distance);
@@ -301,6 +319,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _camera.transform.position = navigationPosition + _lastComposedImpulseOffset;
         }
 
+        /// <summary>Виконує LateTick.</summary>
         public void LateTick()
         {
             UpdateKeyboardOrbit(Time.unscaledDeltaTime);
@@ -579,6 +598,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return worldDelta.sqrMagnitude > 0.000001f;
         }
 
+        /// <summary>Намагається екрана точки  Navigation площини.</summary>
         public bool TryScreenPointToNavigationPlane(Vector2 screenPoint, out Vector3 worldPoint)
         {
             worldPoint = Vector3.zero;

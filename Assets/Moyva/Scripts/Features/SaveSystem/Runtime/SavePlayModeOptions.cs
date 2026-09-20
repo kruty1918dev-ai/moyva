@@ -2,34 +2,56 @@ namespace Kruty1918.Moyva.SaveSystem
 {
     using System;
 
+    /// <summary>
+    /// Тип контролера, який керує діями гравця в матчі.
+    /// </summary>
     public enum PlayerControllerType
     {
+        /// <summary>Гравцем керує людина.</summary>
         Human = 0,
+        /// <summary>Гравцем керує бот-опонент.</summary>
         Bot = 1
     }
 
+    /// <summary>
+    /// Сценарій запуску ігрової сесії, обраний перед входом у gameplay-сцену.
+    /// </summary>
     public enum GameLaunchMode
     {
+        /// <summary>Режим запуску не визначено.</summary>
         Unknown = 0,
+        /// <summary>Прямий запуск gameplay-сцени для тестування.</summary>
         DirectGameplayTest = 1,
+        /// <summary>Нова гра, створена з головного меню.</summary>
         MenuNewGame = 2,
+        /// <summary>Завантаження збереження з головного меню.</summary>
         MenuLoadGame = 3,
+        /// <summary>Приєднання до мережевої гри з головного меню.</summary>
         MenuJoinGame = 4,
+        /// <summary>Мережевий матч, створений з головного меню.</summary>
         MenuMultiplayerGame = 5,
+        /// <summary>Локальний матч проти бота з головного меню.</summary>
         MenuBotGame = 6,
     }
 
+    /// <summary>
+    /// Джерело, з якого ініційовано поточний запуск гри.
+    /// </summary>
     public enum GameLaunchSource
     {
+        /// <summary>Джерело запуску не визначено.</summary>
         Unknown = 0,
+        /// <summary>Прямий тестовий запуск gameplay-сцени.</summary>
         DirectGameplayTest = 1,
+        /// <summary>Запуск із головного меню.</summary>
         HomeMenu = 2,
+        /// <summary>Запуск через завантаження збереження.</summary>
         SaveLoad = 3,
     }
 
     /// <summary>
-    /// Cross-scene runtime launch context used to align startup behavior.
-    /// Allows gameplay scene to differentiate direct test launch vs menu launch.
+    /// Міжсценовий контекст запуску, що вирівнює стартову поведінку гри.
+    /// Дозволяє gameplay-сцені розрізняти прямий тестовий запуск і запуск із меню.
     /// </summary>
     public static class GameLaunchContext
     {
@@ -40,26 +62,50 @@ namespace Kruty1918.Moyva.SaveSystem
         private static DateTime _configuredAtUtc;
         private static DateTime _expiresAtUtc;
 
+        /// <summary>Поточний сценарій запуску ігрової сесії.</summary>
         public static GameLaunchMode Mode { get; private set; } = GameLaunchMode.Unknown;
+        /// <summary>Джерело, з якого ініційовано запуск.</summary>
         public static GameLaunchSource Source { get; private set; } = GameLaunchSource.Unknown;
+        /// <summary>Слот збереження, пов'язаний із запуском.</summary>
         public static int SaveSlot { get; private set; } = 0;
+        /// <summary>Чи передано параметри генерації світу.</summary>
         public static bool HasWorldSettings { get; private set; }
+        /// <summary>Назва світу для нової гри.</summary>
         public static string WorldName { get; private set; } = string.Empty;
+        /// <summary>Seed генерації світу.</summary>
         public static int Seed { get; private set; }
+        /// <summary>Пресет розміру карти.</summary>
         public static int Size { get; private set; }
+        /// <summary>Явна ширина карти в клітинках.</summary>
         public static int Width { get; private set; }
+        /// <summary>Явна висота карти в клітинках.</summary>
         public static int Height { get; private set; }
+        /// <summary>Ідентифікатор типу карти.</summary>
         public static int MapType { get; private set; }
+        /// <summary>Ідентифікатор складності.</summary>
         public static int Difficulty { get; private set; }
+        /// <summary>Максимальна кількість гравців у матчі.</summary>
         public static int MaxPlayers { get; private set; }
+        /// <summary>Чи є лобі приватним.</summary>
         public static bool IsPrivate { get; private set; }
+        /// <summary>Чи відома роль локального гравця.</summary>
         public static bool HasLocalPlayerRole { get; private set; }
+        /// <summary>Чи є локальний гравець хостом.</summary>
         public static bool IsLocalPlayerHost { get; private set; }
+        /// <summary>Ідентифікатор локального гравця.</summary>
         public static string LocalPlayerId { get; private set; } = string.Empty;
+        /// <summary>Ідентифікатор гравця-бота.</summary>
         public static string BotPlayerId { get; private set; } = string.Empty;
+        /// <summary>Ідентифікатор складності бота.</summary>
         public static string BotDifficultyId { get; private set; } = string.Empty;
-        public static bool HasBotOpponent => Mode == GameLaunchMode.MenuBotGame && !string.IsNullOrEmpty(BotPlayerId);
+        /// <summary>Чи має матч бот-опонента.</summary>
+        public static bool HasBotOpponent
+            => (Mode == GameLaunchMode.MenuBotGame || Mode == GameLaunchMode.MenuLoadGame)
+                && !string.IsNullOrEmpty(BotPlayerId);
 
+        /// <summary>
+        /// Налаштовує бот-опонента для локальної нової гри на два місця.
+        /// </summary>
         public static void ConfigureBotOpponent(string playerId, string difficultyId = null)
         {
             if (Mode != GameLaunchMode.MenuNewGame || MaxPlayers != 2
@@ -71,14 +117,24 @@ namespace Kruty1918.Moyva.SaveSystem
             _autoLoadOverride = false;
         }
 
+        /// <summary>
+        /// Повертає тип контролера для вказаного гравця: бот або людина.
+        /// </summary>
         public static PlayerControllerType GetPlayerController(string playerId)
             => HasBotOpponent && string.Equals(playerId, BotPlayerId, StringComparison.Ordinal)
                 ? PlayerControllerType.Bot : PlayerControllerType.Human;
+        /// <summary>UTC-момент останнього налаштування контексту.</summary>
         public static DateTime ConfiguredAtUtc => _configuredAtUtc;
+        /// <summary>UTC-момент, після якого контекст вважається протермінованим.</summary>
         public static DateTime ExpiresAtUtc => _expiresAtUtc;
+        /// <summary>Чи існує активний контекст запуску.</summary>
         public static bool HasActiveContext => Mode != GameLaunchMode.Unknown;
+        /// <summary>Чи протерміновано активний контекст запуску.</summary>
         public static bool IsExpired => HasActiveContext && DateTime.UtcNow >= _expiresAtUtc;
 
+        /// <summary>
+        /// Налаштовує контекст прямого тестового запуску gameplay-сцени.
+        /// </summary>
         public static void ConfigureDirectGameplayTest()
         {
             Mode = GameLaunchMode.DirectGameplayTest;
@@ -93,8 +149,8 @@ namespace Kruty1918.Moyva.SaveSystem
         }
 
         /// <summary>
-        /// Resolves an otherwise missing launch context for a gameplay scene started directly
-        /// from the Unity Editor or a development player. Existing menu/save contexts are preserved.
+        /// Відновлює відсутній контекст запуску для gameplay-сцени, стартованої напряму
+        /// з редактора Unity або development-білду. Наявні контексти меню/збереження зберігаються.
         /// </summary>
         public static bool EnsureDirectGameplayTestFallback()
         {
@@ -110,6 +166,9 @@ namespace Kruty1918.Moyva.SaveSystem
 #endif
         }
 
+        /// <summary>
+        /// Налаштовує контекст нової гри, створеної з головного меню.
+        /// </summary>
         public static void ConfigureMenuNewGame(int saveSlot = 0)
         {
             Mode = GameLaunchMode.MenuNewGame;
@@ -122,6 +181,9 @@ namespace Kruty1918.Moyva.SaveSystem
             MarkConfigured(DefaultContextTtl);
         }
 
+        /// <summary>
+        /// Налаштовує контекст нової гри з параметрами світу та роллю локального гравця.
+        /// </summary>
         public static void ConfigureMenuNewGame(
             int saveSlot,
             string worldName,
@@ -146,6 +208,9 @@ namespace Kruty1918.Moyva.SaveSystem
             MarkConfigured(DefaultContextTtl);
         }
 
+        /// <summary>
+        /// Налаштовує контекст завантаження збереженої гри з меню.
+        /// </summary>
         public static void ConfigureMenuLoadGame(int saveSlot)
         {
             Mode = GameLaunchMode.MenuLoadGame;
@@ -158,6 +223,21 @@ namespace Kruty1918.Moyva.SaveSystem
             MarkConfigured(DefaultContextTtl);
         }
 
+        /// <summary>
+        /// Повторно активує ідентичність бота після завантаження збереженого матчу з ботом.
+        /// Викликається модулем збереження бот-опонента; ігнорується для інших контекстів і порожніх id.
+        /// </summary>
+        public static void RestoreLoadedBotOpponent(string playerId, string difficultyId)
+        {
+            if (Mode != GameLaunchMode.MenuLoadGame || string.IsNullOrWhiteSpace(playerId))
+                return;
+            BotPlayerId = playerId.Trim();
+            BotDifficultyId = string.IsNullOrWhiteSpace(difficultyId) ? string.Empty : difficultyId.Trim();
+        }
+
+        /// <summary>
+        /// Налаштовує контекст приєднання до мережевої гри з меню.
+        /// </summary>
         public static void ConfigureMenuJoinGame()
         {
             Mode = GameLaunchMode.MenuJoinGame;
@@ -170,6 +250,9 @@ namespace Kruty1918.Moyva.SaveSystem
             MarkConfigured(DefaultContextTtl);
         }
 
+        /// <summary>
+        /// Налаштовує контекст мережевого матчу з параметрами світу та роллю локального гравця.
+        /// </summary>
         public static void ConfigureMenuMultiplayerGame(
             string worldName,
             int seed,
@@ -193,6 +276,9 @@ namespace Kruty1918.Moyva.SaveSystem
             MarkConfigured(DefaultContextTtl);
         }
 
+        /// <summary>
+        /// Повністю очищає контекст запуску та перевизначення прапорців.
+        /// </summary>
         public static void Reset()
         {
             Mode = GameLaunchMode.Unknown;
@@ -206,6 +292,9 @@ namespace Kruty1918.Moyva.SaveSystem
             _expiresAtUtc = DateTime.MinValue;
         }
 
+        /// <summary>
+        /// Перевіряє актуальність контексту; за протермінування скидає його.
+        /// </summary>
         public static bool EnsureNotExpired()
         {
             if (!IsExpired)
@@ -215,6 +304,9 @@ namespace Kruty1918.Moyva.SaveSystem
             return false;
         }
 
+        /// <summary>
+        /// Подовжує час життя активного контексту запуску.
+        /// </summary>
         public static void RefreshTtl(TimeSpan? ttl = null)
         {
             if (!HasActiveContext)
@@ -223,18 +315,27 @@ namespace Kruty1918.Moyva.SaveSystem
             MarkConfigured(ttl ?? DefaultContextTtl);
         }
 
+        /// <summary>
+        /// Повертає чинне значення прапорця автозавантаження з урахуванням override контексту.
+        /// </summary>
         public static bool IsAutoLoadEnabled()
         {
             EnsureNotExpired();
             return _autoLoadOverride ?? SavePlayModeOptions.AutoLoadEnabled;
         }
 
+        /// <summary>
+        /// Повертає чинне значення прапорця автозбереження з урахуванням override контексту.
+        /// </summary>
         public static bool IsAutoSaveEnabled()
         {
             EnsureNotExpired();
             return _autoSaveOverride ?? SavePlayModeOptions.AutoSaveEnabled;
         }
 
+        /// <summary>
+        /// Намагається отримати розміри світу з параметрів запуску.
+        /// </summary>
         public static bool TryGetWorldDimensions(out int width, out int height)
         {
             EnsureNotExpired();
@@ -265,6 +366,9 @@ namespace Kruty1918.Moyva.SaveSystem
             return true;
         }
 
+        /// <summary>
+        /// Намагається отримати seed генерації світу з параметрів запуску.
+        /// </summary>
         public static bool TryGetSeed(out int seed)
         {
             EnsureNotExpired();
@@ -347,20 +451,22 @@ namespace Kruty1918.Moyva.SaveSystem
     }
 
     /// <summary>
-    /// Runtime-accessible play mode flags controlled from editor tools.
-    /// In player builds both flags are always enabled.
+    /// Прапорці режиму гри, доступні в runtime та керовані з інструментів редактора.
+    /// У player-білдах обидва прапорці завжди ввімкнені.
     /// </summary>
     public static class SavePlayModeOptions
     {
         private const string AutoLoadKey = "Moyva.Save.PlayMode.AutoLoad";
         private const string AutoSaveKey = "Moyva.Save.PlayMode.AutoSave";
 
+        /// <summary>Чи ввімкнено автозавантаження під час запуску з редактора.</summary>
         public static bool AutoLoadEnabled
         {
             get => GetBool(AutoLoadKey, true);
             set => SetBool(AutoLoadKey, value);
         }
 
+        /// <summary>Чи ввімкнено автозбереження під час запуску з редактора.</summary>
         public static bool AutoSaveEnabled
         {
             get => GetBool(AutoSaveKey, true);

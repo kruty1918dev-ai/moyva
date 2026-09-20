@@ -8,35 +8,40 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
+    /// <summary>Контролер бот-опонента: визначає ходи бота через телеметрію та політику вводу, виконує їх у хід бота.</summary>
     internal sealed class BotController : IInitializable, ITickable, IDisposable
     {
         private readonly ITurnService _turns;
         private readonly IGameplayInputPolicy _input;
         private readonly ITurnAuthorityPolicy _authority;
-        private readonly IBotDecisionOrchestrator _orchestrator;
+        private readonly Func<IBotDecisionOrchestrator> _orchestratorProvider;
         private readonly float _presentationDelay;
+        private IBotDecisionOrchestrator _orchestrator;
         private IDisposable _inputBlock;
         private long _observedTurn = -1;
         private float _delay;
 
+        /// <summary>Створює контролер із сервісом ходів, політикою вводу та пайплайном бота.</summary>
         public BotController(ITurnService turns, IGameplayInputPolicy input,
             [InjectOptional] ITurnAuthorityPolicy authority = null,
-            [InjectOptional] IBotDecisionOrchestrator orchestrator = null,
+            [InjectOptional] Func<IBotDecisionOrchestrator> orchestratorProvider = null,
             [InjectOptional] BotRuntimeConfig config = null)
         {
             _turns = turns;
             _input = input;
             _authority = authority;
-            _orchestrator = orchestrator;
+            _orchestratorProvider = orchestratorProvider;
             _presentationDelay = config?.visibleDelay ?? 0.35f;
         }
 
+        /// <summary>Ініціалізує контролер бота.</summary>
         public void Initialize()
         {
             _turns.StateChanged += RefreshControl;
             RefreshControl();
         }
 
+        /// <summary>Прокачує логіку бота в хід його ходу.</summary>
         public void Tick()
         {
             if (Time.timeScale > 0f)
@@ -53,8 +58,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_delay > 0f)
                 return;
 
-            _orchestrator?.BeginTurn(_turns.ActiveOwnerId);
-            _orchestrator?.Tick(deltaSeconds);
+            // Resolve lazily: on save-load the bot identity is restored during
+            // the load pass, after container construction.
+            var orchestrator = _orchestrator ??= _orchestratorProvider?.Invoke();
+            orchestrator?.BeginTurn(_turns.ActiveOwnerId);
+            orchestrator?.Tick(deltaSeconds);
         }
 
         private bool IsBotTurn()
@@ -82,6 +90,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
         }
 
+        /// <summary>Звільняє ресурси контролера.</summary>
         public void Dispose()
         {
             _orchestrator?.Cancel();

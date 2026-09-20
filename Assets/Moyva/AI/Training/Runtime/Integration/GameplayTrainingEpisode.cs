@@ -167,7 +167,14 @@ namespace Kruty1918.Moyva.AI.Training
                 Perception = new MoyvaBotPerceptionSource(Turns, unitService, owners, fog,
                     profiles: _container.TryResolve<IUnitGameplayProfileService>(),
                     terrain: _container.TryResolve<IGeneratedTerrainLevelQuery>(),
-                    economy: _container.TryResolve<IEconomyInfoMediator>());
+                    economy: _container.TryResolve<IEconomyInfoMediator>(),
+                    intel: _container.TryResolve<IFogIntelReader>(),
+                    grid: _container.TryResolve<IGridService>(),
+                    placements: _container.TryResolve<IConstructionSaveSnapshotSource>(),
+                    buildingDefs: _container.TryResolve<IBuildingRegistry>(),
+                    economyApi: _container.TryResolve<IEconomyRuntimeApi>(),
+                    recruitment: _container.TryResolve<IUnitRecruitmentQuery>(),
+                    productionPerTurn: p => EconomyProductionReadModel.Capture(_container, p).ProductionPerTurn);
                 _setupPhase = false;
                 Outcomes = new TrainingGameplayEventBridge(signals, _container.Resolve<ITurnHistoryQuery>(), TrainingGameplayScope.LearnerId,
                     _container.Resolve<IUnitCombatService>(), owners, context.EpisodeId, _container.TryResolve<IBuildingRegistry>());

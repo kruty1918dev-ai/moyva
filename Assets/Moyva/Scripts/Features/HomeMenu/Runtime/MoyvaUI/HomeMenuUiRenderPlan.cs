@@ -2,57 +2,45 @@ using System;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
-    /// <summary>
-    /// The render pipeline never asks "when did state change"; it diffs the desired
-    /// snapshot (derived purely from <see cref="HomeMenuMoyvaUiState"/> + view data)
-    /// against the snapshot that was actually committed to the DOM and picks the
-    /// cheapest operation that makes them equal.
-    /// </summary>
+    /// <summary>HomeMenuRenderOperation — enum: головного меню рендер Operation.</summary>
     internal enum HomeMenuRenderOperation
     {
-        /// <summary>Desired snapshot already matches the mounted document.</summary>
+        /// <summary>Варіант None.</summary>
         None,
 
-        /// <summary>Only region children changed; swap nav/brand regions in place.</summary>
+        /// <summary>Варіант UpdateRegions.</summary>
         UpdateRegions,
 
-        /// <summary>
-        /// Root classes, modals, viewport, or document identity changed — submit the
-        /// full document. The host reconciles in place and only falls back to a
-        /// fresh context if reconciliation provably fails, so a remount happens
-        /// exactly when needed and never because of timing.
-        /// </summary>
+        /// <summary>Варіант MountDocument.</summary>
         MountDocument
     }
 
-    /// <summary>
-    /// Explicit transition phases of the shell. Route swaps run
-    /// Stable -> ExitingRoute -> Stable; every other change applies immediately.
-    /// While ExitingRoute, incoming state changes only update the pending snapshot —
-    /// the deadline handler always renders the latest desired state, so stale
-    /// deferred work can never resurrect an old page.
-    /// </summary>
+    /// <summary>HomeMenuRenderPhase — enum: головного меню рендер фази.</summary>
     internal enum HomeMenuRenderPhase
     {
+        /// <summary>Варіант Stable.</summary>
         Stable,
+        /// <summary>Варіант ExitingRoute.</summary>
         ExitingRoute
     }
 
-    /// <summary>
-    /// Immutable description of everything the mounted document is supposed to show.
-    /// Comparing snapshots replaces the scattered caches (_lastRouteMarkup,
-    /// _mountedRootClass, _lastRenderedRoute, ...) that used to drift out of sync
-    /// with the real DOM and caused blank panels / missed remounts.
-    /// </summary>
+    /// <summary>HomeMenuUiSnapshot — class: головного меню UI знімка.</summary>
     internal sealed class HomeMenuUiSnapshot
     {
+        /// <summary>маршрутизації — string.</summary>
         public string Route;
+        /// <summary>вʼюпорта Class — string.</summary>
         public string ViewportClass;
+        /// <summary>кореня Class — string.</summary>
         public string RootClass;
+        /// <summary>Розмітка навігаційного блоку.</summary>
         public string NavMarkup;
+        /// <summary>Розмітка бренд-блоку.</summary>
         public string BrandMarkup;
+        /// <summary>Розмітка модальних вікон.</summary>
         public string ModalsMarkup;
 
+        /// <summary>Захоплює Capture.</summary>
         public static HomeMenuUiSnapshot Capture(
             HomeMenuMoyvaUiState state,
             HomeMenuMoyvaUiViewController view,
@@ -72,17 +60,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private static string ResolveRoute(HomeMenuMoyvaUiState state)
             => string.IsNullOrWhiteSpace(state.CurrentRoute) ? "Main" : state.CurrentRoute.Trim();
 
+        /// <summary>Маршрутизує Equals.</summary>
         public bool RouteEquals(HomeMenuUiSnapshot other)
             => other != null && string.Equals(Route, other.Route, StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// Pure decision table: given the mounted snapshot and the desired snapshot,
-    /// choose the cheapest render operation that makes the DOM match state.
-    /// Keeping this pure makes the transition model deterministic and unit-testable.
-    /// </summary>
+    /// <summary>HomeMenuRenderPlanner — class: головного меню рендер Planner.</summary>
     internal static class HomeMenuRenderPlanner
     {
+        /// <summary>Обирає Operation.</summary>
         public static HomeMenuRenderOperation ChooseOperation(
             HomeMenuUiSnapshot mounted,
             HomeMenuUiSnapshot desired)

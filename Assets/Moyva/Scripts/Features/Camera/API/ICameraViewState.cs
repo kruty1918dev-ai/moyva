@@ -2,42 +2,45 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Camera.API
 {
-    /// <summary>Who is currently driving the navigation pose.</summary>
+    /// <summary>CameraNavigationMode — enum: камери Navigation режим.</summary>
     public enum CameraNavigationMode
     {
+        /// <summary>Варіант Idle.</summary>
         Idle,
+        /// <summary>Варіант Player.</summary>
         Player,
+        /// <summary>Варіант FocusTransition.</summary>
         FocusTransition,
     }
 
-    /// <summary>
-    /// Canonical read-only view of the camera's current state for presentation
-    /// consumers (audio, shaders, clouds, VFX, HUD). Updated once per frame.
-    /// Gameplay systems must read camera state through this interface instead
-    /// of reaching for Camera.main.
-    /// </summary>
+    /// <summary>ICameraViewState — interface: I камери виду стану.</summary>
     public interface ICameraViewState
     {
-        /// <summary>Current zoom: orthographic size or vertical field of view.</summary>
+        /// <summary>поточного зум.</summary>
         float CurrentZoom { get; }
 
-        /// <summary>0 = closest zoom, 1 = farthest zoom over the configured range.</summary>
+        /// <summary>Normalized зум.</summary>
         float NormalizedZoom { get; }
 
-        /// <summary>Smoothed NormalizedZoom, frame-rate independent.</summary>
+        /// <summary>Smoothed Normalized зум.</summary>
         float SmoothedNormalizedZoom { get; }
 
+        /// <summary>Чи перспективи — IsPerspective.</summary>
         bool IsPerspective { get; }
 
-        /// <summary>World-space point at the screen center on the navigation plane.</summary>
+        /// <summary>фокус світу точки.</summary>
         Vector3 FocusWorldPoint { get; }
 
-        /// <summary>Camera yaw around the navigation plane normal, in degrees.</summary>
+        /// <summary>орбіти рискання у градусах.</summary>
         float OrbitYawDegrees { get; }
 
+        /// <summary>Navigation режим.</summary>
         CameraNavigationMode NavigationMode { get; }
+        /// <summary>Чи фокус переходу активної — IsFocusTransitionActive.</summary>
         bool IsFocusTransitionActive { get; }
+        /// <summary>Чи гравця Navigating — IsPlayerNavigating.</summary>
         bool IsPlayerNavigating { get; }
+        /// <summary>Чи імпульсу активної — IsImpulseActive.</summary>
         bool IsImpulseActive { get; }
     }
 }

@@ -14,6 +14,7 @@ using UnityEditor;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
+    /// <summary>CameraInstaller — class: камери Installer.</summary>
     public class CameraInstaller : MonoInstaller
     {
         private static readonly Vector3 ReflectionReadyEuler = new(50f, 45f, 0f);
@@ -33,6 +34,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private const string DefaultCameraInputAssetPath = "Assets/Moyva/Data/ScriptableObjects/Input/InputSystem_Actions.inputactions";
         private CameraSettingsSO _runtimeFallbackSettings;
 
+        /// <summary>Встановлює Bindings.</summary>
         public override void InstallBindings()
         {
             InputRoutingBindings.Install(Container);
@@ -175,6 +177,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         }
     }
 
+    /// <summary>CameraProjectSettingsAdapter — class: камери проєкту налаштування адаптера.</summary>
     internal sealed class CameraProjectSettingsAdapter : IInitializable
     {
         private readonly UnityEngine.Camera _camera;
@@ -183,6 +186,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly IGridProjection _gridProjection;
         private readonly IGridService _gridService;
 
+        /// <summary>Виконує CameraProjectSettingsAdapter.</summary>
         public CameraProjectSettingsAdapter(
             UnityEngine.Camera camera,
             CameraSettingsSO cameraSettings,
@@ -197,6 +201,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _gridService = gridService;
         }
 
+        /// <summary>Ініціалізує компонент і підписує на події.</summary>
         public void Initialize()
         {
             if (_camera == null || _cameraSettings == null)

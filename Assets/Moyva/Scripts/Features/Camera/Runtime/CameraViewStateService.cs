@@ -5,11 +5,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
-    /// <summary>
-    /// Canonical read-only camera state for presentation consumers (audio,
-    /// shaders, clouds, VFX, HUD). Sampled once per frame after navigation and
-    /// impulse evaluation; never allocates, never mutates the camera.
-    /// </summary>
+    /// <summary>CameraViewStateService — class: камери виду стану сервісу.</summary>
     internal sealed class CameraViewStateService : ICameraViewState, ILateTickable
     {
         private const float PlayerNavigatingWindowSeconds = 0.45f;
@@ -32,6 +28,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private CameraNavigationMode _navigationMode;
         private bool _isPlayerNavigating;
 
+        /// <summary>Виконує CameraViewStateService.</summary>
         public CameraViewStateService(
             UnityEngine.Camera camera,
             CameraSettingsSO settings,
@@ -50,17 +47,28 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _gridProjection = gridProjection;
         }
 
+        /// <summary>поточного зум — float.</summary>
         public float CurrentZoom => _currentZoom;
+        /// <summary>Normalized зум — float.</summary>
         public float NormalizedZoom => _normalizedZoom;
+        /// <summary>Smoothed Normalized зум — float.</summary>
         public float SmoothedNormalizedZoom => _smoothedNormalizedZoom;
+        /// <summary>Чи перспективи — IsPerspective.</summary>
         public bool IsPerspective => _isPerspective;
+        /// <summary>фокус світу точки — Vector3.</summary>
         public Vector3 FocusWorldPoint => _focusWorldPoint;
+        /// <summary>орбіти рискання у градусах — float.</summary>
         public float OrbitYawDegrees => _orbitYawDegrees;
+        /// <summary>Navigation режим — CameraNavigationMode.</summary>
         public CameraNavigationMode NavigationMode => _navigationMode;
+        /// <summary>Чи фокус переходу активної — IsFocusTransitionActive.</summary>
         public bool IsFocusTransitionActive => _focus != null && _focus.IsFocusActive;
+        /// <summary>Чи гравця Navigating — IsPlayerNavigating.</summary>
         public bool IsPlayerNavigating => _isPlayerNavigating;
+        /// <summary>Чи імпульсу активної — IsImpulseActive.</summary>
         public bool IsImpulseActive => _feedback != null && _feedback.IsImpulseActive;
 
+        /// <summary>Виконує LateTick.</summary>
         public void LateTick()
         {
             if (_camera == null)

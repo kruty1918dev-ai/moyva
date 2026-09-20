@@ -17,6 +17,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
+    /// <summary>HomeMenuMoyvaUiViewController — class: головного меню Moyva UI виду контролера.</summary>
     internal sealed class HomeMenuMoyvaUiViewController :
         IInitializable,
         IDisposable,
@@ -52,6 +53,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly Button _multiplayerCreateButton;
         private readonly Button _multiplayerJoinButton;
 
+        /// <summary>Виконує HomeMenuMoyvaUiViewController.</summary>
         public HomeMenuMoyvaUiViewController(HomeMenuMoyvaUiState state,
             [Zenject.InjectOptional] Kruty1918.Moyva.UIActions.API.IUiHotkeyService hotkeys = null,
             [Zenject.InjectOptional] IPlayerControlSettingsService controlSettings = null,
@@ -86,56 +88,101 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             SetDefaultGraphics();
         }
 
+        /// <summary>Слоти списку збережень.</summary>
         public IReadOnlyList<GameSlotInfo> Slots => _slots;
         internal HomeMenuMoyvaUiState State => _state;
+        /// <summary>Список кімнат лобі.</summary>
         public IReadOnlyList<RoomInfo> Rooms => _rooms;
+        /// <summary>лобі Users — IReadOnlyList<LobbyUserInfo>.</summary>
         public IReadOnlyList<LobbyUserInfo> LobbyUsers => _lobbyUsers;
+        /// <summary>викиду гравців — IReadOnlyList<KickPlayerInfo>.</summary>
         public IReadOnlyList<KickPlayerInfo> KickPlayers => _kickPlayers;
+        /// <summary>створення кімнати заголовка — string.</summary>
         public string CreateRoomTitle { get; private set; } = "Create Lobby";
+        /// <summary>створення кімнати секції заголовка — string.</summary>
         public string CreateRoomSectionTitle { get; private set; } = "Room Settings";
+        /// <summary>створення кімнати наступного тексту — string.</summary>
         public string CreateRoomNextText { get; private set; } = "NEXT";
+        /// <summary>запрошення код тексту — string.</summary>
         public string InviteCodeText { get; private set; } = "Invite Code: N/A";
+        /// <summary>лобі Display назву — string.</summary>
         public string LobbyDisplayName { get; private set; } = "Lobby";
+        /// <summary>викиду статусу — string.</summary>
         public string KickStatus { get; private set; } = string.Empty;
+        /// <summary>викиду інтерактивності — bool.</summary>
         public bool KickInteractable { get; private set; } = true;
+        /// <summary>налаштування інтерактивності — bool.</summary>
         public bool SettingsInteractable { get; private set; } = true;
+        /// <summary>графіки налаштування інтерактивності — bool.</summary>
         public bool GraphicsSettingsInteractable { get; private set; } = true;
         // Busy-overlay read model. Mutated only by HomeMenuBusyOverlayService via
         // ApplyOverlayPresentation — the view never touches OverlayLoaderResult,
         // tasks or locks itself.
+        /// <summary>накладання видимої — bool.</summary>
         public bool OverlayVisible { get; private set; }
+        /// <summary>накладання прогресу — float.</summary>
         public float OverlayProgress { get; private set; }
+        /// <summary>накладання Suffix — string.</summary>
         public string OverlaySuffix { get; private set; } = "%";
+        /// <summary>накладання статусу — string.</summary>
         public string OverlayStatus { get; private set; } = string.Empty;
+        /// <summary>Flow контексту — ILobbyFlowContext.</summary>
         public ILobbyFlowContext FlowContext { get; }
+        /// <summary>лобі статусу — LobbyStatusInfo.</summary>
         public LobbyStatusInfo LobbyStatus { get; private set; }
+        /// <summary>кімнати список стану — RoomListStatus.</summary>
         public RoomListStatus RoomListState { get; private set; } = RoomListStatus.Empty;
+        /// <summary>кімнати список повідомлення — string.</summary>
         public string RoomListMessage { get; private set; } = "Open this panel to browse available rooms.";
+        /// <summary>запрошення код значення — string.</summary>
         public string InviteCodeValue { get; private set; } = string.Empty;
+        /// <summary>запрошення Copied — bool.</summary>
         public bool InviteCopied { get; private set; }
+        /// <summary>створення кімнати Block причини — string.</summary>
         public string CreateRoomBlockReason { get; private set; } = string.Empty;
+        /// <summary>Reduced руху — bool.</summary>
         public bool ReducedMotion => _uiMotion?.ReducedMotion ?? false;
+        /// <summary>Confirmation видимої — bool.</summary>
         public bool ConfirmationVisible { get; private set; }
+        /// <summary>поточного Confirmation — ConfirmationRequest?.</summary>
         public ConfirmationRequest? CurrentConfirmation { get; private set; }
+        /// <summary>інформації видимої — bool.</summary>
         public bool InfoVisible { get; private set; }
+        /// <summary>поточного інформації — InfoMessage.</summary>
         public InfoMessage CurrentInfo { get; private set; }
+        /// <summary>пароль видимої — bool.</summary>
         public bool PasswordVisible { get; private set; }
+        /// <summary>пароль кімнати Display назву — string.</summary>
         public string PasswordRoomDisplayName { get; private set; } = string.Empty;
+        /// <summary>пароль помилки тексту — string.</summary>
         public string PasswordErrorText { get; private set; } = string.Empty;
+        /// <summary>пароль значення — string.</summary>
         public string PasswordValue { get; private set; } = string.Empty;
 
+        /// <summary>кімнати назву — string.</summary>
         public string RoomName { get; set; }
+        /// <summary>пароль — string.</summary>
         public string Password { get; set; }
+        /// <summary>Чи публічної — IsPublic.</summary>
         public bool IsPublic { get; set; }
+        /// <summary>максимум гравців — int.</summary>
         public int MaxPlayers { get; set; }
+        /// <summary>наступного кнопки — Button.</summary>
         public Button NextButton => _createRoomNextButton;
 
+        /// <summary>світу назву — string.</summary>
         public string WorldName { get; set; }
+        /// <summary>Сетер властивості.</summary>
         public int Seed { get; set; }
+        /// <summary>розміру — WorldSize.</summary>
         public WorldSize Size { get; set; }
+        /// <summary>карти Type — MapType.</summary>
         public MapType MapType { get; set; }
+        /// <summary>складності — Difficulty.</summary>
         public Difficulty Difficulty { get; set; }
+        /// <summary>вибраного Bot складності ID — string.</summary>
         public string SelectedBotDifficultyId { get; private set; }
+        /// <summary>вибраного Bot складності індексу — int.</summary>
         public int SelectedBotDifficultyIndex
         {
             get
@@ -146,52 +193,93 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return 0;
             }
         }
+        /// <summary>Bot складності Options — string.</summary>
         public string BotDifficultyOptions => string.Join("|", _botDifficulties.difficulties.Select(d => d.displayName));
+        /// <summary>створення світу кнопки — Button.</summary>
         public Button CreateWorldButton => _worldCreateButton;
 
+        /// <summary>гравця назву — string.</summary>
         public string PlayerName { get; set; }
+        /// <summary>Master гучність — float.</summary>
         public float MasterVolume { get; set; }
+        /// <summary>музики гучність — float.</summary>
         public float MusicVolume { get; set; }
+        /// <summary>Sfx гучність — float.</summary>
         public float SfxVolume { get; set; }
+        /// <summary>UI гучність — float.</summary>
         public float UiVolume { get; set; }
+        /// <summary>Ambience гучність — float.</summary>
         public float AmbienceVolume { get; set; }
+        /// <summary>Чи заглушеної — IsMuted.</summary>
         public bool IsMuted { get; set; }
+        /// <summary>графіки профілю — GraphicsQualityProfile.</summary>
         public GraphicsQualityProfile GraphicsProfile { get; set; }
+        /// <summary>цілі кадру частоти — int.</summary>
         public int TargetFrameRate { get; set; }
+        /// <summary>рендер масштаб — float.</summary>
         public float RenderScale { get; set; }
+        /// <summary>динамічного рендер масштаб — bool.</summary>
         public bool DynamicRenderScale { get; set; }
+        /// <summary>закриття зум оптимізації — bool.</summary>
         public bool CloseZoomOptimization { get; set; }
+        /// <summary>текстур mipmap ліміту — int.</summary>
         public int TextureMipmapLimit { get; set; }
+        /// <summary>Сетер властивості.</summary>
         public int AntiAliasing { get; set; }
+        /// <summary>V синхронізації — bool.</summary>
         public bool VSync { get; set; }
+        /// <summary>тіней — bool.</summary>
         public bool Shadows { get; set; }
+        /// <summary>анізотропної Filtering — bool.</summary>
         public bool AnisotropicFiltering { get; set; }
+        /// <summary>LOD зсув — float.</summary>
         public float LodBias { get; set; }
+        /// <summary>миші чутливість — float.</summary>
         public float MouseSensitivity { get; private set; } = 1f;
+        /// <summary>руху швидкість — float.</summary>
         public float MovementSpeed { get; private set; } = 1f;
+        /// <summary>орбіти швидкість — float.</summary>
         public float OrbitSpeed { get; private set; } = 1f;
+        /// <summary>зум швидкість — float.</summary>
         public float ZoomSpeed { get; private set; } = 1f;
+        /// <summary>камери ефектів — bool.</summary>
         public bool CameraEffects { get; private set; } = true;
+        /// <summary>камери тряски Intensity — float.</summary>
         public float CameraShakeIntensity { get; private set; } = 0.5f;
+        /// <summary>плавного камери фокус — bool.</summary>
         public bool SmoothCameraFocus { get; private set; } = true;
+        /// <summary>автоматичного камери фокус — bool.</summary>
         public bool AutomaticCameraFocus { get; private set; }
+        /// <summary>Reduce камери руху — bool.</summary>
         public bool ReduceCameraMotion { get; private set; }
+        /// <summary>зум Toward пальців — bool.</summary>
         public bool ZoomTowardFingers { get; private set; } = true;
+        /// <summary>Гетер властивості.</summary>
         public HomeMenuControlsEditor Controls { get; }
+        /// <summary>гравця керування Action.</summary>
         public IReadOnlyDictionary<PlayerControlAction, string> ControlBindings => _controlBindings;
         private readonly Dictionary<PlayerControlAction, string> _controlBindings = PlayerControlSettingsData.CreateDefault().Bindings;
 
+        /// <summary>приєднання код — string.</summary>
         public string JoinCode { get; set; }
+        /// <summary>приєднання інтерактивності — bool.</summary>
         public bool JoinInteractable { get; private set; } = true;
+        /// <summary>початку гри кнопки — Button.</summary>
         public Button StartGameButton => _lobbyStartButton;
+        /// <summary>заднього кнопки — Button.</summary>
         public Button BackButton => _lobbyBackButton;
+        /// <summary>кнопки створення кімнати — Button.</summary>
         public Button ButtonCreateRoom { get => _multiplayerCreateButton; set { } }
+        /// <summary>кнопки приєднання  кімнати — Button.</summary>
         public Button ButtonJoinToRoom { get => _multiplayerJoinButton; set { } }
+        /// <summary>вибраного режим — NetworkProviderType.</summary>
         public NetworkProviderType SelectedMode { get; set; }
+        /// <summary>Чи видимої — IsVisible.</summary>
         public bool IsVisible => InfoVisible || PasswordVisible;
         bool IPasswordPanelViewController.IsVisible => PasswordVisible;
         bool IInfoPanelViewController.IsVisible => InfoVisible;
 
+        /// <summary>On слота вибраного.</summary>
         public event Action<GameSlotInfo> OnSlotSelected;
         private event Action CreateRoomRequested;
         private event Action CreateWorldRequested;
@@ -205,59 +293,109 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             add => CreateWorldRequested += value;
             remove => CreateWorldRequested -= value;
         }
+        /// <summary>On Random Seed натискання.</summary>
         public event Action OnRandomSeedClicked;
+        /// <summary>On налаштування Changed.</summary>
         public event Action OnSettingsChanged;
+        /// <summary>On гравця назву Changed.</summary>
         public event Action<string> OnPlayerNameChanged;
+        /// <summary>On Master гучність Changed.</summary>
         public event Action<float> OnMasterVolumeChanged;
+        /// <summary>On музики гучність Changed.</summary>
         public event Action<float> OnMusicVolumeChanged;
+        /// <summary>On Sfx гучність Changed.</summary>
         public event Action<float> OnSfxVolumeChanged;
+        /// <summary>On UI гучність Changed.</summary>
         public event Action<float> OnUiVolumeChanged;
+        /// <summary>On Ambience гучність Changed.</summary>
         public event Action<float> OnAmbienceVolumeChanged;
+        /// <summary>On заглушеної Changed.</summary>
         public event Action<bool> OnMutedChanged;
+        /// <summary>On графіки профілю Changed.</summary>
         public event Action<GraphicsQualityProfile> OnGraphicsProfileChanged;
+        /// <summary>On цілі кадру частоти Changed.</summary>
         public event Action<int> OnTargetFrameRateChanged;
+        /// <summary>On рендер масштаб Changed.</summary>
         public event Action<float> OnRenderScaleChanged;
+        /// <summary>On динамічного рендер масштаб Changed.</summary>
         public event Action<bool> OnDynamicRenderScaleChanged;
+        /// <summary>On закриття зум оптимізації Changed.</summary>
         public event Action<bool> OnCloseZoomOptimizationChanged;
+        /// <summary>On текстур mipmap ліміту Changed.</summary>
         public event Action<int> OnTextureMipmapLimitChanged;
+        /// <summary>Обробляє зміну налаштування згладжування.</summary>
         public event Action<int> OnAntiAliasingChanged;
+        /// <summary>On V синхронізації Changed.</summary>
         public event Action<bool> OnVSyncChanged;
+        /// <summary>On тіней Changed.</summary>
         public event Action<bool> OnShadowsChanged;
+        /// <summary>On анізотропної Filtering Changed.</summary>
         public event Action<bool> OnAnisotropicFilteringChanged;
+        /// <summary>On LOD зсув Changed.</summary>
         public event Action<float> OnLodBiasChanged;
+        /// <summary>On скидання графіки натискання.</summary>
         public event Action OnResetGraphicsClicked;
+        /// <summary>On Delete Saves натискання.</summary>
         public event Action OnDeleteSavesClicked;
+        /// <summary>On миші чутливість Changed.</summary>
         public event Action<float> OnMouseSensitivityChanged;
+        /// <summary>On руху швидкість Changed.</summary>
         public event Action<float> OnMovementSpeedChanged;
+        /// <summary>On орбіти швидкість Changed.</summary>
         public event Action<float> OnOrbitSpeedChanged;
+        /// <summary>On зум швидкість Changed.</summary>
         public event Action<float> OnZoomSpeedChanged;
+        /// <summary>On камери ефектів Changed.</summary>
         public event Action<bool> OnCameraEffectsChanged;
+        /// <summary>On камери тряски Intensity Changed.</summary>
         public event Action<float> OnCameraShakeIntensityChanged;
+        /// <summary>On плавного камери фокус Changed.</summary>
         public event Action<bool> OnSmoothCameraFocusChanged;
+        /// <summary>On автоматичного камери фокус Changed.</summary>
         public event Action<bool> OnAutomaticCameraFocusChanged;
+        /// <summary>On Reduce камери руху Changed.</summary>
         public event Action<bool> OnReduceCameraMotionChanged;
+        /// <summary>On зум Toward пальців Changed.</summary>
         public event Action<bool> OnZoomTowardFingersChanged;
+        /// <summary>гравця керування Action.</summary>
         public event Action<PlayerControlAction, string> OnControlBindingChanged;
+        /// <summary>On скидання Controls натискання.</summary>
         public event Action OnResetControlsClicked;
+        /// <summary>Обробляє підтвердження інформаційного повідомлення.</summary>
         public event Action OnAcknowledged;
+        /// <summary>On приєднання запитаного.</summary>
         public event Action OnJoinRequested;
+        /// <summary>On приєднання код Changed.</summary>
         public event Action OnJoinCodeChanged;
+        /// <summary>On список Rooms Refresh.</summary>
         public event Action OnListRoomsRefresh;
+        /// <summary>On кімнати вибраного.</summary>
         public event Action<RoomInfo> OnRoomSelected;
+        /// <summary>On закриття запитаного.</summary>
         public event Action OnCloseRequested;
+        /// <summary>On Refresh запитаного.</summary>
         public event Action OnRefreshRequested;
+        /// <summary>On викиду запитаного.</summary>
         public event Action<KickPlayerInfo> OnKickRequested;
+        /// <summary>On режим Changed.</summary>
         public event Action<NetworkProviderType> OnModeChanged;
+        /// <summary>On створення кімнати натискання.</summary>
         public event Action<NetworkProviderType> OnCreateRoomClicked;
+        /// <summary>On приєднання кімнати натискання.</summary>
         public event Action<NetworkProviderType> OnJoinRoomClicked;
+        /// <summary>Обробляє підтвердження дії користувачем.</summary>
         public event Action<string> OnConfirmed;
+        /// <summary>On скасування.</summary>
         public event Action OnCancelled;
         /// <summary>Спрацьовує коли користувач обирає мову в Settings (index у SupportedLanguages).</summary>
         public event Action<int> OnLanguageSelected;
 
+        /// <summary>Сетер властивості.</summary>
         public Action OnConfirme { get; set; }
+        /// <summary>Сетер властивості.</summary>
         public Action OnCancled { get; set; }
 
+        /// <summary>Ініціалізує компонент і підписує на події.</summary>
         public void Initialize()
         {
             if (_localization != null)
@@ -296,8 +434,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
         }
 
+        /// <summary>Language індексу — int.</summary>
         public int LanguageIndex => _localization?.CurrentLanguageIndex ?? 0;
 
+        /// <summary>Встановлює Language індексу.</summary>
         public void SetLanguageIndex(int index)
         {
             if (_localization == null ||
@@ -307,6 +447,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             OnLanguageSelected?.Invoke(index);
         }
 
+        /// <summary>Звільняє ресурси та відписує від подій.</summary>
         public void Dispose()
         {
             if (_localization != null)
@@ -338,6 +479,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює кімнати список статусу.</summary>
         public void SetRoomListStatus(RoomListStatus status, string message)
         {
             RoomListState = status;
@@ -345,12 +487,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює лобі статусу.</summary>
         public void SetLobbyStatus(LobbyStatusInfo status)
         {
             LobbyStatus = status;
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює Reduced руху.</summary>
         public void SetReducedMotion(bool reduced)
         {
             if (_uiMotion != null)
@@ -359,6 +503,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Копіює запрошення код.</summary>
         public void CopyInviteCode()
         {
             if (string.IsNullOrWhiteSpace(InviteCodeValue))
@@ -378,6 +523,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 #endif
         }
 
+        /// <summary>Додає слота.</summary>
         public void AddSlot(GameSlotInfo slot)
         {
             RemoveSlot(slot.SlotName);
@@ -385,24 +531,28 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Видаляє слота.</summary>
         public void RemoveSlot(string slotName)
         {
             _slots.RemoveAll(s => string.Equals(s.SlotName, slotName, StringComparison.Ordinal));
             _state.MarkDirty();
         }
 
+        /// <summary>Очищує Slots.</summary>
         public void ClearSlots()
         {
             _slots.Clear();
             _state.MarkDirty();
         }
 
+        /// <summary>Оновлює Slots.</summary>
         public void RefreshSlots()
         {
             _slots.Sort((a, b) => b.LastModified.CompareTo(a.LastModified));
             _state.MarkDirty();
         }
 
+        /// <summary>Застосовує Presentation.</summary>
         public void ApplyPresentation(CreateRoomPanelPresentation presentation)
         {
             if (!string.IsNullOrWhiteSpace(presentation.Title))
@@ -414,6 +564,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Оновлює Refresh.</summary>
         public void Refresh(LocalGameSettings settings)
         {
             PlayerName = settings.PlayerName;
@@ -426,6 +577,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Оновлює графіки.</summary>
         public void RefreshGraphics(GraphicsSettingsData settings)
         {
             GraphicsProfile = settings.Profile;
@@ -442,6 +594,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Оновлює Controls.</summary>
         public void RefreshControls(PlayerControlSettingsData settings)
         {
             var normalized = settings.Normalized();
@@ -461,18 +614,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює інтерактивності.</summary>
         public void SetInteractable(bool interactable)
         {
             SettingsInteractable = interactable;
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює графіки інтерактивності.</summary>
         public void SetGraphicsInteractable(bool interactable)
         {
             GraphicsSettingsInteractable = interactable;
             _state.MarkDirty();
         }
 
+        /// <summary>Показує Show.</summary>
         public void Show(InfoMessage message)
         {
             CurrentInfo = message;
@@ -480,6 +636,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Ховає Hide.</summary>
         public void Hide()
         {
             InfoVisible = false;
@@ -487,6 +644,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Додає кімнати  список.</summary>
         public void AddRoomToList(RoomInfo room)
         {
             var key = BuildRoomKey(room);
@@ -495,24 +653,28 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Очищує кімнати список.</summary>
         public void ClearRoomList()
         {
             _rooms.Clear();
             _state.MarkDirty();
         }
 
+        /// <summary>Оновлює кімнати список.</summary>
         public void RefreshRoomList()
         {
             OnListRoomsRefresh?.Invoke();
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює приєднання інтерактивності.</summary>
         public void SetJoinInteractable(bool interactable)
         {
             JoinInteractable = interactable;
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює гравців.</summary>
         public void SetPlayers(IReadOnlyList<KickPlayerInfo> players)
         {
             _kickPlayers.Clear();
@@ -521,12 +683,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Очищує гравців.</summary>
         public void ClearPlayers()
         {
             _kickPlayers.Clear();
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює статусу.</summary>
         public void SetStatus(string status)
         {
             KickStatus = status ?? string.Empty;
@@ -539,6 +703,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює запрошення код.</summary>
         public void SetInviteCode(LobbyInviteCodePresentation presentation)
         {
             InviteCodeText = presentation.DisplayText;
@@ -549,6 +714,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Очищує лобі Invate код.</summary>
         public void ClearLobbyInvateCode()
         {
             InviteCodeText = "Invite Code: N/A";
@@ -558,6 +724,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Додає нового користувача.</summary>
         public void AddNewUser(LobbyUserInfo userInfo)
         {
             _lobbyUsers.RemoveAll(u => u.UserId == userInfo.UserId);
@@ -565,26 +732,31 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Видаляє користувача.</summary>
         public void RemoveUser(int userId)
         {
             _lobbyUsers.RemoveAll(u => u.UserId == userId);
             _state.MarkDirty();
         }
 
+        /// <summary>Очищує Users.</summary>
         public void ClearUsers()
         {
             _lobbyUsers.Clear();
             _state.MarkDirty();
         }
 
+        /// <summary>Оновлює користувача список.</summary>
         public void RefreshUserList()
         {
             _lobbyUsers.Sort((a, b) => a.UserId.CompareTo(b.UserId));
             _state.MarkDirty();
         }
 
+        /// <summary>Оновлює Refresh.</summary>
         public void Refresh() => _state.MarkDirty();
 
+        /// <summary>Показує Show.</summary>
         public void Show(string roomDisplayName, string errorText)
         {
             PasswordRoomDisplayName = roomDisplayName ?? string.Empty;
@@ -594,18 +766,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює помилки тексту.</summary>
         public void SetErrorText(string errorText)
         {
             PasswordErrorText = errorText ?? string.Empty;
             _state.MarkDirty();
         }
 
+        /// <summary>Намагається отримати Reqest.</summary>
         public bool TryGetReqest(out ConfirmationRequest? request)
         {
             request = CurrentConfirmation;
             return ConfirmationVisible && request.HasValue;
         }
 
+        /// <summary>Показує Show.</summary>
         public void Show(ConfirmationRequest request)
         {
             CurrentConfirmation = request;
@@ -615,6 +790,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Виконує ForeceHide.</summary>
         public void ForeceHide()
         {
             ConfirmationVisible = false;
@@ -622,10 +798,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Виконує ClickCreateRoom.</summary>
         public void ClickCreateRoom() => InvokeButton(_createRoomNextButton, () => CreateRoomRequested?.Invoke());
+        /// <summary>Виконує ClickCreateWorld.</summary>
         public void ClickCreateWorld() => InvokeButton(_worldCreateButton, () => CreateWorldRequested?.Invoke());
+        /// <summary>Виконує ClickLobbyStart.</summary>
         public void ClickLobbyStart() => InvokeButton(_lobbyStartButton, null);
+        /// <summary>Виконує ClickLobbyBack.</summary>
         public void ClickLobbyBack() => InvokeButton(_lobbyBackButton, null);
+        /// <summary>Обирає слота.</summary>
         public void SelectSlot(int index)
         {
             if (index < 0 || index >= _slots.Count)
@@ -635,6 +816,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Обирає кімнати.</summary>
         public void SelectRoom(int index)
         {
             if (index < 0 || index >= _rooms.Count)
@@ -647,6 +829,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Запитує приєднання.</summary>
         public void RequestJoin()
         {
             if (!JoinInteractable)
@@ -656,18 +839,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Запитує кімнати Refresh.</summary>
         public void RequestRoomRefresh()
         {
             OnListRoomsRefresh?.Invoke();
             _state.MarkDirty();
         }
 
+        /// <summary>Запитує викиду Refresh.</summary>
         public void RequestKickRefresh()
         {
             OnRefreshRequested?.Invoke();
             _state.MarkDirty();
         }
 
+        /// <summary>Запитує викиду.</summary>
         public void RequestKick(int index)
         {
             if (!KickInteractable || index < 0 || index >= _kickPlayers.Count)
@@ -677,12 +863,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Запитує викиду закриття.</summary>
         public void RequestKickClose()
         {
             OnCloseRequested?.Invoke();
             _state.MarkDirty();
         }
 
+        /// <summary>Обирає мультиплеєра створення.</summary>
         public void ChooseMultiplayerCreate(NetworkProviderType provider)
         {
             SelectedMode = provider;
@@ -691,6 +879,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Обирає мультиплеєра приєднання.</summary>
         public void ChooseMultiplayerJoin(NetworkProviderType provider)
         {
             SelectedMode = provider;
@@ -699,14 +888,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Починає керування Interaction.</summary>
         public void BeginControlInteraction() => _state.BeginInteraction();
 
+        /// <summary>Завершує керування Interaction.</summary>
         public void EndControlInteraction() => _state.EndInteraction();
 
+        /// <summary>Встановлює налаштування секції.</summary>
         public void SetSettingsSection(HomeMenuSettingsSection section) => _state.SetSettingsSection(section);
 
+        /// <summary>Встановлює Play Flow.</summary>
         public void SetPlayFlow(HomeMenuPlayFlow flow) => _state.SetPlayFlow(flow);
 
+        /// <summary>Встановлює режим.</summary>
         public void SetMode(NetworkProviderType provider)
         {
             if (SelectedMode == provider)
@@ -717,6 +911,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює світу розміру.</summary>
         public void SetWorldSize(WorldSize size)
         {
             Size = size;
@@ -724,6 +919,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює карти Type.</summary>
         public void SetMapType(MapType mapType)
         {
             MapType = mapType;
@@ -731,6 +927,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює складності.</summary>
         public void SetDifficulty(Difficulty difficulty)
         {
             Difficulty = difficulty;
@@ -738,6 +935,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює Bot складності індексу.</summary>
         public void SetBotDifficultyIndex(int index)
         {
             if (_botDifficulties.difficulties == null || _botDifficulties.difficulties.Length == 0)
@@ -749,6 +947,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Виконує RandomizeSeed.</summary>
         public void RandomizeSeed()
         {
             Seed = UnityEngine.Random.Range(100000, int.MaxValue);
@@ -757,6 +956,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Перемикає кімнати Visibility.</summary>
         public void ToggleRoomVisibility()
         {
             IsPublic = !IsPublic;
@@ -764,6 +964,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює кімнати приватної.</summary>
         public void SetRoomPrivate(bool isPrivate)
         {
             var isPublic = !isPrivate;
@@ -775,6 +976,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Виконує IncreaseMaxPlayers.</summary>
         public void IncreaseMaxPlayers()
         {
             MaxPlayers = Mathf.Clamp(MaxPlayers + 1, 2, 8);
@@ -782,6 +984,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Виконує DecreaseMaxPlayers.</summary>
         public void DecreaseMaxPlayers()
         {
             MaxPlayers = Mathf.Clamp(MaxPlayers - 1, 2, 8);
@@ -789,6 +992,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює кімнати назву.</summary>
         public void SetRoomName(string value)
         {
             RoomName = NormalizeText(value, "Moyva Lobby");
@@ -796,12 +1000,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Виконує PreviewRoomName.</summary>
         public void PreviewRoomName(string value)
         {
             RoomName = value ?? string.Empty;
             RefreshCreateRoomInteractable();
         }
 
+        /// <summary>Встановлює кімнати пароль.</summary>
         public void SetRoomPassword(string value)
         {
             Password = value ?? string.Empty;
@@ -809,12 +1015,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Виконує PreviewRoomPassword.</summary>
         public void PreviewRoomPassword(string value)
         {
             Password = value ?? string.Empty;
             RefreshCreateRoomInteractable();
         }
 
+        /// <summary>Встановлює світу назву.</summary>
         public void SetWorldName(string value)
         {
             WorldName = NormalizeText(value, "New World");
@@ -822,8 +1030,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Виконує PreviewWorldName.</summary>
         public void PreviewWorldName(string value) => WorldName = value ?? string.Empty;
 
+        /// <summary>Встановлює Seed.</summary>
         public void SetSeed(string value)
         {
             if (int.TryParse((value ?? string.Empty).Trim(), out var seed) && seed != 0)
@@ -834,6 +1044,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
         }
 
+        /// <summary>Встановлює приєднання код.</summary>
         public void SetJoinCode(string value)
         {
             JoinCode = (value ?? string.Empty).Trim();
@@ -841,8 +1052,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Виконує PreviewJoinCode.</summary>
         public void PreviewJoinCode(string value) => JoinCode = value ?? string.Empty;
 
+        /// <summary>Встановлює гравця назву.</summary>
         public void SetPlayerName(string value)
         {
             PlayerName = NormalizeText(value, "Player");
@@ -850,8 +1063,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Виконує PreviewPlayerName.</summary>
         public void PreviewPlayerName(string value) => PlayerName = value ?? string.Empty;
 
+        /// <summary>Виконує ChangePlayerName.</summary>
         public void ChangePlayerName()
         {
             PlayerName = string.IsNullOrWhiteSpace(PlayerName)
@@ -861,6 +1076,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює Master.</summary>
         public void SetMaster(float value)
         {
             value = Mathf.Clamp01(value);
@@ -870,6 +1086,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює музики.</summary>
         public void SetMusic(float value)
         {
             value = Mathf.Clamp01(value);
@@ -879,6 +1096,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює Sfx.</summary>
         public void SetSfx(float value)
         {
             value = Mathf.Clamp01(value);
@@ -888,6 +1106,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює UI.</summary>
         public void SetUi(float value)
         {
             value = Mathf.Clamp01(value);
@@ -897,6 +1116,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює Ambience.</summary>
         public void SetAmbience(float value)
         {
             value = Mathf.Clamp01(value);
@@ -906,7 +1126,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Перемикає заглушеної.</summary>
         public void ToggleMuted() => SetMuted(!IsMuted);
+        /// <summary>Встановлює заглушеної.</summary>
         public void SetMuted(bool value)
         {
             if (IsMuted == value) return;
@@ -914,6 +1136,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             OnMutedChanged?.Invoke(value);
             _state.MarkDirty();
         }
+        /// <summary>Встановлює графіки профілю.</summary>
         public void SetGraphicsProfile(GraphicsQualityProfile profile)
         {
             if (GraphicsProfile == profile)
@@ -923,6 +1146,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             OnGraphicsProfileChanged?.Invoke(profile);
             _state.MarkDirty();
         }
+        /// <summary>Встановлює рендер масштаб.</summary>
         public void SetRenderScale(float value)
         {
             value = Mathf.Clamp(value, 0.42f, 1f);
@@ -932,6 +1156,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює кадру частоти.</summary>
         public void SetFrameRate(int value)
         {
             value = Mathf.Clamp(value, 30, 360);
@@ -941,6 +1166,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює текстур mipmap ліміту.</summary>
         public void SetTextureMipmapLimit(int value)
         {
             value = Mathf.Clamp(value, 0, 3);
@@ -950,6 +1176,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює LOD зсув.</summary>
         public void SetLodBias(float value)
         {
             value = Mathf.Clamp(Mathf.Round(value * 10f) / 10f, 0.4f, 2f);
@@ -959,7 +1186,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Перемикає динамічного рендер масштаб.</summary>
         public void ToggleDynamicRenderScale() => SetDynamicRenderScale(!DynamicRenderScale);
+        /// <summary>Встановлює динамічного рендер масштаб.</summary>
         public void SetDynamicRenderScale(bool value)
         {
             if (DynamicRenderScale == value) return;
@@ -968,7 +1197,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Перемикає закриття зум оптимізації.</summary>
         public void ToggleCloseZoomOptimization() => SetCloseZoomOptimization(!CloseZoomOptimization);
+        /// <summary>Встановлює закриття зум оптимізації.</summary>
         public void SetCloseZoomOptimization(bool value)
         {
             if (CloseZoomOptimization == value) return;
@@ -977,7 +1208,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Перемикає V синхронізації.</summary>
         public void ToggleVSync() => SetVSync(!VSync);
+        /// <summary>Встановлює V синхронізації.</summary>
         public void SetVSync(bool value)
         {
             if (VSync == value) return;
@@ -986,7 +1219,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Перемикає тіней.</summary>
         public void ToggleShadows() => SetShadows(!Shadows);
+        /// <summary>Встановлює тіней.</summary>
         public void SetShadows(bool value)
         {
             if (Shadows == value) return;
@@ -995,7 +1230,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Перемикає анізотропної.</summary>
         public void ToggleAnisotropic() => SetAnisotropic(!AnisotropicFiltering);
+        /// <summary>Встановлює анізотропної.</summary>
         public void SetAnisotropic(bool value)
         {
             if (AnisotropicFiltering == value) return;
@@ -1003,9 +1240,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             OnAnisotropicFilteringChanged?.Invoke(value);
             _state.MarkDirty();
         }
+        /// <summary>Коригує рендер масштаб.</summary>
         public void AdjustRenderScale(float delta) { RenderScale = Mathf.Clamp(RenderScale + delta, 0.42f, 1f); OnRenderScaleChanged?.Invoke(RenderScale); _state.MarkDirty(); }
+        /// <summary>Коригує кадру частоти.</summary>
         public void AdjustFrameRate(int delta) { TargetFrameRate = Mathf.Clamp(TargetFrameRate + delta, 30, 360); OnTargetFrameRateChanged?.Invoke(TargetFrameRate); _state.MarkDirty(); }
+        /// <summary>Коригує текстур mipmap ліміту.</summary>
         public void AdjustTextureMipmapLimit(int delta) { TextureMipmapLimit = Mathf.Clamp(TextureMipmapLimit + delta, 0, 3); OnTextureMipmapLimitChanged?.Invoke(TextureMipmapLimit); _state.MarkDirty(); }
+        /// <summary>Встановлює Anti Aliasing.</summary>
         public void SetAntiAliasing(int value)
         {
             value = NormalizeAntiAliasing(value);
@@ -1014,22 +1255,38 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             OnAntiAliasingChanged?.Invoke(value);
             _state.MarkDirty();
         }
+        /// <summary>Коригує LOD зсув.</summary>
         public void AdjustLodBias(float delta) { LodBias = Mathf.Clamp(Mathf.Round((LodBias + delta) * 10f) / 10f, 0.4f, 2f); OnLodBiasChanged?.Invoke(LodBias); _state.MarkDirty(); }
+        /// <summary>Скидає графіки.</summary>
         public void ResetGraphics() { OnResetGraphicsClicked?.Invoke(); _state.MarkDirty(); }
+        /// <summary>Виконує DeleteSaves.</summary>
         public void DeleteSaves() { OnDeleteSavesClicked?.Invoke(); _state.MarkDirty(); }
+        /// <summary>Встановлює миші чутливість.</summary>
         public void SetMouseSensitivity(float value) { MouseSensitivity = Mathf.Clamp(value, 0.25f, 3f); OnMouseSensitivityChanged?.Invoke(MouseSensitivity); _state.MarkDirty(); }
+        /// <summary>Встановлює руху швидкість.</summary>
         public void SetMovementSpeed(float value) { MovementSpeed = Mathf.Clamp(value, 0.25f, 3f); OnMovementSpeedChanged?.Invoke(MovementSpeed); _state.MarkDirty(); }
+        /// <summary>Встановлює орбіти швидкість.</summary>
         public void SetOrbitSpeed(float value) { OrbitSpeed = Mathf.Clamp(value, 0.25f, 3f); OnOrbitSpeedChanged?.Invoke(OrbitSpeed); _state.MarkDirty(); }
+        /// <summary>Встановлює зум швидкість.</summary>
         public void SetZoomSpeed(float value) { ZoomSpeed = Mathf.Clamp(value, 0.25f, 3f); OnZoomSpeedChanged?.Invoke(ZoomSpeed); _state.MarkDirty(); }
+        /// <summary>Встановлює камери ефектів.</summary>
         public void SetCameraEffects(bool value) { CameraEffects = value; OnCameraEffectsChanged?.Invoke(value); _state.MarkDirty(); }
+        /// <summary>Встановлює камери тряски Intensity.</summary>
         public void SetCameraShakeIntensity(float value) { CameraShakeIntensity = Mathf.Clamp01(value); OnCameraShakeIntensityChanged?.Invoke(CameraShakeIntensity); _state.MarkDirty(); }
+        /// <summary>Встановлює плавного камери фокус.</summary>
         public void SetSmoothCameraFocus(bool value) { SmoothCameraFocus = value; OnSmoothCameraFocusChanged?.Invoke(value); _state.MarkDirty(); }
+        /// <summary>Встановлює автоматичного камери фокус.</summary>
         public void SetAutomaticCameraFocus(bool value) { AutomaticCameraFocus = value; OnAutomaticCameraFocusChanged?.Invoke(value); _state.MarkDirty(); }
+        /// <summary>Встановлює Reduce камери руху.</summary>
         public void SetReduceCameraMotion(bool value) { ReduceCameraMotion = value; OnReduceCameraMotionChanged?.Invoke(value); _state.MarkDirty(); }
+        /// <summary>Встановлює зум Toward пальців.</summary>
         public void SetZoomTowardFingers(bool value) { ZoomTowardFingers = value; OnZoomTowardFingersChanged?.Invoke(value); _state.MarkDirty(); }
+        /// <summary>Встановлює керування привʼязки.</summary>
         public void SetControlBinding(PlayerControlAction action, string controlPath) { OnControlBindingChanged?.Invoke(action, controlPath); _state.MarkDirty(); }
+        /// <summary>Скидає Controls.</summary>
         public void ResetControls() { OnResetControlsClicked?.Invoke(); _state.MarkDirty(); }
 
+        /// <summary>Підтверджує модального.</summary>
         public void ConfirmModal()
         {
             var confirm = OnConfirme;
@@ -1037,6 +1294,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             confirm?.Invoke();
         }
 
+        /// <summary>Скасовує модального.</summary>
         public void CancelModal()
         {
             var cancel = OnCancled;
@@ -1044,6 +1302,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             cancel?.Invoke();
         }
 
+        /// <summary>Підтверджує інформації.</summary>
         public void AcknowledgeInfo()
         {
             var callback = CurrentInfo.OnAcknowledged;
@@ -1053,6 +1312,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Підтверджує пароль.</summary>
         public void ConfirmPassword()
         {
             PasswordVisible = false;
@@ -1060,6 +1320,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Скасовує пароль.</summary>
         public void CancelPassword()
         {
             PasswordVisible = false;
@@ -1067,18 +1328,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.MarkDirty();
         }
 
+        /// <summary>Сетер властивості.</summary>
         public void SetPasswordPreset(string value)
         {
             PasswordValue = value ?? string.Empty;
             _state.MarkDirty();
         }
 
+        /// <summary>Встановлює пароль значення.</summary>
         public void SetPasswordValue(string value)
         {
             PasswordValue = value ?? string.Empty;
             _state.MarkDirty();
         }
 
+        /// <summary>Виконує PreviewPasswordValue.</summary>
         public void PreviewPasswordValue(string value) => PasswordValue = value ?? string.Empty;
 
         private void InvokeButton(Button button, Action fallback)

@@ -16,12 +16,18 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
     /// </summary>
     public sealed class AmbientWorldAudioService : IInitializable, ITickable, IDisposable
     {
+        /// <summary>Emitter — class: емітера.</summary>
         private sealed class Emitter
         {
+            /// <summary>конфігурації — AudioAmbienceEmitter.</summary>
             public AudioAmbienceEmitter Config;
+            /// <summary>Хендл активного звукового джерела.</summary>
             public AudioHandle Handle;
+            /// <summary>сітки позицію — Vector2Int.</summary>
             public Vector2Int GridPosition;
+            /// <summary>From будівлі — bool.</summary>
             public bool FromBuilding;
+            /// <summary>поточного масштаб — float.</summary>
             public float CurrentScale = 1f;
         }
 
@@ -33,6 +39,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         private readonly SignalBus _signalBus;
         private readonly List<Emitter> _emitters = new List<Emitter>();
 
+        /// <summary>Виконує AmbientWorldAudioService.</summary>
         public AmbientWorldAudioService(
             [InjectOptional] IAudioService audio,
             [InjectOptional] AudioAmbienceConfig config,
@@ -49,6 +56,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             _signalBus = signalBus;
         }
 
+        /// <summary>Ініціалізує компонент і підписує на події.</summary>
         public void Initialize()
         {
             if (_signalBus != null)
@@ -59,6 +67,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             }
         }
 
+        /// <summary>Оновлює стан за тік.</summary>
         public void Tick()
         {
             if (_emitters.Count == 0 || _zoom == null)
@@ -84,6 +93,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             }
         }
 
+        /// <summary>Звільняє ресурси та відписує від подій.</summary>
         public void Dispose()
         {
             if (_signalBus != null)

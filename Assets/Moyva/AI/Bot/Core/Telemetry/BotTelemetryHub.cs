@@ -41,6 +41,7 @@ namespace Kruty1918.Moyva.AI.Bot
         public int EnvironmentId = -1;
         public BotPolicyMode PolicyMode;
         public string ProfileName, FallbackReason, LastError;
+        public float? ExplorationRate;
         public int NonFiniteValues, NoLegalActionFallbackCount;
         public BotRunMetrics Metrics { get; } = new BotRunMetrics();
         public IEnumerable<BotDecisionTrace> Traces => _traces.ToArray();

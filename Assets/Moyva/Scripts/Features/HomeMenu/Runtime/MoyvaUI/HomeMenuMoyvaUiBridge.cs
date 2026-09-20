@@ -248,11 +248,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void CommitMovementSpeedValue(object value) => Commit(() => _view?.SetMovementSpeed(ToFloat(value, _view.MovementSpeed)));
         public void CommitOrbitSpeedValue(object value) => Commit(() => _view?.SetOrbitSpeed(ToFloat(value, _view.OrbitSpeed)));
         public void CommitZoomSpeedValue(object value) => Commit(() => _view?.SetZoomSpeed(ToFloat(value, _view.ZoomSpeed)));
+        /// <summary>Встановлює камери ефектів.</summary>
         public void SetCameraEffects(object value) => _view?.SetCameraEffects(ToBool(value));
+        /// <summary>Фіксує камери тряски значення.</summary>
         public void CommitCameraShakeValue(object value) => Commit(() => _view?.SetCameraShakeIntensity(ToFloat(value, _view.CameraShakeIntensity)));
+        /// <summary>Встановлює плавного камери фокус.</summary>
         public void SetSmoothCameraFocus(object value) => _view?.SetSmoothCameraFocus(ToBool(value));
+        /// <summary>Встановлює автоматичного камери фокус.</summary>
         public void SetAutomaticCameraFocus(object value) => _view?.SetAutomaticCameraFocus(ToBool(value));
+        /// <summary>Встановлює Reduce камери руху.</summary>
         public void SetReduceCameraMotion(object value) => _view?.SetReduceCameraMotion(ToBool(value));
+        /// <summary>Встановлює зум Toward пальців.</summary>
         public void SetZoomTowardFingers(object value) => _view?.SetZoomTowardFingers(ToBool(value));
         public void ResetControls()
         {

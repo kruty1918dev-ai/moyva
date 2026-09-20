@@ -2,8 +2,10 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
+    /// <summary>Реєстратор біндінгів візуального шару будівництва.</summary>
     internal static class ConstructionVisualBindingsInstaller
     {
+        /// <summary>Реєструє візуальні сервіси та обробники будівництва в контейнері.</summary>
         public static void Install(DiContainer container)
         {
             container.Bind<BuildModeGridStateController>().AsSingle();
@@ -13,6 +15,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             container.Bind<ConstructionVisualBoundsAlignmentService>().To<ConstructionVisualBoundsAlignmentService>().AsSingle();
             container.Bind<ConstructionTerrainAlignmentService>().To<ConstructionTerrainAlignmentService>().AsSingle();
             container.Bind<ConstructionVisualFactory>().To<ConstructionVisualFactory>().AsSingle();
+            container.Bind<ConstructionOwnerPaletteResolver>().To<ConstructionOwnerPaletteResolver>().AsSingle();
             container.Bind<ConstructionVisualRootService>().To<ConstructionVisualRootService>().AsSingle();
             container.Bind<ConstructionPreviewVisualService>().To<ConstructionPreviewVisualService>().AsSingle();
             container.Bind<ConstructionPlacedVisualService>().To<ConstructionPlacedVisualService>().AsSingle();

@@ -7,11 +7,7 @@ using Object = UnityEngine.Object;
 
 namespace Kruty1918.Moyva.Clouds.Runtime
 {
-    /// <summary>
-    /// Owns pooled 3D cloud instances for a single world-space cloud layer.
-    /// Shared by the gameplay <see cref="CloudsService"/> and the Home Menu live preview,
-    /// so both surfaces use identical prefabs, materials and visual rules.
-    /// </summary>
+    /// <summary>CloudsWorldPresenter — class: Clouds світу презентера.</summary>
     public sealed class CloudsWorldPresenter : IDisposable
     {
         private static readonly int FadePropertyId = Shader.PropertyToID("_MoyvaCloudFade");
@@ -34,8 +30,10 @@ namespace Kruty1918.Moyva.Clouds.Runtime
         private int _pendingInitialClouds;
         private bool _initialized;
 
+        /// <summary>активної Clouds кількості — int.</summary>
         public int ActiveCloudsCount => _active.Count;
 
+        /// <summary>Виконує CloudsWorldPresenter.</summary>
         public CloudsWorldPresenter(
             CloudsSettings settings,
             Func<Rect> boundsProvider,
@@ -58,6 +56,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             _random = random ?? new System.Random(Environment.TickCount);
         }
 
+        /// <summary>Ініціалізує компонент і підписує на події.</summary>
         public void Initialize()
         {
             if (_initialized)
@@ -69,6 +68,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             TrySpawnInitialClouds();
         }
 
+        /// <summary>Оновлює стан за тік.</summary>
         public void Tick(float deltaTime)
         {
             if (!_initialized)
@@ -88,11 +88,13 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             TickSpawn(deltaTime);
         }
 
+        /// <summary>Спавнить хмари.</summary>
         public void SpawnCloud()
         {
             SpawnCloudInternal(startInView: false);
         }
 
+        /// <summary>Очищує Clouds.</summary>
         public void ClearClouds()
         {
             for (int i = _active.Count - 1; i >= 0; i--)
@@ -101,6 +103,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             _active.Clear();
         }
 
+        /// <summary>Звільняє ресурси та відписує від подій.</summary>
         public void Dispose()
         {
             for (int i = _active.Count - 1; i >= 0; i--)
@@ -612,27 +615,44 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             return (float)_random.NextDouble();
         }
 
+        /// <summary>Чи інстанс перебуває в пулі.</summary>
         private sealed class PooledInstance
         {
+            /// <summary>кореня — GameObject.</summary>
             public GameObject Root;
+            /// <summary>Рендерери хмарного інстанса.</summary>
             public Renderer[] Renderers;
+            /// <summary>властивості Block — MaterialPropertyBlock.</summary>
             public MaterialPropertyBlock PropertyBlock;
+            /// <summary>варіанту індексу — int.</summary>
             public int VariantIndex;
         }
 
+        /// <summary>CloudInstance — class: хмари інстанса.</summary>
         private sealed class CloudInstance
         {
+            /// <summary>Чи інстанс перебуває в пулі.</summary>
             public readonly PooledInstance Pooled;
+            /// <summary>швидкості — Vector3.</summary>
             public readonly Vector3 Velocity;
+            /// <summary>швидкість Magnitude — float.</summary>
             public readonly float SpeedMagnitude;
+            /// <summary>виходу відстані — float.</summary>
             public readonly float ExitDistance;
+            /// <summary>життєвого циклу — float.</summary>
             public readonly float Lifetime;
+            /// <summary>висоти — float.</summary>
             public readonly float Altitude;
+            /// <summary>гойдання фази — float.</summary>
             public readonly float BobPhase;
+            /// <summary>рискання у градусах на секунду — float.</summary>
             public readonly float YawDegreesPerSecond;
+            /// <summary>тінтування — Color.</summary>
             public readonly Color Tint;
+            /// <summary>віку — float.</summary>
             public float Age;
 
+            /// <summary>Виконує CloudInstance.</summary>
             public CloudInstance(
                 PooledInstance pooled,
                 Vector3 velocity,

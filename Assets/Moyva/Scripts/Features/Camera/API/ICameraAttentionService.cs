@@ -2,37 +2,31 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Camera.API
 {
-    /// <summary>
-    /// A "something worth noticing happened" hint from gameplay systems.
-    /// The camera decides what to do with it based on player settings —
-    /// submitters never move the camera directly.
-    /// </summary>
+    /// <summary>CameraAttentionRequest — struct: камери уваги запиту.</summary>
     public struct CameraAttentionRequest
     {
-        /// <summary>World position of the event; only used when HasWorldPosition is set.</summary>
+        /// <summary>світу позицію — Vector3.</summary>
         public Vector3 WorldPosition;
+        /// <summary>Чи світу позицію — HasWorldPosition.</summary>
         public bool HasWorldPosition;
 
-        /// <summary>0..1 — gates optional automatic focus responses.</summary>
+        /// <summary>Важливість запиту уваги.</summary>
         public float Importance;
 
-        /// <summary>Allow the camera to focus the event when Automatic Camera Focus is enabled.</summary>
+        /// <summary>Suggest фокус — bool.</summary>
         public bool SuggestFocus;
 
-        /// <summary>Optional impulse to accompany the event.</summary>
+        /// <summary>Suggested імпульсу — CameraImpulseProfile?.</summary>
         public CameraImpulseProfile? SuggestedImpulse;
 
+        /// <summary>категорії — CameraImpulseCategory.</summary>
         public CameraImpulseCategory Category;
     }
 
-    /// <summary>
-    /// Single entry point for gameplay systems that want camera attention.
-    /// Never takes control away: focus suggestions only run when the player
-    /// opted in via Automatic Camera Focus, and every transition remains
-    /// interruptible by any input.
-    /// </summary>
+    /// <summary>ICameraAttentionService — interface: I камери уваги сервісу.</summary>
     public interface ICameraAttentionService
     {
+        /// <summary>Надсилає Submit.</summary>
         void Submit(CameraAttentionRequest request);
     }
 }

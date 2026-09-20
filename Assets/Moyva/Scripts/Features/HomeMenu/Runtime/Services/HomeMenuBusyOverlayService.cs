@@ -5,13 +5,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
-    /// <summary>
-    /// Owns the busy-overlay lifecycle on behalf of the UI: the completion task, the
-    /// static <see cref="OverlayLoaderResult.Current"/> handshake and the lock count
-    /// all live here. Startup/join/create-room flows talk to this service; the view
-    /// only receives a flat read-model push (<see cref="HomeMenuMoyvaUiViewController.ApplyOverlayPresentation"/>),
-    /// so rendering never holds references to network/startup async state.
-    /// </summary>
+    /// <summary>HomeMenuBusyOverlayService — class: головного меню зайнятості накладання сервісу.</summary>
     internal sealed class HomeMenuBusyOverlayService : IOverlayLoader, IDisposable
     {
         private readonly HomeMenuMoyvaUiViewController _view;
@@ -21,18 +15,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private int _lockCount;
         private string _suffix = "%";
 
+        /// <summary>Виконує HomeMenuBusyOverlayService.</summary>
         public HomeMenuBusyOverlayService(HomeMenuMoyvaUiViewController view)
         {
             _view = view;
             OverlayLoaderResult.CurrentChanged += HandleCurrentChanged;
         }
 
+        /// <summary>Звільняє ресурси та відписує від подій.</summary>
         public void Dispose()
         {
             OverlayLoaderResult.CurrentChanged -= HandleCurrentChanged;
             StopOverlay(forceImmediate: true);
         }
 
+        /// <summary>Завантажує накладання.</summary>
         public OverlayLoaderResult LoadOverlay(float value, float maxValue = 100, string sufix = "%")
         {
             _result?.SetLoading(false, _result.Progress);
@@ -49,6 +46,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             return _result;
         }
 
+        /// <summary>Оновлює накладання.</summary>
         public void UpdateOverlay(float value, float maxValue = 100, string sufix = "%")
         {
             if (_result == null || !_result.IsLoading)
@@ -67,6 +65,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Push();
         }
 
+        /// <summary>Зупиняє накладання.</summary>
         public void StopOverlay(bool forceImmediate = false)
         {
             if (_lockCount > 0 && !forceImmediate)
@@ -79,8 +78,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Push();
         }
 
+        /// <summary>Блокує накладання.</summary>
         public void LockOverlay() => _lockCount++;
 
+        /// <summary>Розблоковує накладання.</summary>
         public void UnlockOverlay() => _lockCount = Math.Max(0, _lockCount - 1);
 
         // CurrentChanged fires under the result's internal lock on the mutating

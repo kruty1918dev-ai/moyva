@@ -4,6 +4,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace Kruty1918.Moyva.Visuals
 {
+    /// <summary>Планарне відбиття води: рендерить віддзеркалену камеру в текстуру для водних матеріалів.</summary>
     [ExecuteAlways]
     [DisallowMultipleComponent]
     public sealed class PlanarWaterReflection : MonoBehaviour
@@ -13,9 +14,11 @@ namespace Kruty1918.Moyva.Visuals
         private static readonly int ReflectionVerticalFlipId = Shader.PropertyToID("_ReflectionVerticalFlip");
         private static bool _isRenderingReflection;
 
+        /// <summary>Площина водної поверхні.</summary>
         [Tooltip("Plane used for mirroring the camera. Leave empty to use this transform.")]
         public Transform waterPlane;
 
+        /// <summary>Шари, що потрапляють у відбиття.</summary>
         [Tooltip("Layers rendered into the water reflection. The Water layer is always excluded at render time.")]
         public LayerMask reflectionMask = ~0;
 
@@ -25,16 +28,19 @@ namespace Kruty1918.Moyva.Visuals
         [Tooltip("Small offset for the reflection clip plane to avoid artifacts at the water surface.")]
         [Min(0f)] public float clipPlaneOffset = 0.07f;
 
+        /// <summary>Чи відбивати скайбокс.</summary>
         [Tooltip("When enabled, the reflection camera uses the source camera skybox/background.")]
         public bool reflectSkybox = true;
 
+        /// <summary>Чи відображати відбиття вертикально.</summary>
         [Tooltip("Turn this on if the reflection texture appears vertically inverted on the current graphics API.")]
         public bool verticalFlip;
 
+        /// <summary>Матеріали води, що отримують текстуру відбиття.</summary>
         [Tooltip("Water materials that should receive the reflection texture. Materials on this renderer are also updated.")]
         public Material[] targetWaterMaterials;
 
-        private Camera _reflectionCamera;
+        private UnityEngine.Camera _reflectionCamera;
         private RenderTexture _reflectionTexture;
         private UniversalAdditionalCameraData _reflectionCameraData;
         private MaterialPropertyBlock _propertyBlock;
@@ -65,7 +71,7 @@ namespace Kruty1918.Moyva.Visuals
                 waterPlane = transform;
         }
 
-        private void RenderReflection(ScriptableRenderContext context, Camera sourceCamera)
+        private void RenderReflection(ScriptableRenderContext context, UnityEngine.Camera sourceCamera)
         {
             if (!isActiveAndEnabled || _isRenderingReflection || sourceCamera == null)
                 return;
@@ -124,7 +130,7 @@ namespace Kruty1918.Moyva.Visuals
             }
         }
 
-        private void EnsureResources(Camera sourceCamera)
+        private void EnsureResources(UnityEngine.Camera sourceCamera)
         {
             int width = Mathf.Max(1, Mathf.RoundToInt(sourceCamera.pixelWidth * textureScale));
             int height = Mathf.Max(1, Mathf.RoundToInt(sourceCamera.pixelHeight * textureScale));
@@ -158,7 +164,7 @@ namespace Kruty1918.Moyva.Visuals
                 {
                     hideFlags = HideFlags.HideAndDontSave
                 };
-                _reflectionCamera = cameraObject.AddComponent<Camera>();
+                _reflectionCamera = cameraObject.AddComponent<UnityEngine.Camera>();
                 _reflectionCamera.enabled = false;
                 _reflectionCameraData = _reflectionCamera.gameObject.AddComponent<UniversalAdditionalCameraData>();
             }
@@ -168,7 +174,7 @@ namespace Kruty1918.Moyva.Visuals
             }
         }
 
-        private void CopyCameraSettings(Camera source, Camera destination)
+        private void CopyCameraSettings(UnityEngine.Camera source, UnityEngine.Camera destination)
         {
             destination.CopyFrom(source);
             destination.enabled = false;
@@ -275,7 +281,7 @@ namespace Kruty1918.Moyva.Visuals
             _textureHeight = 0;
         }
 
-        private Vector4 CameraSpacePlane(Camera camera, Vector3 position, Vector3 normal, float sideSign)
+        private Vector4 CameraSpacePlane(UnityEngine.Camera camera, Vector3 position, Vector3 normal, float sideSign)
         {
             Vector3 offsetPosition = position + normal * clipPlaneOffset;
             Matrix4x4 worldToCamera = camera.worldToCameraMatrix;

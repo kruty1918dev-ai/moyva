@@ -10,6 +10,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
+    /// <summary>ConstructionPlacedVisualService — struct: будівництва Placed візуалу сервісу.</summary>
     internal sealed class ConstructionPlacedVisualService :
         IConstructionPlacedVisualLookup
     {
@@ -18,6 +19,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly Dictionary<Vector2Int, GameObject> _placedByPosition = new();
         private readonly Dictionary<Vector2Int, EntityPresentationConfig> _presentationByPosition = new();
         private readonly Dictionary<Vector2Int, string> _buildingIdByPosition = new();
+        private readonly Dictionary<Vector2Int, string> _ownerIdByPosition = new();
         private readonly Dictionary<Vector2Int, Quaternion> _baseRotationByPosition = new();
         private readonly HashSet<Vector2Int> _demolitionPreviewPositions = new();
         private readonly HashSet<Vector2Int> _underConstructionPositions = new();
@@ -32,6 +34,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private Vector2Int? _selectedPosition;
 
+        /// <summary>Виконує ConstructionPlacedVisualService.</summary>
         [Inject]
         public ConstructionPlacedVisualService(
             ConstructionVisualRootService roots,
@@ -51,6 +54,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus = signalBus;
         }
 
+        /// <summary>Замінює або створює візуал будівлі у вказаній позиції.</summary>
         public void Replace(
             Vector2Int position,
             string buildingId,
@@ -59,6 +63,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             float visualOffsetY = 0f,
             GameObject sourceVisual = null,
             EntityPresentationConfig presentation = null,
+            string ownerId = null,
             bool instantVisual = false)
         {
             Remove(position);
@@ -90,6 +95,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placedByPosition[position] = instance;
             StorePresentation(position, presentation);
             _buildingIdByPosition[position] = buildingId;
+            SetOwner(position, ownerId);
             _baseRotationByPosition[position] = rotation;
             _demolitionPreviewPositions.Remove(position);
             _underConstructionPositions.Remove(position);
@@ -103,11 +109,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 PlayPlacementEmerge(instance, buildingId, position);
         }
 
+        /// <summary>Замінює візуал, відновлюючи збережену позу (позицію/поворот/масштаб).</summary>
         public void ReplaceWithStoredPose(
             Vector2Int position,
             GameObject prefab,
             float visualOffsetY = 0f,
-            EntityPresentationConfig presentation = null)
+            EntityPresentationConfig presentation = null,
+            string ownerId = null)
         {
             if (prefab == null || !_placedByPosition.ContainsKey(position))
                 return;
@@ -118,6 +126,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Quaternion rotation = _baseRotationByPosition.TryGetValue(position, out Quaternion storedRotation)
                 ? storedRotation
                 : Quaternion.identity;
+            string owner = ownerId ?? (TryGetOwner(position, out string storedOwner)
+                ? storedOwner
+                : null);
 
             Replace(
                 position,
@@ -125,13 +136,30 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 prefab,
                 rotation,
                 visualOffsetY,
-                presentation: presentation);
+                presentation: presentation,
+                ownerId: owner);
+        }
+
+        /// <summary>Призначає власника будівлі та перемальовує під палітру фракції.</summary>
+        public void SetOwner(Vector2Int position, string ownerId)
+        {
+            if (string.IsNullOrEmpty(ownerId))
+                _ownerIdByPosition.Remove(position);
+            else
+                _ownerIdByPosition[position] = ownerId;
+        }
+
+        /// <summary>Намагається отримати власника будівлі за позицією.</summary>
+        public bool TryGetOwner(Vector2Int position, out string ownerId)
+        {
+            return _ownerIdByPosition.TryGetValue(position, out ownerId)
+                   && !string.IsNullOrEmpty(ownerId);
         }
 
         /// <summary>
-        /// Construction→operational visual transition: the finished prefab
-        /// replaces the construction placeholder without a hard pop — the new
-        /// instance rises/settles while the placeholder shrinks away.
+        /// Перехід будівництво→робочий стан: готовий префаб замінює
+        /// плейсхолдер будівництва без різкого попа — новий інстанс
+        /// піднімається/сідає, а плейсхолдер стискається й зникає.
         /// </summary>
         public void TransitionToOperational(
             Vector2Int position,
@@ -149,6 +177,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Quaternion rotation = _baseRotationByPosition.TryGetValue(position, out Quaternion storedRot)
                 ? storedRot
                 : Quaternion.identity;
+            string owner = TryGetOwner(position, out string storedOwner)
+                ? storedOwner
+                : null;
 
             GameObject outgoing = Detach(position);
             Replace(
@@ -158,6 +189,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 rotation,
                 visualOffsetY,
                 presentation: presentation,
+                ownerId: owner,
                 instantVisual: true);
 
             if (outgoing == null)
@@ -176,8 +208,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         /// <summary>
-        /// Animated removal: the visual sinks/shakes out of the world while
-        /// gameplay state is already cleared. The cell is released immediately.
+        /// Анімоване знесення: візуал опускається/трясеться зі світу, доки
+        /// gameplay-стан уже очищено. Клітинка звільняється одразу.
         /// </summary>
         public void BeginDemolition(Vector2Int position)
         {
@@ -188,6 +220,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             PlayDemolition(instance, buildingId, position);
         }
 
+        /// <summary>Видаляє візуал будівлі у позиції.</summary>
         public void Remove(Vector2Int position)
         {
             GameObject instance = Detach(position, out _);
@@ -211,12 +244,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placedByPosition.Remove(position);
             _presentationByPosition.Remove(position);
             _buildingIdByPosition.Remove(position);
+            _ownerIdByPosition.Remove(position);
             _baseRotationByPosition.Remove(position);
             _demolitionPreviewPositions.Remove(position);
             _underConstructionPositions.Remove(position);
             return instance;
         }
 
+        /// <summary>Позначає будівлю вибраною.</summary>
         public void Select(Vector2Int position)
         {
             _selectedPosition = position;
@@ -226,12 +261,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _selectionHighlighter.Apply(instance);
         }
 
+        /// <summary>Знімає виділення з поточної будівлі.</summary>
         public void ClearSelection()
         {
             _selectedPosition = null;
             _selectionHighlighter.Clear();
         }
 
+        /// <summary>Знімає виділення, якщо воно відповідає позиції.</summary>
         public bool ClearSelectionIfMatches(Vector2Int position)
         {
             if (!_selectedPosition.HasValue || _selectedPosition.Value != position)
@@ -241,6 +278,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return true;
         }
 
+        /// <summary>Позначає будівлю як кандидата на знесення.</summary>
         public void MarkDemolitionPreview(Vector2Int position)
         {
             if (!_placedByPosition.TryGetValue(position, out GameObject instance) || instance == null)
@@ -250,6 +288,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _styleService.ApplyGhostStyle(instance, false);
         }
 
+        /// <summary>Переводить візуал у стан будівництва.</summary>
         public void MarkUnderConstruction(Vector2Int position)
         {
             if (!_placedByPosition.TryGetValue(position, out GameObject instance) || instance == null)
@@ -263,6 +302,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
+        /// <summary>Переводить візуал у робочий стан.</summary>
         public void MarkOperational(Vector2Int position)
         {
             _underConstructionPositions.Remove(position);
@@ -274,6 +314,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
+        /// <summary>Відновлює стиль будівлі після скасування знесення.</summary>
         public void RestoreDemolitionPreview(Vector2Int position)
         {
             _demolitionPreviewPositions.Remove(position);
@@ -282,6 +323,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ApplyPersistentStyle(position, instance);
         }
 
+        /// <summary>Очищує знесення превʼю Styles.</summary>
         public void ClearDemolitionPreviewStyles()
         {
             foreach (Vector2Int position in _demolitionPreviewPositions)
@@ -293,6 +335,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _demolitionPreviewPositions.Clear();
         }
 
+        /// <summary>Видаляє всі розміщені візуали.</summary>
         public void Clear()
         {
             foreach (KeyValuePair<Vector2Int, GameObject> pair in _placedByPosition)
@@ -304,12 +347,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placedByPosition.Clear();
             _presentationByPosition.Clear();
             _buildingIdByPosition.Clear();
+            _ownerIdByPosition.Clear();
             _baseRotationByPosition.Clear();
             _demolitionPreviewPositions.Clear();
             _underConstructionPositions.Clear();
             ClearSelection();
         }
 
+        /// <summary>Намагається отримати візуал будівлі за позицією.</summary>
         public bool TryGetPlacedVisual(Vector2Int position, out GameObject visual)
         {
             if (_placedByPosition.TryGetValue(position, out visual) && visual != null)

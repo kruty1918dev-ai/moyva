@@ -8,6 +8,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
+    /// <summary>Керує preview-візуалами будівництва: ghost-прев'ю, drag-режим, hover підсвітка сітки.</summary>
     internal sealed class ConstructionPreviewVisualService {
         private const float PreviewMoveSharpness = 18f;
         private const float PreviewDragSharpness = 28f;
@@ -35,10 +36,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionTerrainAlignmentService _terrainAlignment;
         private readonly IConstructionGridGeometryService _gridGeometry;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
+        private readonly ConstructionOwnerPaletteResolver _paletteResolver;
         private GameObject _snapHighlight;
         private Mesh _snapHighlightMesh;
         private Material _snapHighlightMaterial;
         private MaterialPropertyBlock _gridHoverPropertyBlock;
+        /// <summary>Створює сервіс із залежностями preview-шару.</summary>
         [Inject]
         public ConstructionPreviewVisualService(
             ConstructionVisualRootService roots,
@@ -47,7 +50,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IWallVisualResolver wallVisualResolver,
             [InjectOptional] ConstructionTerrainAlignmentService terrainAlignment = null,
             [InjectOptional] IConstructionGridGeometryService gridGeometry = null,
-            [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)
+            [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null,
+            [InjectOptional] ConstructionOwnerPaletteResolver paletteResolver = null)
         {
             _roots = roots;
             _visualFactory = visualFactory;
@@ -56,9 +60,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _terrainAlignment = terrainAlignment;
             _gridGeometry = gridGeometry;
             _settingsProvider = settingsProvider;
+            _paletteResolver = paletteResolver;
         }
 
-        public GameObject Show(BuildingPreviewChangedSignal signal, BuildingDefinition def)
+        /// <summary>Показує preview-візуал будівлі у позиції.</summary>
+        public GameObject Show(
+            BuildingPreviewChangedSignal signal,
+            BuildingDefinition def,
+            string ownerId = null)
         {
             if (TryGetReusablePreview(signal, out GameObject existing))
             {
@@ -67,7 +76,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             Remove(signal.Position);
-            GameObject prefab = ResolvePrefab(signal.Position, signal.BuildingId, def.ResolvePreviewPrefab());
+            GameObject basePrefab = _paletteResolver != null
+                ? _paletteResolver.ResolvePreviewPrefab(def, ownerId)
+                : def.ResolvePreviewPrefab();
+            GameObject prefab = ResolvePrefab(signal.Position, signal.BuildingId, basePrefab);
             GameObject instance = CreatePreview(
                 prefab,
                 signal.Position,
@@ -82,6 +94,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return instance;
         }
 
+        /// <summary>Намагається отримати preview-візуал за позицією.</summary>
         public bool TryGet(Vector2Int position, out GameObject visual)
         {
             if (_previewByPosition.TryGetValue(position, out visual) && visual != null)
@@ -91,8 +104,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return false;
         }
 
+        /// <summary>Перевіряє наявність preview у позиції.</summary>
         public bool Has(Vector2Int position) => TryGet(position, out _);
 
+        /// <summary>Намагається перемістити preview-візуал у нову позицію.</summary>
         public bool TryMove(
             Vector2Int fromPosition,
             Vector2Int toPosition,
@@ -129,6 +144,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return true;
         }
 
+        /// <summary>Переміщує drag-візуал із плавним слідкуванням.</summary>
         public void MoveDragVisual(
             Vector2Int position,
             string buildingId,
@@ -209,6 +225,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     : ResolvePreviewDragSharpness());
         }
 
+        /// <summary>Намагається звільнити preview-візуал зі сховища.</summary>
         public bool TryRelease(Vector2Int position, out GameObject visual)
         {
             if (!_previewByPosition.TryGetValue(position, out visual) || visual == null)
@@ -222,6 +239,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return true;
         }
 
+        /// <summary>Замінює preview стіни спеціальним візуалом.</summary>
         public void ReplaceWallPreview(
             Vector2Int position,
             string buildingId,
@@ -246,6 +264,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _styleService.ApplyGhostStyle(instance, true);
         }
 
+        /// <summary>Видаляє preview-візуал у позиції.</summary>
         public void Remove(Vector2Int position)
         {
             if (!_previewByPosition.TryGetValue(position, out GameObject instance))
@@ -257,6 +276,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _previewByPosition.Remove(position);
         }
 
+        /// <summary>Очищає всі preview-візуали.</summary>
         public void Clear()
         {
             HideSnapTargetHighlight();
@@ -270,6 +290,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _previewByPosition.Clear();
         }
 
+        /// <summary>Звільняє ресурси сервісу.</summary>
         public void Dispose()
         {
             Clear();
@@ -292,6 +313,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _gridHoverPropertyBlock = null;
         }
 
+        /// <summary>Показує підсвітку клітинки сітки під курсором.</summary>
         public void ShowGridHover(BuildGridHoverChangedSignal signal)
         {
             if (!signal.HasTile)
@@ -328,6 +350,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
+        /// <summary>Прибирає підсвітку клітинки сітки.</summary>
         public void ClearGridHover()
         {
             for (int index = 0; index < _gridHoverHighlights.Count; index++)

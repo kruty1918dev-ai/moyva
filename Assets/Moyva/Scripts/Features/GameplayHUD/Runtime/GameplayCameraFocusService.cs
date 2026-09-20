@@ -40,12 +40,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _focusService = focusService;
         }
 
+        /// <summary>Ініціалізує компонент і підписує на події.</summary>
         public void Initialize()
         {
             _signals.Subscribe<WorldInfoSelectionChangedSignal>(OnWorldSelectionChanged);
             _signals.Subscribe<LocalUnitSelectionChangedSignal>(OnUnitSelectionChanged);
         }
 
+        /// <summary>Звільняє ресурси та відписує від подій.</summary>
         public void Dispose()
         {
             _signals.TryUnsubscribe<WorldInfoSelectionChangedSignal>(OnWorldSelectionChanged);
@@ -68,6 +70,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             });
         }
 
+        /// <summary>Фокусує вибраного.</summary>
         public void FocusSelected()
         {
             if (!_hasSelection)

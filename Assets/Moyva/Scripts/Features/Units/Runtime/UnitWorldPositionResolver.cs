@@ -8,6 +8,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
+    /// <summary>Реалізація резолвера світових позицій юнітів через терейн-поверхню та налаштування сітки.</summary>
     internal sealed class UnitWorldPositionResolver : IUnitWorldPositionResolver
     {
         private readonly IGridProjection _gridProjection;
@@ -17,6 +18,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly ITileSettingsService _tileSettings;
         private readonly Dictionary<string, float> _tileSurfaceOffsetYById = new();
 
+        /// <summary>Створює резолвер із залежностями світу та сітки.</summary>
         public UnitWorldPositionResolver(
             [InjectOptional] IGridProjection gridProjection = null,
             [InjectOptional] IGridService gridService = null,
@@ -31,9 +33,11 @@ namespace Kruty1918.Moyva.Units.Runtime
             _tileSettings = tileSettings;
         }
 
+        /// <summary>Чи працює резолвер у 3D world plane.</summary>
         public bool Uses3DWorldPlane
             => GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection);
 
+        /// <summary>Розв'язує світову позицію для координати сітки.</summary>
         public Vector3 ResolveWorldPosition(
             Vector2Int gridPosition,
             float surfacePivotOffsetY = 0.05f)
@@ -54,6 +58,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             return basePosition;
         }
 
+        /// <summary>Розв'язує вертикальний зсув pivot над поверхнею.</summary>
         public float ResolveSurfacePivotOffsetY(
             GameObject unitObject,
             Vector2Int gridPosition,
@@ -73,6 +78,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 unitObject.transform.position.y - surfaceY);
         }
 
+        /// <summary>Вирівнює нижню межу об'єкта до поверхні терейну.</summary>
         public void AlignBottomToSurface(
             GameObject unitObject,
             Vector2Int gridPosition,
@@ -90,6 +96,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 clearance);
         }
 
+        /// <summary>Намагається отримати висоту поверхні терейну у клітинці.</summary>
         public bool TryGetTerrainSurfaceY(Vector2Int gridPosition, out float surfaceY)
         {
             surfaceY = 0f;

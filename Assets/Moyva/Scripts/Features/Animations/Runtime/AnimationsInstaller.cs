@@ -4,8 +4,10 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Animations.Runtime
 {
+    /// <summary>Zenject-інсталер модуля анімацій.</summary>
     public class AnimationsInstaller : MonoInstaller
     {
+        /// <summary>Реєструє біндінги модуля анімацій.</summary>
         public override void InstallBindings()
         {
             Container.Bind<IMovementAnimationService>()

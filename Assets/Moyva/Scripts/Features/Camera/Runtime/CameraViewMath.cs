@@ -3,28 +3,25 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
-    /// <summary>
-    /// Allocation-free math shared by the camera presentation layer:
-    /// focus easing/duration, bounds fitting, zoom normalization and
-    /// impulse envelopes/falloff. No Unity scene access — pure functions.
-    /// </summary>
+    /// <summary>CameraViewMath — class: камери виду Math.</summary>
     internal static class CameraViewMath
     {
+        /// <summary>Плавно змінює у Out Cubic.</summary>
         public static float EaseInOutCubic(float t)
         {
             t = Mathf.Clamp01(t);
             return t < 0.5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) * 0.5f;
         }
 
-        /// <summary>Frame-rate independent exponential smoothing factor.</summary>
+        /// <summary>Виконує SmoothingFactor.</summary>
         public static float SmoothingFactor(float speed, float unscaledDeltaTime)
             => 1f - Mathf.Exp(-Mathf.Max(0f, speed) * Mathf.Max(0f, unscaledDeltaTime));
 
-        /// <summary>0 = closest zoom, 1 = farthest zoom over the configured range.</summary>
+        /// <summary>Нормалізує зум.</summary>
         public static float NormalizeZoom(float zoom, float minZoom, float maxZoom)
             => maxZoom > minZoom ? Mathf.Clamp01(Mathf.InverseLerp(minZoom, maxZoom, zoom)) : 0f;
 
-        /// <summary>Distance-derived transition duration, clamped to the configured window.</summary>
+        /// <summary>Повертає фокус тривалості.</summary>
         public static float ResolveFocusDuration(float distance, CameraFocusSettings settings)
         {
             float t = settings.distanceForMaxDuration > 0.01f
@@ -33,10 +30,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return Mathf.Lerp(settings.minDuration, settings.maxDuration, t);
         }
 
-        /// <summary>
-        /// Half extents of a world-space bounds projected onto the camera's
-        /// screen-right/screen-up axes (closed form over the 8 corners).
-        /// </summary>
+        /// <summary>Повертає виду Half Extents.</summary>
         public static void ResolveViewHalfExtents(
             Bounds worldBounds,
             Vector3 cameraRight,
@@ -49,7 +43,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             halfHeight = e.x * Mathf.Abs(cameraUp.x) + e.y * Mathf.Abs(cameraUp.y) + e.z * Mathf.Abs(cameraUp.z);
         }
 
-        /// <summary>Orthographic size at which the view half-extents fit with padding.</summary>
+        /// <summary>Повертає ортографічного розміру For межі.</summary>
         public static float ResolveOrthographicSizeForBounds(
             float halfWidth, float halfHeight, float aspect, float padding)
         {
@@ -57,7 +51,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return Mathf.Max(halfHeight, halfWidth / safeAspect) * Mathf.Max(1f, padding);
         }
 
-        /// <summary>Vertical FOV at which the view half-extents fit at the given distance.</summary>
+        /// <summary>Повертає перспективи FOV For межі.</summary>
         public static float ResolvePerspectiveFovForBounds(
             float halfWidth, float halfHeight, float aspect, float distance, float padding)
         {
@@ -66,10 +60,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return 2f * Mathf.Atan(required / Mathf.Max(0.1f, distance)) * Mathf.Rad2Deg;
         }
 
-        /// <summary>
-        /// Impulse envelope: fast attack (~12% of lifetime) then exponential decay.
-        /// Returns ~0 at t = duration.
-        /// </summary>
+        /// <summary>Виконує ImpulseEnvelope.</summary>
         public static float ImpulseEnvelope(float elapsed, float duration)
         {
             if (duration <= 0.0001f)
@@ -81,7 +72,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return Mathf.Exp(-4.5f * (t - attack) / (1f - attack));
         }
 
-        /// <summary>Sharp one-shot kick envelope used for directional impulse kicks.</summary>
+        /// <summary>Виконує ImpulseKickEnvelope.</summary>
         public static float ImpulseKickEnvelope(float elapsed, float duration)
         {
             if (duration <= 0.0001f)
@@ -89,10 +80,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return Mathf.Exp(-6f * Mathf.Clamp01(elapsed / duration));
         }
 
-        /// <summary>
-        /// Distance falloff: full strength inside 30% of the radius, then a
-        /// smoothstep fade to zero at the radius edge.
-        /// </summary>
+        /// <summary>Обчислює відстані затухання.</summary>
         public static float EvaluateDistanceFalloff(float distance, float radius)
         {
             if (radius <= 0.01f)

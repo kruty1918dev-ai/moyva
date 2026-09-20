@@ -4,9 +4,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
-    /// <summary>
-    /// Settlement registry: manages settlement storage, lookup, and position-to-settlement mapping.
-    /// </summary>
+    /// <summary>EconomySettlementRegistryService — class: економіки поселення реєстру сервісу.</summary>
     internal sealed class EconomySettlementRegistryService
     {
         private readonly Dictionary<string, EconomySettlementState> _settlements =
@@ -21,8 +19,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly Dictionary<Vector2Int, string> _positionToOwnerId =
             new Dictionary<Vector2Int, string>();
 
+        /// <summary>публічної.</summary>
         public IReadOnlyDictionary<string, EconomySettlementState> AllSettlements => _settlements;
 
+        /// <summary>Повертає поселення.</summary>
         public EconomySettlementState GetSettlement(string settlementId)
         {
             if (string.IsNullOrWhiteSpace(settlementId))
@@ -32,6 +32,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return state;
         }
 
+        /// <summary>Намагається отримати поселення By позицію.</summary>
         public bool TryGetSettlementByPosition(Vector2Int position, out EconomySettlementState state)
         {
             state = null;
@@ -44,6 +45,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return state != null;
         }
 
+        /// <summary>Намагається Find Nearest поселення.</summary>
         public bool TryFindNearestSettlement(Vector2Int position, string ownerId, out EconomySettlementState state)
         {
             state = null;
@@ -57,6 +59,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return string.Equals(NormalizeOwnerId(state.OwnerId), NormalizeOwnerId(ownerId), StringComparison.Ordinal);
         }
 
+        /// <summary>Реєструє поселення.</summary>
         public void RegisterSettlement(EconomySettlementState state, Vector2Int townHallPosition)
         {
             if (state == null || string.IsNullOrWhiteSpace(state.SettlementId))
@@ -66,6 +69,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _positionToSettlement[townHallPosition] = state.SettlementId;
         }
 
+        /// <summary>Скасовує реєстрацію поселення.</summary>
         public void UnregisterSettlement(string settlementId)
         {
             if (string.IsNullOrWhiteSpace(settlementId))
@@ -88,6 +92,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             }
         }
 
+        /// <summary>Реєструє будівлі позицію.</summary>
         public void RegisterBuildingPosition(Vector2Int position, string settlementId, string buildingId, string ownerId)
         {
             _positionToSettlement[position] = settlementId;
@@ -95,6 +100,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _positionToOwnerId[position] = NormalizeOwnerId(ownerId);
         }
 
+        /// <summary>Скасовує реєстрацію будівлі позицію.</summary>
         public void UnregisterBuildingPosition(Vector2Int position)
         {
             _positionToSettlement.Remove(position);
@@ -102,6 +108,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _positionToOwnerId.Remove(position);
         }
 
+        /// <summary>Намагається Transfer поселення власника.</summary>
         public bool TryTransferSettlementOwner(
             string settlementId,
             string previousOwnerId,
@@ -162,6 +169,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return true;
         }
 
+        /// <summary>Намагається отримати будівлі At позицію.</summary>
         public bool TryGetBuildingAtPosition(Vector2Int position, out string buildingId, out string ownerId)
         {
             buildingId = null;
@@ -175,6 +183,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return true;
         }
 
+        /// <summary>Повертає поселення назву Or резервного.</summary>
         public string GetSettlementNameOrFallback(string settlementId)
         {
             if (string.IsNullOrWhiteSpace(settlementId))

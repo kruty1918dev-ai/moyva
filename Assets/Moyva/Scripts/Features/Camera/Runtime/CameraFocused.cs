@@ -5,11 +5,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
-    /// <summary>
-    /// Compatibility adapter for the legacy ICameraFocused API. Delegates to
-    /// the interruptible CameraFocusService when available; falls back to the
-    /// legacy forced move/zoom path otherwise.
-    /// </summary>
+    /// <summary>CameraFocused — class: камери Focused.</summary>
     internal sealed class CameraFocused : ICameraFocused
     {
         private readonly ICameraFocusService _focusService;
@@ -19,6 +15,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly UnityEngine.Camera _camera;
         private readonly IGridProjection _gridProjection;
 
+        /// <summary>Виконує CameraFocused.</summary>
         public CameraFocused(
             [InjectOptional] ICameraFocusService focusService = null,
             [InjectOptional] ICameraMovement cameraMovement = null,
@@ -35,6 +32,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _gridProjection = gridProjection;
         }
 
+        /// <summary>Фокусує Focus.</summary>
         public void Focus(Transform target)
         {
             if (target == null) return;

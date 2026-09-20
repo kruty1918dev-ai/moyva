@@ -4,6 +4,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
+    /// <summary>CameraZoom — class: камери зум.</summary>
     internal sealed class CameraZoom : ICameraZoom, IInitializable, ILateTickable
     {
         private const string GlobalMipBiasProperty = "_MoyvaTexLodBias";
@@ -24,6 +25,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private float _targetZoom;
         private float _lastPushedMipBias = float.NaN;
 
+        /// <summary>ручного керування запитаного.</summary>
         public event System.Action ManualControlRequested;
 
         /// <summary>Unscaled time of the most recent player zoom intent.</summary>
@@ -32,6 +34,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         /// <summary>Current applied zoom (orthographic size or field of view).</summary>
         internal float CurrentZoom => GetCurrentZoom();
 
+        /// <summary>Виконує CameraZoom.</summary>
         public CameraZoom(
             UnityEngine.Camera camera,
             CameraSettingsSO settings,
@@ -41,6 +44,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _settings = settings;
         }
 
+        /// <summary>Ініціалізує компонент і підписує на події.</summary>
         public void Initialize()
         {
             // На старті синхронізуємо цільовий зум з поточним Orthographic Size або Field Of View.
@@ -49,9 +53,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
             UpdateGlobalMipBias();
         }
 
+        /// <summary>Виконує ZoomCamera.</summary>
         public void ZoomCamera(float delta)
             => ZoomCamera(delta, ResolveScreenCenter());
 
+        /// <summary>Виконує ZoomCamera.</summary>
         public void ZoomCamera(float delta, Vector2 screenFocalPoint)
         {
             float normalizedDelta = NormalizeWheelDelta(delta);
@@ -71,9 +77,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         }
 
+        /// <summary>Виконує ZoomCameraByScale.</summary>
         public void ZoomCameraByScale(float scaleFactor, bool immediate)
             => ZoomCameraByScale(scaleFactor, immediate, ResolveScreenCenter());
 
+        /// <summary>Виконує ZoomCameraByScale.</summary>
         public void ZoomCameraByScale(float scaleFactor, bool immediate, Vector2 screenFocalPoint)
         {
             if (scaleFactor <= 0f || float.IsNaN(scaleFactor) || float.IsInfinity(scaleFactor)) return;
@@ -105,6 +113,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return new Vector2(width * 0.5f, height * 0.5f);
         }
 
+        /// <summary>Примусово задає зум камери.</summary>
         public void ForceZoomCamera(float zoomLevel)
         {
             // Programmatic zoom target. Player input always wins — there is no
@@ -133,6 +142,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             ManualControlRequested?.Invoke();
         }
 
+        /// <summary>Виконує LateTick.</summary>
         public void LateTick()
         {
             ResolveZoomRange(out float minZoom, out float maxZoom);

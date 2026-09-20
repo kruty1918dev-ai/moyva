@@ -7,6 +7,7 @@ using UnityEngine;
 using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Construction.API
 {
+/// <summary>Асет-визначення будівлі: ідентичність, вигляд, footprint, правила розміщення, економіка, runtime-параметри та модулі. Редагується в інспекторі, конвертується у runtime-знімок.</summary>
 [System.Serializable]
 public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
     {
@@ -16,8 +17,10 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
 
         private static int _runtimeRevision;
 
+        /// <summary>Поточна ревізія runtime-реєстру визначень будівель.</summary>
         public static int RuntimeRevision => _runtimeRevision;
 
+        /// <summary>Піднімається при зміні ревізії runtime-реєстру визначень.</summary>
         public static event Action<int>
             RuntimeRevisionChanged;
 
@@ -51,6 +54,7 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
             }
         }
 
+        /// <summary>Сигналізує підписникам про зміну runtime-реєстру визначень.</summary>
         public static void NotifyRuntimeRegistryChanged()
         {
             unchecked
@@ -65,42 +69,49 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
         [HideInInspector]
         private int _placementModuleMigrationVersion;
 
+        /// <summary>Ідентичність будівлі: id, назва, категорія, роль.</summary>
         [TabGroup("Основне")]
         [InlineProperty]
         [HideLabel]
         [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public BuildingIdentity Identity = new BuildingIdentity();
 
+        /// <summary>Презентаційні дані будівлі: префаби, іконка, тінти, варіанти.</summary>
         [TabGroup("Вигляд")]
         [InlineProperty]
         [HideLabel]
         [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public BuildingPresentation Presentation = new BuildingPresentation();
 
+        /// <summary>Footprint: розмір і зайняті клітинки будівлі.</summary>
         [TabGroup("Зайняті клітинки")]
         [InlineProperty]
         [HideLabel]
         [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public BuildingFootprint Footprint = new BuildingFootprint();
 
+        /// <summary>Правила розміщення будівлі на карті.</summary>
         [TabGroup("Розміщення")]
         [InlineProperty]
         [HideLabel]
         [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public BuildingPlacementRules Placement = new BuildingPlacementRules();
 
+        /// <summary>Економічні дані: вартість і тривалість будівництва.</summary>
         [TabGroup("Економіка")]
         [InlineProperty]
         [HideLabel]
         [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public BuildingConstructionData Construction = new BuildingConstructionData();
 
+        /// <summary>Runtime-параметри: HP, броня, прапорці, теги.</summary>
         [TabGroup("Ігрові параметри")]
         [InlineProperty]
         [HideLabel]
         [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public BuildingRuntimeStats RuntimeStats = new BuildingRuntimeStats();
 
+        /// <summary>Список модулів будівлі.</summary>
         [TabGroup("Модулі")]
         [SerializeReference]
         [BuildingModuleList]
@@ -108,6 +119,7 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
         [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public List<BuildingModuleDefinition> Modules = new List<BuildingModuleDefinition>();
 
+        /// <summary>Стислий опис ролі, модулів і параметрів будівлі для інспектора.</summary>
         [TabGroup("Огляд")]
         [ShowInInspector]
         [ReadOnly]
@@ -115,6 +127,7 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
         [PropertyTooltip("Що робить: Показує стислий опис ролі, модулів і параметрів будівлі.\nВплив у грі: Допомагає швидко перевірити конфігурацію перед запуском гри.")]
         public string PreviewSummary => _editorPreviewSummaryCache ??= BuildPreviewSummary(GetEditorRuntimeDefinition());
 
+        /// <summary>Підсумковий радіус відкриття туману війни з активного модуля.</summary>
         [TabGroup("Огляд")]
         [ShowInInspector]
         [ReadOnly]
@@ -122,6 +135,7 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
         [PropertyTooltip("Що робить: Показує підсумковий радіус відкриття туману війни з активного модуля.\nВплив у грі: Визначає, яку область бачить гравець навколо споруди.")]
         public int FogRevealRadius => BuildingDefinitionCapabilities.GetFogRevealRadius(GetEditorRuntimeDefinition());
 
+        /// <summary>Фактична кількість зайнятих клітинок footprint.</summary>
         [TabGroup("Огляд")]
         [ShowInInspector]
         [ReadOnly]
@@ -131,6 +145,7 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
             ? Footprint.OccupiedCells.Length
             : Mathf.Max(1, Footprint?.Size.x ?? 1) * Mathf.Max(1, Footprint?.Size.y ?? 1);
 
+        /// <summary>Проблеми конфігурації, знайдені валідатором будівлі.</summary>
         [TabGroup("Перевірка")]
         [ShowInInspector]
         [ReadOnly]
@@ -140,11 +155,16 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
         public IReadOnlyList<BuildingValidationIssue> ValidationIssues
             => _editorValidationCache ??= BuildingValidator.Validate(GetEditorRuntimeDefinition());
 
+        /// <summary>Стабільний ідентифікатор будівлі.</summary>
         public string Id => Identity != null ? Identity.Id : string.Empty;
+        /// <summary>Відображувана назва будівлі.</summary>
         public string DisplayName => Identity != null ? Identity.DisplayName : name;
+        /// <summary>Категорія будівлі.</summary>
         public BuildingCategory Category => Identity != null ? Identity.Category : BuildingCategory.Civilian;
+        /// <summary>Версія міграції модуля розміщення.</summary>
         public int PlacementModuleMigrationVersion => _placementModuleMigrationVersion;
 
+        /// <summary>Заповнює відсутні ID, назву та стандартні вкладені об'єкти.</summary>
         [TabGroup("Перевірка")]
         [Button("Нормалізувати дані", ButtonSizes.Medium)]
         [PropertyTooltip("Що робить: Заповнює відсутні ID, назву та стандартні вкладені об'єкти.\nВплив у грі: Запобігає помилкам через неповну конфігурацію asset.")]
@@ -175,6 +195,7 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
             PublishRuntimeRevisionChanged();
         }
 
+        /// <summary>Конвертує асет у незмінний runtime-знімок визначення будівлі.</summary>
         public BuildingDefinition ToRuntimeDefinition()
         {
             EnsureDefaults();
@@ -217,6 +238,7 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
             };
         }
 
+        /// <summary>Переносить дані з legacy-визначення в нову структуру асета.</summary>
         public void ApplyLegacy(BuildingDefinition legacy)
         {
             EnsureDefaults();
@@ -370,12 +392,20 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
 
         private static BuildingPresentationVariants CloneVariants(
             BuildingPresentationVariants source)
-            => source == null
-                ? new BuildingPresentationVariants()
-                : new BuildingPresentationVariants
-                {
-                    ConstructionPrefab = source.ConstructionPrefab,
-                };
+        {
+            if (source == null)
+                return new BuildingPresentationVariants();
+
+            return new BuildingPresentationVariants
+            {
+                ConstructionPrefab = source.ConstructionPrefab,
+                PrefabVariants = source.PrefabVariants != null
+                    ? new Dictionary<string, GameObject>(
+                        source.PrefabVariants,
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GameObject>(),
+            };
+        }
 
         private static EntityOutlineConfig CloneOutline(
             EntityOutlineConfig source)

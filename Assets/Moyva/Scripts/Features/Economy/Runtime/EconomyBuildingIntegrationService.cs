@@ -8,9 +8,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
-    /// <summary>
-    /// Building integration service: handles construction events and building-settlement relationships.
-    /// </summary>
+    /// <summary>EconomyBuildingIntegrationService — class: економіки будівлі Integration сервісу.</summary>
     internal sealed class EconomyBuildingIntegrationService
     {
         private const string PerfLogTag =
@@ -20,6 +18,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly Dictionary<BuildingDefinition, bool>
             _moduleValidationErrorsByDefinition = new();
 
+        /// <summary>Обробляє подію будівлі Placed.</summary>
         public EconomySettlementState OnBuildingPlaced(BuildingPlacedSignal signal, EconomySettlementRegistryService registry, SignalBus signalBus, EconomyDatabaseSO database, IBuildingRegistry buildingRegistry)
         {
             var definition = FindBuildingDefinition(signal.BuildingId, buildingRegistry);
@@ -154,6 +153,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return null;
         }
 
+        /// <summary>Обробляє подію будівлі Demolished.</summary>
         public void OnBuildingDemolished(BuildingDemolishedSignal signal, EconomySettlementRegistryService registry, SignalBus signalBus, EconomyDatabaseSO database, IBuildingRegistry buildingRegistry)
         {
             var definition = FindBuildingDefinition(signal.BuildingId, buildingRegistry);

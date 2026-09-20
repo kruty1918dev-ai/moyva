@@ -3,14 +3,19 @@ using UnityEngine;
 using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Clouds.API
 {
+    /// <summary>CloudSpawnAreaMode — enum: хмари спавну Area режим.</summary>
     public enum CloudSpawnAreaMode
     {
+        /// <summary>Варіант CameraViewport.</summary>
         CameraViewport = 0,
+        /// <summary>Варіант MapBounds.</summary>
         MapBounds = 1
     }
+/// <summary>CloudsSettings — class: Clouds налаштування.</summary>
 [System.Serializable]
 public sealed class CloudsSettings : MoyvaJsonConfigObject
     {
+        /// <summary>увімкненої — bool.</summary>
         [Header("Загальне")]
         [Tooltip("Вмикає або вимикає систему хмаринок.")]
         public bool Enabled = true;
@@ -21,12 +26,15 @@ public sealed class CloudsSettings : MoyvaJsonConfigObject
         [Tooltip("Скільки хмаринок створити одразу після запуску системи.")]
         [Min(0)] public int InitialClouds = 3;
 
+        /// <summary>Initial Clouds початку у виду — bool.</summary>
         [Tooltip("Якщо увімкнено, стартові хмаринки одразу розкладаються у видимій зоні. Якщо вимкнено, вони також стартують за краєм мапи.")]
         public bool InitialCloudsStartInView = true;
 
+        /// <summary>спавну інтервалу дальності — Vector2.</summary>
         [Tooltip("Діапазон часу між спавнами у секундах.")]
         public Vector2 SpawnIntervalRange = new Vector2(1.5f, 4f);
 
+        /// <summary>спавну Area режим — CloudSpawnAreaMode.</summary>
         [Tooltip("Зона, відносно якої створюються хмаринки. MapBounds розкладає їх по всій мапі, а не тільки біля поточного кадру камери.")]
         public CloudSpawnAreaMode SpawnAreaMode = CloudSpawnAreaMode.MapBounds;
 
@@ -36,18 +44,22 @@ public sealed class CloudsSettings : MoyvaJsonConfigObject
         [Tooltip("Скільки випадкових позицій спробувати перед тим, як погодитись на останню знайдену.")]
         [Min(1)] public int SpawnPlacementAttempts = 10;
 
+        /// <summary>хмари Prefabs — CloudPrefabVariant[].</summary>
         [Header("Варіанти префабів")]
         [Tooltip("Список 3D prefab-варіантів хмаринок із вагами вибору.")]
         public CloudPrefabVariant[] CloudPrefabs;
 
+        /// <summary>висоти дальності — Vector2.</summary>
         [Header("Висота")]
         [Tooltip("Діапазон висоти хмаринок над базовою площиною мапи у world units.")]
         public Vector2 AltitudeRange = new Vector2(7f, 14f);
 
+        /// <summary>швидкість дальності — Vector2.</summary>
         [Header("Рух")]
         [Tooltip("Діапазон горизонтальної швидкості у world units за секунду.")]
         public Vector2 SpeedRange = new Vector2(0.35f, 0.9f);
 
+        /// <summary>масштаб дальності — Vector2.</summary>
         [Tooltip("Діапазон масштабу хмаринок.")]
         public Vector2 ScaleRange = new Vector2(0.85f, 1.35f);
 
@@ -81,6 +93,7 @@ public sealed class CloudsSettings : MoyvaJsonConfigObject
         [Tooltip("Тривалість плавної появи та зникнення у секундах.")]
         [Min(0f)] public float FadeDuration = 1.2f;
 
+        /// <summary>карти краю затухання увімкненої — bool.</summary>
         [Header("Межі мапи")]
         [Tooltip("Плавно гасити хмаринки біля меж мапи замість різкого обрізання.")]
         public bool MapEdgeFadeEnabled = true;
@@ -88,22 +101,27 @@ public sealed class CloudsSettings : MoyvaJsonConfigObject
         [Tooltip("Ширина смуги затухання біля краю мапи у world units.")]
         [Min(0f)] public float MapEdgeFadeWidth = 2f;
 
+        /// <summary>ручного карти розміру — Vector2.</summary>
         [Tooltip("Розмір мапи для сцен без IGridService. У звичайній ігровій сцені використовується автоматичний розмір з IGridService.")]
         public Vector2 ManualMapSize = new Vector2(32f, 32f);
 
+        /// <summary>ручного карти центру — Vector2.</summary>
         [Tooltip("Центр ручних меж мапи для сцен без IGridService.")]
         public Vector2 ManualMapCenter = new Vector2(15.5f, 15.5f);
 
+        /// <summary>життєвого циклу Dissolve увімкненої — bool.</summary>
         [Header("Розчинення")]
         [Tooltip("Якщо увімкнено, хмаринка після випадкового часу життя починає плавно розчинятися, навіть якщо ще не дійшла до краю.")]
         public bool LifetimeDissolveEnabled = false;
 
+        /// <summary>життєвого циклу дальності — Vector2.</summary>
         [Tooltip("Діапазон часу життя хмаринки до початку розчинення у секундах.")]
         public Vector2 LifetimeRange = new Vector2(12f, 24f);
 
         [Tooltip("Скільки секунд хмаринка плавно розчиняється після завершення часу життя.")]
         [Min(0f)] public float DissolveDuration = 3f;
 
+        /// <summary>хмари кольору — Color.</summary>
         [Header("Вигляд")]
         [Tooltip("Базовий колірний тон хмаринок. Множиться на колір матеріалу.")]
         public Color CloudColor = Color.white;
@@ -114,19 +132,23 @@ public sealed class CloudsSettings : MoyvaJsonConfigObject
         [Tooltip("Наскільки сильно може варіюватися яскравість тону окремих хмаринок. 0 = однакові.")]
         [Range(0f, 0.3f)] public float CloudTintJitter = 0.08f;
 
+        /// <summary>камери Proximity затухання увімкненої — bool.</summary>
         [Tooltip("Коли камера сильно наближена, хмаринки стають прозорішими, щоб не перекривати геймплей під ними.")]
         public bool CameraProximityFadeEnabled = true;
 
+        /// <summary>камери затухання зум дальності — Vector2.</summary>
         [Tooltip("Zoom камери (FOV для perspective або orthographic size): X = дуже близько і мінімальна прозорість, Y = достатньо далеко і повна прозорість.")]
         public Vector2 CameraFadeZoomRange = new Vector2(5f, 14f);
 
         [Tooltip("Множник прозорості хмаринок при максимально близькому zoom.")]
         [Range(0f, 1f)] public float CloseCameraAlphaMultiplier = 0.28f;
 
+        /// <summary>тіней увімкненої — bool.</summary>
         [Header("Тіні")]
         [Tooltip("Чи відкидають хмаринки реальні 3D тіні на мапу.")]
         public bool ShadowsEnabled = true;
 
+        /// <summary>Обчислює хмари масштаб.</summary>
         public float EvaluateCloudScale(float altitude01, float random01)
         {
             altitude01 = Mathf.Clamp01(altitude01);

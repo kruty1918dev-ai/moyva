@@ -44,6 +44,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             container.BindInterfacesAndSelfTo<AmbienceOneShotService>().AsSingle().NonLazy();
             container.BindInterfacesAndSelfTo<AmbientWorldAudioService>().AsSingle().NonLazy();
             container.BindInterfacesAndSelfTo<GameplayAudioFeedbackService>().AsSingle().NonLazy();
+            container.BindInterfacesAndSelfTo<CombatMusicService>().AsSingle().NonLazy();
             if (!container.HasBinding<IUiActionFeedbackSink>())
                 container.Bind<IUiActionFeedbackSink>().To<UiActionAudioSink>().AsSingle();
 

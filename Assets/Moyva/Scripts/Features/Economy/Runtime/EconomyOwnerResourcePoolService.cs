@@ -6,6 +6,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
+    /// <summary>EconomyOwnerResourcePoolService — class: економіки власника ресурсу пула сервісу.</summary>
     internal sealed class EconomyOwnerResourcePoolService
     {
         private const string DefaultOwnerId = EconomyManager.DefaultOwnerId;
@@ -15,6 +16,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly Dictionary<string, Dictionary<string, float>> _ownerResourcePools =
             new Dictionary<string, Dictionary<string, float>>(StringComparer.Ordinal);
 
+        /// <summary>Додає власника ресурсу.</summary>
         public void AddOwnerResource(
             string ownerId,
             string resourceId,
@@ -44,6 +46,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             });
         }
 
+        /// <summary>Передає власника ресурсів  складу.</summary>
         public void TransferOwnerResourcesToWarehouse(
             string ownerId,
             EconomySettlementState state,
@@ -78,6 +81,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             }
         }
 
+        /// <summary>Передає власника ресурсів  першого складу.</summary>
         public bool TransferOwnerResourcesToFirstWarehouse(
             string ownerId,
             IReadOnlyDictionary<string, EconomySettlementState> settlements,
@@ -98,6 +102,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return true;
         }
 
+        /// <summary>Передає власника ресурсів  Existing Warehouses.</summary>
         public void TransferOwnerResourcesToExistingWarehouses(
             IReadOnlyDictionary<string, EconomySettlementState> settlements,
             SignalBus signalBus,
@@ -111,6 +116,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 TransferOwnerResourcesToFirstWarehouse(owners[ownerIndex], settlements, signalBus, logTag);
         }
 
+        /// <summary>Намагається споживання власника пула ресурсів.</summary>
         public bool TryConsumeOwnerPoolResources(
             string ownerId,
             IReadOnlyDictionary<string, float> resourceCosts,
@@ -180,6 +186,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return true;
         }
 
+        /// <summary>Виконує OwnerHasAnyWarehouse.</summary>
         public bool OwnerHasAnyWarehouse(
             string ownerId,
             IReadOnlyDictionary<string, EconomySettlementState> settlements)
@@ -203,6 +210,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return false;
         }
 
+        /// <summary>Повертає власника пула ресурсу підсумки.</summary>
         public Dictionary<string, float> GetOwnerPoolResourceTotals(string ownerId)
         {
             string normalizedOwnerId = NormalizeOwnerId(ownerId);
@@ -212,6 +220,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return new Dictionary<string, float>(pool, StringComparer.Ordinal);
         }
 
+        /// <summary>Повертає власника ресурсу підсумки.</summary>
         public Dictionary<string, float> GetOwnerResourceTotals(
             IReadOnlyDictionary<string, EconomySettlementState> settlements,
             string ownerId)
@@ -253,6 +262,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return totals;
         }
 
+        /// <summary>Повертає власника ресурсу підсумки знімка.</summary>
         public Dictionary<string, Dictionary<string, float>> GetOwnerResourceTotalsSnapshot(
             IReadOnlyDictionary<string, EconomySettlementState> settlements)
         {
@@ -283,6 +293,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return snapshot;
         }
 
+        /// <summary>Повертає власника ресурсу Pools знімка.</summary>
         public Dictionary<string, Dictionary<string, float>> GetOwnerResourcePoolsSnapshot()
         {
             var snapshot = new Dictionary<string, Dictionary<string, float>>(StringComparer.Ordinal);
@@ -308,6 +319,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return snapshot;
         }
 
+        /// <summary>Відновлює власника ресурсу Pools.</summary>
         public void RestoreOwnerResourcePools(
             Dictionary<string, Dictionary<string, float>> snapshot,
             SignalBus signalBus)

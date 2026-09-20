@@ -2,9 +2,11 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Clouds.API
 {
+    /// <summary>CloudPrefabVariant — class: хмари префаба варіанту.</summary>
     [System.Serializable]
     public sealed class CloudPrefabVariant
     {
+        /// <summary>префаба — GameObject.</summary>
         [Tooltip("Prefab із MeshFilter/MeshRenderer, який представляє одну форму 3D-хмари.")]
         public GameObject Prefab;
 
