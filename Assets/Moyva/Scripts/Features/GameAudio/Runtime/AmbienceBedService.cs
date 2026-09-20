@@ -88,7 +88,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         private void ApplyWeights()
         {
             float t = _zoom?.ZoomT ?? 0f;
-            float cutoff = _zoom?.EvaluateBedCutoff() ?? 22000f;
+            float sharedCutoff = _zoom?.EvaluateBedCutoff() ?? 22000f;
 
             foreach (var bed in _beds)
             {
@@ -101,7 +101,12 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
                 }
 
                 if (bed.LowPass != null)
+                {
+                    float cutoff = cfg.farCutoff > 0f
+                        ? (_zoom?.EvaluateBedCutoff(cfg.farCutoff) ?? sharedCutoff)
+                        : sharedCutoff;
                     bed.LowPass.cutoffFrequency = cutoff;
+                }
             }
         }
     }

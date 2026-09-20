@@ -18,7 +18,7 @@
       "volume": 0.6,
       "nearWeight": 0.0,
       "farWeight": 1.0,
-      "lowpassWithZoom": true
+      "lowpassWithZoom": false
     },
     {
       "soundKey": "amb-wind-near",
@@ -32,21 +32,24 @@
       "volume": 0.4,
       "nearWeight": 0.15,
       "farWeight": 0.7,
-      "lowpassWithZoom": true
+      "lowpassWithZoom": true,
+      "farCutoff": 4500.0
     },
     {
       "soundKey": "amb-birds",
       "volume": 0.5,
       "nearWeight": 0.9,
       "farWeight": 0.1,
-      "lowpassWithZoom": true
+      "lowpassWithZoom": true,
+      "farCutoff": 2500.0
     },
     {
       "soundKey": "amb-insects",
       "volume": 0.45,
       "nearWeight": 0.8,
       "farWeight": 0.0,
-      "lowpassWithZoom": true
+      "lowpassWithZoom": true,
+      "farCutoff": 1500.0
     }
   ],
   "emitters": [
