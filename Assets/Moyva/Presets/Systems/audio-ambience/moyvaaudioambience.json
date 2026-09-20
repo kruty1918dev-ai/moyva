@@ -32,7 +32,8 @@
       "volume": 0.4,
       "nearWeight": 0.15,
       "farWeight": 0.7,
-      "lowpassWithZoom": true
+      "lowpassWithZoom": true,
+      "farCutoff": 4500.0
     },
     {
       "soundKey": "amb-birds",
@@ -40,7 +41,12 @@
       "nearWeight": 0.9,
       "farWeight": 0.1,
       "lowpassWithZoom": true,
-      "dayPhases": ["dawn", "day", "dusk"]
+      "dayPhases": [
+        "dawn",
+        "day",
+        "dusk"
+      ],
+      "farCutoff": 2500.0
     },
     {
       "soundKey": "amb-insects",
@@ -48,7 +54,11 @@
       "nearWeight": 0.8,
       "farWeight": 0.0,
       "lowpassWithZoom": true,
-      "dayPhases": ["day", "dusk"]
+      "dayPhases": [
+        "day",
+        "dusk"
+      ],
+      "farCutoff": 1500.0
     },
     {
       "soundKey": "amb-night-crickets",
@@ -56,7 +66,10 @@
       "nearWeight": 0.85,
       "farWeight": 0.15,
       "lowpassWithZoom": true,
-      "dayPhases": ["dusk", "night"]
+      "dayPhases": [
+        "dusk",
+        "night"
+      ]
     }
   ],
   "emitters": [
@@ -272,7 +285,11 @@
       "maxInterval": 14.0,
       "minZoom": 0.0,
       "maxZoom": 0.65,
-      "dayPhases": ["dawn", "day", "dusk"]
+      "dayPhases": [
+        "dawn",
+        "day",
+        "dusk"
+      ]
     },
     {
       "soundKey": "amb-stinger-critter",
@@ -281,7 +298,10 @@
       "maxInterval": 22.0,
       "minZoom": 0.0,
       "maxZoom": 0.5,
-      "dayPhases": ["day", "dusk"]
+      "dayPhases": [
+        "day",
+        "dusk"
+      ]
     },
     {
       "soundKey": "amb-stinger-rooster",
@@ -290,7 +310,10 @@
       "maxInterval": 95.0,
       "minZoom": 0.0,
       "maxZoom": 0.35,
-      "dayPhases": ["dawn", "day"]
+      "dayPhases": [
+        "dawn",
+        "day"
+      ]
     }
   ],
   "maxEmittersTotal": 30

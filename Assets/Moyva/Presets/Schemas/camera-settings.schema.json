@@ -270,6 +270,18 @@
       "minimum": 0.01,
       "x-moyva-editorMinimum": 0.01
     },
+    "farView": {
+      "type": ["object", "null"],
+      "title": "Far View Window",
+      "description": "Shared normalized-zoom window where the world reads as distant/high-altitude. Consumed by far-view visuals and zoom-driven audio.",
+      "additionalProperties": false,
+      "properties": {
+        "start": { "type": "number", "minimum": 0.0, "maximum": 1.0, "x-moyva-editorMinimum": 0.0, "x-moyva-editorMaximum": 1.0 },
+        "full": { "type": "number", "minimum": 0.0, "maximum": 1.0, "x-moyva-editorMinimum": 0.0, "x-moyva-editorMaximum": 1.0 },
+        "smoothing": { "type": "number", "minimum": 0.05, "x-moyva-editorMinimum": 0.05 },
+        "shape": { "type": "number", "minimum": 0.2, "maximum": 3.0, "x-moyva-editorMinimum": 0.2, "x-moyva-editorMaximum": 3.0 }
+      }
+    },
     "enableAutomaticMipBias": {
       "type": "boolean",
       "title": "Enable Automatic Mip Bias",

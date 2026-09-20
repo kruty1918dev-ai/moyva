@@ -1,9 +1,7 @@
 {
-  "name": "Kruty1918.Moyva.GameAudio.Tests",
-  "rootNamespace": "Kruty1918.Moyva.GameAudio.Tests",
+  "name": "Kruty1918.Moyva.Tests.Camera",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Camera",
   "references": [
-    "Kruty1918.Moyva.Shared",
-    "Kruty1918.Moyva.GameAudio",
     "Kruty1918.Moyva.Camera",
     "Kruty1918.Moyva.Jsonization",
     "Zenject"

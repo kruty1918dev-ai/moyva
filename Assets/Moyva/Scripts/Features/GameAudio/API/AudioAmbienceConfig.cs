@@ -59,6 +59,8 @@ namespace Kruty1918.Moyva.GameAudio.API
         /// Порожній масив — шар звучить завжди. Потребує ICalendarService у контейнері.
         /// </summary>
         public string[] dayPhases = Array.Empty<string>();
+        [Tooltip("<=0 → спільний zoom.farCutoff; інакше — жорсткіша per-bed межа на далекому zoom.")]
+        [Range(0f, 22000f)] public float farCutoff = 0f;
     }
 
     /// <summary>

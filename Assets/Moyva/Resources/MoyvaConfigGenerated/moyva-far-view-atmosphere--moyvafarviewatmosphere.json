@@ -1,0 +1,46 @@
+{
+  "$schema": "../../Schemas/far-view-atmosphere.schema.json",
+  "schema": "moyva.far-view-atmosphere",
+  "version": 1,
+  "id": "moyvafarviewatmosphere",
+  "model": "far-view-atmosphere",
+  "enabled": true,
+  "haze": {
+    "atmosphereColor": { "r": 0.62, "g": 0.72, "b": 0.84, "a": 1.0 },
+    "skyColor": { "r": 0.70, "g": 0.79, "b": 0.90, "a": 1.0 },
+    "strength": 0.85,
+    "depthStart": 18.0,
+    "depthEnd": 130.0,
+    "gamma": 1.35,
+    "skyFill": 0.75
+  },
+  "flatten": {
+    "strength": 0.55,
+    "radiusPixels": 1.25
+  },
+  "veil": {
+    "strength": 0.30,
+    "scale": 0.045,
+    "speed": 0.35,
+    "altitude": 9.0,
+    "coverage": 0.55,
+    "windDirection": { "x": 0.8, "y": 0.6 }
+  },
+  "palette": {
+    "saturation": 0.82,
+    "contrast": 0.90,
+    "shadowLift": 0.14,
+    "highlightCompress": 0.20
+  },
+  "edge": {
+    "vignetteStrength": 0.16,
+    "vignetteRadius": 1.15
+  },
+  "quality": {
+    "performanceVeilOctaves": 1,
+    "balancedVeilOctaves": 2,
+    "qualityVeilOctaves": 2,
+    "performanceSimplifiedFlatten": true,
+    "ditherEnabled": true
+  }
+}

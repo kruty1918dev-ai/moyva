@@ -125,6 +125,10 @@ public class CameraSettingsSO : MoyvaJsonConfigObject
         [HideInInspector]
         [Range(0f, 3f)] public float automaticMipBiasMax = 0.75f;
 
+        [Header("Far View Window")]
+        [Tooltip("Shared normalized-zoom window where the world reads as distant/high-altitude. Consumed by far-view visuals and zoom-driven audio.")]
+        public CameraFarViewSettings farView = CameraFarViewSettings.CreateDefault();
+
         [Header("Map Render Mask")]
         [HideInInspector]
         public bool mapRenderMaskEnabled = true;
@@ -183,6 +187,10 @@ public class CameraSettingsSO : MoyvaJsonConfigObject
             Mathf.Max(0f, boundsOverflowTiles.y));
         public bool ResolveEnableAutomaticMipBias() => enableAutomaticMipBias;
         public float ResolveAutomaticMipBiasMax() => Mathf.Clamp(automaticMipBiasMax, 0f, 3f);
+        public float ResolveFarViewStart() => farView.Normalize().start;
+        public float ResolveFarViewFull() => farView.Normalize().full;
+        public float ResolveFarViewSmoothing() => farView.Normalize().smoothing;
+        public float ResolveFarViewShape() => farView.Normalize().shape;
 
         private void OnValidate()
         {
@@ -197,6 +205,7 @@ public class CameraSettingsSO : MoyvaJsonConfigObject
             edgeScrollMarginPixels = Mathf.Max(1f, edgeScrollMarginPixels);
             edgeScrollSpeedMultiplier = Mathf.Max(0.01f, edgeScrollSpeedMultiplier);
             automaticMipBiasMax = Mathf.Clamp(automaticMipBiasMax, 0f, 3f);
+            farView = farView.Normalize();
         }
     }
 }

@@ -74,7 +74,8 @@ MonoBehaviour:
   m_RendererFeatures:
   - {fileID: -778899001122334455}
   - {fileID: -1149095496555172467}
-  m_RendererFeatureMap: 
+  - {fileID: 4758392017561029384}
+  m_RendererFeatureMap: 088bc73454340942
   m_UseNativeRenderPass: 1
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_AssetVersion: 3
@@ -128,3 +129,21 @@ MonoBehaviour:
     BlurQuality: 0
     Falloff: 100
     SampleCount: -1
+--- !u!114 &4758392017561029384
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39f21a04fcbbd6743b4badb28998f096, type: 3}
+  m_Name: FarViewAtmosphere
+  m_EditorClassIdentifier: Kruty1918.Moyva.Visuals::Kruty1918.Moyva.Visuals.FarViewAtmosphereRendererFeature
+  m_Active: 1
+  _shader: {fileID: 4800000, guid: aacf768f43011534589bf1c2ee336212, type: 3}
+  _renderPassEvent: 550
+  _applyInSceneView: 1
+  _applyInSceneViewDuringPlay: 0
+  _debugView: 0
