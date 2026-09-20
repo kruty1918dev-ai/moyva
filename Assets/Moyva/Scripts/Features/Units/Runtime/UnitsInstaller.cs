@@ -138,6 +138,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInterfacesAndSelfTo<UnitVisualMotionService>()
+                .AsSingle()
+                .NonLazy();
+
             Container.BindInterfacesAndSelfTo<UnitWorldInfoPresenter>()
                 .AsSingle()
                 .NonLazy();
