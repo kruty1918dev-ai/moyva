@@ -1,46 +1,6 @@
 namespace Kruty1918.Moyva.Camera.API
 {
     /// <summary>
-    /// Shared far-view ("high altitude") window over normalized zoom.
-    /// Neutral camera-side definition: ICameraZoomState.FarViewWeight rises
-    /// from 0 at <see cref="start"/> to 1 at <see cref="full"/>. Visual and
-    /// audio systems read the same weight so transitions stay synchronized.
-    /// </summary>
-    [System.Serializable]
-    public struct CameraFarViewSettings
-    {
-        [UnityEngine.Range(0f, 1f)] public float start;
-        [UnityEngine.Range(0f, 1f)] public float full;
-        [UnityEngine.Min(0.05f)] public float smoothing;
-        [UnityEngine.Range(0.2f, 3f)] public float shape;
-
-        public static CameraFarViewSettings CreateDefault()
-        {
-            return new CameraFarViewSettings
-            {
-                start = 0.30f,
-                full = 0.85f,
-                smoothing = 4f,
-                shape = 1f,
-            };
-        }
-
-        public CameraFarViewSettings Normalize()
-        {
-            float s = UnityEngine.Mathf.Clamp01(start);
-            return new CameraFarViewSettings
-            {
-                start = s,
-                full = UnityEngine.Mathf.Clamp(
-                    UnityEngine.Mathf.Max(full, s + 0.02f), 0.02f, 1f),
-                smoothing = UnityEngine.Mathf.Max(0.05f, smoothing),
-                shape = UnityEngine.Mathf.Clamp(
-                    shape <= 0f ? 1f : shape, 0.2f, 3f),
-            };
-        }
-    }
-
-    /// <summary>
     /// Canonical normalized camera-distance ("altitude") state.
     /// Single authority for how far the camera currently is from the world:
     /// far-view visuals and zoom-driven audio both consume this so their

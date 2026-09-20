@@ -12,7 +12,6 @@ namespace Kruty1918.Moyva.Marketing.Contracts
         HeroStills = 5,
         StoreAssets = 6,
         SocialImage = 7,
-        MenuBackground = 8,
     }
 
     public enum MarketingOutputKind

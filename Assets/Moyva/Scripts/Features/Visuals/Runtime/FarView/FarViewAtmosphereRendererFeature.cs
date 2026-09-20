@@ -5,6 +5,7 @@ using UnityEditor;
 #endif
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
 
 namespace Kruty1918.Moyva.Visuals

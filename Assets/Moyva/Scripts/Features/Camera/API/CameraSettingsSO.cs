@@ -82,8 +82,47 @@ namespace Kruty1918.Moyva.Camera.API
             };
         }
     }
-[System.Serializable]
-public class CameraSettingsSO : MoyvaJsonConfigObject
+
+    /// <summary>
+    /// Shared far-view ("high altitude") window over normalized zoom.
+    /// Neutral camera-side definition: ICameraZoomState.FarViewWeight rises
+    /// from 0 at <see cref="start"/> to 1 at <see cref="full"/>. Visual and
+    /// audio systems read the same weight so transitions stay synchronized.
+    /// </summary>
+    [System.Serializable]
+    public struct CameraFarViewSettings
+    {
+        [Range(0f, 1f)] public float start;
+        [Range(0f, 1f)] public float full;
+        [Min(0.05f)] public float smoothing;
+        [Range(0.2f, 3f)] public float shape;
+
+        public static CameraFarViewSettings CreateDefault()
+        {
+            return new CameraFarViewSettings
+            {
+                start = 0.30f,
+                full = 0.85f,
+                smoothing = 4f,
+                shape = 1f,
+            };
+        }
+
+        public CameraFarViewSettings Normalize()
+        {
+            float s = Mathf.Clamp01(start);
+            return new CameraFarViewSettings
+            {
+                start = s,
+                full = Mathf.Clamp(Mathf.Max(full, s + 0.02f), 0.02f, 1f),
+                smoothing = Mathf.Max(0.05f, smoothing),
+                shape = Mathf.Clamp(shape <= 0f ? 1f : shape, 0.2f, 3f),
+            };
+        }
+    }
+
+    [System.Serializable]
+    public class CameraSettingsSO : MoyvaJsonConfigObject
     {
         [Header("Control Profile")]
         [FormerlySerializedAs("desktopProfile")]
