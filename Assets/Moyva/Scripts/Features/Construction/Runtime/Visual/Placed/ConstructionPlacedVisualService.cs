@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using Kruty1918.Moyva.Animations.API;
+using Kruty1918.Moyva.Animations.Runtime.Motion;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
@@ -8,7 +10,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    /// <summary>Керує візуалами розміщених будівель: створення, заміна префабів за власником, вибір, стилі станів (demolition/construction/operational).</summary>
+    /// <summary>ConstructionPlacedVisualService — struct: будівництва Placed візуалу сервісу.</summary>
     internal sealed class ConstructionPlacedVisualService :
         IConstructionPlacedVisualLookup
     {
@@ -27,23 +29,29 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionVisualStyleService _styleService;
         private readonly ConstructionTerrainAlignmentService _terrainAlignment;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
+        private readonly IGameplayMotionSettingsProvider _motionSettings;
+        private readonly SignalBus _signalBus;
 
         private Vector2Int? _selectedPosition;
 
-        /// <summary>Створює сервіс із залежностями візуального шару будівель.</summary>
+        /// <summary>Виконує ConstructionPlacedVisualService.</summary>
         [Inject]
         public ConstructionPlacedVisualService(
             ConstructionVisualRootService roots,
             ConstructionVisualFactory visualFactory,
             ConstructionVisualStyleService styleService,
             [InjectOptional] ConstructionTerrainAlignmentService terrainAlignment = null,
-            [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)
+            [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null,
+            [InjectOptional] IGameplayMotionSettingsProvider motionSettings = null,
+            [InjectOptional] SignalBus signalBus = null)
         {
             _roots = roots;
             _visualFactory = visualFactory;
             _styleService = styleService;
             _terrainAlignment = terrainAlignment;
             _settingsProvider = settingsProvider;
+            _motionSettings = motionSettings;
+            _signalBus = signalBus;
         }
 
         /// <summary>Замінює або створює візуал будівлі у вказаній позиції.</summary>
@@ -55,7 +63,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             float visualOffsetY = 0f,
             GameObject sourceVisual = null,
             EntityPresentationConfig presentation = null,
-            string ownerId = null)
+            string ownerId = null,
+            bool instantVisual = false)
         {
             Remove(position);
             string objectName = $"Building_{buildingId}_{position.x}_{position.y}";
@@ -93,6 +102,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_selectedPosition.HasValue && _selectedPosition.Value == position)
                 _selectionHighlighter.Apply(instance);
+
+            // Fresh placements (not relocations) emerge from the ground —
+            // the building rises out of its foundation and settles into place.
+            if (sourceVisual == null && !instantVisual)
+                PlayPlacementEmerge(instance, buildingId, position);
         }
 
         /// <summary>Замінює візуал, відновлюючи збережену позу (позицію/поворот/масштаб).</summary>
@@ -142,14 +156,90 @@ namespace Kruty1918.Moyva.Construction.Runtime
                    && !string.IsNullOrEmpty(ownerId);
         }
 
+        /// <summary>
+        /// Перехід будівництво→робочий стан: готовий префаб замінює
+        /// плейсхолдер будівництва без різкого попа — новий інстанс
+        /// піднімається/сідає, а плейсхолдер стискається й зникає.
+        /// </summary>
+        public void TransitionToOperational(
+            Vector2Int position,
+            GameObject prefab,
+            float visualOffsetY = 0f,
+            EntityPresentationConfig presentation = null,
+            bool instantVisual = false)
+        {
+            if (prefab == null || !_placedByPosition.ContainsKey(position))
+                return;
+
+            string buildingId = _buildingIdByPosition.TryGetValue(position, out string storedId)
+                ? storedId
+                : string.Empty;
+            Quaternion rotation = _baseRotationByPosition.TryGetValue(position, out Quaternion storedRot)
+                ? storedRot
+                : Quaternion.identity;
+            string owner = TryGetOwner(position, out string storedOwner)
+                ? storedOwner
+                : null;
+
+            GameObject outgoing = Detach(position);
+            Replace(
+                position,
+                buildingId,
+                prefab,
+                rotation,
+                visualOffsetY,
+                presentation: presentation,
+                ownerId: owner,
+                instantVisual: true);
+
+            if (outgoing == null)
+                return;
+
+            if (!instantVisual
+                && _placedByPosition.TryGetValue(position, out GameObject incoming)
+                && incoming != null)
+            {
+                PlayOperationalTransition(incoming, outgoing, position, buildingId);
+            }
+            else
+            {
+                Object.Destroy(outgoing);
+            }
+        }
+
+        /// <summary>
+        /// Анімоване знесення: візуал опускається/трясеться зі світу, доки
+        /// gameplay-стан уже очищено. Клітинка звільняється одразу.
+        /// </summary>
+        public void BeginDemolition(Vector2Int position)
+        {
+            GameObject instance = Detach(position, out string buildingId);
+            if (instance == null)
+                return;
+
+            PlayDemolition(instance, buildingId, position);
+        }
+
         /// <summary>Видаляє візуал будівлі у позиції.</summary>
         public void Remove(Vector2Int position)
         {
-            if (!_placedByPosition.TryGetValue(position, out GameObject instance))
-                return;
-
+            GameObject instance = Detach(position, out _);
             if (instance != null)
                 Object.Destroy(instance);
+        }
+
+        /// <summary>Detaches the placed visual from all registries without destroying it.</summary>
+        private GameObject Detach(Vector2Int position)
+            => Detach(position, out _);
+
+        private GameObject Detach(Vector2Int position, out string buildingId)
+        {
+            buildingId = string.Empty;
+            if (!_placedByPosition.TryGetValue(position, out GameObject instance))
+                return null;
+
+            if (_buildingIdByPosition.TryGetValue(position, out string id))
+                buildingId = id;
 
             _placedByPosition.Remove(position);
             _presentationByPosition.Remove(position);
@@ -158,6 +248,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _baseRotationByPosition.Remove(position);
             _demolitionPreviewPositions.Remove(position);
             _underConstructionPositions.Remove(position);
+            return instance;
         }
 
         /// <summary>Позначає будівлю вибраною.</summary>
@@ -232,7 +323,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ApplyPersistentStyle(position, instance);
         }
 
-        /// <summary>Очищає всі стилі попереднього перегляду знесення.</summary>
+        /// <summary>Очищує знесення превʼю Styles.</summary>
         public void ClearDemolitionPreviewStyles()
         {
             foreach (Vector2Int position in _demolitionPreviewPositions)

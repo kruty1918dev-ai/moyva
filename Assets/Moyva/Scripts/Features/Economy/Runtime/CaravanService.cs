@@ -14,7 +14,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private const float Epsilon = 0.0001f;
         private static readonly IReadOnlyDictionary<string, float> Empty =
             new ReadOnlyDictionary<string, float>(new Dictionary<string, float>());
-        private readonly ISettlementRegistry _settlements;
+        private readonly EconomySettlementRegistryService _settlements;
         private readonly SignalBus _signals;
         private readonly LazyInject<ICaravanGameplayAccess> _gameplay;
         private readonly IBuildingRegistry _buildings;
@@ -32,7 +32,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             public readonly Dictionary<string, float> Resources = new(StringComparer.Ordinal);
         }
 
-        public CaravanService(ISettlementRegistry settlements, SignalBus signals,
+        public CaravanService(EconomySettlementRegistryService settlements, SignalBus signals,
             LazyInject<ICaravanGameplayAccess> gameplay,
             [InjectOptional] IBuildingRegistry buildings = null,
             [InjectOptional] IConstructionPlacementQuery placementQuery = null,

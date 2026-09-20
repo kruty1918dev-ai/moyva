@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/vfx-catalog.schema.json",
+  "title": "Moyva — VFX Catalog Config",
+  "description": "JSON source of truth для Kruty1918.Moyva.Vfx.API.VfxCatalogConfig. Мапить доменні VFX-події на pooled префаби; runtime читає JSON напряму через frozen snapshot.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.vfx-catalog"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "title": "Стабільний ID"
+    },
+    "model": {
+      "const": "vfx-catalog"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "effects": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "additionalProperties": false,
+        "required": [
+          "eventName",
+          "prefab"
+        ],
+        "properties": {
+          "eventName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Стабільний VFX event id (див. VfxEventIds), наприклад building-placed."
+          },
+          "context": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": "",
+            "description": "Опційний контекст: unit:<typeId>, tile:<typeId>. Контекстне правило має пріоритет над базовим."
+          },
+          "prefab": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Opaque Unity asset reference на pooled VFX prefab з VfxEffect на root.",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ]
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 1,
+            "description": "0 = low (ambient/dust), 1 = normal, 2 = critical (kill/capture — витісняє найстаріший ефект при переповненні)."
+          },
+          "maxConcurrent": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Одночасних інстансів цього ефекту. 0 = лише глобальний бюджет."
+          },
+          "prewarm": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0,
+            "description": "<=0 — взяти duration із VfxEffect на префабі."
+          },
+          "scale": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "default": 1
+          },
+          "cooldownPerKey": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0,
+            "description": "Мінімальний інтервал між спавнами з тим самим ключем (наприклад unitId)."
+          },
+          "factionTint": {
+            "type": "boolean",
+            "default": false,
+            "description": "Підфарбувати tintTargets ефекту кольором фракції власника."
+          },
+          "cullDistance": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "maxOrthoSize": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0,
+            "description": "Не спавнити ефект, якщо orthographicSize камери більший (далекий zoom). 0 = вимкнено."
+          }
+        }
+      }
+    },
+    "budget": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "maxActivePerformance": { "type": "integer", "minimum": 1, "default": 24 },
+        "maxActiveBalanced": { "type": "integer", "minimum": 1, "default": 48 },
+        "maxActiveQuality": { "type": "integer", "minimum": 1, "default": 96 },
+        "maxSpawnsPerFrame": { "type": "integer", "minimum": 1, "default": 6 },
+        "defaultCullDistance": { "type": "number", "minimum": 0, "default": 90 },
+        "lowPriorityMaxOrthoSize": { "type": "number", "minimum": 0, "default": 0 }
+      }
+    }
+  }
+}

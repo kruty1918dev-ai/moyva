@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using DG.Tweening;
+using ReactUnity;
 using ReactUnity.UGUI;
 using ReactUnity.UGUI.Behaviours;
 using UnityEngine;
@@ -41,14 +42,48 @@ namespace UnityHTML.Runtime
             motion.Restore();
         }
 
+        public void RestoreResting(string targetId)
+        {
+            if (string.IsNullOrWhiteSpace(targetId))
+                return;
+
+            if (_active.Remove(targetId, out ActiveMotion motion))
+            {
+                motion.Tween?.Kill(false);
+                motion.Restore();
+                return;
+            }
+
+            // No tracked motion: a finished tween (e.g. fade-out) already removed
+            // itself from _active but can leave the CanvasGroup at alpha 0.
+            if (!TryFindTarget(targetId, out RectTransform target))
+                return;
+            CanvasGroup group = target.GetComponent<CanvasGroup>();
+            if (group != null)
+                group.alpha = ActiveMotion.ResolveRestingAlpha(target, group);
+        }
+
+        /// <summary>
+        /// Called by the document tree before a component is destroyed/pooled during
+        /// reconciliation. Stops every motion targeting that element (or its children)
+        /// so a live tween can never write into a recycled element owned by a newer page.
+        /// </summary>
+        internal void HandleComponentRemoved(IReactComponent component)
+        {
+            if (component is not UGUIComponent ugui || ugui.GameObject == null)
+                return;
+
+            foreach (ReactElement element in ugui.GameObject.GetComponentsInChildren<ReactElement>(true))
+            {
+                string id = element != null && element.Component != null ? element.Component.Id : null;
+                if (!string.IsNullOrEmpty(id))
+                    Stop(id);
+            }
+        }
+
         internal void Attach(RectTransform root)
         {
             _root = root;
-        }
-
-        internal void PrepareForDocumentUpdate()
-        {
-            StopAll();
         }
 
         internal void ApplyDeclaredMotions()

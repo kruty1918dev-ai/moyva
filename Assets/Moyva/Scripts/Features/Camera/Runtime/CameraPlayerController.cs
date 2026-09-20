@@ -18,9 +18,12 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly IGameplayInputPolicy _inputPolicy;
         private readonly IPlayerControlSettingsService _controlSettings;
         private readonly IInputDeviceContext _devices;
+        private readonly IGameplayCameraFocusService _gameplayFocus;
+        private readonly CameraGestureArbiter _gestureArbiter;
         private PlayerControlProfile _profile;
         private bool _panHeld;
         private bool _orbitHeld;
+        private float _focusSelectedValue;
         private readonly Dictionary<int, bool> _touchCaptures = new();
         private readonly List<int> _releasedTouches = new();
         private readonly Dictionary<PlayerControlAction, PlayerControlBinding> _bindings = new();
@@ -38,7 +41,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
             InputActionAsset inputAsset,
             [InjectOptional] IGameplayInputPolicy inputPolicy = null,
             [InjectOptional] IPlayerControlSettingsService controlSettings = null,
-            [InjectOptional] IInputDeviceContext devices = null)
+            [InjectOptional] IInputDeviceContext devices = null,
+            [InjectOptional] IGameplayCameraFocusService gameplayFocus = null)
         {
             _cameraMovement = cameraMovement;
             _cameraZoom = cameraZoom;
@@ -46,6 +50,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _inputPolicy = inputPolicy;
             _controlSettings = controlSettings;
             _devices = devices;
+            _gameplayFocus = gameplayFocus;
+            _gestureArbiter = new CameraGestureArbiter(settings != null ? settings.ResolveTouchSettleFrames() : 2);
             if (_devices != null) _devices.Changed += OnProfileChanged;
             ApplyControlSettings(_controlSettings?.Settings ?? PlayerControlSettingsData.CreateDefault());
             if (_controlSettings != null)
@@ -106,6 +112,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 _cameraZoom.ZoomCamera(zoom * ResolveZoomSpeed(), pointerPosition);
             float rotation = ResolveConfiguredRotation();
             _cameraMovement.SetCameraOrbitInput(canNavigate && !pan && !orbit ? Mathf.Clamp(rotation * ResolveOrbitSpeed(), -1f, 1f) : 0f);
+
+            float focusSelected = ReadBinding(PlayerControlAction.FocusSelected);
+            if (focusSelected > 0.5f && _focusSelectedValue <= 0.5f && canNavigate)
+                _gameplayFocus?.FocusSelected();
+            _focusSelectedValue = focusSelected;
         }
 
         private bool ReadGesture(string path, bool orbit)
@@ -183,20 +194,27 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             UpdateTouchCaptures(touchscreen);
             int activeTouchCount = TryReadActiveTouches(touchscreen, out var firstTouch, out var secondTouch);
+            _gestureArbiter.NotifyTouchCount(activeTouchCount);
+            _gestureArbiter.TickSettle();
             if (activeTouchCount <= 0)
                 return false;
 
             if (IsTouchOverInteractiveUi(firstTouch) || (activeTouchCount > 1 && IsTouchOverInteractiveUi(secondTouch)))
                 return true;
 
+            float dpiScale = ResolveTouchDpiScale();
             if (activeTouchCount > 1)
             {
-                HandleTwoFingerGesture(firstTouch, secondTouch);
+                HandleTwoFingerGesture(firstTouch, secondTouch, dpiScale);
                 return true;
             }
 
-            Vector2 touchDelta = ClampTouchDelta(firstTouch.Delta);
-            float dragDeadZone = _settings.ResolveTouchDragDeadZonePixels();
+            // Releasing the second finger mid-gesture must not become a pan jump.
+            if (_gestureArbiter.SuppressSingleFingerPan)
+                return true;
+
+            Vector2 touchDelta = ClampTouchDelta(firstTouch.Delta, dpiScale);
+            float dragDeadZone = _settings.ResolveTouchDragDeadZonePixels() * dpiScale;
             if (touchDelta.sqrMagnitude <= dragDeadZone * dragDeadZone)
                 return true;
 
@@ -204,51 +222,69 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return true;
         }
 
-        private void HandleTwoFingerGesture(TouchGestureSample firstTouch, TouchGestureSample secondTouch)
+        private void HandleTwoFingerGesture(TouchGestureSample firstTouch, TouchGestureSample secondTouch, float dpiScale)
         {
             Vector2 firstPreviousPosition = firstTouch.Position - firstTouch.Delta;
             Vector2 secondPreviousPosition = secondTouch.Position - secondTouch.Delta;
 
             Vector2 currentCenter = (firstTouch.Position + secondTouch.Position) * 0.5f;
+            Vector2 previousCenter = (firstPreviousPosition + secondPreviousPosition) * 0.5f;
 
             float currentDistance = Vector2.Distance(firstTouch.Position, secondTouch.Position);
             float previousDistance = Vector2.Distance(firstPreviousPosition, secondPreviousPosition);
             if (previousDistance <= 0.01f || currentDistance <= 0.01f)
                 return;
 
-            float pinchDelta = currentDistance - previousDistance;
-            float pinchDeadZone = _settings.ResolveTouchPinchDeadZonePixels();
-            bool isPinching = Mathf.Abs(pinchDelta) > pinchDeadZone;
-            float twist = Vector2.SignedAngle(secondPreviousPosition - firstPreviousPosition, secondTouch.Position - firstTouch.Position);
-            if (!isPinching && Mathf.Abs(twist) > 0.5f && _profile?.OrbitBinding == "<Touch>/twist")
+            var gesture = _gestureArbiter.EvaluateTwoFinger(
+                ClampTouchDelta(currentCenter - previousCenter, dpiScale),
+                currentDistance - previousDistance,
+                Vector2.SignedAngle(secondPreviousPosition - firstPreviousPosition, secondTouch.Position - firstTouch.Position),
+                _settings.ResolveTouchDragDeadZonePixels() * dpiScale,
+                _settings.ResolveTouchPinchDeadZonePixels() * dpiScale,
+                _settings.ResolveTouchPinchDominancePixels() * dpiScale,
+                _settings.ResolveTouchTwistDominanceDegrees());
+
+            if (gesture.HasTwist && _profile?.OrbitBinding == "<Touch>/twist")
             {
-                _cameraMovement.RotateCameraAroundFocusPoint(twist * ResolveOrbitSpeed() * (_profile?.Sensitivity ?? 1f));
+                _cameraMovement.RotateCameraAroundFocusPoint(gesture.TwistDegrees * ResolveOrbitSpeed() * (_profile?.Sensitivity ?? 1f));
                 return;
             }
 
-            if (!isPinching)
+            if (!gesture.HasPinch)
             {
-                Vector2 previousCenter = (firstPreviousPosition + secondPreviousPosition) * 0.5f;
-                Vector2 centerDelta = ClampTouchDelta(currentCenter - previousCenter);
-                float dragDeadZone = _settings.ResolveTouchDragDeadZonePixels();
-                if (centerDelta.sqrMagnitude > dragDeadZone * dragDeadZone)
-                    ApplyTouchDrag(centerDelta, currentCenter);
+                if (gesture.HasPan)
+                    ApplyTouchDrag(gesture.PanDeltaPixels, currentCenter);
                 return;
             }
 
-            string gesture = pinchDelta > 0f ? "<Touch>/pinchOut" : "<Touch>/pinchIn";
-            float zoomDirection = GestureAction(gesture, PlayerControlAction.ZoomIn) - GestureAction(gesture, PlayerControlAction.ZoomOut);
+            float pinchDelta = gesture.PinchDeltaPixels;
+            string gesturePath = pinchDelta > 0f ? "<Touch>/pinchOut" : "<Touch>/pinchIn";
+            float zoomDirection = GestureAction(gesturePath, PlayerControlAction.ZoomIn) - GestureAction(gesturePath, PlayerControlAction.ZoomOut);
             if (_profile?.Profile != ControlProfile.TouchPhone) zoomDirection = Mathf.Sign(pinchDelta);
-            if (Mathf.Approximately(zoomDirection, 0f)) { ApplyTouchAction(gesture, Mathf.Abs(pinchDelta) * 0.02f, currentCenter); return; }
+            if (Mathf.Approximately(zoomDirection, 0f)) { ApplyTouchAction(gesturePath, Mathf.Abs(pinchDelta) * 0.02f, currentCenter); return; }
             float scaleFactor = Mathf.Pow(previousDistance / currentDistance, zoomDirection * Mathf.Sign(pinchDelta));
             if (!Mathf.Approximately(ResolveZoomSpeed(), 1f))
                 scaleFactor = Mathf.Pow(scaleFactor, ResolveZoomSpeed());
             bool immediate = _settings.ResolveUseImmediateTouchGestures();
-            if (_settings.ResolveKeepPinchFocusUnderFingers())
+            if (ResolveKeepPinchFocus())
                 _cameraZoom.ZoomCameraByScale(scaleFactor, immediate, currentCenter);
             else
                 _cameraZoom.ZoomCameraByScale(scaleFactor, immediate);
         }
+
+        private bool ResolveKeepPinchFocus()
+        {
+            if (_controlSettings != null)
+                return _controlSettings.Settings.ZoomTowardFingers;
+            return _settings.ResolveKeepPinchFocusUnderFingers();
+        }
+
+        private float ResolveTouchDpiScale()
+            => CameraTouchMath.ResolveDpiScale(
+                Screen.dpi,
+                _settings.ResolveTouchDpiReference(),
+                _settings.ResolveTouchDpiScaleMin(),
+                _settings.ResolveTouchDpiScaleMax());
 
         private float GestureAction(string path, PlayerControlAction action)
             => _bindings.TryGetValue(action, out var binding) && binding.ControlPath == path ? 1f : 0f;
@@ -321,8 +357,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
         }
 
         private Vector2 ClampTouchDelta(Vector2 delta)
+            => ClampTouchDelta(delta, ResolveTouchDpiScale());
+
+        private Vector2 ClampTouchDelta(Vector2 delta, float dpiScale)
         {
-            float maxDelta = Mathf.Max(1f, _settings.ResolveMaxTouchDeltaPixels());
+            float maxDelta = Mathf.Max(1f, _settings.ResolveMaxTouchDeltaPixels() * dpiScale);
             return delta.sqrMagnitude > maxDelta * maxDelta
                 ? delta.normalized * maxDelta
                 : delta;

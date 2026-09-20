@@ -30,7 +30,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private static readonly IReadOnlyList<ConstructionSupplyOrderSnapshot> NoOrders =
             new List<ConstructionSupplyOrderSnapshot>();
 
-        private readonly ISettlementRegistry _settlements;
+        private readonly EconomySettlementRegistryService _settlements;
         private readonly EconomyManager _economy;
         private readonly ICaravanService _caravans;
         private readonly SignalBus _signals;
@@ -68,7 +68,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         }
 
         public ConstructionSupplyService(
-            ISettlementRegistry settlements,
+            EconomySettlementRegistryService settlements,
             EconomyManager economy,
             ICaravanService caravans,
             SignalBus signals,

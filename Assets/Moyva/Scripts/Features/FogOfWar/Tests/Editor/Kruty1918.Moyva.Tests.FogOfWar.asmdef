@@ -3,9 +3,11 @@
   "rootNamespace": "Kruty1918.Moyva.Tests.FogOfWar",
   "references": [
     "Kruty1918.Moyva.FogOfWar",
+    "Kruty1918.Moyva.Grid",
     "Kruty1918.Moyva.SaveSystem",
     "Kruty1918.Moyva.Signals",
-    "Zenject"
+    "Zenject",
+    "Zenject-usage.dll"
   ],
   "includePlatforms": ["Editor"],
   "autoReferenced": false,

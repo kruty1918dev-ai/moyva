@@ -20,15 +20,16 @@ namespace Kruty1918.Moyva.Economy
     /// </summary>
     public sealed class EconomyInstaller : MonoInstaller
     {
+        /// <summary>Встановлює Simulation Bindings.</summary>
         public static void InstallSimulationBindings(DiContainer container, EconomyDatabaseSO database)
         {
             if (database?.RulesConfig == null) throw new System.InvalidOperationException("Economy rules are missing.");
             container.BindInstance(database).IfNotBound();
             container.BindInterfacesAndSelfTo<EconomyManager>().AsSingle();
-            container.Bind<ISettlementRegistry>().To<EconomySettlementRegistryService>().AsSingle();
-            container.Bind<IEconomyOwnerResourcePoolService>().To<EconomyOwnerResourcePoolService>().AsSingle();
-            container.Bind<IEconomyBuildingIntegration>().To<EconomyBuildingIntegrationService>().AsSingle();
-            container.Bind<IEconomyTurnProcessor>().To<EconomyTurnProcessorService>().AsSingle();
+            container.Bind<EconomySettlementRegistryService>().AsSingle();
+            container.Bind<EconomyOwnerResourcePoolService>().AsSingle();
+            container.Bind<EconomyBuildingIntegrationService>().AsSingle();
+            container.Bind<EconomyTurnProcessorService>().AsSingle();
             container.Bind<IEconomyInfoMediator>().To<EconomyInfoMediator>().AsSingle();
             container.Bind<IEconomyRuntimeApi>().To<EconomyRuntimeApi>().AsSingle();
             if (!container.HasBinding<ICaravanService>())
@@ -58,6 +59,7 @@ namespace Kruty1918.Moyva.Economy
         [Tooltip("Шаблон параметрів Economy Hub (EconomyRulesConfiguration). Використовується runtime API для централізованого форматування UI-даних.")]
         private EconomyRulesConfiguration _rulesTemplate;
 
+        /// <summary>Встановлює Bindings.</summary>
         public override void InstallBindings()
         {
             if (_database == null)
@@ -111,31 +113,27 @@ namespace Kruty1918.Moyva.Economy
                     .AsSingle();
             }
 
-            if (!Container.HasBinding<IEconomyOwnerResourcePoolService>())
+            if (!Container.HasBinding<EconomyOwnerResourcePoolService>())
             {
-                Container.Bind<IEconomyOwnerResourcePoolService>()
-                    .To<EconomyOwnerResourcePoolService>()
+                Container.Bind<EconomyOwnerResourcePoolService>()
                     .AsSingle();
             }
 
-            if (!Container.HasBinding<ISettlementRegistry>())
+            if (!Container.HasBinding<EconomySettlementRegistryService>())
             {
-                Container.Bind<ISettlementRegistry>()
-                    .To<EconomySettlementRegistryService>()
+                Container.Bind<EconomySettlementRegistryService>()
                     .AsSingle();
             }
 
-            if (!Container.HasBinding<IEconomyBuildingIntegration>())
+            if (!Container.HasBinding<EconomyBuildingIntegrationService>())
             {
-                Container.Bind<IEconomyBuildingIntegration>()
-                    .To<EconomyBuildingIntegrationService>()
+                Container.Bind<EconomyBuildingIntegrationService>()
                     .AsSingle();
             }
 
-            if (!Container.HasBinding<IEconomyTurnProcessor>())
+            if (!Container.HasBinding<EconomyTurnProcessorService>())
             {
-                Container.Bind<IEconomyTurnProcessor>()
-                    .To<EconomyTurnProcessorService>()
+                Container.Bind<EconomyTurnProcessorService>()
                     .AsSingle();
             }
 

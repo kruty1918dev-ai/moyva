@@ -169,7 +169,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
                 Scale = rule.scale,
                 CountScale = _quality.CountScale,
             };
-            if (factionTint.HasValue)
+            if (rule.factionTint && factionTint.HasValue)
             {
                 request.Tint = factionTint.Value;
                 request.HasTint = true;
@@ -354,7 +354,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
                 CountScale = _quality.CountScale,
                 CooldownKey = cooldownKey,
             };
-            if (factionTint.HasValue)
+            if (rule.factionTint && factionTint.HasValue)
             {
                 request.Tint = factionTint.Value;
                 request.HasTint = true;

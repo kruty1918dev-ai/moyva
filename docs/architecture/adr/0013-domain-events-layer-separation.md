@@ -1,6 +1,6 @@
 # 0013 Domain Events Layer Separation
 
-- Status: Accepted
+- Status: Superseded — rolled back 2026-09-20; the `DomainEvents` mirror and `SignalDomainEventBridge` are deleted. Canonical gameplay `*Signal` types are the single event layer; former subscribers (`GameplayAudioFeedbackService`, `AmbientWorldAudioService`) consume them directly.
 - Date: 2026-05-10
 
 ## Context

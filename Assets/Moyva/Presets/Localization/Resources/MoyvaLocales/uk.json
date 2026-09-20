@@ -724,6 +724,18 @@
     "{0} residents": "{0} мешканців",
     "{0} sandbox speed": "{0} швидкість пісочниці",
     "{0} {1}": "{0} {1}",
-    "{0} {1} remaining": "залишилось {0} {1}"
+    "{0} {1} remaining": "залишилось {0} {1}",
+    "Camera effects": "Ефекти камери",
+    "Camera pulses and event accents.": "Пульсації камери та акценти подій.",
+    "Camera shake": "Тряска камери",
+    "Smooth camera focus": "Плавний фокус камери",
+    "Glide to focused targets instead of snapping.": "Плавне наближення до цілей замість миттєвого стрибка.",
+    "Automatic camera focus": "Автоматичний фокус камери",
+    "Focus the camera on important events.": "Камера фокусується на важливих подіях.",
+    "Reduce camera motion": "Зменшити рух камери",
+    "Minimize camera shake and focus glides.": "Мінімізувати тряску та плавні переходи камери.",
+    "Zoom toward fingers": "Наближення до пальців",
+    "Pinch zoom keeps the map under your fingers.": "Масштабування щипком тримає мапу під пальцями.",
+    "Focus selected": "Фокус на вибраному"
   }
 }

@@ -1,0 +1,19 @@
+{
+  "name": "Kruty1918.Moyva.Architecture.Tests",
+  "rootNamespace": "Kruty1918.Moyva.Architecture.Tests",
+  "references": [],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

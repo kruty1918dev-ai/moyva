@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
 {
     internal sealed class SettlementCaptureService : ISettlementCaptureService
     {
-        private readonly ISettlementRegistry _settlements;
+        private readonly EconomySettlementRegistryService _settlements;
         private readonly IConstructionOwnershipTransfer _construction;
         private readonly SignalBus _signals;
 
@@ -80,7 +80,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         }
 
         public SettlementCaptureService(
-            ISettlementRegistry settlements,
+            EconomySettlementRegistryService settlements,
             IConstructionOwnershipTransfer construction,
             SignalBus signals)
         {

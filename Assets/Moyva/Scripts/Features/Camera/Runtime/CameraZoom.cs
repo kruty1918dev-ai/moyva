@@ -4,6 +4,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
+    /// <summary>CameraZoom — class: камери зум.</summary>
     internal sealed class CameraZoom : ICameraZoom, IInitializable, ILateTickable
     {
         private const string GlobalMipBiasProperty = "_MoyvaTexLodBias";
@@ -24,9 +25,16 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private float _targetZoom;
         private float _lastPushedMipBias = float.NaN;
 
-        private float _forceBlockTimer;
-        private const float ForceBlockDuration = 1.5f; // Час затримки після форсованого зуму
+        /// <summary>ручного керування запитаного.</summary>
+        public event System.Action ManualControlRequested;
 
+        /// <summary>Unscaled time of the most recent player zoom intent.</summary>
+        internal float LastManualControlTime { get; private set; } = float.NegativeInfinity;
+
+        /// <summary>Current applied zoom (orthographic size or field of view).</summary>
+        internal float CurrentZoom => GetCurrentZoom();
+
+        /// <summary>Виконує CameraZoom.</summary>
         public CameraZoom(
             UnityEngine.Camera camera,
             CameraSettingsSO settings,
@@ -36,6 +44,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _settings = settings;
         }
 
+        /// <summary>Ініціалізує компонент і підписує на події.</summary>
         public void Initialize()
         {
             // На старті синхронізуємо цільовий зум з поточним Orthographic Size або Field Of View.
@@ -44,17 +53,18 @@ namespace Kruty1918.Moyva.Camera.Runtime
             UpdateGlobalMipBias();
         }
 
+        /// <summary>Виконує ZoomCamera.</summary>
         public void ZoomCamera(float delta)
             => ZoomCamera(delta, ResolveScreenCenter());
 
+        /// <summary>Виконує ZoomCamera.</summary>
         public void ZoomCamera(float delta, Vector2 screenFocalPoint)
         {
-            // Якщо діє блокування від форсованого зуму — ігноруємо інпут гравця
-            if (_forceBlockTimer > 0f) return;
-
             float normalizedDelta = NormalizeWheelDelta(delta);
             if (Mathf.Abs(normalizedDelta) <= ZoomEpsilon)
                 return;
+
+            NotifyManualControl();
 
             // Віднімаємо дельту: скрол вперед наближає, назад віддаляє.
             float zoomStep = Mathf.Max(0.01f, _settings.ResolveZoomSpeed());
@@ -67,13 +77,16 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         }
 
+        /// <summary>Виконує ZoomCameraByScale.</summary>
         public void ZoomCameraByScale(float scaleFactor, bool immediate)
             => ZoomCameraByScale(scaleFactor, immediate, ResolveScreenCenter());
 
+        /// <summary>Виконує ZoomCameraByScale.</summary>
         public void ZoomCameraByScale(float scaleFactor, bool immediate, Vector2 screenFocalPoint)
         {
-            if (_forceBlockTimer > 0f) return;
             if (scaleFactor <= 0f || float.IsNaN(scaleFactor) || float.IsInfinity(scaleFactor)) return;
+
+            NotifyManualControl();
 
             float sensitivity = Mathf.Max(0.01f, _settings.ResolveTouchPinchZoomSensitivity());
             ResolveZoomRange(out float minZoom, out float maxZoom);
@@ -100,23 +113,38 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return new Vector2(width * 0.5f, height * 0.5f);
         }
 
+        /// <summary>Примусово задає зум камери.</summary>
         public void ForceZoomCamera(float zoomLevel)
         {
-            ResolveZoomRange(out float minZoom, out float maxZoom);
-            _targetZoom = Mathf.Clamp(zoomLevel, minZoom, maxZoom);
-
-            // Блокуємо ручне керування на заданий час
-            _forceBlockTimer = ForceBlockDuration;
+            // Programmatic zoom target. Player input always wins — there is no
+            // input lock; use CameraFocusService for interruptible transitions.
+            SetTargetZoom(zoomLevel);
         }
 
+        /// <summary>Moves the zoom target without touching the current value.</summary>
+        internal void SetTargetZoom(float zoom)
+        {
+            ResolveZoomRange(out float minZoom, out float maxZoom);
+            _targetZoom = Mathf.Clamp(zoom, minZoom, maxZoom);
+        }
+
+        /// <summary>Sets the zoom target and applies it immediately.</summary>
+        internal void SetZoomImmediate(float zoom)
+        {
+            SetTargetZoom(zoom);
+            ApplyZoomValue(_targetZoom);
+            UpdateGlobalMipBias();
+        }
+
+        private void NotifyManualControl()
+        {
+            LastManualControlTime = Time.unscaledTime;
+            ManualControlRequested?.Invoke();
+        }
+
+        /// <summary>Виконує LateTick.</summary>
         public void LateTick()
         {
-            // Оновлюємо таймер блокування
-            if (_forceBlockTimer > 0f)
-            {
-                _forceBlockTimer -= Time.unscaledDeltaTime;
-            }
-
             ResolveZoomRange(out float minZoom, out float maxZoom);
             _targetZoom = Mathf.Clamp(_targetZoom, minZoom, maxZoom);
 

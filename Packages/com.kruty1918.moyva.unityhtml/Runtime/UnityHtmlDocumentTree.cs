@@ -15,6 +15,13 @@ namespace UnityHTML.Runtime
         private string _html;
         public UnityHtmlDocumentTree(ReactContext context) => _context = context;
 
+        /// <summary>
+        /// Fired right before a reconciled-out component is destroyed/pooled, so the
+        /// host can stop animations whose target is leaving the tree. Without this a
+        /// live tween keeps writing into a recycled element belonging to the new page.
+        /// </summary>
+        internal Action<IReactComponent> ComponentRemoved;
+
         public bool Update(string html)
         {
             if (_html == html) return false;
@@ -115,8 +122,9 @@ namespace UnityHTML.Runtime
             { Remove(nodes[i].Component); nodes.RemoveAt(i); }
         }
 
-        private static void Remove(IReactComponent component)
+        private void Remove(IReactComponent component)
         {
+            ComponentRemoved?.Invoke(component);
 #if UNITY_EDITOR
             if (!UnityEngine.Application.isPlaying && component is ReactUnity.UGUI.UGUIComponent ugui)
             {
