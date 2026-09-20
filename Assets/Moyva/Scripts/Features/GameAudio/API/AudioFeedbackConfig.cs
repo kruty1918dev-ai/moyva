@@ -31,14 +31,26 @@ namespace Kruty1918.Moyva.GameAudio.API
         public string notificationSuccess = "ui-notification-success";
         public string notificationWarning = "ui-notification-warning";
         public string notificationError = "ui-notification-error";
+
+        /// <summary>Epic (combat) музика під час бою: вмикається на атаку, вимикається після тиші.</summary>
+        public bool combatMusicEnabled = true;
+        [Min(1f)] public float combatMusicQuietSeconds = 25f;
     }
 
-    /// <summary>Правило: доменна подія → звуковий ключ.</summary>
+    /// <summary>
+    /// Правило: доменна подія → звуковий ключ.
+    /// Необов'язковий context уточнює подію ("unit:archer", "tile:water") —
+    /// спочатку шукається правило eventName+context, інакше базове eventName.
+    /// </summary>
     [Serializable]
     public sealed class AudioFeedbackEventRule
     {
         public string eventName;
         public string soundKey;
+
+        [Tooltip("Контекст події: 'unit:<unitTypeId>' або 'tile:<tileTypeId>'. Порожньо — будь-який.")]
+        public string context = string.Empty;
+
         [Range(0f, 1f)] public float volumeScale = 1f;
         [Tooltip("Грати у 3D-позиції події, якщо вона відома.")]
         public bool atPosition = true;

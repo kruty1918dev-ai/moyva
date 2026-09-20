@@ -96,6 +96,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus.Subscribe<BuildingDemolishedSignal>(HandleBuildGridStateChanged);
             _signalBus.Subscribe<BuildingOperationalSignal>(_placedSignals.Handle);
             _signalBus.Subscribe<BuildingOperationalSignal>(HandleBuildGridStateChanged);
+            _signalBus.Subscribe<BuildingOwnershipTransferredSignal>(_placedSignals.Handle);
             _signalBus.Subscribe<WorldInfoSelectionChangedSignal>(_placedSignals.Handle);
             _signalBus.Subscribe<GameModeChangedSignal>(_placedSignals.Handle);
             _signalBus.Subscribe<WorldGeneratedDataSignal>(HandleWorldGenerated);
@@ -120,6 +121,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(HandleBuildGridStateChanged);
             _signalBus.TryUnsubscribe<BuildingOperationalSignal>(_placedSignals.Handle);
             _signalBus.TryUnsubscribe<BuildingOperationalSignal>(HandleBuildGridStateChanged);
+            _signalBus.TryUnsubscribe<BuildingOwnershipTransferredSignal>(_placedSignals.Handle);
             _signalBus.TryUnsubscribe<WorldInfoSelectionChangedSignal>(_placedSignals.Handle);
             _signalBus.TryUnsubscribe<GameModeChangedSignal>(_placedSignals.Handle);
             _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(HandleWorldGenerated);

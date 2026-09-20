@@ -6,6 +6,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Kruty1918.Moyva.Economy.Runtime;
+using Kruty1918.Moyva.Grid.API;
 using Zenject;
 using System;
 using System.Reflection;
@@ -69,7 +70,14 @@ namespace Kruty1918.Moyva.AI.Bot
                     profiles: profiles,
                     terrain: terrain,
                     economy: container.TryResolve<IEconomyInfoMediator>(),
-                    intel: container.TryResolve<IFogIntelReader>()), policy, config, telemetry);
+                    intel: container.TryResolve<IFogIntelReader>(),
+                    grid: container.TryResolve<IGridService>(),
+                    placements: container.TryResolve<IConstructionSaveSnapshotSource>(),
+                    buildingDefs: container.TryResolve<IBuildingRegistry>(),
+                    economyApi: container.TryResolve<IEconomyRuntimeApi>(),
+                    recruitment: container.TryResolve<IUnitRecruitmentQuery>(),
+                    productionPerTurn: p => EconomyProductionReadModel.Capture(container, p).ProductionPerTurn),
+                policy, config, telemetry);
             if (config.policyMode != BotPolicyMode.Heuristic && factory == null)
                 telemetry.FallbackReason = "No ML policy binding installed; using Heuristic.";
             return result;

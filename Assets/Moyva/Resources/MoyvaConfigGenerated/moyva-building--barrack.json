@@ -34,6 +34,28 @@
         "$asset": "asset.game-object.building-scaffolding.07c8416d",
         "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
         "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-barracks-blue.f428515d",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_barracks_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-barracks-green.6da1a55b",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_barracks_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-barracks-red.6a85a968",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_barracks_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-barracks-yellow.f8cf8e4e",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_barracks_yellow.prefab",
+          "required": true
+        }
       }
     },
     "uiTint": {

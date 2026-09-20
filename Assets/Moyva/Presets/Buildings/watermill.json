@@ -1,0 +1,198 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "watermill",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 1,
+  "identity": {
+    "id": "watermill",
+    "displayName": "Watermill",
+    "category": "Industrial",
+    "role": "Production",
+    "description": "A river mill that grinds grain into food. Must be built next to water.",
+    "tags": [
+      "industry",
+      "production",
+      "food",
+      "water"
+    ]
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.building-watermill-blue.9471730f",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_watermill_blue.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.windmill-01.663a1b41",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/windmill-01.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.windmill-01.663a1b41",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/windmill-01.png",
+      "required": true
+    },
+    "variants": {
+      "constructionPrefab": {
+        "$asset": "asset.game-object.building-scaffolding.07c8416d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
+        "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-watermill-blue.9471730f",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_watermill_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-watermill-green.edd9ff71",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_watermill_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-watermill-red.de170d35",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_watermill_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-watermill-yellow.fe9cc5ef",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_watermill_yellow.prefab",
+          "required": true
+        }
+      }
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [
+      {
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": true,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 40
+      },
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 20
+      }
+    ],
+    "buildTurns": 3,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 90,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "workforce",
+      "workersRequired": 1,
+      "priority": 410,
+      "workerTypeId": "",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "production",
+      "resourceId": "wheat-bundle-food-resources",
+      "workersRequired": 1,
+      "priority": 410,
+      "recipes": [
+        {
+          "recipeId": "watermill:mill-food",
+          "inputs": [],
+          "outputs": [
+            {
+              "resourceId": "wheat-bundle-food-resources",
+              "amount": 10
+            }
+          ],
+          "turnsPerCycle": 1,
+          "requiresWorkers": true,
+          "requiresStorageSpace": false
+        }
+      ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "settlement-influence-requirement",
+      "mergeMode": "Override",
+      "requiresInfluence": true,
+      "blockOverlappingCenters": false,
+      "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "",
+    "sourceAssetPath": "",
+    "sourceHash": "agent-added-watermill-2026-02"
+  }
+}

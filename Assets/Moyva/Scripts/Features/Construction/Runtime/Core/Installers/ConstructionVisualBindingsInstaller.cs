@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             container.Bind<ConstructionVisualBoundsAlignmentService>().To<ConstructionVisualBoundsAlignmentService>().AsSingle();
             container.Bind<ConstructionTerrainAlignmentService>().To<ConstructionTerrainAlignmentService>().AsSingle();
             container.Bind<ConstructionVisualFactory>().To<ConstructionVisualFactory>().AsSingle();
+            container.Bind<ConstructionOwnerPaletteResolver>().To<ConstructionOwnerPaletteResolver>().AsSingle();
             container.Bind<ConstructionVisualRootService>().To<ConstructionVisualRootService>().AsSingle();
             container.Bind<ConstructionPreviewVisualService>().To<ConstructionPreviewVisualService>().AsSingle();
             container.Bind<ConstructionPlacedVisualService>().To<ConstructionPlacedVisualService>().AsSingle();

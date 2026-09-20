@@ -1647,6 +1647,865 @@
       "maxSimultaneous": 2,
       "effects": {},
       "duck": null
+    },
+    {
+      "key": "amb-night-crickets",
+      "clip": {
+        "$asset": "asset.audio-clip.crickets-loop-01.9403a52c",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Environment/Crickets Loop 01.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Ambience",
+      "channel": "beds",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.5,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 0.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 0.0,
+      "maxDistance": 0.0,
+      "rolloffMode": "Logarithmic",
+      "loop": true,
+      "poolWarmup": 2,
+      "maxSimultaneous": 2,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "amb-mountain-wind",
+      "clip": {
+        "$asset": "asset.audio-clip.wind-loop-7.d6d24ac5",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Environment/Wind Loop 7.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Ambience",
+      "channel": "world",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.6,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 0.0,
+      "maxDistance": 0.0,
+      "rolloffMode": "Logarithmic",
+      "loop": true,
+      "poolWarmup": 2,
+      "maxSimultaneous": 6,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "amb-desert-wind",
+      "clip": {
+        "$asset": "asset.audio-clip.wind-loop-2.36ed7745",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Environment/Wind Loop 2.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Ambience",
+      "channel": "world",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.45,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 0.0,
+      "maxDistance": 0.0,
+      "rolloffMode": "Logarithmic",
+      "loop": true,
+      "poolWarmup": 2,
+      "maxSimultaneous": 4,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "amb-henhouse",
+      "clip": {
+        "$asset": "asset.audio-clip.henhouse-loop.cfc068b2",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Environment/Henhouse Loop.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Ambience",
+      "channel": "world",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.7,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 0.0,
+      "maxDistance": 0.0,
+      "rolloffMode": "Logarithmic",
+      "loop": true,
+      "poolWarmup": 2,
+      "maxSimultaneous": 4,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-move-cavalry",
+      "clip": {
+        "$asset": "asset.audio-clip.horse-gallop-grass-slow-1-1.9feba6bf",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Footsteps/Horse/Horse Gallop Grass Slow 1-1.wav",
+        "required": true
+      },
+      "variants": [
+        {
+          "$asset": "asset.audio-clip.horse-gallop-grass-slow-1-2.1c4ca1ab",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Footsteps/Horse/Horse Gallop Grass Slow 1-2.wav",
+          "required": true
+        },
+        {
+          "$asset": "asset.audio-clip.horse-gallop-grass-slow-1-3.999a8b45",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Footsteps/Horse/Horse Gallop Grass Slow 1-3.wav",
+          "required": true
+        },
+        {
+          "$asset": "asset.audio-clip.horse-gallop-grass-slow-1-4.27d48e9b",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Footsteps/Horse/Horse Gallop Grass Slow 1-4.wav",
+          "required": true
+        }
+      ],
+      "bus": "Sfx",
+      "channel": "world",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.7,
+      "volumeRandom": 0.08,
+      "pitch": 1.0,
+      "pitchRandom": 0.06,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 2.0,
+      "maxDistance": 20.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 4,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-move-wagon",
+      "clip": {
+        "$asset": "asset.audio-clip.horse-gallop-gravel-slow-1-1.455438f6",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Footsteps/Horse/Horse Gallop Gravel Slow 1-1.wav",
+        "required": true
+      },
+      "variants": [
+        {
+          "$asset": "asset.audio-clip.horse-gallop-gravel-slow-1-2.20aade69",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Footsteps/Horse/Horse Gallop Gravel Slow 1-2.wav",
+          "required": true
+        },
+        {
+          "$asset": "asset.audio-clip.horse-gallop-gravel-slow-1-3.999474d9",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Footsteps/Horse/Horse Gallop Gravel Slow 1-3.wav",
+          "required": true
+        },
+        {
+          "$asset": "asset.audio-clip.horse-gallop-gravel-slow-1-4.df21d036",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Footsteps/Horse/Horse Gallop Gravel Slow 1-4.wav",
+          "required": true
+        }
+      ],
+      "bus": "Sfx",
+      "channel": "world",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.7,
+      "volumeRandom": 0.08,
+      "pitch": 1.0,
+      "pitchRandom": 0.06,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 2.0,
+      "maxDistance": 20.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 4,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-move-boat",
+      "clip": {
+        "$asset": "asset.audio-clip.water-movement-2-1.cf5f058b",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Environment/Water Movement 2-1.wav",
+        "required": true
+      },
+      "variants": [
+        {
+          "$asset": "asset.audio-clip.water-splash-6-2.a56b9a40",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Environment/Water Splash 6-2.wav",
+          "required": true
+        }
+      ],
+      "bus": "Sfx",
+      "channel": "world",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.6,
+      "volumeRandom": 0.1,
+      "pitch": 1.0,
+      "pitchRandom": 0.08,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 2.0,
+      "maxDistance": 18.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 4,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-move-water",
+      "clip": {
+        "$asset": "asset.audio-clip.water-splash-1-1.16ab2edc",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Environment/Water Splash 1-1.wav",
+        "required": true
+      },
+      "variants": [
+        {
+          "$asset": "asset.audio-clip.water-splash-2-2.08dfff1e",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Environment/Water Splash 2-2.wav",
+          "required": true
+        },
+        {
+          "$asset": "asset.audio-clip.water-splash-3-1.41da645d",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Environment/Water Splash 3-1.wav",
+          "required": true
+        }
+      ],
+      "bus": "Sfx",
+      "channel": "world",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.65,
+      "volumeRandom": 0.1,
+      "pitch": 1.0,
+      "pitchRandom": 0.08,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 2.0,
+      "maxDistance": 18.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 4,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-move-dirt",
+      "clip": {
+        "$asset": "asset.audio-clip.dirt-walk-surface-1-1.e41c85ca",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Footsteps/Footstep Dirt/Dirt Walk Surface 1-1.wav",
+        "required": true
+      },
+      "variants": [
+        {
+          "$asset": "asset.audio-clip.dirt-walk-surface-1-2.2cb51228",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Footsteps/Footstep Dirt/Dirt Walk Surface 1-2.wav",
+          "required": true
+        },
+        {
+          "$asset": "asset.audio-clip.dirt-walk-surface-1-3.40cc95e8",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Footsteps/Footstep Dirt/Dirt Walk Surface 1-3.wav",
+          "required": true
+        },
+        {
+          "$asset": "asset.audio-clip.dirt-walk-surface-1-4.0e4826fc",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Footsteps/Footstep Dirt/Dirt Walk Surface 1-4.wav",
+          "required": true
+        }
+      ],
+      "bus": "Sfx",
+      "channel": "world",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.7,
+      "volumeRandom": 0.1,
+      "pitch": 1.0,
+      "pitchRandom": 0.1,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 2.0,
+      "maxDistance": 20.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 6,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-unit-ack",
+      "clip": {
+        "$asset": "asset.audio-clip.male-grunt-01.4f272867",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Human Vocalizations/Male - Grunt 01.wav",
+        "required": true
+      },
+      "variants": [
+        {
+          "$asset": "asset.audio-clip.male-grunt-02.f15fd98a",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Human Vocalizations/Male - Grunt 02.wav",
+          "required": true
+        },
+        {
+          "$asset": "asset.audio-clip.male-grunt-04.f01557d0",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Human Vocalizations/Male - Grunt 04.wav",
+          "required": true
+        }
+      ],
+      "bus": "Sfx",
+      "channel": "world",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.4,
+      "volumeRandom": 0.15,
+      "pitch": 1.0,
+      "pitchRandom": 0.1,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 2.0,
+      "maxDistance": 16.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 4,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-combat-bow",
+      "clip": {
+        "$asset": "asset.audio-clip.arrow-shot-1-1.979c8088",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Weapons and Combat/Arrow Shot 1-1.wav",
+        "required": true
+      },
+      "variants": [
+        {
+          "$asset": "asset.audio-clip.arrow-shot-2-2.9924fb62",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Weapons and Combat/Arrow Shot 2-2.wav",
+          "required": true
+        },
+        {
+          "$asset": "asset.audio-clip.arrow-shot-2-3.03fb839f",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Weapons and Combat/Arrow Shot 2-3.wav",
+          "required": true
+        },
+        {
+          "$asset": "asset.audio-clip.arrow-shot-3-1.731128ab",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Weapons and Combat/Arrow Shot 3-1.wav",
+          "required": true
+        }
+      ],
+      "bus": "Sfx",
+      "channel": "combat",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.75,
+      "volumeRandom": 0.1,
+      "pitch": 1.0,
+      "pitchRandom": 0.08,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 2.0,
+      "maxDistance": 24.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 6,
+      "effects": {},
+      "duck": {
+        "enabled": true,
+        "targetBus": "Ambience",
+        "amount": 0.65,
+        "attack": 0.08,
+        "hold": 0.35,
+        "release": 0.7
+      }
+    },
+    {
+      "key": "sfx-recruitment-ready",
+      "clip": {
+        "$asset": "asset.audio-clip.fantasy-interface-11-2.83cd9c90",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Interface/Fantasy Interface 11-2.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Sfx",
+      "channel": "feedback",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.8,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 0.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 0.0,
+      "maxDistance": 0.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 2,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-building-operational",
+      "clip": {
+        "$asset": "asset.audio-clip.magic-chimes-1-6.09293c5a",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Misc/Magic Chimes 1-6.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Sfx",
+      "channel": "feedback",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.7,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 3.0,
+      "maxDistance": 25.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 3,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-settlement-deactivated",
+      "clip": {
+        "$asset": "asset.audio-clip.negative-effect-2-1.c7bdc810",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Magic/Negative Effect 2-1.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Sfx",
+      "channel": "feedback",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.75,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 0.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 0.0,
+      "maxDistance": 0.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 2,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-settlement-captured",
+      "clip": {
+        "$asset": "asset.audio-clip.fantasy-interface-08-4.42b6ab4f",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Interface/Fantasy Interface 08-4.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Sfx",
+      "channel": "feedback",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.85,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 4.0,
+      "maxDistance": 30.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 2,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-faction-eliminated",
+      "clip": {
+        "$asset": "asset.audio-clip.negative-effect-7-1.5e0c71a0",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Magic/Negative Effect 7-1.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Sfx",
+      "channel": "feedback",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.9,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 0.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 0.0,
+      "maxDistance": 0.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 1,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-garrison-enter",
+      "clip": {
+        "$asset": "asset.audio-clip.door-close-6-1.7bbc3e3a",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Doors and Gates/Door Close 6-1.wav",
+        "required": true
+      },
+      "variants": [
+        {
+          "$asset": "asset.audio-clip.door-close-7-1.b8c34bf5",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Doors and Gates/Door Close 7-1.wav",
+          "required": true
+        }
+      ],
+      "bus": "Sfx",
+      "channel": "world",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.6,
+      "volumeRandom": 0.1,
+      "pitch": 1.0,
+      "pitchRandom": 0.08,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 2.0,
+      "maxDistance": 16.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 3,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-garrison-exit",
+      "clip": {
+        "$asset": "asset.audio-clip.door-open-6-1.7cfe4007",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Doors and Gates/Door Open 6-1.wav",
+        "required": true
+      },
+      "variants": [
+        {
+          "$asset": "asset.audio-clip.door-open-7-1.4a23e699",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Doors and Gates/Door Open 7-1.wav",
+          "required": true
+        }
+      ],
+      "bus": "Sfx",
+      "channel": "world",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.6,
+      "volumeRandom": 0.1,
+      "pitch": 1.0,
+      "pitchRandom": 0.08,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 2.0,
+      "maxDistance": 16.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 3,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "ui-select",
+      "clip": {
+        "$asset": "asset.audio-clip.minimalist2.deff2fb5",
+        "editorPath": "Assets/ThirdParty/Audio/UI Soundpack/WAV/Minimalist2.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Ui",
+      "channel": "buttons",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.45,
+      "volumeRandom": 0.05,
+      "pitch": 1.0,
+      "pitchRandom": 0.05,
+      "spatialBlend": 0.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 0.0,
+      "maxDistance": 0.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 4,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "ui-save",
+      "clip": {
+        "$asset": "asset.audio-clip.book-pages-2-1.c6293fea",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Misc/Book Pages 2-1.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Ui",
+      "channel": "panels",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.6,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 0.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 0.0,
+      "maxDistance": 0.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 2,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-mode-construction",
+      "clip": {
+        "$asset": "asset.audio-clip.nail-wood-1-2.ee66394b",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Crafting/Nail Wood 1-2.wav",
+        "required": true
+      },
+      "variants": [],
+      "bus": "Sfx",
+      "channel": "feedback",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.7,
+      "volumeRandom": 0.0,
+      "pitch": 1.0,
+      "pitchRandom": 0.0,
+      "spatialBlend": 0.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 0.0,
+      "maxDistance": 0.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 2,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-caravan-delivery",
+      "clip": {
+        "$asset": "asset.audio-clip.coins-2-1.41397868",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Misc/Coins 2-1.wav",
+        "required": true
+      },
+      "variants": [
+        {
+          "$asset": "asset.audio-clip.coins-2-7.e8838d11",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Misc/Coins 2-7.wav",
+          "required": true
+        }
+      ],
+      "bus": "Sfx",
+      "channel": "feedback",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.7,
+      "volumeRandom": 0.08,
+      "pitch": 1.0,
+      "pitchRandom": 0.05,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 3.0,
+      "maxDistance": 22.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 3,
+      "effects": {},
+      "duck": null
+    },
+    {
+      "key": "sfx-supply-ready",
+      "clip": {
+        "$asset": "asset.audio-clip.objects-small-1-3.0fb8789a",
+        "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Misc/Objects Small 1-3.wav",
+        "required": true
+      },
+      "variants": [
+        {
+          "$asset": "asset.audio-clip.objects-small-1-5.00d06014",
+          "editorPath": "Assets/ThirdParty/Audio/NaPH - RPG & Fantasy Sounds Bundle/Misc/Objects Small 1-5.wav",
+          "required": true
+        }
+      ],
+      "bus": "Sfx",
+      "channel": "feedback",
+      "mixerGroup": {
+        "$asset": "",
+        "editorPath": "",
+        "required": false
+      },
+      "volume": 0.6,
+      "volumeRandom": 0.08,
+      "pitch": 1.0,
+      "pitchRandom": 0.05,
+      "spatialBlend": 1.0,
+      "dopplerLevel": 0.0,
+      "reverbZoneMix": 1.0,
+      "priority": 128,
+      "minDistance": 3.0,
+      "maxDistance": 20.0,
+      "rolloffMode": "Logarithmic",
+      "loop": false,
+      "poolWarmup": 1,
+      "maxSimultaneous": 3,
+      "effects": {},
+      "duck": null
     }
   ]
 }

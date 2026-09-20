@@ -12,6 +12,55 @@
       "atPosition": true
     },
     {
+      "eventName": "unit-moved",
+      "context": "unit:light-cavalry",
+      "soundKey": "sfx-move-cavalry",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "unit-moved",
+      "context": "unit:caravan-wagon",
+      "soundKey": "sfx-move-wagon",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "unit-moved",
+      "context": "unit:boat",
+      "soundKey": "sfx-move-boat",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "unit-moved",
+      "context": "tile:water",
+      "soundKey": "sfx-move-water",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "unit-moved",
+      "context": "tile:mountain",
+      "soundKey": "sfx-move-dirt",
+      "volumeScale": 0.9,
+      "atPosition": true
+    },
+    {
+      "eventName": "unit-moved",
+      "context": "tile:snow",
+      "soundKey": "sfx-move-dirt",
+      "volumeScale": 0.85,
+      "atPosition": true
+    },
+    {
+      "eventName": "unit-moved",
+      "context": "tile:sand",
+      "soundKey": "sfx-move-dirt",
+      "volumeScale": 0.9,
+      "atPosition": true
+    },
+    {
       "eventName": "unit-created",
       "soundKey": "sfx-unit-created",
       "volumeScale": 1.0,
@@ -50,6 +99,13 @@
     {
       "eventName": "combat-attack",
       "soundKey": "sfx-combat-attack",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "combat-attack",
+      "context": "unit:archer",
+      "soundKey": "sfx-combat-bow",
       "volumeScale": 1.0,
       "atPosition": true
     },
@@ -100,6 +156,108 @@
       "soundKey": "sfx-game-resumed",
       "volumeScale": 1.0,
       "atPosition": false
+    },
+    {
+      "eventName": "unit-command",
+      "soundKey": "sfx-unit-ack",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "unit-move-rejected",
+      "soundKey": "ui-denied",
+      "volumeScale": 0.9,
+      "atPosition": false
+    },
+    {
+      "eventName": "recruitment-ready",
+      "soundKey": "sfx-recruitment-ready",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "command-rejected",
+      "soundKey": "ui-denied",
+      "volumeScale": 0.9,
+      "atPosition": false
+    },
+    {
+      "eventName": "building-operational",
+      "soundKey": "sfx-building-operational",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "construction-cancelled",
+      "soundKey": "ui-back",
+      "volumeScale": 0.8,
+      "atPosition": false
+    },
+    {
+      "eventName": "settlement-deactivated",
+      "soundKey": "sfx-settlement-deactivated",
+      "volumeScale": 1.0,
+      "atPosition": false
+    },
+    {
+      "eventName": "settlement-captured",
+      "soundKey": "sfx-settlement-captured",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "faction-eliminated",
+      "soundKey": "sfx-faction-eliminated",
+      "volumeScale": 1.0,
+      "atPosition": false
+    },
+    {
+      "eventName": "unit-garrison-enter",
+      "soundKey": "sfx-garrison-enter",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "unit-garrison-exit",
+      "soundKey": "sfx-garrison-exit",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "caravan-delivered",
+      "soundKey": "sfx-caravan-delivery",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "supply-ready",
+      "soundKey": "sfx-supply-ready",
+      "volumeScale": 1.0,
+      "atPosition": true
+    },
+    {
+      "eventName": "game-saved",
+      "soundKey": "ui-save",
+      "volumeScale": 1.0,
+      "atPosition": false
+    },
+    {
+      "eventName": "selection-changed",
+      "soundKey": "ui-select",
+      "volumeScale": 1.0,
+      "atPosition": false
+    },
+    {
+      "eventName": "panel-closed",
+      "soundKey": "ui-back",
+      "volumeScale": 0.8,
+      "atPosition": false
+    },
+    {
+      "eventName": "mode-construction",
+      "soundKey": "sfx-mode-construction",
+      "volumeScale": 1.0,
+      "atPosition": false
     }
   ],
   "uiActionSounds": [
@@ -142,5 +300,7 @@
   "notificationInfo": "ui-notification-info",
   "notificationSuccess": "ui-notification-success",
   "notificationWarning": "ui-notification-warning",
-  "notificationError": "ui-notification-error"
+  "notificationError": "ui-notification-error",
+  "combatMusicEnabled": true,
+  "combatMusicQuietSeconds": 25.0
 }

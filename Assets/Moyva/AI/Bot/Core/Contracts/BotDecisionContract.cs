@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.AI.Bot
     public enum BotCapabilityId { Turn = 0, Movement = 1, Combat = 2, Recruitment = 3, Construction = 4, Capture = 5, Economy = 6, Exploration = 7 }
     public static class BotDecisionContract
     {
-        public const int ContractVersion = 2, ObservationSchemaVersion = 3, CandidateSchemaVersion = 2, ActionSchemaVersion = 1;
+        public const int ContractVersion = 3, ObservationSchemaVersion = 4, CandidateSchemaVersion = 2, ActionSchemaVersion = 1;
         public const int MaxCandidateSlots = 128, GlobalFeatureCount = 96, CandidateFeatureCount = 32;
         public const int SpatialSize = 8, SpatialChannels = 10, SpatialFeatureCount = 640;
         public const int ObservationCount = GlobalFeatureCount + SpatialFeatureCount + MaxCandidateSlots * CandidateFeatureCount;

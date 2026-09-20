@@ -1,5 +1,7 @@
 using System;
 using Kruty1918.Moyva.Audio.API;
+using Kruty1918.Moyva.Calendar.Core;
+using Kruty1918.Moyva.Calendar.Domain;
 using Kruty1918.Moyva.GameAudio.API;
 using UnityEngine;
 using Zenject;
@@ -8,33 +10,50 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
 {
     /// <summary>
     /// Випадкові 2D-стингери амбієнсу (птах, комаха, порив вітру) з JSON-інтервалами.
-    /// Гейтяться zoom-діапазоном кожного правила.
+    /// Гейтяться zoom-діапазоном кожного правила та (опційно) фазою доби.
     /// </summary>
-    public sealed class AmbienceOneShotService : IInitializable, ITickable
+    public sealed class AmbienceOneShotService : IInitializable, ITickable, IDisposable
     {
         private readonly IAudioService _audio;
         private readonly AudioAmbienceConfig _config;
         private readonly AudioZoomFocusService _zoom;
+        private readonly ICalendarService _calendar;
         private float[] _nextAt;
+
+        private DayPhase _phase = DayPhase.Day;
 
         public AmbienceOneShotService(
             [InjectOptional] IAudioService audio,
             [InjectOptional] AudioAmbienceConfig config,
-            [InjectOptional] AudioZoomFocusService zoom)
+            [InjectOptional] AudioZoomFocusService zoom,
+            [InjectOptional] ICalendarService calendar)
         {
             _audio = audio;
             _config = config;
             _zoom = zoom;
+            _calendar = calendar;
         }
 
         public void Initialize()
         {
+            if (_calendar != null)
+            {
+                _phase = _calendar.CurrentDayPhase;
+                _calendar.OnDayPhaseChanged += OnDayPhaseChanged;
+            }
+
             if (_config?.oneShots == null)
                 return;
 
             _nextAt = new float[_config.oneShots.Length];
             for (int i = 0; i < _nextAt.Length; i++)
                 _nextAt[i] = Time.unscaledTime + NextDelay(_config.oneShots[i]);
+        }
+
+        public void Dispose()
+        {
+            if (_calendar != null)
+                _calendar.OnDayPhaseChanged -= OnDayPhaseChanged;
         }
 
         public void Tick()
@@ -51,12 +70,16 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
 
                 _nextAt[i] = Time.unscaledTime + NextDelay(shot);
                 if (zoomT < shot.minZoom || zoomT > shot.maxZoom
-                    || string.IsNullOrWhiteSpace(shot.soundKey))
+                    || string.IsNullOrWhiteSpace(shot.soundKey)
+                    || !DayPhaseAudioGate.Allows(shot.dayPhases, _phase))
                     continue;
 
                 _audio.Play(shot.soundKey, new AudioPlayOptions(volumeScale: shot.volume));
             }
         }
+
+        private void OnDayPhaseChanged(DayPhase phase)
+            => _phase = phase;
 
         private static float NextDelay(AudioAmbienceOneShot shot)
         {

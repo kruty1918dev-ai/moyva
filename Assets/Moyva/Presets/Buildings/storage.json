@@ -34,6 +34,28 @@
         "$asset": "asset.game-object.building-scaffolding.07c8416d",
         "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
         "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-market-blue.cde5c5af",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_market_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-market-green.5eec2648",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_market_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-market-red.1d1260bc",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_market_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-market-yellow.464f742c",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_market_yellow.prefab",
+          "required": true
+        }
       }
     },
     "uiTint": {
@@ -127,4 +149,4 @@
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/storage.asset",
     "sourceHash": "7a745f13eed82beb7740142b10e5ebfcef41b5ba1329d51f658c37901db0f30f"
   }
-}
+}

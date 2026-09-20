@@ -47,6 +47,14 @@ MonoBehaviour:
   _entries:
   - Key: asset.audio-clip.animal-rooster-01.d9cc0181
     Asset: {fileID: 8300000, guid: d9cc018128a794a2c80f40951e1bfa59, type: 3}
+  - Key: asset.audio-clip.arrow-shot-1-1.979c8088
+    Asset: {fileID: 8300000, guid: 979c8088438b44b45a63851c8e2398e8, type: 3}
+  - Key: asset.audio-clip.arrow-shot-2-2.9924fb62
+    Asset: {fileID: 8300000, guid: 9924fb62bdbd741308bb5278d167b5ef, type: 3}
+  - Key: asset.audio-clip.arrow-shot-2-3.03fb839f
+    Asset: {fileID: 8300000, guid: 03fb839fbb1e9407ca26976646527368, type: 3}
+  - Key: asset.audio-clip.arrow-shot-3-1.731128ab
+    Asset: {fileID: 8300000, guid: 731128ab60cff4dea9ba967489fe8d1b, type: 3}
   - Key: asset.audio-clip.bird-chirp-06.fb6efcbb
     Asset: {fileID: 8300000, guid: fb6efcbb5fc044607b90035dc1636209, type: 3}
   - Key: asset.audio-clip.birds-loop-02.879f50f2
@@ -65,12 +73,36 @@ MonoBehaviour:
     Asset: {fileID: 8300000, guid: 737dfcf79f9b149e3a54c3093a8e3dc8, type: 3}
   - Key: asset.audio-clip.body-fall-2-2.44fe65f2
     Asset: {fileID: 8300000, guid: 44fe65f2a20874a56b08ee97c3f81a63, type: 3}
+  - Key: asset.audio-clip.book-pages-2-1.c6293fea
+    Asset: {fileID: 8300000, guid: c6293fea4e12d49a9ab22b3a33bd3dd5, type: 3}
+  - Key: asset.audio-clip.coins-2-1.41397868
+    Asset: {fileID: 8300000, guid: 413978681ba504872a49af5e347e931c, type: 3}
+  - Key: asset.audio-clip.coins-2-7.e8838d11
+    Asset: {fileID: 8300000, guid: e8838d119ec4146d7864ecb83c3fa47c, type: 3}
+  - Key: asset.audio-clip.crickets-loop-01.9403a52c
+    Asset: {fileID: 8300000, guid: 9403a52ce609f40309ebb06e6dc86ec3, type: 3}
   - Key: asset.audio-clip.critter-01.2723e452
     Asset: {fileID: 8300000, guid: 2723e45241952436c8df008ed0bf966e, type: 3}
   - Key: asset.audio-clip.critter-03.4e921b58
     Asset: {fileID: 8300000, guid: 4e921b58a4c0e4bd6ac05e29e0d70732, type: 3}
   - Key: asset.audio-clip.crowd-loop-01.18d7d1e6
     Asset: {fileID: 8300000, guid: 18d7d1e633bf042f4bba0620e240a0b0, type: 3}
+  - Key: asset.audio-clip.dirt-walk-surface-1-1.e41c85ca
+    Asset: {fileID: 8300000, guid: e41c85ca70984485eb74b2b9e0db09d8, type: 3}
+  - Key: asset.audio-clip.dirt-walk-surface-1-2.2cb51228
+    Asset: {fileID: 8300000, guid: 2cb512287f328441c82e6d9e1b513c74, type: 3}
+  - Key: asset.audio-clip.dirt-walk-surface-1-3.40cc95e8
+    Asset: {fileID: 8300000, guid: 40cc95e835e5346e28b6f74a3758a214, type: 3}
+  - Key: asset.audio-clip.dirt-walk-surface-1-4.0e4826fc
+    Asset: {fileID: 8300000, guid: 0e4826fc285f847bf8f8618c35e5153f, type: 3}
+  - Key: asset.audio-clip.door-close-6-1.7bbc3e3a
+    Asset: {fileID: 8300000, guid: 7bbc3e3ad82e44a658e7ba5349de64b5, type: 3}
+  - Key: asset.audio-clip.door-close-7-1.b8c34bf5
+    Asset: {fileID: 8300000, guid: b8c34bf5ed2a1404ebd97ea471982038, type: 3}
+  - Key: asset.audio-clip.door-open-6-1.7cfe4007
+    Asset: {fileID: 8300000, guid: 7cfe40079ce8b4d98bbafd6b0471e4a6, type: 3}
+  - Key: asset.audio-clip.door-open-7-1.4a23e699
+    Asset: {fileID: 8300000, guid: 4a23e699aed134c5faf4e6565275e29c, type: 3}
   - Key: asset.audio-clip.epic-combat-music-loop.05c2e7af
     Asset: {fileID: 8300000, guid: 05c2e7afe9a55438eb204af13aab6ade, type: 3}
   - Key: asset.audio-clip.fantasy-interface-05-4.78be9394
@@ -81,12 +113,16 @@ MonoBehaviour:
     Asset: {fileID: 8300000, guid: b1c0e0cf9ab214e00a308f29ecdacff6, type: 3}
   - Key: asset.audio-clip.fantasy-interface-07-3.a8246111
     Asset: {fileID: 8300000, guid: a824611168db44a19acab714d3ed1024, type: 3}
+  - Key: asset.audio-clip.fantasy-interface-08-4.42b6ab4f
+    Asset: {fileID: 8300000, guid: 42b6ab4f1ac75481baa9e4585ba438ab, type: 3}
   - Key: asset.audio-clip.fantasy-interface-09-2.40ed7183
     Asset: {fileID: 8300000, guid: 40ed7183af25d4c85b382d8018c7bdce, type: 3}
   - Key: asset.audio-clip.fantasy-interface-09-3.5b4a9bf4
     Asset: {fileID: 8300000, guid: 5b4a9bf472cff4c878ff5ce7e0281556, type: 3}
   - Key: asset.audio-clip.fantasy-interface-11-1.26e8d81e
     Asset: {fileID: 8300000, guid: 26e8d81ed861742f0b7df9b9461cb685, type: 3}
+  - Key: asset.audio-clip.fantasy-interface-11-2.83cd9c90
+    Asset: {fileID: 8300000, guid: 83cd9c90f3e284b008f50ed54cbec1e5, type: 3}
   - Key: asset.audio-clip.fantasy-interface-12-1.77371dd5
     Asset: {fileID: 8300000, guid: 77371dd5feff842e0aa428f500fc0987, type: 3}
   - Key: asset.audio-clip.fantasy-interface-3-3.324c6dda
@@ -113,12 +149,40 @@ MonoBehaviour:
     Asset: {fileID: 8300000, guid: 3b038fe42061242c2b545ccbeb6a1325, type: 3}
   - Key: asset.audio-clip.grass-walk-surface-1-7.eb71f68f
     Asset: {fileID: 8300000, guid: eb71f68f7cea341779307a3a4bc8d127, type: 3}
+  - Key: asset.audio-clip.henhouse-loop.cfc068b2
+    Asset: {fileID: 8300000, guid: cfc068b2075bd4c4dacfd320d901c2fc, type: 3}
+  - Key: asset.audio-clip.horse-gallop-grass-slow-1-1.9feba6bf
+    Asset: {fileID: 8300000, guid: 9feba6bf6d8864159bcbcdf182e4bea7, type: 3}
+  - Key: asset.audio-clip.horse-gallop-grass-slow-1-2.1c4ca1ab
+    Asset: {fileID: 8300000, guid: 1c4ca1abf5b8f42b5ba3d285fa085a64, type: 3}
+  - Key: asset.audio-clip.horse-gallop-grass-slow-1-3.999a8b45
+    Asset: {fileID: 8300000, guid: 999a8b45d25b14ff78b55c74da0c7c8d, type: 3}
+  - Key: asset.audio-clip.horse-gallop-grass-slow-1-4.27d48e9b
+    Asset: {fileID: 8300000, guid: 27d48e9b1d705407dab4c6ab94758d19, type: 3}
+  - Key: asset.audio-clip.horse-gallop-gravel-slow-1-1.455438f6
+    Asset: {fileID: 8300000, guid: 455438f6f39f04971aba027f1485f8ac, type: 3}
+  - Key: asset.audio-clip.horse-gallop-gravel-slow-1-2.20aade69
+    Asset: {fileID: 8300000, guid: 20aade695e40a451fb51f79f770b1591, type: 3}
+  - Key: asset.audio-clip.horse-gallop-gravel-slow-1-3.999474d9
+    Asset: {fileID: 8300000, guid: 999474d9f02864aac84ae174d62760f0, type: 3}
+  - Key: asset.audio-clip.horse-gallop-gravel-slow-1-4.df21d036
+    Asset: {fileID: 8300000, guid: df21d036a78cf4318a6e34c13a342cb1, type: 3}
   - Key: asset.audio-clip.insects-loop-1.2d1c4036
     Asset: {fileID: 8300000, guid: 2d1c40362fb0646f19f9c45c23b06de0, type: 3}
+  - Key: asset.audio-clip.magic-chimes-1-6.09293c5a
+    Asset: {fileID: 8300000, guid: 09293c5ae0da849fca0b7c49c92d0b37, type: 3}
+  - Key: asset.audio-clip.male-grunt-01.4f272867
+    Asset: {fileID: 8300000, guid: 4f2728670c70e4d189b2f93f4bc4982a, type: 3}
+  - Key: asset.audio-clip.male-grunt-02.f15fd98a
+    Asset: {fileID: 8300000, guid: f15fd98abcf634294a1d8ac78acaad5e, type: 3}
+  - Key: asset.audio-clip.male-grunt-04.f01557d0
+    Asset: {fileID: 8300000, guid: f01557d0774f04ff9949e1f2796ac884, type: 3}
   - Key: asset.audio-clip.metallic-gear-2-loop.6b1e3ee2
     Asset: {fileID: 8300000, guid: 6b1e3ee2d75ed45bda6be13ae0eeda9b, type: 3}
   - Key: asset.audio-clip.minimalist1.d8f42014
     Asset: {fileID: 8300000, guid: d8f42014edbccc0439ea92b410ad4557, type: 3}
+  - Key: asset.audio-clip.minimalist2.deff2fb5
+    Asset: {fileID: 8300000, guid: deff2fb538f3b7a44aa556210c060408, type: 3}
   - Key: asset.audio-clip.minimalist6.dde559ac
     Asset: {fileID: 8300000, guid: dde559ace49168e4d8e75f0f395c8900, type: 3}
   - Key: asset.audio-clip.minimalist7.0a41a68b
@@ -127,8 +191,18 @@ MonoBehaviour:
     Asset: {fileID: 8300000, guid: 101f204092fa54e48b66d52b74776e6c, type: 3}
   - Key: asset.audio-clip.modern16.158bcd8f
     Asset: {fileID: 8300000, guid: 158bcd8f1d5db764c878f62c516414e3, type: 3}
+  - Key: asset.audio-clip.nail-wood-1-2.ee66394b
+    Asset: {fileID: 8300000, guid: ee66394b1fbbf4da5b8f888791839890, type: 3}
   - Key: asset.audio-clip.nail-wood-3-loop-1.d32b7e50
     Asset: {fileID: 8300000, guid: d32b7e5085f3d4190b528c4dd442e747, type: 3}
+  - Key: asset.audio-clip.negative-effect-2-1.c7bdc810
+    Asset: {fileID: 8300000, guid: c7bdc8104972b47359a60d473149fe98, type: 3}
+  - Key: asset.audio-clip.negative-effect-7-1.5e0c71a0
+    Asset: {fileID: 8300000, guid: 5e0c71a0cf6a84486b343fdaedfffebe, type: 3}
+  - Key: asset.audio-clip.objects-small-1-3.0fb8789a
+    Asset: {fileID: 8300000, guid: 0fb8789a74dd24223b40b455d3747af6, type: 3}
+  - Key: asset.audio-clip.objects-small-1-5.00d06014
+    Asset: {fileID: 8300000, guid: 00d06014e9ac8478d8ace7abeec3fac2, type: 3}
   - Key: asset.audio-clip.positive-effect-3-2.241d9602
     Asset: {fileID: 8300000, guid: 241d96029b46f41c1b741f6021b5a0e9, type: 3}
   - Key: asset.audio-clip.rock-large-debris-1-1.882f5943
@@ -149,6 +223,16 @@ MonoBehaviour:
     Asset: {fileID: 8300000, guid: 1155955e306f54181935f3ac9156a5eb, type: 3}
   - Key: asset.audio-clip.village-amb-loop-01.26a3a102
     Asset: {fileID: 8300000, guid: 26a3a102f4cfd47b8b529036b6eaacc6, type: 3}
+  - Key: asset.audio-clip.water-movement-2-1.cf5f058b
+    Asset: {fileID: 8300000, guid: cf5f058b618c946ba98620b2a06c4e29, type: 3}
+  - Key: asset.audio-clip.water-splash-1-1.16ab2edc
+    Asset: {fileID: 8300000, guid: 16ab2edc37cd743f2ba4dddfa87ac107, type: 3}
+  - Key: asset.audio-clip.water-splash-2-2.08dfff1e
+    Asset: {fileID: 8300000, guid: 08dfff1eea8c84e558b16b8351b034f3, type: 3}
+  - Key: asset.audio-clip.water-splash-3-1.41da645d
+    Asset: {fileID: 8300000, guid: 41da645dc0924428ebf8146f4b0f4f69, type: 3}
+  - Key: asset.audio-clip.water-splash-6-2.a56b9a40
+    Asset: {fileID: 8300000, guid: a56b9a40eec804861a40c651211b17c8, type: 3}
   - Key: asset.audio-clip.water-stream-calm-1.69095914
     Asset: {fileID: 8300000, guid: 690959147432d4186a426744a96c9965, type: 3}
   - Key: asset.audio-clip.whoosh-2-1.90341784
@@ -169,6 +253,10 @@ MonoBehaviour:
     Asset: {fileID: 8300000, guid: 03896c38c68756541a2d951b5bf85b43, type: 3}
   - Key: asset.audio-clip.wind-gusts-loop.08d41df3
     Asset: {fileID: 8300000, guid: 08d41df3761dd8d4881277e2f59e04a8, type: 3}
+  - Key: asset.audio-clip.wind-loop-2.36ed7745
+    Asset: {fileID: 8300000, guid: 36ed7745bf4004c32bcf9a5c7fb14585, type: 3}
+  - Key: asset.audio-clip.wind-loop-7.d6d24ac5
+    Asset: {fileID: 8300000, guid: d6d24ac5b06f74fed9511dbc00660cc1, type: 3}
   - Key: asset.audio-clip.wind-soft-loop.3d810496
     Asset: {fileID: 8300000, guid: 3d8104967381b5145b75fb729949d195, type: 3}
   - Key: asset.audio-clip.wood-10-1.9e802a6e
@@ -201,28 +289,184 @@ MonoBehaviour:
     Asset: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
   - Key: asset.game-object.beach.1e1d4f94
     Asset: {fileID: 7203100000000003001, guid: 1e1d4f94fe6e4932b7d4173f7d25f3a1, type: 3}
+  - Key: asset.game-object.building-archeryrange-blue.bdf80fdf
+    Asset: {fileID: 919132149155446097, guid: bdf80fdfe6d3fdb46918e183bfbbe08e, type: 3}
+  - Key: asset.game-object.building-archeryrange-green.69d76745
+    Asset: {fileID: 919132149155446097, guid: 69d76745bb08e07489e1e3d2b0aaa173, type: 3}
+  - Key: asset.game-object.building-archeryrange-red.a6c65ba9
+    Asset: {fileID: 919132149155446097, guid: a6c65ba9d8d0a554bb3f1c1d2fe579fe, type: 3}
+  - Key: asset.game-object.building-archeryrange-yellow.90335cef
+    Asset: {fileID: 919132149155446097, guid: 90335cef571459e4994e9650772a6913, type: 3}
   - Key: asset.game-object.building-barracks-blue.f428515d
     Asset: {fileID: 919132149155446097, guid: f428515d2dbd75c4ea1e2b8ec7d0eeb7, type: 3}
+  - Key: asset.game-object.building-barracks-green.6da1a55b
+    Asset: {fileID: 919132149155446097, guid: 6da1a55b71cdc284897ed3d5271e81b9, type: 3}
+  - Key: asset.game-object.building-barracks-red.6a85a968
+    Asset: {fileID: 919132149155446097, guid: 6a85a968084a5d049971dfdff7d9337a, type: 3}
+  - Key: asset.game-object.building-barracks-yellow.f8cf8e4e
+    Asset: {fileID: 919132149155446097, guid: f8cf8e4eccc1d1442829696d22cbdf3f, type: 3}
   - Key: asset.game-object.building-blacksmith-blue.c0db6feb
     Asset: {fileID: 919132149155446097, guid: c0db6febc489e3e4193a96c3a9d4577a, type: 3}
+  - Key: asset.game-object.building-blacksmith-green.1e823b3b
+    Asset: {fileID: 919132149155446097, guid: 1e823b3b2413d734ea60d14b11b9548a, type: 3}
+  - Key: asset.game-object.building-blacksmith-red.ba4b5622
+    Asset: {fileID: 919132149155446097, guid: ba4b562293dd8554dac863c7b3844fc7, type: 3}
+  - Key: asset.game-object.building-blacksmith-yellow.02b52d0b
+    Asset: {fileID: 919132149155446097, guid: 02b52d0b26b8cc745a58735041871df7, type: 3}
+  - Key: asset.game-object.building-castle-blue.aa5e4730
+    Asset: {fileID: 919132149155446097, guid: aa5e47304b9a3e842854a935ccd279a6, type: 3}
+  - Key: asset.game-object.building-castle-green.cdf0b207
+    Asset: {fileID: 919132149155446097, guid: cdf0b20725278e3488f70eb63c310bc9, type: 3}
+  - Key: asset.game-object.building-castle-red.1d75a2c0
+    Asset: {fileID: 919132149155446097, guid: 1d75a2c064b48a040b48462f27efa2c2, type: 3}
+  - Key: asset.game-object.building-castle-yellow.6af2760d
+    Asset: {fileID: 919132149155446097, guid: 6af2760de6ed21542ac867b8fbb499ac, type: 3}
+  - Key: asset.game-object.building-church-blue.a90ca0bb
+    Asset: {fileID: 919132149155446097, guid: a90ca0bb9af6e5b42babb0924b2728ef, type: 3}
+  - Key: asset.game-object.building-church-green.6fd7829b
+    Asset: {fileID: 919132149155446097, guid: 6fd7829bc7e2c394897e52bc6742722b, type: 3}
+  - Key: asset.game-object.building-church-red.f6531ae7
+    Asset: {fileID: 919132149155446097, guid: f6531ae7a23aa0448a2cd03a76ac6e07, type: 3}
+  - Key: asset.game-object.building-church-yellow.ef99b1f6
+    Asset: {fileID: 919132149155446097, guid: ef99b1f614a1be54384e3648d8f5d332, type: 3}
+  - Key: asset.game-object.building-dirt.c129d485
+    Asset: {fileID: 919132149155446097, guid: c129d4857c2a02f4c8b39e4a3e0e5515, type: 3}
+  - Key: asset.game-object.building-docks-blue.ed7fb88f
+    Asset: {fileID: 919132149155446097, guid: ed7fb88f76eac774fb47fa3393a12468, type: 3}
+  - Key: asset.game-object.building-docks-green.92893f00
+    Asset: {fileID: 919132149155446097, guid: 92893f00ae75797418cca561aafbd671, type: 3}
+  - Key: asset.game-object.building-docks-red.59b38d6d
+    Asset: {fileID: 919132149155446097, guid: 59b38d6d393386644a5da3eba1856c2b, type: 3}
+  - Key: asset.game-object.building-docks-yellow.636a3e20
+    Asset: {fileID: 919132149155446097, guid: 636a3e2046ea7ca4791eb0b6cf21c104, type: 3}
+  - Key: asset.game-object.building-grain.c7beac19
+    Asset: {fileID: 919132149155446097, guid: c7beac19b46b72e47bfa2d3dbf28c9a9, type: 3}
+  - Key: asset.game-object.building-home-a-blue.b4c27096
+    Asset: {fileID: 919132149155446097, guid: b4c27096f893f324ca10ba6422301a23, type: 3}
+  - Key: asset.game-object.building-home-a-green.64532fc0
+    Asset: {fileID: 919132149155446097, guid: 64532fc06e7057647842bd3fb2861766, type: 3}
+  - Key: asset.game-object.building-home-a-red.df3752b5
+    Asset: {fileID: 919132149155446097, guid: df3752b5fbc667143a053510a1453f95, type: 3}
+  - Key: asset.game-object.building-home-a-yellow.569ecd77
+    Asset: {fileID: 919132149155446097, guid: 569ecd77a67682c4c91c216beddbdb07, type: 3}
+  - Key: asset.game-object.building-home-b-blue.c4fbceaa
+    Asset: {fileID: 919132149155446097, guid: c4fbceaa602d55d4495d0357692c5008, type: 3}
+  - Key: asset.game-object.building-home-b-green.44c4c60c
+    Asset: {fileID: 919132149155446097, guid: 44c4c60c879da6c4fa5e2d116536afcf, type: 3}
+  - Key: asset.game-object.building-home-b-red.cd56ae84
+    Asset: {fileID: 919132149155446097, guid: cd56ae846cc64c94989f839fa99286b9, type: 3}
+  - Key: asset.game-object.building-home-b-yellow.3613b0ee
+    Asset: {fileID: 919132149155446097, guid: 3613b0ee08e10154caec0ac92c3229e1, type: 3}
   - Key: asset.game-object.building-lumbermill-blue.81e5f8fe
     Asset: {fileID: 919132149155446097, guid: 81e5f8fecfba2464a994bcc5452fd31e, type: 3}
+  - Key: asset.game-object.building-lumbermill-green.e41fe8f1
+    Asset: {fileID: 919132149155446097, guid: e41fe8f1f3a747249a7475e5e1c7bf68, type: 3}
+  - Key: asset.game-object.building-lumbermill-red.bb9d4809
+    Asset: {fileID: 919132149155446097, guid: bb9d4809d7a90214b87cda2720582c8e, type: 3}
+  - Key: asset.game-object.building-lumbermill-yellow.4c8163c0
+    Asset: {fileID: 919132149155446097, guid: 4c8163c02685b2345b08b3b6e6935c35, type: 3}
   - Key: asset.game-object.building-market-blue.cde5c5af
     Asset: {fileID: 919132149155446097, guid: cde5c5afa32fc5a419902e6a8bbef5c4, type: 3}
+  - Key: asset.game-object.building-market-green.5eec2648
+    Asset: {fileID: 919132149155446097, guid: 5eec2648be5167747ad95caaedf2c09d, type: 3}
+  - Key: asset.game-object.building-market-red.1d1260bc
+    Asset: {fileID: 919132149155446097, guid: 1d1260bc83b36954688e590e0474283e, type: 3}
+  - Key: asset.game-object.building-market-yellow.464f742c
+    Asset: {fileID: 919132149155446097, guid: 464f742ca04075d428b5540b41ff7cb0, type: 3}
   - Key: asset.game-object.building-mine-blue.9fab77ec
     Asset: {fileID: 919132149155446097, guid: 9fab77ecb6c0d0340aafded7b8e7b66b, type: 3}
+  - Key: asset.game-object.building-mine-green.b4b635e9
+    Asset: {fileID: 919132149155446097, guid: b4b635e9eb76a174487b2fc288cc4e59, type: 3}
+  - Key: asset.game-object.building-mine-red.c8dde972
+    Asset: {fileID: 919132149155446097, guid: c8dde972240900043a394c67fd5d7a2e, type: 3}
+  - Key: asset.game-object.building-mine-yellow.50effc49
+    Asset: {fileID: 919132149155446097, guid: 50effc49c6456414cb0999fd2399bb0b, type: 3}
   - Key: asset.game-object.building-scaffolding.07c8416d
     Asset: {fileID: 919132149155446097, guid: 07c8416d728609645b1d00049899f341, type: 3}
   - Key: asset.game-object.building-stables-blue.49c0cff0
     Asset: {fileID: 919132149155446097, guid: 49c0cff0949cccd488fd77e8e775d7ee, type: 3}
+  - Key: asset.game-object.building-stables-green.41baa87e
+    Asset: {fileID: 919132149155446097, guid: 41baa87e9db4ee648a83d5e16dc5ebf4, type: 3}
+  - Key: asset.game-object.building-stables-red.8516af5e
+    Asset: {fileID: 919132149155446097, guid: 8516af5e54c924348a8b758e3a620046, type: 3}
+  - Key: asset.game-object.building-stables-yellow.3c63951e
+    Asset: {fileID: 919132149155446097, guid: 3c63951e9e6885b47a211d80938c7534, type: 3}
+  - Key: asset.game-object.building-tavern-blue.019c06a9
+    Asset: {fileID: 919132149155446097, guid: 019c06a9663cc1b4786bb52aa1d678db, type: 3}
+  - Key: asset.game-object.building-tavern-green.4ede3d7a
+    Asset: {fileID: 919132149155446097, guid: 4ede3d7ae82cc3c4787b24dc0035b26d, type: 3}
+  - Key: asset.game-object.building-tavern-red.6cdf1d57
+    Asset: {fileID: 919132149155446097, guid: 6cdf1d57cad43ea47848d44c05bb361e, type: 3}
+  - Key: asset.game-object.building-tavern-yellow.78ba9287
+    Asset: {fileID: 919132149155446097, guid: 78ba9287c2da571459de8db16f7ddeef, type: 3}
+  - Key: asset.game-object.building-tent-blue.ba961fd2
+    Asset: {fileID: 919132149155446097, guid: ba961fd2589ee8e42ac31c315ab389f1, type: 3}
+  - Key: asset.game-object.building-tent-green.f4d51664
+    Asset: {fileID: 919132149155446097, guid: f4d516648c1463444b09c50bf60284d3, type: 3}
+  - Key: asset.game-object.building-tent-red.b14f267f
+    Asset: {fileID: 919132149155446097, guid: b14f267f4c4637a498d07205cfd6f54d, type: 3}
+  - Key: asset.game-object.building-tent-yellow.1e949b52
+    Asset: {fileID: 919132149155446097, guid: 1e949b520db1d234394fb4e0ac643a4a, type: 3}
+  - Key: asset.game-object.building-tower-catapult-blue.8ba48a4b
+    Asset: {fileID: 919132149155446097, guid: 8ba48a4ba56307142846548d1d58b35a, type: 3}
+  - Key: asset.game-object.building-tower-catapult-green.e2378410
+    Asset: {fileID: 919132149155446097, guid: e2378410aa8af5d438efe074d48a27fe, type: 3}
+  - Key: asset.game-object.building-tower-catapult-red.64d1ab26
+    Asset: {fileID: 919132149155446097, guid: 64d1ab266f55e8e40bdff02b7f1b20b8, type: 3}
+  - Key: asset.game-object.building-tower-catapult-yellow.6bfb8af7
+    Asset: {fileID: 919132149155446097, guid: 6bfb8af75f0492748bfb9f2fe46311b0, type: 3}
+  - Key: asset.game-object.building-townhall-blue.9887d51b
+    Asset: {fileID: 919132149155446097, guid: 9887d51b10bac59479f85a9d60d49d09, type: 3}
+  - Key: asset.game-object.building-townhall-green.86cb223e
+    Asset: {fileID: 919132149155446097, guid: 86cb223e2004b8c49abc22972aff7bdb, type: 3}
+  - Key: asset.game-object.building-townhall-red.7545b8b1
+    Asset: {fileID: 919132149155446097, guid: 7545b8b128c681a4cb9f8f0a8f10e2fd, type: 3}
+  - Key: asset.game-object.building-townhall-yellow.a20defce
+    Asset: {fileID: 919132149155446097, guid: a20defceb4ee3604fa02a7a6171b17cc, type: 3}
+  - Key: asset.game-object.building-watchtower-blue.8ecb7db0
+    Asset: {fileID: 919132149155446097, guid: 8ecb7db09bc26a246877c8528d11b1cf, type: 3}
+  - Key: asset.game-object.building-watchtower-green.32e8c3a0
+    Asset: {fileID: 919132149155446097, guid: 32e8c3a09133c5d41acc68f5d8215e19, type: 3}
+  - Key: asset.game-object.building-watchtower-red.526a5576
+    Asset: {fileID: 919132149155446097, guid: 526a5576aaa0b3640902b2d37b3d0b14, type: 3}
+  - Key: asset.game-object.building-watchtower-yellow.b70f82bb
+    Asset: {fileID: 919132149155446097, guid: b70f82bb8b9825d4085c0eebcee24b19, type: 3}
+  - Key: asset.game-object.building-watermill-blue.9471730f
+    Asset: {fileID: 919132149155446097, guid: 9471730f2adfa804faadee865fb1f869, type: 3}
+  - Key: asset.game-object.building-watermill-green.edd9ff71
+    Asset: {fileID: 919132149155446097, guid: edd9ff715ad64be4da67b9137a7504e4, type: 3}
+  - Key: asset.game-object.building-watermill-red.de170d35
+    Asset: {fileID: 919132149155446097, guid: de170d35ce2828d4fa405e36fec76d3c, type: 3}
+  - Key: asset.game-object.building-watermill-yellow.fe9cc5ef
+    Asset: {fileID: 919132149155446097, guid: fe9cc5efc87b24248974c59fc7d258dd, type: 3}
+  - Key: asset.game-object.building-well-blue.945c8b70
+    Asset: {fileID: 919132149155446097, guid: 945c8b70c6d9cc94c895eb600783927a, type: 3}
+  - Key: asset.game-object.building-well-green.731abc5e
+    Asset: {fileID: 919132149155446097, guid: 731abc5e5ea66934f80bf4cf66169842, type: 3}
+  - Key: asset.game-object.building-well-red.c04c2b24
+    Asset: {fileID: 919132149155446097, guid: c04c2b24d97dd1a4a9fd8f3b5f3c0e66, type: 3}
+  - Key: asset.game-object.building-well-yellow.0ff7f60f
+    Asset: {fileID: 919132149155446097, guid: 0ff7f60f46b996b4790554a04c2423ff, type: 3}
+  - Key: asset.game-object.building-windmill-blue.7ee0e3b9
+    Asset: {fileID: 919132149155446097, guid: 7ee0e3b9c13823441a7f8d17aee1820f, type: 3}
+  - Key: asset.game-object.building-windmill-green.0e948b77
+    Asset: {fileID: 919132149155446097, guid: 0e948b77436ff2d48b009022183edf61, type: 3}
+  - Key: asset.game-object.building-windmill-red.e7d7d50d
+    Asset: {fileID: 919132149155446097, guid: e7d7d50d87721854ab82519669f1d45b, type: 3}
+  - Key: asset.game-object.building-windmill-yellow.be830000
+    Asset: {fileID: 919132149155446097, guid: be830000043603b4fbd3cf7915779d2a, type: 3}
   - Key: asset.game-object.building-workshop-blue.f5d290f5
     Asset: {fileID: 919132149155446097, guid: f5d290f564dc7d7438e79949b85fce90, type: 3}
+  - Key: asset.game-object.building-workshop-green.4889dd58
+    Asset: {fileID: 919132149155446097, guid: 4889dd589bd65cc4d875308ad589d5cc, type: 3}
+  - Key: asset.game-object.building-workshop-red.e42b0460
+    Asset: {fileID: 919132149155446097, guid: e42b0460d6d008247975add387216302, type: 3}
+  - Key: asset.game-object.building-workshop-yellow.9250c45c
+    Asset: {fileID: 919132149155446097, guid: 9250c45c5c4c23143864a97742b88939, type: 3}
   - Key: asset.game-object.bush.95c5bade
     Asset: {fileID: 9113448713621649907, guid: 95c5badeee3ddb26f9a546ceeb5dcdfc, type: 3}
   - Key: asset.game-object.cart-blue-full.c2a3c9da
     Asset: {fileID: 919132149155446097, guid: c2a3c9da6be3d8043902197af00df62f, type: 3}
-  - Key: asset.game-object.castle-01.6655d3eb
-    Asset: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}
   - Key: asset.game-object.cliff-edge-a.8ef03624
     Asset: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
   - Key: asset.game-object.cliff-fill.6242e01f
@@ -461,8 +705,6 @@ MonoBehaviour:
     Asset: {fileID: 3695883313670877591, guid: f6983808e9750ea4d892758f7959ed26, type: 3}
   - Key: asset.game-object.hill.3ef4f4f1
     Asset: {fileID: 7203100000000005001, guid: 3ef4f4f119e14ce295c8c512a2a73a98, type: 3}
-  - Key: asset.game-object.house-01.a160b9cd
-    Asset: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
   - Key: asset.game-object.light-cavalry.32716c4f
     Asset: {fileID: 8475329214379649031, guid: 32716c4f2fd9817ffb4d8981530bd546, type: 3}
   - Key: asset.game-object.lowland.c9a436dd
@@ -863,8 +1105,6 @@ MonoBehaviour:
     Asset: {fileID: 1029532166024854157, guid: c5f700218c39da048b98e8769cfed620, type: 3}
   - Key: asset.game-object.water.1d32aeff
     Asset: {fileID: 1384669653051272897, guid: 1d32aeffc2c9ab6c8a53853a9910a1f3, type: 3}
-  - Key: asset.game-object.windmill-01.87bc8f20
-    Asset: {fileID: 2585797056767779472, guid: 87bc8f20c999a2d7c930c5143cc8c369, type: 3}
   - Key: asset.sprite.16x16-items-sheet-10.62d7684d
     Asset: {fileID: 2043002081, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-104.62d7684d

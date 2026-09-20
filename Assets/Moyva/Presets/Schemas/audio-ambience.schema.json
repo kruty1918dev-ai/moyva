@@ -135,6 +135,19 @@
           "lowpassWithZoom": {
             "type": "boolean",
             "title": "Lowpass With Zoom"
+          },
+          "dayPhases": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "title": "Day Phases"
           }
         },
         "additionalProperties": false
@@ -283,6 +296,19 @@
             "maximum": 1.0,
             "x-moyva-editorMinimum": 0.0,
             "x-moyva-editorMaximum": 1.0
+          },
+          "dayPhases": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "title": "Day Phases"
           }
         },
         "additionalProperties": false
