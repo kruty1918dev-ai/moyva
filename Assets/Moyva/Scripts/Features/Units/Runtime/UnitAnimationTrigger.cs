@@ -3,13 +3,10 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
-    /// <summary>
-    /// Stateless animator bridge: resolves the configured clip for a unit type
-    /// and fires its Animator trigger. Shared by combat, movement and lifecycle
-    /// presentation so every caller uses the same lookup rules.
-    /// </summary>
+    /// <summary>Тригер анімацій юніта: програє кліпи за подіями стану.</summary>
     internal static class UnitAnimationTrigger
     {
+        /// <summary>Програє анімацію на вказаному об'єкті юніта.</summary>
         public static void Play(
             GameObject unitObject,
             UnitClassConfig config,

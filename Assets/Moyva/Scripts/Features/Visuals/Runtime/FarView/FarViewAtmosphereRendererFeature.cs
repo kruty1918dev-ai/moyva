@@ -10,20 +10,15 @@ using UnityEngine.Rendering.Universal;
 
 namespace Kruty1918.Moyva.Visuals
 {
-    /// <summary>
-    /// Fullscreen high-altitude atmosphere composite.
-    /// Runs AFTER Fog of War (FoW injects at BeforeRenderingPostProcessing - 10,
-    /// this feature defaults to BeforeRenderingPostProcessing) so the effect can
-    /// only restyle pixels the player is allowed to see — it never reconstructs
-    /// hidden world state. Reads only global uniforms published by
-    /// FarViewAtmosphereDriver; zero-cost when FarViewWeight ≈ 0.
-    /// </summary>
+    /// <summary>URP renderer feature далекої атмосфери: композитить haze/veil/flatten поверх кадру у вікні far-view зуму.</summary>
     public sealed class FarViewAtmosphereRendererFeature : ScriptableRendererFeature
     {
+        /// <summary>Ім'я шейдера композиту далекої атмосфери.</summary>
         public const string ShaderName = "Hidden/Moyva/FarViewAtmosphere";
+        /// <summary>Мінімальна вага, нижче якої прохід пропускається.</summary>
         public const float WeightEpsilon = 0.001f;
 
-        /// <summary>RenderPassEvent used by FogOfWarScreenSpaceRendererFeature.</summary>
+        /// <summary>Точка RenderGraph, де виконується композит туману.</summary>
         public const RenderPassEvent FogCompositeEvent =
             (RenderPassEvent)((int)RenderPassEvent.BeforeRenderingPostProcessing - 10);
 
@@ -37,13 +32,20 @@ namespace Kruty1918.Moyva.Visuals
         private static readonly int DebugId =
             Shader.PropertyToID("_MoyvaFarViewDebug");
 
+        /// <summary>Режими відладкового перегляду атмосферного проходу.</summary>
         public enum DebugView
         {
+            /// <summary>Фінальний композит кадру.</summary>
             Final = 0,
+            /// <summary>Візуалізація ваги far-view.</summary>
             Weight = 1,
+            /// <summary>Лише шар haze.</summary>
             HazeOnly = 2,
+            /// <summary>Лише шар veil.</summary>
             VeilOnly = 3,
+            /// <summary>Лише шар flatten.</summary>
             FlattenOnly = 4,
+            /// <summary>Візуалізація eye-depth.</summary>
             EyeDepth = 5
         }
 
@@ -62,6 +64,7 @@ namespace Kruty1918.Moyva.Visuals
         private Material _material;
         private FarViewPass _pass;
 
+        /// <summary>Створює ресурси проходу та матеріал атмосфери.</summary>
         public override void Create()
         {
             ResolveShaderReference();
@@ -85,6 +88,7 @@ namespace Kruty1918.Moyva.Visuals
                 _pass.renderPassEvent = _renderPassEvent;
         }
 
+        /// <summary>Додає атмосферний прохід у чергу рендера, коли вага far-view ненульова.</summary>
         public override void AddRenderPasses(
             ScriptableRenderer renderer,
             ref RenderingData renderingData)
@@ -149,6 +153,7 @@ namespace Kruty1918.Moyva.Visuals
 #endif
         }
 
+        /// <summary>Звільняє ресурси проходу та матеріал.</summary>
         protected override void Dispose(bool disposing)
         {
             if (_material != null)
@@ -159,6 +164,7 @@ namespace Kruty1918.Moyva.Visuals
             _pass = null;
         }
 
+        /// <summary>RenderGraph-прохід композиту далекої атмосфери.</summary>
         private sealed class FarViewPass : ScriptableRenderPass
         {
             private const int CompositePass = 0;
@@ -171,11 +177,13 @@ namespace Kruty1918.Moyva.Visuals
 
             private Material _material;
 
+            /// <summary>Створює прохід із матеріалом атмосфери.</summary>
             public FarViewPass(Material material)
             {
                 _material = material;
             }
 
+            /// <summary>Записує прохід у RenderGraph: читає камерну ціль і виконує блит атмосфери.</summary>
             public override void RecordRenderGraph(
                 RenderGraph renderGraph,
                 ContextContainer frameData)
@@ -262,10 +270,14 @@ namespace Kruty1918.Moyva.Visuals
                     });
             }
 
+            /// <summary>Дані проходу блиту для RenderGraph.</summary>
             private sealed class BlitPassData
             {
+                /// <summary>Текстура-джерело кадру.</summary>
                 public TextureHandle Source;
+                /// <summary>Матеріал блиту.</summary>
                 public Material Material;
+                /// <summary>Індекс проходу в матеріалі.</summary>
                 public int PassIndex;
             }
         }

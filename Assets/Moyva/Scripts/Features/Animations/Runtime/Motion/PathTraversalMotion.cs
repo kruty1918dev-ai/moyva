@@ -4,17 +4,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Animations.Runtime.Motion
 {
-    /// <summary>
-    /// Continuous velocity-profile traversal over a resolved world-space polyline.
-    /// Replaces per-tile linear lerp: the unit accelerates, cruises, brakes into
-    /// the final vertex, keeps facing toward travel direction with slight corner
-    /// anticipation and an optional speed-scaled vertical bob.
-    ///
-    /// Authority stays with the caller: <see cref="_canAdvance"/> is evaluated for
-    /// vertex i+1 at the moment the unit reaches vertex i (identical ordering to
-    /// the legacy per-tile loop — step-complete event first, then the next gate).
-    /// A gate failure halts the unit exactly on the last confirmed vertex.
-    /// </summary>
+    /// <summary>Безперервний рух юніта шляхом: інтерполює позицію/yaw між тайлами з прискоренням, поворотами і bob.</summary>
     public sealed class PathTraversalMotion
     {
         private const float ArriveEpsilon = 0.005f;
@@ -41,24 +31,25 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
         private int _cursor;
         private Vector3 _pathPosition;
 
-        /// <summary>Index of the last vertex the unit has actually reached (fires <c>onVertexReached</c>).</summary>
+        /// <summary>Індекс останньої досягнутої точки шляху.</summary>
         public int ReachedIndex { get; private set; }
 
-        /// <summary>Traversal finished — either at the final vertex or halted by the gate.</summary>
+        /// <summary>Чи завершено проходження шляху.</summary>
         public bool IsComplete { get; private set; }
 
-        /// <summary>True when traversal stopped early because the gate refused the next vertex.</summary>
+        /// <summary>Чи було проходження зупинено достроково.</summary>
         public bool WasHalted { get; private set; }
 
-        /// <summary>World position on the path including the vertical bob offset.</summary>
+        /// <summary>Поточна світова позиція руху.</summary>
         public Vector3 Position { get; private set; }
 
-        /// <summary>Smoothed facing yaw in degrees (XZ plane). Only meaningful when facing is enabled.</summary>
+        /// <summary>Поточний кут yaw у градусах.</summary>
         public float YawDegrees => _yawDeg;
 
-        /// <summary>Current scalar speed in world units/sec — exposed for animation speed sync.</summary>
+        /// <summary>Поточна швидкість руху.</summary>
         public float Speed => _speed;
 
+        /// <summary>Створює рух по шляху з налаштуваннями та списком тайлів.</summary>
         public PathTraversalMotion(
             IReadOnlyList<Vector3> points,
             float cruiseSpeed,
@@ -115,7 +106,7 @@ namespace Kruty1918.Moyva.Animations.Runtime.Motion
             }
         }
 
-        /// <summary>Advances the traversal. Drive once per frame with <c>Time.deltaTime</c>.</summary>
+        /// <summary>Прокачує рух на deltaTime: позиція, поворот, bob, колбеки кроків.</summary>
         public void Tick(float deltaTime)
         {
             if (IsComplete || deltaTime <= 0f)

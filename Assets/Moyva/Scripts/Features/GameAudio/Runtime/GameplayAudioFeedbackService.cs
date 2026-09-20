@@ -31,6 +31,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         private readonly Dictionary<string, AudioFeedbackEventRule> _rules =
             new Dictionary<string, AudioFeedbackEventRule>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>Створює сервіс аудіо-фідбека із конфігурацією та джерелами подій.</summary>
         public GameplayAudioFeedbackService(
             [InjectOptional] IAudioService audio,
             [InjectOptional] AudioFeedbackConfig config,
@@ -51,6 +52,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             _turns = turns;
         }
 
+        /// <summary>Підписує сервіс на gameplay-події.</summary>
         public void Initialize()
         {
             if (_config?.eventSounds != null)
@@ -107,6 +109,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
                 _turns.StateChanged += OnTurnStateChanged;
         }
 
+        /// <summary>Відписує сервіс.</summary>
         public void Dispose()
         {
             if (_signalBus != null)

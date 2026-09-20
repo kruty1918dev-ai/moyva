@@ -4,21 +4,20 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Vfx.Runtime
 {
-    /// <summary>
-    /// Short MaterialPropertyBlock color flash on existing renderers (combat
-    /// hit feedback). Snapshots the renderer's current block, writes a bright
-    /// tint for ~0.1s, then restores the snapshot — safe alongside other MPB
-    /// users because nothing is created or destroyed.
-    /// </summary>
+    /// <summary>Спалах рендерерів через MaterialPropertyBlock: короткий tint-імпульс без мутації матеріалів.</summary>
     public sealed class VfxRendererFlash
     {
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int LegacyColorId = Shader.PropertyToID("_Color");
 
+        /// <summary>Запис про активний спалах рендерера.</summary>
         private struct ActiveFlash
         {
+            /// <summary>Рендерер, що спалахує.</summary>
             public Renderer Renderer;
+            /// <summary>Попередній стан MaterialPropertyBlock для відкату.</summary>
             public MaterialPropertyBlock Previous;
+            /// <summary>Час завершення спалаху.</summary>
             public float EndAt;
         }
 
@@ -28,16 +27,21 @@ namespace Kruty1918.Moyva.Vfx.Runtime
         private readonly List<Renderer> _rendererBuffer = new List<Renderer>(16);
         private readonly Func<float> _clock;
 
+        /// <summary>Колір спалаху.</summary>
         public Color FlashColor = new Color(2.6f, 1.1f, 0.9f, 1f);
+        /// <summary>Тривалість спалаху в секундах.</summary>
         public float Duration = 0.12f;
 
+        /// <summary>Створює спалахувач із опційним джерелом часу.</summary>
         public VfxRendererFlash(Func<float> clock = null)
         {
             _clock = clock ?? (() => Time.time);
         }
 
+        /// <summary>Кількість активних спалахів.</summary>
         public int ActiveCount => _active.Count;
 
+        /// <summary>Запускає спалах на всіх рендерерах цілі.</summary>
         public void Flash(GameObject target)
         {
             if (target == null)
@@ -76,6 +80,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             }
         }
 
+        /// <summary>Оновлює спалахи та відкочує завершені.</summary>
         public void Tick()
         {
             float now = _clock();
@@ -93,6 +98,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             }
         }
 
+        /// <summary>Скасовує всі спалахи з відкатом стану.</summary>
         public void Clear()
         {
             for (int i = 0; i < _active.Count; i++)

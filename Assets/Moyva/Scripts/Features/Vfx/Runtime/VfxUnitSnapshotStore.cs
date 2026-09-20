@@ -3,21 +3,19 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Vfx.Runtime
 {
-    /// <summary>
-    /// Presentation-only mirror of unit identity/position. Signals deliver
-    /// unit state changes; the store keeps the last known grid position so
-    /// effects that need a location at authoritative-removal time
-    /// (UnitDestroyedSignal carries only UnitId) stay reliable regardless of
-    /// subscriber order. Also tracks recent spawns so the deployment effect
-    /// is not duplicated by unit-created.
-    /// </summary>
+    /// <summary>Зберігає знімки стану юнітів для VFX: позиція, тип, власник; дедуплікація спавн-ефектів у часовому вікні.</summary>
     public sealed class VfxUnitSnapshotStore
     {
+        /// <summary>Знімок стану одного юніта.</summary>
         private sealed class Snapshot
         {
+            /// <summary>Позиція юніта на сітці.</summary>
             public Vector2Int Position;
+            /// <summary>Ідентифікатор типу юніта.</summary>
             public string UnitTypeId;
+            /// <summary>Ідентифікатор власника юніта.</summary>
             public string OwnerId;
+            /// <summary>Час спавну юніта.</summary>
             public float SpawnedAt;
         }
 
@@ -26,11 +24,13 @@ namespace Kruty1918.Moyva.Vfx.Runtime
         private readonly Dictionary<string, float> _recentSpawnEffects =
             new Dictionary<string, float>(System.StringComparer.Ordinal);
 
-        /// <summary>Seconds during which a follow-up spawn/deploy effect for the same unit is suppressed.</summary>
+        /// <summary>Вікно дедуплікації спавн-ефекту в секундах.</summary>
         public float SpawnDedupeWindow = 2f;
 
+        /// <summary>Кількість відстежуваних юнітів.</summary>
         public int TrackedCount => _units.Count;
 
+        /// <summary>Реєструє новоствореного юніта у сховищі.</summary>
         public void TrackCreated(
             string unitId,
             Vector2Int position,
@@ -50,6 +50,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             };
         }
 
+        /// <summary>Оновлює позицію та власника відстежуваного юніта.</summary>
         public void TrackMoved(string unitId, Vector2Int position, string ownerId)
         {
             if (string.IsNullOrWhiteSpace(unitId))
@@ -70,6 +71,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             };
         }
 
+        /// <summary>Намагається отримати знімок юніта.</summary>
         public bool TryGet(
             string unitId,
             out Vector2Int position,
@@ -91,16 +93,14 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             return false;
         }
 
+        /// <summary>Видаляє юніта зі сховища.</summary>
         public void Remove(string unitId)
         {
             if (!string.IsNullOrWhiteSpace(unitId))
                 _units.Remove(unitId);
         }
 
-        /// <summary>
-        /// Returns true when a spawn effect was already emitted for the unit
-        /// within the dedupe window; otherwise records it now.
-        /// </summary>
+        /// <summary>Намагається спожити право на спавн-ефект у вікні дедуплікації.</summary>
         public bool TryConsumeSpawnEffect(string unitId, float now)
         {
             if (string.IsNullOrWhiteSpace(unitId))
@@ -133,6 +133,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
 
         private List<string> _pruneBuffer;
 
+        /// <summary>Очищає сховище.</summary>
         public void Clear()
         {
             _units.Clear();

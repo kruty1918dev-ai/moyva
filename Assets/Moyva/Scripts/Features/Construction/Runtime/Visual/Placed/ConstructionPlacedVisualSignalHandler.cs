@@ -5,6 +5,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
+    /// <summary>Обробник сигналів для візуалів розміщених будівель: ставлення, знесення, робочий стан, власник, виділення, режим гри.</summary>
     internal sealed class ConstructionPlacedVisualSignalHandler {
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IWallTopologyService _wallTopologyService;
@@ -17,6 +18,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionOwnerPaletteResolver _paletteResolver;
         private readonly int _townHallBuildRadius;
 
+        /// <summary>Створює обробника із сервісами візуалів будівель.</summary>
         [Inject]
         public ConstructionPlacedVisualSignalHandler(
             IBuildingRegistry buildingRegistry,
@@ -42,6 +44,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _townHallBuildRadius = Mathf.Max(0, townHallBuildRadius);
         }
 
+        /// <summary>Обробляє сигнал розміщення будівлі.</summary>
         public void Handle(BuildingPlacedSignal signal)
         {
             if (signal.HasRelocationSource
@@ -148,6 +151,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 || !lifecycle.IsOperational(position);
         }
 
+        /// <summary>Обробляє сигнал знесення будівлі.</summary>
         public void Handle(BuildingDemolishedSignal signal)
         {
             _placedVisuals.Remove(signal.Position);
@@ -159,6 +163,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _wallVisuals.RefreshPlacedNeighborhood(signal.Position);
         }
 
+        /// <summary>Обробляє сигнал переходу будівлі в робочий стан.</summary>
         public void Handle(BuildingOperationalSignal signal)
         {
             BuildingDefinition def =
@@ -186,6 +191,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placedVisuals.MarkOperational(signal.Position);
         }
 
+        /// <summary>Обробляє сигнал передачі власника будівлі.</summary>
         public void Handle(BuildingOwnershipTransferredSignal signal)
         {
             _placedVisuals.SetOwner(signal.Position, signal.NewOwnerId);
@@ -229,6 +235,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private static bool HasOwnerVariants(BuildingDefinition def)
             => def?.Presentation?.Variants?.PrefabVariants?.Count > 0;
 
+        /// <summary>Обробляє зміну виділення у світі.</summary>
         public void Handle(WorldInfoSelectionChangedSignal signal)
         {
             if (signal.Kind != WorldInfoSelectionKind.Building || string.IsNullOrWhiteSpace(signal.ObjectId))
@@ -246,6 +253,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _radiusVisuals.HideInspection();
         }
 
+        /// <summary>Обробляє зміну режиму гри.</summary>
         public void Handle(GameModeChangedSignal signal)
         {
             bool active = signal.NewMode == GameModeType.Construction;
