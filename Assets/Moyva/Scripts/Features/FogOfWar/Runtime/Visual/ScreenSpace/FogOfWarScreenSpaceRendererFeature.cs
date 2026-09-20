@@ -335,6 +335,17 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                    + ")";
         }
 
+        /*
+         * CommandBuffer.ClearRenderTarget expects logical depth where
+         * 1.0 is always the far plane; Unity remaps it to the native
+         * reversed-Z representation internally. Do not apply
+         * SystemInfo.usesReversedZBuffer here.
+         */
+        internal static float ResolveSurfaceDepthClearValue()
+        {
+            return 1f;
+        }
+
         protected override void Dispose(
             bool disposing)
         {
@@ -627,9 +638,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         rendererList;
 
                     passData.DepthClearValue =
-                        SystemInfo.usesReversedZBuffer
-                            ? 0f
-                            : 1f;
+                        ResolveSurfaceDepthClearValue();
 
                     builder.UseRendererList(
                         rendererList);
