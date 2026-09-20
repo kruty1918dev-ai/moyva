@@ -1,0 +1,123 @@
+{
+  "$schema": "../../Schemas/vfx-catalog.schema.json",
+  "schema": "moyva.vfx-catalog",
+  "version": 1,
+  "id": "vfxcatalogconfig",
+  "model": "vfx-catalog",
+  "effects": [
+    {
+      "eventName": "building-placed",
+      "prefab": {
+        "$asset": "asset.game-object.vfx-building-placed.b62d1dfc",
+        "editorPath": "Assets/Moyva/Prefabs/VFX/Construction/vfx-building-placed.prefab"
+      },
+      "priority": 1,
+      "prewarm": 2,
+      "factionTint": true
+    },
+    {
+      "eventName": "building-operational",
+      "prefab": {
+        "$asset": "asset.game-object.vfx-building-operational.4ade28b6",
+        "editorPath": "Assets/Moyva/Prefabs/VFX/Construction/vfx-building-operational.prefab"
+      },
+      "priority": 1,
+      "prewarm": 2,
+      "factionTint": true
+    },
+    {
+      "eventName": "building-demolished",
+      "prefab": {
+        "$asset": "asset.game-object.vfx-building-demolished.806a5d37",
+        "editorPath": "Assets/Moyva/Prefabs/VFX/Construction/vfx-building-demolished.prefab"
+      },
+      "priority": 1,
+      "maxConcurrent": 4
+    },
+    {
+      "eventName": "unit-spawned",
+      "prefab": {
+        "$asset": "asset.game-object.vfx-unit-spawned.a1da3dbc",
+        "editorPath": "Assets/Moyva/Prefabs/VFX/Units/vfx-unit-spawned.prefab"
+      },
+      "priority": 1,
+      "prewarm": 2,
+      "maxConcurrent": 6,
+      "factionTint": true
+    },
+    {
+      "eventName": "unit-move-dust",
+      "prefab": {
+        "$asset": "asset.game-object.vfx-unit-move-dust.cda48699",
+        "editorPath": "Assets/Moyva/Prefabs/VFX/Units/vfx-unit-move-dust.prefab"
+      },
+      "priority": 0,
+      "maxConcurrent": 12,
+      "cooldownPerKey": 0.22,
+      "maxOrthoSize": 24
+    },
+    {
+      "eventName": "unit-destroyed",
+      "prefab": {
+        "$asset": "asset.game-object.vfx-unit-destroyed.27de97e4",
+        "editorPath": "Assets/Moyva/Prefabs/VFX/Units/vfx-unit-destroyed.prefab"
+      },
+      "priority": 2,
+      "prewarm": 2
+    },
+    {
+      "eventName": "combat-attack",
+      "prefab": {
+        "$asset": "asset.game-object.vfx-combat-attack.0c8c832e",
+        "editorPath": "Assets/Moyva/Prefabs/VFX/Combat/vfx-combat-attack.prefab"
+      },
+      "priority": 1,
+      "maxConcurrent": 8
+    },
+    {
+      "eventName": "combat-impact",
+      "prefab": {
+        "$asset": "asset.game-object.vfx-combat-impact.8e178634",
+        "editorPath": "Assets/Moyva/Prefabs/VFX/Combat/vfx-combat-impact.prefab"
+      },
+      "priority": 1,
+      "prewarm": 4,
+      "maxConcurrent": 10
+    },
+    {
+      "eventName": "settlement-created",
+      "prefab": {
+        "$asset": "asset.game-object.vfx-settlement-created.1eceb64f",
+        "editorPath": "Assets/Moyva/Prefabs/VFX/World/vfx-settlement-created.prefab"
+      },
+      "priority": 1,
+      "factionTint": true
+    },
+    {
+      "eventName": "settlement-captured",
+      "prefab": {
+        "$asset": "asset.game-object.vfx-settlement-captured.6e9b0f0a",
+        "editorPath": "Assets/Moyva/Prefabs/VFX/World/vfx-settlement-captured.prefab"
+      },
+      "priority": 2,
+      "factionTint": true
+    },
+    {
+      "eventName": "world-ping",
+      "prefab": {
+        "$asset": "asset.game-object.vfx-world-ping.fee6f509",
+        "editorPath": "Assets/Moyva/Prefabs/VFX/World/vfx-world-ping.prefab"
+      },
+      "priority": 1,
+      "maxConcurrent": 3
+    }
+  ],
+  "budget": {
+    "maxActivePerformance": 24,
+    "maxActiveBalanced": 48,
+    "maxActiveQuality": 96,
+    "maxSpawnsPerFrame": 6,
+    "defaultCullDistance": 90,
+    "lowPriorityMaxOrthoSize": 16
+  }
+}

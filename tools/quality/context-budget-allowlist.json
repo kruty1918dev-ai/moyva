@@ -9,6 +9,26 @@
       "warnEffectiveLines": 1600,
       "maxEffectiveLines": 2300,
       "reason": "Cohesive vertical-fill geometry leaf; composition does not read it."
+    },
+    "Assets/Moyva/Scripts/Features/Clouds/Runtime/CloudsWorldPresenter.cs": {
+      "warnEffectiveLines": 550,
+      "maxEffectiveLines": 650,
+      "reason": "Cohesive cloud presentation root: spawn/cull/lifecycle per world cell; splitting mid-flow would scatter a single responsibility."
+    },
+    "Assets/Moyva/Scripts/Features/Economy/Runtime/EconomyManager.cs": {
+      "warnEffectiveLines": 950,
+      "maxEffectiveLines": 1050,
+      "reason": "Economy turn orchestration leaf; cohesive per-turn aggregation over settlements/owners, reads as one pipeline."
+    },
+    "Assets/Moyva/Scripts/Features/HomeMenu/Runtime/HomeMenuInstaller.cs": {
+      "warnEffectiveLines": 520,
+      "maxEffectiveLines": 600,
+      "reason": "Composition root for the home menu feature; ordered bindings read as a single graph."
+    },
+    "Assets/Moyva/Scripts/Features/HomeMenu/Runtime/MoyvaUI/HomeMenuMoyvaUiViewController.cs": {
+      "warnEffectiveLines": 1050,
+      "maxEffectiveLines": 1150,
+      "reason": "Menu UI controller covering lobby/saves/settings views; cohesive but a split candidate — tracked as size debt."
     }
   }
 }

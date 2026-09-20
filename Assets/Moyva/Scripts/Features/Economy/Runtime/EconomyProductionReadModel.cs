@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
-using Zenject;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
@@ -23,20 +22,16 @@ namespace Kruty1918.Moyva.Economy.Runtime
         }
     }
 
-    public static class EconomyProductionReadModel
+    internal static class EconomyProductionReadModel
     {
-        public static EconomyProductionReadSnapshot Capture(DiContainer container, string ownerId)
+        public static EconomyProductionReadSnapshot Capture(IReadOnlyDictionary<string, EconomySettlementState> settlements, string ownerId)
         {
             var production = new Dictionary<string, float>(StringComparer.Ordinal);
             var producers = new Dictionary<string, int>(StringComparer.Ordinal);
-            if (container == null || string.IsNullOrWhiteSpace(ownerId))
+            if (settlements == null || string.IsNullOrWhiteSpace(ownerId))
                 return new EconomyProductionReadSnapshot(production, producers);
 
-            var registry = container.TryResolve<ISettlementRegistry>();
-            if (registry?.AllSettlements == null)
-                return new EconomyProductionReadSnapshot(production, producers);
-
-            foreach (var pair in registry.AllSettlements)
+            foreach (var pair in settlements)
             {
                 var settlement = pair.Value;
                 if (settlement == null || !settlement.IsActive

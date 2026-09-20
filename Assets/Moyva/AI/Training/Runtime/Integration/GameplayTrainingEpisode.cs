@@ -226,7 +226,7 @@ namespace Kruty1918.Moyva.AI.Training
                         if (!float.IsNaN(pair.Value) && !float.IsInfinity(pair.Value))
                             stocks[pair.Key] = pair.Value;
 
-                var productionSnapshot = EconomyProductionReadModel.Capture(_container, learner);
+                var productionSnapshot = Economy.GetOwnerProductionSnapshot(learner);
                 foreach (var pair in productionSnapshot.ProductionPerTurn)
                     production[pair.Key] = pair.Value;
                 foreach (var pair in productionSnapshot.ActiveProducerBuildingsByType)

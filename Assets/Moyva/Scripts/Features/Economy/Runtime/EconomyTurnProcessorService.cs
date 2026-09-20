@@ -4,11 +4,13 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
-    internal sealed class EconomyTurnProcessorService : IEconomyTurnProcessor
+    /// <summary>EconomyTurnProcessorService — class: економіки ходу Processor сервісу.</summary>
+    internal sealed class EconomyTurnProcessorService
     {
         private readonly EconomyTickOrchestrator _orchestrator = new EconomyTickOrchestrator();
 
-        public void ProcessTurn(ISettlementRegistry registry, SignalBus signalBus, EconomyDatabaseSO database, float turnDurationSeconds)
+        /// <summary>Виконує ProcessTurn.</summary>
+        public void ProcessTurn(EconomySettlementRegistryService registry, SignalBus signalBus, EconomyDatabaseSO database, float turnDurationSeconds)
         {
             if (database == null || database.RulesConfig == null)
                 return;

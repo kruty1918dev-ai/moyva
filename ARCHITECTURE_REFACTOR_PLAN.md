@@ -40,7 +40,7 @@ Never refactored, only adapted-to if needed: DOTween (`Assets/Plugins/Demigiant`
 
 - `Shared/`, `Infrastructure/InputRouting/` — utilities, audio, graphics, diagnostics
 - `Jsonization/` — custom JSON runtime: `MoyvaJsonRuntime` (743 LOC), type registry, asset catalog; all config DTOs derive `MoyvaJsonConfigObject`
-- `Signals/` — Zenject `SignalBus` declarations + `SignalDomainEventBridge` (dead) + `IEconomyInfoMediator` (misplaced economy contract in the Signals feature)
+- `Signals/` — Zenject `SignalBus` declarations + `IEconomyInfoMediator` (misplaced economy contract in the Signals feature)
 - `Features/` — 27 feature folders, each `API/` + `Runtime/` (+`Editor/`, `Tests/`, `UI/` where present)
 - `Bootstrap/Runtime/` — gameplay scene composition root + 15-file StartingPosition pipeline
 - `AI/Bot`, `AI/Training` — bot runtime + ML-Agents training; consume gameplay via `InstallSimulationBindings` static methods
@@ -74,7 +74,7 @@ Namespace-level fan-out (measured, not asmdef-claimed): HomeMenu→20 namespaces
 
 1. **God class by partials**: `ConstructionService` — 6,348 LOC across 23 partials, implements 18 interfaces, ~25 injected deps, ~130 public methods. Partials mask the god class; `IConstructionService` itself is labeled "compatibility facade".
 2. **Three parallel DI compositions**: scene bootstrap, training scope, menu preview — each hand-maintained; feature `InstallSimulationBindings` drift from `InstallBindings`.
-3. **Dead parallel event layer**: `SignalDomainEventBridge` mirrors 15 signals into `*DomainEvent` types with **zero subscribers** (stalled migration TD-001/TD-002 — delete rather than finish; signals already carry domain semantics).
+3. ~~**Dead parallel event layer**~~ — RESOLVED (P1.3): `SignalDomainEventBridge` + `*DomainEvent` types deleted; audio subscribers migrated to canonical signals. Signals carry domain semantics directly.
 4. **Dead presenters/paths**: `GameplayTurnHudPresenter` (1,532 LOC, 7 partials — never bound), `GameplayRecruitmentPanelView`, UnityHTML HomeMenu path (`UseDynamicMoyvaUi = true` const → `BindSharedSceneUi` + `UnityHTML/` dead), fog `LegacyTwcVolume` render path (~4K LOC under `Visual/Volume` + `Chunking`), `FogOfWarSettings.LegacyOverlay` partial.
 5. **Editor one-off tooling**: `RecruitmentPanelFinalAuthoring` 1,278 LOC, `GameplayUiAuditService` 1,337, `GameplayUiRedesignService` 1,143, `JsonizationExportService` 1,230, Pass73/74/82/P09A/P24B/C pass-named migration scripts — ~6-8K LOC of single-use authoring that shipped to HEAD.
 6. **Interface proliferation**: ~450 interfaces, ~409 single-implementation; 193 DI-bound single-impl. Real seams (turn authority, fog queries, placement appliers) drown in binding-convention interfaces. 16 `InternalsVisibleTo` point at nonexistent test assemblies; `Shared` exposes internals to `Assembly-CSharp` — global leak.
@@ -91,7 +91,7 @@ Namespace-level fan-out (measured, not asmdef-claimed): HomeMenu→20 namespaces
 | God classes | `ConstructionService` 6,348 LOC/23p/18 ifaces; `MultiplayerAuthorityService` 2,782/7p/16 deps; `HomeMenuBackgroundPreviewController` 2,437/9p; `BuildingPlacementEvaluator` 2,094/9p; `FogOfWarService` 1,801/9p; `EconomyManager` 1,019 |
 | Constructor bloat | `TrainingScenarioFacts` 28 params; `GameplayHudReadModel` 24; `GameplayHtmlPresenter` 20; `UnitMovementService` 18; `MapVisualInstantiator` 18; `ConstructionInputService` 17; `UnitRecruitmentDeploymentController` 15 |
 | Parallel APIs | 5 placement-commit seams; `IConstructionService` compat facade; `IGraphRunner` sync+async twins; `Fire`/`FireAsync` |
-| Event spaghetti | 60 signal types; 12 subscribers to `BuildingPlacedSignal` each deriving state; dead DomainEvent mirror |
+| Event spaghetti | 60 signal types; 12 subscribers to `BuildingPlacedSignal` each deriving state |
 | Static mutable state | `SavePlayModeOptions.*`, `TwcModifierCatalog` static registries, `MainThreadDispatcher.Instance`, `TrainingModelInspectorController.Instance` |
 | Hidden side effects | `BindInterfacesAndSelfTo(...).NonLazy()` `IInitializable` cascades; signal-driven state rebuild; `_setupPhase` flag in training episode |
 | Tests | 12 test files for 215K LOC; InternalsVisibleTo seams exist but no test assemblies |
@@ -146,7 +146,7 @@ Editor → Feature APIs; never a runtime authority
 
 1. One composition contract per feature: `Install(DiContainer, FeatureInstallMode)` where mode ∈ {Full, Simulation, Preview} — scene bootstrap, training, and menu preview all call the same method; `InstallSimulationBindings` becomes a thin wrapper and is deleted once callers migrate.
 2. Feature APIs are the only cross-feature surface; `internal` runtime types get `InternalsVisibleTo` only for test assemblies that exist.
-3. Signals are the domain-event layer — delete the DomainEvent mirror instead of finishing it (YAGNI; the bridge has had zero subscribers for two documented iterations).
+3. Signals are the single event layer — DONE: the DomainEvent mirror was deleted (P1.3); `SignalsArchitectureTests` guards against reintroduction.
 4. No new per-attribute dictionaries; entity state = one record per aggregate.
 5. Editor code never carries production logic; one-off migration tooling moves to `tools/` or is deleted after its release.
 6. JSON presets remain the only config source; `*SO`-named DTOs get renamed `*Config` (mechanical rename, preserves serialized JSON since these aren't Unity-serialized assets — verify `MoyvaJsonTypeRegistry` resolves by stable ID in-patch).
@@ -169,7 +169,7 @@ Editor → Feature APIs; never a runtime authority
 ## 14. Systems that should remain unchanged
 
 - `Jsonization/` runtime (works; JSON policy is clean)
-- `Signals/` SignalBus declarations (minus the dead bridge)
+- `Signals/` SignalBus declarations
 - `SaveSystem` module-registry pattern
 - `Turns` (7 files, clean contracts)
 - `Economy` service decomposition (focused services — keep; only the facade surface shrinks)
@@ -191,7 +191,7 @@ Editor → Feature APIs; never a runtime authority
 
 ## 16. Systems/code to remove (after in-patch verification)
 
-- `SignalDomainEventBridge` + `GameplayDomainEvents` (~310 LOC + per-signal fire overhead)
+- ~~`SignalDomainEventBridge` + `GameplayDomainEvents`~~ — DONE (P1.3)
 - `GameplayTurnHudPresenter.*` + `GameplayRecruitmentPanelView` (~1,700 LOC)
 - `HomeMenu/Runtime/UnityHTML/` + `BindSharedSceneUi` + `UseDynamicMoyvaUi` const (~500+ LOC)
 - Fog `LegacyTwcVolume` path + `FogVisualUpdaterRouter` legacy branch + `FogOfWarSettings.LegacyOverlay` (~4K LOC — gated on confirming ScreenSpace is the shipping path)
@@ -213,7 +213,7 @@ Editor → Feature APIs; never a runtime authority
 - `CODEMAP.md` (≤16 KiB) becomes the **canonical-operation map**: "To do X → API Y → service Z". Replace path-lists with operation-lists.
 - `AGENTS.md` stays ≤6 KiB; rules only.
 - Module README only where non-obvious invariants exist (Construction commit modes, Fog owner-grid model, Economy settlement lifecycle).
-- Delete/archive stale docs: `docs/standards/domain-events-layer.md` (superseded), pass-migration docs. Target ≤100 docs files.
+- Delete/archive stale docs: ~~`docs/standards/domain-events-layer.md`~~ (deleted, P1.3), pass-migration docs. Target ≤100 docs files.
 - Add `docs/architecture/canonical-apis.md` — the §13 table, kept checkable.
 
 ## 19. Migration plan — ordered patches
@@ -232,7 +232,7 @@ Editor → Feature APIs; never a runtime authority
 
 **P1.2 UnityHTML HomeMenu path removal** — delete `Runtime/UnityHTML/`, `BindSharedSceneUi`, `UseDynamicMoyvaUi` const. Behavior: NONE (const-true). Risk: LOW.
 
-**P1.3 DomainEvent bridge removal** — delete `SignalDomainEventBridge`, `GameplayDomainEvents`, installer binding. Behavior: NONE (zero subscribers). Risk: LOW. Resolves TD-001/TD-002 by deletion.
+**P1.3 DomainEvent bridge removal** — DONE: `SignalDomainEventBridge`, `GameplayDomainEvents`, installer declarations deleted; `GameplayAudioFeedbackService`/`AmbientWorldAudioService` migrated to canonical signals; `SignalsArchitectureTests` added as regression guard. Resolves TD-001/TD-002.
 
 **P1.4 Legacy fog volume path removal** — after verifying ScreenSpace is the active mode (`FogVisualPresentationMode` default + scene config): delete `Visual/Volume/`, `Visual/Chunking/`, router legacy branch, `LegacyOverlay` settings partial. Risk: MEDIUM (rendering path — needs visual smoke test). Behavior: INTENTIONAL if any scene still uses legacy mode → then keep, mark deprecated.
 
@@ -291,7 +291,7 @@ Editor → Feature APIs; never a runtime authority
 | P0.3 Metrics script | tools/ai | LOW | measurable deltas | — | S |
 | P1.1 Dead HUD presenter | GameplayHUD | LOW | −1.7K LOC, one canonical HUD path | P0.1 | S |
 | P1.2 UnityHTML menu path | HomeMenu | LOW | −500+ LOC, one menu stack | P0.1 | S |
-| P1.3 DomainEvent bridge | Signals | LOW | −310 LOC, kills stalled migration | P0.1 | S |
+| P1.3 DomainEvent bridge | Signals | DONE | −310 LOC, killed stalled migration | — | S |
 | P1.4 Legacy fog volume | FogOfWar | MED | −4K LOC | P0.1, visual verify | M |
 | P1.5 Editor one-offs | Editor + Bootstrap.Editor | LOW–MED | −6–8K LOC | per-file owner check | M |
 | P1.6 Vendored fragments | Multiplayer | LOW | dedupe | — | XS |
@@ -371,7 +371,7 @@ Global: every §13 canonical API is the single documented entry point; §14–16
 
 1. **P0.1 characterization tests** — precondition for everything; the InternalsVisibleTo seams already exist.
 2. **P3.1 + P3.2 Construction commit/service split** — kills the worst god class AND the 5-API confusion.
-3. **P1.3 DomainEvent bridge deletion** — deletes a whole parallel event layer with zero subscribers.
+3. ~~**P1.3 DomainEvent bridge deletion**~~ — DONE: parallel event layer removed; consumers migrated to canonical signals.
 4. **P2.1 fog state unification** — removes the two-truths visibility model that already caused a real bug.
 5. **P1.1 + P1.2 dead presenter/menu-stack removal** — ~2.2K LOC of misleading parallel UI.
 6. **P4.1 composition-contract unification** — one install seam; training/menu/scene stop drifting.

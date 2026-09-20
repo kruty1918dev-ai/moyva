@@ -14,7 +14,7 @@ using UnityEditor;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
-    /// <summary>Zenject-інсталер камери: біндить стан зуму, сервіси керування та адаптер налаштувань проєкту.</summary>
+    /// <summary>CameraInstaller — class: камери Installer.</summary>
     public class CameraInstaller : MonoInstaller
     {
         private static readonly Vector3 ReflectionReadyEuler = new(50f, 45f, 0f);
@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private const string DefaultCameraInputAssetPath = "Assets/Moyva/Data/ScriptableObjects/Input/InputSystem_Actions.inputactions";
         private CameraSettingsSO _runtimeFallbackSettings;
 
-        /// <summary>Реєструє біндінги камери в контейнері.</summary>
+        /// <summary>Встановлює Bindings.</summary>
         public override void InstallBindings()
         {
             InputRoutingBindings.Install(Container);
@@ -70,6 +70,13 @@ namespace Kruty1918.Moyva.Camera.Runtime
             Container.BindInterfacesAndSelfTo<CameraMapRenderMaskService>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraAutoFramingService>().AsSingle();
 
+            // Camera experience layer: interruptible focus, additive impulses,
+            // attention routing and the canonical read-only view state.
+            Container.BindInterfacesAndSelfTo<CameraFocusService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CameraImpulseService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CameraViewStateService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CameraAttentionService>().AsSingle();
+
             // CameraFocused не має Tick/Initializable, тому можна просто до інтерфейсу
             Container.BindInterfacesTo<CameraFocused>().AsSingle();
 
@@ -79,8 +86,12 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             Container.BindExecutionOrder<CameraProjectSettingsAdapter>(-100);
             Container.BindExecutionOrder<CameraAutoFramingService>(-90);
+            // Impulse offsets must be computed before CameraMovement composes
+            // the final pose; zoom/view state sample afterwards.
+            Container.BindLateTickableExecutionOrder<CameraImpulseService>(-10);
             // Sample zoom state after CameraZoom applied the smoothed zoom value.
-            Container.BindExecutionOrder<CameraZoomStateService>(50);
+            Container.BindLateTickableExecutionOrder<CameraZoomStateService>(50);
+            Container.BindLateTickableExecutionOrder<CameraViewStateService>(60);
         }
 
         private InputActionAsset ResolveCameraInputAsset()
@@ -166,7 +177,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         }
     }
 
-    /// <summary>Адаптує налаштування камери під конфігурацію проєкту при старті.</summary>
+    /// <summary>CameraProjectSettingsAdapter — class: камери проєкту налаштування адаптера.</summary>
     internal sealed class CameraProjectSettingsAdapter : IInitializable
     {
         private readonly UnityEngine.Camera _camera;
@@ -175,7 +186,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly IGridProjection _gridProjection;
         private readonly IGridService _gridService;
 
-        /// <summary>Створює адаптер із налаштуваннями та камерою.</summary>
+        /// <summary>Виконує CameraProjectSettingsAdapter.</summary>
         public CameraProjectSettingsAdapter(
             UnityEngine.Camera camera,
             CameraSettingsSO cameraSettings,
@@ -190,7 +201,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _gridService = gridService;
         }
 
-        /// <summary>Застосовує налаштування до камери сцени.</summary>
+        /// <summary>Ініціалізує компонент і підписує на події.</summary>
         public void Initialize()
         {
             if (_camera == null || _cameraSettings == null)

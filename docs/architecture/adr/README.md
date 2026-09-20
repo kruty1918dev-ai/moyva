@@ -36,7 +36,7 @@ ADR (Architecture Decision Record) — короткий журнал архіт�
 - [0010 Service Mode Profiles](0010-service-mode-profiles.md)
 - [0011 Feature Toggles for Risky Features](0011-feature-toggles-risky-features.md)
 - [0012 Multiplayer Config Schema + Migration Pipeline](0012-multiplayer-config-schema-migration-pipeline.md)
-- [0013 Domain Events Layer Separation](0013-domain-events-layer-separation.md)
+- [0013 Domain Events Layer Separation](0013-domain-events-layer-separation.md) (Superseded)
 - [0014 System Tech Debt Register](0014-system-tech-debt-register.md)
 - [0015 Unit Designer Modular Facades](0015-unit-designer-modular-facades.md)
 - [0016 Unit Designer Safe Edit Mode](0016-unit-designer-safe-edit-mode.md)

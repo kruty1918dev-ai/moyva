@@ -86,6 +86,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Container.BindInterfacesAndSelfTo<HomeMenuMoyvaUiViewController>()
                 .AsSingle();
 
+            // Overlay lifecycle lives outside the view so UI rendering never owns
+            // async/network-facing state.
+            Container.BindInterfacesAndSelfTo<HomeMenuBusyOverlayService>()
+                .AsSingle();
+
             BindMoyvaUiPanel("PlayModePanel");
             BindMoyvaUiPanel("ContinuePanel");
             BindMoyvaUiPanel(_multiplayerTypePanelName);

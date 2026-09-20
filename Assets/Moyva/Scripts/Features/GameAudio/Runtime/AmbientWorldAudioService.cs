@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Audio.API;
 using Kruty1918.Moyva.GameAudio.API;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Signals.DomainEvents;
+using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
 
@@ -16,12 +16,18 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
     /// </summary>
     public sealed class AmbientWorldAudioService : IInitializable, ITickable, IDisposable
     {
+        /// <summary>Emitter — class: емітера.</summary>
         private sealed class Emitter
         {
+            /// <summary>конфігурації — AudioAmbienceEmitter.</summary>
             public AudioAmbienceEmitter Config;
+            /// <summary>Хендл активного звукового джерела.</summary>
             public AudioHandle Handle;
+            /// <summary>сітки позицію — Vector2Int.</summary>
             public Vector2Int GridPosition;
+            /// <summary>From будівлі — bool.</summary>
             public bool FromBuilding;
+            /// <summary>поточного масштаб — float.</summary>
             public float CurrentScale = 1f;
         }
 
@@ -33,6 +39,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         private readonly SignalBus _signalBus;
         private readonly List<Emitter> _emitters = new List<Emitter>();
 
+        /// <summary>Виконує AmbientWorldAudioService.</summary>
         public AmbientWorldAudioService(
             [InjectOptional] IAudioService audio,
             [InjectOptional] AudioAmbienceConfig config,
@@ -49,16 +56,18 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             _signalBus = signalBus;
         }
 
+        /// <summary>Ініціалізує компонент і підписує на події.</summary>
         public void Initialize()
         {
             if (_signalBus != null)
             {
-                _signalBus.Subscribe<WorldBuiltDomainEvent>(OnWorldBuilt);
-                _signalBus.Subscribe<BuildingPlacedDomainEvent>(OnBuildingPlaced);
-                _signalBus.Subscribe<BuildingDemolishedDomainEvent>(OnBuildingDemolished);
+                _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
+                _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+                _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
             }
         }
 
+        /// <summary>Оновлює стан за тік.</summary>
         public void Tick()
         {
             if (_emitters.Count == 0 || _zoom == null)
@@ -84,13 +93,14 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             }
         }
 
+        /// <summary>Звільняє ресурси та відписує від подій.</summary>
         public void Dispose()
         {
             if (_signalBus != null)
             {
-                _signalBus.TryUnsubscribe<WorldBuiltDomainEvent>(OnWorldBuilt);
-                _signalBus.TryUnsubscribe<BuildingPlacedDomainEvent>(OnBuildingPlaced);
-                _signalBus.TryUnsubscribe<BuildingDemolishedDomainEvent>(OnBuildingDemolished);
+                _signalBus.TryUnsubscribe<WorldBuiltSignal>(OnWorldBuilt);
+                _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+                _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
             }
 
             StopAll();
@@ -102,7 +112,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             SpawnTileEmitters();
         }
 
-        private void OnBuildingPlaced(BuildingPlacedDomainEvent evt)
+        private void OnBuildingPlaced(BuildingPlacedSignal evt)
         {
             if (_config?.emitters == null || string.IsNullOrEmpty(evt.BuildingId))
                 return;
@@ -118,7 +128,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             }
         }
 
-        private void OnBuildingDemolished(BuildingDemolishedDomainEvent evt)
+        private void OnBuildingDemolished(BuildingDemolishedSignal evt)
         {
             for (int i = _emitters.Count - 1; i >= 0; i--)
             {

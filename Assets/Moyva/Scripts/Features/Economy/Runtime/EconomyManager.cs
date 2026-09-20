@@ -21,6 +21,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
     {
         private static readonly ProfilerMarker BuildingPlacedMarker =
             new("Moyva.BuildCommit.Subscriber.Economy");
+        /// <summary>типового власника ID — string.</summary>
         public const string DefaultOwnerId = "player_0";
         private const string StarterPackLogTag = "[Bootstrap][StarterPack]";
 
@@ -28,16 +29,17 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly SignalBus _signalBus;
         private readonly EconomyDatabaseSO _database;
         private readonly IBuildingRegistry _buildingRegistry;
-        private readonly IEconomyOwnerResourcePoolService _ownerResourcePoolService;
-        private readonly ISettlementRegistry _settlementRegistry;
-        private readonly IEconomyBuildingIntegration _buildingIntegration;
-        private readonly IEconomyTurnProcessor _turnProcessor;
+        private readonly EconomyOwnerResourcePoolService _ownerResourcePoolService;
+        private readonly EconomySettlementRegistryService _settlementRegistry;
+        private readonly EconomyBuildingIntegrationService _buildingIntegration;
+        private readonly EconomyTurnProcessorService _turnProcessor;
         private EconomyRuntimeSaveSnapshot
             _pendingRuntimeSaveSnapshot;
 
         private EconomyRulesConfigSO Rules => _database?.RulesConfig;
 
         // Keeps direct construction in tests/backward-compatible call sites.
+        /// <summary>Виконує EconomyManager.</summary>
         public EconomyManager(
             ICalendarService calendar,
             SignalBus signalBus,
@@ -53,10 +55,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
             SignalBus signalBus,
             EconomyDatabaseSO database,
             IBuildingRegistry buildingRegistry,
-            [InjectOptional] IEconomyOwnerResourcePoolService ownerResourcePoolService = null,
-            [InjectOptional] ISettlementRegistry settlementRegistry = null,
-            [InjectOptional] IEconomyBuildingIntegration buildingIntegration = null,
-            [InjectOptional] IEconomyTurnProcessor turnProcessor = null)
+            [InjectOptional] EconomyOwnerResourcePoolService ownerResourcePoolService = null,
+            [InjectOptional] EconomySettlementRegistryService settlementRegistry = null,
+            [InjectOptional] EconomyBuildingIntegrationService buildingIntegration = null,
+            [InjectOptional] EconomyTurnProcessorService turnProcessor = null)
         {
             _calendar = calendar;
             _signalBus = signalBus;
@@ -68,10 +70,12 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _turnProcessor = turnProcessor ?? new EconomyTurnProcessorService();
         }
 
+        /// <summary>публічної.</summary>
         public IReadOnlyDictionary<string, EconomySettlementState> Settlements => _settlementRegistry.AllSettlements;
 
         // ───────────────────────── Lifecycle
 
+        /// <summary>Ініціалізує компонент і підписує на події.</summary>
         public void Initialize()
         {
             _calendar.OnHourChanged += OnTurnAdvanced;
@@ -84,6 +88,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 OnBuildingDefinitionRuntimeRevisionChanged;
         }
 
+        /// <summary>Звільняє ресурси та відписує від подій.</summary>
         public void Dispose()
         {
             _calendar.OnHourChanged -= OnTurnAdvanced;
@@ -369,16 +374,19 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return _settlementRegistry.GetSettlement(settlementId);
         }
 
+        /// <summary>Намагається отримати поселення By позицію.</summary>
         public bool TryGetSettlementByPosition(Vector2Int position, out EconomySettlementState state)
         {
             return _settlementRegistry.TryGetSettlementByPosition(position, out state);
         }
 
+        /// <summary>Намагається Resolve будівництва поселення.</summary>
         public bool TryResolveConstructionSettlement(Vector2Int position, string ownerId, out EconomySettlementState state)
         {
             return _settlementRegistry.TryFindNearestSettlement(position, NormalizeOwnerId(ownerId), out state);
         }
 
+        /// <summary>Намагається споживання поселення ресурсів.</summary>
         public bool TryConsumeSettlementResources(string settlementId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage)
         {
             errorMessage = null;
@@ -443,6 +451,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return true;
         }
 
+        /// <summary>Намагається споживання власника пула ресурсів.</summary>
         public bool TryConsumeOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage)
         {
             return _ownerResourcePoolService.TryConsumeOwnerPoolResources(
@@ -453,6 +462,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 out errorMessage);
         }
 
+        /// <summary>Повертає власника пула ресурсів.</summary>
         public void RefundOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resources)
         {
             if (resources == null)
@@ -461,6 +471,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 _ownerResourcePoolService.AddOwnerResource(ownerId, pair.Key, pair.Value, _signalBus);
         }
 
+        /// <summary>Повертає найму населення.</summary>
         public RecruitmentPopulationSnapshot GetRecruitmentPopulation(string ownerId, Vector2Int position)
         {
             if (!TryResolveConstructionSettlement(position, ownerId, out var state) || state == null || !state.IsActive)
@@ -478,6 +489,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 Mathf.Clamp(available / fullSpeed, minimum, 1f));
         }
 
+        /// <summary>Намагається Reserve найму населення.</summary>
         public bool TryReserveRecruitmentPopulation(string ownerId, Vector2Int position, long queueId,
             int count, out string reason)
         {
@@ -504,6 +516,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return true;
         }
 
+        /// <summary>Встановлює найму населення Assignment.</summary>
         public void SetRecruitmentPopulationAssignment(string ownerId, long queueId, string unitId)
         {
             if (queueId < 1) return;
@@ -533,6 +546,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             => _signalBus.Fire(new SettlementPopulationChangedSignal
             { OwnerId = state.OwnerId, SettlementId = state.SettlementId });
 
+        /// <summary>Повертає найму ресурсів.</summary>
         public void RefundRecruitmentResources(string ownerId, string settlementId,
             IReadOnlyDictionary<string, float> resources)
         {
@@ -549,11 +563,13 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     AddResource(settlementId, resource.Key, resource.Value);
         }
 
+        /// <summary>Намагається отримати будівлі At позицію.</summary>
         public bool TryGetBuildingAtPosition(Vector2Int position, out string buildingId, out string ownerId)
         {
             return _settlementRegistry.TryGetBuildingAtPosition(position, out buildingId, out ownerId);
         }
 
+        /// <summary>Повертає складу ресурсу підсумки By позицію.</summary>
         public Dictionary<string, float> GetWarehouseResourceTotalsByPosition(Vector2Int warehousePosition)
         {
             if (!_settlementRegistry.TryGetSettlementByPosition(warehousePosition, out var state) || state == null)
@@ -562,6 +578,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return state.GetWarehouseSnapshot(ToWarehouseKey(warehousePosition));
         }
 
+        /// <summary>Повертає поселення Warehouses усього.</summary>
         public Dictionary<string, float> GetSettlementWarehousesTotal(string settlementId)
         {
             if (string.IsNullOrWhiteSpace(settlementId))
@@ -574,6 +591,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return state.GetAllWarehousesTotalSnapshot();
         }
 
+        /// <summary>Повертає поселення ресурсу підсумки.</summary>
         public Dictionary<string, float> GetSettlementResourceTotals(string settlementId)
         {
             if (string.IsNullOrWhiteSpace(settlementId))
@@ -586,6 +604,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return new Dictionary<string, float>(state.ResourcePool, StringComparer.Ordinal);
         }
 
+        /// <summary>Повертає поселення зарезервованої ресурсу підсумки.</summary>
         public Dictionary<string, float> GetSettlementReservedResourceTotals(string settlementId)
         {
             if (string.IsNullOrWhiteSpace(settlementId))
@@ -598,6 +617,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return state.GetReservedSnapshot();
         }
 
+        /// <summary>Повертає поселення Available ресурсу підсумки.</summary>
         public Dictionary<string, float> GetSettlementAvailableResourceTotals(string settlementId)
         {
             if (string.IsNullOrWhiteSpace(settlementId))
@@ -617,11 +637,13 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return result;
         }
 
+        /// <summary>Повертає власника пула ресурсу підсумки.</summary>
         public Dictionary<string, float> GetOwnerPoolResourceTotals(string ownerId)
         {
             return _ownerResourcePoolService.GetOwnerPoolResourceTotals(ownerId);
         }
 
+        /// <summary>Повертає власника ресурсу підсумки.</summary>
         public Dictionary<string, float> GetOwnerResourceTotals(string ownerId)
         {
             return _ownerResourcePoolService.GetOwnerResourceTotals(
@@ -629,21 +651,25 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 NormalizeOwnerId(ownerId));
         }
 
+        /// <summary>Виконує OwnerHasAnyWarehouse.</summary>
         public bool OwnerHasAnyWarehouse(string ownerId)
         {
             return _ownerResourcePoolService.OwnerHasAnyWarehouse(ownerId, _settlementRegistry.AllSettlements);
         }
 
+        /// <summary>Повертає власника ресурсу Pools знімка.</summary>
         public Dictionary<string, Dictionary<string, float>> GetOwnerResourcePoolsSnapshot()
         {
             return _ownerResourcePoolService.GetOwnerResourcePoolsSnapshot();
         }
 
+        /// <summary>Повертає власника ресурсу підсумки знімка.</summary>
         public Dictionary<string, Dictionary<string, float>> GetOwnerResourceTotalsSnapshot()
         {
             return _ownerResourcePoolService.GetOwnerResourceTotalsSnapshot(_settlementRegistry.AllSettlements);
         }
 
+        /// <summary>Відновлює власника ресурсу Pools.</summary>
         public void RestoreOwnerResourcePools(Dictionary<string, Dictionary<string, float>> snapshot)
         {
             _ownerResourcePoolService.RestoreOwnerResourcePools(snapshot, _signalBus);
@@ -1041,6 +1067,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             });
         }
 
+        /// <summary>Повертає поселення назву Or резервного.</summary>
         public string GetSettlementNameOrFallback(string settlementId)
         {
             return _settlementRegistry.GetSettlementNameOrFallback(settlementId);

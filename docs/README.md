@@ -121,7 +121,6 @@ Moyva - це покрокова 2D-стратегія про розбудову 
 - [Service Mode Profiles](standards/service-mode-profiles.md)
 - [Feature Toggles for Risky Features](standards/feature-toggles-risky-features.md)
 - [Multiplayer Config Schema + Migration Pipeline](standards/multiplayer-config-schema-migration.md)
-- [Domain Events Layer](standards/domain-events-layer.md)
 - [Tech Debt Register](standards/tech-debt-register.md)
 - [Tech Debt Register Items](architecture/tech-debt-register.md)
 - [Unit Designer Modular Facades](standards/unit-designer-modular-facades.md)

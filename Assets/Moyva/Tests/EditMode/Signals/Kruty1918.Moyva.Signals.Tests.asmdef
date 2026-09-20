@@ -1,0 +1,21 @@
+{
+  "name": "Kruty1918.Moyva.Signals.Tests",
+  "rootNamespace": "Kruty1918.Moyva.Signals.Tests",
+  "references": [
+    "Kruty1918.Moyva.Signals"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
