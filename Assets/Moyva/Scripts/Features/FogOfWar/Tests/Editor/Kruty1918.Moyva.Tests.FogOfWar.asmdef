@@ -6,6 +6,7 @@
     "Kruty1918.Moyva.Grid",
     "Kruty1918.Moyva.SaveSystem",
     "Kruty1918.Moyva.Signals",
+    "Unity.RenderPipelines.Universal.Runtime",
     "Zenject"
   ],
   "includePlatforms": ["Editor"],
