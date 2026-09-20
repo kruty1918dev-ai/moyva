@@ -28,23 +28,33 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             Container.BindInstance(_settings).AsSingle();
             Container.BindInstance(new CloudsSceneReferences(_sceneCamera, _cloudsRoot)).AsSingle();
             Container.BindInterfacesAndSelfTo<CloudsWorldPresenter>()
-                .FromMethod(ctx => new CloudsWorldPresenter(
-                    _settings,
-                    () => ResolveMapBounds(ctx.Container),
-                    _sceneCamera,
-                    _cloudsRoot))
+                .FromMethod(ctx =>
+                {
+                    DiContainer container = ctx.Container;
+                    return new CloudsWorldPresenter(
+                        _settings,
+                        () => ResolveMapBounds(container),
+                        _sceneCamera,
+                        _cloudsRoot);
+                })
                 .AsSingle()
                 .NonLazy();
         }
 
+        private Rect? _cachedMapBounds;
+
         private Rect ResolveMapBounds(DiContainer container)
         {
+            if (_cachedMapBounds.HasValue)
+                return _cachedMapBounds.Value;
+
             IGridService grid = container.TryResolve<IGridService>();
             IGridProjection projection = container.TryResolve<IGridProjection>();
             if (grid != null && projection != null)
             {
                 Bounds bounds = projection.GetWorldBounds(grid.GridWidth, grid.GridHeight);
-                return Rect.MinMaxRect(bounds.min.x, bounds.min.z, bounds.max.x, bounds.max.z);
+                _cachedMapBounds = Rect.MinMaxRect(bounds.min.x, bounds.min.z, bounds.max.x, bounds.max.z);
+                return _cachedMapBounds.Value;
             }
 
             Vector2 halfSize = _settings.ManualMapSize * 0.5f;
