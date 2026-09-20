@@ -135,10 +135,6 @@ namespace Kruty1918.Moyva.Visuals
             if (_shader != null)
                 return;
 
-            _shader = Shader.Find(ShaderName);
-            if (_shader != null)
-                return;
-
 #if UNITY_EDITOR
             for (int i = 0; i < ShaderAssetPaths.Length; i++)
             {
