@@ -150,7 +150,7 @@ namespace Kruty1918.Moyva.Vfx.Tests
         public void SetUp()
         {
             _container = new DiContainer();
-            SignalBusInstaller.Install(_container);
+            Kruty1918.Moyva.Signals.SignalBusInstaller.Install(_container);
             _container.DeclareSignal<BuildingPlacedSignal>().OptionalSubscriber();
             _container.DeclareSignal<UnitMovedSignal>().OptionalSubscriber();
             _container.DeclareSignal<UnitDestroyedSignal>().OptionalSubscriber();
@@ -172,7 +172,7 @@ namespace Kruty1918.Moyva.Vfx.Tests
             foreach (GameObject go in _stubPrefabs)
             {
                 if (go != null)
-                    Object.DestroyImmediate(go);
+                    UnityEngine.Object.DestroyImmediate(go);
             }
             _stubPrefabs.Clear();
         }

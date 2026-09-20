@@ -111,7 +111,7 @@ namespace Kruty1918.Moyva.Visuals
                 || cameraData.renderType == CameraRenderType.Overlay)
                 return;
 
-            Camera camera = cameraData.camera;
+            UnityEngine.Camera camera = cameraData.camera;
             if (camera != null
                 && camera.cameraType == CameraType.SceneView
                 && (!_applyInSceneView

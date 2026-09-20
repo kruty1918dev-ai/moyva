@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.Visuals
         [Tooltip("Water materials that should receive the reflection texture. Materials on this renderer are also updated.")]
         public Material[] targetWaterMaterials;
 
-        private Camera _reflectionCamera;
+        private UnityEngine.Camera _reflectionCamera;
         private RenderTexture _reflectionTexture;
         private UniversalAdditionalCameraData _reflectionCameraData;
         private MaterialPropertyBlock _propertyBlock;
@@ -65,7 +65,7 @@ namespace Kruty1918.Moyva.Visuals
                 waterPlane = transform;
         }
 
-        private void RenderReflection(ScriptableRenderContext context, Camera sourceCamera)
+        private void RenderReflection(ScriptableRenderContext context, UnityEngine.Camera sourceCamera)
         {
             if (!isActiveAndEnabled || _isRenderingReflection || sourceCamera == null)
                 return;
@@ -124,7 +124,7 @@ namespace Kruty1918.Moyva.Visuals
             }
         }
 
-        private void EnsureResources(Camera sourceCamera)
+        private void EnsureResources(UnityEngine.Camera sourceCamera)
         {
             int width = Mathf.Max(1, Mathf.RoundToInt(sourceCamera.pixelWidth * textureScale));
             int height = Mathf.Max(1, Mathf.RoundToInt(sourceCamera.pixelHeight * textureScale));
@@ -158,7 +158,7 @@ namespace Kruty1918.Moyva.Visuals
                 {
                     hideFlags = HideFlags.HideAndDontSave
                 };
-                _reflectionCamera = cameraObject.AddComponent<Camera>();
+                _reflectionCamera = cameraObject.AddComponent<UnityEngine.Camera>();
                 _reflectionCamera.enabled = false;
                 _reflectionCameraData = _reflectionCamera.gameObject.AddComponent<UniversalAdditionalCameraData>();
             }
@@ -168,7 +168,7 @@ namespace Kruty1918.Moyva.Visuals
             }
         }
 
-        private void CopyCameraSettings(Camera source, Camera destination)
+        private void CopyCameraSettings(UnityEngine.Camera source, UnityEngine.Camera destination)
         {
             destination.CopyFrom(source);
             destination.enabled = false;
@@ -275,7 +275,7 @@ namespace Kruty1918.Moyva.Visuals
             _textureHeight = 0;
         }
 
-        private Vector4 CameraSpacePlane(Camera camera, Vector3 position, Vector3 normal, float sideSign)
+        private Vector4 CameraSpacePlane(UnityEngine.Camera camera, Vector3 position, Vector3 normal, float sideSign)
         {
             Vector3 offsetPosition = position + normal * clipPlaneOffset;
             Matrix4x4 worldToCamera = camera.worldToCameraMatrix;
