@@ -215,6 +215,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return result;
         }
 
+        public EconomyProductionReadSnapshot GetOwnerProductionSnapshot(string ownerId)
+        {
+            return EconomyProductionReadModel.Capture(_economyManager?.Settlements, ownerId);
+        }
+
         private static bool TryParseWarehousePosition(string key, out UnityEngine.Vector2Int position)
         {
             position = default;

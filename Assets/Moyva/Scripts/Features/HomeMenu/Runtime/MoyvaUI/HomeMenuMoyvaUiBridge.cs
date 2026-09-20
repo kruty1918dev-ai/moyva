@@ -248,6 +248,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void CommitMovementSpeedValue(object value) => Commit(() => _view?.SetMovementSpeed(ToFloat(value, _view.MovementSpeed)));
         public void CommitOrbitSpeedValue(object value) => Commit(() => _view?.SetOrbitSpeed(ToFloat(value, _view.OrbitSpeed)));
         public void CommitZoomSpeedValue(object value) => Commit(() => _view?.SetZoomSpeed(ToFloat(value, _view.ZoomSpeed)));
+        public void SetCameraEffects(object value) => _view?.SetCameraEffects(ToBool(value));
+        public void CommitCameraShakeValue(object value) => Commit(() => _view?.SetCameraShakeIntensity(ToFloat(value, _view.CameraShakeIntensity)));
+        public void SetSmoothCameraFocus(object value) => _view?.SetSmoothCameraFocus(ToBool(value));
+        public void SetAutomaticCameraFocus(object value) => _view?.SetAutomaticCameraFocus(ToBool(value));
+        public void SetReduceCameraMotion(object value) => _view?.SetReduceCameraMotion(ToBool(value));
+        public void SetZoomTowardFingers(object value) => _view?.SetZoomTowardFingers(ToBool(value));
         public void ResetControls()
         {
             _view?.Controls.CancelCapture();

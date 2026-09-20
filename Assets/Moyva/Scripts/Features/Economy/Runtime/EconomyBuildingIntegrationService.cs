@@ -8,7 +8,10 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
-    internal sealed class EconomyBuildingIntegrationService : IEconomyBuildingIntegration
+    /// <summary>
+    /// Building integration service: handles construction events and building-settlement relationships.
+    /// </summary>
+    internal sealed class EconomyBuildingIntegrationService
     {
         private const string PerfLogTag =
             "[MoyvaConstructionPerf]";
@@ -17,7 +20,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly Dictionary<BuildingDefinition, bool>
             _moduleValidationErrorsByDefinition = new();
 
-        public EconomySettlementState OnBuildingPlaced(BuildingPlacedSignal signal, ISettlementRegistry registry, SignalBus signalBus, EconomyDatabaseSO database, IBuildingRegistry buildingRegistry)
+        public EconomySettlementState OnBuildingPlaced(BuildingPlacedSignal signal, EconomySettlementRegistryService registry, SignalBus signalBus, EconomyDatabaseSO database, IBuildingRegistry buildingRegistry)
         {
             var definition = FindBuildingDefinition(signal.BuildingId, buildingRegistry);
             if (definition == null)
@@ -151,7 +154,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return null;
         }
 
-        public void OnBuildingDemolished(BuildingDemolishedSignal signal, ISettlementRegistry registry, SignalBus signalBus, EconomyDatabaseSO database, IBuildingRegistry buildingRegistry)
+        public void OnBuildingDemolished(BuildingDemolishedSignal signal, EconomySettlementRegistryService registry, SignalBus signalBus, EconomyDatabaseSO database, IBuildingRegistry buildingRegistry)
         {
             var definition = FindBuildingDefinition(signal.BuildingId, buildingRegistry);
             if (definition == null)
@@ -219,7 +222,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 RecalculateHousing(state, buildingRegistry);
         }
 
-        private EconomySettlementState CreateSettlement(string townHallBuildingId, Vector2Int position, BuildingDefinition definition, string ownerId, ISettlementRegistry registry, SignalBus signalBus, EconomyDatabaseSO database, IBuildingRegistry buildingRegistry)
+        private EconomySettlementState CreateSettlement(string townHallBuildingId, Vector2Int position, BuildingDefinition definition, string ownerId, EconomySettlementRegistryService registry, SignalBus signalBus, EconomyDatabaseSO database, IBuildingRegistry buildingRegistry)
         {
             var rules = database?.RulesConfig;
             if (rules == null)
@@ -452,7 +455,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         private static bool OwnerHasActiveSettlementCenter(
             string ownerId,
-            ISettlementRegistry registry)
+            EconomySettlementRegistryService registry)
         {
             string normalizedOwnerId = NormalizeOwnerId(ownerId);
             foreach (var pair in registry.AllSettlements)

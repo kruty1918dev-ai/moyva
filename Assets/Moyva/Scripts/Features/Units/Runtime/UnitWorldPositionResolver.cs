@@ -31,6 +31,9 @@ namespace Kruty1918.Moyva.Units.Runtime
             _tileSettings = tileSettings;
         }
 
+        public bool Uses3DWorldPlane
+            => GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection);
+
         public Vector3 ResolveWorldPosition(
             Vector2Int gridPosition,
             float surfacePivotOffsetY = 0.05f)

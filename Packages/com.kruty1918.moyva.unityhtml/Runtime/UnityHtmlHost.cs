@@ -89,6 +89,7 @@ namespace UnityHTML.Runtime
 
                 _context.Start();
                 _tree = new UnityHtmlDocumentTree(_context);
+                _tree.ComponentRemoved = _motion.HandleComponentRemoved;
                 _tree.Update(document.Html);
                 DetachUnsafeEditorAssemblyReloadDispose(_context);
                 CompleteLayoutPass();

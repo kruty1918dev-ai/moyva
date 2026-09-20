@@ -4,7 +4,10 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
-    internal sealed class EconomySettlementRegistryService : ISettlementRegistry
+    /// <summary>
+    /// Settlement registry: manages settlement storage, lookup, and position-to-settlement mapping.
+    /// </summary>
+    internal sealed class EconomySettlementRegistryService
     {
         private readonly Dictionary<string, EconomySettlementState> _settlements =
             new Dictionary<string, EconomySettlementState>(StringComparer.Ordinal);

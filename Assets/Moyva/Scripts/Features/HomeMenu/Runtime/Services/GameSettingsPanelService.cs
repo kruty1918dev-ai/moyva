@@ -94,6 +94,18 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _moyvaUiViewController.OnOrbitSpeedChanged += OnOrbitSpeedChanged;
                 _moyvaUiViewController.OnZoomSpeedChanged -= OnZoomSpeedChanged;
                 _moyvaUiViewController.OnZoomSpeedChanged += OnZoomSpeedChanged;
+                _moyvaUiViewController.OnCameraEffectsChanged -= OnCameraEffectsChanged;
+                _moyvaUiViewController.OnCameraEffectsChanged += OnCameraEffectsChanged;
+                _moyvaUiViewController.OnCameraShakeIntensityChanged -= OnCameraShakeIntensityChanged;
+                _moyvaUiViewController.OnCameraShakeIntensityChanged += OnCameraShakeIntensityChanged;
+                _moyvaUiViewController.OnSmoothCameraFocusChanged -= OnSmoothCameraFocusChanged;
+                _moyvaUiViewController.OnSmoothCameraFocusChanged += OnSmoothCameraFocusChanged;
+                _moyvaUiViewController.OnAutomaticCameraFocusChanged -= OnAutomaticCameraFocusChanged;
+                _moyvaUiViewController.OnAutomaticCameraFocusChanged += OnAutomaticCameraFocusChanged;
+                _moyvaUiViewController.OnReduceCameraMotionChanged -= OnReduceCameraMotionChanged;
+                _moyvaUiViewController.OnReduceCameraMotionChanged += OnReduceCameraMotionChanged;
+                _moyvaUiViewController.OnZoomTowardFingersChanged -= OnZoomTowardFingersChanged;
+                _moyvaUiViewController.OnZoomTowardFingersChanged += OnZoomTowardFingersChanged;
                 _moyvaUiViewController.OnControlBindingChanged -= OnControlBindingChanged;
                 _moyvaUiViewController.OnControlBindingChanged += OnControlBindingChanged;
                 _moyvaUiViewController.OnResetControlsClicked -= OnResetControlsClicked;
@@ -144,6 +156,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _moyvaUiViewController.OnMovementSpeedChanged -= OnMovementSpeedChanged;
                 _moyvaUiViewController.OnOrbitSpeedChanged -= OnOrbitSpeedChanged;
                 _moyvaUiViewController.OnZoomSpeedChanged -= OnZoomSpeedChanged;
+                _moyvaUiViewController.OnCameraEffectsChanged -= OnCameraEffectsChanged;
+                _moyvaUiViewController.OnCameraShakeIntensityChanged -= OnCameraShakeIntensityChanged;
+                _moyvaUiViewController.OnSmoothCameraFocusChanged -= OnSmoothCameraFocusChanged;
+                _moyvaUiViewController.OnAutomaticCameraFocusChanged -= OnAutomaticCameraFocusChanged;
+                _moyvaUiViewController.OnReduceCameraMotionChanged -= OnReduceCameraMotionChanged;
+                _moyvaUiViewController.OnZoomTowardFingersChanged -= OnZoomTowardFingersChanged;
                 _moyvaUiViewController.OnControlBindingChanged -= OnControlBindingChanged;
                 _moyvaUiViewController.OnResetControlsClicked -= OnResetControlsClicked;
             }
@@ -272,6 +290,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private void OnMovementSpeedChanged(float value) => _controlSettingsService?.SetMovementSpeed(value);
         private void OnOrbitSpeedChanged(float value) => _controlSettingsService?.SetOrbitSpeed(value);
         private void OnZoomSpeedChanged(float value) => _controlSettingsService?.SetZoomSpeed(value);
+        private void OnCameraEffectsChanged(bool value) => _controlSettingsService?.SetCameraEffects(value);
+        private void OnCameraShakeIntensityChanged(float value) => _controlSettingsService?.SetCameraShakeIntensity(value);
+        private void OnSmoothCameraFocusChanged(bool value) => _controlSettingsService?.SetSmoothCameraFocus(value);
+        private void OnAutomaticCameraFocusChanged(bool value) => _controlSettingsService?.SetAutomaticCameraFocus(value);
+        private void OnReduceCameraMotionChanged(bool value) => _controlSettingsService?.SetReduceCameraMotion(value);
+        private void OnZoomTowardFingersChanged(bool value) => _controlSettingsService?.SetZoomTowardFingers(value);
 
         private void OnControlBindingChanged(PlayerControlAction action, string controlPath)
         {

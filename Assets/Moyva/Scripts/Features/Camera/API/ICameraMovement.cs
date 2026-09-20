@@ -4,6 +4,13 @@ namespace Kruty1918.Moyva.Camera.API
 {
     public interface ICameraMovement
     {
+        /// <summary>
+        /// Raised when the player expresses navigation intent (pan, drag, orbit).
+        /// Programmatic navigation (teleports, focus transitions) never raises it.
+        /// Automatic camera motion subscribes to this to yield to the player.
+        /// </summary>
+        event System.Action ManualControlRequested;
+
         void MoveCamera(Vector3 direction);
         void MoveCameraKeyboard(Vector2 direction, float unscaledDeltaTime);
         void MoveCameraImmediate(Vector3 direction, float speedMultiplier);
@@ -32,5 +39,11 @@ namespace Kruty1918.Moyva.Camera.API
     public interface IGameplayCameraFocusService
     {
         void FocusGridPosition(Vector2Int gridPosition, string targetId = null);
+
+        /// <summary>
+        /// Focuses the currently selected unit/building/map object, if any.
+        /// Bound to the FocusSelected player action (default: F / right stick press).
+        /// </summary>
+        void FocusSelected();
     }
 }

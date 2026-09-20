@@ -27,6 +27,13 @@ namespace Kruty1918.Moyva.Signals
         public bool HasRelocationSource;
         public Vector2Int RelocationSourcePosition;
         public int RotationQuarterTurns;
+
+        /// <summary>
+        /// Presentation hint: skip entrance/settle motion and show the final
+        /// pose immediately (save restore, world seeding). Gameplay-affecting
+        /// subscribers must ignore this flag.
+        /// </summary>
+        public bool InstantVisual;
     }
 
     /// <summary>

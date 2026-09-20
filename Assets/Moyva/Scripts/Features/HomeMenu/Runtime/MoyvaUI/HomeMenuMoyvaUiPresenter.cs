@@ -11,6 +11,18 @@ using Zenject;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
+    /// <summary>
+    /// Renders the Home Menu by applying a small state machine, not a pile of caches:
+    ///
+    ///   State (authoritative) -> snapshot -> plan operation -> apply -> snapshot committed
+    ///
+    /// Route changes run through <see cref="HomeMenuRenderPhase.ExitingRoute"/>: the exit
+    /// fade is armed once, and the deadline handler always renders the *latest* desired
+    /// snapshot, so rapid navigation can never apply a stale intermediate route.
+    /// Nothing in this class tracks "what was requested" — it only diffs what is
+    /// mounted against what is desired, which is why cancelled/stale work cannot
+    /// mutate a page that was rendered after it.
+    /// </summary>
     internal sealed class HomeMenuMoyvaUiPresenter : IInitializable, ITickable, IDisposable
     {
         private const string Prefix = "[HomeMenuMoyvaUI]";
@@ -32,20 +44,23 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private HomeMenuMoyvaUiAnchor _mountedAnchor;
         private string _lastViewportClass = string.Empty;
-        private string _mountedViewportClass = string.Empty;
-        private string _mountedRootClass = string.Empty;
-        private string _lastRouteMarkup;
-        private string _lastBrandMarkup;
-        private string _lastModalsMarkup;
         private bool _loggedFallback;
         private bool _initialized;
-        private bool _pendingRemount;
-        private int _lastStateChangeFrame = -1;
-        private string _lastRenderedRoute = string.Empty;
-        private float _pendingRenderAt = -1f;
+
+        /// <summary>The snapshot actually committed to the DOM; null before first mount.</summary>
+        private HomeMenuUiSnapshot _mounted;
+
+        private HomeMenuRenderPhase _phase = HomeMenuRenderPhase.Stable;
+        private float _phaseDeadline = -1f;
+
+        /// <summary>Time seam for EditMode tests; production uses unscaled time.</summary>
+        internal Func<float> TimeNow = () => Time.unscaledTime;
 
         /// <summary>Тестовий seam: місток, який отримує всі callbacks з markup (Globals.moyvaMenu).</summary>
         internal HomeMenuMoyvaUiBridge Bridge => _bridge;
+
+        /// <summary>Current transition phase (test seam).</summary>
+        internal HomeMenuRenderPhase Phase => _phase;
 
         public HomeMenuMoyvaUiPresenter(
             HomeMenuConfigSO config,
@@ -93,11 +108,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_localization != null)
                 _localizationFonts?.Warmup(_localization.CurrentLanguage);
 
-            _state.Changed += HandleStateChanged;
             _navigation.OnMenuChanged += HandleMenuChanged;
             if (_localization != null)
                 _localization.LanguageChanged += HandleLanguageChanged;
-            RenderIfNeeded(force: true);
+
+            RenderIfNeeded();
         }
 
         public void Tick()
@@ -108,10 +123,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _view.Controls.Tick();
             HandleEscapeInput();
 
-            if (_pendingRenderAt >= 0f && Time.unscaledTime >= _pendingRenderAt)
+            // A pending route exit always completes on the latest desired state —
+            // never on whatever was requested when the fade started.
+            if (_phase == HomeMenuRenderPhase.ExitingRoute && TimeNow() >= _phaseDeadline)
             {
-                _pendingRenderAt = -1f;
-                MountDocument(force: false, routeExitPlayed: true);
+                _phase = HomeMenuRenderPhase.Stable;
+                _phaseDeadline = -1f;
+                Apply(desired: Capture(), opOverride: null, routeExitPlayed: true);
             }
 
             var viewportClass = _mountedAnchor.CurrentViewportClass;
@@ -121,16 +139,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _state.MarkDirty();
             }
 
-            if (_state.IsInteractionActive || _lastStateChangeFrame == Time.frameCount)
+            if (_phase != HomeMenuRenderPhase.Stable || _state.IsInteractionActive)
                 return;
 
-            RenderIfNeeded(force: false);
+            RenderIfNeeded();
         }
 
         public void Dispose()
         {
             _view.Controls.CancelCapture();
-            _state.Changed -= HandleStateChanged;
 
             if (_navigation != null)
                 _navigation.OnMenuChanged -= HandleMenuChanged;
@@ -145,58 +162,86 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             _mountedAnchor = null;
-            _pendingRenderAt = -1f;
+            _phase = HomeMenuRenderPhase.Stable;
+            _phaseDeadline = -1f;
             _host?.Dispose();
         }
-
-        private void HandleStateChanged() => _lastStateChangeFrame = Time.frameCount;
 
         private void HandleMenuChanged(NavigationChangeEventArgs _) => _state.MarkDirty();
 
         private void HandleLanguageChanged()
         {
-            // A language switch swaps the whole glyph set, so the fallback chain and
-            // per-component TMP font caches (m_currentFontAsset, m_Ellipsis.fontAsset
-            // and the pooled text components kept by ReactUnity) all become stale.
-            // Force the next render through a fresh context instead of a regional
-            // update that would keep those references alive.
-            _pendingRemount = true;
+            // Localization changes flow through the same snapshot diff as everything
+            // else: text differences land via a region update, and the host escalates
+            // to a fresh context only if reconciliation provably fails (e.g. pooled
+            // TMP components holding destroyed font references). No flag, no timing.
             _state.MarkDirty();
         }
 
-        private void RenderIfNeeded(bool force)
+        private HomeMenuUiSnapshot Capture()
+            => HomeMenuUiSnapshot.Capture(_state, _view, _mountedAnchor.CurrentViewportClass);
+
+        private void RenderIfNeeded()
         {
-            if (_mountedAnchor == null || _state.IsFallback)
-                return;
-
-            if (_pendingRenderAt >= 0f && !force)
-                return; // route exit animation in progress; the deferred mount renders latest state.
-
-            if (!force && !_state.ConsumeDirty())
-                return;
-            if (force)
-                _state.ConsumeDirty();
-
-            var route = ResolveRoute();
-            if (!force
-                && _state.IsMounted
-                && !_state.ReducedMotion
-                && _pendingRenderAt < 0f
-                && !string.Equals(route, _lastRenderedRoute, StringComparison.Ordinal))
+            var desired = Capture();
+            var op = HomeMenuRenderPlanner.ChooseOperation(_mounted, desired);
+            if (op == HomeMenuRenderOperation.None)
             {
-                // Let the outgoing route fade briefly before the document swap.
-                _host.Motion?.Play(RouteRootId, "fade-out", RouteExitSeconds, 0f);
-                _pendingRenderAt = Time.unscaledTime + RouteExitSeconds;
-                _state.MarkDirty();
+                _state.ConsumeDirty();
                 return;
             }
 
-            MountDocument(force, routeExitPlayed: false);
+            var routeChanged = _mounted != null && !desired.RouteEquals(_mounted);
+            if (_mounted != null && routeChanged && !_state.ReducedMotion)
+            {
+                // Arm the route exit once; completion happens in Tick so that rapid
+                // navigation inside the exit window collapses into a single swap.
+                _phase = HomeMenuRenderPhase.ExitingRoute;
+                _phaseDeadline = TimeNow() + RouteExitSeconds;
+                _host.Motion?.Play(RouteRootId, "fade-out", RouteExitSeconds, 0f);
+                return;
+            }
+
+            Apply(desired, op, routeExitPlayed: false);
         }
 
-        private void PlayRouteEnter(string previousRoute, bool routeExitPlayed)
+        private void Apply(HomeMenuUiSnapshot desired, HomeMenuRenderOperation? opOverride, bool routeExitPlayed)
         {
-            var routeChanged = !string.Equals(previousRoute, _lastRenderedRoute, StringComparison.Ordinal);
+            var previousRoute = _mounted != null ? _mounted.Route : string.Empty;
+            var op = opOverride ?? HomeMenuRenderPlanner.ChooseOperation(_mounted, desired);
+
+            // op == None means the DOM already matches (e.g. the route reverted
+            // inside the exit window); the commit + enter-motion still must run.
+            var applied = op == HomeMenuRenderOperation.None;
+            if (op == HomeMenuRenderOperation.UpdateRegions)
+            {
+                applied = TryUpdateRegions(desired);
+                if (!applied)
+                    op = HomeMenuRenderOperation.MountDocument;
+            }
+
+            if (op == HomeMenuRenderOperation.MountDocument)
+                applied = TryMountDocument(desired);
+
+            if (!applied)
+            {
+                Fallback("Document update could not be applied.");
+                return;
+            }
+
+            // Commit only after the DOM actually changed: _mounted always describes
+            // the rendered document, never a pending intent.
+            _mounted = desired;
+            _state.IsMounted = true;
+            _state.ConsumeDirty();
+            _mountedAnchor.SetMoyvaUiVisible(true);
+            _mountedAnchor.SetLegacyUiVisible(false);
+            PlayRouteEnter(previousRoute, desired.Route, routeExitPlayed);
+        }
+
+        private void PlayRouteEnter(string previousRoute, string currentRoute, bool routeExitPlayed)
+        {
+            var routeChanged = !string.Equals(previousRoute, currentRoute, StringComparison.Ordinal);
             // When an exit ran but the swap landed back on the same route (rapid
             // back-and-forth inside the exit window), still fade back in: the panel
             // is mid-fade and would otherwise stay transparent.
@@ -205,80 +250,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (!_state.ReducedMotion)
                 _host.Motion?.Play(RouteRootId, "fade", RouteEnterSeconds, 0f);
             else
-                _host.Motion?.Stop(RouteRootId); // restore alpha if a fade-out was interrupted
+                _host.Motion?.RestoreResting(RouteRootId);
         }
-
-        private void MountDocument(bool force, bool routeExitPlayed)
-        {
-            _state.ConsumeDirty();
-            if (_pendingRemount)
-            {
-                // Tear down the old ReactUnity context (and its pooled TMP text
-                // components) so nothing keeps stale font/material references.
-                _pendingRemount = false;
-                _host.Unmount();
-                _state.IsMounted = false;
-            }
-
-            var previousRoute = _lastRenderedRoute;
-            var route = ResolveRoute();
-            var viewportClass = _mountedAnchor.CurrentViewportClass;
-            _lastViewportClass = viewportClass;
-            var globals = new Dictionary<string, object>
-            {
-                ["moyvaMenu"] = _bridge
-            };
-
-            if (_mountedAnchor.FontAsset != null)
-                globals["moyvaFont"] = _mountedAnchor.FontAsset;
-
-            if (!force && TryApplyRegionalUpdate(viewportClass, globals))
-            {
-                // A deferred route swap lands here, not in Mount() below. Sync the
-                // rendered-route cache and replay the enter motion: a finished
-                // exit fade leaves the region CanvasGroup at alpha 0 (blank panel),
-                // and a stale cache re-arms the exit fade on every later
-                // same-route change such as settings tab switches.
-                _lastRenderedRoute = route;
-                PlayRouteEnter(previousRoute, routeExitPlayed);
-                return;
-            }
-
-            var routeMarkup = HomeMenuMoyvaUiMarkup.BuildRouteMarkup(_state, _view);
-            var brand = HomeMenuMoyvaUiMarkup.BuildBrandMarkup(_view);
-            var html = HomeMenuMoyvaUiMarkup.Build(_state, _view, viewportClass);
-            var css = _mountedAnchor.CssAsset != null ? _mountedAnchor.CssAsset.text : string.Empty;
-            var document = new UnityHtmlDocument(html, css, "MoyvaUI HomeMenu");
-
-            UnityHtmlMountResult result;
-            using (HomeMenuUiPerformanceMetrics.HtmlMountMarker.Auto())
-            {
-                _mountedAnchor.PrepareForMount();
-                HomeMenuUiPerformanceMetrics.RecordHtmlMount();
-                result = _host.Mount(_mountedAnchor.MountRoot, document, globals);
-            }
-
-            if (!result.Succeeded)
-            {
-                Fallback(result.ErrorMessage);
-                return;
-            }
-
-            _state.IsMounted = true;
-            _mountedViewportClass = viewportClass;
-            _mountedRootClass = HomeMenuMoyvaUiMarkup.BuildRootClass(_state, viewportClass);
-            _lastRouteMarkup = routeMarkup;
-            _lastBrandMarkup = brand;
-            _lastModalsMarkup = HomeMenuMoyvaUiMarkup.BuildModalsMarkup(_state, _view);
-            _lastRenderedRoute = route;
-            _mountedAnchor.SetMoyvaUiVisible(true);
-            _mountedAnchor.SetLegacyUiVisible(false);
-
-            PlayRouteEnter(previousRoute, routeExitPlayed);
-        }
-
-        private string ResolveRoute()
-            => string.IsNullOrWhiteSpace(_state.CurrentRoute) ? "Main" : _state.CurrentRoute.Trim();
 
         private void HandleEscapeInput()
         {
@@ -299,62 +272,62 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _bridge.HandleEscape();
         }
 
-        private bool TryApplyRegionalUpdate(string viewportClass, IReadOnlyDictionary<string, object> globals)
+        private bool TryUpdateRegions(HomeMenuUiSnapshot desired)
         {
-            if (!_state.IsMounted ||
-                !string.Equals(viewportClass, _mountedViewportClass, StringComparison.Ordinal))
-                return false;
-
-            // Region swaps only replace region children; they cannot retarget the
-            // shell root classes (route-*, controls-page, reduced-motion). A changed
-            // root class must take the full document path or scoped CSS goes stale —
-            // e.g. the Controls tab would render without its controls-page layout.
-            if (!string.Equals(
-                    HomeMenuMoyvaUiMarkup.BuildRootClass(_state, viewportClass),
-                    _mountedRootClass,
-                    StringComparison.Ordinal))
-                return false;
-
-            var modals = HomeMenuMoyvaUiMarkup.BuildModalsMarkup(_state, _view);
-            if (!string.Equals(modals, _lastModalsMarkup, StringComparison.Ordinal))
-                return false;
-
-            var route = HomeMenuMoyvaUiMarkup.BuildRouteMarkup(_state, _view);
-            var brand = HomeMenuMoyvaUiMarkup.BuildBrandMarkup(_view);
-            if (string.Equals(route, _lastRouteMarkup, StringComparison.Ordinal) &&
-                string.Equals(brand, _lastBrandMarkup, StringComparison.Ordinal))
-            {
-                _lastModalsMarkup = modals;
-                return true;
-            }
-
             var regions = new Dictionary<string, string>
             {
-                [HomeMenuMoyvaUiMarkup.NavRegionId] = route,
-                [HomeMenuMoyvaUiMarkup.BrandRegionId] = brand
+                [HomeMenuMoyvaUiMarkup.NavRegionId] = desired.NavMarkup,
+                [HomeMenuMoyvaUiMarkup.BrandRegionId] = desired.BrandMarkup
             };
 
-            bool updated;
             try
             {
-                updated = _host.UpdateRegions(regions, globals);
+                return _host.UpdateRegions(regions, BuildGlobals());
             }
             catch (Exception exception)
             {
                 // A reconcile that throws may have already removed children;
-                // fall back to a full mount instead of leaving a half-swapped,
+                // escalate to a document mount instead of leaving a half-swapped,
                 // invisible region.
                 Debug.LogWarning($"{Prefix} Region update failed ({exception.GetBaseException().Message}); remounting document.");
                 return false;
             }
+        }
 
-            if (!updated)
+        private bool TryMountDocument(HomeMenuUiSnapshot desired)
+        {
+            var css = _mountedAnchor.CssAsset != null ? _mountedAnchor.CssAsset.text : string.Empty;
+            var html = HomeMenuMoyvaUiMarkup.Build(_state, _view, desired.ViewportClass);
+            var document = new UnityHtmlDocument(html, css, "MoyvaUI HomeMenu");
+
+            UnityHtmlMountResult result;
+            using (HomeMenuUiPerformanceMetrics.HtmlMountMarker.Auto())
+            {
+                _mountedAnchor.PrepareForMount();
+                HomeMenuUiPerformanceMetrics.RecordHtmlMount();
+                result = _host.Mount(_mountedAnchor.MountRoot, document, BuildGlobals());
+            }
+
+            if (!result.Succeeded)
+            {
+                Fallback(result.ErrorMessage);
                 return false;
+            }
 
-            _lastRouteMarkup = route;
-            _lastBrandMarkup = brand;
-            _lastModalsMarkup = modals;
             return true;
+        }
+
+        private Dictionary<string, object> BuildGlobals()
+        {
+            var globals = new Dictionary<string, object>
+            {
+                ["moyvaMenu"] = _bridge
+            };
+
+            if (_mountedAnchor.FontAsset != null)
+                globals["moyvaFont"] = _mountedAnchor.FontAsset;
+
+            return globals;
         }
 
         private bool CanMount(HomeMenuMoyvaUiAnchor anchor)
@@ -371,7 +344,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private bool Fallback(string reason)
         {
             _state.IsFallback = true;
-            _pendingRenderAt = -1f;
+            _phase = HomeMenuRenderPhase.Stable;
+            _phaseDeadline = -1f;
             _host?.Unmount();
             var anchor = _mountedAnchor ?? FindAnchor();
             anchor?.SetMoyvaUiVisible(false);

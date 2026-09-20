@@ -192,5 +192,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
         Dictionary<string, float> GetSettlementResourceTotals(string settlementId);
         IReadOnlyList<EconomyWarehouseSnapshot> GetOwnerWarehouseSnapshots(string ownerId);
         IReadOnlyList<EconomySettlementSnapshot> GetOwnerSettlementSnapshots(string ownerId);
+        EconomyProductionReadSnapshot GetOwnerProductionSnapshot(string ownerId);
     }
 }

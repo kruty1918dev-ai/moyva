@@ -6,7 +6,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
-    internal sealed class EconomyOwnerResourcePoolService : IEconomyOwnerResourcePoolService
+    internal sealed class EconomyOwnerResourcePoolService
     {
         private const string DefaultOwnerId = EconomyManager.DefaultOwnerId;
 

@@ -32,7 +32,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         IPasswordPanelViewController,
         IWorldSetupViewController,
         IConfiremationPanel,
-        IOverlayLoader,
         IRoomListStatusView,
         ILobbyStatusView
     {
@@ -52,10 +51,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly Button _lobbyBackButton;
         private readonly Button _multiplayerCreateButton;
         private readonly Button _multiplayerJoinButton;
-
-        private TaskCompletionSource<bool> _overlayCompletionSource;
-        private OverlayLoaderResult _overlayResult;
-        private int _overlayLockCount;
 
         public HomeMenuMoyvaUiViewController(HomeMenuMoyvaUiState state,
             [Zenject.InjectOptional] Kruty1918.Moyva.UIActions.API.IUiHotkeyService hotkeys = null,
@@ -105,10 +100,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public bool KickInteractable { get; private set; } = true;
         public bool SettingsInteractable { get; private set; } = true;
         public bool GraphicsSettingsInteractable { get; private set; } = true;
-        public bool OverlayVisible => _overlayResult != null && _overlayResult.IsLoading;
-        public float OverlayProgress => _overlayResult?.Progress ?? 0f;
+        // Busy-overlay read model. Mutated only by HomeMenuBusyOverlayService via
+        // ApplyOverlayPresentation — the view never touches OverlayLoaderResult,
+        // tasks or locks itself.
+        public bool OverlayVisible { get; private set; }
+        public float OverlayProgress { get; private set; }
         public string OverlaySuffix { get; private set; } = "%";
-        public string OverlayStatus => _overlayResult?.Status ?? string.Empty;
+        public string OverlayStatus { get; private set; } = string.Empty;
         public ILobbyFlowContext FlowContext { get; }
         public LobbyStatusInfo LobbyStatus { get; private set; }
         public RoomListStatus RoomListState { get; private set; } = RoomListStatus.Empty;
@@ -173,6 +171,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public float MovementSpeed { get; private set; } = 1f;
         public float OrbitSpeed { get; private set; } = 1f;
         public float ZoomSpeed { get; private set; } = 1f;
+        public bool CameraEffects { get; private set; } = true;
+        public float CameraShakeIntensity { get; private set; } = 0.5f;
+        public bool SmoothCameraFocus { get; private set; } = true;
+        public bool AutomaticCameraFocus { get; private set; }
+        public bool ReduceCameraMotion { get; private set; }
+        public bool ZoomTowardFingers { get; private set; } = true;
         public HomeMenuControlsEditor Controls { get; }
         public IReadOnlyDictionary<PlayerControlAction, string> ControlBindings => _controlBindings;
         private readonly Dictionary<PlayerControlAction, string> _controlBindings = PlayerControlSettingsData.CreateDefault().Bindings;
@@ -227,6 +231,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public event Action<float> OnMovementSpeedChanged;
         public event Action<float> OnOrbitSpeedChanged;
         public event Action<float> OnZoomSpeedChanged;
+        public event Action<bool> OnCameraEffectsChanged;
+        public event Action<float> OnCameraShakeIntensityChanged;
+        public event Action<bool> OnSmoothCameraFocusChanged;
+        public event Action<bool> OnAutomaticCameraFocusChanged;
+        public event Action<bool> OnReduceCameraMotionChanged;
+        public event Action<bool> OnZoomTowardFingersChanged;
         public event Action<PlayerControlAction, string> OnControlBindingChanged;
         public event Action OnResetControlsClicked;
         public event Action OnAcknowledged;
@@ -253,7 +263,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_localization != null)
                 _localization.LanguageChanged += OnLanguageChanged;
             _state.SetReducedMotion(ReducedMotion);
-            OverlayLoaderResult.CurrentChanged += HandleOverlayChanged;
             _state.MarkDirty();
         }
 
@@ -302,8 +311,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (_localization != null)
                 _localization.LanguageChanged -= OnLanguageChanged;
-            OverlayLoaderResult.CurrentChanged -= HandleOverlayChanged;
-            StopOverlay(true);
             for (int i = 0; i < _ownedObjects.Count; i++)
             {
                 if (_ownedObjects[i] == null)
@@ -318,9 +325,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _ownedObjects.Clear();
         }
 
-        private void HandleOverlayChanged(OverlayLoaderResult _)
+        /// <summary>
+        /// Single mutation path for the busy-overlay read model; called by
+        /// <see cref="HomeMenuBusyOverlayService"/> whenever the async side changes.
+        /// </summary>
+        internal void ApplyOverlayPresentation(bool visible, float progress, string suffix, string status)
         {
-            MainThreadDispatcher.Enqueue(() => _state.MarkDirty());
+            OverlayVisible = visible;
+            OverlayProgress = progress;
+            OverlaySuffix = string.IsNullOrEmpty(suffix) ? "%" : suffix;
+            OverlayStatus = status ?? string.Empty;
+            _state.MarkDirty();
         }
 
         public void SetRoomListStatus(RoomListStatus status, string message)
@@ -434,6 +449,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             MovementSpeed = normalized.MovementSpeed;
             OrbitSpeed = normalized.OrbitSpeed;
             ZoomSpeed = normalized.ZoomSpeed;
+            CameraEffects = normalized.CameraEffects;
+            CameraShakeIntensity = normalized.CameraShakeIntensity;
+            SmoothCameraFocus = normalized.SmoothCameraFocus;
+            AutomaticCameraFocus = normalized.AutomaticCameraFocus;
+            ReduceCameraMotion = normalized.ReduceCameraMotion;
+            ZoomTowardFingers = normalized.ZoomTowardFingers;
             _controlBindings.Clear();
             foreach (var pair in normalized.Bindings)
                 _controlBindings[pair.Key] = pair.Value;
@@ -600,56 +621,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             CurrentConfirmation = null;
             _state.MarkDirty();
         }
-
-        public OverlayLoaderResult LoadOverlay(float value, float maxValue = 100, string sufix = "%")
-        {
-            _overlayResult?.SetLoading(false, _overlayResult.Progress);
-            _overlayCompletionSource?.TrySetResult(true);
-            _overlayCompletionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            OverlaySuffix = string.IsNullOrEmpty(sufix) ? "%" : sufix;
-            var progress = maxValue <= 0f ? 0f : Mathf.Clamp01(value / maxValue) * 100f;
-            _overlayResult = OverlayLoaderResult.Start(
-                async () => await _overlayCompletionSource.Task.ConfigureAwait(false),
-                null,
-                _ => StopOverlay(true));
-            _overlayResult.SetLoading(true, progress);
-            _state.MarkDirty();
-            return _overlayResult;
-        }
-
-        public void UpdateOverlay(float value, float maxValue = 100, string sufix = "%")
-        {
-            if (_overlayResult == null || !_overlayResult.IsLoading)
-                return;
-
-            OverlaySuffix = string.IsNullOrEmpty(sufix) ? "%" : sufix;
-            var progress = maxValue <= 0f ? 0f : Mathf.Clamp01(value / maxValue) * 100f;
-            _overlayResult.SetLoading(true, progress);
-            _state.MarkDirty();
-        }
-
-        /// <summary>Встановлює вже локалізований статус-рядок під прогресом оверлею.</summary>
-        public void SetOverlayStatus(string status)
-        {
-            _overlayResult?.SetStatus(status ?? string.Empty);
-            _state.MarkDirty();
-        }
-
-        public void StopOverlay(bool forceImmediate = false)
-        {
-            if (_overlayLockCount > 0 && !forceImmediate)
-                return;
-
-            _overlayCompletionSource?.TrySetResult(true);
-            _overlayCompletionSource = null;
-            _overlayResult?.SetLoading(false, _overlayResult.Progress);
-            _overlayResult = null;
-            _state.MarkDirty();
-        }
-
-        public void LockOverlay() => _overlayLockCount++;
-
-        public void UnlockOverlay() => _overlayLockCount = Math.Max(0, _overlayLockCount - 1);
 
         public void ClickCreateRoom() => InvokeButton(_createRoomNextButton, () => CreateRoomRequested?.Invoke());
         public void ClickCreateWorld() => InvokeButton(_worldCreateButton, () => CreateWorldRequested?.Invoke());
@@ -1050,6 +1021,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetMovementSpeed(float value) { MovementSpeed = Mathf.Clamp(value, 0.25f, 3f); OnMovementSpeedChanged?.Invoke(MovementSpeed); _state.MarkDirty(); }
         public void SetOrbitSpeed(float value) { OrbitSpeed = Mathf.Clamp(value, 0.25f, 3f); OnOrbitSpeedChanged?.Invoke(OrbitSpeed); _state.MarkDirty(); }
         public void SetZoomSpeed(float value) { ZoomSpeed = Mathf.Clamp(value, 0.25f, 3f); OnZoomSpeedChanged?.Invoke(ZoomSpeed); _state.MarkDirty(); }
+        public void SetCameraEffects(bool value) { CameraEffects = value; OnCameraEffectsChanged?.Invoke(value); _state.MarkDirty(); }
+        public void SetCameraShakeIntensity(float value) { CameraShakeIntensity = Mathf.Clamp01(value); OnCameraShakeIntensityChanged?.Invoke(CameraShakeIntensity); _state.MarkDirty(); }
+        public void SetSmoothCameraFocus(bool value) { SmoothCameraFocus = value; OnSmoothCameraFocusChanged?.Invoke(value); _state.MarkDirty(); }
+        public void SetAutomaticCameraFocus(bool value) { AutomaticCameraFocus = value; OnAutomaticCameraFocusChanged?.Invoke(value); _state.MarkDirty(); }
+        public void SetReduceCameraMotion(bool value) { ReduceCameraMotion = value; OnReduceCameraMotionChanged?.Invoke(value); _state.MarkDirty(); }
+        public void SetZoomTowardFingers(bool value) { ZoomTowardFingers = value; OnZoomTowardFingersChanged?.Invoke(value); _state.MarkDirty(); }
         public void SetControlBinding(PlayerControlAction action, string controlPath) { OnControlBindingChanged?.Invoke(action, controlPath); _state.MarkDirty(); }
         public void ResetControls() { OnResetControlsClicked?.Invoke(); _state.MarkDirty(); }
 

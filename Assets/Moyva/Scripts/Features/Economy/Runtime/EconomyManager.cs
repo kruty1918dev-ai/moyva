@@ -28,10 +28,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly SignalBus _signalBus;
         private readonly EconomyDatabaseSO _database;
         private readonly IBuildingRegistry _buildingRegistry;
-        private readonly IEconomyOwnerResourcePoolService _ownerResourcePoolService;
-        private readonly ISettlementRegistry _settlementRegistry;
-        private readonly IEconomyBuildingIntegration _buildingIntegration;
-        private readonly IEconomyTurnProcessor _turnProcessor;
+        private readonly EconomyOwnerResourcePoolService _ownerResourcePoolService;
+        private readonly EconomySettlementRegistryService _settlementRegistry;
+        private readonly EconomyBuildingIntegrationService _buildingIntegration;
+        private readonly EconomyTurnProcessorService _turnProcessor;
         private EconomyRuntimeSaveSnapshot
             _pendingRuntimeSaveSnapshot;
 
@@ -53,10 +53,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
             SignalBus signalBus,
             EconomyDatabaseSO database,
             IBuildingRegistry buildingRegistry,
-            [InjectOptional] IEconomyOwnerResourcePoolService ownerResourcePoolService = null,
-            [InjectOptional] ISettlementRegistry settlementRegistry = null,
-            [InjectOptional] IEconomyBuildingIntegration buildingIntegration = null,
-            [InjectOptional] IEconomyTurnProcessor turnProcessor = null)
+            [InjectOptional] EconomyOwnerResourcePoolService ownerResourcePoolService = null,
+            [InjectOptional] EconomySettlementRegistryService settlementRegistry = null,
+            [InjectOptional] EconomyBuildingIntegrationService buildingIntegration = null,
+            [InjectOptional] EconomyTurnProcessorService turnProcessor = null)
         {
             _calendar = calendar;
             _signalBus = signalBus;

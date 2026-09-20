@@ -18,7 +18,8 @@ namespace Kruty1918.Moyva.Shared.Controls
         ZoomIn,
         ZoomOut,
         PrimarySelect,
-        SecondarySelect
+        SecondarySelect,
+        FocusSelected
     }
 
     public struct PlayerControlSettingsData
@@ -27,6 +28,12 @@ namespace Kruty1918.Moyva.Shared.Controls
         public float MovementSpeed;
         public float OrbitSpeed;
         public float ZoomSpeed;
+        public bool CameraEffects;
+        public float CameraShakeIntensity;
+        public bool SmoothCameraFocus;
+        public bool AutomaticCameraFocus;
+        public bool ReduceCameraMotion;
+        public bool ZoomTowardFingers;
         public Dictionary<PlayerControlAction, string> Bindings;
         public ProfileDocument Devices;
 
@@ -41,6 +48,12 @@ namespace Kruty1918.Moyva.Shared.Controls
                 MovementSpeed = 1f,
                 OrbitSpeed = 1f,
                 ZoomSpeed = 1f,
+                CameraEffects = true,
+                CameraShakeIntensity = 0.5f,
+                SmoothCameraFocus = true,
+                AutomaticCameraFocus = false,
+                ReduceCameraMotion = false,
+                ZoomTowardFingers = true,
                 Bindings = new Dictionary<PlayerControlAction, string>
                 {
                     { PlayerControlAction.MoveForward, "<Keyboard>/w" },
@@ -53,6 +66,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                     { PlayerControlAction.ZoomOut, "<Keyboard>/minus" },
                     { PlayerControlAction.PrimarySelect, "<Mouse>/leftButton" },
                     { PlayerControlAction.SecondarySelect, "<Mouse>/rightButton" },
+                    { PlayerControlAction.FocusSelected, "<Keyboard>/f" },
                 }
             };
         }
@@ -66,6 +80,14 @@ namespace Kruty1918.Moyva.Shared.Controls
                 MovementSpeed = ClampMultiplier(MovementSpeed),
                 OrbitSpeed = ClampMultiplier(OrbitSpeed),
                 ZoomSpeed = ClampMultiplier(ZoomSpeed),
+                CameraEffects = CameraEffects,
+                CameraShakeIntensity = float.IsNaN(CameraShakeIntensity) || float.IsInfinity(CameraShakeIntensity)
+                    ? defaults.CameraShakeIntensity
+                    : Mathf.Clamp01(CameraShakeIntensity),
+                SmoothCameraFocus = SmoothCameraFocus,
+                AutomaticCameraFocus = AutomaticCameraFocus,
+                ReduceCameraMotion = ReduceCameraMotion,
+                ZoomTowardFingers = ZoomTowardFingers,
                 Bindings = NormalizeBindings(Bindings, defaults.Bindings),
                 Devices = NormalizeDevices(Devices, Bindings)
             };
@@ -150,6 +172,12 @@ namespace Kruty1918.Moyva.Shared.Controls
         void SetMovementSpeed(float value);
         void SetOrbitSpeed(float value);
         void SetZoomSpeed(float value);
+        void SetCameraEffects(bool value);
+        void SetCameraShakeIntensity(float value);
+        void SetSmoothCameraFocus(bool value);
+        void SetAutomaticCameraFocus(bool value);
+        void SetReduceCameraMotion(bool value);
+        void SetZoomTowardFingers(bool value);
         void ResetToDefaults();
         void ConfigureDevices(ControlProfile selection, PointerInterpretation pointerMode);
         bool TrySetProfileBinding(ControlProfile profile, PlayerControlAction action, string path, out PlayerControlAction conflict);
@@ -159,7 +187,7 @@ namespace Kruty1918.Moyva.Shared.Controls
 
     internal sealed class PlayerControlSettingsService : IPlayerControlSettingsService, IInitializable
     {
-        private const int Version = 2;
+        private const int Version = 3;
         private readonly IInputDeviceContext _devices;
         private readonly string _filePath;
 
@@ -213,6 +241,48 @@ namespace Kruty1918.Moyva.Shared.Controls
         {
             var next = Clone(Settings);
             next.ZoomSpeed = value;
+            Update(next);
+        }
+
+        public void SetCameraEffects(bool value)
+        {
+            var next = Clone(Settings);
+            next.CameraEffects = value;
+            Update(next);
+        }
+
+        public void SetCameraShakeIntensity(float value)
+        {
+            var next = Clone(Settings);
+            next.CameraShakeIntensity = value;
+            Update(next);
+        }
+
+        public void SetSmoothCameraFocus(bool value)
+        {
+            var next = Clone(Settings);
+            next.SmoothCameraFocus = value;
+            Update(next);
+        }
+
+        public void SetAutomaticCameraFocus(bool value)
+        {
+            var next = Clone(Settings);
+            next.AutomaticCameraFocus = value;
+            Update(next);
+        }
+
+        public void SetReduceCameraMotion(bool value)
+        {
+            var next = Clone(Settings);
+            next.ReduceCameraMotion = value;
+            Update(next);
+        }
+
+        public void SetZoomTowardFingers(bool value)
+        {
+            var next = Clone(Settings);
+            next.ZoomTowardFingers = value;
             Update(next);
         }
 
@@ -292,15 +362,22 @@ namespace Kruty1918.Moyva.Shared.Controls
                 using var stream = File.OpenRead(_filePath);
                 using var reader = new BinaryReader(stream);
                 int version = reader.ReadInt32();
-                if (version != 1 && version != Version)
+                if (version < 1 || version > Version)
                     return PlayerControlSettingsData.CreateDefault().Normalized();
 
+                var defaults = PlayerControlSettingsData.CreateDefault();
                 var settings = new PlayerControlSettingsData
                 {
                     MouseSensitivity = reader.ReadSingle(),
                     MovementSpeed = reader.ReadSingle(),
                     OrbitSpeed = reader.ReadSingle(),
                     ZoomSpeed = reader.ReadSingle(),
+                    CameraEffects = defaults.CameraEffects,
+                    CameraShakeIntensity = defaults.CameraShakeIntensity,
+                    SmoothCameraFocus = defaults.SmoothCameraFocus,
+                    AutomaticCameraFocus = defaults.AutomaticCameraFocus,
+                    ReduceCameraMotion = defaults.ReduceCameraMotion,
+                    ZoomTowardFingers = defaults.ZoomTowardFingers,
                     Bindings = new Dictionary<PlayerControlAction, string>()
                 };
 
@@ -314,6 +391,16 @@ namespace Kruty1918.Moyva.Shared.Controls
 
                 if (version == 1 && !File.Exists(_filePath + ".v1.bak")) File.Copy(_filePath, _filePath + ".v1.bak");
                 if (version >= 2) settings.Devices = JsonUtility.FromJson<ProfileDocument>(reader.ReadString());
+                if (version >= 3)
+                {
+                    byte flags = reader.ReadByte();
+                    settings.CameraEffects = (flags & 1) != 0;
+                    settings.SmoothCameraFocus = (flags & 2) != 0;
+                    settings.AutomaticCameraFocus = (flags & 4) != 0;
+                    settings.ReduceCameraMotion = (flags & 8) != 0;
+                    settings.ZoomTowardFingers = (flags & 16) != 0;
+                    settings.CameraShakeIntensity = reader.ReadSingle();
+                }
                 return settings.Normalized();
             }
             catch
@@ -346,6 +433,14 @@ namespace Kruty1918.Moyva.Shared.Controls
                     writer.Write(pair.Value ?? string.Empty);
                 }
                 writer.Write(JsonUtility.ToJson(data.Devices));
+                byte flags = 0;
+                if (data.CameraEffects) flags |= 1;
+                if (data.SmoothCameraFocus) flags |= 2;
+                if (data.AutomaticCameraFocus) flags |= 4;
+                if (data.ReduceCameraMotion) flags |= 8;
+                if (data.ZoomTowardFingers) flags |= 16;
+                writer.Write(flags);
+                writer.Write(data.CameraShakeIntensity);
                 }
                 if (File.Exists(_filePath)) File.Replace(temporaryPath, _filePath, _filePath + ".bak");
                 else File.Move(temporaryPath, _filePath);
@@ -365,6 +460,12 @@ namespace Kruty1918.Moyva.Shared.Controls
                 MovementSpeed = source.MovementSpeed,
                 OrbitSpeed = source.OrbitSpeed,
                 ZoomSpeed = source.ZoomSpeed,
+                CameraEffects = source.CameraEffects,
+                CameraShakeIntensity = source.CameraShakeIntensity,
+                SmoothCameraFocus = source.SmoothCameraFocus,
+                AutomaticCameraFocus = source.AutomaticCameraFocus,
+                ReduceCameraMotion = source.ReduceCameraMotion,
+                ZoomTowardFingers = source.ZoomTowardFingers,
                 Bindings = new Dictionary<PlayerControlAction, string>(
                     source.Bindings ?? PlayerControlSettingsData.CreateDefault().Bindings)
             };
@@ -376,7 +477,13 @@ namespace Kruty1918.Moyva.Shared.Controls
             if (!Mathf.Approximately(first.MouseSensitivity, second.MouseSensitivity) ||
                 !Mathf.Approximately(first.MovementSpeed, second.MovementSpeed) ||
                 !Mathf.Approximately(first.OrbitSpeed, second.OrbitSpeed) ||
-                !Mathf.Approximately(first.ZoomSpeed, second.ZoomSpeed))
+                !Mathf.Approximately(first.ZoomSpeed, second.ZoomSpeed) ||
+                first.CameraEffects != second.CameraEffects ||
+                !Mathf.Approximately(first.CameraShakeIntensity, second.CameraShakeIntensity) ||
+                first.SmoothCameraFocus != second.SmoothCameraFocus ||
+                first.AutomaticCameraFocus != second.AutomaticCameraFocus ||
+                first.ReduceCameraMotion != second.ReduceCameraMotion ||
+                first.ZoomTowardFingers != second.ZoomTowardFingers)
                 return false;
 
             foreach (PlayerControlAction action in Enum.GetValues(typeof(PlayerControlAction)))

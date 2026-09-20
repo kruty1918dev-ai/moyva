@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Audio.API;
 using Kruty1918.Moyva.GameAudio.API;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Signals.DomainEvents;
+using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
 
@@ -53,9 +53,9 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         {
             if (_signalBus != null)
             {
-                _signalBus.Subscribe<WorldBuiltDomainEvent>(OnWorldBuilt);
-                _signalBus.Subscribe<BuildingPlacedDomainEvent>(OnBuildingPlaced);
-                _signalBus.Subscribe<BuildingDemolishedDomainEvent>(OnBuildingDemolished);
+                _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
+                _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+                _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
             }
         }
 
@@ -88,9 +88,9 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         {
             if (_signalBus != null)
             {
-                _signalBus.TryUnsubscribe<WorldBuiltDomainEvent>(OnWorldBuilt);
-                _signalBus.TryUnsubscribe<BuildingPlacedDomainEvent>(OnBuildingPlaced);
-                _signalBus.TryUnsubscribe<BuildingDemolishedDomainEvent>(OnBuildingDemolished);
+                _signalBus.TryUnsubscribe<WorldBuiltSignal>(OnWorldBuilt);
+                _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+                _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
             }
 
             StopAll();
@@ -102,7 +102,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             SpawnTileEmitters();
         }
 
-        private void OnBuildingPlaced(BuildingPlacedDomainEvent evt)
+        private void OnBuildingPlaced(BuildingPlacedSignal evt)
         {
             if (_config?.emitters == null || string.IsNullOrEmpty(evt.BuildingId))
                 return;
@@ -118,7 +118,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             }
         }
 
-        private void OnBuildingDemolished(BuildingDemolishedDomainEvent evt)
+        private void OnBuildingDemolished(BuildingDemolishedSignal evt)
         {
             for (int i = _emitters.Count - 1; i >= 0; i--)
             {

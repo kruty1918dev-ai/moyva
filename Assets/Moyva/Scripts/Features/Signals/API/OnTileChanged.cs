@@ -50,6 +50,39 @@ namespace Kruty1918.Moyva.Signals
         public string BuildingId;
         public Vector2Int Position;
         public string OwnerId;
+
+        /// <summary>
+        /// Presentation hint: skip the construction→operational transition
+        /// motion (save/world restore). Gameplay subscribers must ignore it.
+        /// </summary>
+        public bool InstantVisual;
+    }
+
+    /// <summary>
+    /// Phase of a building's presentation motion. This is the seam where VFX
+    /// and audio attach to gameplay motion without depending on it.
+    /// </summary>
+    public enum BuildingMotionPhase
+    {
+        PlacementEmerge,
+        Settle,
+        RelocationStart,
+        RelocationSettle,
+        ConstructionComplete,
+        DemolitionStart,
+        DemolitionComplete,
+        BlockedShake
+    }
+
+    /// <summary>
+    /// Fired by the construction visual layer when a building enters/leaves a
+    /// motion phase. Presentation-only; authoritative state never depends on it.
+    /// </summary>
+    public struct BuildingMotionPhaseSignal
+    {
+        public string BuildingId;
+        public Vector2Int Position;
+        public BuildingMotionPhase Phase;
     }
 
     // Викликається, коли юніт перемістився

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using Kruty1918.Moyva.Animations.API;
+using Kruty1918.Moyva.Animations.Runtime.Motion;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
@@ -25,6 +27,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionVisualStyleService _styleService;
         private readonly ConstructionTerrainAlignmentService _terrainAlignment;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
+        private readonly IGameplayMotionSettingsProvider _motionSettings;
+        private readonly SignalBus _signalBus;
 
         private Vector2Int? _selectedPosition;
 
@@ -34,13 +38,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ConstructionVisualFactory visualFactory,
             ConstructionVisualStyleService styleService,
             [InjectOptional] ConstructionTerrainAlignmentService terrainAlignment = null,
-            [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)
+            [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null,
+            [InjectOptional] IGameplayMotionSettingsProvider motionSettings = null,
+            [InjectOptional] SignalBus signalBus = null)
         {
             _roots = roots;
             _visualFactory = visualFactory;
             _styleService = styleService;
             _terrainAlignment = terrainAlignment;
             _settingsProvider = settingsProvider;
+            _motionSettings = motionSettings;
+            _signalBus = signalBus;
         }
 
         public void Replace(
@@ -50,7 +58,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Quaternion rotation,
             float visualOffsetY = 0f,
             GameObject sourceVisual = null,
-            EntityPresentationConfig presentation = null)
+            EntityPresentationConfig presentation = null,
+            bool instantVisual = false)
         {
             Remove(position);
             string objectName = $"Building_{buildingId}_{position.x}_{position.y}";
@@ -87,6 +96,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_selectedPosition.HasValue && _selectedPosition.Value == position)
                 _selectionHighlighter.Apply(instance);
+
+            // Fresh placements (not relocations) emerge from the ground —
+            // the building rises out of its foundation and settles into place.
+            if (sourceVisual == null && !instantVisual)
+                PlayPlacementEmerge(instance, buildingId, position);
         }
 
         public void ReplaceWithStoredPose(
@@ -114,13 +128,85 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 presentation: presentation);
         }
 
-        public void Remove(Vector2Int position)
+        /// <summary>
+        /// Construction→operational visual transition: the finished prefab
+        /// replaces the construction placeholder without a hard pop — the new
+        /// instance rises/settles while the placeholder shrinks away.
+        /// </summary>
+        public void TransitionToOperational(
+            Vector2Int position,
+            GameObject prefab,
+            float visualOffsetY = 0f,
+            EntityPresentationConfig presentation = null,
+            bool instantVisual = false)
         {
-            if (!_placedByPosition.TryGetValue(position, out GameObject instance))
+            if (prefab == null || !_placedByPosition.ContainsKey(position))
                 return;
 
+            string buildingId = _buildingIdByPosition.TryGetValue(position, out string storedId)
+                ? storedId
+                : string.Empty;
+            Quaternion rotation = _baseRotationByPosition.TryGetValue(position, out Quaternion storedRot)
+                ? storedRot
+                : Quaternion.identity;
+
+            GameObject outgoing = Detach(position);
+            Replace(
+                position,
+                buildingId,
+                prefab,
+                rotation,
+                visualOffsetY,
+                presentation: presentation,
+                instantVisual: true);
+
+            if (outgoing == null)
+                return;
+
+            if (!instantVisual
+                && _placedByPosition.TryGetValue(position, out GameObject incoming)
+                && incoming != null)
+            {
+                PlayOperationalTransition(incoming, outgoing, position, buildingId);
+            }
+            else
+            {
+                Object.Destroy(outgoing);
+            }
+        }
+
+        /// <summary>
+        /// Animated removal: the visual sinks/shakes out of the world while
+        /// gameplay state is already cleared. The cell is released immediately.
+        /// </summary>
+        public void BeginDemolition(Vector2Int position)
+        {
+            GameObject instance = Detach(position, out string buildingId);
+            if (instance == null)
+                return;
+
+            PlayDemolition(instance, buildingId, position);
+        }
+
+        public void Remove(Vector2Int position)
+        {
+            GameObject instance = Detach(position, out _);
             if (instance != null)
                 Object.Destroy(instance);
+        }
+
+        /// <summary>Detaches the placed visual from all registries without destroying it.</summary>
+        private GameObject Detach(Vector2Int position)
+            => Detach(position, out _);
+
+        private GameObject Detach(Vector2Int position, out string buildingId)
+        {
+            buildingId = string.Empty;
+            if (!_placedByPosition.TryGetValue(position, out GameObject instance))
+                return null;
+
+            if (_buildingIdByPosition.TryGetValue(position, out string id))
+                buildingId = id;
 
             _placedByPosition.Remove(position);
             _presentationByPosition.Remove(position);
@@ -128,6 +214,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _baseRotationByPosition.Remove(position);
             _demolitionPreviewPositions.Remove(position);
             _underConstructionPositions.Remove(position);
+            return instance;
         }
 
         public void Select(Vector2Int position)

@@ -64,8 +64,16 @@ namespace Kruty1918.Moyva.Camera.Runtime
             Container.BindInterfacesAndSelfTo<TilemapCameraBoundsProvider>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraMovement>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraZoom>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CameraZoomStateService>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraMapRenderMaskService>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraAutoFramingService>().AsSingle();
+
+            // Camera experience layer: interruptible focus, additive impulses,
+            // attention routing and the canonical read-only view state.
+            Container.BindInterfacesAndSelfTo<CameraFocusService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CameraImpulseService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CameraViewStateService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CameraAttentionService>().AsSingle();
 
             // CameraFocused не має Tick/Initializable, тому можна просто до інтерфейсу
             Container.BindInterfacesTo<CameraFocused>().AsSingle();
@@ -76,6 +84,12 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             Container.BindExecutionOrder<CameraProjectSettingsAdapter>(-100);
             Container.BindExecutionOrder<CameraAutoFramingService>(-90);
+            // Impulse offsets must be computed before CameraMovement composes
+            // the final pose; zoom/view state sample afterwards.
+            Container.BindLateTickableExecutionOrder<CameraImpulseService>(-10);
+            // Sample zoom state after CameraZoom applied the smoothed zoom value.
+            Container.BindLateTickableExecutionOrder<CameraZoomStateService>(50);
+            Container.BindLateTickableExecutionOrder<CameraViewStateService>(60);
         }
 
         private InputActionAsset ResolveCameraInputAsset()

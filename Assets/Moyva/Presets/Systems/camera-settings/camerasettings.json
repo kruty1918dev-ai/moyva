@@ -49,6 +49,12 @@
   "edgeScrollEnabled": false,
   "edgeScrollMarginPixels": 12.0,
   "edgeScrollSpeedMultiplier": 1.0,
+  "farView": {
+    "start": 0.3,
+    "full": 0.85,
+    "smoothing": 4.0,
+    "shape": 1.0
+  },
   "enableAutomaticMipBias": false,
   "automaticMipBiasMax": 0.75,
   "mapRenderMaskEnabled": true,
