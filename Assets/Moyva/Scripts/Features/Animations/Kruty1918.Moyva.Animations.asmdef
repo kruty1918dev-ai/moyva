@@ -2,7 +2,9 @@
     "name": "Kruty1918.Moyva.Animations",
     "rootNamespace": "Kruty1918.Moyva.Animations",
     "references": [
-        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4"
+        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
+        "Kruty1918.Moyva.Shared",
+        "Kruty1918.Moyva.Jsonization"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

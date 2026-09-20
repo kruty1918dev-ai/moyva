@@ -6,6 +6,8 @@
     "GUID:dbeb150ae01f08dd59e8e397e8ee8e2a",
     "Kruty1918.Moyva.ObjectsMap",
     "Kruty1918.Moyva.Calendar",
+    "Kruty1918.Moyva.Camera",
+    "Kruty1918.Moyva.Shared",
     "Unity.RenderPipelines.Core.Runtime",
     "Unity.RenderPipelines.Universal.Runtime",
     "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"

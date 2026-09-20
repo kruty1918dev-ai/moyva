@@ -82,8 +82,47 @@ namespace Kruty1918.Moyva.Camera.API
             };
         }
     }
-[System.Serializable]
-public class CameraSettingsSO : MoyvaJsonConfigObject
+
+    /// <summary>
+    /// Shared far-view ("high altitude") window over normalized zoom.
+    /// Neutral camera-side definition: ICameraZoomState.FarViewWeight rises
+    /// from 0 at <see cref="start"/> to 1 at <see cref="full"/>. Visual and
+    /// audio systems read the same weight so transitions stay synchronized.
+    /// </summary>
+    [System.Serializable]
+    public struct CameraFarViewSettings
+    {
+        [Range(0f, 1f)] public float start;
+        [Range(0f, 1f)] public float full;
+        [Min(0.05f)] public float smoothing;
+        [Range(0.2f, 3f)] public float shape;
+
+        public static CameraFarViewSettings CreateDefault()
+        {
+            return new CameraFarViewSettings
+            {
+                start = 0.30f,
+                full = 0.85f,
+                smoothing = 4f,
+                shape = 1f,
+            };
+        }
+
+        public CameraFarViewSettings Normalize()
+        {
+            float s = Mathf.Clamp01(start);
+            return new CameraFarViewSettings
+            {
+                start = s,
+                full = Mathf.Clamp(Mathf.Max(full, s + 0.02f), 0.02f, 1f),
+                smoothing = Mathf.Max(0.05f, smoothing),
+                shape = Mathf.Clamp(shape <= 0f ? 1f : shape, 0.2f, 3f),
+            };
+        }
+    }
+
+    [System.Serializable]
+    public class CameraSettingsSO : MoyvaJsonConfigObject
     {
         [Header("Control Profile")]
         [FormerlySerializedAs("desktopProfile")]
@@ -124,6 +163,10 @@ public class CameraSettingsSO : MoyvaJsonConfigObject
         public bool enableAutomaticMipBias = false;
         [HideInInspector]
         [Range(0f, 3f)] public float automaticMipBiasMax = 0.75f;
+
+        [Header("Far View Window")]
+        [Tooltip("Shared normalized-zoom window where the world reads as distant/high-altitude. Consumed by far-view visuals and zoom-driven audio.")]
+        public CameraFarViewSettings farView = CameraFarViewSettings.CreateDefault();
 
         [Header("Map Render Mask")]
         [HideInInspector]
@@ -183,6 +226,10 @@ public class CameraSettingsSO : MoyvaJsonConfigObject
             Mathf.Max(0f, boundsOverflowTiles.y));
         public bool ResolveEnableAutomaticMipBias() => enableAutomaticMipBias;
         public float ResolveAutomaticMipBiasMax() => Mathf.Clamp(automaticMipBiasMax, 0f, 3f);
+        public float ResolveFarViewStart() => farView.Normalize().start;
+        public float ResolveFarViewFull() => farView.Normalize().full;
+        public float ResolveFarViewSmoothing() => farView.Normalize().smoothing;
+        public float ResolveFarViewShape() => farView.Normalize().shape;
 
         private void OnValidate()
         {
@@ -197,6 +244,7 @@ public class CameraSettingsSO : MoyvaJsonConfigObject
             edgeScrollMarginPixels = Mathf.Max(1f, edgeScrollMarginPixels);
             edgeScrollSpeedMultiplier = Mathf.Max(0.01f, edgeScrollSpeedMultiplier);
             automaticMipBiasMax = Mathf.Clamp(automaticMipBiasMax, 0f, 3f);
+            farView = farView.Normalize();
         }
     }
 }

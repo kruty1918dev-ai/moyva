@@ -53,6 +53,8 @@ namespace Kruty1918.Moyva.GameAudio.API
         [Range(0f, 1f)] public float nearWeight = 1f;
         [Range(0f, 1f)] public float farWeight = 0f;
         public bool lowpassWithZoom = true;
+        [Tooltip("<=0 → спільний zoom.farCutoff; інакше — жорсткіша per-bed межа на далекому zoom.")]
+        [Range(0f, 22000f)] public float farCutoff = 0f;
     }
 
     /// <summary>
