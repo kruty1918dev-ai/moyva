@@ -61,6 +61,7 @@ namespace Kruty1918.Moyva.Marketing.Contracts
         LateralTrack = 3,
         Orbit = 4,
         Crane = 5,
+        FullOrbit = 6,
     }
 
     /// <summary>A resolved subject the camera should frame.</summary>
