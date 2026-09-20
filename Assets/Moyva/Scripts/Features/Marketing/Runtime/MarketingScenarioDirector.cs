@@ -44,6 +44,7 @@ namespace Kruty1918.Moyva.Marketing.Runtime
                 || recipe.contentType == MarketingContentType.SocialVideo
                 || recipe.contentType == MarketingContentType.HeroStills
                 || recipe.contentType == MarketingContentType.SocialImage
+                || recipe.contentType == MarketingContentType.MenuBackground
                 || worldEmpty;
 
             if (strategy == "observe" || (!wantsStaging && strategy == "auto"))

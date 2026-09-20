@@ -83,6 +83,9 @@ namespace Kruty1918.Moyva.Marketing.Runtime
                 case ShotMotion.Orbit:
                     azimuth += Mathf.Lerp(-9f, 9f, tt) * (0.4f + 0.6f * motion);
                     break;
+                case ShotMotion.FullOrbit:
+                    azimuth += 360f * tt; // full circle → seamless video loop
+                    break;
                 case ShotMotion.Crane:
                     height += Mathf.Lerp(0f, _subjectRadius * 0.9f, tt) * motion;
                     pitch = Mathf.Lerp(pitch, Mathf.Min(pitch + 8f, 80f), tt * motion);

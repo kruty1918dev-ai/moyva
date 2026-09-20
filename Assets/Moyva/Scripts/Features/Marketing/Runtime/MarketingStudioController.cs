@@ -325,6 +325,8 @@ namespace Kruty1918.Moyva.Marketing.Runtime
 
             _scenario = new MarketingScenarioDirector(_gameplay);
             var staged = _scenario.Apply(_recipe, _world, _index, _seeds.scenarioSeed);
+            Debug.Log($"[MarketingStudio] Staging: {staged.scenario} ok={staged.ok} " +
+                $"spawned={staged.spawnedUnitIds.Count} {staged.message}");
             if (!staged.ok)
                 _output.Manifest.validationIssues.Add("staging:" + staged.message);
             if (staged.spawnedUnitIds.Count > 0)
@@ -352,7 +354,9 @@ namespace Kruty1918.Moyva.Marketing.Runtime
 
             var planner = new ShotPlanner();
             _sequence = _recipe.outputKind >= MarketingOutputKind.Video
-                ? planner.PlanTrailer(_world, _index, _recipe, _seeds.cinematicSeed)
+                ? (_recipe.contentType == MarketingContentType.MenuBackground
+                    ? planner.PlanAmbient(_world, _index, _recipe, _seeds.cinematicSeed)
+                    : planner.PlanTrailer(_world, _index, _recipe, _seeds.cinematicSeed))
                 : planner.PlanScreenshots(_world, _index, _recipe, _seeds.cinematicSeed);
             _output.WriteMetadataJson(_sequence, "shots.json");
         }
@@ -564,6 +568,16 @@ namespace Kruty1918.Moyva.Marketing.Runtime
                 yield return TransitionIn(shot.transitionIn);
 
                 _cameraDirector.ApplyShot(shot, AzimuthBase(i));
+                _cameraDirector.Evaluate(0f);
+
+                // First-frame preview: review framing without decoding video.
+                var preview = _still.Render(_captureCamera, 640,
+                    Mathf.Max(1, Mathf.RoundToInt(640f / aspect)), 1);
+                if (preview != null)
+                {
+                    _output.WritePng(preview, "Debug", $"preview-{shot.shotId}.png");
+                    Destroy(preview);
+                }
 
                 // Beat text
                 if (_recipe.includeMarketingText && !string.IsNullOrEmpty(shot.beat)
