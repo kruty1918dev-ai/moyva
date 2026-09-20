@@ -38,6 +38,8 @@ namespace Kruty1918.Moyva.Units.Runtime
 		private readonly IUnitWorldPositionResolver _worldPositionResolver;
 		private readonly IUnitTraversalPolicy _traversalPolicy;
 		private readonly ITraversalCostResolver _traversalCosts;
+		private readonly IGameplayMotionSettingsProvider _motionSettings;
+		private readonly UnitVisualMotionService _visualMotion;
 
 		private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
 
@@ -59,7 +61,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 			[InjectOptional] IUnitPlacementValidator placementValidator = null,
 			[InjectOptional] IUnitWorldPositionResolver worldPositionResolver = null,
 			[InjectOptional] IUnitTraversalPolicy traversalPolicy = null,
-			[InjectOptional] ITraversalCostResolver traversalCosts = null)
+			[InjectOptional] ITraversalCostResolver traversalCosts = null,
+			[InjectOptional] IGameplayMotionSettingsProvider motionSettings = null,
+			[InjectOptional] UnitVisualMotionService visualMotion = null)
 		{
 			_unitService = unitService;
 			_pathfinder = pathfinder;
@@ -79,6 +83,8 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_worldPositionResolver = worldPositionResolver;
 			_traversalPolicy = traversalPolicy;
 			_traversalCosts = traversalCosts;
+			_motionSettings = motionSettings;
+			_visualMotion = visualMotion;
 		}
 
 		public void Initialize()
@@ -86,6 +92,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_signalBus.Subscribe<InterruptMovementSignal>(OnInterruptRequested);
 			_signalBus.Subscribe<UnitGarrisonStateChangedSignal>(
 				OnUnitGarrisonStateChanged);
+			_signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
 		}
 
 		public void Dispose()
@@ -93,6 +100,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 			_signalBus.TryUnsubscribe<InterruptMovementSignal>(OnInterruptRequested);
 			_signalBus.TryUnsubscribe<UnitGarrisonStateChangedSignal>(
 				OnUnitGarrisonStateChanged);
+			_signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
 
 			foreach (var cts in _activeMovements.Values)
 			{
@@ -116,6 +124,18 @@ namespace Kruty1918.Moyva.Units.Runtime
 			if (unitObject == null)
 				return;
 
+			// Emerge-from-building transition instead of a raw teleport when
+			// the visual lifecycle service is present.
+			if (_visualMotion != null
+				&& _visualMotion.TryPlayGarrisonExit(
+					unitObject,
+					signal.BuildingPosition,
+					signal.UnitPosition,
+					go => ApplyUnitPresentationPosition(go, signal.UnitId)))
+			{
+				return;
+			}
+
 			unitObject.transform.position =
 				ResolveCanonicalMovementWorldPosition(
 					signal.UnitPosition,
@@ -130,6 +150,14 @@ namespace Kruty1918.Moyva.Units.Runtime
 
 		private void OnInterruptRequested(InterruptMovementSignal signal)
 		{
+			if (_activeMovements.TryGetValue(signal.UnitId, out var cts))
+				cts.Cancel();
+		}
+
+		private void OnUnitDestroyed(UnitDestroyedSignal signal)
+		{
+			// A destroyed unit must stop its movement traversal immediately —
+			// the death presentation owns the transform from here on.
 			if (_activeMovements.TryGetValue(signal.UnitId, out var cts))
 				cts.Cancel();
 		}
@@ -278,12 +306,17 @@ namespace Kruty1918.Moyva.Units.Runtime
 				var config = string.IsNullOrEmpty(unitTypeId) ? null : _unitClassConfig.GetConfig(unitTypeId);
 
 				var settings = _unitGameplayProfileService.ResolveMovementAnimationSettings(unitTypeId);
+				settings = ResolveLocomotionSettings(settings);
 				settings.CanPerformStep = stepPos => CanMakeStep(unitId, stepPos);
-					settings.OnStepCompleted = stepPos =>
-					{
-						OnStepCompleted(unitId, stepPos);
-						completedSteps++;
-					};
+				settings.OnStepCompleted = stepPos =>
+				{
+					OnStepCompleted(unitId, stepPos);
+					completedSteps++;
+				};
+				// No cancel-snap once the unit is logically gone — the death
+				// transition owns the transform from that point on.
+				settings.AllowCancelSnap = () =>
+					_unitService.TryGetUnitPosition(unitId, out _);
 				float unitSurfacePivotOffsetY = ResolveUnitSurfacePivotOffsetY(unitObj, startPosition);
 				EntityPresentationConfig presentation = config?.ResolvePresentation();
 				settings.ResolveWorldPosition = stepPos => ResolveMovementWorldPosition(
@@ -292,7 +325,15 @@ namespace Kruty1918.Moyva.Units.Runtime
 					presentation,
 					unitObj.transform.rotation);
 
-				await _animationService.MoveAlongPathAsync(unitObj.transform, path, settings, linkedCts.Token);
+				UnitAnimationTrigger.Play(unitObj, config, AnimationType.Move);
+				try
+				{
+					await _animationService.MoveAlongPathAsync(unitObj.transform, path, settings, linkedCts.Token);
+				}
+				finally
+				{
+					UnitAnimationTrigger.Play(unitObj, config, AnimationType.Idle);
+				}
 			}
 			catch (OperationCanceledException)
 			{
@@ -306,8 +347,8 @@ namespace Kruty1918.Moyva.Units.Runtime
 				if (_activeMovements.TryGetValue(unitId, out var currentCts) && currentCts == internalCts)
 					_activeMovements.Remove(unitId);
 
-					internalCts.Dispose();
-				}
+				internalCts.Dispose();
+			}
 
 			if (completedSteps > 0 && _progressClock?.IsRealtime != true)
 				_turns?.TryRecordAction(ownerId, "unit-move");
@@ -325,37 +366,37 @@ namespace Kruty1918.Moyva.Units.Runtime
 			return false;
 		}
 
-private bool CanMakeStep(string unitId, Vector2Int stepPos)
-{
-	float currentMovement = _unitService.GetStamina(unitId);
+		private bool CanMakeStep(string unitId, Vector2Int stepPos)
+		{
+			float currentMovement = _unitService.GetStamina(unitId);
 
-	if (_traversalPolicy != null
-		&& _unitService.TryGetUnitPosition(
-			unitId,
-			out Vector2Int from))
-	{
-		bool allowed = _traversalPolicy.TryEvaluateStep(
-			unitId,
-			from,
-			stepPos,
-			currentMovement,
-			UnitTraversalMode.Execute,
-			out float exactCost,
-			out string exactReason);
+			if (_traversalPolicy != null
+				&& _unitService.TryGetUnitPosition(
+					unitId,
+					out Vector2Int from))
+			{
+				bool allowed = _traversalPolicy.TryEvaluateStep(
+					unitId,
+					from,
+					stepPos,
+					currentMovement,
+					UnitTraversalMode.Execute,
+					out float exactCost,
+					out string exactReason);
 
-		return allowed;
-	}
+				return allowed;
+			}
 
-	bool canStep = TryEvaluateMovementStep(
-		unitId,
-		stepPos,
-		currentMovement,
-		openConstructionGateIfNeeded: true,
-		out float cost,
-		out string reason);
+			bool canStep = TryEvaluateMovementStep(
+				unitId,
+				stepPos,
+				currentMovement,
+				openConstructionGateIfNeeded: true,
+				out float cost,
+				out string reason);
 
-	return canStep;
-}
+			return canStep;
+		}
 
 		private bool TryEvaluateMovementStep(
 			string unitId,
@@ -535,6 +576,40 @@ private bool CanMakeStep(string unitId, Vector2Int stepPos)
 
 			reason = null;
 			return true;
+		}
+
+		/// <summary>
+		/// Merges per-class animation settings with the global locomotion profile:
+		/// zero/legacy fields inherit canonical motion defaults, facing is gated by
+		/// the actual world plane, and secondary motion (bob) respects quality tiers.
+		/// </summary>
+		private PathAnimationSettings ResolveLocomotionSettings(PathAnimationSettings settings)
+		{
+			UnitLocomotionMotionProfile profile =
+				_motionSettings?.UnitLocomotion ?? new UnitLocomotionMotionProfile();
+
+			if (settings.Acceleration <= 0f)
+				settings.Acceleration = profile.acceleration;
+			if (settings.Deceleration <= 0f)
+				settings.Deceleration = profile.deceleration;
+			if (settings.TurnSpeedDegPerSec <= 0f)
+				settings.TurnSpeedDegPerSec = profile.turnSpeedDegPerSec;
+			if (settings.BobFrequency <= 0f)
+				settings.BobFrequency = profile.bobFrequency;
+			if (settings.BobAmplitude <= 0f)
+				settings.BobAmplitude = profile.bobAmplitude;
+
+			// Secondary motion scales with quality/reduced-motion; facing only
+			// makes sense when the world actually lives on the XZ plane.
+			settings.BobAmplitude = _motionSettings != null
+				? _motionSettings.ScaleSecondaryAmplitude(settings.BobAmplitude)
+				: settings.BobAmplitude;
+			settings.FaceTravelDirection =
+				settings.FaceTravelDirection
+				&& profile.faceTravelDirection
+				&& _worldPositionResolver != null
+				&& _worldPositionResolver.Uses3DWorldPlane;
+			return settings;
 		}
 
 		private Vector3 ResolveMovementWorldPosition(
