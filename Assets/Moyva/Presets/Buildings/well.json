@@ -1,0 +1,173 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "well",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 1,
+  "identity": {
+    "id": "well",
+    "displayName": "Well",
+    "category": "Civilian",
+    "role": "Housing",
+    "description": "A settlement well that supports a few extra residents.",
+    "tags": [
+      "civilian",
+      "housing",
+      "utility"
+    ]
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.building-well-blue.945c8b70",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_well_blue.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.house-01.f9cc986b",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/house-01.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.house-01.f9cc986b",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/house-01.png",
+      "required": true
+    },
+    "variants": {
+      "constructionPrefab": {
+        "$asset": "asset.game-object.building-scaffolding.07c8416d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
+        "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-well-blue.945c8b70",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_well_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-well-green.731abc5e",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_well_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-well-red.c04c2b24",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_well_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-well-yellow.0ff7f60f",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_well_yellow.prefab",
+          "required": true
+        }
+      }
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [
+      {
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 10
+      },
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 10
+      }
+    ],
+    "buildTurns": 1,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 60,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "housing",
+      "capacity": 2,
+      "isGarrisonCapable": false,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "settlement-influence-requirement",
+      "mergeMode": "Override",
+      "requiresInfluence": true,
+      "blockOverlappingCenters": false,
+      "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "",
+    "sourceAssetPath": "",
+    "sourceHash": "agent-added-well-2026-02"
+  }
+}

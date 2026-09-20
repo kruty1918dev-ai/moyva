@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Animations.API;
+using Kruty1918.Moyva.Animations.Runtime.Motion;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
@@ -15,6 +17,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IUnitService _units;
         private readonly IUnitClassConfig _configs;
         private readonly IGridProjection _projection;
+        private readonly IGameplayMotionSettingsProvider _motion;
         private readonly HashSet<Vector2Int> _targetPositions = new();
 
         private GameObject _root;
@@ -28,13 +31,15 @@ namespace Kruty1918.Moyva.Units.Runtime
             IUnitCombatService combat,
             IUnitService units,
             [InjectOptional] IUnitClassConfig configs = null,
-            [InjectOptional] IGridProjection projection = null)
+            [InjectOptional] IGridProjection projection = null,
+            [InjectOptional] IGameplayMotionSettingsProvider motion = null)
         {
             _signals = signals;
             _combat = combat;
             _units = units;
             _configs = configs;
             _projection = projection;
+            _motion = motion;
         }
 
         public void Initialize()
@@ -98,13 +103,65 @@ namespace Kruty1918.Moyva.Units.Runtime
         }
 
         private void OnAttackStarted(string attacker, string target)
-            => PlayConfiguredAnimation(attacker, AnimationType.Attack);
+        {
+            PlayConfiguredAnimation(attacker, AnimationType.Attack);
+            PlayAttackLunge(attacker, target);
+        }
 
         private void OnAttackResolved(UnitAttackResult result)
         {
             if (result.Succeeded && !result.TargetDied)
+            {
                 PlayConfiguredAnimation(result.TargetUnitId, AnimationType.TakeDamage);
+                PlayHitRecoil(result.AttackerUnitId, result.TargetUnitId);
+            }
             if (_selectedUnitId != null) Refresh();
+        }
+
+        /// <summary>Tiny forward lunge toward the target — never leaves the attacker's tile.</summary>
+        private void PlayAttackLunge(string attackerId, string targetId)
+        {
+            GameObject attacker = _units.GetUnitObject(attackerId);
+            GameObject target = _units.GetUnitObject(targetId);
+            if (attacker == null || target == null)
+                return;
+
+            UnitTransitionMotionProfile p = _motion?.UnitTransitions ?? new UnitTransitionMotionProfile();
+            float amplitude = _motion?.ScaleSecondaryAmplitude(p.attackLungeDistance) ?? p.attackLungeDistance;
+            float duration = _motion?.ScaleDuration(p.attackLungeDuration) ?? p.attackLungeDuration;
+            if (amplitude <= 0f || duration <= 0f)
+                return;
+
+            Vector3 dir = target.transform.position - attacker.transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.0001f)
+                return;
+
+            EntityMotion.AttachOrUpdate(attacker)
+                ?.PunchPosition(dir.normalized * amplitude, duration, p.attackLungeEase);
+        }
+
+        /// <summary>Short directional recoil on the surviving target.</summary>
+        private void PlayHitRecoil(string attackerId, string targetId)
+        {
+            GameObject attacker = _units.GetUnitObject(attackerId);
+            GameObject target = _units.GetUnitObject(targetId);
+            if (attacker == null || target == null)
+                return;
+
+            UnitTransitionMotionProfile p = _motion?.UnitTransitions ?? new UnitTransitionMotionProfile();
+            float amplitude = _motion?.ScaleSecondaryAmplitude(p.hitRecoilDistance) ?? p.hitRecoilDistance;
+            float duration = _motion?.ScaleDuration(p.hitRecoilDuration) ?? p.hitRecoilDuration;
+            if (amplitude <= 0f || duration <= 0f)
+                return;
+
+            Vector3 dir = target.transform.position - attacker.transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.0001f)
+                return;
+
+            EntityMotion.AttachOrUpdate(target)
+                ?.PunchPosition(dir.normalized * amplitude, duration, p.hitRecoilEase);
         }
 
         private void Refresh()
@@ -159,10 +216,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (obj == null) return;
             string typeId = _units.GetUnitTypeId(unitId);
             UnitClassConfig config = string.IsNullOrWhiteSpace(typeId) ? null : _configs.GetConfig(typeId);
-            UnitAnimationClip clip = config?.GetAnimation(type);
-            if (clip == null || string.IsNullOrWhiteSpace(clip.AnimatorParameterName)) return;
-            Animator animator = obj.GetComponentInChildren<Animator>(true);
-            if (animator != null) animator.SetTrigger(clip.AnimatorParameterName);
+            UnitAnimationTrigger.Play(obj, config, type);
         }
 
         private void EnsureMaterials()

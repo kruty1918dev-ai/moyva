@@ -63,7 +63,8 @@ class Project:
         return (self.root / Path(value).expanduser()).resolve()
 
     def git(self, *args):
-        result = subprocess.run(["git", *args], cwd=self.root, capture_output=True, text=True, timeout=15)
+        result = subprocess.run(["git", *args], cwd=self.root, capture_output=True, text=True,
+                                encoding="utf-8", errors="replace", timeout=15)
         return result.stdout.strip() if result.returncode == 0 else None
 
     def fingerprint(self):

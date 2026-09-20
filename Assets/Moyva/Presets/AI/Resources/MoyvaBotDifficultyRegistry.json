@@ -14,10 +14,11 @@
         "trainingRunId": "",
         "curriculumStage": 8,
         "notes": "Поклади легку .onnx ModelAsset у Resources/AI/Models/MoyvaStrategy_Easy або зміни шлях тут.",
-        "contractVersion": 2,
-        "contractHash": "5a00e6a1cb5ae597d108f32f94a4fc9ba41a93cfd4a2d491c0e1506fe21caadb"
+        "contractVersion": 3,
+        "contractHash": "6c88f6762c20d32ebba27bd1578eae305bb146b19b24fab5522a6f9361d92419"
       },
-      "policyModeName": "Heuristic"
+      "policyModeName": "Heuristic",
+      "explorationRate": 0.45
     },
     {
       "id": "normal",
@@ -32,10 +33,11 @@
         "trainingRunId": "smoke-10k-v2",
         "curriculumStage": 8,
         "notes": "Deployed by moyva deploy from smoke-10k-v2; disabled: contract hash drifted since deploy. Redeploy a compatible model to re-enable MLAgentsInference.",
-        "contractVersion": 2,
-        "contractHash": "459f56a85539648b64fb8b71b29b286df862952c7204a22660943dacde78f964"
+        "contractVersion": 3,
+        "contractHash": "6c88f6762c20d32ebba27bd1578eae305bb146b19b24fab5522a6f9361d92419"
       },
-      "policyModeName": "Heuristic"
+      "policyModeName": "Heuristic",
+      "explorationRate": 0.1
     },
     {
       "id": "hard",
@@ -50,10 +52,11 @@
         "trainingRunId": "",
         "curriculumStage": 8,
         "notes": "Для hard-моделі додай відповідний ModelAsset і ввімкни MLAgentsInference.",
-        "contractVersion": 2,
-        "contractHash": "5a00e6a1cb5ae597d108f32f94a4fc9ba41a93cfd4a2d491c0e1506fe21caadb"
+        "contractVersion": 3,
+        "contractHash": "6c88f6762c20d32ebba27bd1578eae305bb146b19b24fab5522a6f9361d92419"
       },
-      "policyModeName": "Heuristic"
+      "policyModeName": "Heuristic",
+      "explorationRate": 0.0
     },
     {
       "id": "insane",
@@ -68,10 +71,11 @@
         "trainingRunId": "",
         "curriculumStage": 8,
         "notes": "Для insane-моделі додай відповідний ModelAsset і ввімкни MLAgentsInference.",
-        "contractVersion": 2,
-        "contractHash": "5a00e6a1cb5ae597d108f32f94a4fc9ba41a93cfd4a2d491c0e1506fe21caadb"
+        "contractVersion": 3,
+        "contractHash": "6c88f6762c20d32ebba27bd1578eae305bb146b19b24fab5522a6f9361d92419"
       },
-      "policyModeName": "Heuristic"
+      "policyModeName": "Heuristic",
+      "explorationRate": 0.0
     }
   ]
 }

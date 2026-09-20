@@ -27,6 +27,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IObjectsMapService _objectsMapService;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IConstructionGateStateService _gateStateService;
+        private readonly UnitVisualMotionService _visualMotion;
 
         private readonly Dictionary<string, float> _unitStamina = new();
         private readonly Dictionary<string, Vector2Int> _unitPositions = new();
@@ -71,7 +72,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             IObjectsMapService objectsMapService,
             IHealthRegistry healthRegistry = null,
             [InjectOptional] IBuildingRegistry buildingRegistry = null,
-            [InjectOptional] IConstructionGateStateService gateStateService = null)
+            [InjectOptional] IConstructionGateStateService gateStateService = null,
+            [InjectOptional] UnitVisualMotionService visualMotion = null)
         {
             _signalBus = signalBus;
             _gridService = gridService;
@@ -81,6 +83,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _healthRegistry = healthRegistry;
             _buildingRegistry = buildingRegistry;
             _gateStateService = gateStateService;
+            _visualMotion = visualMotion;
         }
 
         public void Initialize()
@@ -181,7 +184,13 @@ namespace Kruty1918.Moyva.Units.Runtime
                     out GameObject unitObject)
                 && unitObject != null)
             {
-                UnityEngine.Object.Destroy(unitObject);
+                // Presentation owns the death follow-through when available;
+                // authoritative state above is already committed either way.
+                if (_visualMotion == null
+                    || !_visualMotion.TryPlayDeath(unitObject, GetUnitTypeId(signal.UnitId)))
+                {
+                    UnityEngine.Object.Destroy(unitObject);
+                }
             }
 
             _unitStamina.Remove(signal.UnitId);
@@ -293,7 +302,11 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (_unitObjects.TryGetValue(unitId, out GameObject unitObject)
                 && unitObject != null)
             {
-                unitObject.SetActive(false);
+                if (_visualMotion == null
+                    || !_visualMotion.TryPlayGarrisonEnter(unitObject, buildingPosition))
+                {
+                    unitObject.SetActive(false);
+                }
             }
 
             _signalBus.Fire(
@@ -416,6 +429,11 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
             }
 
+            Vector2Int exitedBuildingPosition =
+                _garrisonedUnitPositions.TryGetValue(unitId, out Vector2Int garrisonedAt)
+                    ? garrisonedAt
+                    : targetPosition;
+
             _objectsMapService.Register(targetPosition, unitId);
             _unitPositions[unitId] = targetPosition;
             _garrisonedUnitPositions.Remove(unitId);
@@ -431,6 +449,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 {
                     UnitId = unitId,
                     IsGarrisoned = false,
+                    BuildingPosition = exitedBuildingPosition,
                     UnitPosition = targetPosition,
                     VisionRange = _unitVisionRanges.TryGetValue(
                         unitId,

@@ -11,6 +11,7 @@
     "Unity.InferenceEngine",
     "Kruty1918.Moyva.AI.Bot.Core",
     "Kruty1918.Moyva.Construction",
+    "Kruty1918.Moyva.FogOfWar",
     "Zenject"
   ],
   "includePlatforms": [

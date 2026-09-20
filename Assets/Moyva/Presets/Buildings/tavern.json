@@ -1,0 +1,201 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "tavern",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 1,
+  "identity": {
+    "id": "tavern",
+    "displayName": "Tavern",
+    "category": "Civilian",
+    "role": "Support",
+    "description": "A lively tavern that earns a steady trickle of gold coins.",
+    "tags": [
+      "civilian",
+      "economy",
+      "gold"
+    ]
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.building-tavern-blue.019c06a9",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_tavern_blue.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.house-01.f9cc986b",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/house-01.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.house-01.f9cc986b",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/house-01.png",
+      "required": true
+    },
+    "variants": {
+      "constructionPrefab": {
+        "$asset": "asset.game-object.building-scaffolding.07c8416d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
+        "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-tavern-blue.019c06a9",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_tavern_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-tavern-green.4ede3d7a",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_tavern_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-tavern-red.6cdf1d57",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_tavern_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-tavern-yellow.78ba9287",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_tavern_yellow.prefab",
+          "required": true
+        }
+      }
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [
+      {
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 50
+      },
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 20
+      }
+    ],
+    "buildTurns": 3,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 80,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "workerless",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "housing",
+      "capacity": 2,
+      "isGarrisonCapable": false,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "production",
+      "resourceId": "coin-gold-materials-resources",
+      "workersRequired": 0,
+      "priority": 300,
+      "recipes": [
+        {
+          "recipeId": "tavern:earn-gold",
+          "inputs": [],
+          "outputs": [
+            {
+              "resourceId": "coin-gold-materials-resources",
+              "amount": 2
+            }
+          ],
+          "turnsPerCycle": 1,
+          "requiresWorkers": false,
+          "requiresStorageSpace": false
+        }
+      ],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "settlement-influence-requirement",
+      "mergeMode": "Override",
+      "requiresInfluence": true,
+      "blockOverlappingCenters": false,
+      "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "",
+    "sourceAssetPath": "",
+    "sourceHash": "agent-added-tavern-2026-02"
+  }
+}

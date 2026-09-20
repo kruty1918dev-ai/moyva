@@ -1,0 +1,186 @@
+{
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
+  "version": 1,
+  "id": "watchtower",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 1,
+  "identity": {
+    "id": "watchtower",
+    "displayName": "Watchtower",
+    "category": "Military",
+    "role": "Defense",
+    "description": "A tall lookout tower that spots enemies from afar and shoots at attackers.",
+    "tags": [
+      "military",
+      "defense",
+      "vision"
+    ]
+  },
+  "presentation": {
+    "prefab": {
+      "$asset": "asset.game-object.building-watchtower-blue.8ecb7db0",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_watchtower_blue.prefab",
+      "required": true
+    },
+    "icon": {
+      "$asset": "asset.sprite.castle-01.467e2447",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/castle-01.png",
+      "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.castle-01.467e2447",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/castle-01.png",
+      "required": true
+    },
+    "variants": {
+      "constructionPrefab": {
+        "$asset": "asset.game-object.building-scaffolding.07c8416d",
+        "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
+        "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-watchtower-blue.8ecb7db0",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_watchtower_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-watchtower-green.32e8c3a0",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_watchtower_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-watchtower-red.526a5576",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_watchtower_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-watchtower-yellow.b70f82bb",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_watchtower_yellow.prefab",
+          "required": true
+        }
+      }
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
+    }
+  },
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [
+      {
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 30
+      },
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 20
+      }
+    ],
+    "buildTurns": 2,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 120,
+    "armor": 1,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "defense",
+      "armor": 1,
+      "garrisonCapacity": 0,
+      "attackRange": 3,
+      "attackDamage": 4,
+      "visionRevealBonus": 2,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "fog-reveal",
+      "revealRadius": 4,
+      "shape": "PixelCircle",
+      "revealOnBuilt": true,
+      "revealWhileActive": true,
+      "onlyAfterConstructionComplete": true,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "settlement-influence-requirement",
+      "mergeMode": "Override",
+      "requiresInfluence": true,
+      "blockOverlappingCenters": false,
+      "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "",
+    "sourceAssetPath": "",
+    "sourceHash": "agent-added-watchtower-2026-02"
+  }
+}

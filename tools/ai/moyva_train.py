@@ -139,7 +139,8 @@ def prerequisite(args, trainer=True):
         except importlib.metadata.PackageNotFoundError:
             raise LaunchError("ML-Agents missing. Install tools/ai/requirements-training.txt in this Python environment.")
         if version != "1.1.0": raise LaunchError(f"Expected mlagents==1.1.0; found {version}.")
-        check = subprocess.run([sys.executable, "-m", "mlagents.trainers.learn", "--help"], capture_output=True, text=True)
+        check = subprocess.run([sys.executable, "-m", "mlagents.trainers.learn", "--help"], capture_output=True,
+                               text=True, encoding="utf-8", errors="replace")
         if check.returncode: raise LaunchError("mlagents-learn cannot start: " + (check.stderr or check.stdout).strip()[-1200:])
     results = resolve(args.results); results.mkdir(parents=True, exist_ok=True)
     probe = results / (".write-test-" + str(os.getpid()))
@@ -207,7 +208,8 @@ def build(args, unity=None):
 
 
 def git_value(*args):
-    try: return subprocess.check_output(["git", *args], cwd=ROOT, text=True, stderr=subprocess.DEVNULL).strip()
+    try: return subprocess.check_output(["git", *args], cwd=ROOT, text=True, encoding="utf-8",
+                                        errors="replace", stderr=subprocess.DEVNULL).strip()
     except (OSError, subprocess.CalledProcessError): return None
 
 

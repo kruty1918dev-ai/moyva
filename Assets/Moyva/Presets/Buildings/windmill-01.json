@@ -15,8 +15,8 @@
   },
   "presentation": {
     "prefab": {
-      "$asset": "asset.game-object.windmill-01.87bc8f20",
-      "editorPath": "Assets/Moyva/Prefabs/Buildings/windmill-01.prefab",
+      "$asset": "asset.game-object.building-windmill-blue.7ee0e3b9",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_windmill_blue.prefab",
       "required": true
     },
     "icon": {
@@ -34,6 +34,28 @@
         "$asset": "asset.game-object.building-scaffolding.07c8416d",
         "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
         "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-windmill-blue.7ee0e3b9",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_windmill_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-windmill-green.0e948b77",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_windmill_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-windmill-red.e7d7d50d",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_windmill_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-windmill-yellow.be830000",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_windmill_yellow.prefab",
+          "required": true
+        }
       }
     },
     "uiTint": {
@@ -177,4 +199,4 @@
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/windmill-01.asset",
     "sourceHash": "4c32003e0e38e18273f40e76d8db97b8a04ad7fe97e36e052dfa7710114d8298"
   }
-}
+}

@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionInfluenceRadiusVisualService _radiusVisuals;
         private readonly ConstructionBuildGridOverlayService _buildGridOverlay;
         private readonly IConstructionLifecycle _constructionLifecycle;
+        private readonly ConstructionOwnerPaletteResolver _paletteResolver;
         private readonly int _townHallBuildRadius;
 
         [Inject]
@@ -26,7 +27,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ConstructionInfluenceRadiusVisualService radiusVisuals,
             ConstructionBuildGridOverlayService buildGridOverlay,
             [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius,
-            [InjectOptional] IConstructionLifecycle constructionLifecycle = null)
+            [InjectOptional] IConstructionLifecycle constructionLifecycle = null,
+            [InjectOptional] ConstructionOwnerPaletteResolver paletteResolver = null)
         {
             _buildingRegistry = buildingRegistry;
             _wallTopologyService = wallTopologyService;
@@ -36,6 +38,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _radiusVisuals = radiusVisuals;
             _buildGridOverlay = buildGridOverlay;
             _constructionLifecycle = constructionLifecycle;
+            _paletteResolver = paletteResolver;
             _townHallBuildRadius = Mathf.Max(0, townHallBuildRadius);
         }
 
@@ -67,6 +70,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _buildingRegistry.GetById(signal.BuildingId);
             if (def?.Prefab != null)
             {
+                string ownerId = signal.OwnerId;
                 bool showConstructionVisual =
                     ShouldUseConstructionVisual(
                         def,
@@ -74,12 +78,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         signal.Position);
                 GameObject placedPrefab = showConstructionVisual
                     ? def.ResolveConstructionPrefab()
-                    : def.Prefab;
+                    : ResolvePlacedPrefab(def, ownerId);
                 GameObject sourceVisual =
                     ResolveReusablePlacedSource(
                         previewVisual,
                         def,
-                        placedPrefab);
+                        placedPrefab,
+                        ownerId);
                 _placedVisuals.Replace(
                     signal.Position,
                     signal.BuildingId,
@@ -89,7 +94,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                             signal.RotationQuarterTurns)),
                     def.ResolveVisualYOffset(),
                     sourceVisual,
-                    def.Presentation);
+                    def.Presentation,
+                    ownerId);
 
                 if (showConstructionVisual)
                     _placedVisuals.MarkUnderConstruction(signal.Position);
@@ -101,16 +107,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         }
 
-        private static GameObject ResolveReusablePlacedSource(
+        private GameObject ResolvePlacedPrefab(
+            BuildingDefinition def,
+            string ownerId)
+            => _paletteResolver != null
+                ? _paletteResolver.ResolvePlacedPrefab(def, ownerId)
+                : def?.Prefab;
+
+        private GameObject ResolveReusablePlacedSource(
             GameObject previewVisual,
             BuildingDefinition def,
-            GameObject placedPrefab)
+            GameObject placedPrefab,
+            string ownerId)
         {
             if (previewVisual == null || def == null)
                 return null;
 
-            GameObject previewPrefab =
-                def.ResolvePreviewPrefab();
+            GameObject previewPrefab = _paletteResolver != null
+                ? _paletteResolver.ResolvePreviewPrefab(def, ownerId)
+                : def.ResolvePreviewPrefab();
             if (previewPrefab != null
                 && previewPrefab != placedPrefab)
             {
@@ -151,17 +166,68 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (def?.Prefab != null)
             {
                 if (_wallTopologyService.IsWallOrGate(signal.BuildingId))
+                {
                     _wallVisuals.RefreshPlacedNeighborhood(signal.Position);
+                }
                 else
+                {
+                    string ownerId = ResolveStoredOrSignalOwner(
+                        signal.Position,
+                        signal.OwnerId);
                     _placedVisuals.ReplaceWithStoredPose(
                         signal.Position,
-                        def.Prefab,
+                        ResolvePlacedPrefab(def, ownerId),
                         def.ResolveVisualYOffset(),
-                        def.Presentation);
+                        def.Presentation,
+                        ownerId);
+                }
             }
 
             _placedVisuals.MarkOperational(signal.Position);
         }
+
+        public void Handle(BuildingOwnershipTransferredSignal signal)
+        {
+            _placedVisuals.SetOwner(signal.Position, signal.NewOwnerId);
+
+            if (_wallTopologyService.IsWallOrGate(signal.BuildingId))
+                return;
+
+            BuildingDefinition def =
+                _buildingRegistry.GetById(signal.BuildingId);
+            if (!HasOwnerVariants(def)
+                || ShouldUseConstructionVisual(
+                    def,
+                    _constructionLifecycle,
+                    signal.Position))
+            {
+                // Neutral walls and scaffolding stay as-is; the stored owner
+                // still drives the variant swap when the building completes.
+                return;
+            }
+
+            _placedVisuals.ReplaceWithStoredPose(
+                signal.Position,
+                ResolvePlacedPrefab(def, signal.NewOwnerId),
+                def.ResolveVisualYOffset(),
+                def.Presentation,
+                signal.NewOwnerId);
+        }
+
+        private string ResolveStoredOrSignalOwner(
+            Vector2Int position,
+            string signalOwnerId)
+        {
+            if (!string.IsNullOrWhiteSpace(signalOwnerId))
+                return signalOwnerId;
+
+            return _placedVisuals.TryGetOwner(position, out string stored)
+                ? stored
+                : null;
+        }
+
+        private static bool HasOwnerVariants(BuildingDefinition def)
+            => def?.Presentation?.Variants?.PrefabVariants?.Count > 0;
 
         public void Handle(WorldInfoSelectionChangedSignal signal)
         {

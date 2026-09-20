@@ -18,8 +18,8 @@
   },
   "presentation": {
     "prefab": {
-      "$asset": "asset.game-object.building-stables-blue.49c0cff0",
-      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_stables_blue.prefab",
+      "$asset": "asset.game-object.building-docks-blue.ed7fb88f",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_docks_blue.prefab",
       "required": true
     },
     "icon": {
@@ -37,6 +37,28 @@
         "$asset": "asset.game-object.building-scaffolding.07c8416d",
         "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
         "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-docks-blue.ed7fb88f",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_docks_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-docks-green.92893f00",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_docks_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-docks-red.59b38d6d",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_docks_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-docks-yellow.636a3e20",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_docks_yellow.prefab",
+          "required": true
+        }
       }
     },
     "uiTint": {
@@ -144,7 +166,9 @@
       "recipes": [
         {
           "unitTypeId": "caravan-wagon",
-          "trainingTurns": 2, "trainingSeconds": 20, "populationCost": 1,
+          "trainingTurns": 2,
+          "trainingSeconds": 20,
+          "populationCost": 1,
           "costs": [
             {
               "resourceId": "walnut-wood-materials-resources",
@@ -179,4 +203,4 @@
     "sourceAssetPath": "",
     "sourceHash": "runtime-json-added-caravan-depot-2026-09-06"
   }
-}
+}

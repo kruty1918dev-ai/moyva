@@ -4,6 +4,7 @@
   "references": [
     "Kruty1918.Moyva.Shared",
     "Kruty1918.Moyva.GameAudio",
+    "Kruty1918.Moyva.Camera",
     "Kruty1918.Moyva.Jsonization",
     "Zenject"
   ],

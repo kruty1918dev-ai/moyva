@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Kruty1918.Moyva.Presentation.API;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -12,6 +13,11 @@ namespace Kruty1918.Moyva.Construction.API
         [LabelText("Префаб будівництва")]
         [PropertyTooltip("Що робить: Вказує replacement 3D-префаб, який повністю замінює базовий visual, доки будівля ще будується.\nВплив у грі: Якщо будівля не operational, гравець бачить цей prefab замість фінальної моделі.")]
         public GameObject ConstructionPrefab;
+
+        [AssetsOnly]
+        [LabelText("Варіанти за кольором власника")]
+        [PropertyTooltip("Що робить: Мапить ключ палітри власника (blue/green/red/yellow) на варіант префаба будівлі.\nВплив у грі: Поставлена будівля використовує модель у кольорі фракції власника; без запису для ключа використовується базовий префаб.")]
+        public Dictionary<string, GameObject> PrefabVariants = new Dictionary<string, GameObject>();
     }
 
     [Serializable]
