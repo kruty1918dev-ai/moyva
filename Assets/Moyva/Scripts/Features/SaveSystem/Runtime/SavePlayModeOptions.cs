@@ -58,7 +58,9 @@ namespace Kruty1918.Moyva.SaveSystem
         public static string LocalPlayerId { get; private set; } = string.Empty;
         public static string BotPlayerId { get; private set; } = string.Empty;
         public static string BotDifficultyId { get; private set; } = string.Empty;
-        public static bool HasBotOpponent => Mode == GameLaunchMode.MenuBotGame && !string.IsNullOrEmpty(BotPlayerId);
+        public static bool HasBotOpponent
+            => (Mode == GameLaunchMode.MenuBotGame || Mode == GameLaunchMode.MenuLoadGame)
+                && !string.IsNullOrEmpty(BotPlayerId);
 
         public static void ConfigureBotOpponent(string playerId, string difficultyId = null)
         {
@@ -156,6 +158,18 @@ namespace Kruty1918.Moyva.SaveSystem
             _autoLoadOverride = true;
             _autoSaveOverride = true;
             MarkConfigured(DefaultContextTtl);
+        }
+
+        /// <summary>
+        /// Re-arms bot identity after a saved bot match is loaded. Called by the
+        /// bot-opponent save module; ignored for non-load contexts and empty ids.
+        /// </summary>
+        public static void RestoreLoadedBotOpponent(string playerId, string difficultyId)
+        {
+            if (Mode != GameLaunchMode.MenuLoadGame || string.IsNullOrWhiteSpace(playerId))
+                return;
+            BotPlayerId = playerId.Trim();
+            BotDifficultyId = string.IsNullOrWhiteSpace(difficultyId) ? string.Empty : difficultyId.Trim();
         }
 
         public static void ConfigureMenuJoinGame()
