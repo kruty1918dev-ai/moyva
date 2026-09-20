@@ -35,6 +35,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionTerrainAlignmentService _terrainAlignment;
         private readonly IConstructionGridGeometryService _gridGeometry;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
+        private readonly ConstructionOwnerPaletteResolver _paletteResolver;
         private GameObject _snapHighlight;
         private Mesh _snapHighlightMesh;
         private Material _snapHighlightMaterial;
@@ -47,7 +48,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IWallVisualResolver wallVisualResolver,
             [InjectOptional] ConstructionTerrainAlignmentService terrainAlignment = null,
             [InjectOptional] IConstructionGridGeometryService gridGeometry = null,
-            [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)
+            [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null,
+            [InjectOptional] ConstructionOwnerPaletteResolver paletteResolver = null)
         {
             _roots = roots;
             _visualFactory = visualFactory;
@@ -56,9 +58,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _terrainAlignment = terrainAlignment;
             _gridGeometry = gridGeometry;
             _settingsProvider = settingsProvider;
+            _paletteResolver = paletteResolver;
         }
 
-        public GameObject Show(BuildingPreviewChangedSignal signal, BuildingDefinition def)
+        public GameObject Show(
+            BuildingPreviewChangedSignal signal,
+            BuildingDefinition def,
+            string ownerId = null)
         {
             if (TryGetReusablePreview(signal, out GameObject existing))
             {
@@ -67,7 +73,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             Remove(signal.Position);
-            GameObject prefab = ResolvePrefab(signal.Position, signal.BuildingId, def.ResolvePreviewPrefab());
+            GameObject basePrefab = _paletteResolver != null
+                ? _paletteResolver.ResolvePreviewPrefab(def, ownerId)
+                : def.ResolvePreviewPrefab();
+            GameObject prefab = ResolvePrefab(signal.Position, signal.BuildingId, basePrefab);
             GameObject instance = CreatePreview(
                 prefab,
                 signal.Position,

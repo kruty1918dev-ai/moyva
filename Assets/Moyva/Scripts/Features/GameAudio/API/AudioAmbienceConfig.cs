@@ -53,6 +53,12 @@ namespace Kruty1918.Moyva.GameAudio.API
         [Range(0f, 1f)] public float nearWeight = 1f;
         [Range(0f, 1f)] public float farWeight = 0f;
         public bool lowpassWithZoom = true;
+
+        /// <summary>
+        /// Фази доби, у яких шар звучить: "night", "dawn", "day", "dusk".
+        /// Порожній масив — шар звучить завжди. Потребує ICalendarService у контейнері.
+        /// </summary>
+        public string[] dayPhases = Array.Empty<string>();
     }
 
     /// <summary>
@@ -90,5 +96,11 @@ namespace Kruty1918.Moyva.GameAudio.API
         [Tooltip("zoomT-діапазон, у якому стингер може звучати.")]
         [Range(0f, 1f)] public float minZoom = 0f;
         [Range(0f, 1f)] public float maxZoom = 0.7f;
+
+        /// <summary>
+        /// Фази доби, у яких стингер може звучати: "night", "dawn", "day", "dusk".
+        /// Порожній масив — без обмежень.
+        /// </summary>
+        public string[] dayPhases = Array.Empty<string>();
     }
 }

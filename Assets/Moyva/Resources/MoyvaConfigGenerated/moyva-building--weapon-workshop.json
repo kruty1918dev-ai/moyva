@@ -15,8 +15,8 @@
   },
   "presentation": {
     "prefab": {
-      "$asset": "asset.game-object.building-blacksmith-blue.c0db6feb",
-      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_blacksmith_blue.prefab",
+      "$asset": "asset.game-object.building-workshop-blue.f5d290f5",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_workshop_blue.prefab",
       "required": true
     },
     "icon": {
@@ -34,6 +34,28 @@
         "$asset": "asset.game-object.building-scaffolding.07c8416d",
         "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
         "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-workshop-blue.f5d290f5",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_workshop_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-workshop-green.4889dd58",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_workshop_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-workshop-red.e42b0460",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_workshop_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-workshop-yellow.9250c45c",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_workshop_yellow.prefab",
+          "required": true
+        }
       }
     },
     "uiTint": {

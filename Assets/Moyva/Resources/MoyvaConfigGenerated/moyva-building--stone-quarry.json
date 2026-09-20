@@ -15,8 +15,8 @@
   },
   "presentation": {
     "prefab": {
-      "$asset": "asset.game-object.building-mine-blue.9fab77ec",
-      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_mine_blue.prefab",
+      "$asset": "asset.game-object.building-dirt.c129d485",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_dirt.prefab",
       "required": true
     },
     "icon": {

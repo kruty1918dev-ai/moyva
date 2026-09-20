@@ -16,6 +16,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly Dictionary<Vector2Int, GameObject> _placedByPosition = new();
         private readonly Dictionary<Vector2Int, EntityPresentationConfig> _presentationByPosition = new();
         private readonly Dictionary<Vector2Int, string> _buildingIdByPosition = new();
+        private readonly Dictionary<Vector2Int, string> _ownerIdByPosition = new();
         private readonly Dictionary<Vector2Int, Quaternion> _baseRotationByPosition = new();
         private readonly HashSet<Vector2Int> _demolitionPreviewPositions = new();
         private readonly HashSet<Vector2Int> _underConstructionPositions = new();
@@ -50,7 +51,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Quaternion rotation,
             float visualOffsetY = 0f,
             GameObject sourceVisual = null,
-            EntityPresentationConfig presentation = null)
+            EntityPresentationConfig presentation = null,
+            string ownerId = null)
         {
             Remove(position);
             string objectName = $"Building_{buildingId}_{position.x}_{position.y}";
@@ -81,6 +83,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placedByPosition[position] = instance;
             StorePresentation(position, presentation);
             _buildingIdByPosition[position] = buildingId;
+            SetOwner(position, ownerId);
             _baseRotationByPosition[position] = rotation;
             _demolitionPreviewPositions.Remove(position);
             _underConstructionPositions.Remove(position);
@@ -93,7 +96,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Vector2Int position,
             GameObject prefab,
             float visualOffsetY = 0f,
-            EntityPresentationConfig presentation = null)
+            EntityPresentationConfig presentation = null,
+            string ownerId = null)
         {
             if (prefab == null || !_placedByPosition.ContainsKey(position))
                 return;
@@ -104,6 +108,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Quaternion rotation = _baseRotationByPosition.TryGetValue(position, out Quaternion storedRotation)
                 ? storedRotation
                 : Quaternion.identity;
+            string owner = ownerId ?? (TryGetOwner(position, out string storedOwner)
+                ? storedOwner
+                : null);
 
             Replace(
                 position,
@@ -111,7 +118,22 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 prefab,
                 rotation,
                 visualOffsetY,
-                presentation: presentation);
+                presentation: presentation,
+                ownerId: owner);
+        }
+
+        public void SetOwner(Vector2Int position, string ownerId)
+        {
+            if (string.IsNullOrEmpty(ownerId))
+                _ownerIdByPosition.Remove(position);
+            else
+                _ownerIdByPosition[position] = ownerId;
+        }
+
+        public bool TryGetOwner(Vector2Int position, out string ownerId)
+        {
+            return _ownerIdByPosition.TryGetValue(position, out ownerId)
+                   && !string.IsNullOrEmpty(ownerId);
         }
 
         public void Remove(Vector2Int position)
@@ -125,6 +147,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placedByPosition.Remove(position);
             _presentationByPosition.Remove(position);
             _buildingIdByPosition.Remove(position);
+            _ownerIdByPosition.Remove(position);
             _baseRotationByPosition.Remove(position);
             _demolitionPreviewPositions.Remove(position);
             _underConstructionPositions.Remove(position);
@@ -217,6 +240,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placedByPosition.Clear();
             _presentationByPosition.Clear();
             _buildingIdByPosition.Clear();
+            _ownerIdByPosition.Clear();
             _baseRotationByPosition.Clear();
             _demolitionPreviewPositions.Clear();
             _underConstructionPositions.Clear();

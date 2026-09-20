@@ -1,0 +1,20 @@
+{
+  "name": "Kruty1918.Moyva.Vfx.Editor",
+  "rootNamespace": "Kruty1918.Moyva.Vfx.EditorTools",
+  "references": [
+    "Kruty1918.Moyva.Vfx",
+    "Kruty1918.Moyva.Jsonization",
+    "Kruty1918.Moyva.Jsonization.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
