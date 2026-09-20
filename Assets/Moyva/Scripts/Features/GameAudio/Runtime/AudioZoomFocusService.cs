@@ -8,11 +8,15 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
     /// <summary>
     /// Нормалізований стан зуму камери для аудіо-шарів.
     /// ZoomT: 0 = максимально близько, 1 = максимально далеко (згладжено).
-    /// Використовує той самий діапазон, що й CameraZoom (CameraSettingsSO).
+    /// Джерело істини — ICameraZoomState (той самий згладжений normalized zoom,
+    /// що й у far-view візуалів), тому аудіо і картинка переходять синхронно.
+    /// Локальний підрахунок лишається лише як fallback для контекстів без
+    /// gameplay-камери (меню, ізольовані тести).
     /// </summary>
     public sealed class AudioZoomFocusService : IInitializable, ITickable
     {
         private readonly AudioAmbienceConfig _config;
+        private readonly ICameraZoomState _zoomState;
         private readonly CameraSettingsSO _cameraSettings;
         private readonly UnityEngine.Camera _camera;
 
@@ -21,10 +25,12 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
 
         public AudioZoomFocusService(
             [InjectOptional] AudioAmbienceConfig config,
-            [InjectOptional] CameraSettingsSO cameraSettings,
-            [InjectOptional] UnityEngine.Camera camera)
+            [InjectOptional] ICameraZoomState zoomState = null,
+            [InjectOptional] CameraSettingsSO cameraSettings = null,
+            [InjectOptional] UnityEngine.Camera camera = null)
         {
             _config = config;
+            _zoomState = zoomState;
             _cameraSettings = cameraSettings;
             _camera = camera;
         }
@@ -40,6 +46,14 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
 
         public void Tick()
         {
+            if (_zoomState != null)
+            {
+                // Shared state already applies frame-rate independent smoothing;
+                // consuming it directly keeps audio and visuals in lockstep.
+                _zoomT = _zoomState.SmoothedNormalizedZoom;
+                return;
+            }
+
             float target = EvaluateRawZoomT();
             float smoothing = _config?.zoom != null ? Mathf.Max(0.1f, _config.zoom.smoothing) : 5f;
             _zoomT = Mathf.Lerp(_zoomT, target, 1f - Mathf.Exp(-smoothing * Time.unscaledDeltaTime));
@@ -67,6 +81,20 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
 
             float t = _config.zoom.enabled ? _zoomT : 0f;
             return Mathf.Lerp(_config.zoom.nearCutoff, _config.zoom.farCutoff, t);
+        }
+
+        /// <summary>
+        /// Per-bed lowpass: beds with <c>lowpassWithZoom</c> keep the shared
+        /// cutoff; explicit far cutoffs can darken a bed further.
+        /// </summary>
+        public float EvaluateBedCutoff(float bedFarCutoff)
+        {
+            float shared = EvaluateBedCutoff();
+            if (bedFarCutoff <= 0f)
+                return shared;
+
+            float t = _config?.zoom != null && _config.zoom.enabled ? _zoomT : 0f;
+            return Mathf.Min(shared, Mathf.Lerp(22000f, bedFarCutoff, t));
         }
 
         private float EvaluateRawZoomT()

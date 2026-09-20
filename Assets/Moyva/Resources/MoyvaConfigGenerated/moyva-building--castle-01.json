@@ -15,8 +15,8 @@
   },
   "presentation": {
     "prefab": {
-      "$asset": "asset.game-object.castle-01.6655d3eb",
-      "editorPath": "Assets/Moyva/Prefabs/Buildings/castle-01.prefab",
+      "$asset": "asset.game-object.building-castle-blue.aa5e4730",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_castle_blue.prefab",
       "required": true
     },
     "icon": {
@@ -34,6 +34,28 @@
         "$asset": "asset.game-object.building-scaffolding.07c8416d",
         "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
         "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-castle-blue.aa5e4730",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_castle_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-castle-green.cdf0b207",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_castle_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-castle-red.1d75a2c0",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_castle_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-castle-yellow.6af2760d",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_castle_yellow.prefab",
+          "required": true
+        }
       }
     },
     "uiTint": {

@@ -15,8 +15,8 @@
   },
   "presentation": {
     "prefab": {
-      "$asset": "asset.game-object.house-01.a160b9cd",
-      "editorPath": "Assets/Moyva/Prefabs/Buildings/house-01.prefab",
+      "$asset": "asset.game-object.building-home-b-blue.c4fbceaa",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_home_B_blue.prefab",
       "required": true
     },
     "icon": {
@@ -34,6 +34,28 @@
         "$asset": "asset.game-object.building-scaffolding.07c8416d",
         "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
         "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-home-b-blue.c4fbceaa",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_home_B_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-home-b-green.44c4c60c",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_home_B_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-home-b-red.cd56ae84",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_home_B_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-home-b-yellow.3613b0ee",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_home_B_yellow.prefab",
+          "required": true
+        }
       }
     },
     "uiTint": {

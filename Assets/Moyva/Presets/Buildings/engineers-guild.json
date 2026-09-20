@@ -15,8 +15,8 @@
   },
   "presentation": {
     "prefab": {
-      "$asset": "asset.game-object.building-workshop-blue.f5d290f5",
-      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_workshop_blue.prefab",
+      "$asset": "asset.game-object.building-tower-catapult-blue.8ba48a4b",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_tower_catapult_blue.prefab",
       "required": true
     },
     "icon": {
@@ -34,6 +34,28 @@
         "$asset": "asset.game-object.building-scaffolding.07c8416d",
         "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
         "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-tower-catapult-blue.8ba48a4b",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_tower_catapult_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-tower-catapult-green.e2378410",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_tower_catapult_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-tower-catapult-red.64d1ab26",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_tower_catapult_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-tower-catapult-yellow.6bfb8af7",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_tower_catapult_yellow.prefab",
+          "required": true
+        }
       }
     },
     "uiTint": {
@@ -130,4 +152,4 @@
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/engineers-guild.asset",
     "sourceHash": "74f337e412424e4f40e4dad2650c80481bff2d9ccf7978911fb15457a731a290"
   }
-}
+}

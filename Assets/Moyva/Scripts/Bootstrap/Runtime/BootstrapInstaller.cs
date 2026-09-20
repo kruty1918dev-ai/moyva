@@ -75,6 +75,8 @@ namespace Kruty1918.Moyva.Bootstrap
                 .NonLazy();
             Container.BindExecutionOrder<GameplayProgressClockConfigurator>(91);
             Container.BindInterfacesTo<BotController>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<BotOpponentSaveModule>().AsSingle();
+            Container.BindInterfacesTo<SaveModuleRegistrar<BotOpponentSaveModule>>().AsSingle().NonLazy();
             Container.Bind<Kruty1918.Moyva.AI.Bot.IBotPolicyDriverFactory>()
                 .To<Kruty1918.Moyva.AI.Bot.MoyvaMlAgentsPolicyDriverFactory>()
                 .AsSingle();
@@ -95,6 +97,9 @@ namespace Kruty1918.Moyva.Bootstrap
 
             // Аудіо-шар геймплею: ambient-емітери, zoom-фокус, доменний фідбек.
             Kruty1918.Moyva.GameAudio.Runtime.GameAudioInstaller.InstallGameplay(Container);
+
+            // VFX-шар геймплею: pooled ефекти на доменні сигнали.
+            Kruty1918.Moyva.Vfx.Runtime.VfxInstaller.Install(Container);
 
             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
             // Виконується після SaveAutoLoadInitializer, щоб знати чи є збереження.

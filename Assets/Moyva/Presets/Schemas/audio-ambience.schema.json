@@ -135,6 +135,28 @@
           "lowpassWithZoom": {
             "type": "boolean",
             "title": "Lowpass With Zoom"
+          },
+          "dayPhases": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "title": "Day Phases"
+          },
+          "farCutoff": {
+            "type": "number",
+            "title": "Far Cutoff",
+            "description": "<=0 → спільний zoom.farCutoff; інакше — жорсткіша per-bed межа на далекому zoom.",
+            "minimum": 0.0,
+            "maximum": 22000.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 22000.0
           }
         },
         "additionalProperties": false
@@ -283,6 +305,19 @@
             "maximum": 1.0,
             "x-moyva-editorMinimum": 0.0,
             "x-moyva-editorMaximum": 1.0
+          },
+          "dayPhases": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "title": "Day Phases"
           }
         },
         "additionalProperties": false

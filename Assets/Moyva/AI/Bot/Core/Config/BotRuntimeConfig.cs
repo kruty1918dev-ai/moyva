@@ -26,6 +26,9 @@ namespace Kruty1918.Moyva.AI.Bot
         public BotPolicyMode policyMode = BotPolicyMode.Heuristic;
         public BotModelProfile modelProfile = new BotModelProfile();
         public float visibleDelay = -1f;
+        // Probability that a decision is replaced by a uniformly random legal
+        // candidate. Real strength dial for Easy/Normal without resource cheats.
+        public float explorationRate = -1f;
 
         public bool IsValid
         {
@@ -117,6 +120,7 @@ namespace Kruty1918.Moyva.AI.Bot
         public bool autoEndTurn = true, telemetryEnabled = true, detailedTelemetry;
         public int telemetryCapacity = 128;
         public int curriculumStage = 8;
+        public float explorationRate;
         // Bitmask over BotCapabilityId; -1 enables every capability.
         // Bit 0 (Turn) is always treated as enabled: EndTurn must remain legal.
         public int capabilityMask = -1;
@@ -131,6 +135,7 @@ namespace Kruty1918.Moyva.AI.Bot
                 || telemetryCapacity < 1 || telemetryCapacity > 4096 || curriculumStage < 0 || curriculumStage > 8
                 || !Finite(decisionTimeout) || decisionTimeout <= 0 || !Finite(executionTimeout) || executionTimeout <= 0
                 || !Finite(visibleDelay) || visibleDelay < 0 || modelProfile == null
+                || !Finite(explorationRate) || explorationRate < 0 || explorationRate > 1
                 || !Enum.IsDefined(typeof(BotPolicyMode), policyMode))
                 throw new ArgumentException("Invalid bot runtime config.");
         }

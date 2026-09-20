@@ -1,0 +1,23 @@
+{
+  "name": "Kruty1918.Moyva.Tests.Camera",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Camera",
+  "references": [
+    "Kruty1918.Moyva.Camera",
+    "Kruty1918.Moyva.Jsonization",
+    "Zenject"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

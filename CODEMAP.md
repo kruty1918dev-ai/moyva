@@ -43,6 +43,8 @@ Base: `Features/`
 | Notifications | `Notifications/API/IGameplayNotificationService.cs`; `Notifications/Runtime/NotificationsInstaller.cs`; `Notifications/Runtime/GameplayNotificationService.cs` |
 | Game audio layer | `GameAudio/API/AudioAmbienceConfig.cs`; `GameAudio/API/AudioFeedbackConfig.cs`; `GameAudio/Runtime/GameAudioInstaller.cs` (shared→ProjectServices, gameplay→Bootstrap installers); presets: Presets/Systems/audio-* |
 | Camera | `Camera/API/`; `Camera/Runtime/CameraInstaller.cs`; `Camera/Runtime/CameraMovement.cs`; `Camera/Runtime/CameraZoom.cs` |
+| Camera zoom state | `Camera/API/ICameraZoomState.cs`; `Camera/Runtime/CameraZoomStateService.cs` |
+| Far-view atmosphere | `Visuals/Runtime/FarView/FarViewAtmosphereRendererFeature.cs`; `Visuals/Runtime/FarView/FarViewAtmosphereDriver.cs` |
 | Movement animation | `Animations/API/IMovementAnimationService.cs`; `Animations/Runtime/AnimationsInstaller.cs`; `Animations/Runtime/MovementAnimationService.cs` |
 | Clouds | `Clouds/API/ICloudsService.cs`; `Clouds/Runtime/CloudsInstaller.cs`; `Clouds/Runtime/CloudsService.cs` |
 | Day/night visuals | `Visuals/Runtime/VisualInstaller.cs`; `Visuals/Runtime/DayNightShaderController.cs` |

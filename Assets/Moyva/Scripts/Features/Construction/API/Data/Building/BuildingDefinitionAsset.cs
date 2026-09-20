@@ -370,12 +370,20 @@ public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
 
         private static BuildingPresentationVariants CloneVariants(
             BuildingPresentationVariants source)
-            => source == null
-                ? new BuildingPresentationVariants()
-                : new BuildingPresentationVariants
-                {
-                    ConstructionPrefab = source.ConstructionPrefab,
-                };
+        {
+            if (source == null)
+                return new BuildingPresentationVariants();
+
+            return new BuildingPresentationVariants
+            {
+                ConstructionPrefab = source.ConstructionPrefab,
+                PrefabVariants = source.PrefabVariants != null
+                    ? new Dictionary<string, GameObject>(
+                        source.PrefabVariants,
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GameObject>(),
+            };
+        }
 
         private static EntityOutlineConfig CloneOutline(
             EntityOutlineConfig source)

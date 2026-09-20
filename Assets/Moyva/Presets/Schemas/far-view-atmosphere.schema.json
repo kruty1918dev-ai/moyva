@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/far-view-atmosphere.schema.json",
+  "title": "Moyva — Far View Atmosphere Config",
+  "description": "JSON source of truth для Kruty1918.Moyva.Visuals.FarViewAtmosphereConfig. Художні параметри high-altitude ефекту; пороги переходу живуть у camera-settings (farView).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.far-view-atmosphere"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID"
+    },
+    "model": {
+      "const": "far-view-atmosphere"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "haze": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "atmosphereColor": { "$ref": "#/$defs/color" },
+        "skyColor": { "$ref": "#/$defs/color" },
+        "strength": { "type": "number", "minimum": 0, "maximum": 1 },
+        "depthStart": { "type": "number", "minimum": 0 },
+        "depthEnd": { "type": "number", "minimum": 0.01 },
+        "gamma": { "type": "number", "minimum": 0.2, "maximum": 4 },
+        "skyFill": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "flatten": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "strength": { "type": "number", "minimum": 0, "maximum": 1 },
+        "radiusPixels": { "type": "number", "minimum": 0.25, "maximum": 4 }
+      }
+    },
+    "veil": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "strength": { "type": "number", "minimum": 0, "maximum": 1 },
+        "scale": { "type": "number", "exclusiveMinimum": 0 },
+        "speed": { "type": "number", "minimum": 0 },
+        "altitude": { "type": "number", "minimum": 0 },
+        "coverage": { "type": "number", "minimum": 0, "maximum": 1 },
+        "windDirection": { "$ref": "#/$defs/vector2" }
+      }
+    },
+    "palette": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "saturation": { "type": "number", "minimum": 0, "maximum": 1.5 },
+        "contrast": { "type": "number", "minimum": 0.5, "maximum": 1.5 },
+        "shadowLift": { "type": "number", "minimum": 0, "maximum": 0.6 },
+        "highlightCompress": { "type": "number", "minimum": 0, "maximum": 0.8 }
+      }
+    },
+    "edge": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "vignetteStrength": { "type": "number", "minimum": 0, "maximum": 1 },
+        "vignetteRadius": { "type": "number", "minimum": 0.5, "maximum": 2.5 }
+      }
+    },
+    "quality": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "performanceVeilOctaves": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "balancedVeilOctaves": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "qualityVeilOctaves": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "performanceSimplifiedFlatten": { "type": "boolean" },
+        "ditherEnabled": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "color": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["r", "g", "b"],
+      "properties": {
+        "r": { "type": "number", "minimum": 0, "maximum": 1 },
+        "g": { "type": "number", "minimum": 0, "maximum": 1 },
+        "b": { "type": "number", "minimum": 0, "maximum": 1 },
+        "a": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 }
+      }
+    },
+    "vector2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    }
+  }
+}

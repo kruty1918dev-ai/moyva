@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/gameplay-motion.schema.json",
+  "title": "Moyva — Gameplay Motion Config",
+  "description": "JSON source of truth для Kruty1918.Moyva.Animations.API.GameplayMotionConfig — єдиний canonical motion vocabulary для unit locomotion, unit transitions та building transitions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.gameplay-motion"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID"
+    },
+    "model": {
+      "const": "gameplay-motion"
+    },
+    "unitLocomotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "acceleration": { "type": "number" },
+        "deceleration": { "type": "number" },
+        "turnSpeedDegPerSec": { "type": "number" },
+        "faceTravelDirection": { "type": "boolean" },
+        "bobAmplitude": { "type": "number" },
+        "bobFrequency": { "type": "number" },
+        "cornerAnticipation": { "type": "number" }
+      }
+    },
+    "unitTransitions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "deployDuration": { "type": "number" },
+        "deployRiseHeight": { "type": "number" },
+        "deployScaleStart": { "type": "number" },
+        "deployEase": { "$ref": "#/$defs/ease" },
+        "deathDuration": { "type": "number" },
+        "deathSinkDepth": { "type": "number" },
+        "deathTiltDeg": { "type": "number" },
+        "deathEase": { "$ref": "#/$defs/ease" },
+        "hitRecoilDuration": { "type": "number" },
+        "hitRecoilDistance": { "type": "number" },
+        "hitRecoilEase": { "$ref": "#/$defs/ease" },
+        "attackLungeDuration": { "type": "number" },
+        "attackLungeDistance": { "type": "number" },
+        "attackLungeEase": { "$ref": "#/$defs/ease" },
+        "garrisonEnterDuration": { "type": "number" },
+        "garrisonExitDuration": { "type": "number" },
+        "garrisonShrinkScale": { "type": "number" },
+        "garrisonEase": { "$ref": "#/$defs/ease" }
+      }
+    },
+    "building": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "previewMoveSharpness": { "type": "number" },
+        "previewDragSharpness": { "type": "number" },
+        "previewSnapSharpness": { "type": "number" },
+        "placedSnapSharpness": { "type": "number" },
+        "previewRotateDuration": { "type": "number" },
+        "previewRotateEase": { "$ref": "#/$defs/ease" },
+        "emergeDepth": { "type": "number" },
+        "emergeDuration": { "type": "number" },
+        "emergeEase": { "$ref": "#/$defs/ease" },
+        "emergeScaleYStart": { "type": "number" },
+        "demolishDuration": { "type": "number" },
+        "demolishSinkDepth": { "type": "number" },
+        "demolishShakeAmplitude": { "type": "number" },
+        "demolishEase": { "$ref": "#/$defs/ease" },
+        "operationalDuration": { "type": "number" },
+        "operationalStartScale": { "type": "number" },
+        "operationalRiseHeight": { "type": "number" },
+        "operationalEase": { "$ref": "#/$defs/ease" },
+        "relocationSpeed": { "type": "number" },
+        "relocationLift": { "type": "number" },
+        "relocationEase": { "$ref": "#/$defs/ease" },
+        "blockedShakeAmplitude": { "type": "number" },
+        "blockedShakeDuration": { "type": "number" }
+      }
+    },
+    "accessibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reducedMotionDurationScale": { "type": "number" },
+        "secondaryMotionPerformanceScale": { "type": "number" },
+        "secondaryMotionBalancedScale": { "type": "number" },
+        "secondaryMotionQualityScale": { "type": "number" }
+      }
+    }
+  },
+  "$defs": {
+    "ease": {
+      "type": "string",
+      "enum": [
+        "Linear",
+        "SmoothStep",
+        "InQuad",
+        "OutQuad",
+        "InOutQuad",
+        "InCubic",
+        "OutCubic",
+        "InOutCubic",
+        "OutBackSoft"
+      ]
+    }
+  }
+}

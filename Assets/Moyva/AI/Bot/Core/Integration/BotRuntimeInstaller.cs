@@ -6,6 +6,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Kruty1918.Moyva.Economy.Runtime;
+using Kruty1918.Moyva.Grid.API;
 using Zenject;
 using System;
 using System.Reflection;
@@ -20,12 +21,12 @@ namespace Kruty1918.Moyva.AI.Bot
             var config = asset != null ? JsonUtility.FromJson<BotRuntimeConfig>(asset.text) : new BotRuntimeConfig();
             var profile = Resources.Load<TextAsset>(config.modelProfileResourceId);
             if (profile != null) config.modelProfile = JsonUtility.FromJson<BotModelProfile>(profile.text);
-            ApplyLaunchDifficulty(config);
             config.Validate();
             container.Bind<BotRuntimeConfig>().FromInstance(config.Snapshot()).AsSingle();
             container.Bind<BotTelemetryHub>().FromInstance(new BotTelemetryHub(config.telemetryCapacity, config.telemetryEnabled)).AsSingle();
             container.Bind<IBotDecisionOrchestrator>().FromMethod(context => Create(context.Container)).AsSingle();
             container.Bind<BotTelemetryView>().FromNewComponentOnNewGameObject().AsSingle().NonLazy();
+            container.Bind<BotDebugOverlay>().FromNewComponentOnNewGameObject().AsSingle().NonLazy();
         }
 
         private static void ApplyLaunchDifficulty(BotRuntimeConfig config)
@@ -42,6 +43,8 @@ namespace Kruty1918.Moyva.AI.Bot
             config.curriculumStage = config.modelProfile.curriculumStage;
             if (selected.visibleDelay >= 0f)
                 config.visibleDelay = selected.visibleDelay;
+            if (selected.explorationRate >= 0f)
+                config.explorationRate = selected.explorationRate;
         }
 
         private static string ReadLaunchBotDifficultyId()
@@ -60,7 +63,11 @@ namespace Kruty1918.Moyva.AI.Bot
             var profiles = container.TryResolve<IUnitGameplayProfileService>();
             var terrain = container.TryResolve<IGeneratedTerrainLevelQuery>();
             var registry = CreateGameplayRegistry(container, gateway);
-            var config = container.Resolve<BotRuntimeConfig>();
+            // Difficulty resolves lazily: on save-load the bot identity arrives
+            // after container construction via the bot-opponent save module.
+            var config = container.Resolve<BotRuntimeConfig>().Snapshot();
+            ApplyLaunchDifficulty(config);
+            config.Validate();
             var telemetry = container.Resolve<BotTelemetryHub>();
             var factory = container.TryResolve<IBotPolicyDriverFactory>();
             var policy = factory?.Create(config, telemetry) ?? new HeuristicBotPolicyDriver();
@@ -69,7 +76,14 @@ namespace Kruty1918.Moyva.AI.Bot
                     profiles: profiles,
                     terrain: terrain,
                     economy: container.TryResolve<IEconomyInfoMediator>(),
-                    intel: container.TryResolve<IFogIntelReader>()), policy, config, telemetry);
+                    intel: container.TryResolve<IFogIntelReader>(),
+                    grid: container.TryResolve<IGridService>(),
+                    placements: container.TryResolve<IConstructionSaveSnapshotSource>(),
+                    buildingDefs: container.TryResolve<IBuildingRegistry>(),
+                    economyApi: container.TryResolve<IEconomyRuntimeApi>(),
+                    recruitment: container.TryResolve<IUnitRecruitmentQuery>(),
+                    productionPerTurn: p => EconomyProductionReadModel.Capture(container, p).ProductionPerTurn),
+                policy, config, telemetry);
             if (config.policyMode != BotPolicyMode.Heuristic && factory == null)
                 telemetry.FallbackReason = "No ML policy binding installed; using Heuristic.";
             return result;

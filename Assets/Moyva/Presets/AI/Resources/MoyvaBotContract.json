@@ -1,6 +1,6 @@
 {
-  "contractVersion": 2,
-  "observationSchemaVersion": 3,
+  "contractVersion": 3,
+  "observationSchemaVersion": 4,
   "candidateSchemaVersion": 2,
   "actionSchemaVersion": 1,
   "maxCandidateSlots": 128,
