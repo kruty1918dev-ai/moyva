@@ -403,7 +403,7 @@ namespace UnityHTML.Runtime
 
             // A finished tween (e.g. fade-out) can leave the CanvasGroup at alpha 0,
             // so the resting alpha is the element's computed opacity when available.
-            private static float ResolveRestingAlpha(RectTransform target, CanvasGroup group)
+            internal static float ResolveRestingAlpha(RectTransform target, CanvasGroup group)
             {
                 UGUIComponent component = target != null ? target.GetComponent<ReactElement>()?.Component : null;
                 var style = component != null && !component.Destroyed ? component.ComputedStyle : null;

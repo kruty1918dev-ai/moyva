@@ -6,10 +6,14 @@
     "Kruty1918.Moyva.Grid",
     "Kruty1918.Moyva.SaveSystem",
     "Kruty1918.Moyva.Signals",
-    "Zenject",
-    "Zenject-usage.dll"
+    "Zenject"
   ],
   "includePlatforms": ["Editor"],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "Zenject-usage.dll",
+    "nunit.framework.dll"
+  ],
   "autoReferenced": false,
   "optionalUnityReferences": ["TestAssemblies"]
 }

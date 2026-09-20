@@ -251,6 +251,112 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return instance;
         }
 
+        /// <summary>Поява будівлі з фундаменту: підйом із заглиблення та розгортання за вертикаллю.</summary>
+        private void PlayPlacementEmerge(GameObject instance, string buildingId, Vector2Int position)
+        {
+            BuildingMotionProfile profile = _motionSettings?.Building;
+            if (profile == null || _motionSettings.ReducedMotion)
+                return;
+
+            float duration = _motionSettings.ScaleDuration(profile.emergeDuration);
+            EntityMotion motion = duration > 0f ? EntityMotion.AttachOrUpdate(instance) : null;
+            if (motion == null)
+                return;
+
+            Transform t = instance.transform;
+            Vector3 finalPosition = t.position;
+            Vector3 finalScale = t.localScale;
+
+            t.position = finalPosition + Vector3.down * profile.emergeDepth;
+            t.localScale = new Vector3(
+                finalScale.x,
+                finalScale.y * Mathf.Clamp01(profile.emergeScaleYStart),
+                finalScale.z);
+
+            motion.EaseTo(finalPosition, duration, profile.emergeEase);
+            motion.ScaleTo(finalScale, duration, profile.emergeEase);
+        }
+
+        /// <summary>Перехідний рух: новий інстанс сідає на місце, а вихідний стискається й знищується.</summary>
+        private void PlayOperationalTransition(
+            GameObject incoming,
+            GameObject outgoing,
+            Vector2Int position,
+            string buildingId)
+        {
+            BuildingMotionProfile profile = _motionSettings?.Building;
+            float duration = profile != null
+                ? _motionSettings.ScaleDuration(profile.operationalDuration)
+                : 0f;
+
+            if (profile == null || _motionSettings.ReducedMotion || duration <= 0f)
+            {
+                Object.Destroy(outgoing);
+                return;
+            }
+
+            EntityMotion inMotion = EntityMotion.AttachOrUpdate(incoming);
+            if (inMotion != null)
+            {
+                Transform inT = incoming.transform;
+                Vector3 finalPosition = inT.position;
+                Vector3 finalScale = inT.localScale;
+
+                inT.position = finalPosition + Vector3.up * profile.operationalRiseHeight;
+                inT.localScale = finalScale * Mathf.Clamp01(profile.operationalStartScale);
+
+                inMotion.EaseTo(finalPosition, duration, profile.operationalEase);
+                inMotion.ScaleTo(finalScale, duration, profile.operationalEase);
+            }
+
+            EntityMotion outMotion = EntityMotion.AttachOrUpdate(outgoing);
+            if (outMotion == null)
+            {
+                Object.Destroy(outgoing);
+                return;
+            }
+
+            Transform outT = outgoing.transform;
+            outMotion.EaseTo(
+                outT.position + Vector3.down * (profile.demolishSinkDepth * 0.5f),
+                duration,
+                profile.demolishEase);
+            outMotion.ScaleTo(
+                outT.localScale * 0.05f,
+                duration,
+                profile.demolishEase,
+                () => Object.Destroy(outgoing));
+        }
+
+        /// <summary>Знесення: візуал занурюється з тремтінням і знищується по завершенні.</summary>
+        private void PlayDemolition(GameObject instance, string buildingId, Vector2Int position)
+        {
+            BuildingMotionProfile profile = _motionSettings?.Building;
+            float duration = profile != null
+                ? _motionSettings.ScaleDuration(profile.demolishDuration)
+                : 0f;
+
+            EntityMotion motion = duration > 0f && !_motionSettings.ReducedMotion
+                ? EntityMotion.AttachOrUpdate(instance)
+                : null;
+            if (motion == null)
+            {
+                Object.Destroy(instance);
+                return;
+            }
+
+            Transform t = instance.transform;
+            motion.EaseTo(
+                t.position + Vector3.down * profile.demolishSinkDepth,
+                duration,
+                profile.demolishEase);
+            motion.ScaleTo(t.localScale * 0.6f, duration, profile.demolishEase);
+
+            float shake = _motionSettings.ScaleSecondaryAmplitude(profile.demolishShakeAmplitude);
+            if (shake > 0f)
+                motion.PunchPosition(new Vector3(shake, 0f, 0f), duration, MotionEaseKind.InOutQuad);
+        }
+
         /// <summary>Позначає будівлю вибраною.</summary>
         public void Select(Vector2Int position)
         {

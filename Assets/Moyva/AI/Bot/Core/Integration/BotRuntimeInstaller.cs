@@ -71,6 +71,7 @@ namespace Kruty1918.Moyva.AI.Bot
             var telemetry = container.Resolve<BotTelemetryHub>();
             var factory = container.TryResolve<IBotPolicyDriverFactory>();
             var policy = factory?.Create(config, telemetry) ?? new HeuristicBotPolicyDriver();
+            var economyApi = container.TryResolve<IEconomyRuntimeApi>();
             var result = new BotDecisionOrchestrator(gateway, registry,
                 new MoyvaBotPerceptionSource(turns, units, owners, fog,
                     profiles: profiles,
@@ -80,9 +81,9 @@ namespace Kruty1918.Moyva.AI.Bot
                     grid: container.TryResolve<IGridService>(),
                     placements: container.TryResolve<IConstructionSaveSnapshotSource>(),
                     buildingDefs: container.TryResolve<IBuildingRegistry>(),
-                    economyApi: container.TryResolve<IEconomyRuntimeApi>(),
+                    economyApi: economyApi,
                     recruitment: container.TryResolve<IUnitRecruitmentQuery>(),
-                    productionPerTurn: p => EconomyProductionReadModel.Capture(container, p).ProductionPerTurn),
+                    productionPerTurn: p => economyApi?.GetOwnerProductionSnapshot(p)?.ProductionPerTurn),
                 policy, config, telemetry);
             if (config.policyMode != BotPolicyMode.Heuristic && factory == null)
                 telemetry.FallbackReason = "No ML policy binding installed; using Heuristic.";
