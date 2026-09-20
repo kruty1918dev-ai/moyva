@@ -46,7 +46,7 @@ Base: `Features/`
 | Camera zoom state | `Camera/API/ICameraZoomState.cs`; `Camera/Runtime/CameraZoomStateService.cs` |
 | Far-view atmosphere | `Visuals/Runtime/FarView/FarViewAtmosphereRendererFeature.cs`; `Visuals/Runtime/FarView/FarViewAtmosphereDriver.cs` |
 | Movement animation | `Animations/API/IMovementAnimationService.cs`; `Animations/Runtime/AnimationsInstaller.cs`; `Animations/Runtime/MovementAnimationService.cs` |
-| Clouds | `Clouds/API/ICloudsService.cs`; `Clouds/Runtime/CloudsInstaller.cs`; `Clouds/Runtime/CloudsService.cs` |
+| Clouds | `Clouds/API/CloudsSettings.cs`; `Clouds/Runtime/CloudsInstaller.cs`; `Clouds/Runtime/CloudsWorldPresenter.cs` |
 | Day/night visuals | `Visuals/Runtime/VisualInstaller.cs`; `Visuals/Runtime/DayNightShaderController.cs` |
 
 ## Marketing Content Studio
