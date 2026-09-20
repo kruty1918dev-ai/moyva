@@ -1,0 +1,26 @@
+{
+  "name": "Kruty1918.Moyva.Tests.Visuals",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Visuals",
+  "references": [
+    "Kruty1918.Moyva.Visuals",
+    "Kruty1918.Moyva.Camera",
+    "Kruty1918.Moyva.Shared",
+    "Kruty1918.Moyva.Jsonization",
+    "Unity.RenderPipelines.Universal.Runtime",
+    "Zenject"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
