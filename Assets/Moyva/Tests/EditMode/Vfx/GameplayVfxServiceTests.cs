@@ -150,7 +150,7 @@ namespace Kruty1918.Moyva.Vfx.Tests
         public void SetUp()
         {
             _container = new DiContainer();
-            Kruty1918.Moyva.Signals.SignalBusInstaller.Install(_container);
+            Zenject.SignalBusInstaller.Install(_container);
             _container.DeclareSignal<BuildingPlacedSignal>().OptionalSubscriber();
             _container.DeclareSignal<UnitMovedSignal>().OptionalSubscriber();
             _container.DeclareSignal<UnitDestroyedSignal>().OptionalSubscriber();
