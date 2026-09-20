@@ -131,6 +131,8 @@ Assets/_Recovery.meta
 /quadcast-raw.wav
 /.moyva-git-bridge-chatgpt-import-test.md
 /e HEAD
+/nul
+/.moyva_patch_state.json
 # END MOYVA REPOSITORY HYGIENE
 
 # BEGIN MOYVA AI CONTEXT HYGIENE
@@ -172,9 +174,19 @@ __pycache__/
 # Installed Continue MCP server dependencies
 /.continue/**/node_modules/
 # Dedicated training output (source and configuration stay tracked).
-/Results/MoyvaTraining/
+# Entire Results/ tree is regenerable training output: checkpoints (.pt/.onnx),
+# run logs, telemetry, frozen evaluations and evaluation player builds.
+/Results/
 /Build/Training/
 /.venv-training/
+
+# pack-model distributable archives belong to GitHub Releases / artifact storage.
+/Exports/
+
+# ML checkpoints must never be committed anywhere in the repo.
+*.pt
+*.pth
+*.ckpt
 
 # Machine-local Moyva Control Center settings, IPC and process records.
 /.moyva-local/

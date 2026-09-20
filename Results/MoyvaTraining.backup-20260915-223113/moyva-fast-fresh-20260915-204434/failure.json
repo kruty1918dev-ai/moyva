@@ -1,8 +1,0 @@
-{
-  "id": "communicator",
-  "component": "Unity worker",
-  "evidence": [
-    "  Communicator API: 1.5.0,"
-  ],
-  "repair": "Inspect unity.log; validate the player contract and a free worker port, then retry once."
-}
