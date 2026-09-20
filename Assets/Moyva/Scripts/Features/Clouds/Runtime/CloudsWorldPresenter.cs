@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Clouds.API;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Zenject;
 using Object = UnityEngine.Object;
 
 namespace Kruty1918.Moyva.Clouds.Runtime
 {
     /// <summary>CloudsWorldPresenter — class: Clouds світу презентера.</summary>
-    public sealed class CloudsWorldPresenter : IDisposable
+    public sealed class CloudsWorldPresenter : IInitializable, ITickable, IDisposable
     {
         private static readonly int FadePropertyId = Shader.PropertyToID("_MoyvaCloudFade");
         private static readonly int TintPropertyId = Shader.PropertyToID("_MoyvaCloudTint");
@@ -86,6 +87,11 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             TrySpawnInitialClouds();
             TickClouds(deltaTime);
             TickSpawn(deltaTime);
+        }
+
+        void ITickable.Tick()
+        {
+            Tick(Time.deltaTime);
         }
 
         /// <summary>Спавнить хмари.</summary>
