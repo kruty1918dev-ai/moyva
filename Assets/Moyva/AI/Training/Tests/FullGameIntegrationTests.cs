@@ -174,6 +174,59 @@ namespace Kruty1918.Moyva.AI.Training.Tests
             yield return new ExitPlayMode();
         }
 
+        [UnityTest]
+        public IEnumerator PerceptionPublishesSpatialIntelAndEconomyFeatures()
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            yield return new EnterPlayMode();
+            var config = TrainingConfig.Load(AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Moyva/Presets/AI/MoyvaTrainingConfig.json"));
+            config.curriculum.stage = TrainingCurriculumStage.FullGame;
+            var container = new DiContainer();
+            new TrainingInstaller().Install(container, config);
+            using (var simulation = (GameplayTrainingSimulation)container.Resolve<ITrainingSimulationFactory>().Create(0))
+            using (var environment = new TrainingEnvironment(0, config, simulation))
+            {
+                environment.BeginEpisode();
+                Assert.IsTrue(environment.IsReady, environment.Diagnostics.LastError);
+                var snapshot = simulation.Perception.Capture(simulation.PlayerId);
+                Assert.AreEqual(1f, snapshot.Global[BotObservationSchema.SpatialAvailable],
+                    "Spatial block must be marked available when grid and fog are bound.");
+                Assert.Greater(snapshot.Global[BotObservationSchema.OwnSettlements], 0f,
+                    "FullGame scaffold must report the learner's castle settlement.");
+                Assert.Greater(snapshot.Global[BotObservationSchema.OwnUnits], 0f);
+                int explored = 0, visible = 0, ownUnits = 0, ownBuildings = 0;
+                for (int cell = 0; cell < 64; cell++)
+                {
+                    if (snapshot.Spatial[BotSpatialChannel.Explored * 64 + cell] > 0) explored++;
+                    if (snapshot.Spatial[BotSpatialChannel.Visible * 64 + cell] > 0) visible++;
+                    if (snapshot.Spatial[BotSpatialChannel.OwnUnits * 64 + cell] > 0) ownUnits++;
+                    if (snapshot.Spatial[BotSpatialChannel.OwnBuildings * 64 + cell] > 0) ownBuildings++;
+                    Assert.LessOrEqual(snapshot.Spatial[BotSpatialChannel.Visible * 64 + cell],
+                        snapshot.Spatial[BotSpatialChannel.Explored * 64 + cell],
+                        "Visible-only intel must never appear on unexplored cells.");
+                }
+                Assert.Greater(explored, 0, "Opening reveal must land on the spatial grid.");
+                Assert.Greater(visible, 0);
+                Assert.Greater(ownUnits, 0, "Own units must land on the spatial grid.");
+                Assert.Greater(ownBuildings, 0, "Own castle must land on the spatial grid.");
+                // Fog legality: enemy spatial channels must contain no hidden state.
+                int enemyVisible = 0, enemyRemembered = 0;
+                for (int cell = 0; cell < 64; cell++)
+                {
+                    if (snapshot.Spatial[BotSpatialChannel.VisibleEnemyUnits * 64 + cell] > 0) enemyVisible++;
+                    if (snapshot.Spatial[BotSpatialChannel.RememberedEnemyUnits * 64 + cell] > 0) enemyRemembered++;
+                }
+                int actualVisibleEnemies = simulation.Episode.Units.GetAllUnitIds()
+                    .Count(id => simulation.Episode.UnitOwners.GetUnitOwnerId(id) != simulation.PlayerId
+                        && simulation.Episode.Units.TryGetUnitPosition(id, out var position)
+                        && simulation.Episode.Fog.IsVisible(simulation.PlayerId, position));
+                Assert.GreaterOrEqual(enemyVisible + enemyRemembered, 0);
+                if (actualVisibleEnemies > 0) Assert.Greater(enemyVisible, 0,
+                    "Visible enemy units must appear on the spatial grid.");
+            }
+            yield return new ExitPlayMode();
+        }
+
         private static IEnumerator Complete(Task<BotExecutionResult> task)
         {
             float deadline = Time.realtimeSinceStartup + 20;

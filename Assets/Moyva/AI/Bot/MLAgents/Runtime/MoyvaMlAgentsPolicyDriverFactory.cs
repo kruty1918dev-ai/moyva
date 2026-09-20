@@ -10,6 +10,16 @@ namespace Kruty1918.Moyva.AI.Bot
 
         public IBotPolicyDriver Create(BotRuntimeConfig config, BotTelemetryHub telemetry)
         {
+            IBotPolicyDriver driver = CreateCore(config, telemetry);
+            // Difficulty dial: blends in uniformly random legal actions.
+            // Weakens the policy without touching rules, fog or resources.
+            return config != null && config.explorationRate > 0f
+                ? new EpsilonBlendPolicyDriver(driver, config.explorationRate)
+                : driver;
+        }
+
+        private IBotPolicyDriver CreateCore(BotRuntimeConfig config, BotTelemetryHub telemetry)
+        {
             if (config == null || config.policyMode != BotPolicyMode.MLAgentsInference)
                 return new HeuristicBotPolicyDriver();
 
