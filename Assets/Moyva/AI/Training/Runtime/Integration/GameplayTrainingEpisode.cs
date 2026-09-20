@@ -164,6 +164,7 @@ namespace Kruty1918.Moyva.AI.Training
                 Gateway = new MoyvaBotTurnAdapter(Turns, _container.Resolve<ITurnAuthorityPolicy>());
                 _container.Bind<IBotOpeningPlacementAnchorSource>().FromInstance(this).AsSingle();
                 Capabilities = BotRuntimeInstaller.CreateGameplayRegistry(_container, Gateway);
+                var economyApi = _container.TryResolve<IEconomyRuntimeApi>();
                 Perception = new MoyvaBotPerceptionSource(Turns, unitService, owners, fog,
                     profiles: _container.TryResolve<IUnitGameplayProfileService>(),
                     terrain: _container.TryResolve<IGeneratedTerrainLevelQuery>(),
@@ -172,9 +173,9 @@ namespace Kruty1918.Moyva.AI.Training
                     grid: _container.TryResolve<IGridService>(),
                     placements: _container.TryResolve<IConstructionSaveSnapshotSource>(),
                     buildingDefs: _container.TryResolve<IBuildingRegistry>(),
-                    economyApi: _container.TryResolve<IEconomyRuntimeApi>(),
+                    economyApi: economyApi,
                     recruitment: _container.TryResolve<IUnitRecruitmentQuery>(),
-                    productionPerTurn: p => EconomyProductionReadModel.Capture(_container, p).ProductionPerTurn);
+                    productionPerTurn: p => economyApi?.GetOwnerProductionSnapshot(p)?.ProductionPerTurn);
                 _setupPhase = false;
                 Outcomes = new TrainingGameplayEventBridge(signals, _container.Resolve<ITurnHistoryQuery>(), TrainingGameplayScope.LearnerId,
                     _container.Resolve<IUnitCombatService>(), owners, context.EpisodeId, _container.TryResolve<IBuildingRegistry>());

@@ -67,7 +67,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
         public void BuildProducesWellFormedMarkupWithEveryModal()
         {
             _state.Open("JoinRoomPanel");
-            _view.LoadOverlay(10f, 100f, "%");
+            _view.ApplyOverlayPresentation(true, 10f, "%", "Loading");
             _view.Show(new InfoMessage("Title", "Message"));
             _view.Show("Private Room", "Wrong password");
             _view.Show(new ConfirmationRequest { LabelText = "Sure?", MessageText = "Really?" });

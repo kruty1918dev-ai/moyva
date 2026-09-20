@@ -214,6 +214,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             public RecordingMotion(List<(string id, string preset)> log) => _log = log;
             public void Play(string targetId, string preset, float duration, float delay) => _log.Add((targetId, preset));
             public void Stop(string targetId) { }
+            public void RestoreResting(string targetId) { }
         }
     }
 }

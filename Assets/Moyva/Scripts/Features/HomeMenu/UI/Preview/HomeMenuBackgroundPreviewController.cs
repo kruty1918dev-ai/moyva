@@ -92,7 +92,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private bool _ownsCloudLayer;
         private int _currentSeed;
         private GameObject _livePreviewRoot;
-        private Camera _livePreviewCamera;
+        private UnityEngine.Camera _livePreviewCamera;
         private Light _livePreviewLight;
         private RenderTexture _livePreviewRenderTexture;
         private Vector2Int _livePreviewRenderTextureSize;
@@ -107,6 +107,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private readonly List<Mesh> _livePreviewMeshes = new List<Mesh>();
         private static MoyvaProjectSettingsSO _runtimeFallbackSettings;
 
+        /// <summary>Впроваджує опціональні сервіси превʼю через Zenject.</summary>
         [Inject]
         public void Construct(
             [InjectOptional] IMenuWorldPreviewKingdomPlacementService kingdomPlacementService = null,

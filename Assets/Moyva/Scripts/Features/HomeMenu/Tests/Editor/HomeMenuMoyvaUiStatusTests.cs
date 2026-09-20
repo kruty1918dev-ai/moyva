@@ -31,12 +31,13 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
         [Test]
         public void OverlayStatusPropagatesStageText()
         {
-            var overlay = _view.LoadOverlay(0f, 100f, "%");
+            var overlayService = new HomeMenuBusyOverlayService(_view);
             var observed = string.Empty;
             void OnChanged(OverlayLoaderResult result) => observed = result.Status;
             OverlayLoaderResult.CurrentChanged += OnChanged;
             try
             {
+                var overlay = overlayService.LoadOverlay(0f, 100f, "%");
                 overlay.SetStatus("Joining the lobby...");
 
                 Assert.That(_view.OverlayStatus, Is.EqualTo("Joining the lobby..."));
@@ -45,6 +46,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             finally
             {
                 OverlayLoaderResult.CurrentChanged -= OnChanged;
+                overlayService.Dispose();
             }
         }
 

@@ -13,6 +13,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
+    /// <summary>Live 3D-превʼю світу у фоні меню: камера, рендер-текстура та mesh-подання.</summary>
     public sealed partial class HomeMenuBackgroundPreviewController
     {
         private const int MaxLivePreviewTextureWidth = 1920;
@@ -35,7 +36,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             {
                 hideFlags = HideFlags.DontSave
             };
-            _livePreviewCamera = cameraObject.AddComponent<Camera>();
+            _livePreviewCamera = cameraObject.AddComponent<UnityEngine.Camera>();
             _livePreviewCamera.enabled = true;
             _livePreviewCamera.clearFlags = CameraClearFlags.SolidColor;
             _livePreviewCamera.backgroundColor = projectSettings.HomeMenuPreviewBackgroundColor;
@@ -214,7 +215,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 RectTransform targetRect = _targetImage.rectTransform;
                 targetRect.GetWorldCorners(_targetWorldCorners);
                 Canvas canvas = _targetImage.canvas;
-                Camera uiCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                UnityEngine.Camera uiCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
                     ? canvas.worldCamera
                     : null;
 

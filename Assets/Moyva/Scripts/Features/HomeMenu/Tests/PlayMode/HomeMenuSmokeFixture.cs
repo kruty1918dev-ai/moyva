@@ -38,15 +38,16 @@ namespace Kruty1918.Moyva.Tests.HomeMenu.PlayMode
         internal HomeMenuMoyvaUiBridge Bridge { get; private set; }
         internal HomeMenuMoyvaUiPresenter Presenter { get; private set; }
         internal HomeMenuMoyvaUiAnchor Anchor { get; private set; }
+        internal IOverlayLoader OverlayLoader { get; private set; }
 
-        private Camera _camera;
+        private UnityEngine.Camera _camera;
         private Canvas _canvas;
         private CanvasScaler _scaler;
         private RenderMode _origRenderMode;
         private CanvasScaler.ScaleMode _origScaleMode;
         private float _origScaleFactor;
         private float _origPlaneDistance;
-        private Camera _origWorldCamera;
+        private UnityEngine.Camera _origWorldCamera;
         private RenderTexture _rt;
 
         protected IEnumerator LoadMenu()
@@ -73,6 +74,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu.PlayMode
             Presenter = Container.Resolve<HomeMenuMoyvaUiPresenter>();
             Bridge = Presenter.Bridge;
             Assert.IsNotNull(Bridge, "MoyvaUI bridge not available — presenter did not initialize.");
+            OverlayLoader = Container.Resolve<IOverlayLoader>();
 
             var anchors = Container.ResolveAll<HomeMenuMoyvaUiAnchor>();
             foreach (var anchor in anchors)
@@ -117,7 +119,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu.PlayMode
             _origScaleFactor = _scaler != null ? _scaler.scaleFactor : 1f;
 
             var cameraGo = new GameObject("SmokeCaptureCamera");
-            _camera = cameraGo.AddComponent<Camera>();
+            _camera = cameraGo.AddComponent<UnityEngine.Camera>();
             _camera.clearFlags = CameraClearFlags.SolidColor;
             _camera.backgroundColor = new Color(0.043f, 0.047f, 0.07f);
             _camera.cullingMask = ~0;
