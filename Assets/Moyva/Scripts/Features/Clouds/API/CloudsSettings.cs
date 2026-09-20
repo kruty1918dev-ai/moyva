@@ -49,10 +49,32 @@ public sealed class CloudsSettings : MoyvaJsonConfigObject
         [Tooltip("Список 3D prefab-варіантів хмаринок із вагами вибору.")]
         public CloudPrefabVariant[] CloudPrefabs;
 
+        /// <summary>Спрайт-варіанти хмаринок для 2D-превʼю (головне меню).</summary>
+        [Header("Варіанти спрайтів")]
+        [Tooltip("Список спрайтів хмаринок із вагами вибору. Використовується спрайтовим рендером превʼю головного меню.")]
+        public CloudSpriteVariant[] CloudSprites;
+
         /// <summary>висоти дальності — Vector2.</summary>
         [Header("Висота")]
         [Tooltip("Діапазон висоти хмаринок над базовою площиною мапи у world units.")]
         public Vector2 AltitudeRange = new Vector2(7f, 14f);
+
+        /// <summary>Варіація висоти: нижній mip bias спрайтових хмаринок.</summary>
+        [Header("Варіація висоти (спрайти)")]
+        [Tooltip("Додатковий базовий mip bias для найнижчих спрайтових хмаринок. Нижчі/менші хмари виглядають сильніше деформованими.")]
+        [Range(0f, 4f)] public float LowAltitudeMipBias = 1.2f;
+
+        /// <summary>Варіація висоти: верхній mip bias спрайтових хмаринок.</summary>
+        [Tooltip("Додатковий базовий mip bias для найвищих спрайтових хмаринок.")]
+        [Range(0f, 4f)] public float HighAltitudeMipBias = 0.15f;
+
+        /// <summary>Варіація висоти: множник висоти для нижніх хмаринок.</summary>
+        [Tooltip("Множник CloudHeight для нижніх хмаринок.")]
+        [Min(0f)] public float LowAltitudeHeightMultiplier = 0.7f;
+
+        /// <summary>Варіація висоти: множник висоти для верхніх хмаринок.</summary>
+        [Tooltip("Множник CloudHeight для верхніх хмаринок.")]
+        [Min(0f)] public float HighAltitudeHeightMultiplier = 1.35f;
 
         /// <summary>швидкість дальності — Vector2.</summary>
         [Header("Рух")]
@@ -89,6 +111,10 @@ public sealed class CloudsSettings : MoyvaJsonConfigObject
 
         [Tooltip("Відстань за протилежним краєм, після якої хмаринка знищується.")]
         [Min(0f)] public float DespawnPadding = 6f;
+
+        /// <summary>Вертикальний запас навколо зони спавну для спрайтових хмаринок.</summary>
+        [Tooltip("Додатковий вертикальний запас навколо зони, у якій може пройти спрайтова хмаринка (UI-превʼю меню).")]
+        [Min(0f)] public float SpawnVerticalPadding = 1.5f;
 
         [Tooltip("Тривалість плавної появи та зникнення у секундах.")]
         [Min(0f)] public float FadeDuration = 1.2f;
@@ -143,10 +169,46 @@ public sealed class CloudsSettings : MoyvaJsonConfigObject
         [Tooltip("Множник прозорості хмаринок при максимально близькому zoom.")]
         [Range(0f, 1f)] public float CloseCameraAlphaMultiplier = 0.28f;
 
+        /// <summary>Матеріал для спрайтових хмаринок (UI-превʼю меню).</summary>
+        [Tooltip("Матеріал для SpriteRenderer спрайтових хмаринок. Якщо порожньо, використовується runtime-матеріал на Sprites/Default.")]
+        public Material SpriteMaterial;
+
         /// <summary>тіней увімкненої — bool.</summary>
         [Header("Тіні")]
         [Tooltip("Чи відкидають хмаринки реальні 3D тіні на мапу.")]
         public bool ShadowsEnabled = true;
+
+        /// <summary>Висота спрайтової хмаринки над землею для розрахунку тіні.</summary>
+        [Tooltip("Висота хмаринки над землею. Впливає на автоматичне зміщення, масштаб і прозорість тіні спрайтових хмаринок.")]
+        [Min(0f)] public float CloudHeight = 2f;
+
+        /// <summary>Базове зміщення тіні спрайтової хмаринки.</summary>
+        [Tooltip("Базове зміщення тіні відносно спрайтової хмаринки у world units.")]
+        public Vector2 ShadowOffset = new Vector2(0f, -0.45f);
+
+        /// <summary>Зміщення тіні на одиницю висоти хмаринки.</summary>
+        [Tooltip("Додаткове зміщення тіні на одну одиницю висоти хмаринки.")]
+        public Vector2 ShadowOffsetPerHeight = new Vector2(0.08f, -0.18f);
+
+        /// <summary>Колір тіні спрайтової хмаринки.</summary>
+        [Tooltip("Колір тіні спрайтової хмаринки.")]
+        public Color ShadowColor = new Color(0f, 0f, 0f, 1f);
+
+        /// <summary>Множник прозорості тіні відносно хмаринки.</summary>
+        [Tooltip("Множник прозорості тіні відносно прозорості хмаринки.")]
+        [Range(0f, 1f)] public float ShadowAlphaMultiplier = 0.35f;
+
+        /// <summary>Множник масштабу тіні відносно хмаринки.</summary>
+        [Tooltip("Множник масштабу тіні відносно хмаринки.")]
+        [Min(0.01f)] public float ShadowScaleMultiplier = 1.03f;
+
+        /// <summary>Додатковий масштаб тіні на одиницю висоти хмаринки.</summary>
+        [Tooltip("Додатковий масштаб тіні на одну одиницю висоти хмаринки.")]
+        [Min(0f)] public float ShadowScalePerHeight = 0.04f;
+
+        /// <summary>Наскільки висота послаблює прозорість тіні.</summary>
+        [Tooltip("Наскільки висота послаблює прозорість тіні. 0 = висота не впливає на прозорість.")]
+        [Min(0f)] public float ShadowAlphaHeightFade = 0.08f;
 
         /// <summary>Обчислює хмари масштаб.</summary>
         public float EvaluateCloudScale(float altitude01, float random01)
@@ -157,6 +219,21 @@ public sealed class CloudsSettings : MoyvaJsonConfigObject
             float baseScale = Mathf.Lerp(ScaleRange.x, ScaleRange.y, altitude01);
             float jitter = Mathf.Lerp(1f - ScaleJitter, 1f + ScaleJitter, random01);
             return Mathf.Max(0.01f, baseScale * jitter);
+        }
+
+        /// <summary>Обчислює mip bias спрайтової хмаринки за нормованою висотою.</summary>
+        public float EvaluateCloudMipBias(float altitude01)
+        {
+            altitude01 = Mathf.Clamp01(altitude01);
+            return Mathf.Lerp(LowAltitudeMipBias, HighAltitudeMipBias, altitude01);
+        }
+
+        /// <summary>Обчислює візуальну висоту спрайтової хмаринки за нормованою висотою.</summary>
+        public float EvaluateCloudVisualHeight(float altitude01)
+        {
+            altitude01 = Mathf.Clamp01(altitude01);
+            float heightMultiplier = Mathf.Lerp(LowAltitudeHeightMultiplier, HighAltitudeHeightMultiplier, altitude01);
+            return Mathf.Max(0f, CloudHeight * heightMultiplier);
         }
 
         private void OnValidate()
@@ -186,6 +263,25 @@ public sealed class CloudsSettings : MoyvaJsonConfigObject
             CloudTintJitter = Mathf.Clamp(CloudTintJitter, 0f, 0.3f);
             CameraFadeZoomRange = ClampRange(CameraFadeZoomRange, 0.01f);
             CloseCameraAlphaMultiplier = Mathf.Clamp01(CloseCameraAlphaMultiplier);
+            LowAltitudeMipBias = Mathf.Clamp(LowAltitudeMipBias, 0f, 4f);
+            HighAltitudeMipBias = Mathf.Clamp(HighAltitudeMipBias, 0f, 4f);
+            LowAltitudeHeightMultiplier = Mathf.Max(0f, LowAltitudeHeightMultiplier);
+            HighAltitudeHeightMultiplier = Mathf.Max(0f, HighAltitudeHeightMultiplier);
+            SpawnVerticalPadding = Mathf.Max(0f, SpawnVerticalPadding);
+            CloudHeight = Mathf.Max(0f, CloudHeight);
+            ShadowAlphaMultiplier = Mathf.Clamp01(ShadowAlphaMultiplier);
+            ShadowScaleMultiplier = Mathf.Max(0.01f, ShadowScaleMultiplier);
+            ShadowScalePerHeight = Mathf.Max(0f, ShadowScalePerHeight);
+            ShadowAlphaHeightFade = Mathf.Max(0f, ShadowAlphaHeightFade);
+
+            if (CloudSprites != null)
+            {
+                for (int i = 0; i < CloudSprites.Length; i++)
+                {
+                    if (CloudSprites[i] != null)
+                        CloudSprites[i].Chance = Mathf.Max(0f, CloudSprites[i].Chance);
+                }
+            }
 
             if (CloudPrefabs == null)
                 return;
