@@ -1,0 +1,28 @@
+{
+  "name": "Kruty1918.Moyva.Tests.InputSensor.PlayMode",
+  "rootNamespace": "Kruty1918.Moyva.Tests.InputSensor.PlayMode",
+  "references": [
+    "Zenject",
+    "Zenject-usage",
+    "Kruty1918.Moyva.Camera",
+    "Kruty1918.Moyva.InputRouting",
+    "Kruty1918.Moyva.Shared",
+    "Kruty1918.Moyva.Jsonization",
+    "UnityHTML.Runtime",
+    "ReactUnity",
+    "ReactUnity.UGUI",
+    "UnityEngine.UI",
+    "Unity.TextMeshPro",
+    "Unity.InputSystem",
+    "Unity.InputSystem.TestFramework"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "autoReferenced": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
