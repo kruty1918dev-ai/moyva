@@ -28,7 +28,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IObjectsMapService _objectsMapService;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IConstructionGateStateService _gateStateService;
-        private readonly UnitVisualMotionService _visualMotion;
+        private readonly LazyInject<UnitVisualMotionService> _visualMotion;
 
         private readonly Dictionary<string, float> _unitStamina = new();
         private readonly Dictionary<string, Vector2Int> _unitPositions = new();
@@ -77,7 +77,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             IHealthRegistry healthRegistry = null,
             [InjectOptional] IBuildingRegistry buildingRegistry = null,
             [InjectOptional] IConstructionGateStateService gateStateService = null,
-            [InjectOptional] UnitVisualMotionService visualMotion = null)
+            [InjectOptional] LazyInject<UnitVisualMotionService> visualMotion = null)
         {
             _signalBus = signalBus;
             _gridService = gridService;
@@ -193,7 +193,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 // Presentation owns the death follow-through when available;
                 // authoritative state above is already committed either way.
                 if (_visualMotion == null
-                    || !_visualMotion.TryPlayDeath(unitObject, GetUnitTypeId(signal.UnitId)))
+                    || !_visualMotion.Value.TryPlayDeath(unitObject, GetUnitTypeId(signal.UnitId)))
                 {
                     UnityEngine.Object.Destroy(unitObject);
                 }
@@ -316,7 +316,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 && unitObject != null)
             {
                 if (_visualMotion == null
-                    || !_visualMotion.TryPlayGarrisonEnter(unitObject, buildingPosition))
+                    || !_visualMotion.Value.TryPlayGarrisonEnter(unitObject, buildingPosition))
                 {
                     unitObject.SetActive(false);
                 }

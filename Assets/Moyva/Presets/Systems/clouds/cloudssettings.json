@@ -121,17 +121,13 @@
     "x": 1.0,
     "y": 2.0
   },
-  "altitudeScaleJitter": 0.12,
   "lowAltitudeMipBias": 1.2,
   "highAltitudeMipBias": 0.15,
   "lowAltitudeHeightMultiplier": 0.7,
   "highAltitudeHeightMultiplier": 1.35,
   "leftToRightChance": 0.5,
-  "spawnHorizontalPadding": 3.0,
   "spawnVerticalPadding": 1.5,
-  "despawnHorizontalPadding": 4.0,
   "fadeDuration": 10.0,
-  "mapMaskEnabled": true,
   "manualMapSize": {
     "x": 32.0,
     "y": 32.0
@@ -140,8 +136,6 @@
     "x": 15.5,
     "y": 15.5
   },
-  "maskEdgeFadeWidth": 1.5,
-  "maskEdgeFadeSteps": 5,
   "lifetimeDissolveEnabled": true,
   "lifetimeRange": {
     "x": 80.0,
@@ -161,14 +155,7 @@
     "required": false
   },
   "cameraProximityFadeEnabled": true,
-  "cameraFadeOrthographicRange": {
-    "x": 5.0,
-    "y": 14.0
-  },
   "closeCameraAlphaMultiplier": 0.28,
-  "cameraFadeSteps": 4,
-  "sortingLayerName": "Default",
-  "sortingOrder": 50,
   "shadowsEnabled": true,
   "cloudHeight": 2.0,
   "shadowOffset": {
@@ -189,7 +176,6 @@
   "shadowScaleMultiplier": 1.4,
   "shadowScalePerHeight": 0.04,
   "shadowAlphaHeightFade": 0.08,
-  "shadowSortingOrderOffset": -1,
   "migration": {
     "sourceAssetGuid": "1791697a3240b51ddadc7bae72cf33e3",
     "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Effects/CloudsSettings.asset",

@@ -27,7 +27,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<OnMapObjectSpawnedSignal>();
             Container.DeclareSignal<OnObjectsMapChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<GridTileChangedSignal>().OptionalSubscriber();
-            Container.DeclareSignal<WorldBuiltSignal>();
+            Container.DeclareSignal<WorldBuiltSignal>().OptionalSubscriber();
             Container.DeclareSignal<WorldGeneratedDataSignal>().OptionalSubscriber();
             Container.DeclareSignal<WorldSpawnPositionsSignal>().OptionalSubscriber();
 
