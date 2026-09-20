@@ -227,11 +227,11 @@ namespace Kruty1918.Moyva.Tests.HomeMenu.PlayMode
             Bridge.Cancel();
             yield return WaitRealtime(0.2f);
 
-            var overlay = View.LoadOverlay(35f, 100f, "%");
+            var overlay = OverlayLoader.LoadOverlay(35f, 100f, "%");
             overlay?.SetStatus("Joining the lobby...");
             yield return WaitRealtime(0.35f);
             yield return Capture("overlay-status");
-            View.StopOverlay(true);
+            OverlayLoader.StopOverlay(true);
             yield return WaitRealtime(0.3f);
 
             ReportLogSummary();
