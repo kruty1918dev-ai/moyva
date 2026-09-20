@@ -22,7 +22,12 @@
     "touchPinchDeadZonePixels": 2.0,
     "maxTouchDeltaPixels": 96.0,
     "useImmediateTouchGestures": true,
-    "keepPinchFocusUnderFingers": true
+    "keepPinchFocusUnderFingers": true,
+    "closeZoomMoveMultiplier": 0.7,
+    "farZoomMoveMultiplier": 1.35,
+    "touchPinchDominancePixels": 14.0,
+    "touchTwistDominanceDegrees": 7.0,
+    "touchSettleFrames": 2
   },
   "boundsOverflowTiles": {
     "x": 25.0,
