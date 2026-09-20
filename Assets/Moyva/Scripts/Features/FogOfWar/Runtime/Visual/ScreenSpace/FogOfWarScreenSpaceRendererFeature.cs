@@ -92,6 +92,16 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private FogScreenSpacePass _pass;
         private bool _loggedUnavailable;
 
+        /*
+         * CommandBuffer.ClearRenderTarget takes the depth value in the
+         * logical convention: 1.0 is the far plane on every platform and
+         * Unity maps it to the native buffer itself. Passing 0 on
+         * reversed-Z targets clears to near instead, and every fragment
+         * then fails the depth test (ZTest LEqual) leaving the surface
+         * eye-depth texture empty.
+         */
+        internal static float ResolveSurfaceDepthClearValue() => 1f;
+
         public override void Create()
         {
             DisposeMaterials();
@@ -627,9 +637,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         rendererList;
 
                     passData.DepthClearValue =
-                        SystemInfo.usesReversedZBuffer
-                            ? 0f
-                            : 1f;
+                        ResolveSurfaceDepthClearValue();
 
                     builder.UseRendererList(
                         rendererList);
