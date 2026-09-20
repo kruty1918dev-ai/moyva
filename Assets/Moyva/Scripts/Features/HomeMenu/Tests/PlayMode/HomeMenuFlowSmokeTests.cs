@@ -174,14 +174,14 @@ namespace Kruty1918.Moyva.Tests.HomeMenu.PlayMode
             AssertCurrentRoute("PlayModePanel");
 
             // Busy overlay swallows Escape entirely — navigation must not move.
-            var overlay = View.LoadOverlay(10f, 100f, "%");
+            var overlay = OverlayLoader.LoadOverlay(10f, 100f, "%");
             overlay?.SetStatus("Joining the lobby...");
             yield return WaitRealtime(0.3f);
             PressEscape();
             yield return WaitRealtime(0.4f);
             AssertCurrentRoute("PlayModePanel");
             Assert.IsTrue(View.OverlayVisible, "Overlay must stay visible after Escape (busy op is non-cancellable).");
-            View.StopOverlay(true);
+            OverlayLoader.StopOverlay(true);
             yield return WaitRealtime(0.3f);
             PressEscape();
             yield return WaitRealtime(0.5f);
