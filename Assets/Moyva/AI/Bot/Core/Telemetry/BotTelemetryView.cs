@@ -8,7 +8,9 @@ namespace Kruty1918.Moyva.AI.Bot
     {
         private Func<IBotDecisionOrchestrator> _provider;
         public IBotDecisionOrchestrator Orchestrator => _provider?.Invoke();
-        [Inject] public void Configure(IBotDecisionOrchestrator orchestrator) { _provider = () => orchestrator; }
+        // Func<> resolves lazily so a save-load can restore the bot identity
+        // before the orchestrator reads the launch difficulty.
+        [Inject] public void Configure(Func<IBotDecisionOrchestrator> orchestrator) { _provider = orchestrator; }
         public void ConfigureProvider(Func<IBotDecisionOrchestrator> provider) { _provider = provider; }
     }
 }

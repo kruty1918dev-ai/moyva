@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if ! command -v rg >/dev/null 2>&1; then
+  rg() {
+    local quiet=0
+    local args=()
+    for arg in "$@"; do
+      case "$arg" in
+        -q) quiet=1 ;;
+        -n) ;;
+        *) args+=("$arg") ;;
+      esac
+    done
+    if [[ $quiet -eq 1 ]]; then
+      grep -q -E "${args[0]}" "${args[@]:1}"
+    else
+      grep -n -E "${args[0]}" "${args[@]:1}"
+    fi
+  }
+fi
+
 if [[ $# -lt 1 ]]; then
   echo "usage: $0 <project.csproj> [dotnet-build-args...]" >&2
   exit 2

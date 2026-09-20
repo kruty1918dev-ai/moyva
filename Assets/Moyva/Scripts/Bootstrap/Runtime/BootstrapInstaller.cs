@@ -75,6 +75,8 @@ namespace Kruty1918.Moyva.Bootstrap
                 .NonLazy();
             Container.BindExecutionOrder<GameplayProgressClockConfigurator>(91);
             Container.BindInterfacesTo<BotController>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<BotOpponentSaveModule>().AsSingle();
+            Container.BindInterfacesTo<SaveModuleRegistrar<BotOpponentSaveModule>>().AsSingle().NonLazy();
             Container.Bind<Kruty1918.Moyva.AI.Bot.IBotPolicyDriverFactory>()
                 .To<Kruty1918.Moyva.AI.Bot.MoyvaMlAgentsPolicyDriverFactory>()
                 .AsSingle();

@@ -121,7 +121,8 @@ def preflight(project,preset,profile="standard",repair=False):
             if repair:validate_unity(project,"readiness")
             else:raise ControlError("FullGame readiness is not validated for current source.")
     if profile in ("standard","strict"):
-        check=subprocess.run([choose_python(project),"-m","mlagents.trainers.learn","--help"],capture_output=True,text=True,timeout=45)
+        check=subprocess.run([choose_python(project),"-m","mlagents.trainers.learn","--help"],capture_output=True,
+                             text=True,encoding="utf-8",errors="replace",timeout=45)
         if check.returncode:raise ControlError("Trainer cannot start: "+(check.stderr or check.stdout)[-1500:])
     if profile=="strict":validate_unity(project,"fullgame" if preset["stage"]==project.stages()["FullGame"] else "ai")
     return {"state":"READY","profile":profile,"checks":report["checks"]}
