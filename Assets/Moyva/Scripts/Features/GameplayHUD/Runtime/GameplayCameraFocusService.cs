@@ -1,3 +1,5 @@
+using System;
+
 using Kruty1918.Moyva.Camera.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Signals;
@@ -7,9 +9,9 @@ using Zenject;
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
     /// <summary>
-    /// Gameplay-side focus entry points. Routes focus requests through the
-    /// interruptible ICameraFocusService and tracks the last world selection
-    /// so FocusSelected (default key: F) can frame it.
+    /// Точки входу фокусування камери з боку геймплею. Проксує запити через
+    /// переривний ICameraFocusService та відстежує останнє виділення у світі,
+    /// щоб FocusSelected (клавіша F за замовчуванням) міг кадрувати його.
     /// </summary>
     internal sealed class GameplayCameraFocusService : IGameplayCameraFocusService, IInitializable, IDisposable
     {
@@ -28,6 +30,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private WorldInfoSelectionKind _selectionKind;
         private Vector2Int _selectionPosition;
 
+        /// <summary>Створює сервіс із залежностями камери, сітки та шини сигналів.</summary>
         public GameplayCameraFocusService(
             ICameraMovement camera,
             IGridProjection grid,
@@ -54,6 +57,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signals.TryUnsubscribe<LocalUnitSelectionChangedSignal>(OnUnitSelectionChanged);
         }
 
+        /// <summary>Фокусує камеру на клітинці сітки зі збереженням поточного zoom.</summary>
         public void FocusGridPosition(Vector2Int gridPosition, string targetId = null)
         {
             Vector3 worldPoint = _grid.GridToWorld(gridPosition);
