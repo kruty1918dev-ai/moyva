@@ -51,6 +51,7 @@ namespace Kruty1918.Moyva.AI.Bot
             IBotPerceptionSource perception, IBotPolicyDriver policy, BotRuntimeConfig config, BotTelemetryHub telemetry)
         {
             _turns = turns; _registry = registry; _config = config.Snapshot(); Telemetry = telemetry;
+            telemetry.ExplorationRate = _config.explorationRate;
             _builder = new BotDecisionFrameBuilder(registry, perception, turns, telemetry, _config);
             SetPolicy(policy, policy?.Mode == BotPolicyMode.Heuristic ? "Heuristic" : config.modelProfile.modelName, telemetry.FallbackReason);
         }
