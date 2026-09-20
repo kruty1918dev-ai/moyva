@@ -1,7 +1,7 @@
 using System;
 using Kruty1918.Moyva.Audio.Runtime;
 using Kruty1918.Moyva.GameAudio.API;
-using Kruty1918.Moyva.Signals.DomainEvents;
+using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
 using Zenject;
@@ -47,7 +47,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             _armed = true;
             _combat.AttackStarted += OnCombatActivity;
             _combat.AttackResolved += OnCombatActivity;
-            _signalBus?.Subscribe<GameEndedDomainEvent>(OnGameEnded);
+            _signalBus?.Subscribe<GameEndedSignal>(OnGameEnded);
         }
 
         /// <summary>Оновлює бойову музику за станом бою.</summary>
@@ -69,7 +69,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             _armed = false;
             _combat.AttackStarted -= OnCombatActivity;
             _combat.AttackResolved -= OnCombatActivity;
-            _signalBus?.TryUnsubscribe<GameEndedDomainEvent>(OnGameEnded);
+            _signalBus?.TryUnsubscribe<GameEndedSignal>(OnGameEnded);
 
             if (_music != null && _music.IsEpicActive)
                 _music.DisableEpicMusic();
@@ -87,7 +87,7 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
             _quietAt = Time.unscaledTime + Mathf.Max(1f, _config.combatMusicQuietSeconds);
         }
 
-        private void OnGameEnded(GameEndedDomainEvent evt)
+        private void OnGameEnded(GameEndedSignal evt)
         {
             if (_music.IsEpicActive)
                 _music.DisableEpicMusic();

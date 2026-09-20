@@ -4,7 +4,6 @@ using Kruty1918.Moyva.Audio.API;
 using Kruty1918.Moyva.GameAudio.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Signals;
-using Kruty1918.Moyva.Signals.DomainEvents;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
@@ -68,18 +67,18 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
 
             if (_signalBus != null)
             {
-                _signalBus.Subscribe<UnitMovedDomainEvent>(OnUnitMoved);
-                _signalBus.Subscribe<UnitCreatedDomainEvent>(OnUnitCreated);
-                _signalBus.Subscribe<UnitDestroyedDomainEvent>(OnUnitDestroyed);
-                _signalBus.Subscribe<BuildingPlacedDomainEvent>(OnBuildingPlaced);
-                _signalBus.Subscribe<BuildingDemolishedDomainEvent>(OnBuildingDemolished);
-                _signalBus.Subscribe<SettlementCreatedDomainEvent>(OnSettlementCreated);
-                _signalBus.Subscribe<SettlementDeactivatedDomainEvent>(OnSettlementDeactivated);
-                _signalBus.Subscribe<ResourceDeficitDomainEvent>(OnResourceDeficit);
-                _signalBus.Subscribe<GameStartedDomainEvent>(OnGameStarted);
-                _signalBus.Subscribe<GameEndedDomainEvent>(OnGameEnded);
-                _signalBus.Subscribe<GamePausedDomainEvent>(OnGamePaused);
-                _signalBus.Subscribe<GameModeChangedDomainEvent>(OnGameModeChanged);
+                _signalBus.Subscribe<UnitMovedSignal>(OnUnitMoved);
+                _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreated);
+                _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+                _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+                _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+                _signalBus.Subscribe<SettlementCreatedSignal>(OnSettlementCreated);
+                _signalBus.Subscribe<SettlementDeactivatedSignal>(OnSettlementDeactivated);
+                _signalBus.Subscribe<ResourceDeficitSignal>(OnResourceDeficit);
+                _signalBus.Subscribe<GameStartedSignal>(OnGameStarted);
+                _signalBus.Subscribe<GameEndedSignal>(OnGameEnded);
+                _signalBus.Subscribe<GamePausedSignal>(OnGamePaused);
+                _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
 
                 _signalBus.Subscribe<MoveUnitRequestSignal>(OnMoveUnitRequested);
                 _signalBus.Subscribe<MoveGroupRequestSignal>(OnMoveGroupRequested);
@@ -114,18 +113,18 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         {
             if (_signalBus != null)
             {
-                _signalBus.TryUnsubscribe<UnitMovedDomainEvent>(OnUnitMoved);
-                _signalBus.TryUnsubscribe<UnitCreatedDomainEvent>(OnUnitCreated);
-                _signalBus.TryUnsubscribe<UnitDestroyedDomainEvent>(OnUnitDestroyed);
-                _signalBus.TryUnsubscribe<BuildingPlacedDomainEvent>(OnBuildingPlaced);
-                _signalBus.TryUnsubscribe<BuildingDemolishedDomainEvent>(OnBuildingDemolished);
-                _signalBus.TryUnsubscribe<SettlementCreatedDomainEvent>(OnSettlementCreated);
-                _signalBus.TryUnsubscribe<SettlementDeactivatedDomainEvent>(OnSettlementDeactivated);
-                _signalBus.TryUnsubscribe<ResourceDeficitDomainEvent>(OnResourceDeficit);
-                _signalBus.TryUnsubscribe<GameStartedDomainEvent>(OnGameStarted);
-                _signalBus.TryUnsubscribe<GameEndedDomainEvent>(OnGameEnded);
-                _signalBus.TryUnsubscribe<GamePausedDomainEvent>(OnGamePaused);
-                _signalBus.TryUnsubscribe<GameModeChangedDomainEvent>(OnGameModeChanged);
+                _signalBus.TryUnsubscribe<UnitMovedSignal>(OnUnitMoved);
+                _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreated);
+                _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+                _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+                _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+                _signalBus.TryUnsubscribe<SettlementCreatedSignal>(OnSettlementCreated);
+                _signalBus.TryUnsubscribe<SettlementDeactivatedSignal>(OnSettlementDeactivated);
+                _signalBus.TryUnsubscribe<ResourceDeficitSignal>(OnResourceDeficit);
+                _signalBus.TryUnsubscribe<GameStartedSignal>(OnGameStarted);
+                _signalBus.TryUnsubscribe<GameEndedSignal>(OnGameEnded);
+                _signalBus.TryUnsubscribe<GamePausedSignal>(OnGamePaused);
+                _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
 
                 _signalBus.TryUnsubscribe<MoveUnitRequestSignal>(OnMoveUnitRequested);
                 _signalBus.TryUnsubscribe<MoveGroupRequestSignal>(OnMoveGroupRequested);
@@ -155,42 +154,42 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
                 _turns.StateChanged -= OnTurnStateChanged;
         }
 
-        private void OnUnitMoved(UnitMovedDomainEvent evt)
+        private void OnUnitMoved(UnitMovedSignal evt)
             => Play("unit-moved", ToWorld(evt.NewPosition),
                 UnitContext(_units?.GetUnitTypeId(evt.UnitId)),
                 TileContext(TileTypeAt(evt.NewPosition)));
 
-        private void OnUnitCreated(UnitCreatedDomainEvent evt)
+        private void OnUnitCreated(UnitCreatedSignal evt)
             => Play("unit-created", evt.Position);
 
-        private void OnUnitDestroyed(UnitDestroyedDomainEvent evt)
+        private void OnUnitDestroyed(UnitDestroyedSignal evt)
             => Play("unit-destroyed", UnitPositionOrNull(evt.UnitId));
 
-        private void OnBuildingPlaced(BuildingPlacedDomainEvent evt)
+        private void OnBuildingPlaced(BuildingPlacedSignal evt)
             => Play("building-placed", evt.Position);
 
-        private void OnBuildingDemolished(BuildingDemolishedDomainEvent evt)
+        private void OnBuildingDemolished(BuildingDemolishedSignal evt)
             => Play("building-demolished", evt.Position);
 
-        private void OnSettlementCreated(SettlementCreatedDomainEvent evt)
+        private void OnSettlementCreated(SettlementCreatedSignal evt)
             => Play("settlement-created", evt.TownHallPosition);
 
-        private void OnSettlementDeactivated(SettlementDeactivatedDomainEvent evt)
+        private void OnSettlementDeactivated(SettlementDeactivatedSignal evt)
             => Play("settlement-deactivated", (Vector3?)null);
 
-        private void OnResourceDeficit(ResourceDeficitDomainEvent evt)
+        private void OnResourceDeficit(ResourceDeficitSignal evt)
             => Play("resource-deficit", (Vector3?)null);
 
-        private void OnGameStarted(GameStartedDomainEvent evt)
+        private void OnGameStarted(GameStartedSignal evt)
             => Play("game-started", (Vector3?)null);
 
-        private void OnGameEnded(GameEndedDomainEvent evt)
+        private void OnGameEnded(GameEndedSignal evt)
             => Play("game-ended", (Vector3?)null);
 
-        private void OnGamePaused(GamePausedDomainEvent evt)
+        private void OnGamePaused(GamePausedSignal evt)
             => Play(evt.IsPaused ? "game-paused" : "game-resumed", (Vector3?)null);
 
-        private void OnGameModeChanged(GameModeChangedDomainEvent evt)
+        private void OnGameModeChanged(GameModeChangedSignal evt)
         {
             if (evt.NewMode == GameModeType.Construction)
                 Play("mode-construction", (Vector3?)null);
