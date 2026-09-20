@@ -64,6 +64,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             Container.BindInterfacesAndSelfTo<TilemapCameraBoundsProvider>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraMovement>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraZoom>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CameraZoomStateService>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraMapRenderMaskService>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraAutoFramingService>().AsSingle();
 
@@ -76,6 +77,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             Container.BindExecutionOrder<CameraProjectSettingsAdapter>(-100);
             Container.BindExecutionOrder<CameraAutoFramingService>(-90);
+            // Sample zoom state after CameraZoom applied the smoothed zoom value.
+            Container.BindExecutionOrder<CameraZoomStateService>(50);
         }
 
         private InputActionAsset ResolveCameraInputAsset()
