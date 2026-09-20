@@ -39,6 +39,13 @@ namespace Kruty1918.Moyva.Shared.Localization
             TMP_FontAsset fallback = EnsureFallbackFont();
             if (fallback == null || primary == fallback) return;
             primary.fallbackFontAssetTable ??= new List<TMP_FontAsset>();
+            // Drop stale runtime fallbacks left by earlier service instances:
+            // their material may have been collected while the font asset
+            // itself is still alive, and a glyph hit there throws
+            // MissingReferenceException inside TMP_MaterialManager.
+            primary.fallbackFontAssetTable.RemoveAll(a =>
+                a == null ||
+                (a.name == "LocalizationFallback (Dynamic)" && a.material == null));
             primary.fallbackFontAssetTable.Remove(fallback);
             primary.fallbackFontAssetTable.Insert(0, fallback);
         }
@@ -54,6 +61,7 @@ namespace Kruty1918.Moyva.Shared.Localization
             string charset = CharsetFor(language?.Id);
             if (charset.Length == 0) return;
             fallback.TryAddCharacters(charset);
+            ProtectSubAssets(fallback);
         }
 
         /// <summary>
@@ -62,17 +70,9 @@ namespace Kruty1918.Moyva.Shared.Localization
         /// </summary>
         private TMP_FontAsset EnsureFallbackFont()
         {
-            if (_fallback != null) return _fallback;
-            Font source = Resources.Load<Font>(FontResourcePath);
-            if (source == null)
-            {
-                Debug.LogError($"[Localization] Font '{FontResourcePath}' not found in Resources; " +
-                               "non-ASCII glyphs will be missing.");
-                return null;
-            }
-            _fallback = TMP_FontAsset.CreateFontAsset(source);
-            _fallback.name = "LocalizationFallback (Dynamic)";
-            _fallback.hideFlags = HideFlags.HideAndDontSave;
+            if (_fallback != null && _fallback.material != null) return _fallback;
+            _fallback = FindLiveGlobalFallback() ?? CreateFallbackFont();
+            if (_fallback == null) return null;
             if (TMP_Settings.instance != null && TMP_Settings.fallbackFontAssets != null)
             {
                 // First position here too: glyph searches must reach the
@@ -83,6 +83,67 @@ namespace Kruty1918.Moyva.Shared.Localization
             if (TMP_Settings.defaultFontAsset != null)
                 RegisterPrimaryFont(TMP_Settings.defaultFontAsset);
             return _fallback;
+        }
+
+        /// <summary>
+        /// Повторно використовує fallback-асет, який залишився у глобальному
+        /// списку TMP від попереднього екземпляра сервісу (перехід сцен).
+        /// </summary>
+        private static TMP_FontAsset FindLiveGlobalFallback()
+        {
+            var globalList = TMP_Settings.instance != null ? TMP_Settings.fallbackFontAssets : null;
+            if (globalList == null) return null;
+            TMP_FontAsset live = null;
+            for (int i = globalList.Count - 1; i >= 0; i--)
+            {
+                TMP_FontAsset asset = globalList[i];
+                if (asset == null || asset.name != "LocalizationFallback (Dynamic)")
+                    continue;
+                // A leftover asset with a dead material must not stay in the
+                // global list: glyph lookups hit it first and throw.
+                if (asset.material == null)
+                    globalList.RemoveAt(i);
+                else if (live == null)
+                    live = asset;
+            }
+            return live;
+        }
+
+        private static TMP_FontAsset CreateFallbackFont()
+        {
+            Font source = Resources.Load<Font>(FontResourcePath);
+            if (source == null)
+            {
+                Debug.LogError($"[Localization] Font '{FontResourcePath}' not found in Resources; " +
+                               "non-ASCII glyphs will be missing.");
+                return null;
+            }
+            TMP_FontAsset fallback = TMP_FontAsset.CreateFontAsset(source);
+            fallback.name = "LocalizationFallback (Dynamic)";
+            fallback.hideFlags = HideFlags.HideAndDontSave;
+            ProtectSubAssets(fallback);
+            return fallback;
+        }
+
+        /// <summary>
+        /// The asset survives scene unloads via HideAndDontSave, but its
+        /// sub-objects (material, atlas textures) keep default flags and would
+        /// be collected by Resources.UnloadUnusedAssets between scenes —
+        /// leaving a dead m_Material that throws MissingReferenceException
+        /// in TMP_MaterialManager.GetFallbackMaterial. Atlas growth during
+        /// warmup creates additional textures, so this must run again after
+        /// TryAddCharacters.
+        /// </summary>
+        private static void ProtectSubAssets(TMP_FontAsset fallback)
+        {
+            if (fallback.material != null)
+                fallback.material.hideFlags = HideFlags.HideAndDontSave;
+            if (fallback.atlasTextures == null) return;
+            foreach (Texture2D atlas in fallback.atlasTextures)
+            {
+                if (atlas != null)
+                    atlas.hideFlags = HideFlags.HideAndDontSave;
+            }
         }
 
         /// <summary>
