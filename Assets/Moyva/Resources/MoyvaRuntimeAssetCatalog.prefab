@@ -1345,9 +1345,3 @@ MonoBehaviour:
     Asset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
   - Key: asset.tile-preset.tilewater.dfeb07ab
     Asset: {fileID: 11400000, guid: dfeb07ab92df40308a24960fec915de2, type: 2}
-  - Key: asset.game-object.castle-01.6655d3eb
-    Asset: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}
-  - Key: asset.game-object.house-01.a160b9cd
-    Asset: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
-  - Key: asset.game-object.windmill-01.87bc8f20
-    Asset: {fileID: 2585797056767779472, guid: 87bc8f20c999a2d7c930c5143cc8c369, type: 3}
