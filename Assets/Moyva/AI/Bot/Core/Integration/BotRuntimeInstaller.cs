@@ -25,6 +25,13 @@ namespace Kruty1918.Moyva.AI.Bot
             container.Bind<BotRuntimeConfig>().FromInstance(config.Snapshot()).AsSingle();
             container.Bind<BotTelemetryHub>().FromInstance(new BotTelemetryHub(config.telemetryCapacity, config.telemetryEnabled)).AsSingle();
             container.Bind<IBotDecisionOrchestrator>().FromMethod(context => Create(context.Container)).AsSingle();
+            container.Bind<Func<IBotDecisionOrchestrator>>()
+                .FromMethod(context =>
+                {
+                    DiContainer botContainer = context.Container;
+                    return () => botContainer.Resolve<IBotDecisionOrchestrator>();
+                })
+                .AsSingle();
             container.Bind<BotTelemetryView>().FromNewComponentOnNewGameObject().AsSingle().NonLazy();
             container.Bind<BotDebugOverlay>().FromNewComponentOnNewGameObject().AsSingle().NonLazy();
         }
