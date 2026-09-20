@@ -19,8 +19,8 @@
   },
   "presentation": {
     "prefab": {
-      "$asset": "asset.game-object.building-market-blue.cde5c5af",
-      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_market_blue.prefab",
+      "$asset": "asset.game-object.building-townhall-blue.9887d51b",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_townhall_blue.prefab",
       "required": true
     },
     "icon": {
@@ -38,6 +38,28 @@
         "$asset": "asset.game-object.building-scaffolding.07c8416d",
         "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_scaffolding.prefab",
         "required": true
+      },
+      "prefabVariants": {
+        "blue": {
+          "$asset": "asset.game-object.building-townhall-blue.9887d51b",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_townhall_blue.prefab",
+          "required": true
+        },
+        "green": {
+          "$asset": "asset.game-object.building-townhall-green.86cb223e",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_townhall_green.prefab",
+          "required": true
+        },
+        "red": {
+          "$asset": "asset.game-object.building-townhall-red.7545b8b1",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_townhall_red.prefab",
+          "required": true
+        },
+        "yellow": {
+          "$asset": "asset.game-object.building-townhall-yellow.a20defce",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_townhall_yellow.prefab",
+          "required": true
+        }
       }
     },
     "uiTint": {

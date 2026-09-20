@@ -67,7 +67,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 bool existed = _previewVisuals.TryGet(signal.Position, out GameObject existing);
                 Quaternion previous = existed && existing != null ? existing.transform.rotation : Quaternion.identity;
-                GameObject preview = _previewVisuals.Show(signal, def);
+                GameObject preview = _previewVisuals.Show(
+                    signal,
+                    def,
+                    _constructionService.Value.GetActiveOwner());
                 ApplyRotation(
                     preview,
                     signal.RotationQuarterTurns,

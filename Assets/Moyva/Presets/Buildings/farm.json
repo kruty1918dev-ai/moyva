@@ -18,8 +18,8 @@
   },
   "presentation": {
     "prefab": {
-      "$asset": "asset.game-object.windmill-01.87bc8f20",
-      "editorPath": "Assets/Moyva/Prefabs/Buildings/windmill-01.prefab",
+      "$asset": "asset.game-object.building-grain.c7beac19",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/neutral/building_grain.prefab",
       "required": true
     },
     "icon": {

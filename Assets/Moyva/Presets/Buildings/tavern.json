@@ -2,34 +2,35 @@
   "$schema": "../Schemas/building.schema.json",
   "schema": "moyva.building",
   "version": 1,
-  "id": "smelter",
+  "id": "tavern",
   "model": "building-definition",
   "placementModuleMigrationVersion": 1,
   "identity": {
-    "id": "smelter",
-    "displayName": "Smelter",
-    "category": "Industrial",
-    "role": "Production",
-    "description": "Turns iron ore into iron ingots for advanced buildings and military equipment.",
+    "id": "tavern",
+    "displayName": "Tavern",
+    "category": "Civilian",
+    "role": "Support",
+    "description": "A lively tavern that earns a steady trickle of gold coins.",
     "tags": [
-      "industry",
-      "iron"
+      "civilian",
+      "economy",
+      "gold"
     ]
   },
   "presentation": {
     "prefab": {
-      "$asset": "asset.game-object.building-blacksmith-blue.c0db6feb",
-      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_blacksmith_blue.prefab",
+      "$asset": "asset.game-object.building-tavern-blue.019c06a9",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_tavern_blue.prefab",
       "required": true
     },
     "icon": {
-      "$asset": "asset.sprite.weapon-workshop.e57bf7bc",
-      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/weapon-workshop.png",
+      "$asset": "asset.sprite.house-01.f9cc986b",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/house-01.png",
       "required": true
     },
     "runtimePreview": {
-      "$asset": "asset.sprite.weapon-workshop.e57bf7bc",
-      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/weapon-workshop.png",
+      "$asset": "asset.sprite.house-01.f9cc986b",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/house-01.png",
       "required": true
     },
     "variants": {
@@ -40,23 +41,23 @@
       },
       "prefabVariants": {
         "blue": {
-          "$asset": "asset.game-object.building-blacksmith-blue.c0db6feb",
-          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_blacksmith_blue.prefab",
+          "$asset": "asset.game-object.building-tavern-blue.019c06a9",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_tavern_blue.prefab",
           "required": true
         },
         "green": {
-          "$asset": "asset.game-object.building-blacksmith-green.1e823b3b",
-          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_blacksmith_green.prefab",
+          "$asset": "asset.game-object.building-tavern-green.4ede3d7a",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/green/building_tavern_green.prefab",
           "required": true
         },
         "red": {
-          "$asset": "asset.game-object.building-blacksmith-red.ba4b5622",
-          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_blacksmith_red.prefab",
+          "$asset": "asset.game-object.building-tavern-red.6cdf1d57",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/red/building_tavern_red.prefab",
           "required": true
         },
         "yellow": {
-          "$asset": "asset.game-object.building-blacksmith-yellow.02b52d0b",
-          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_blacksmith_yellow.prefab",
+          "$asset": "asset.game-object.building-tavern-yellow.78ba9287",
+          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/yellow/building_tavern_yellow.prefab",
           "required": true
         }
       }
@@ -101,7 +102,12 @@
     "blocksMovement": true,
     "blocksConstruction": true,
     "requiresFlatGround": true,
-    "occupiedCells": [],
+    "occupiedCells": [
+      {
+        "x": 0,
+        "y": 0
+      }
+    ],
     "entranceCells": [],
     "roadConnectionCells": []
   },
@@ -124,54 +130,53 @@
     "cost": [
       {
         "resourceId": "walnut-wood-materials-resources",
-        "amount": 30
+        "amount": 50
       },
       {
         "resourceId": "stone-materials-resources",
-        "amount": 30
+        "amount": 20
       }
     ],
-    "buildTurns": 4,
+    "buildTurns": 3,
     "requiresBuilder": true,
     "workRequired": 0
   },
   "runtimeStats": {
-    "maxHp": 100,
+    "maxHp": 80,
     "armor": 0,
     "flags": "BlocksPath, Selectable, Damageable",
     "runtimeTags": []
   },
   "modules": [
     {
-      "$type": "workforce",
-      "workersRequired": 2,
-      "priority": 180,
-      "workerTypeId": "",
+      "$type": "workerless",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "housing",
+      "capacity": 2,
+      "isGarrisonCapable": false,
       "isEnabled": true,
       "singletonScope": "PerBuilding"
     },
     {
       "$type": "production",
-      "resourceId": "iron-ingot-materials-resources",
-      "workersRequired": 2,
-      "priority": 180,
+      "resourceId": "coin-gold-materials-resources",
+      "workersRequired": 0,
+      "priority": 300,
       "recipes": [
         {
-          "recipeId": "smelter:smelt-iron",
-          "inputs": [
+          "recipeId": "tavern:earn-gold",
+          "inputs": [],
+          "outputs": [
             {
-              "resourceId": "iron-ore-materials-resources",
+              "resourceId": "coin-gold-materials-resources",
               "amount": 2
             }
           ],
-          "outputs": [
-            {
-              "resourceId": "iron-ingot-materials-resources",
-              "amount": 1
-            }
-          ],
           "turnsPerCycle": 1,
-          "requiresWorkers": true,
+          "requiresWorkers": false,
           "requiresStorageSpace": false
         }
       ],
@@ -191,6 +196,6 @@
   "migration": {
     "sourceAssetGuid": "",
     "sourceAssetPath": "",
-    "sourceHash": "runtime-json-added-smelter-2026-09-06"
+    "sourceHash": "agent-added-tavern-2026-02"
   }
 }
