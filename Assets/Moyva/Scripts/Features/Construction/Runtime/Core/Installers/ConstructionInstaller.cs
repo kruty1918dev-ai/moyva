@@ -188,6 +188,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .To<ConstructionInteractiveUiHitTester>()
                 .AsSingle();
 
+            Container.BindInterfacesTo<InitialCastleTransitionPolicy>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<ConstructionInputService>()
                 .AsSingle()
                 .NonLazy();
