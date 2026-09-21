@@ -110,6 +110,38 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 : T(reason);
         }
 
+        private bool TryResolveRecipeAvailability(
+            string ownerId, string unitTypeId, int populationCost, out string reason)
+        {
+            var query = _recruitment as IUnitRecruitmentQuery;
+            if (query != null)
+            {
+                if (query.TryGetEnqueueShortages(
+                        ownerId, _selectionPosition, unitTypeId,
+                        out IReadOnlyList<UnitRecruitmentShortage> shortages,
+                        out string eligibilityReason))
+                {
+                    reason = null;
+                    return true;
+                }
+
+                if (shortages != null && shortages.Count > 0)
+                {
+                    reason = FormatRecruitmentShortages(shortages);
+                    return false;
+                }
+
+                reason = LocalizeRecruitmentRejection(eligibilityReason, null);
+                return false;
+            }
+
+            int available =
+                _population?.GetRecruitmentPopulation(ownerId, _selectionPosition).Available ?? 0;
+            bool enough = available >= populationCost;
+            reason = enough ? null : TF("Requires {0} available residents.", populationCost);
+            return enough;
+        }
+
         private bool TryCollectRecruitmentShortages(
             string ownerId, string unitTypeId,
             out IReadOnlyList<UnitRecruitmentShortage> shortages)
@@ -817,6 +849,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     {
                         string unitTypeId = recipe.UnitTypeId.Trim();
                         UnitClassConfig config = _unitConfigs?.GetConfig(unitTypeId);
+                        bool affordable = TryResolveRecipeAvailability(
+                            ownerId, unitTypeId, Math.Max(1, recipe.PopulationCost),
+                            out string recipeReason);
                         return new GameplayRecruitmentRecipeSnapshot(
                             unitTypeId,
                             string.IsNullOrWhiteSpace(config?.DisplayName) ? Display(unitTypeId) : config.DisplayName,
@@ -827,9 +862,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                             config?.HitPoints ?? 0,
                             config?.MovementPointsPerTurn ?? 0f,
                             config?.ResolveCustomSprite(),
-                            canRecruit && (_population?.GetRecruitmentPopulation(ownerId, _selectionPosition).Available ?? 0) >= Math.Max(1, recipe.PopulationCost),
-                            !canRecruit ? unavailableReason
-                                : TF("Requires {0} available residents.", Math.Max(1, recipe.PopulationCost)),
+                            canRecruit && affordable,
+                            !canRecruit ? unavailableReason : recipeReason,
                             recipe.TrainingSeconds > 0f ? recipe.TrainingSeconds
                                 : recipe.TrainingTurns * (_progressClock?.SandboxRoundSeconds ?? 10f),
                             Math.Max(1, recipe.PopulationCost));
