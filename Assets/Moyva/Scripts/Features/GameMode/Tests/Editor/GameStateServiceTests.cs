@@ -29,6 +29,10 @@ namespace Kruty1918.Moyva.Tests.GameMode
         [SetUp]
         public void SetUp()
         {
+            _startedCount = 0;
+            _pausedCount = 0;
+            _resumedCount = 0;
+            _endedWinner = "<unset>";
             _bus = CreateSignalBus();
             _bus.Subscribe<GameStartedSignal>(() => _startedCount++);
             _bus.Subscribe<GamePausedSignal>(s =>
