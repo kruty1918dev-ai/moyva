@@ -465,8 +465,8 @@ namespace Kruty1918.Moyva.Tests.Units
         {
             public FakeSaveContext(MemoryStream stream)
             {
-                Writer = new BinaryWriter(stream);
-                Reader = new BinaryReader(stream);
+                Writer = stream.CanWrite ? new BinaryWriter(stream) : null;
+                Reader = stream.CanRead ? new BinaryReader(stream) : null;
             }
 
             public BinaryWriter Writer { get; }

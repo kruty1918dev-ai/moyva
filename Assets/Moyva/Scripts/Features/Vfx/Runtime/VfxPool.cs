@@ -114,7 +114,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             for (int i = 0; i < _active.Count; i++)
             {
                 if (_active[i].Effect != null)
-                    UnityEngine.Object.Destroy(_active[i].Effect.gameObject);
+                    DestroyUnityObject(_active[i].Effect.gameObject);
             }
             _active.Clear();
 
@@ -123,13 +123,21 @@ namespace Kruty1918.Moyva.Vfx.Runtime
                 foreach (VfxEffect effect in pair.Value)
                 {
                     if (effect != null)
-                        UnityEngine.Object.Destroy(effect.gameObject);
+                        DestroyUnityObject(effect.gameObject);
                 }
             }
             _free.Clear();
+        }
 
-            if (_root != null)
-                UnityEngine.Object.Destroy(_root.gameObject);
+        private static void DestroyUnityObject(UnityEngine.Object unityObject)
+        {
+            if (unityObject == null)
+                return;
+
+            if (Application.isPlaying)
+                UnityEngine.Object.Destroy(unityObject);
+            else
+                UnityEngine.Object.DestroyImmediate(unityObject);
         }
 
         private VfxEffect Acquire(GameObject prefab)
@@ -159,7 +167,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             var effect = instance.GetComponent<VfxEffect>();
             if (effect == null)
             {
-                UnityEngine.Object.Destroy(instance);
+                DestroyUnityObject(instance);
                 _dropped++;
                 return null;
             }
@@ -186,7 +194,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
 
             if (key == null)
             {
-                UnityEngine.Object.Destroy(effect.gameObject);
+                DestroyUnityObject(effect.gameObject);
                 return;
             }
 

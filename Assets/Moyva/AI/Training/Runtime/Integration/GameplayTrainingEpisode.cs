@@ -37,6 +37,19 @@ namespace Kruty1918.Moyva.AI.Training
         private readonly GameObject _root;
         private readonly List<IDisposable> _disposables = new List<IDisposable>();
         private SignalBus _signals;
+        private IGridService _grid;
+        private IGridProjection _projection;
+        private IBuildingRegistry _buildings;
+        private IConstructionSaveSnapshotSource _placements;
+        private IUnitMovementService _movement;
+        private IUnitMovementQuery _movementQuery;
+        private IUnitService _units;
+        private IUnitOwnershipQuery _unitOwners;
+        private IUnitTraversalPolicy _traversal;
+        private IHealthRegistry _health;
+        private IEconomyRuntimeApi _economy;
+        private IFogOwnerStateReader _fog;
+        private IConstructionPlacedBuildingDestruction _destruction;
         private BotDecisionOrchestrator _opponent;
         private OwnedGameplayMap _world;
         private readonly HashSet<string> _legitimatelyRecruitedUnitIds = new HashSet<string>(StringComparer.Ordinal);
@@ -52,21 +65,21 @@ namespace Kruty1918.Moyva.AI.Training
         public IBotPerceptionSource Perception { get; private set; }
         public TrainingGameplayEventBridge Outcomes { get; private set; }
         internal MenuWorldPreviewData GeneratedWorld => _world?.Data;
-        public IGridService Grid => _container.Resolve<IGridService>();
-        public IGridProjection Projection => _container.Resolve<IGridProjection>();
+        public IGridService Grid => _grid;
+        public IGridProjection Projection => _projection;
         public GameObject Root => _root;
-        internal IBuildingRegistry Buildings => _container.TryResolve<IBuildingRegistry>();
-        internal IConstructionSaveSnapshotSource Placements => _container.Resolve<IConstructionSaveSnapshotSource>();
-        internal IUnitMovementService Movement => _container.Resolve<IUnitMovementService>();
-        internal IUnitMovementQuery MovementQuery => _container.Resolve<IUnitMovementQuery>();
-        internal IUnitService Units => _container.Resolve<IUnitService>();
-        internal IUnitOwnershipQuery UnitOwners => _container.Resolve<IUnitOwnershipQuery>();
-        internal IUnitTraversalPolicy Traversal => _container.Resolve<IUnitTraversalPolicy>();
-        internal IHealthRegistry Health => _container.Resolve<IHealthRegistry>();
-        internal IEconomyRuntimeApi Economy => _container.Resolve<IEconomyRuntimeApi>();
-        internal IFogOwnerStateReader Fog => _container.TryResolve<IFogOwnerStateReader>();
+        internal IBuildingRegistry Buildings => _buildings;
+        internal IConstructionSaveSnapshotSource Placements => _placements;
+        internal IUnitMovementService Movement => _movement;
+        internal IUnitMovementQuery MovementQuery => _movementQuery;
+        internal IUnitService Units => _units;
+        internal IUnitOwnershipQuery UnitOwners => _unitOwners;
+        internal IUnitTraversalPolicy Traversal => _traversal;
+        internal IHealthRegistry Health => _health;
+        internal IEconomyRuntimeApi Economy => _economy;
+        internal IFogOwnerStateReader Fog => _fog;
         internal SignalBus Signals => _signals;
-        internal IConstructionPlacedBuildingDestruction Destruction => _container.Resolve<IConstructionPlacedBuildingDestruction>();
+        internal IConstructionPlacedBuildingDestruction Destruction => _destruction;
 
         public GameplayTrainingEpisode(TrainingConfig config, TrainingResetContext context)
         {
@@ -101,23 +114,28 @@ namespace Kruty1918.Moyva.AI.Training
                     economy.RulesConfig.Settlement.MinTownHallDistance);
                 EconomyInstalled = true;
 
-                var signals = _container.Resolve<SignalBus>();
-                var grid = _container.Resolve<IGridService>();
+                var signals = _signals = _container.Resolve<SignalBus>();
+                var grid = _grid = _container.Resolve<IGridService>();
+                _projection = _container.Resolve<IGridProjection>();
+                _buildings = _container.TryResolve<IBuildingRegistry>();
+                _placements = _container.Resolve<IConstructionSaveSnapshotSource>();
+                _traversal = _container.Resolve<IUnitTraversalPolicy>();
+                _health = _container.Resolve<IHealthRegistry>();
+                _destruction = _container.Resolve<IConstructionPlacedBuildingDestruction>();
                 for (int y = 0; y < world.Height; y++)
                     for (int x = 0; x < world.Width; x++) grid.SetTileData(new Vector2Int(x, y), world.BiomeMap[x, y]);
                 // Force the complete graph before recording disposal, including turn participants.
                 Turns = _container.Resolve<ITurnService>();
-                var unitService = _container.Resolve<IUnitService>();
-                var owners = _container.Resolve<IUnitOwnershipQuery>();
-                var fog = _container.Resolve<IFogOwnerStateReader>();
-                var movement = _container.Resolve<IUnitMovementService>();
-                var movementQuery = _container.Resolve<IUnitMovementQuery>();
+                var unitService = _units = _container.Resolve<IUnitService>();
+                var owners = _unitOwners = _container.Resolve<IUnitOwnershipQuery>();
+                var fog = _fog = _container.TryResolve<IFogOwnerStateReader>();
+                var movement = _movement = _container.Resolve<IUnitMovementService>();
+                var movementQuery = _movementQuery = _container.Resolve<IUnitMovementQuery>();
                 _container.ResolveAll<ITurnParticipant>();
                 _container.ResolveAll<ITurnBlocker>();
                 var initializers = _container.ResolveAll<IInitializable>();
                 _disposables.AddRange(_container.ResolveAll<IDisposable>());
                 foreach (var initializer in initializers) initializer.Initialize();
-                _signals = signals;
                 _signals.Subscribe<UnitCreatedSignal>(OwnUnitObject);
                 _signals.Subscribe<UnitRecruitmentDeployedSignal>(TrackRecruitmentDeployment);
                 _container.Resolve<IGameStateService>().StartGame();
@@ -164,21 +182,21 @@ namespace Kruty1918.Moyva.AI.Training
                 Gateway = new MoyvaBotTurnAdapter(Turns, _container.Resolve<ITurnAuthorityPolicy>());
                 _container.Bind<IBotOpeningPlacementAnchorSource>().FromInstance(this).AsSingle();
                 Capabilities = BotRuntimeInstaller.CreateGameplayRegistry(_container, Gateway);
-                var economyApi = _container.TryResolve<IEconomyRuntimeApi>();
+                var economyApi = _economy = _container.TryResolve<IEconomyRuntimeApi>();
                 Perception = new MoyvaBotPerceptionSource(Turns, unitService, owners, fog,
                     profiles: _container.TryResolve<IUnitGameplayProfileService>(),
                     terrain: _container.TryResolve<IGeneratedTerrainLevelQuery>(),
                     economy: _container.TryResolve<IEconomyInfoMediator>(),
                     intel: _container.TryResolve<IFogIntelReader>(),
-                    grid: _container.TryResolve<IGridService>(),
-                    placements: _container.TryResolve<IConstructionSaveSnapshotSource>(),
-                    buildingDefs: _container.TryResolve<IBuildingRegistry>(),
+                    grid: _grid,
+                    placements: _placements,
+                    buildingDefs: _buildings,
                     economyApi: economyApi,
                     recruitment: _container.TryResolve<IUnitRecruitmentQuery>(),
                     productionPerTurn: p => economyApi?.GetOwnerProductionSnapshot(p)?.ProductionPerTurn);
                 _setupPhase = false;
                 Outcomes = new TrainingGameplayEventBridge(signals, _container.Resolve<ITurnHistoryQuery>(), TrainingGameplayScope.LearnerId,
-                    _container.Resolve<IUnitCombatService>(), owners, context.EpisodeId, _container.TryResolve<IBuildingRegistry>());
+                    _container.Resolve<IUnitCombatService>(), owners, context.EpisodeId, _buildings);
                 _opponent = new BotDecisionOrchestrator(Gateway, Capabilities, Perception,
                     TrainingOpponentPolicy.Create(context.Scenario?.startingConditions?.opponent?.archetype,
                         config.opponentModelPath),
@@ -246,7 +264,7 @@ namespace Kruty1918.Moyva.AI.Training
                 if (operationalCastles > 0)
                     operationalByType[_castleBuildingTypeId] = operationalCastles;
 
-                var buildingRegistry = _container.TryResolve<IBuildingRegistry>();
+                var buildingRegistry = _buildings;
                 var recruitmentQuery = _container.TryResolve<IUnitRecruitmentQuery>();
                 if (buildingRegistry != null && recruitmentQuery != null)
                 {
@@ -266,7 +284,7 @@ namespace Kruty1918.Moyva.AI.Training
             int ownedUnits = 0;
             int deployedUnits = 0;
             int visibleEnemies = 0;
-            var fog = _container.TryResolve<IFogOwnerStateReader>();
+            var fog = _fog;
 
             foreach (string unitId in Units.GetAllUnitIds())
             {

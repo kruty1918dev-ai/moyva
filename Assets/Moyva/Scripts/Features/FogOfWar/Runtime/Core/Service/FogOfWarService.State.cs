@@ -6,13 +6,37 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     internal sealed partial class FogOfWarService
     {
         public FogStateType GetFogState(Vector2Int position)
-            => _initialized ? _stateGrid.GetState(position) : FogStateType.Unexplored;
+        {
+            if (!_initialized)
+                return FogStateType.Unexplored;
+
+            FogStateType local = _stateGrid.GetState(position);
+            if (_localPerspectiveOwnerId != null || local == FogStateType.Visible)
+                return local;
+
+            // Unresolved local perspective: every owner contributes
+            // (dev/offline fallback, mirrors IsLocalPerspectiveOwner).
+            bool explored = local == FogStateType.Explored;
+            foreach (var entry in _ownerStates)
+            {
+                switch (GetFogState(entry.Key, position))
+                {
+                    case FogStateType.Visible:
+                        return FogStateType.Visible;
+                    case FogStateType.Explored:
+                        explored = true;
+                        break;
+                }
+            }
+
+            return explored ? FogStateType.Explored : FogStateType.Unexplored;
+        }
 
         public bool IsVisible(Vector2Int position)
-            => _initialized && _stateGrid.IsVisible(position);
+            => GetFogState(position) == FogStateType.Visible;
 
         public bool IsExplored(Vector2Int position)
-            => _initialized && _stateGrid.IsExplored(position);
+            => _initialized && GetFogState(position) != FogStateType.Unexplored;
 
         public bool[,] GetExploredSnapshot()
         {
