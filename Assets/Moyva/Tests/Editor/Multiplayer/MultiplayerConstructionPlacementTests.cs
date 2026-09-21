@@ -158,6 +158,23 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
         }
 
         [Test]
+        public void ClientConfirm_WithOnlyPendingDemolitions_KeepsSession()
+        {
+            var service = CreateService(
+                LocalGameplayRole.Client,
+                "p1",
+                isLocalHost: false);
+            _construction.PendingDemolitions = 2;
+
+            Assert.IsTrue(service.TryHandleConfirmRequest());
+
+            Assert.AreEqual(0, _commands.PeerSends.Count);
+            Assert.IsFalse(
+                _construction.Cancelled,
+                "Pending demolitions must not be silently discarded on the client.");
+        }
+
+        [Test]
         public void HostRequest_FromUnauthorizedSender_ReceivesRejected()
         {
             var service = CreateService(
@@ -311,12 +328,13 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             public readonly Dictionary<Vector2Int, string> Pending = new();
             public string ActiveOwner = "p1";
             public bool DirectPlaceResult;
+            public int PendingDemolitions;
             public int ConfirmCalls;
             public bool Cancelled;
 
             public BuildingPlacementState State => BuildingPlacementState.Idle;
             public bool IsDemolishMode => false;
-            public int PendingDemolitionCount => 0;
+            public int PendingDemolitionCount => PendingDemolitions;
 
             public void SelectBuilding(string buildingId) { }
             public string GetSelectedBuildingId() => null;

@@ -44,6 +44,15 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var pending = _constructionService.GetPendingPlacements();
             if (pending == null || pending.Count == 0)
             {
+                if (_constructionService.PendingDemolitionCount > 0)
+                {
+                    // Демоліційні запити клієнт→хост не реалізовані; не
+                    // скидаємо чергу мовчки — гравець може скасувати вручну.
+                    LogConstructionAuthorityWarning(
+                        "Confirm request carries only pending demolitions; client demolition requests are not supported — keeping the local session.");
+                    return true;
+                }
+
                 LogConstructionAuthorityWarning(
                     "Confirm request had no pending construction placements; cancelling local preview session.");
                 _constructionService.Cancel();
