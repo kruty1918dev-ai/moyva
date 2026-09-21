@@ -55,6 +55,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (_session.InvalidReasons.TryGetValue(tile, out string reason)
                     && !string.IsNullOrWhiteSpace(reason))
                 {
+                    NotifyWarning(T(reason));
                 }
 
                 return;
@@ -79,6 +80,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Vector2Int target = _session.SelectedTile.Value;
             if (!TryRevalidateTarget(target, out string reason))
             {
+                NotifyWarning(T(reason
+                    ?? "Selected tile is no longer a deployment candidate."));
                 RefreshDeploymentTiles();
                 return;
             }
@@ -105,6 +108,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     {
                         Debug.LogWarning(
                             $"{LogTag} Deploy request could not be sent: {remoteReason}");
+                        NotifyWarning(string.IsNullOrEmpty(remoteReason)
+                            ? T("Placement request could not be sent to the host.")
+                            : remoteReason);
                         RefreshDeploymentTiles();
                     }
                     return;
@@ -120,6 +126,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                 if (!deployed)
                 {
+                    NotifyWarning(string.IsNullOrEmpty(reason)
+                        ? T("The unit could not be deployed on the selected tile.")
+                        : reason);
                     RefreshDeploymentTiles();
                     return;
                 }

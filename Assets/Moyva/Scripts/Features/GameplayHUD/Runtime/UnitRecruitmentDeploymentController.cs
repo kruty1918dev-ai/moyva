@@ -5,8 +5,10 @@ using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.InputRouting.API;
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Notifications.API;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
+using Kruty1918.Moyva.Shared.Localization;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.UIActions.API;
@@ -63,6 +65,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IGameplayInputPolicy _inputPolicy;
         private readonly IUiContextStack _uiContexts;
         private readonly IGameModeService _gameModeService;
+        private readonly IGameplayNotificationService _notifications;
+        private readonly ILocalizationService _localization;
         private readonly List<GridActionOverlayCell> _overlayCells = new();
         private readonly MaterialPropertyBlock _previewPropertyBlock = new();
 
@@ -95,7 +99,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IGameModeService gameModeService = null,
             [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] IUnitRecruitmentRemoteCommandRequester remoteRecruitment = null,
-            [InjectOptional] ILocalGameplayRoleResolver roleResolver = null)
+            [InjectOptional] ILocalGameplayRoleResolver roleResolver = null,
+            [InjectOptional] IGameplayNotificationService notifications = null,
+            [InjectOptional] ILocalizationService localization = null)
         {
             _signalBus = signalBus;
             _turns = turns;
@@ -113,6 +119,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _inputPolicy = inputPolicy;
             _uiContexts = uiContexts;
             _gameModeService = gameModeService;
+            _notifications = notifications;
+            _localization = localization;
         }
 
         public void Initialize()
@@ -158,13 +166,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
 
             if (_progressClock?.IsRealtime != true
-                && !_turns.CanOwnerAct(_session.OwnerId, out _))
+                && !_turns.CanOwnerAct(_session.OwnerId, out string turnLostReason))
             {
+                NotifyInfo(string.IsNullOrEmpty(turnLostReason)
+                    ? T("Deployment cancelled.")
+                    : turnLostReason);
                 ExecuteActionOrFallback(UiActionIds.Deployment.Cancel, UiActionSource.Programmatic);
                 return;
             }
 
-            HandleKeyboard();
             HandleMouse();
             FaceSpritePreviewToCamera();
         }

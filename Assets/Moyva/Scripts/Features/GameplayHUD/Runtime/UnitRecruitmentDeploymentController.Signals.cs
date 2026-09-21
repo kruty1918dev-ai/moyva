@@ -29,8 +29,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
 
             if (_progressClock?.IsRealtime != true
-                && !_turns.CanOwnerAct(_session.OwnerId, out _))
+                && !_turns.CanOwnerAct(_session.OwnerId, out string reason))
+            {
+                NotifyInfo(string.IsNullOrEmpty(reason)
+                    ? T("Deployment cancelled.")
+                    : reason);
                 CancelSession();
+            }
         }
 
         private void OnRecruitmentQueueChanged(
@@ -62,7 +67,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private void OnGameModeChanged(GameModeChangedSignal signal)
         {
             if (_session != null && signal.NewMode != GameModeType.Normal)
+            {
+                NotifyInfo(T("Deployment cancelled."));
                 CancelSession();
+            }
         }
 
         private static bool TryResolveRendererBounds(
