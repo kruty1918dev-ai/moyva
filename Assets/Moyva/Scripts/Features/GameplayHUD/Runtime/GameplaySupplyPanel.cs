@@ -86,6 +86,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IUnitClassConfig _unitConfigs;
         private readonly IBuildingRegistry _buildings;
         private readonly IConstructionSelectionAvailabilityQuery _availability;
+        private readonly IEconomyInfoMediator _economy;
         private string _sourceSettlementId;
         private string _sourceWarehouseKey;
         private string _wagonId;
@@ -97,7 +98,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IUnitRecruitmentQuery recruitment = null,
             [InjectOptional] IUnitClassConfig unitConfigs = null,
             [InjectOptional] IBuildingRegistry buildings = null,
-            [InjectOptional] IConstructionSelectionAvailabilityQuery availability = null)
+            [InjectOptional] IConstructionSelectionAvailabilityQuery availability = null,
+            [InjectOptional] IEconomyInfoMediator economy = null)
         {
             _construction = construction;
             _supply = supply;
@@ -108,6 +110,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _unitConfigs = unitConfigs;
             _buildings = buildings;
             _availability = availability;
+            _economy = economy;
         }
 
         private string LocalOwner => string.IsNullOrWhiteSpace(_turns.LocalOwnerId)
@@ -241,7 +244,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
             }
 
-            snapshot.Hints = BuildHints(ownerId, snapshot, evaluation.UnreachableSources);
+            snapshot.Hints = BuildHints(ownerId, snapshot,
+                evaluation.SettlementId, evaluation.UnreachableSources);
             _lastSnapshot = snapshot;
             return snapshot;
         }
@@ -250,7 +254,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         /// blocked: wagon recruitment vs depot construction vs unreachable
         /// remote stock vs local production.</summary>
         private GameplaySupplyHintSnapshot[] BuildHints(string ownerId,
-            GameplaySupplySnapshot snapshot, int unreachableSources)
+            GameplaySupplySnapshot snapshot, string settlementId,
+            int unreachableSources)
         {
             var hints = new List<GameplaySupplyHintSnapshot>();
             if (!snapshot.Resolved) return hints.ToArray();
@@ -275,22 +280,45 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (unreachableSources > 0)
                     hints.Add(new GameplaySupplyHintSnapshot
                     { Text = _state.T("Remote stockpiles exist, but no route reaches them — clear a path for the wagons.") });
+                var producers = new ProducerFeasibilityResolver(
+                    _buildings, _availability, _construction, _economy);
                 foreach (var line in snapshot.Resources)
                 {
                     if (line.Deficit <= 0.0001f) continue;
-                    string producerName = FindAvailableProducerName(ownerId, line.ResourceId);
-                    hints.Add(producerName != null
-                        ? new GameplaySupplyHintSnapshot
-                        {
-                            Text = _state.TF("No settlement stocks {0} — produce it locally.",
-                                line.ResourceId),
-                            ProducerResourceId = line.ResourceId,
-                        }
-                        : new GameplaySupplyHintSnapshot
-                        { Text = _state.TF("No known building produces {0} yet.", line.ResourceId) });
+                    hints.Add(ProducerHint(producers.Suggest(
+                        ownerId, settlementId, line.ResourceId), line.ResourceId));
                 }
             }
             return hints.ToArray();
+        }
+
+        private GameplaySupplyHintSnapshot ProducerHint(
+            ProducerSuggestion suggestion, string resourceId)
+        {
+            switch (suggestion.Kind)
+            {
+                case ProducerSuggestionKind.Direct:
+                    return new GameplaySupplyHintSnapshot
+                    {
+                        Text = _state.TF("No settlement stocks {0} — produce it locally.",
+                            resourceId),
+                        ProducerResourceId = resourceId,
+                    };
+                case ProducerSuggestionKind.ViaPrerequisite:
+                    return new GameplaySupplyHintSnapshot
+                    {
+                        Text = _state.TF(
+                            "No settlement stocks {0} — its producers need {1}; produce {1} first.",
+                            resourceId, suggestion.ProducedResourceId),
+                        ProducerResourceId = suggestion.ProducedResourceId,
+                    };
+                case ProducerSuggestionKind.Impossible:
+                    return new GameplaySupplyHintSnapshot
+                    { Text = _state.TF("No achievable way to produce {0} — every producer needs resources you cannot obtain yet.", resourceId) };
+                default:
+                    return new GameplaySupplyHintSnapshot
+                    { Text = _state.TF("No known building produces {0} yet.", resourceId) };
+            }
         }
 
         private static bool HasAnyDeficit(GameplaySupplySnapshot snapshot)
@@ -342,25 +370,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     definition.Id);
             }
             return _state.T("No wagon depot yet — build one to field supply wagons.");
-        }
-
-        private string FindAvailableProducerName(string ownerId, string resourceId)
-        {
-            if (_buildings == null || string.IsNullOrWhiteSpace(resourceId)) return null;
-            foreach (var definition in _buildings.GetAll())
-            {
-                var produced = GameplayHudReadModel.ResolveProducedResourceIds(definition);
-                bool matches = false;
-                foreach (var id in produced)
-                    if (string.Equals(id, resourceId, StringComparison.Ordinal))
-                    { matches = true; break; }
-                if (!matches) continue;
-                var availability = _availability?.EvaluateSelectionAvailability(
-                    definition.Id, ownerId);
-                if (availability == null || availability.Value.CanSelect)
-                    return definition.Id;
-            }
-            return null;
         }
 
         public UiActionResult Execute(in UiActionRequest request)

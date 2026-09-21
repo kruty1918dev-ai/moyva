@@ -176,6 +176,29 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return enough;
         }
 
+        /// <summary>Bounded prerequisite search per missing resource: the
+        /// resource whose producers are achievable now (a prerequisite when the
+        /// direct producer is itself blocked, null when no chain resolves —
+        /// including cyclic producer graphs with no initial stock).</summary>
+        private string[] ResolveProducerActionIds(
+            string ownerId, string settlementId, string[] missingIds)
+        {
+            if (missingIds == null || missingIds.Length == 0 || _buildings == null)
+                return null;
+            var resolver = new ProducerFeasibilityResolver(
+                _buildings, _availability, _construction, _population);
+            var actionIds = new string[missingIds.Length];
+            for (int i = 0; i < missingIds.Length; i++)
+            {
+                ProducerSuggestion suggestion =
+                    resolver.Suggest(ownerId, settlementId, missingIds[i]);
+                if (suggestion.Kind == ProducerSuggestionKind.Direct
+                    || suggestion.Kind == ProducerSuggestionKind.ViaPrerequisite)
+                    actionIds[i] = suggestion.ProducedResourceId;
+            }
+            return actionIds;
+        }
+
         private bool TryCollectRecruitmentShortages(
             string ownerId, string unitTypeId,
             out IReadOnlyList<UnitRecruitmentShortage> shortages)
@@ -912,6 +935,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (module.Recipes != null)
             {
+                string fundingSettlementId = null;
+                if (_population != null
+                    && _population.TryGetSettlementContext(
+                        _selectionPosition, out var settlementContext))
+                    fundingSettlementId = settlementContext.SettlementId;
                 snapshot.RecruitmentRecipes = module.Recipes
                     .Where(recipe => recipe != null && !string.IsNullOrWhiteSpace(recipe.UnitTypeId))
                     .Select(recipe =>
@@ -936,7 +964,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                             recipe.TrainingSeconds > 0f ? recipe.TrainingSeconds
                                 : recipe.TrainingTurns * (_progressClock?.SandboxRoundSeconds ?? 10f),
                             Math.Max(1, recipe.PopulationCost),
-                            missingIds);
+                            missingIds,
+                            ResolveProducerActionIds(ownerId, fundingSettlementId, missingIds));
                     })
                     .ToArray();
             }

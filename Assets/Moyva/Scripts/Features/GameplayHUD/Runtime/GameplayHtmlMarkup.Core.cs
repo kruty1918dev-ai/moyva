@@ -334,9 +334,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     for (int missing = 0; missing < recipe.MissingResourceIds.Length; missing++)
                     {
                         string resourceId = recipe.MissingResourceIds[missing];
+                        string actionId =
+                            recipe.ProducerActionResourceIds != null
+                            && missing < recipe.ProducerActionResourceIds.Length
+                                ? recipe.ProducerActionResourceIds[missing]
+                                : resourceId;
+                        if (recipe.ProducerActionResourceIds != null
+                            && string.IsNullOrWhiteSpace(actionId))
+                        {
+                            html.Append("<text className=\"muted\">")
+                                .Append(E(state.TF("No achievable producer for {0}",
+                                    DisplayResource(resourceId))))
+                                .Append("</text>");
+                            continue;
+                        }
                         html.Append(Button(
-                            state.TF("Find {0} producer", DisplayResource(resourceId)),
-                            $"Globals.gameplay.ShowProducersFor('{J(resourceId)}')",
+                            state.TF("Find {0} producer", DisplayResource(actionId)),
+                            $"Globals.gameplay.ShowProducersFor('{J(actionId)}')",
                             "button small",
                             state.T("Show buildings that produce this resource"),
                             false));

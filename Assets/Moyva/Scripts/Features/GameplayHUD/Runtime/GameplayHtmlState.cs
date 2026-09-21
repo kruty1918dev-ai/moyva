@@ -487,7 +487,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string unavailableReason,
             float trainingSeconds = 0f,
             int populationCost = 1,
-            string[] missingResourceIds = null)
+            string[] missingResourceIds = null,
+            string[] producerActionResourceIds = null)
         {
             PopulationCost = populationCost;
             TrainingSeconds = trainingSeconds;
@@ -503,9 +504,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             CanRecruit = canRecruit;
             UnavailableReason = unavailableReason ?? string.Empty;
             MissingResourceIds = missingResourceIds ?? Array.Empty<string>();
+            ProducerActionResourceIds = producerActionResourceIds;
         }
 
         public string[] MissingResourceIds { get; }
+        /// <summary>Parallel to <see cref="MissingResourceIds"/>: the resource
+        /// whose producers the player can actually build next for that
+        /// shortage (a prerequisite resource when the direct producer is
+        /// itself blocked). Null entries mean no achievable producer; a null
+        /// array means feasibility was not evaluated.</summary>
+        public string[] ProducerActionResourceIds { get; }
         public string UnitTypeId { get; }
         public string Name { get; }
         public string Role { get; }
