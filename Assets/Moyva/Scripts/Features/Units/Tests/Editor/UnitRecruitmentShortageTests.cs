@@ -105,6 +105,36 @@ namespace Kruty1918.Moyva.Tests.Units
         }
 
         [Test]
+        public void Shortages_PopulationCarriesGrowthBlocker()
+        {
+            // P058: a housing-full settlement must not promise that waiting helps.
+            _economy.Population = new RecruitmentPopulationSnapshot(
+                total: 12, available: 0, training: 0, military: 0, constructionSpeed: 1f,
+                housingCapacity: 12, foodAvailable: 30f,
+                growthBlocker: PopulationGrowthBlocker.Housing);
+            _economy.SettlementAvailable["wood"] = 50f;
+            _economy.SettlementAvailable["food"] = 50f;
+
+            _service.TryGetEnqueueShortages(
+                Owner, Position, UnitType,
+                out IReadOnlyList<UnitRecruitmentShortage> shortages,
+                out _);
+
+            var population = FindPopulation(shortages);
+            Assert.AreEqual(PopulationGrowthBlocker.Housing, population.PopulationBlocker,
+                "The housing blocker must reach the UI so it can suggest a house.");
+        }
+
+        private static UnitRecruitmentShortage FindPopulation(
+            IReadOnlyList<UnitRecruitmentShortage> shortages)
+        {
+            foreach (var shortage in shortages)
+                if (shortage.IsPopulation) return shortage;
+            Assert.Fail("Expected a population shortage entry.");
+            return default;
+        }
+
+        [Test]
         public void CanEnqueue_Affordable_ReturnsTrueWithEmptyShortages()
         {
             _economy.SettlementAvailable["wood"] = 50f;

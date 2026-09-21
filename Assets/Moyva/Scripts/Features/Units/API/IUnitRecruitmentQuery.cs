@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Units.API
@@ -29,17 +30,22 @@ namespace Kruty1918.Moyva.Units.API
             bool isPopulation,
             float required,
             float available,
-            float reserved)
+            float reserved,
+            PopulationGrowthBlocker populationBlocker = PopulationGrowthBlocker.None)
         {
             ResourceId = resourceId;
             IsPopulation = isPopulation;
             Required = required;
             Available = available;
             Reserved = reserved;
+            PopulationBlocker = populationBlocker;
         }
 
         public string ResourceId { get; }
         public bool IsPopulation { get; }
+        /// <summary>Why free residents cannot grow fast enough to cover this
+        /// shortage; meaningful only when <see cref="IsPopulation"/>.</summary>
+        public PopulationGrowthBlocker PopulationBlocker { get; }
         public float Required { get; }
         public float Available { get; }
         public float Reserved { get; }

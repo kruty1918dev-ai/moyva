@@ -17,18 +17,32 @@ namespace Kruty1918.Moyva.Signals
         public string OwnerId { get; }
     }
 
+    /// <summary>Why a settlement cannot supply more free residents:
+    /// Housing = beds are full and rules gate growth on housing;
+    /// Food = residents starve, shrinking recruitable population.</summary>
+    public enum PopulationGrowthBlocker { None = 0, Housing = 1, Food = 2 }
+
     public readonly struct RecruitmentPopulationSnapshot
     {
-        public RecruitmentPopulationSnapshot(int total, int available, int training, int military, float constructionSpeed)
+        public RecruitmentPopulationSnapshot(int total, int available, int training, int military,
+            float constructionSpeed, int housingCapacity = -1, float foodAvailable = -1f,
+            PopulationGrowthBlocker growthBlocker = PopulationGrowthBlocker.None)
         {
             Total = total; Available = available; Training = training; Military = military;
             ConstructionSpeed = constructionSpeed;
+            HousingCapacity = housingCapacity; FoodAvailable = foodAvailable;
+            GrowthBlocker = growthBlocker;
         }
         public int Total { get; }
         public int Available { get; }
         public int Training { get; }
         public int Military { get; }
         public float ConstructionSpeed { get; }
+        /// <summary>Total beds across housing buildings; -1 when unknown.</summary>
+        public int HousingCapacity { get; }
+        /// <summary>Settlement food stock after reservations; negative when unknown.</summary>
+        public float FoodAvailable { get; }
+        public PopulationGrowthBlocker GrowthBlocker { get; }
     }
 
     public struct CaravanDeliveryCompletedSignal

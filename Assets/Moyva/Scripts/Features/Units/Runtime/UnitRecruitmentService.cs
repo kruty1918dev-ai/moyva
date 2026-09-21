@@ -258,7 +258,8 @@ namespace Kruty1918.Moyva.Units.Runtime
                     isPopulation: true,
                     required: requiredPopulation,
                     available: _economy == null ? 0 : population.Available,
-                    reserved: 0));
+                    reserved: 0,
+                    populationBlocker: population.GrowthBlocker));
             }
 
             var costs = BuildCostMap(recipe.Costs);

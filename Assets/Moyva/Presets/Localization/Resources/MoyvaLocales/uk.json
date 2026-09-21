@@ -828,6 +828,8 @@
     "No wagon depot yet — build one to field supply wagons.": "Депо для возів ще немає — збудуйте його, щоб мати вантажні вози.",
     "PRODUCE LOCALLY": "ВИРОБЛЯТИ ЛОКАЛЬНО",
     "Show buildings producing this resource": "Показати будівлі, що виробляють цей ресурс",
-    "NEXT STEP": "НАСТУПНИЙ КРОК"
+    "NEXT STEP": "НАСТУПНИЙ КРОК",
+    "; housing is full — build {0}": "; житло заповнене — збудуйте {0}",
+    "; food shortage starves residents": "; нестача їжі вбиває жителів"
   }
 }

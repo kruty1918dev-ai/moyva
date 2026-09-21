@@ -200,10 +200,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 UnitRecruitmentShortage shortage = shortages[i];
                 if (shortage.IsPopulation)
                 {
-                    parts.Add(TF(
+                    string populationSegment = TF(
                         "Population: need {0}, available {1}",
                         shortage.Required.ToString("0.#"),
-                        shortage.Available.ToString("0.#")));
+                        shortage.Available.ToString("0.#"));
+                    if (shortage.PopulationBlocker == PopulationGrowthBlocker.Housing)
+                        populationSegment += TF("; housing is full — build {0}", HousingBuildingHint());
+                    else if (shortage.PopulationBlocker == PopulationGrowthBlocker.Food)
+                        populationSegment += T("; food shortage starves residents");
+                    parts.Add(populationSegment);
                     continue;
                 }
 
@@ -220,6 +225,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             return TF("Missing: {0}", string.Join("; ", parts));
+        }
+
+        /// <summary>Names the first selectable building with a housing module,
+        /// so the housing hint suggests only a building that actually helps.</summary>
+        private string HousingBuildingHint()
+        {
+            if (_buildings == null) return "housing";
+            string ownerId = null;
+            foreach (var definition in _buildings.GetAll())
+            {
+                if (!BuildingDefinitionCapabilities.TryGetEnabledModule(
+                        definition, out HousingBuildingModule _))
+                    continue;
+                var availability = _availability?.EvaluateSelectionAvailability(
+                    definition.Id, ownerId);
+                if (availability.HasValue && !availability.Value.CanSelect)
+                    continue;
+                return definition.Id;
+            }
+            return "housing";
         }
 
         public GameplayHudReadModel(
