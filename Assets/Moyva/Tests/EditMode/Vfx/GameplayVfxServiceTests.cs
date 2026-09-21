@@ -152,10 +152,15 @@ namespace Kruty1918.Moyva.Vfx.Tests
             _container = new DiContainer();
             Zenject.SignalBusInstaller.Install(_container);
             _container.DeclareSignal<BuildingPlacedSignal>().OptionalSubscriber();
+            _container.DeclareSignal<BuildingOperationalSignal>().OptionalSubscriber();
+            _container.DeclareSignal<BuildingDemolishedSignal>().OptionalSubscriber();
             _container.DeclareSignal<UnitMovedSignal>().OptionalSubscriber();
             _container.DeclareSignal<UnitDestroyedSignal>().OptionalSubscriber();
             _container.DeclareSignal<UnitCreatedSignal>().OptionalSubscriber();
             _container.DeclareSignal<UnitRecruitmentDeployedSignal>().OptionalSubscriber();
+            _container.DeclareSignal<SettlementCreatedSignal>().OptionalSubscriber();
+            _container.DeclareSignal<SettlementCapturedSignal>().OptionalSubscriber();
+            _container.DeclareSignal<WorldFocusPingRequestedSignal>().OptionalSubscriber();
             _bus = _container.Resolve<SignalBus>();
 
             _spawner = new StubSpawner();
