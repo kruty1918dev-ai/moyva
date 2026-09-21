@@ -10,6 +10,7 @@ using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Notifications.API;
+using Kruty1918.Moyva.Shared.Localization;
 using UnityEngine;
 using Zenject;
 using System;
@@ -45,6 +46,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly IConstructionSessionCommands _constructionService;
         private readonly IConstructionLifecycle _constructionLifecycle;
         private readonly IGameplayNotificationService _notifications;
+        private readonly ILocalizationService _loca;
         private readonly SignalBus _signalBus;
         private readonly ITurnService _turns;
         private GameModeType _currentMode = GameModeType.Normal;
@@ -79,7 +81,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             [InjectOptional] ITurnService turns,
             [InjectOptional] IConstructionLifecycle constructionLifecycle,
             [InjectOptional] IGameplayNotificationService notifications,
-            SignalBus signalBus)
+            SignalBus signalBus,
+            [InjectOptional] ILocalizationService localization = null)
         {
             _gridService = gridService;
             _objectsMapService = objectsMapService;
@@ -100,7 +103,11 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _constructionLifecycle = constructionLifecycle;
             _notifications = notifications;
             _signalBus = signalBus;
+            _loca = localization;
         }
+
+        private string T(string key)
+            => _loca?.T(key) ?? key;
 
         public void Initialize()
         {
@@ -133,8 +140,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
             _notifications?.Show(
                 string.IsNullOrWhiteSpace(signal.Reason)
-                    ? "Рух неможливий"
-                    : signal.Reason,
+                    ? T("Movement is not possible.")
+                    : T(signal.Reason),
                 GameplayNotificationKind.Warning,
                 dedupKey: "unit-move-rejected");
         }
@@ -143,8 +150,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         {
             _notifications?.Show(
                 string.IsNullOrWhiteSpace(signal.Reason)
-                    ? "Команду групи відхилено"
-                    : signal.Reason,
+                    ? T("Unit group command rejected.")
+                    : T(signal.Reason),
                 GameplayNotificationKind.Warning,
                 dedupKey: "unit-group-rejected");
         }
@@ -153,8 +160,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         {
             _notifications?.Show(
                 string.IsNullOrWhiteSpace(signal.Reason)
-                    ? "Команду найму відхилено"
-                    : signal.Reason,
+                    ? T("Unit recruitment command rejected.")
+                    : T(signal.Reason),
                 GameplayNotificationKind.Warning,
                 dedupKey: "unit-recruitment-rejected");
         }

@@ -80,6 +80,36 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         /// <summary>Локалізує й форматує {0}..{n}.</summary>
         private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
 
+        private const string InsufficientResourcePrefix =
+            "Insufficient recruitment resource:";
+
+        private static string TryGetInsufficientResource(string reason)
+        {
+            if (string.IsNullOrEmpty(reason)
+                || !reason.StartsWith(InsufficientResourcePrefix, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            string resourceId = reason.Substring(InsufficientResourcePrefix.Length).Trim();
+            return resourceId.Length == 0 ? null : resourceId;
+        }
+
+        private string LocalizeRecruitmentRejection(string reason, string resourceId)
+        {
+            if (resourceId != null)
+            {
+                string display = _population?.GetResourceDisplayName(resourceId);
+                return TF(
+                    "Insufficient recruitment resource: {0}",
+                    string.IsNullOrWhiteSpace(display) ? resourceId : display);
+            }
+
+            return string.IsNullOrWhiteSpace(reason)
+                ? T("Recruitment could not be started.")
+                : T(reason);
+        }
+
         public GameplayHudReadModel(
             ITurnService turns,
             IEconomyRuntimeApi economy,
@@ -609,15 +639,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return UiActionResult.Rejected(
                     UiActionReason.ActionUnavailable,
                     string.IsNullOrWhiteSpace(remoteReason)
-                        ? "Recruitment request could not be sent to host."
-                        : remoteReason);
+                        ? T("Recruitment request could not be sent to host.")
+                        : T(remoteReason));
             }
 
             if (!_recruitment.TryEnqueue(ownerId, _selectionPosition, unitTypeId.Trim(), out string reason))
             {
+                string resourceId = TryGetInsufficientResource(reason);
                 return UiActionResult.Rejected(
-                    UiActionReason.ActionUnavailable,
-                    string.IsNullOrWhiteSpace(reason) ? T("Recruitment could not be started.") : T(reason));
+                    resourceId != null
+                        ? UiActionReason.InsufficientResources
+                        : UiActionReason.ActionUnavailable,
+                    LocalizeRecruitmentRejection(reason, resourceId));
             }
 
             return UiActionResult.Performed();
@@ -642,13 +675,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return UiActionResult.Rejected(
                     UiActionReason.ActionUnavailable,
                     string.IsNullOrWhiteSpace(remoteReason)
-                        ? "Cancel request could not be sent to host."
-                        : remoteReason);
+                        ? T("Cancel request could not be sent to host.")
+                        : T(remoteReason));
             }
 
             return _recruitment.TryCancel(ResolveOwnerId(), _selectionPosition, id, out string reason)
                 ? UiActionResult.Performed()
-                : UiActionResult.Rejected(UiActionReason.ActionUnavailable, reason);
+                : UiActionResult.Rejected(
+                    UiActionReason.ActionUnavailable,
+                    LocalizeRecruitmentRejection(reason, TryGetInsufficientResource(reason)));
         }
 
         public bool TryResolveNotificationBuilding(Vector2Int position, out string buildingId)
