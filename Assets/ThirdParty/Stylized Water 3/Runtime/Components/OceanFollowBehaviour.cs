@@ -1,4 +1,4 @@
-﻿// Stylized Water 3 by Staggart Creations (http://staggart.xyz)
+// Stylized Water 3 by Staggart Creations (http://staggart.xyz)
 // COPYRIGHT PROTECTED UNDER THE UNITY ASSET STORE EULA (https://unity.com/legal/as-terms)
 //    • Copying or referencing source code for the production of new asset store, or public, content is strictly prohibited!
 //    • Uploading this file to a public repository will subject it to an automated DMCA takedown request.
@@ -116,7 +116,7 @@ namespace StylizedWater3
                     //Progressively lower the height of each LOD a small amount, this helps ensure transparency sorting will be correct.
                     targetPosition.y = height - (heightOffset * i);
                     
-                    #if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    #if UNITY_EDITOR || UNITY_ENABLE_CHECKS
                     if (lods[i].gameObjects[j] == false) throw new Exception("[Ocean] A child GameObject was deleted, these should not be touched!");
                     #endif
                     

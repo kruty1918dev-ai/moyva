@@ -220,7 +220,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
 		private static Light FindDirectionalLight()
 		{
-			var lights = Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+			var lights = Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude);
 			for (int i = 0; i < lights.Length; i++)
 			{
 				if (lights[i] != null && lights[i].type == LightType.Directional)

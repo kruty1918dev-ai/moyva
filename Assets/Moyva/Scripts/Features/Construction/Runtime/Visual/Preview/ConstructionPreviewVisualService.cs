@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
@@ -25,8 +25,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private static readonly int UseCellMaskPropertyId = Shader.PropertyToID("_UseCellMask");
 
         private readonly Dictionary<Vector2Int, GameObject> _previewByPosition = new();
-        private readonly Dictionary<int, Stack<GameObject>> _previewPoolByPrefabId = new();
-        private readonly Dictionary<GameObject, int> _prefabIdByPreviewInstance = new();
+        private readonly Dictionary<EntityId, Stack<GameObject>> _previewPoolByPrefabId = new();
+        private readonly Dictionary<GameObject, EntityId> _prefabIdByPreviewInstance = new();
         private readonly List<GameObject> _gridHoverHighlights = new();
         private readonly List<MeshRenderer> _gridHoverRenderers = new();
         private readonly ConstructionVisualRootService _roots;
@@ -432,7 +432,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (prefab != null)
             {
                 _prefabIdByPreviewInstance[instance] =
-                    prefab.GetInstanceID();
+                    prefab.GetEntityId();
             }
 
             ConstructionBuildingPointerTarget.AttachOrUpdate(
@@ -451,7 +451,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (prefab == null)
                 return null;
 
-            int prefabId = prefab.GetInstanceID();
+            EntityId prefabId = prefab.GetEntityId();
             if (!_previewPoolByPrefabId.TryGetValue(
                     prefabId,
                     out Stack<GameObject> pool))
@@ -477,7 +477,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (!_prefabIdByPreviewInstance.TryGetValue(
                     instance,
-                    out int prefabId))
+                    out EntityId prefabId))
             {
                 Object.Destroy(instance);
                 return;
@@ -512,7 +512,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void DestroyPreviewPool()
         {
-            foreach (KeyValuePair<int, Stack<GameObject>> pair
+            foreach (KeyValuePair<EntityId, Stack<GameObject>> pair
                      in _previewPoolByPrefabId)
             {
                 Stack<GameObject> pool = pair.Value;

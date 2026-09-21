@@ -20,7 +20,7 @@ namespace Kruty1918.Moyva.Construction.API
         [AssetsOnly]
         [LabelText("Варіанти за кольором власника")]
         [PropertyTooltip("Що робить: Мапить ключ палітри власника (blue/green/red/yellow) на варіант префаба будівлі.\nВплив у грі: Поставлена будівля використовує модель у кольорі фракції власника; без запису для ключа використовується базовий префаб.")]
-        public Dictionary<string, GameObject> PrefabVariants = new Dictionary<string, GameObject>();
+        [SerializeField] public Dictionary<string, GameObject> PrefabVariants = new Dictionary<string, GameObject>();
     }
 
     /// <summary>Runtime-конфігурація презентації будівлі з варіантами префабів.</summary>

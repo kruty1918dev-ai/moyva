@@ -44,8 +44,8 @@ namespace GiantGrey.TileWorldCreator
         public bool foldoutState;
         public bool useMultiLayers = false;
 
-        public Dictionary<int, Dictionary<Vector2, bool>> worldGrid = new Dictionary<int, Dictionary<Vector2, bool>>();
-        public HashSet<ClusterIdentifier> availableClusters;
+        [System.NonSerialized] public Dictionary<int, Dictionary<Vector2, bool>> worldGrid = new Dictionary<int, Dictionary<Vector2, bool>>();
+        [System.NonSerialized] public HashSet<ClusterIdentifier> availableClusters;
 
         public List<BuildLayerMask> masks = new List<BuildLayerMask>();
 

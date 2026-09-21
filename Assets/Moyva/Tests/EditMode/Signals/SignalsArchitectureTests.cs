@@ -46,7 +46,7 @@ namespace Kruty1918.Moyva.Signals.Tests
 
         private static IEnumerable<Type> MoyvaTypes()
         {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
             {
                 if (!assembly.GetName().Name.StartsWith("Kruty1918.Moyva", StringComparison.Ordinal))
                     continue;

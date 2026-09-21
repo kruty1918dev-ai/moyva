@@ -32,7 +32,7 @@ namespace Kruty1918.Moyva.Marketing.Runtime
             if (_captured) return;
             _captured = true;
             _originals.Clear();
-            foreach (var l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
+            foreach (var l in Object.FindObjectsByType<Light>())
             {
                 if (l.type != LightType.Directional) continue;
                 _originals.Add(new SunState

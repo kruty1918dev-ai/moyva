@@ -42,7 +42,7 @@ namespace GiantGrey.TileWorldCreator.UI
 
             
 
-            foreach (LayerIdentifier _layerIdentifier in GameObject.FindObjectsByType<LayerIdentifier>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID))
+            foreach (LayerIdentifier _layerIdentifier in GameObject.FindObjectsByType<LayerIdentifier>(FindObjectsInactive.Include))
             {
                 if (!_layerIdentifier.isActiveAndEnabled) continue;
             
@@ -209,7 +209,7 @@ namespace GiantGrey.TileWorldCreator.UI
                     {
                         _layer.tmpLayerOffset = 0f;
                         isDragging = false;
-                        foreach (LayerIdentifier _li in GameObject.FindObjectsByType<LayerIdentifier>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID))
+                        foreach (LayerIdentifier _li in GameObject.FindObjectsByType<LayerIdentifier>(FindObjectsInactive.Include))
                         {
                             var _layerA = _manager.GetBuildLayerByGuid(_li.guid) as TilesBuildLayer;
                             if (_layerA != null)

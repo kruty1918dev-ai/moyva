@@ -89,7 +89,7 @@ namespace GiantGrey.TileWorldCreator
 
             
             var managers = GameObject.FindObjectsByType<TileWorldCreatorManager>(
-                FindObjectsInactive.Include, FindObjectsSortMode.InstanceID);
+                FindObjectsInactive.Include);
 
             if (managers != null)
             {
@@ -157,11 +157,11 @@ namespace GiantGrey.TileWorldCreator
                 if (stream.GetEventType(i) == ObjectChangeKind.ChangeAssetObjectProperties)
                 {
                     stream.GetChangeAssetObjectPropertiesEvent(i, out var e);
-                    var changedObj = EditorUtility.InstanceIDToObject(e.instanceId);
+                    var changedObj = EditorUtility.EntityIdToObject(e.entityId);
                     if (changedObj is BlueprintLayer)
                     {
                         var managers = GameObject.FindObjectsByType<TileWorldCreatorManager>(
-                            FindObjectsInactive.Include, FindObjectsSortMode.InstanceID);
+                            FindObjectsInactive.Include);
                         if (selectedManager < managers.Length)
                         {
                             TileWorldCreatorManager manager = managers[selectedManager];
@@ -247,7 +247,7 @@ namespace GiantGrey.TileWorldCreator
             // Refresh managers
             managers.Clear();
             managers.AddRange(GameObject.FindObjectsByType<TileWorldCreatorManager>(
-                FindObjectsInactive.Include, FindObjectsSortMode.InstanceID));
+                FindObjectsInactive.Include));
 
             if (managers.Count == 0)
             {
@@ -354,7 +354,7 @@ namespace GiantGrey.TileWorldCreator
                     {
                         managers.Clear();
                         managers.AddRange(GameObject.FindObjectsByType<TileWorldCreatorManager>(
-                            FindObjectsInactive.Include, FindObjectsSortMode.InstanceID));
+                            FindObjectsInactive.Include));
                         return;
                     }
                     else
@@ -527,10 +527,9 @@ namespace GiantGrey.TileWorldCreator
                 return false;
 
             Type installerType = null;
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            for (int i = 0; i < assemblies.Length; i++)
+            foreach (var assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
             {
-                installerType = assemblies[i].GetType(MoyvaInstallerTypeName, false);
+                installerType = assembly.GetType(MoyvaInstallerTypeName, false);
                 if (installerType != null)
                     break;
             }
@@ -544,7 +543,7 @@ namespace GiantGrey.TileWorldCreator
                 return false;
 
             var installers = UnityEngine.Object.FindObjectsByType(
-                installerType, FindObjectsInactive.Include, FindObjectsSortMode.None);
+                installerType, FindObjectsInactive.Include);
             for (int i = 0; i < installers.Length; i++)
             {
                 if (ReferenceEquals(managerField.GetValue(installers[i]), manager))

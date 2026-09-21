@@ -106,7 +106,7 @@ namespace Kruty1918.Moyva.AI.Training
                 PropertyInfo modelProperty = typeof(BehaviorParameters).GetProperty("Model", BindingFlags.Instance | BindingFlags.Public);
                 if (modelProperty == null)
                     throw new MissingMemberException("BehaviorParameters.Model is unavailable.");
-                var behaviors = UnityEngine.Object.FindObjectsByType<BehaviorParameters>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                var behaviors = UnityEngine.Object.FindObjectsByType<BehaviorParameters>(FindObjectsInactive.Include);
                 int bound = 0;
                 foreach (var behavior in behaviors)
                 {

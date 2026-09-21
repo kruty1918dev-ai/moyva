@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu.PlayMode
             // Zenject SceneContext installs during scene Awake; resolve on the next frame.
             yield return null;
 
-            var sceneContext = UnityEngine.Object.FindFirstObjectByType<SceneContext>();
+            var sceneContext = UnityEngine.Object.FindAnyObjectByType<SceneContext>();
             Assert.IsNotNull(sceneContext, "SceneContext not found in HomeMenu scene.");
             Container = sceneContext.Container;
             Assert.IsNotNull(Container, "Zenject container is not initialized.");

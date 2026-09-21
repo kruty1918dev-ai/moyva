@@ -102,7 +102,7 @@ namespace Kruty1918.Moyva.Jsonization
             var result = new Dictionary<string, Type>(
                 StringComparer.OrdinalIgnoreCase);
 
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
             {
                 Type[] types;
                 try { types = assembly.GetTypes(); }
@@ -144,7 +144,7 @@ namespace Kruty1918.Moyva.Jsonization
             string wantedModel = model ?? string.Empty;
             string wantedSchema = schema ?? string.Empty;
 
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
             {
                 Type[] types;
                 try { types = assembly.GetTypes(); }

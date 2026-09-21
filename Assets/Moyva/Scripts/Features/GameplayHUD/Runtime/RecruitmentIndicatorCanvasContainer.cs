@@ -17,7 +17,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             canvas = anchor != null
                 ? anchor.GetComponentInParent<Canvas>(true)
                 : null;
-            canvas ??= Object.FindFirstObjectByType<Canvas>(
+            canvas ??= Object.FindAnyObjectByType<Canvas>(
                 FindObjectsInactive.Include);
 
             if (canvas == null)

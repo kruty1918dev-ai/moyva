@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
 
         private static bool TryFindSceneSettings(out MapChunkSceneSettings settings)
         {
-            settings = UnityEngine.Object.FindFirstObjectByType<MapChunkSceneSettings>(UnityEngine.FindObjectsInactive.Include);
+            settings = UnityEngine.Object.FindAnyObjectByType<MapChunkSceneSettings>(UnityEngine.FindObjectsInactive.Include);
             return settings != null;
         }
     }

@@ -125,7 +125,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private Canvas ResolveCanvas()
         {
-            return Object.FindFirstObjectByType<Canvas>(
+            return Object.FindAnyObjectByType<Canvas>(
                 FindObjectsInactive.Include);
         }
 

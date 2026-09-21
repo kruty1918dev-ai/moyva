@@ -364,7 +364,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiCaptureLab
 
         private static MethodInfo FindReadScreenPixel()
         {
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (Assembly assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
             {
                 Type type = assembly.GetType("UnityEditorInternal.InternalEditorUtility", false);
                 if (type == null)
@@ -388,7 +388,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiCaptureLab
             Type type = typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView", false);
             if (type == null)
             {
-                type = AppDomain.CurrentDomain.GetAssemblies()
+                type = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies()
                     .Select(a => a.GetType("UnityEditor.GameView", false))
                     .FirstOrDefault(t => t != null);
             }
@@ -553,7 +553,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiCaptureLab
 
         private static Type FindType(string fullName)
         {
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (Assembly assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
             {
                 Type type = assembly.GetType(fullName, false);
                 if (type != null)

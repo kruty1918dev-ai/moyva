@@ -2,13 +2,19 @@ fileFormatVersion: 2
 guid: 5978f8f3dd274e848fbb7a123bde1fb9
 timeCreated: 1488828285
 PluginImporter:
-  serializedVersion: 1
+  externalObjects: {}
+  serializedVersion: 2
   iconMap: {}
   executionOrder: {}
+  defineConstraints: []
   isPreloaded: 0
   isOverridable: 0
+  isExplicitlyReferenced: 0
+  validateReferences: 1
   platformData:
-    Any:
+  - first:
+      : Any
+    second:
       enabled: 0
       settings:
         Exclude Android: 1
@@ -33,45 +39,76 @@ PluginImporter:
         Exclude XboxOne: 0
         Exclude iOS: 0
         Exclude tvOS: 0
-    Editor:
+  - first:
+      Any: 
+    second:
+      enabled: 0
+      settings: {}
+  - first:
+      Editor: Editor
+    second:
       enabled: 0
       settings:
         DefaultValueInitialized: true
-    N3DS:
+  - first:
+      Nintendo 3DS: N3DS
+    second:
       enabled: 1
       settings: {}
-    PS4:
+  - first:
+      PS Vita: PSP2
+    second:
       enabled: 1
       settings: {}
-    PSM:
+  - first:
+      PlayStation 4: PS4
+    second:
       enabled: 1
       settings: {}
-    PSP2:
+  - first:
+      PlayStation Mobile: PSM
+    second:
       enabled: 1
       settings: {}
-    SamsungTV:
+  - first:
+      Samsung TV: SamsungTV
+    second:
       enabled: 1
       settings: {}
-    Tizen:
+  - first:
+      Tizen: Tizen
+    second:
       enabled: 1
       settings: {}
-    WebGL:
+  - first:
+      WebGL: WebGL
+    second:
       enabled: 1
       settings: {}
-    WiiU:
+  - first:
+      Wii U: WiiU
+    second:
       enabled: 1
       settings: {}
-    WindowsStoreApps:
+  - first:
+      Windows Store Apps: WindowsStoreApps
+    second:
       enabled: 1
       settings:
         CPU: AnyCPU
-    XboxOne:
+  - first:
+      Xbox One: XboxOne
+    second:
       enabled: 1
       settings: {}
-    iOS:
+  - first:
+      iPhone: iOS
+    second:
       enabled: 1
       settings: {}
-    tvOS:
+  - first:
+      tvOS: tvOS
+    second:
       enabled: 1
       settings: {}
   userData: 

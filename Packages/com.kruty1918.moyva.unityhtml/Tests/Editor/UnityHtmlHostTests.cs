@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using ReactUnity.UGUI.Behaviours;
@@ -287,10 +287,9 @@ namespace UnityHTML.Tests
             var rootObject = CreateRoot();
             using var host = new UnityHtmlHost();
             var existingDetachedIds = Object.FindObjectsByType<ReactElement>(
-                    FindObjectsInactive.Include,
-                    FindObjectsSortMode.None)
+                    FindObjectsInactive.Include)
                 .Where(element => element != null && element.transform.parent == null)
-                .Select(element => element.GetInstanceID())
+                .Select(element => element.GetEntityId())
                 .ToHashSet();
 
             try
@@ -303,12 +302,11 @@ namespace UnityHTML.Tests
                         "UnityHtmlDetachedScroll"));
 
                 var leaked = Object.FindObjectsByType<ReactElement>(
-                        FindObjectsInactive.Include,
-                        FindObjectsSortMode.None)
+                        FindObjectsInactive.Include)
                     .Where(element =>
                         element != null &&
                         element.transform.parent == null &&
-                        !existingDetachedIds.Contains(element.GetInstanceID()))
+                        !existingDetachedIds.Contains(element.GetEntityId()))
                     .ToArray();
 
                 Assert.That(leaked, Is.Empty);

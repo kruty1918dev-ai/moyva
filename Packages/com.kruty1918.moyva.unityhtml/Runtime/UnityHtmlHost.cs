@@ -324,7 +324,8 @@ namespace UnityHTML.Runtime
             for (var i = 0; i < scrollRects.Length; i++)
             {
                 var scrollRect = scrollRects[i];
-                if (scrollRect != null && scrollRect.vertical && _seenScrollRects.Add(scrollRect))
+                if (scrollRect != null && scrollRect.vertical && scrollRect.content != null
+                    && _seenScrollRects.Add(scrollRect))
                     scrollRect.verticalNormalizedPosition = 1f;
             }
         }
@@ -408,8 +409,7 @@ namespace UnityHTML.Runtime
                 return;
 
             var elements = UnityEngine.Object.FindObjectsByType<ReactElement>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
             for (var i = 0; i < elements.Length; i++)
             {
                 var element = elements[i];

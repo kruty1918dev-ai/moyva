@@ -789,7 +789,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiAudit
 
                     string path = AssetDatabase.GetAssetPath(graphic.material);
                     string key = string.IsNullOrWhiteSpace(path)
-                        ? "instance:" + graphic.material.GetInstanceID()
+                        ? "instance:" + graphic.material.GetEntityId()
                         : path;
 
                     if (!seen.Add(key))

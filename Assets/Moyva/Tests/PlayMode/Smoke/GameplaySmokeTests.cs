@@ -55,7 +55,7 @@ namespace Kruty1918.Moyva.Tests.Smoke.PlayMode
         }
 
         private static SceneContext FindSceneContext()
-            => UnityEngine.Object.FindObjectsByType<SceneContext>(FindObjectsSortMode.None).FirstOrDefault();
+            => UnityEngine.Object.FindObjectsByType<SceneContext>().FirstOrDefault();
 
         [TearDown]
         public void TearDown()

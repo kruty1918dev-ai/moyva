@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -17,7 +17,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
         private const string AutoSyncKey = "Moyva.HomeMenu.UnityHTML.EditorAutoSyncHierarchyToHtml";
         private const double HierarchyDebounceSeconds = 0.35d;
 
-        private static readonly HashSet<int> DirtyAnchorIds = new();
+        private static readonly HashSet<EntityId> DirtyAnchorIds = new();
         private static double _nextHierarchySyncTime;
         private static bool _queuedHierarchySync;
         private static bool _syncInProgress;
@@ -46,8 +46,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
             }
 
             var anchors = UnityEngine.Object.FindObjectsByType<HomeMenuMoyvaUiAnchor>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
 
             _syncInProgress = true;
             try
@@ -165,7 +164,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
             if (anchor == null || !anchor.EditorLivePreview)
                 return;
 
-            DirtyAnchorIds.Add(anchor.GetInstanceID());
+            DirtyAnchorIds.Add(anchor.GetEntityId());
             _nextHierarchySyncTime = EditorApplication.timeSinceStartup + HierarchyDebounceSeconds;
             _queuedHierarchySync = true;
         }
@@ -181,7 +180,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
             foreach (var id in DirtyAnchorIds)
             {
 #pragma warning disable CS0618 // EntityIdToObject is not available in all supported Unity editor versions.
-                if (EditorUtility.InstanceIDToObject(id) is HomeMenuMoyvaUiAnchor anchor &&
+                if (EditorUtility.EntityIdToObject(id) is HomeMenuMoyvaUiAnchor anchor &&
 #pragma warning restore CS0618
                     anchor != null &&
                     anchor.EditorLivePreview)
@@ -212,8 +211,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
                 return;
 
             var anchors = UnityEngine.Object.FindObjectsByType<HomeMenuMoyvaUiAnchor>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
 
             for (var i = 0; i < anchors.Length; i++)
             {

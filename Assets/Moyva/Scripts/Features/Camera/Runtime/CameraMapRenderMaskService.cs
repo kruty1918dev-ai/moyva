@@ -108,7 +108,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private void ApplyToSpriteRenderers()
         {
-            var renderers = UnityEngine.Object.FindObjectsByType<SpriteRenderer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var renderers = UnityEngine.Object.FindObjectsByType<SpriteRenderer>(FindObjectsInactive.Include);
             for (int i = 0; i < renderers.Length; i++)
             {
                 SpriteRenderer renderer = renderers[i];
@@ -126,7 +126,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private void ApplyToTilemapRenderers()
         {
-            var renderers = UnityEngine.Object.FindObjectsByType<TilemapRenderer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var renderers = UnityEngine.Object.FindObjectsByType<TilemapRenderer>(FindObjectsInactive.Include);
             for (int i = 0; i < renderers.Length; i++)
             {
                 TilemapRenderer renderer = renderers[i];
@@ -216,7 +216,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 return fromProjection;
             }
 
-            var tilemapRenderers = UnityEngine.Object.FindObjectsByType<TilemapRenderer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var tilemapRenderers = UnityEngine.Object.FindObjectsByType<TilemapRenderer>(FindObjectsInactive.Include);
             if (TryBuildBoundsFromTilemaps(tilemapRenderers, out MapBounds fromTilemaps))
             {
                 return fromTilemaps;

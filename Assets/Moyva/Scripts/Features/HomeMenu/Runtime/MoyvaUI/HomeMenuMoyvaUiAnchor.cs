@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Kruty1918.Moyva.Shared.UI;
 using TMPro;
 using UnityEngine;
@@ -220,10 +220,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var signature = 17;
             unchecked
             {
-                signature = signature * 31 + _mountRoot.GetInstanceID();
-                signature = signature * 31 + _htmlAsset.GetInstanceID();
-                signature = signature * 31 + _cssAsset.GetInstanceID();
-                signature = signature * 31 + (_fontAsset != null ? _fontAsset.GetInstanceID() : 0);
+                signature = signature * 31 + _mountRoot.GetEntityId().GetHashCode();
+                signature = signature * 31 + _htmlAsset.GetEntityId().GetHashCode();
+                signature = signature * 31 + _cssAsset.GetEntityId().GetHashCode();
+                signature = signature * 31 + (_fontAsset != null ? _fontAsset.GetEntityId().GetHashCode() : 0);
                 signature = signature * 31 + (_htmlAsset.text != null ? _htmlAsset.text.Length : 0);
                 signature = signature * 31 + (_cssAsset.text != null ? _cssAsset.text.Length : 0);
                 signature = signature * 31 + Mathf.RoundToInt(_mountRoot.rect.width);

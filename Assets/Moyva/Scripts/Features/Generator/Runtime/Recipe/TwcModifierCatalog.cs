@@ -78,10 +78,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _entries = new List<TwcModifierEntry>();
             _byTypeName = new Dictionary<string, TwcModifierEntry>();
             var baseType = typeof(BlueprintModifier);
-            Assembly[] assemblies;
+            IReadOnlyList<Assembly> assemblies;
             try
             {
-                assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
             }
             catch
             {

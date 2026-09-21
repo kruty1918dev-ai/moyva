@@ -73,7 +73,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 				ApplyPresentationPosition(unitObj, config, unitObj.transform.position);
 			}
 
-			string instanceId = unitObj.GetInstanceID().ToString().Replace("-", "");
+			string instanceId = unitObj.GetEntityId().ToString().Replace("-", "");
 			string finalUnitId = $"{typeId}_{_typeCounters[typeId]:D2}_{instanceId}";
 
 			return FireUnitCreated(finalUnitId, typeId, gridPosition, unitObj, ownerId);

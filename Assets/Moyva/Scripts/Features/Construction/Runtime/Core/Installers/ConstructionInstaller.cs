@@ -255,7 +255,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (economyInstallerType == null)
                 throw new InvalidOperationException("EconomyInstaller type not found.");
 
-            MonoBehaviour[] behaviours = FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            MonoBehaviour[] behaviours = FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include);
             MonoBehaviour economyInstaller = null;
             for (int i = 0; i < behaviours.Length; i++)
             {

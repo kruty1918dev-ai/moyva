@@ -257,7 +257,7 @@ namespace Kruty1918.Moyva.Tests.Performance
 
         private static Transform FindOrCreateCanvas()
         {
-            var canvas = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+            var canvas = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include)
                 .FirstOrDefault();
             if (canvas != null) return canvas.transform;
             var go = new GameObject("PerfCanvas", typeof(Canvas), typeof(CanvasScaler));

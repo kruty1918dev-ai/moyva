@@ -36,7 +36,7 @@ namespace StylizedWater3
         {
             renderTargets.Clear();
         
-            var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+            var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
             foreach (var assembly in assemblies)
             {
                 Type[] types = assembly.GetTypes();

@@ -71,7 +71,7 @@ namespace GiantGrey.TileWorldCreator.UI
 #if UNITY_6000_2
             _addLayerButton.style.translate = new Vector2(folder.resolvedStyle.width, 0);
 #else
-            _addLayerButton.transform.position = new Vector2(folder.resolvedStyle.width, 0);
+            _addLayerButton.style.translate = new Vector2(folder.resolvedStyle.width, 0);
 #endif
             _addLayerButton.style.width = 20;
             _addLayerButton.style.height = 20;
@@ -86,7 +86,7 @@ namespace GiantGrey.TileWorldCreator.UI
 #if UNITY_6000_2
             _editButton.style.translate = new Vector2(folder.resolvedStyle.width, folder.resolvedStyle.translate.y);
 #else
-            _editButton.transform.position = new Vector2(folder.resolvedStyle.width, folder.transform.position.y);
+            _editButton.style.translate = new Vector2(folder.resolvedStyle.width, folder.resolvedStyle.translate.y);
 #endif      
             _editButton.style.width = 20;
             _editButton.style.height = 20;
@@ -98,8 +98,8 @@ namespace GiantGrey.TileWorldCreator.UI
                 _addLayerButton.style.translate = new Vector2(folder.resolvedStyle.width, 0);
                 _editButton.style.translate = new Vector2(folder.resolvedStyle.width - 22, 0);
 #else
-                _addLayerButton.transform.position = new Vector2(folder.resolvedStyle.width, 0);
-                _editButton.transform.position = new Vector2(folder.resolvedStyle.width - 22, 0);
+                _addLayerButton.style.translate = new Vector2(folder.resolvedStyle.width, 0);
+                _editButton.style.translate = new Vector2(folder.resolvedStyle.width - 22, 0);
 #endif
                 if (buildLayerFolder == null) return;
                 buildLayerFolder.foldoutState = folder.value; 
@@ -300,7 +300,7 @@ namespace GiantGrey.TileWorldCreator.UI
             AssetDatabase.Refresh();
 
             MonoBehaviour.DestroyImmediate(_layer);
-            var _layers = GameObject.FindObjectsByType<LayerIdentifier>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID);
+            var _layers = GameObject.FindObjectsByType<LayerIdentifier>(FindObjectsInactive.Include);
             foreach(var _layerIdentifier in _layers)
             {
                 if (_layerIdentifier.guid == _layer.guid)

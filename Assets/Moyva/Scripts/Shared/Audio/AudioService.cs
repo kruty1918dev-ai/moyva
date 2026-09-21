@@ -52,7 +52,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
         private readonly float[] _busVolumes = { 1f, 1f, 1f, 1f, 1f };
 
         private GameObject _root;
-        private int _lastProcessedSceneHandle = -1;
+        private UnityEngine.SceneManagement.SceneHandle _lastProcessedSceneHandle = default;
 
         public AudioService([InjectOptional] AudioRegistrySO registry, [InjectOptional] SceneAudioOverridesSO sceneOverrides)
         {

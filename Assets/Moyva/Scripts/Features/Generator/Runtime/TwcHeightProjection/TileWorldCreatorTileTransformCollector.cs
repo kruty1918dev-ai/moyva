@@ -1,11 +1,11 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal sealed class TileWorldCreatorTileTransformCollector : ITileWorldCreatorTileTransformCollector
     {
-        public int Collect(Transform root, List<TileWorldCreatorTileTransformSample> buffer, HashSet<int> collectedIds, out int skippedSideWallRenderers)
+        public int Collect(Transform root, List<TileWorldCreatorTileTransformSample> buffer, HashSet<EntityId> collectedIds, out int skippedSideWallRenderers)
         {
             skippedSideWallRenderers = 0;
             var renderers = root.GetComponentsInChildren<Renderer>(true);
@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Transform root,
             Renderer renderer,
             List<TileWorldCreatorTileTransformSample> buffer,
-            HashSet<int> collectedIds,
+            HashSet<EntityId> collectedIds,
             ref int skippedSideWallRenderers)
         {
             if (renderer == null)
@@ -31,7 +31,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             Transform tileRoot = ResolveTileRoot(root, renderer.transform);
-            if (tileRoot == root || !collectedIds.Add(tileRoot.GetInstanceID()))
+            if (tileRoot == root || !collectedIds.Add(tileRoot.GetEntityId()))
                 return;
 
             buffer.Add(new TileWorldCreatorTileTransformSample(tileRoot, renderer.bounds.center));

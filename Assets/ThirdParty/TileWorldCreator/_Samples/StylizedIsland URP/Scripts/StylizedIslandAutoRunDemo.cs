@@ -1,4 +1,4 @@
-
+﻿
 using UnityEngine;
 #if TWC_PRIMETWEEN
 using PrimeTween;
@@ -172,7 +172,7 @@ namespace GiantGrey.TileWorldCreator.Samples
                 var color =  "#ffffff";
                 try
                 {
-                color =  "#" +    (layers[l].gameObject.GetInstanceID() * (l + 1)).ToString().Substring(0, 6);
+                color =  "#" +    (layers[l].gameObject.GetEntityId().GetHashCode() * (l + 1)).ToString().Substring(0, 6);
                 }catch{}
                 Color _colorConv = Color.white; 
                 UnityEngine.ColorUtility.TryParseHtmlString(color, out _colorConv);

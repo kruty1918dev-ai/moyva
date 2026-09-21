@@ -71,7 +71,7 @@ namespace Kruty1918.Moyva.Generator.API
         /// Asset variant pools for each environment type.
         /// Maps environment type IDs to lists of map object registry IDs.
         /// </summary>
-        public Dictionary<string, string[]> AssetPools = new();
+        [SerializeField] public Dictionary<string, string[]> AssetPools = new();
     }
 
     [Serializable]

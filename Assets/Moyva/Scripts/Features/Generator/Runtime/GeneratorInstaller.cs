@@ -129,8 +129,7 @@ namespace Kruty1918.Moyva.Generator
         private static T FindFirst<T>() where T : Object
         {
             var results = Object.FindObjectsByType<T>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
             return results != null && results.Length > 0
                 ? results[0]
                 : null;

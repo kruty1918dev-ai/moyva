@@ -232,7 +232,7 @@ namespace StylizedWater3
             Object target = EditorUtility.EntityIdToObject(instanceID);
             EntityId id = (EntityId)instanceID;
             #else
-            Object target = EditorUtility.InstanceIDToObject(instanceID);
+            Object target = EditorUtility.EntityIdToObject(instanceID);
             int id = instanceID;
             #endif
 
