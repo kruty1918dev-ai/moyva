@@ -118,6 +118,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _signalBus.Subscribe<UnitMoveRejectedSignal>(OnUnitMoveRejected);
             _signalBus.Subscribe<UnitGroupCommandRejectedSignal>(OnUnitGroupCommandRejected);
             _signalBus.Subscribe<UnitRecruitmentCommandRejectedSignal>(OnUnitRecruitmentCommandRejected);
+            _signalBus.Subscribe<ConstructionPlacementRejectedSignal>(OnConstructionPlacementRejected);
         }
 
         public void Dispose()
@@ -129,6 +130,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _signalBus.TryUnsubscribe<UnitMoveRejectedSignal>(OnUnitMoveRejected);
             _signalBus.TryUnsubscribe<UnitGroupCommandRejectedSignal>(OnUnitGroupCommandRejected);
             _signalBus.TryUnsubscribe<UnitRecruitmentCommandRejectedSignal>(OnUnitRecruitmentCommandRejected);
+            _signalBus.TryUnsubscribe<ConstructionPlacementRejectedSignal>(OnConstructionPlacementRejected);
             CancelMovement(MovementCancelReason.Dispose);
         }
 
@@ -164,6 +166,16 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                     : T(signal.Reason),
                 GameplayNotificationKind.Warning,
                 dedupKey: "unit-recruitment-rejected");
+        }
+
+        private void OnConstructionPlacementRejected(ConstructionPlacementRejectedSignal signal)
+        {
+            _notifications?.Show(
+                string.IsNullOrWhiteSpace(signal.Reason)
+                    ? T("The placement was rejected by host.")
+                    : T(signal.Reason),
+                GameplayNotificationKind.Warning,
+                dedupKey: $"construction-place-rejected:{signal.Position}");
         }
 
         private void OnGameModeChanged(GameModeChangedSignal signal)

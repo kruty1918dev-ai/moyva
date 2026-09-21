@@ -9,6 +9,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed partial class ConstructionService
     {
+        public int PendingDemolitionCount => _pendingDemolitions.Count;
+
         public bool TryDemolishAt(Vector2Int position)
         {
             if (!CanActiveOwnerAct(out string turnReason))

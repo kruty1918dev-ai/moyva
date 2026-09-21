@@ -629,6 +629,7 @@
     "The lobby was removed. Choose another room or try again.": "Лобі видалено. Оберіть іншу кімнату або спробуйте ще раз.",
     "The original payment receipt is unavailable for this saved job.": "Оригінальна квитанція оплати недоступна для цього збереженого завдання.",
     "The placement was rejected by gameplay rules.": "Розміщення відхилено правилами гри.",
+    "The placement was rejected by host.": "Розміщення відхилено хостом.",
     "The realm is silent": "Царство мовчить",
     "The recruitment queue is empty.": "Черга найму порожня.",
     "The room is already in game, but it does not contain valid world settings for reconnect.": "Кімната вже в грі, але не містить коректних налаштувань світу для перепідключення.",

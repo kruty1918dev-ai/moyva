@@ -173,7 +173,7 @@ namespace Kruty1918.Moyva.Tests.GameMode
         private static SignalBus CreateSignalBus()
         {
             var container = new DiContainer();
-            SignalBusInstaller.Install(container);
+            global::Zenject.SignalBusInstaller.Install(container);
             container.DeclareSignal<GameStartedSignal>().OptionalSubscriber();
             container.DeclareSignal<GamePausedSignal>().OptionalSubscriber();
             container.DeclareSignal<GameEndedSignal>().OptionalSubscriber();

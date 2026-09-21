@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     public readonly struct BuildingPlacePayload
     {
         private const byte IntentExtensionMarker = 0xA7;
-        private const byte IntentExtensionVersion = 2;
+        private const byte IntentExtensionVersion = 3;
 
         public readonly GameActionMessageKind Kind;
         public readonly string BuildingId;
@@ -33,6 +33,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         public readonly Vector2Int RelocationSourcePosition;
         public readonly string SatisfiedReplacementBuildingId;
         public readonly ConstructionRotation Rotation;
+        public readonly string RejectionReason;
 
         public BuildingPlacePayload(GameActionMessageKind kind, string buildingId, Vector2Int position,
                                     string ownerId, string sourceFactionId,
@@ -40,7 +41,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                                     Vector2Int relocationSourcePosition = default,
                                     string satisfiedReplacementBuildingId = null,
                                     ConstructionRotation rotation =
-                                        ConstructionRotation.Degrees0)
+                                        ConstructionRotation.Degrees0,
+                                    string rejectionReason = null)
         {
             Kind            = kind;
             BuildingId      = buildingId;
@@ -53,6 +55,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 satisfiedReplacementBuildingId;
             Rotation = ConstructionRotationUtility.Normalize(
                 (int)rotation);
+            RejectionReason = rejectionReason;
         }
 
         public ConstructionPlacementCommitIntent ToCommitIntent()
@@ -82,6 +85,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             w.Write(RelocationSourcePosition.y);
             w.Write(SatisfiedReplacementBuildingId ?? "");
             w.Write((byte)Rotation);
+            w.Write(RejectionReason ?? "");
             return ms.ToArray();
         }
 
@@ -102,6 +106,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             string satisfiedReplacementBuildingId = null;
             ConstructionRotation rotation =
                 ConstructionRotation.Degrees0;
+            string rejectionReason = null;
             if (ms.Position < ms.Length)
             {
                 byte marker = r.ReadByte();
@@ -113,6 +118,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 byte version = r.ReadByte();
                 if (version != 1
+                    && version != 2
                     && version != IntentExtensionVersion)
                 {
                     throw new InvalidDataException(
@@ -128,6 +134,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     rotation = ConstructionRotationUtility.Normalize(
                         r.ReadByte());
                 }
+                if (version >= 3 && ms.Position < ms.Length)
+                {
+                    rejectionReason = r.ReadString();
+                }
             }
 
             return new BuildingPlacePayload(
@@ -139,7 +149,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 hasRelocationSource,
                 relocationSourcePosition,
                 satisfiedReplacementBuildingId,
-                rotation);
+                rotation,
+                rejectionReason);
         }
     }
 

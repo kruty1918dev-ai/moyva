@@ -250,6 +250,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _signalBus.TryUnsubscribe<UnitRecruitmentQueueChangedSignal>(OnRecruitmentQueueChangedBroadcast);
             if (_caravanService != null)
                 _caravanService.RouteTransferCommitted -= OnRouteTransferCommittedLocally;
+            _placementRequestsInFlight.Clear();
             _lifetime.Dispose();
         }
 

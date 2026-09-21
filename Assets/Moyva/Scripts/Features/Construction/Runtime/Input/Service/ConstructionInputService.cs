@@ -327,9 +327,24 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (request.ActionId == UiActionIds.Construction.ConfirmPlacement)
             {
-                if (!_isActive || _constructionService.GetPendingPlacements().Count == 0)
+                bool hasConfirmableWork =
+                    _constructionService.GetPendingPlacements().Count > 0
+                    || _constructionService.PendingDemolitionCount > 0;
+                if (!_isActive || !hasConfirmableWork)
                     return UiActionResult.Rejected(UiActionReason.NoSelection);
                 _signalBus.Fire(new PlaceBuildingConfirmRequestSignal());
+                // Коли коміт синхронно злив усю чергу (локальна/хост-влада),
+                // режим будівництва завершується — панель закривається через
+                // OnGameModeChanged. На клієнті pending лишаються до відповіді
+                // хоста, тому режим не закривається передчасно.
+                if (_constructionService.GetPendingPlacements().Count == 0
+                    && _constructionService.PendingDemolitionCount == 0)
+                {
+                    _signalBus.Fire(new GameModeChangeRequestedSignal
+                    {
+                        RequestedMode = GameModeType.Normal,
+                    });
+                }
                 return UiActionResult.Performed();
             }
 
