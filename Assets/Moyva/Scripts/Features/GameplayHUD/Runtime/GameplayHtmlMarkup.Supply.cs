@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             GameplayHtmlState state)
         {
             var supply = snapshot.Supply;
-            PanelHeader(html, "CONSTRUCTION SUPPLY", "Deliver missing resources by wagon", true);
+            PanelHeader(html, state, "CONSTRUCTION SUPPLY", "Deliver missing resources by wagon", true);
             html.Append("<view className=\"panel-body\"><scroll className=\"panel-scroll context-scroll\"><view className=\"building-list\">");
 
             if (supply == null)

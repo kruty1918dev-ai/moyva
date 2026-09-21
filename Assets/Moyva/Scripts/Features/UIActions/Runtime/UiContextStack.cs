@@ -37,8 +37,7 @@ namespace Kruty1918.Moyva.UIActions.Runtime
                 if (!context.BlocksLowerHotkeys)
                     continue;
 
-                return context.AllowedHotkeyActionIds != null
-                    && context.AllowedHotkeyActionIds.Contains(actionId);
+                return context.AllowsHotkey(actionId);
             }
 
             return true;

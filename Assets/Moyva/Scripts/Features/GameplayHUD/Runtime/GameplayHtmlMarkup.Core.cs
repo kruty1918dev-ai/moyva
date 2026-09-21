@@ -78,7 +78,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             if (snapshot.RequiresFirstCastle)
             {
-                PanelHeader(html, state.T("ONBOARDING"), state.T("Place your first castle"), false);
+                PanelHeader(html, state, state.T("ONBOARDING"), state.T("Place your first castle"), false);
                 html.Append("<view className=\"panel-body\"><view className=\"task ")
                     .Append(snapshot.PlacementValid ? "valid" : "invalid")
                     .Append("\"><text className=\"task-title\">").Append(state.T("Found your first settlement")).Append("</text><text className=\"muted\">").Append(state.T("Select the castle, choose a valid tile, then confirm the placement.")).Append("</text><text className=\"")
@@ -92,7 +92,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (state.OpenPanelId == GameplayHtmlPanel.Construction)
             {
-                PanelHeader(html, state.T("CONSTRUCTION"), state.T("Build in your kingdom"), true);
+                PanelHeader(html, state, state.T("CONSTRUCTION"), state.T("Build in your kingdom"), true);
                 html.Append("<view className=\"panel-body\"><input id=\"construction-search\" className=\"browser-search\" value=\"")
                     .Append(E(state.ConstructionSearch))
                     .Append("\" placeholder=\"").Append(E(state.T("Search buildings"))).Append("\" characterLimit=\"48\" onEndEdit=\"Globals.gameplay.SetConstructionSearch(event)\"></input><scroll className=\"category-strip\"><view className=\"filter-row\">")
@@ -161,7 +161,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (state.OpenPanelId == GameplayHtmlPanel.Notifications)
             {
-                PanelHeader(html, state.T("ACTIVITY"), state.T("Notifications"), true);
+                PanelHeader(html, state, state.T("ACTIVITY"), state.T("Notifications"), true);
                 html.Append("<view className=\"panel-body\"><scroll className=\"panel-scroll\"><view className=\"building-list\">");
                 html.Append(Button(state.T("CLEAR ALL"), "Globals.gameplay.ClearNotifications()", "button", state.T("Clear notification history"), state.Notifications.Count == 0));
                 for (int index = 0; index < state.Notifications.Count; index++)
@@ -182,6 +182,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 PanelHeader(
                     html,
+                    state,
                     state.T(snapshot.SelectionKind.ToUpperInvariant()),
                     state.T(string.IsNullOrWhiteSpace(snapshot.SelectionTitle) ? Display(snapshot.SelectionId) : snapshot.SelectionTitle),
                     true);
@@ -434,7 +435,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             GameplayHtmlSnapshot snapshot,
             GameplayHtmlState state)
         {
-            html.Append("<view id=\"kingdom-scrim\" className=\"scrim\" data-motion=\"fade\" data-motion-duration=\"0.12\"><view id=\"kingdom-dashboard\" className=\"dashboard\" data-motion=\"scale\" data-motion-duration=\"0.18\" data-motion-ease=\"out-back\">");
+            string scrimMotion = state.PanelClosing ? "fade-out" : "fade";
+            string scrimDuration = state.PanelClosing
+                ? GameplayHtmlState.PanelCloseSeconds.ToString("0.00", CultureInfo.InvariantCulture)
+                : "0.12";
+            html.Append("<view id=\"kingdom-scrim\" className=\"scrim\" data-motion=\"").Append(scrimMotion)
+                .Append("\" data-motion-duration=\"").Append(scrimDuration)
+                .Append("\"><view id=\"kingdom-dashboard\" className=\"dashboard\" data-motion=\"scale\" data-motion-duration=\"0.18\" data-motion-ease=\"out-back\">");
             PanelHeaderContent(html, state.T("KINGDOM"), snapshot.KingdomName, true, state);
             html.Append("<view className=\"tabs\">");
             Tab(html, state, KingdomDashboardTab.Overview, state.T("OVERVIEW"), "ShowOverview");
@@ -621,9 +628,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 .Append("</view></view></view>");
         }
 
-        private static void PanelHeader(StringBuilder html, string eyebrow, string title, bool close)
+        private static void PanelHeader(StringBuilder html, GameplayHtmlState state, string eyebrow, string title, bool close)
         {
-            html.Append("<view id=\"gameplay-side-panel\" className=\"side-panel\" data-motion=\"slide-left\" data-motion-duration=\"0.16\">");
+            // While the panel is closing the node stays mounted but swaps its
+            // entry motion for the exit tween; reconciliation then unmounts it
+            // after the close window expires.
+            string motion = state.PanelClosing ? "fade-out" : "slide-left";
+            string duration = state.PanelClosing
+                ? GameplayHtmlState.PanelCloseSeconds.ToString("0.00", CultureInfo.InvariantCulture)
+                : "0.16";
+            html.Append("<view id=\"gameplay-side-panel\" className=\"side-panel\" data-motion=\"")
+                .Append(motion).Append("\" data-motion-duration=\"").Append(duration).Append("\">");
             PanelHeaderContent(html, eyebrow, title, close, null);
         }
 

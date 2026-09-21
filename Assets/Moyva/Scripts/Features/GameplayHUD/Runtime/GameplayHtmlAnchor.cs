@@ -220,10 +220,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
 
             int signature = HashCode.Combine(
-                root.GetInstanceID(),
-                _cssAsset.GetInstanceID(),
+                root.GetEntityId(),
+                _cssAsset.GetEntityId(),
                 _cssAsset.text?.Length ?? 0,
-                _fontAsset != null ? _fontAsset.GetInstanceID() : 0,
+                _fontAsset != null ? _fontAsset.GetEntityId() : default,
                 (int)_editorPreviewScreen,
                 Mathf.RoundToInt(root.rect.width),
                 Mathf.RoundToInt(root.rect.height));
@@ -274,6 +274,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             return snapshot.RequiresFirstCastle
                    || state.OpenPanelId == GameplayHtmlPanel.Construction
+                   || state.OpenPanelId == GameplayHtmlPanel.Supply
                    || state.OpenPanelId == GameplayHtmlPanel.Notifications
                    || !string.IsNullOrWhiteSpace(snapshot.SelectionKind);
         }

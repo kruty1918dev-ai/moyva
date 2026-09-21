@@ -172,7 +172,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     UiActionIds.Construction.RotatePlacement,
                     UiActionIds.Construction.UndoPlacement,
                     UiActionIds.Construction.RedoPlacement,
-                }));
+                },
+                // No new commands while the exit motion plays — the panel
+                // settles, then hotkeys pass through again.
+                hotkeyAllowance: _ => !_state.PanelClosing));
             _initialCastleContext = _contexts?.Push(new UiContextRegistration(
                 "InitialCastlePlacement",
                 UiContextLayer.Modal,
@@ -217,6 +220,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
             }
             EnsureInitialCastlePlacement();
+            _state.AdvancePanelClose();
             string viewport = _anchor.ViewportClass;
             if (!string.Equals(viewport, _viewportClass, StringComparison.Ordinal))
                 _state.MarkDirty();

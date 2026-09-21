@@ -1,0 +1,14 @@
+{
+  "name": "Kruty1918.Moyva.Tests.UIActions",
+  "rootNamespace": "Kruty1918.Moyva.Tests.UIActions",
+  "references": [
+    "Kruty1918.Moyva.UIActions"
+  ],
+  "includePlatforms": ["Editor"],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

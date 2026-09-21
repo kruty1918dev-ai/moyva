@@ -262,7 +262,16 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
 
             bridge.ClosePanel();
 
-            Assert.AreEqual(GameplayHtmlPanel.None, state.OpenPanelId);
+            Assert.IsTrue(state.PanelClosing,
+                "An allowed close enters the closing state first.");
+            Assert.AreEqual(GameplayHtmlPanel.Construction, state.OpenPanelId,
+                "The panel stays mounted while the exit motion plays.");
+            state.AdvancePanelClose(0f);
+            Assert.AreEqual(GameplayHtmlPanel.Construction, state.OpenPanelId,
+                "The panel must still be mounted before the close deadline.");
+            state.AdvancePanelClose(GameplayHtmlState.PanelCloseSeconds + 0.01f);
+            Assert.AreEqual(GameplayHtmlPanel.None, state.OpenPanelId,
+                "The panel unmounts once the close window elapses.");
             Assert.Contains(UiActionIds.Construction.Close.ToString(), router.Executed,
                 "Closing the construction panel must route through the domain action.");
         }
@@ -275,6 +284,8 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             var bridge = CreateBridge(state, new FakeRouter());
 
             bridge.ClosePanel();
+            state.AdvancePanelClose(0f);
+            state.AdvancePanelClose(GameplayHtmlState.PanelCloseSeconds + 0.01f);
 
             Assert.AreEqual(GameplayHtmlPanel.None, state.OpenPanelId);
         }
@@ -287,9 +298,159 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             var bridge = CreateBridge(state, new FakeRouter());
 
             bridge.ClosePanel();
+            state.AdvancePanelClose(0f);
+            state.AdvancePanelClose(GameplayHtmlState.PanelCloseSeconds + 0.01f);
 
             Assert.AreEqual(GameplayHtmlPanel.None, state.OpenPanelId);
             Assert.IsNull(state.SupplyPosition, "Closing must clear the supply context.");
+        }
+
+        // ---------- P063: closing lifecycle ----------
+
+        [Test]
+        public void ClosePanel_WhileClosing_IsIgnored_NoDuplicateDomainClose()
+        {
+            var state = new GameplayHtmlState();
+            state.OpenPanel(GameplayHtmlPanel.Construction);
+            var router = new FakeRouter();
+            var bridge = CreateBridge(state, router);
+
+            bridge.ClosePanel();
+            bridge.ClosePanel();
+
+            int closes = router.Executed.Count(
+                id => id == UiActionIds.Construction.Close.ToString());
+            Assert.AreEqual(1, closes,
+                "A second close during the exit motion must not re-run the domain action.");
+            Assert.IsTrue(state.PanelClosing);
+        }
+
+        [Test]
+        public void MutatingCommand_WhileClosing_IsRejected()
+        {
+            var state = new GameplayHtmlState();
+            state.OpenPanel(GameplayHtmlPanel.Construction);
+            var router = new FakeRouter();
+            var bridge = CreateBridge(state, router);
+
+            bridge.ClosePanel();
+            bridge.SelectBuilding("lumber-camp");
+
+            Assert.IsFalse(router.Executed.Contains(
+                    UiActionIds.Construction.SelectBuilding.ToString()),
+                "Panel commands must be blocked while the panel is closing.");
+        }
+
+        [Test]
+        public void OpenPanel_WhileClosing_SettlesThenOpens_LastIntentWins()
+        {
+            var state = new GameplayHtmlState();
+            state.OpenPanel(GameplayHtmlPanel.Construction);
+            var bridge = CreateBridge(state, new FakeRouter());
+
+            bridge.ClosePanel();
+            Assert.IsTrue(state.PanelClosing);
+
+            bridge.Notifications();
+
+            Assert.IsFalse(state.PanelClosing,
+                "Reopening during the close window resolves the pending close.");
+            Assert.AreEqual(GameplayHtmlPanel.Notifications, state.OpenPanelId,
+                "The last open intent wins over the in-flight close.");
+        }
+
+        [Test]
+        public void Markup_WhileClosing_EmitsExitMotion_ThenUnmounts()
+        {
+            var state = new GameplayHtmlState();
+            state.OpenPanel(GameplayHtmlPanel.Notifications);
+
+            string open = GameplayHtmlMarkup.Build(
+                new GameplayHtmlSnapshot(), state, "vp-wide");
+            Assert.IsTrue(open.Contains("id=\"gameplay-side-panel\""),
+                "Open panel must render the side panel node.");
+            Assert.IsTrue(open.Contains("slide-left"),
+                "Open panel must play its entry motion.");
+
+            state.ClosePanel();
+            string closing = GameplayHtmlMarkup.Build(
+                new GameplayHtmlSnapshot(), state, "vp-wide");
+            Assert.IsTrue(closing.Contains("id=\"gameplay-side-panel\""),
+                "The panel node must stay mounted during closing.");
+            Assert.IsTrue(closing.Contains("fade-out"),
+                "Closing must swap the node to its exit motion.");
+
+            state.AdvancePanelClose(0f);
+            state.AdvancePanelClose(GameplayHtmlState.PanelCloseSeconds + 0.01f);
+            string closed = GameplayHtmlMarkup.Build(
+                new GameplayHtmlSnapshot(), state, "vp-wide");
+            Assert.IsFalse(closed.Contains("id=\"gameplay-side-panel\""),
+                "The panel node must unmount after the close window.");
+        }
+
+        [Test]
+        public void KingdomDashboard_WhileClosing_EmitsExitMotion()
+        {
+            var state = new GameplayHtmlState();
+            state.OpenPanel(GameplayHtmlPanel.Kingdom);
+            state.ClosePanel();
+
+            string closing = GameplayHtmlMarkup.Build(
+                new GameplayHtmlSnapshot(), state, "vp-wide");
+            Assert.IsTrue(closing.Contains("id=\"kingdom-scrim\""),
+                "The dashboard scrim must stay mounted during closing.");
+            Assert.IsTrue(closing.Contains("fade-out"),
+                "The dashboard must fade out while closing.");
+        }
+
+        [Test]
+        public void ClosePanel_SelectionShown_FiresWorldInfoPanelClosed()
+        {
+            // The selection details panel has no OpenPanelId — Escape dismisses
+            // it via WorldInfoPanelClosedSignal; the X button must do the same
+            // instead of silently doing nothing.
+            var container = new DiContainer();
+            SignalBusInstaller.Install(container);
+            container.DeclareSignal<Kruty1918.Moyva.Signals.WorldInfoPanelClosedSignal>()
+                .OptionalSubscriber();
+            var bus = container.Resolve<SignalBus>();
+            int closedFired = 0;
+            bus.Subscribe<Kruty1918.Moyva.Signals.WorldInfoPanelClosedSignal>(
+                () => closedFired++);
+
+            var router = new FakeRouter();
+            container.Bind<IUiActionRouter>().FromInstance(router);
+            var lazy = new LazyInject<IUiActionRouter>(container,
+                new InjectContext(container, typeof(IUiActionRouter)));
+
+            var readModel = new GameplayHudReadModel(
+                null, null, new FakeConstructionClose(), null);
+            readModel.SetSelection(new Kruty1918.Moyva.Signals.WorldInfoSelectionChangedSignal
+            {
+                Kind = Kruty1918.Moyva.Signals.WorldInfoSelectionKind.Building,
+                ObjectId = "lumber-camp",
+                Position = new Vector2Int(5, 6),
+            });
+            Assert.IsTrue(readModel.HasSelection);
+
+            var state = new GameplayHtmlState();
+            var bridge = new GameplayHtmlBridge(
+                state, readModel, lazy, new FakeConstructionClose(),
+                null, null, null, notificationSignals: bus);
+
+            bridge.ClosePanel();
+
+            Assert.AreEqual(1, closedFired,
+                "Closing a selection panel must fire the same signal as Escape.");
+        }
+
+        [Test]
+        public void ClosePanel_NothingOpen_DoesNotThrow()
+        {
+            var state = new GameplayHtmlState();
+            var bridge = CreateBridge(state, new FakeRouter());
+            Assert.DoesNotThrow(() => bridge.ClosePanel());
+            Assert.AreEqual(GameplayHtmlPanel.None, state.OpenPanelId);
         }
     }
 }

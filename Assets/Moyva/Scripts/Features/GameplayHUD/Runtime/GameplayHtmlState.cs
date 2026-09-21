@@ -86,20 +86,61 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly List<GameplayNotificationViewSnapshot> _notifications = new();
         private long _nextNotificationId;
 
+        /// <summary>Seconds a closing panel stays mounted while its exit
+        /// motion plays; input shields stay up for the whole window so a
+        /// trailing pointer-up cannot reach the map.</summary>
+        internal const float PanelCloseSeconds = 0.18f;
+
+        /// <summary>Panel lifecycle: a close request plays the exit motion and
+        /// settles on the next presenter tick past the deadline. While closing,
+        /// new panel commands are blocked and the DOM node stays mounted.</summary>
+        public bool PanelClosing { get; private set; }
+        private float _panelCloseEndsAt = -1f;
+
         public void OpenPanel(GameplayHtmlPanel panel)
         {
+            if (PanelClosing)
+                SettlePanelClose();
             if (OpenPanelId == panel)
-                OpenPanelId = GameplayHtmlPanel.None;
-            else
-                OpenPanelId = panel;
+            {
+                ClosePanel();
+                return;
+            }
+            OpenPanelId = panel;
             if (OpenPanelId == GameplayHtmlPanel.Notifications) UnreadNotifications = 0;
             MarkDirty();
         }
 
         public void ClosePanel()
         {
-            if (OpenPanelId == GameplayHtmlPanel.None)
+            if (OpenPanelId == GameplayHtmlPanel.None || PanelClosing)
                 return;
+            PanelClosing = true;
+            _panelCloseEndsAt = -1f;
+            MarkDirty();
+        }
+
+        /// <summary>Presenter ticks this every frame; when the exit window has
+        /// elapsed the panel finally unmounts. Returns true when it settled.</summary>
+        public bool AdvancePanelClose()
+            => AdvancePanelClose(Time.unscaledTime);
+
+        internal bool AdvancePanelClose(float now)
+        {
+            if (!PanelClosing)
+                return false;
+            if (_panelCloseEndsAt < 0f)
+                _panelCloseEndsAt = now + PanelCloseSeconds;
+            if (now < _panelCloseEndsAt)
+                return false;
+            SettlePanelClose();
+            return true;
+        }
+
+        private void SettlePanelClose()
+        {
+            PanelClosing = false;
+            _panelCloseEndsAt = -1f;
             OpenPanelId = GameplayHtmlPanel.None;
             SupplyPosition = null;
             SupplyBuildingId = string.Empty;
@@ -109,6 +150,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void OpenSupplyPanel(Vector2Int position, string buildingId)
         {
+            if (PanelClosing)
+                SettlePanelClose();
             SupplyPosition = position;
             SupplyBuildingId = buildingId?.Trim() ?? string.Empty;
             OpenPanelId = GameplayHtmlPanel.Supply;
