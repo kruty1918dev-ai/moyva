@@ -488,6 +488,45 @@ namespace UnityHTML.Tests
             public void Trigger() => TriggerCount++;
         }
 
+        [Test]
+        public void UpdateRegions_OnlyChangedRegionReconciles_UnchangedKeepInstances()
+        {
+            var rootObject = CreateRoot();
+            using var host = new UnityHtmlHost();
+
+            try
+            {
+                var document = new UnityHtmlDocument(
+                    "<view className='shell'><view id='r1'><text id='t1'>one</text></view><view id='r2'><text id='t2'>two</text></view></view>",
+                    ".shell { width: 400px; height: 100px; } #r1,#r2 { width: 100px; height: 40px; }",
+                    "UnityHtmlRegions");
+
+                var result = host.Mount(rootObject.GetComponent<RectTransform>(), document);
+                Assert.That(result.Succeeded, Is.True, result.ErrorMessage);
+
+                var texts = rootObject.GetComponentsInChildren<TextMeshProUGUI>(true);
+                var stable = texts.First(t => t.text == "one");
+                var updating = texts.First(t => t.text == "two");
+
+                var update = host.UpdateRegions(new Dictionary<string, string>
+                {
+                    ["r1"] = "<text id='t1'>one</text>",
+                    ["r2"] = "<text id='t2'>TWO</text>",
+                });
+
+                Assert.That(update, Is.True);
+                var after = rootObject.GetComponentsInChildren<TextMeshProUGUI>(true);
+                Assert.That(after.Any(t => ReferenceEquals(t, stable)), Is.True,
+                    "An identical region must not remount its elements.");
+                Assert.That(after.Any(t => t.text == "TWO"), Is.True,
+                    "The changed region must reflect its new content.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(rootObject);
+            }
+        }
+
         private sealed class SliderBridge
         {
             public float Value { get; private set; }
