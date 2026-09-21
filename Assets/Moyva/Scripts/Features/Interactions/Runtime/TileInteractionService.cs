@@ -492,11 +492,11 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             if (!_unitCombatService.CanAttack(_selectedUnitId, targetUnitId, out rejectReason))
             {
                 if (rejectReason == UnitAttackRejectReason.TargetOutOfRange)
-                    _notifications?.Show("Ціль поза дальністю атаки", GameplayNotificationKind.Warning, dedupKey: "unit-attack-out-of-range");
+                    _notifications?.Show(T("Target is out of attack range."), GameplayNotificationKind.Warning, dedupKey: "unit-attack-out-of-range");
                 else if (rejectReason == UnitAttackRejectReason.TargetNotVisible)
-                    _notifications?.Show("Ціль поза зоною видимості", GameplayNotificationKind.Warning, dedupKey: "unit-attack-not-visible");
+                    _notifications?.Show(T("Target is outside the visible area."), GameplayNotificationKind.Warning, dedupKey: "unit-attack-not-visible");
                 else if (rejectReason == UnitAttackRejectReason.AttackUnavailable)
-                    _notifications?.Show("Цей юніт зараз не може атакувати", GameplayNotificationKind.Warning, dedupKey: "unit-attack-unavailable");
+                    _notifications?.Show(T("This unit cannot attack right now."), GameplayNotificationKind.Warning, dedupKey: "unit-attack-unavailable");
                 return true;
             }
 
