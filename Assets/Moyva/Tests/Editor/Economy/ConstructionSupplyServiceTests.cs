@@ -128,6 +128,8 @@ namespace Kruty1918.Moyva.Tests.Economy
             Assert.AreEqual("source", evaluation.Sources[0].SettlementId,
                 "The reachable farther source must be offered instead of the blocked nearer one.");
             Assert.Greater(evaluation.Sources[0].RouteDistance, 0f);
+            Assert.AreEqual(1, evaluation.UnreachableSources,
+                "The blocked warehouse must be reported so the UI can explain it.");
         }
 
         [Test]

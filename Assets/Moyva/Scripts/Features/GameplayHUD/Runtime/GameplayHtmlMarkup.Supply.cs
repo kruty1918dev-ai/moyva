@@ -96,6 +96,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 html.Append("</text>");
             }
 
+            if (supply.Hints.Length > 0)
+            {
+                html.Append("<text className=\"section-title\">NEXT STEP</text>");
+                foreach (var hint in supply.Hints)
+                {
+                    html.Append("<text className=\"item-meta\">").Append(E(hint.Text)).Append("</text>");
+                    if (!string.IsNullOrWhiteSpace(hint.ProducerResourceId))
+                        html.Append(Button(state.T("PRODUCE LOCALLY"),
+                            $"Globals.gameplay.ShowProducersFor('{J(hint.ProducerResourceId)}')",
+                            "button", state.T("Show buildings producing this resource"), false));
+                }
+            }
+
             html.Append("<text className=\"item-meta\">Resources move only by wagon — deliveries are reserved for this construction.</text>");
             html.Append("</view></scroll>");
             html.Append(Button("DISPATCH DELIVERY", "Globals.gameplay.DispatchSupply()",

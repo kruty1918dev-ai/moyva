@@ -66,11 +66,13 @@ namespace Kruty1918.Moyva.Economy.API
             string settlementName, Vector2Int position, string reason,
             IReadOnlyList<ConstructionSupplyResourceLine> resources,
             IReadOnlyList<ConstructionSupplySourceSnapshot> sources,
-            IReadOnlyList<ConstructionSupplyWagonSnapshot> wagons)
+            IReadOnlyList<ConstructionSupplyWagonSnapshot> wagons,
+            int unreachableSources = 0)
         {
             Resolved = resolved; SettlementId = settlementId; SettlementName = settlementName;
             Position = position; Reason = reason;
             Resources = resources; Sources = sources; Wagons = wagons;
+            UnreachableSources = unreachableSources;
         }
 
         public bool Resolved { get; }
@@ -81,6 +83,8 @@ namespace Kruty1918.Moyva.Economy.API
         public IReadOnlyList<ConstructionSupplyResourceLine> Resources { get; }
         public IReadOnlyList<ConstructionSupplySourceSnapshot> Sources { get; }
         public IReadOnlyList<ConstructionSupplyWagonSnapshot> Wagons { get; }
+        /// <summary>Warehouse sources skipped because no usable route reaches them.</summary>
+        public int UnreachableSources { get; }
         public bool HasDeficit { get { if (Resources == null) return false; for (int i = 0; i < Resources.Count; i++) if (Resources[i].Deficit > 0.0001f) return true; return false; } }
     }
 

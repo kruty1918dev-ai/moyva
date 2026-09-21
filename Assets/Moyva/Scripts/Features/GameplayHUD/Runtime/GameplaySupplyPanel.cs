@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
+using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.UIActions.API;
 using UnityEngine;
 using Zenject;
@@ -30,6 +31,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public float RouteDistance;
     }
 
+    internal sealed class GameplaySupplyHintSnapshot
+    {
+        public string Text = string.Empty;
+        /// <summary>Resource id for a "produce locally" button, when the hint
+        /// can navigate to the construction producer filter.</summary>
+        public string ProducerResourceId;
+    }
+
     internal sealed class GameplaySupplyWagonSnapshot
     {
         public string UnitId = string.Empty;
@@ -52,6 +61,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public string PlannedShipment;
         public bool PlannedNeedsRepeat;
         public float PlannedRouteDistance;
+        public GameplaySupplyHintSnapshot[] Hints = Array.Empty<GameplaySupplyHintSnapshot>();
         public int SourceIndex = -1;
         public int WagonIndex = -1;
         public bool CanDispatch;
@@ -72,6 +82,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly ILocalGameplayRoleResolver _roles;
         private readonly ITurnService _turns;
         private readonly GameplayHtmlState _state;
+        private readonly IUnitRecruitmentQuery _recruitment;
+        private readonly IUnitClassConfig _unitConfigs;
+        private readonly IBuildingRegistry _buildings;
+        private readonly IConstructionSelectionAvailabilityQuery _availability;
         private string _sourceSettlementId;
         private string _sourceWarehouseKey;
         private string _wagonId;
@@ -79,13 +93,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public GameplaySupplyPanel(IConstructionSessionCommands construction,
             IConstructionSupplyService supply, ILocalGameplayRoleResolver roles,
-            ITurnService turns, GameplayHtmlState state)
+            ITurnService turns, GameplayHtmlState state,
+            [InjectOptional] IUnitRecruitmentQuery recruitment = null,
+            [InjectOptional] IUnitClassConfig unitConfigs = null,
+            [InjectOptional] IBuildingRegistry buildings = null,
+            [InjectOptional] IConstructionSelectionAvailabilityQuery availability = null)
         {
             _construction = construction;
             _supply = supply;
             _roles = roles;
             _turns = turns;
             _state = state;
+            _recruitment = recruitment;
+            _unitConfigs = unitConfigs;
+            _buildings = buildings;
+            _availability = availability;
         }
 
         private string LocalOwner => string.IsNullOrWhiteSpace(_turns.LocalOwnerId)
@@ -218,8 +240,127 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         sources[snapshot.SourceIndex].RouteDistance;
                 }
             }
+
+            snapshot.Hints = BuildHints(ownerId, snapshot, evaluation.UnreachableSources);
             _lastSnapshot = snapshot;
             return snapshot;
+        }
+
+        /// <summary>Explains the achievable prerequisite when delivery is
+        /// blocked: wagon recruitment vs depot construction vs unreachable
+        /// remote stock vs local production.</summary>
+        private GameplaySupplyHintSnapshot[] BuildHints(string ownerId,
+            GameplaySupplySnapshot snapshot, int unreachableSources)
+        {
+            var hints = new List<GameplaySupplyHintSnapshot>();
+            if (!snapshot.Resolved) return hints.ToArray();
+
+            if (snapshot.Wagons.Length == 0)
+            {
+                if (HasWagonRecruitmentOption(ownerId))
+                    hints.Add(new GameplaySupplyHintSnapshot
+                    { Text = _state.T("Recruit a wagon at your depot to haul the cargo.") });
+                else
+                    hints.Add(new GameplaySupplyHintSnapshot
+                    { Text = WagonDepotHint(ownerId) });
+            }
+            else if (snapshot.WagonIndex < 0)
+            {
+                hints.Add(new GameplaySupplyHintSnapshot
+                { Text = _state.T("All wagons are busy or unavailable — recruit another or wait for a route to finish.") });
+            }
+
+            if (snapshot.Sources.Length == 0 && HasAnyDeficit(snapshot))
+            {
+                if (unreachableSources > 0)
+                    hints.Add(new GameplaySupplyHintSnapshot
+                    { Text = _state.T("Remote stockpiles exist, but no route reaches them — clear a path for the wagons.") });
+                foreach (var line in snapshot.Resources)
+                {
+                    if (line.Deficit <= 0.0001f) continue;
+                    string producerName = FindAvailableProducerName(ownerId, line.ResourceId);
+                    hints.Add(producerName != null
+                        ? new GameplaySupplyHintSnapshot
+                        {
+                            Text = _state.TF("No settlement stocks {0} — produce it locally.",
+                                line.ResourceId),
+                            ProducerResourceId = line.ResourceId,
+                        }
+                        : new GameplaySupplyHintSnapshot
+                        { Text = _state.TF("No known building produces {0} yet.", line.ResourceId) });
+                }
+            }
+            return hints.ToArray();
+        }
+
+        private static bool HasAnyDeficit(GameplaySupplySnapshot snapshot)
+        {
+            foreach (var line in snapshot.Resources)
+                if (line.Deficit > 0.0001f) return true;
+            return false;
+        }
+
+        /// <summary>A wagon-producing building is already standing when the
+        /// recruitment query offers a cargo-capable unit for this owner.</summary>
+        private bool HasWagonRecruitmentOption(string ownerId)
+        {
+            if (_recruitment == null || _unitConfigs == null) return false;
+            var options = _recruitment.GetOptions(ownerId);
+            if (options == null) return false;
+            foreach (var option in options)
+            {
+                var config = _unitConfigs.GetConfig(option.UnitTypeId);
+                if (config != null && config.CanTransportCargo) return true;
+            }
+            return false;
+        }
+
+        /// <summary>Names the cheapest constructible building that can recruit a
+        /// cargo-capable unit, or explains the blocking prerequisite.</summary>
+        private string WagonDepotHint(string ownerId)
+        {
+            if (_buildings == null)
+                return _state.T("No wagon depot yet — build one to field supply wagons.");
+            foreach (var definition in _buildings.GetAll())
+            {
+                if (!BuildingDefinitionCapabilities.TryGetEnabledModule(
+                        definition, out UnitRecruitmentBuildingModule module))
+                    continue;
+                bool recruitsCargo = false;
+                foreach (var recipe in module.Recipes)
+                {
+                    var config = _unitConfigs?.GetConfig(recipe?.UnitTypeId);
+                    if (config != null && config.CanTransportCargo) { recruitsCargo = true; break; }
+                }
+                if (!recruitsCargo) continue;
+                var availability = _availability?.EvaluateSelectionAvailability(
+                    definition.Id, ownerId);
+                if (availability.HasValue && !availability.Value.CanSelect)
+                    return _state.TF("A wagon depot is not available yet: {0}",
+                        availability.Value.Reason);
+                return _state.TF("No wagon depot yet — build {0} to field supply wagons.",
+                    definition.Id);
+            }
+            return _state.T("No wagon depot yet — build one to field supply wagons.");
+        }
+
+        private string FindAvailableProducerName(string ownerId, string resourceId)
+        {
+            if (_buildings == null || string.IsNullOrWhiteSpace(resourceId)) return null;
+            foreach (var definition in _buildings.GetAll())
+            {
+                var produced = GameplayHudReadModel.ResolveProducedResourceIds(definition);
+                bool matches = false;
+                foreach (var id in produced)
+                    if (string.Equals(id, resourceId, StringComparison.Ordinal))
+                    { matches = true; break; }
+                if (!matches) continue;
+                var availability = _availability?.EvaluateSelectionAvailability(
+                    definition.Id, ownerId);
+                if (availability == null || availability.Value.CanSelect)
+                    return definition.Id;
+            }
+            return null;
         }
 
         public UiActionResult Execute(in UiActionRequest request)

@@ -132,8 +132,9 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             return new ConstructionSupplyEvaluation(true, settlement.SettlementId,
                 _economy.GetSettlementNameOrFallback(settlement.SettlementId), position, null,
-                resources, CollectSources(ownerId, settlement, resources, position),
-                CollectWagons(ownerId));
+                resources, CollectSources(ownerId, settlement, resources, position,
+                    out int unreachableSources),
+                CollectWagons(ownerId), unreachableSources);
         }
 
         public CaravanTransferResult DispatchSupply(ConstructionSupplyDispatchRequest request,
@@ -520,8 +521,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         private List<ConstructionSupplySourceSnapshot> CollectSources(string ownerId,
             EconomySettlementState targetSettlement,
-            IReadOnlyList<ConstructionSupplyResourceLine> resources, Vector2Int position)
+            IReadOnlyList<ConstructionSupplyResourceLine> resources, Vector2Int position,
+            out int unreachableSources)
         {
+            unreachableSources = 0;
             var result = new List<ConstructionSupplySourceSnapshot>();
             if (resources == null) return result;
 
@@ -544,7 +547,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     if (!TryParseWarehouseKey(warehouse.Key, out var sourceOrigin)
                         || !_gameplay.Value.TryMeasureWarehouseRoute(ownerId, sourceOrigin,
                             targetOrigin, out float routeDistance))
+                    {
+                        unreachableSources++;
                         continue;
+                    }
                     var stock = new Dictionary<string, float>(StringComparer.Ordinal);
                     foreach (var line in resources)
                     {

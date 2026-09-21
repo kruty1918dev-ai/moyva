@@ -817,6 +817,17 @@
     "Placed {0} building(s); {1} rejected: {2}": "Розміщено споруд: {0}; відхилено: {1}: {2}",
     "route": "маршрут",
     "Delivery plan": "План доставки",
-    "wagon repeats until the deficit is covered": "віз повторює рейси, доки дефіцит не закрито"
+    "wagon repeats until the deficit is covered": "віз повторює рейси, доки дефіцит не закрито",
+    "Recruit a wagon at your depot to haul the cargo.": "Найміть віз у вашому депо, щоб перевезти вантаж.",
+    "All wagons are busy or unavailable — recruit another or wait for a route to finish.": "Усі вози зайняті або недоступні — найміть ще один або зачекайте завершення маршруту.",
+    "Remote stockpiles exist, but no route reaches them — clear a path for the wagons.": "Віддалені запаси існують, але маршрут до них недоступний — розчистіть шлях для возів.",
+    "No settlement stocks {0} — produce it locally.": "Жодне поселення не має запасу {0} — виробляйте його локально.",
+    "No known building produces {0} yet.": "Поки що жодна будівля не виробляє {0}.",
+    "A wagon depot is not available yet: {0}": "Депо для возів поки недоступне: {0}",
+    "No wagon depot yet — build {0} to field supply wagons.": "Депо для возів ще немає — збудуйте {0}, щоб мати вантажні вози.",
+    "No wagon depot yet — build one to field supply wagons.": "Депо для возів ще немає — збудуйте його, щоб мати вантажні вози.",
+    "PRODUCE LOCALLY": "ВИРОБЛЯТИ ЛОКАЛЬНО",
+    "Show buildings producing this resource": "Показати будівлі, що виробляють цей ресурс",
+    "NEXT STEP": "НАСТУПНИЙ КРОК"
   }
 }

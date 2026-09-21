@@ -110,7 +110,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 : T(reason);
         }
 
-        private static string[] ResolveProducedResourceIds(BuildingDefinition definition)
+        internal static string[] ResolveProducedResourceIds(BuildingDefinition definition)
         {
             if (!BuildingDefinitionCapabilities.TryGetEnabledModule(
                     definition, out ProductionBuildingModule production))
