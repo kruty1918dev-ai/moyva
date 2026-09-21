@@ -290,7 +290,7 @@ namespace UnityHTML.Tests
                     FindObjectsInactive.Include,
                     FindObjectsSortMode.None)
                 .Where(element => element != null && element.transform.parent == null)
-                .Select(element => element.GetInstanceID())
+                .Select(element => element.GetEntityId())
                 .ToHashSet();
 
             try
@@ -308,7 +308,7 @@ namespace UnityHTML.Tests
                     .Where(element =>
                         element != null &&
                         element.transform.parent == null &&
-                        !existingDetachedIds.Contains(element.GetInstanceID()))
+                        !existingDetachedIds.Contains(element.GetEntityId()))
                     .ToArray();
 
                 Assert.That(leaked, Is.Empty);

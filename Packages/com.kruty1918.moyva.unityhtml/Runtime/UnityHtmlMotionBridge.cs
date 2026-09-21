@@ -108,7 +108,7 @@ namespace UnityHTML.Runtime
                 string delayText = Data(component, "motion-delay");
                 string distanceText = Data(component, "motion-distance");
                 string easeText = Data(component, "motion-ease");
-                string signature = $"{component.RectTransform.GetInstanceID()}|{preset}|{durationText}|{delayText}|{distanceText}|{easeText}";
+                string signature = $"{component.RectTransform.GetEntityId()}|{preset}|{durationText}|{delayText}|{distanceText}|{easeText}";
                 _seen.Add(id);
 
                 if (_declared.TryGetValue(id, out string previous) && previous == signature)
