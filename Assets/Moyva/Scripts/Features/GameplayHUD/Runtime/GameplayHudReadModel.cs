@@ -110,6 +110,52 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 : T(reason);
         }
 
+        private bool TryCollectRecruitmentShortages(
+            string ownerId, string unitTypeId,
+            out IReadOnlyList<UnitRecruitmentShortage> shortages)
+        {
+            shortages = null;
+            var query = _recruitment as IUnitRecruitmentQuery;
+            if (query == null)
+                return false;
+
+            query.TryGetEnqueueShortages(
+                ownerId, _selectionPosition, unitTypeId,
+                out shortages, out _);
+            return shortages != null && shortages.Count > 0;
+        }
+
+        private string FormatRecruitmentShortages(
+            IReadOnlyList<UnitRecruitmentShortage> shortages)
+        {
+            var parts = new List<string>(shortages.Count);
+            for (int i = 0; i < shortages.Count; i++)
+            {
+                UnitRecruitmentShortage shortage = shortages[i];
+                if (shortage.IsPopulation)
+                {
+                    parts.Add(TF(
+                        "Population: need {0}, available {1}",
+                        shortage.Required.ToString("0.#"),
+                        shortage.Available.ToString("0.#")));
+                    continue;
+                }
+
+                string display = _population?.GetResourceDisplayName(shortage.ResourceId);
+                string name = string.IsNullOrWhiteSpace(display) ? shortage.ResourceId : display;
+                string segment = TF(
+                    "{0}: need {1}, available {2}",
+                    name,
+                    shortage.Required.ToString("0.#"),
+                    shortage.Available.ToString("0.#"));
+                if (shortage.Reserved > 0.0001f)
+                    segment += TF(" ({0} reserved)", shortage.Reserved.ToString("0.#"));
+                parts.Add(segment);
+            }
+
+            return TF("Missing: {0}", string.Join("; ", parts));
+        }
+
         public GameplayHudReadModel(
             ITurnService turns,
             IEconomyRuntimeApi economy,
@@ -646,11 +692,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!_recruitment.TryEnqueue(ownerId, _selectionPosition, unitTypeId.Trim(), out string reason))
             {
                 string resourceId = TryGetInsufficientResource(reason);
+                bool hasShortages = TryCollectRecruitmentShortages(
+                    ownerId, unitTypeId.Trim(), out IReadOnlyList<UnitRecruitmentShortage> shortages);
                 return UiActionResult.Rejected(
-                    resourceId != null
+                    resourceId != null || hasShortages
                         ? UiActionReason.InsufficientResources
                         : UiActionReason.ActionUnavailable,
-                    LocalizeRecruitmentRejection(reason, resourceId));
+                    hasShortages
+                        ? FormatRecruitmentShortages(shortages)
+                        : LocalizeRecruitmentRejection(reason, resourceId));
             }
 
             return UiActionResult.Performed();

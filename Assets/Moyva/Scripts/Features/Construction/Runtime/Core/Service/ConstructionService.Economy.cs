@@ -215,8 +215,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 AddCosts(ownerPoolReserved, costs);
 
                 var ownerPoolBalances = new List<ConstructionResourceBalance>(ownerPoolReserved.Count);
-                bool ownerPoolHasDeficit = false;
-                string ownerPoolDeficitMessage = string.Empty;
+                var ownerPoolDeficitParts = new List<string>(ownerPoolReserved.Count);
 
                 foreach (var pair in ownerPoolReserved)
                 {
@@ -225,12 +224,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         : 0f;
                     var balance = new ConstructionResourceBalance(pair.Key, availableAmount, pair.Value);
                     ownerPoolBalances.Add(balance);
-                    if (balance.IsDeficit && string.IsNullOrEmpty(ownerPoolDeficitMessage))
+                    if (balance.IsDeficit)
                     {
-                        ownerPoolHasDeficit = true;
-                        ownerPoolDeficitMessage = $"Недостатньо ресурсу '{ResolveResourceDisplayName(pair.Key)}' у стартовому запасі власника '{normalizedOwnerId}': потрібно {pair.Value:0.#}, доступно {availableAmount:0.#}.";
+                        ownerPoolDeficitParts.Add(
+                            $"'{ResolveResourceDisplayName(pair.Key)}': потрібно {pair.Value:0.#}, доступно {availableAmount:0.#}");
                     }
                 }
+
+                bool ownerPoolHasDeficit = ownerPoolDeficitParts.Count > 0;
+                string ownerPoolDeficitMessage = ownerPoolHasDeficit
+                    ? $"Недостатньо ресурсів у стартовому запасі власника '{normalizedOwnerId}' ({string.Join("; ", ownerPoolDeficitParts)})."
+                    : string.Empty;
 
                 ownerPoolBalances.Sort((left, right) => string.CompareOrdinal(left.ResourceId, right.ResourceId));
 
@@ -264,8 +268,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             AddCosts(reserved, costs);
 
             var balances = new List<ConstructionResourceBalance>(reserved.Count);
-            bool hasDeficit = false;
-            string deficitMessage = string.Empty;
+            var deficitParts = new List<string>(reserved.Count);
 
             foreach (var pair in reserved)
             {
@@ -274,14 +277,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     : 0f;
                 var balance = new ConstructionResourceBalance(pair.Key, availableAmount, pair.Value);
                 balances.Add(balance);
-                if (balance.IsDeficit && string.IsNullOrEmpty(deficitMessage))
+                if (balance.IsDeficit)
                 {
-                    hasDeficit = true;
-                    deficitMessage = $"Недостатньо ресурсу '{ResolveResourceDisplayName(pair.Key)}' у поселенні '{settlement.SettlementName}': потрібно {pair.Value:0.#}, доступно {availableAmount:0.#}.";
+                    deficitParts.Add(
+                        $"'{ResolveResourceDisplayName(pair.Key)}': потрібно {pair.Value:0.#}, доступно {availableAmount:0.#}");
                 }
             }
 
             balances.Sort((left, right) => string.CompareOrdinal(left.ResourceId, right.ResourceId));
+
+            bool hasDeficit = deficitParts.Count > 0;
+            string deficitMessage = hasDeficit
+                ? $"Недостатньо ресурсів у поселенні '{settlement.SettlementName}' ({string.Join("; ", deficitParts)})."
+                : string.Empty;
 
             return new ConstructionResourceProjection(
                 settlement.OwnerId,
