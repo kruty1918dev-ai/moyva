@@ -123,7 +123,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (confirmed > 0)
             {
-                _state.SetFeedback(_state.TF("Placed {0} building(s).", confirmed));
+                string lastReason = _construction?.GetLastActionMessage();
+                if (after > 0)
+                {
+                    _state.SetFeedback(string.IsNullOrWhiteSpace(lastReason)
+                        ? _state.TF("Placed {0} building(s); {1} rejected.", confirmed, after)
+                        : _state.TF("Placed {0} building(s); {1} rejected: {2}",
+                            confirmed, after, _state.T(lastReason)));
+                }
+                else
+                {
+                    _state.SetFeedback(_state.TF("Placed {0} building(s).", confirmed));
+                }
                 return;
             }
 

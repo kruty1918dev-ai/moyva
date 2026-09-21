@@ -500,7 +500,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             string actionMessage = _construction?.GetLastActionMessage();
             if (!string.IsNullOrWhiteSpace(actionMessage))
-                return actionMessage;
+                return T(actionMessage);
             return string.IsNullOrWhiteSpace(_lastPreviewMessage)
                 ? T("Choose a location on the map.")
                 : _lastPreviewMessage;

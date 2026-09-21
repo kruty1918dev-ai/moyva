@@ -7,6 +7,9 @@
     "Kruty1918.Moyva.FogOfWar",
     "Kruty1918.Moyva.MapChunks",
     "Kruty1918.Moyva.WorldCreation.API",
+    "Kruty1918.Moyva.ObjectsMap",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.Turns",
     "Zenject"
   ],
   "includePlatforms": ["Editor"],
