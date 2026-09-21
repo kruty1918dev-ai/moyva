@@ -110,9 +110,38 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 : T(reason);
         }
 
-        private bool TryResolveRecipeAvailability(
-            string ownerId, string unitTypeId, int populationCost, out string reason)
+        private static string[] ResolveProducedResourceIds(BuildingDefinition definition)
         {
+            if (!BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition, out ProductionBuildingModule production))
+                return Array.Empty<string>();
+
+            var ids = new List<string>();
+            if (!string.IsNullOrWhiteSpace(production.ResourceId))
+                ids.Add(production.ResourceId.Trim());
+            if (production.Recipes != null)
+            {
+                foreach (var recipe in production.Recipes)
+                {
+                    if (recipe?.Outputs == null)
+                        continue;
+                    foreach (var output in recipe.Outputs)
+                    {
+                        if (output != null && !string.IsNullOrWhiteSpace(output.ResourceId))
+                            ids.Add(output.ResourceId.Trim());
+                    }
+                }
+            }
+            return ids.Count == 0
+                ? Array.Empty<string>()
+                : ids.Distinct(StringComparer.Ordinal).ToArray();
+        }
+
+        private bool TryResolveRecipeAvailability(
+            string ownerId, string unitTypeId, int populationCost,
+            out string reason, out string[] missingResourceIds)
+        {
+            missingResourceIds = Array.Empty<string>();
             var query = _recruitment as IUnitRecruitmentQuery;
             if (query != null)
             {
@@ -128,6 +157,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (shortages != null && shortages.Count > 0)
                 {
                     reason = FormatRecruitmentShortages(shortages);
+                    missingResourceIds = shortages
+                        .Where(s => !s.IsPopulation && !string.IsNullOrWhiteSpace(s.ResourceId))
+                        .Select(s => s.ResourceId)
+                        .Distinct(StringComparer.Ordinal)
+                        .ToArray();
                     return false;
                 }
 
@@ -402,6 +436,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             IReadOnlyList<TurnFaction> factions = _turns?.Factions;
             return factions == null || factions.Count > 1;
+        }
+
+        public string ResolveResourceDisplayName(string resourceId)
+        {
+            if (string.IsNullOrWhiteSpace(resourceId))
+                return "resource";
+
+            string display = _population?.GetResourceDisplayName(resourceId.Trim());
+            return string.IsNullOrWhiteSpace(display) ? resourceId.Trim() : display;
         }
 
         public string ResolveBuildingDisplayName(string buildingId)
@@ -689,7 +732,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         string.IsNullOrWhiteSpace(availability.Reason)
                             ? T("Unavailable under current construction rules.")
                             : T(availability.Reason),
-                        definition.BuildTurns);
+                        definition.BuildTurns,
+                        ResolveProducedResourceIds(definition));
                 })
                 .ToArray();
         }
@@ -851,7 +895,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         UnitClassConfig config = _unitConfigs?.GetConfig(unitTypeId);
                         bool affordable = TryResolveRecipeAvailability(
                             ownerId, unitTypeId, Math.Max(1, recipe.PopulationCost),
-                            out string recipeReason);
+                            out string recipeReason, out string[] missingIds);
                         return new GameplayRecruitmentRecipeSnapshot(
                             unitTypeId,
                             string.IsNullOrWhiteSpace(config?.DisplayName) ? Display(unitTypeId) : config.DisplayName,
@@ -866,7 +910,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                             !canRecruit ? unavailableReason : recipeReason,
                             recipe.TrainingSeconds > 0f ? recipe.TrainingSeconds
                                 : recipe.TrainingTurns * (_progressClock?.SandboxRoundSeconds ?? 10f),
-                            Math.Max(1, recipe.PopulationCost));
+                            Math.Max(1, recipe.PopulationCost),
+                            missingIds);
                     })
                     .ToArray();
             }

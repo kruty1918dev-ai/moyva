@@ -218,6 +218,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
         }
         public void Notifications() => OpenOverlayPanel(GameplayHtmlPanel.Notifications);
+        public void ShowProducersFor(object value)
+        {
+            string resourceId = value?.ToString()?.Trim();
+            if (string.IsNullOrWhiteSpace(resourceId))
+                return;
+            UiActionResult openResult = Execute(UiActionIds.Construction.Open, "GameplayHTML");
+            if (openResult.Status == UiActionStatus.Rejected)
+            {
+                SetResult(openResult, _state.T("Construction is unavailable."));
+                return;
+            }
+            _state.SetConstructionProducerFilter(resourceId);
+            _state.SetFeedback(_state.TF(
+                "Showing buildings producing {0}.",
+                _readModel.ResolveResourceDisplayName(resourceId)));
+        }
+
+        public void ClearProducerFilter()
+            => _state.SetConstructionProducerFilter(string.Empty);
+
         public void SetConstructionCategory(object value)
             => _state.SetConstructionCategory(value?.ToString());
         public void SetConstructionSearch(string value)

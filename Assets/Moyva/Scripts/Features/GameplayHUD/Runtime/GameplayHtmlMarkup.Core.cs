@@ -104,7 +104,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     if (!string.IsNullOrWhiteSpace(category) && categories.Add(category))
                         html.Append(FilterButton(state.T(category.ToUpperInvariant()), category, state.ConstructionCategory));
                 }
-                html.Append("</view></scroll><scroll className=\"panel-scroll construction-scroll\"><view className=\"building-list\">");
+                html.Append("</view></scroll>");
+                if (!string.IsNullOrWhiteSpace(state.ConstructionProducerResource))
+                {
+                    html.Append("<view className=\"filter-row\"><button className=\"filter-button active\" onClick=\"Globals.gameplay.ClearProducerFilter()\"><text className=\"tab-label\">")
+                        .Append(E(state.TF(
+                            "Produces {0}",
+                            DisplayResource(state.ConstructionProducerResource))))
+                        .Append("</text></button></view>");
+                }
+                html.Append("<scroll className=\"panel-scroll construction-scroll\"><view className=\"building-list\">");
                 var filteredOptions = new List<GameplayBuildingOptionSnapshot>(snapshot.BuildingOptions.Length);
                 for (int index = 0; index < snapshot.BuildingOptions.Length; index++)
                 {
@@ -316,7 +325,25 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     .Append(E(meta)).Append("</text><text className=\"")
                     .Append(recipe.CanRecruit ? "muted" : "status-bad").Append("\">")
                     .Append(E(recipe.CanRecruit ? (string.IsNullOrWhiteSpace(recipe.Cost) ? state.T("No resource cost") : state.T(recipe.Cost)) : state.T(recipe.UnavailableReason)))
-                    .Append("</text></view>")
+                    .Append("</text>");
+                if (!recipe.CanRecruit
+                    && recipe.MissingResourceIds != null
+                    && recipe.MissingResourceIds.Length > 0)
+                {
+                    html.Append("<view className=\"filter-row\">");
+                    for (int missing = 0; missing < recipe.MissingResourceIds.Length; missing++)
+                    {
+                        string resourceId = recipe.MissingResourceIds[missing];
+                        html.Append(Button(
+                            state.TF("Find {0} producer", DisplayResource(resourceId)),
+                            $"Globals.gameplay.ShowProducersFor('{J(resourceId)}')",
+                            "button small",
+                            state.T("Show buildings that produce this resource"),
+                            false));
+                    }
+                    html.Append("</view>");
+                }
+                html.Append("</view>")
                     .Append(Button(state.T("RECRUIT"), $"Globals.gameplay.Recruit('{J(recipe.UnitTypeId)}')", "button primary", state.TF("Recruit {0}", state.T(recipe.Name)), !recipe.CanRecruit))
                     .Append("</view>");
             }
@@ -617,6 +644,27 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 && !string.Equals(option.Category, state.ConstructionCategory, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(state.ConstructionProducerResource))
+            {
+                bool produces = false;
+                if (option.ProducedResourceIds != null)
+                {
+                    for (int i = 0; i < option.ProducedResourceIds.Length; i++)
+                    {
+                        if (string.Equals(
+                                option.ProducedResourceIds[i],
+                                state.ConstructionProducerResource,
+                                StringComparison.Ordinal))
+                        {
+                            produces = true;
+                            break;
+                        }
+                    }
+                }
+                if (!produces)
+                    return false;
             }
 
             if (string.IsNullOrWhiteSpace(state.ConstructionSearch))

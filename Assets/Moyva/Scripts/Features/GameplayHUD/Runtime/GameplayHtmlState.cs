@@ -75,6 +75,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public string Feedback { get; private set; } = string.Empty;
         public string ConstructionCategory { get; private set; } = string.Empty;
         public string ConstructionSearch { get; private set; } = string.Empty;
+        public string ConstructionProducerResource { get; private set; } = string.Empty;
         public int ConstructionPageIndex { get; private set; }
         public Vector2Int? SupplyPosition { get; private set; }
         public string SupplyBuildingId { get; private set; } = string.Empty;
@@ -102,6 +103,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             OpenPanelId = GameplayHtmlPanel.None;
             SupplyPosition = null;
             SupplyBuildingId = string.Empty;
+            ConstructionProducerResource = string.Empty;
             MarkDirty();
         }
 
@@ -141,6 +143,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (string.Equals(ConstructionCategory, normalized, StringComparison.OrdinalIgnoreCase))
                 return;
             ConstructionCategory = normalized;
+            ConstructionProducerResource = string.Empty;
             ConstructionPageIndex = 0;
             MarkDirty();
         }
@@ -151,6 +154,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (string.Equals(ConstructionSearch, normalized, StringComparison.OrdinalIgnoreCase))
                 return;
             ConstructionSearch = normalized;
+            ConstructionProducerResource = string.Empty;
+            ConstructionPageIndex = 0;
+            MarkDirty();
+        }
+
+        public void SetConstructionProducerFilter(string resourceId)
+        {
+            string normalized = resourceId?.Trim() ?? string.Empty;
+            if (string.Equals(ConstructionProducerResource, normalized, StringComparison.Ordinal))
+                return;
+            ConstructionProducerResource = normalized;
             ConstructionPageIndex = 0;
             MarkDirty();
         }
@@ -331,7 +345,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Sprite icon,
             bool canSelect = true,
             string unavailableReason = null,
-            int buildTurns = 0)
+            int buildTurns = 0,
+            string[] producedResourceIds = null)
         {
             Id = id ?? string.Empty;
             Name = string.IsNullOrWhiteSpace(name) ? Id : name;
@@ -342,9 +357,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             CanSelect = canSelect;
             UnavailableReason = unavailableReason ?? string.Empty;
             BuildTurns = Math.Max(0, buildTurns);
+            ProducedResourceIds = producedResourceIds ?? Array.Empty<string>();
         }
 
         public int BuildTurns { get; }
+        public string[] ProducedResourceIds { get; }
         public string Id { get; }
         public string Name { get; }
         public string Category { get; }
@@ -469,7 +486,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool canRecruit,
             string unavailableReason,
             float trainingSeconds = 0f,
-            int populationCost = 1)
+            int populationCost = 1,
+            string[] missingResourceIds = null)
         {
             PopulationCost = populationCost;
             TrainingSeconds = trainingSeconds;
@@ -484,8 +502,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Icon = icon;
             CanRecruit = canRecruit;
             UnavailableReason = unavailableReason ?? string.Empty;
+            MissingResourceIds = missingResourceIds ?? Array.Empty<string>();
         }
 
+        public string[] MissingResourceIds { get; }
         public string UnitTypeId { get; }
         public string Name { get; }
         public string Role { get; }
