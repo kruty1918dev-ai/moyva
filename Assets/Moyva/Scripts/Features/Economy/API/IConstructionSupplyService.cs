@@ -25,16 +25,21 @@ namespace Kruty1918.Moyva.Economy.API
     public readonly struct ConstructionSupplySourceSnapshot
     {
         public ConstructionSupplySourceSnapshot(string settlementId, string settlementName,
-            string warehouseKey, IReadOnlyDictionary<string, float> available)
+            string warehouseKey, IReadOnlyDictionary<string, float> available,
+            float routeDistance)
         {
             SettlementId = settlementId; SettlementName = settlementName;
             WarehouseKey = warehouseKey; Available = available;
+            RouteDistance = routeDistance;
         }
 
         public string SettlementId { get; }
         public string SettlementName { get; }
         public string WarehouseKey { get; }
         public IReadOnlyDictionary<string, float> Available { get; }
+        /// <summary>Measured route distance to the target warehouse, or geometric
+        /// distance when no wagon is available to profile the route.</summary>
+        public float RouteDistance { get; }
     }
 
     public readonly struct ConstructionSupplyWagonSnapshot

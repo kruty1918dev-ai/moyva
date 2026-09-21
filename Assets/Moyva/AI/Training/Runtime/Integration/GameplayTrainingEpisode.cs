@@ -642,6 +642,12 @@ namespace Kruty1918.Moyva.AI.Training
                 string unitId, Vector2Int origin, System.Threading.CancellationToken token)
                 => System.Threading.Tasks.Task.FromResult(
                     CaravanTransferResult.Rejected("No wagons in training simulation."));
+            public bool TryMeasureWarehouseRoute(string ownerId, Vector2Int sourceOrigin,
+                Vector2Int targetOrigin, out float distance)
+            {
+                distance = Vector2Int.Distance(sourceOrigin, targetOrigin);
+                return true;
+            }
         }
     }
 }

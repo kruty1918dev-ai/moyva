@@ -27,6 +27,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public string SettlementName = string.Empty;
         public string WarehouseKey = string.Empty;
         public string StockSummary = string.Empty;
+        public float RouteDistance;
     }
 
     internal sealed class GameplaySupplyWagonSnapshot
@@ -144,6 +145,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         SettlementName = source.SettlementName,
                         WarehouseKey = source.WarehouseKey,
                         StockSummary = string.Join(", ", parts),
+                        RouteDistance = source.RouteDistance,
                     });
                 }
             snapshot.Sources = sources.ToArray();

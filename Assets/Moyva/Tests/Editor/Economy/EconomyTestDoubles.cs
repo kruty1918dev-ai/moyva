@@ -191,5 +191,17 @@ namespace Kruty1918.Moyva.Tests.Economy
         public Task<CaravanTransferResult> MoveToWarehouseAsync(string unitId, Vector2Int origin,
             CancellationToken token)
             => Task.FromResult(CaravanTransferResult.Success());
+
+        /// <summary>Origins that report no usable route. Keyed by warehouse origin;
+        /// blocked entries fail regardless of direction.</summary>
+        public readonly HashSet<Vector2Int> UnreachableWarehouses = new();
+
+        public bool TryMeasureWarehouseRoute(string ownerId, Vector2Int sourceOrigin,
+            Vector2Int targetOrigin, out float distance)
+        {
+            distance = Vector2Int.Distance(sourceOrigin, targetOrigin);
+            return !UnreachableWarehouses.Contains(sourceOrigin)
+                && !UnreachableWarehouses.Contains(targetOrigin);
+        }
     }
 }

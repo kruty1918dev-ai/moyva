@@ -130,7 +130,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             return new ConstructionSupplyEvaluation(true, settlement.SettlementId,
                 _economy.GetSettlementNameOrFallback(settlement.SettlementId), position, null,
-                resources, CollectSources(ownerId, settlement.SettlementId, resources),
+                resources, CollectSources(ownerId, settlement, resources, position),
                 CollectWagons(ownerId));
         }
 
@@ -489,20 +489,32 @@ namespace Kruty1918.Moyva.Economy.Runtime
         }
 
         private List<ConstructionSupplySourceSnapshot> CollectSources(string ownerId,
-            string targetSettlementId, IReadOnlyList<ConstructionSupplyResourceLine> resources)
+            EconomySettlementState targetSettlement,
+            IReadOnlyList<ConstructionSupplyResourceLine> resources, Vector2Int position)
         {
             var result = new List<ConstructionSupplySourceSnapshot>();
             if (resources == null) return result;
+
+            Vector2Int targetOrigin = position;
+            string targetKey = ResolveTargetWarehouseKey(position, targetSettlement);
+            if (!string.IsNullOrWhiteSpace(targetKey)
+                && TryParseWarehouseKey(targetKey, out var parsedTarget))
+                targetOrigin = parsedTarget;
+
             foreach (var pair in _settlements.AllSettlements)
             {
                 var settlement = pair.Value;
                 if (settlement == null || !settlement.IsActive
                     || !string.Equals(settlement.OwnerId, ownerId, StringComparison.Ordinal)
-                    || string.Equals(settlement.SettlementId, targetSettlementId, StringComparison.Ordinal))
+                    || string.Equals(settlement.SettlementId, targetSettlement.SettlementId, StringComparison.Ordinal))
                     continue;
                 foreach (var warehouse in settlement.WarehouseResourcePools)
                 {
                     if (warehouse.Value == null) continue;
+                    if (!TryParseWarehouseKey(warehouse.Key, out var sourceOrigin)
+                        || !_gameplay.Value.TryMeasureWarehouseRoute(ownerId, sourceOrigin,
+                            targetOrigin, out float routeDistance))
+                        continue;
                     var stock = new Dictionary<string, float>(StringComparer.Ordinal);
                     foreach (var line in resources)
                     {
@@ -516,11 +528,28 @@ namespace Kruty1918.Moyva.Economy.Runtime
                         settlement.SettlementId,
                         _economy.GetSettlementNameOrFallback(settlement.SettlementId),
                         warehouse.Key,
-                        new ReadOnlyDictionary<string, float>(stock)));
+                        new ReadOnlyDictionary<string, float>(stock),
+                        routeDistance));
                 }
             }
-            result.Sort((a, b) => string.CompareOrdinal(a.SettlementName, b.SettlementName));
+            result.Sort((a, b) =>
+            {
+                int cmp = a.RouteDistance.CompareTo(b.RouteDistance);
+                if (cmp != 0) return cmp;
+                cmp = string.CompareOrdinal(a.SettlementName, b.SettlementName);
+                return cmp != 0 ? cmp : string.CompareOrdinal(a.WarehouseKey, b.WarehouseKey);
+            });
             return result;
+        }
+
+        private static bool TryParseWarehouseKey(string key, out Vector2Int position)
+        {
+            position = default;
+            int separator = key.IndexOf(':');
+            if (separator < 1 || !int.TryParse(key.Substring(0, separator), out int x)
+                || !int.TryParse(key.Substring(separator + 1), out int y)) return false;
+            position = new Vector2Int(x, y);
+            return true;
         }
 
         private List<ConstructionSupplyWagonSnapshot> CollectWagons(string ownerId)

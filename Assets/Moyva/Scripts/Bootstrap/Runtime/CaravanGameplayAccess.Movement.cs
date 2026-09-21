@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,16 +26,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_pathfinder is not ICostAwarePathfinder pathfinder)
                 return CaravanTransferResult.Rejected("Route planning is unavailable.");
 
-            var footprint = new HashSet<Vector2Int>();
-            foreach (var placement in _portfolio.GetOwnerPlacements(unit.OwnerId))
-            {
-                if (placement.Position != origin) continue;
-                var definition = _buildings.GetById(placement.BuildingId);
-                for (int i = 0; i < BuildingFootprintUtility.GetOccupiedCellCount(definition); i++)
-                    footprint.Add(BuildingFootprintUtility.GetOccupiedCell(definition, origin, i, placement.Rotation));
-                break;
-            }
-            if (footprint.Count == 0) return CaravanTransferResult.Rejected("The destination warehouse no longer exists.");
+            if (!TryGetWarehouseFootprint(unit.OwnerId, origin, out var footprint))
+                return CaravanTransferResult.Rejected("The destination warehouse no longer exists.");
             if (_units.GetStamina(unitId) <= 0) return CaravanTransferResult.Rejected("Waiting for movement to recover.");
 
             // Treat only the target footprint as a virtual destination. Execution stops outside it.
@@ -71,6 +64,67 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 for (int y = -1; y <= 1; y++)
                     if (footprint.Contains(position + new Vector2Int(x, y))) return true;
             return false;
+        }
+
+        private bool TryGetWarehouseFootprint(string ownerId, Vector2Int origin,
+            out HashSet<Vector2Int> footprint)
+        {
+            footprint = new HashSet<Vector2Int>();
+            foreach (var placement in _portfolio.GetOwnerPlacements(ownerId))
+            {
+                if (placement.Position != origin) continue;
+                var definition = _buildings.GetById(placement.BuildingId);
+                for (int i = 0; i < BuildingFootprintUtility.GetOccupiedCellCount(definition); i++)
+                    footprint.Add(BuildingFootprintUtility.GetOccupiedCell(definition, origin, i, placement.Rotation));
+                break;
+            }
+            return footprint.Count > 0;
+        }
+
+        public bool TryMeasureWarehouseRoute(string ownerId, Vector2Int sourceOrigin,
+            Vector2Int targetOrigin, out float distance)
+        {
+            distance = Vector2Int.Distance(sourceOrigin, targetOrigin);
+            if (_pathfinder is not ICostAwarePathfinder pathfinder) return true;
+            string wagonId = FindOwnerWagonId(ownerId);
+            if (wagonId == null) return true;
+            if (!TryGetWarehouseFootprint(ownerId, sourceOrigin, out var sourceFootprint)
+                || !TryGetWarehouseFootprint(ownerId, targetOrigin, out var targetFootprint))
+                return false;
+
+            bool AllowStep(Vector2Int from, Vector2Int to, out float cost)
+            {
+                if (sourceFootprint.Contains(to) || targetFootprint.Contains(to))
+                {
+                    cost = 1f;
+                    return true;
+                }
+                return _traversal.TryEvaluateStep(wagonId, from, to, float.PositiveInfinity,
+                    UnitTraversalMode.Pathfinding, out cost, out _);
+            }
+
+            var path = pathfinder.FindPathWithCosts(sourceOrigin, targetOrigin, AllowStep);
+            if (path == null || path.Count == 0) return false;
+            if (path.Count == 1)
+            {
+                distance = 0f;
+                return true;
+            }
+
+            float total = 0f;
+            for (int i = 1; i < path.Count; i++)
+                total += AllowStep(path[i - 1], path[i], out float stepCost) ? stepCost : 1f;
+            distance = total;
+            return true;
+        }
+
+        private string FindOwnerWagonId(string ownerId)
+        {
+            foreach (var unitId in _units.GetAllUnitIds())
+                if (TryGetWagon(unitId, out var wagon)
+                    && string.Equals(wagon.OwnerId, ownerId, StringComparison.Ordinal))
+                    return unitId;
+            return null;
         }
     }
 }

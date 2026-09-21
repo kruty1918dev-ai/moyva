@@ -99,6 +99,59 @@ namespace Kruty1918.Moyva.Tests.Economy
                 "player_0", "lumber-camp", PlacementPosition,
                 "source", SourceWarehouseKey, unitId), Required(wood));
 
+        private EconomySettlementState AddSourceSettlement(string id, string name,
+            Vector2Int position, string warehouseKey, float wood = 200f)
+        {
+            var settlement = new EconomySettlementState
+            {
+                SettlementId = id,
+                OwnerId = "player_0",
+                SettlementName = name,
+            };
+            settlement.EnsureWarehousePool(warehouseKey);
+            settlement.AddResource("wood", wood, warehouseKey);
+            _registry.RegisterSettlement(settlement, position);
+            return settlement;
+        }
+
+        [Test]
+        public void Evaluate_ExcludesUnreachableSource_EvenWhenGeometricallyNearer()
+        {
+            // Near warehouse across impassable terrain; the farther one keeps an open route.
+            AddSourceSettlement("near", "Near", new Vector2Int(9, 10), "9:10", wood: 500f);
+            _gameplay.UnreachableWarehouses.Add(new Vector2Int(9, 10));
+
+            var evaluation = _supply.Evaluate("player_0", "lumber-camp",
+                PlacementPosition, Required(50f));
+
+            Assert.AreEqual(1, evaluation.Sources.Count);
+            Assert.AreEqual("source", evaluation.Sources[0].SettlementId,
+                "The reachable farther source must be offered instead of the blocked nearer one.");
+            Assert.Greater(evaluation.Sources[0].RouteDistance, 0f);
+        }
+
+        [Test]
+        public void Evaluate_OrdersSourcesByRouteDistance_ThenSettlementName()
+        {
+            // "far" sits closer to the target warehouse (8) than "source" (~14.1);
+            // "alpha" and "zeta" tie at distance 2 and must resolve by name.
+            AddSourceSettlement("far", "Far", new Vector2Int(18, 10), "18:10", wood: 100f);
+            AddSourceSettlement("zeta", "Zeta", new Vector2Int(8, 10), "8:10");
+            AddSourceSettlement("alpha", "Alpha", new Vector2Int(12, 10), "12:10");
+
+            var evaluation = _supply.Evaluate("player_0", "lumber-camp",
+                PlacementPosition, Required(50f));
+
+            Assert.AreEqual(4, evaluation.Sources.Count);
+            Assert.AreEqual("alpha", evaluation.Sources[0].SettlementId);
+            Assert.AreEqual("zeta", evaluation.Sources[1].SettlementId);
+            Assert.AreEqual("far", evaluation.Sources[2].SettlementId);
+            Assert.AreEqual("source", evaluation.Sources[3].SettlementId);
+            for (int i = 1; i < evaluation.Sources.Count; i++)
+                Assert.LessOrEqual(evaluation.Sources[i - 1].RouteDistance,
+                    evaluation.Sources[i].RouteDistance + 0.001f);
+        }
+
         [Test]
         public void Evaluate_ReportsLocalDeficit_AndListsSourceWarehouses()
         {

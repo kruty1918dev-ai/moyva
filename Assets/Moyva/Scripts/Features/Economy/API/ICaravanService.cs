@@ -77,6 +77,13 @@ namespace Kruty1918.Moyva.Economy.API
         bool CanCommand(string ownerId, string unitId, out string reason);
         bool CanAccessWarehouse(string unitId, Vector2Int origin, out string reason);
         Task<CaravanTransferResult> MoveToWarehouseAsync(string unitId, Vector2Int origin, CancellationToken token);
+
+        /// <summary>Measures the route distance the owner's transport would travel
+        /// between two warehouse origins, honouring terrain traversal. Returns false
+        /// when the warehouses exist but no usable path connects them; falls back to
+        /// geometric distance when no wagon is available to profile the route.</summary>
+        bool TryMeasureWarehouseRoute(string ownerId, Vector2Int sourceOrigin,
+            Vector2Int targetOrigin, out float distance);
     }
 
     public interface ICaravanService

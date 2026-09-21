@@ -116,17 +116,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 reason = "This warehouse is not operational yet.";
                 return false;
             }
-            foreach (var placement in _portfolio.GetOwnerPlacements(unit.OwnerId))
+            if (TryGetWarehouseFootprint(unit.OwnerId, origin, out var footprint)
+                && BesideFootprint(unit.Position, footprint))
             {
-                if (placement.Position != origin) continue;
-                var definition = _buildings.GetById(placement.BuildingId);
-                for (int i = 0; i < BuildingFootprintUtility.GetOccupiedCellCount(definition); i++)
-                {
-                    var cell = BuildingFootprintUtility.GetOccupiedCell(definition, origin, i, placement.Rotation);
-                    if (Math.Abs((long)unit.Position.x - cell.x) <= 1
-                        && Math.Abs((long)unit.Position.y - cell.y) <= 1)
-                    { reason = string.Empty; return true; }
-                }
+                reason = string.Empty;
+                return true;
             }
             return false;
         }
