@@ -53,14 +53,19 @@
    "kaykit-rock-single-d",
    "kaykit-rock-single-e"
   ],
-  "palm": [
-   "palm-tree-object-001",
-   "palm-tree-object-002",
-   "palm-tree-object-003"
+  "bush": [
+   "kaykit-trees-a-small",
+   "kaykit-trees-b-small"
+  ],
+  "grass": [
+   "grass-bilboard",
+   "grass-kreuz"
   ],
   "stump": [
-   "green-tree-stump-object-001",
-   "palm-tree-stump-object-001"
+   "kaykit-trees-a-cut",
+   "kaykit-trees-b-cut",
+   "kaykit-tree-single-a-cut",
+   "kaykit-tree-single-b-cut"
   ]
  }
 }

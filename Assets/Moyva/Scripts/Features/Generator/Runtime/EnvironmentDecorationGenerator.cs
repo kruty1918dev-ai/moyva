@@ -186,14 +186,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
             float randomValue = (hash % 10000) / 10000f;
 
             int maxObjects = _config.MaxObjectsPerTile;
+            int count = 0;
             for (int i = 0; i < maxObjects; i++)
             {
                 float threshold = density / (i + 1);
                 if (randomValue < threshold)
-                    return i + 1;
+                    count = i + 1;
+                else
+                    break;
             }
 
-            return 0;
+            return count;
         }
 
         private bool TryGenerateDecoration(
@@ -239,39 +242,74 @@ namespace Kruty1918.Moyva.Generator.Runtime
             uint hash = DeterministicHash.CellHash(seed, x, y, index);
             float randomValue = (hash % 10000) / 10000f;
 
-            float treeThreshold = _config.TypeDensities.TreeDensity;
-            float bushThreshold = treeThreshold + _config.TypeDensities.BushDensity;
-            float grassThreshold = bushThreshold + _config.TypeDensities.GrassDensity;
-            float rockThreshold = grassThreshold + _config.TypeDensities.RockDensity;
+            float treeWeight = _config.TypeDensities.TreeDensity;
+            float bushWeight = _config.TypeDensities.BushDensity;
+            float grassWeight = _config.TypeDensities.GrassDensity;
+            float rockWeight = _config.TypeDensities.RockDensity;
 
-            // Adjust based on biome
-            if (tileId != null && tileId.ToLowerInvariant().Contains("forest"))
+            string lowerTileId = tileId?.ToLowerInvariant();
+            bool isForest = lowerTileId != null && lowerTileId.Contains("forest");
+
+            // Adjust per-type weights based on biome before building the
+            // cumulative distribution so thresholds stay ordered.
+            if (isForest)
             {
-                treeThreshold *= 1.5f;
-                grassThreshold *= 0.8f;
+                treeWeight *= 1.5f;
+                grassWeight *= 0.8f;
             }
-            else if (tileId != null && (tileId.ToLowerInvariant().Contains("hill") || 
-                     tileId.ToLowerInvariant().Contains("mountain")))
+            else if (lowerTileId != null && (lowerTileId.Contains("hill") ||
+                     lowerTileId.Contains("mountain")))
             {
-                rockThreshold *= 2.0f;
-                treeThreshold *= 0.3f;
+                rockWeight *= 2.0f;
+                treeWeight *= 0.3f;
             }
-            else if (tileId != null && tileId.ToLowerInvariant().Contains("sand"))
+            else if (lowerTileId != null && lowerTileId.Contains("sand"))
             {
-                treeThreshold *= 0.1f;
-                rockThreshold *= 1.5f;
+                treeWeight *= 0.1f;
+                rockWeight *= 1.5f;
             }
 
-            if (randomValue < treeThreshold)
+            // Cut stumps appear only in forests, carved out of the tree band.
+            float stumpWeight = 0f;
+            if (isForest && HasPool("stump"))
+            {
+                stumpWeight = treeWeight * 0.15f;
+                treeWeight -= stumpWeight;
+            }
+
+            // A type with no configured pool contributes no probability mass.
+            if (!HasPool("tree"))
+                treeWeight = 0f;
+            if (!HasPool("bush"))
+                bushWeight = 0f;
+            if (!HasPool("grass"))
+                grassWeight = 0f;
+            if (!HasPool("rock"))
+                rockWeight = 0f;
+
+            float stumpThreshold = treeWeight + stumpWeight;
+            float bushThreshold = stumpThreshold + bushWeight;
+            float grassThreshold = bushThreshold + grassWeight;
+            float rockThreshold = grassThreshold + rockWeight;
+
+            if (randomValue < treeWeight)
                 return "tree";
+            if (randomValue < stumpThreshold)
+                return "stump";
             if (randomValue < bushThreshold)
-                return null; // Bush not in current asset pool
+                return "bush";
             if (randomValue < grassThreshold)
-                return null; // Grass not implemented as 3D objects
+                return "grass";
             if (randomValue < rockThreshold)
                 return "rock";
 
             return null;
+        }
+
+        private bool HasPool(string decorationType)
+        {
+            return _config.AssetPools.TryGetValue(decorationType, out var pool)
+                && pool != null && pool.Length > 0;
         }
 
         private Vector3 CalculatePosition(int x, int y, GeneratedWorldData worldData, int seed, int index)

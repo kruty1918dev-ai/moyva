@@ -32,10 +32,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// </summary>
         public int Spawn(DecorationPlacementResult placementResult)
         {
+            Clear();
             if (placementResult == null || placementResult.Count == 0)
                 return 0;
 
-            Clear();
             int spawned = 0;
 
             foreach (var placement in placementResult.Placements)
@@ -89,16 +89,21 @@ namespace Kruty1918.Moyva.Generator.Runtime
             instance.transform.localScale = placement.Scale;
 
             // Ensure decorations don't cast shadows or have colliders (purely visual)
-            var renderer = instance.GetComponent<Renderer>();
-            if (renderer != null)
+            var renderers = instance.GetComponentsInChildren<Renderer>(true);
+            foreach (var renderer in renderers)
             {
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 renderer.receiveShadows = true;
             }
 
-            var collider = instance.GetComponent<Collider>();
-            if (collider != null)
-                UnityEngine.Object.Destroy(collider);
+            var colliders = instance.GetComponentsInChildren<Collider>(true);
+            foreach (var collider in colliders)
+            {
+                if (Application.isPlaying)
+                    UnityEngine.Object.Destroy(collider);
+                else
+                    UnityEngine.Object.DestroyImmediate(collider);
+            }
 
             return true;
         }
