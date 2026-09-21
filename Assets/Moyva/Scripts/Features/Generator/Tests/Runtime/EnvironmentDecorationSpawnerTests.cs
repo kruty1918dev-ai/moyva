@@ -109,6 +109,52 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
                 "Colliders on child objects must be removed for visual-only decorations");
         }
 
+        [Test]
+        public void Spawn_UsesTerrainSurfaceHeight_WhenAvailable()
+        {
+            // Arrange: terrain surface at y=3.2 for the placement cell
+            var prefab = CreatePrefabWithChildVisuals();
+            _registry.SetDefinition("deco-surface", prefab);
+            var terrain = new FakeTerrainLevelService(3.2f);
+            var spawner = new EnvironmentDecorationSpawner(_registry, _layout, _roots, terrain);
+            var placement = new DecorationPlacement("deco-surface",
+                new Vector3(2f, 0f, 3f), Quaternion.identity, Vector3.one, 2, 3);
+
+            // Act
+            int spawned = spawner.Spawn(new DecorationPlacementResult(new[] { placement }));
+
+            // Assert
+            Assert.AreEqual(1, spawned);
+            var root = FindSpawnedDecorationRoot();
+            Assert.IsNotNull(root);
+            var child = root.GetChild(0);
+            Assert.AreEqual(3.2f, child.localPosition.y, 0.001f,
+                "Decoration Y must come from the terrain surface height map");
+            Assert.AreEqual(2f, child.localPosition.x, 0.001f);
+            Assert.AreEqual(3f, child.localPosition.z, 0.001f);
+        }
+
+        [Test]
+        public void Spawn_FallsBackToPlacementHeight_WhenNoSurfaceMap()
+        {
+            // Arrange: terrain service present but no surface data for the cell
+            var prefab = CreatePrefabWithChildVisuals();
+            _registry.SetDefinition("deco-fallback", prefab);
+            var terrain = new FakeTerrainLevelService(0f) { HasSurface = false };
+            var spawner = new EnvironmentDecorationSpawner(_registry, _layout, _roots, terrain);
+            var placement = new DecorationPlacement("deco-fallback",
+                new Vector3(2f, 7.5f, 3f), Quaternion.identity, Vector3.one, 2, 3);
+
+            // Act
+            spawner.Spawn(new DecorationPlacementResult(new[] { placement }));
+
+            // Assert
+            var root = FindSpawnedDecorationRoot();
+            Assert.IsNotNull(root);
+            Assert.AreEqual(7.5f, root.GetChild(0).localPosition.y, 0.001f,
+                "Without a surface map the generator's placement Y must be kept");
+        }
+
         private int CountDecorationChildren()
         {
             int total = 0;
@@ -192,6 +238,40 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             {
                 return transform != null && CreatedRoots.Contains(transform);
             }
+        }
+
+        private sealed class FakeTerrainLevelService : IGeneratorTerrainLevelService
+        {
+            private readonly float _surfaceY;
+
+            public FakeTerrainLevelService(float surfaceY)
+            {
+                _surfaceY = surfaceY;
+            }
+
+            public bool HasSurface = true;
+            public bool HasLevelMap => true;
+            public bool HasSurfaceHeightMap => HasSurface;
+            public bool HasExplicitSurfaceHeightMap => HasSurface;
+            public int Width => 64;
+            public int Height => 64;
+            public HillLevelDataMap CurrentHillLevelData => null;
+
+            public void Clear() { }
+            public void SetLevelMap(int[,] levelMap) { }
+            public void SetSurfaceHeightMap(float[,] surfaceHeightMap) { }
+            public void SetHillLevelData(HillLevelDataMap data) { }
+            public bool TryGetLevel(Vector2Int position, out int level) { level = 0; return true; }
+
+            public bool TryGetSurfaceHeight(Vector2Int position, out float surfaceY)
+            {
+                surfaceY = _surfaceY;
+                return HasSurface;
+            }
+
+            public int GetLevelOrDefault(Vector2Int position, int fallback = 0) => fallback;
+            public int[,] CopyLevelMap() => null;
+            public float[,] CopySurfaceHeightMap() => null;
         }
     }
 }

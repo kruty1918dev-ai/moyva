@@ -15,16 +15,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IMapObjectRegistryService _objectRegistry;
         private readonly IMapChunkLayoutService _layout;
         private readonly IMapVisualChunkRootService _roots;
+        private readonly IGeneratorTerrainLevelService _terrainLevels;
         private readonly Dictionary<MapChunkCoord, Transform> _decorationRoots = new Dictionary<MapChunkCoord, Transform>();
 
         public EnvironmentDecorationSpawner(
             IMapObjectRegistryService objectRegistry,
             IMapChunkLayoutService layout,
-            IMapVisualChunkRootService roots)
+            IMapVisualChunkRootService roots,
+            [Zenject.InjectOptional] IGeneratorTerrainLevelService terrainLevels = null)
         {
             _objectRegistry = objectRegistry ?? throw new ArgumentNullException(nameof(objectRegistry));
             _layout = layout ?? throw new ArgumentNullException(nameof(layout));
             _roots = roots ?? throw new ArgumentNullException(nameof(roots));
+            _terrainLevels = terrainLevels;
         }
 
         /// <summary>
@@ -84,7 +87,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Transform root = GetDecorationRoot(coord);
             var instance = UnityEngine.Object.Instantiate(definition.VisualPrefab, root, false);
             instance.name = $"{definition.Id}_{placement.TileX}_{placement.TileY}";
-            instance.transform.localPosition = placement.Position;
+            var localPosition = placement.Position;
+            if (_terrainLevels != null
+                && _terrainLevels.TryGetSurfaceHeight(cell, out float surfaceY))
+            {
+                localPosition.y = surfaceY;
+            }
+            instance.transform.localPosition = localPosition;
             instance.transform.localRotation = placement.Rotation;
             instance.transform.localScale = placement.Scale;
 

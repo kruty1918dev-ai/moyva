@@ -212,9 +212,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (_terrainLevelService == null || worldData == null)
                 return;
 
-            if (worldData.TerrainLevelMap != null)
+            // The TileWorldCreator build path already publishes level and
+            // surface maps with real world heights; only fill in what is
+            // still missing so we never clobber that explicit data with the
+            // normalized noise HeightMap.
+            if (worldData.TerrainLevelMap != null && !_terrainLevelService.HasLevelMap)
                 _terrainLevelService.SetLevelMap(worldData.TerrainLevelMap);
-            if (worldData.HeightMap != null)
+            if (worldData.HeightMap != null && !_terrainLevelService.HasSurfaceHeightMap)
                 _terrainLevelService.SetSurfaceHeightMap(worldData.HeightMap);
         }
     }
