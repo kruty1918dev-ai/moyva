@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -56,19 +56,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     TurnPill(html, state.T("FREE PLAY"), state.T("SPEED"), string.Empty);
             }
             html.Append("</view><view className=\"top-section top-actions\">")
-                .Append(snapshot.SandboxRealtime ? SandboxSpeedButton(1f, snapshot.SandboxSpeed, state) : string.Empty)
-                .Append(snapshot.SandboxRealtime ? SandboxSpeedButton(2f, snapshot.SandboxSpeed, state) : string.Empty)
-                .Append(Button(state.T("KINGDOM"), "Globals.gameplay.Kingdom()", "button", state.T("Open kingdom dashboard")))
-                .Append("<button className=\"button\" data-tooltip=\"").Append(E(state.T("Notifications"))).Append("\" onClick=\"Globals.gameplay.Notifications()\"><image className=\"action-icon\" src=\"global:gameplay_notifications_icon\" preserveAspect=\"true\"></image><text className=\"button-label\">")
+                .Append(snapshot.SandboxRealtime ? SandboxSpeedButton(1f, snapshot.SandboxSpeed, state, snapshot.RequiresFirstCastle) : string.Empty)
+                .Append(snapshot.SandboxRealtime ? SandboxSpeedButton(2f, snapshot.SandboxSpeed, state, snapshot.RequiresFirstCastle) : string.Empty)
+                // While the first-castle prompt is modal, the top bar is off
+                // limits so Tab cannot navigate out of the forced placement.
+                .Append(Button(state.T("KINGDOM"), "Globals.gameplay.Kingdom()", "button", state.T("Open kingdom dashboard"), snapshot.RequiresFirstCastle))
+                .Append("<button className=\"button\" data-tooltip=\"").Append(E(state.T("Notifications"))).Append(snapshot.RequiresFirstCastle ? "\" disabled=\"true" : "").Append("\" onClick=\"Globals.gameplay.Notifications()\"><image className=\"action-icon\" src=\"global:gameplay_notifications_icon\" preserveAspect=\"true\"></image><text className=\"button-label\">")
                 .Append(state.UnreadNotifications > 0 ? state.UnreadNotifications.ToString(CultureInfo.InvariantCulture) : state.T("LOG"))
-                .Append("</text></button><button className=\"button\" data-tooltip=\"").Append(E(state.T("Game menu"))).Append("\" onClick=\"Globals.gameplay.Pause()\"><image className=\"action-icon\" src=\"global:gameplay_menu_icon\" preserveAspect=\"true\"></image><text className=\"button-label\">").Append(state.T("MENU")).Append("</text></button>")
+                .Append("</text></button><button className=\"button\" data-tooltip=\"").Append(E(state.T("Game menu"))).Append(snapshot.RequiresFirstCastle ? "\" disabled=\"true" : "").Append("\" onClick=\"Globals.gameplay.Pause()\"><image className=\"action-icon\" src=\"global:gameplay_menu_icon\" preserveAspect=\"true\"></image><text className=\"button-label\">").Append(state.T("MENU")).Append("</text></button>")
                 .Append("</view>");
         }
-        private static string SandboxSpeedButton(float speed, float current, GameplayHtmlState state)
+        private static string SandboxSpeedButton(float speed, float current, GameplayHtmlState state, bool disabled = false)
         {
             string text = $"{Amount(speed)}X";
             string selected = Math.Abs(current - speed) < 0.05f ? " selected" : string.Empty;
-            return Button(text, $"Globals.gameplay.SandboxSpeed({speed.ToString(CultureInfo.InvariantCulture)})", $"button compact{selected}", state.TF("{0} sandbox speed", text));
+            return Button(text, $"Globals.gameplay.SandboxSpeed({speed.ToString(CultureInfo.InvariantCulture)})", $"button compact{selected}", state.TF("{0} sandbox speed", text), disabled);
         }
 
         private static void AppendContextPanel(
@@ -93,7 +95,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (state.OpenPanelId == GameplayHtmlPanel.Construction)
             {
                 PanelHeader(html, state, state.T("CONSTRUCTION"), state.T("Build in your kingdom"), true);
-                html.Append("<view className=\"panel-body\"><input id=\"construction-search\" className=\"browser-search\" value=\"")
+                html.Append("<view className=\"panel-body\"><input id=\"construction-search\" data-autofocus=\"true\" className=\"browser-search\" value=\"")
                     .Append(E(state.ConstructionSearch))
                     .Append("\" placeholder=\"").Append(E(state.T("Search buildings"))).Append("\" characterLimit=\"48\" onEndEdit=\"Globals.gameplay.SetConstructionSearch(event)\"></input><scroll className=\"category-strip\"><view className=\"filter-row\">")
                     .Append(FilterButton(state.T("ALL"), string.Empty, state.ConstructionCategory));

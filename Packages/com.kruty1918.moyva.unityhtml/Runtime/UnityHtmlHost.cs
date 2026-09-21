@@ -27,6 +27,8 @@ namespace UnityHTML.Runtime
         private UnityHtmlTooltipLayer _tooltips;
         private Vector2 _layoutSize;
         private readonly HashSet<ScrollRect> _seenScrollRects = new();
+        private string _autofocusedElementId;
+        private GameObject _selectionBeforeAutofocus;
 
         public IUnityHtmlMotion Motion => _motion;
 
@@ -248,6 +250,7 @@ namespace UnityHTML.Runtime
             Canvas.ForceUpdateCanvases();
             RestoreRenderedScrollPositions(scrollPositions);
             InitializeNewScrollPositions();
+            ApplyAutofocus();
             _tooltips?.RefreshTargets();
 #if UNITY_EDITOR
             MarkEditorPreviewObjectsDontSave(_root);
@@ -328,6 +331,61 @@ namespace UnityHTML.Runtime
                     && _seenScrollRects.Add(scrollRect))
                     scrollRect.verticalNormalizedPosition = 1f;
             }
+        }
+
+        // Focus the first element carrying data-autofocus when it is newly
+        // mounted; when that element unmounts, selection returns to whatever
+        // had it before. Focus is handed over only once per mount so a rerender
+        // never steals it back while the user is typing.
+        private void ApplyAutofocus()
+        {
+            // EventSystem.current may resolve to a destroyed instance left in
+            // the static registry (editor/test scenes); fall back to a live one.
+            EventSystem eventSystem = EventSystem.current;
+            if (eventSystem == null)
+                eventSystem = UnityEngine.Object.FindFirstObjectByType<EventSystem>();
+            if (eventSystem == null)
+                return;
+
+            Selectable target = null;
+            string targetId = null;
+            var elements = _root.GetComponentsInChildren<ReactElement>(true);
+            for (var i = 0; i < elements.Length; i++)
+            {
+                UGUIComponent component = elements[i] != null ? elements[i].Component : null;
+                if (component == null
+                    || !component.Data.TryGetValue("autofocus", out object flag)
+                    || !string.Equals(flag?.ToString(), "true", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                target = elements[i].GetComponent<Selectable>();
+                if (target == null)
+                    target = elements[i].GetComponentInChildren<Selectable>(true);
+                if (target == null)
+                    continue;
+                targetId = component.Id;
+                break;
+            }
+
+            if (target == null)
+            {
+                if (_autofocusedElementId != null)
+                {
+                    _autofocusedElementId = null;
+                    if (_selectionBeforeAutofocus != null)
+                        eventSystem.SetSelectedGameObject(_selectionBeforeAutofocus);
+                    _selectionBeforeAutofocus = null;
+                }
+                return;
+            }
+
+            if (string.Equals(targetId, _autofocusedElementId, StringComparison.Ordinal))
+                return;
+
+            _autofocusedElementId = targetId;
+            _selectionBeforeAutofocus = eventSystem.currentSelectedGameObject;
+            if (target.IsActive() && target.interactable)
+                target.Select();
         }
 
         private readonly struct RenderedScrollPosition
