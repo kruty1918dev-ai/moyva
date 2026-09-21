@@ -108,13 +108,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private static void DestroyMaterial(Material material)
         {
             if (material != null)
-                Object.Destroy(material);
+                DestroyUnityObject(material);
         }
 
         private static void DestroyRuntimeRoot(Transform root)
         {
             if (root != null)
-                Object.Destroy(root.gameObject);
+                DestroyUnityObject(root.gameObject);
+        }
+
+        private static void DestroyUnityObject(Object obj)
+        {
+            if (Application.isPlaying)
+                Object.Destroy(obj);
+            else
+                Object.DestroyImmediate(obj);
         }
 
         private sealed class DeploymentSession

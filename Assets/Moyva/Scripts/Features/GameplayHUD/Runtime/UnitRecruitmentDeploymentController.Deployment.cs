@@ -66,6 +66,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _cancelButton.interactable = _session != null;
         }
 
+        private void OnRecruitmentCommandRejected(
+            UnitRecruitmentCommandRejectedSignal signal)
+        {
+            // Host відхилив команду (найм/скасування/деплой). Якщо це була
+            // відповідь на наш deploy-запит — повертаємо кнопку для повтору.
+            if (!_confirmInProgress)
+                return;
+
+            _confirmInProgress = false;
+            UpdateConfirmInteractable();
+        }
+
         private void OnRecruitmentDeployed(
             UnitRecruitmentDeployedSignal signal)
         {

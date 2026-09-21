@@ -4,6 +4,7 @@ using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Notifications.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
@@ -314,6 +315,70 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             });
         }
 
+        [Test]
+        public void ClientConfirm_SendsSingleDeployRequest_UntilRejected()
+        {
+            var roles = new FakeRoleResolver { Role = LocalGameplayRole.Client };
+            var remote = new FakeRemoteRecruitment();
+            RebuildController(roles, remote);
+            EnqueueReadyItem();
+            FireReadyClick();
+            _controller.SelectTile(new Vector2Int(5, 4));
+
+            var request = new UiActionRequest(UiActionIds.Deployment.Confirm);
+            _controller.Execute(request);
+            _controller.Execute(request);
+            _controller.Execute(request);
+
+            Assert.AreEqual(
+                1,
+                remote.DeployRequests,
+                "Awaiting a host answer must not resend the deploy request.");
+            Assert.AreEqual(0, _recruitment.DeployCalls);
+        }
+
+        [Test]
+        public void ClientConfirm_HostRejectionReEnablesConfirm()
+        {
+            var roles = new FakeRoleResolver { Role = LocalGameplayRole.Client };
+            var remote = new FakeRemoteRecruitment();
+            RebuildController(roles, remote);
+            EnqueueReadyItem();
+            FireReadyClick();
+            _controller.SelectTile(new Vector2Int(5, 4));
+            _controller.Execute(
+                new UiActionRequest(UiActionIds.Deployment.Confirm));
+
+            _signals.Fire(new UnitRecruitmentCommandRejectedSignal
+            {
+                Reason = "Tile occupied by host-side order.",
+            });
+            _controller.Execute(
+                new UiActionRequest(UiActionIds.Deployment.Confirm));
+
+            Assert.AreEqual(2, remote.DeployRequests);
+        }
+
+        private void RebuildController(
+            ILocalGameplayRoleResolver roles,
+            IUnitRecruitmentRemoteCommandRequester remote)
+        {
+            _controller.Dispose();
+            _controller = new UnitRecruitmentDeploymentController(
+                _signals,
+                _turns,
+                _recruitment,
+                new FakeUnitConfigs(),
+                new FakeGridProjection(),
+                gridOverlay: _overlay,
+                inputPolicy: _inputPolicy,
+                gameModeService: _gameMode,
+                remoteRecruitment: remote,
+                roleResolver: roles,
+                notifications: _notifications);
+            _controller.Initialize();
+        }
+
         private void AssertNotification(
             GameplayNotificationKind kind,
             string messagePart)
@@ -452,6 +517,54 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
                 unitId = DeployResult ? "unit-1" : null;
                 reason = DeployResult ? null : DeployRejectReason;
                 return DeployResult;
+            }
+        }
+
+        private sealed class FakeRoleResolver : ILocalGameplayRoleResolver
+        {
+            public LocalGameplayRole Role = LocalGameplayRole.Offline;
+
+            public LocalGameplayRoleSnapshot Resolve()
+                => new LocalGameplayRoleSnapshot(Role, OwnerId);
+        }
+
+        private sealed class FakeRemoteRecruitment
+            : IUnitRecruitmentRemoteCommandRequester
+        {
+            public int DeployRequests;
+            public bool RequestResult = true;
+            public string RequestReason;
+
+            public bool TryRequestEnqueue(
+                string ownerId,
+                Vector2Int recruitingBuildingPosition,
+                string unitTypeId,
+                out string reason)
+            {
+                reason = null;
+                return RequestResult;
+            }
+
+            public bool TryRequestCancel(
+                string ownerId,
+                Vector2Int recruitingBuildingPosition,
+                long queueId,
+                out string reason)
+            {
+                reason = null;
+                return RequestResult;
+            }
+
+            public bool TryRequestDeploy(
+                string ownerId,
+                Vector2Int recruitingBuildingPosition,
+                long queueId,
+                Vector2Int targetPosition,
+                out string reason)
+            {
+                DeployRequests++;
+                reason = RequestReason;
+                return RequestResult;
             }
         }
 

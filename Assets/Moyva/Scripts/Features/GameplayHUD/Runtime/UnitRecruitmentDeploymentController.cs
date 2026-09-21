@@ -132,6 +132,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 OnRecruitmentQueueChanged);
             _signalBus.Subscribe<UnitRecruitmentDeployedSignal>(
                 OnRecruitmentDeployed);
+            _signalBus.Subscribe<UnitRecruitmentCommandRejectedSignal>(
+                OnRecruitmentCommandRejected);
             _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
             RegisterUiContexts();
         }
@@ -145,13 +147,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 OnRecruitmentQueueChanged);
             _signalBus.TryUnsubscribe<UnitRecruitmentDeployedSignal>(
                 OnRecruitmentDeployed);
+            _signalBus.TryUnsubscribe<UnitRecruitmentCommandRejectedSignal>(
+                OnRecruitmentCommandRejected);
             _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
             _deploymentContext?.Dispose();
 
             EndSession(destroyPreview: true);
             DestroyRuntimeRoot(_previewRoot);
             if (_controlsRoot != null)
-                Object.Destroy(_controlsRoot.gameObject);
+                DestroyUnityObject(_controlsRoot.gameObject);
             _previewRoot = null;
             _controlsRoot = null;
             _confirmButton = null;
