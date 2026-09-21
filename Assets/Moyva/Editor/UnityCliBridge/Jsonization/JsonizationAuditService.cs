@@ -80,7 +80,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             }
 
             string[] assetGuids = AssetDatabase.FindAssets("t:ScriptableObject", new[] { "Assets/Moyva" });
-            var seenAssetObjects = new HashSet<int>();
+            var seenAssetObjects = new HashSet<EntityId>();
             foreach (string guid in assetGuids)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
@@ -91,7 +91,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
 
                 foreach (UnityEngine.Object obj in all)
                 {
-                    if (obj == null || !seenAssetObjects.Add(obj.GetInstanceID())) continue;
+                    if (obj == null || !seenAssetObjects.Add(obj.GetEntityId())) continue;
                     Type type = obj.GetType();
                     if (!JsonizationEditorUtil.IsProjectOwned(type) || !typeof(ScriptableObject).IsAssignableFrom(type)) continue;
 
@@ -202,7 +202,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 "t:ScriptableObject",
                 new[] { "Assets/Moyva" });
 
-            var seenAssetObjects = new HashSet<int>();
+            var seenAssetObjects = new HashSet<EntityId>();
 
             foreach (string guid in assetGuids)
             {
@@ -224,7 +224,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 foreach (UnityEngine.Object obj in all)
                 {
                     if (obj == null ||
-                        !seenAssetObjects.Add(obj.GetInstanceID()))
+                        !seenAssetObjects.Add(obj.GetEntityId()))
                         continue;
 
                     Type type = obj.GetType();

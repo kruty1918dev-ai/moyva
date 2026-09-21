@@ -157,7 +157,7 @@ namespace GiantGrey.TileWorldCreator
                 if (stream.GetEventType(i) == ObjectChangeKind.ChangeAssetObjectProperties)
                 {
                     stream.GetChangeAssetObjectPropertiesEvent(i, out var e);
-                    var changedObj = EditorUtility.InstanceIDToObject(e.instanceId);
+                    var changedObj = EditorUtility.EntityIdToObject(e.entityId);
                     if (changedObj is BlueprintLayer)
                     {
                         var managers = GameObject.FindObjectsByType<TileWorldCreatorManager>(

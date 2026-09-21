@@ -359,7 +359,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             if (modelFields.Length == 0)
                 return;
 
-            string key = "preset-models:" + preset.GetInstanceID();
+            string key = "preset-models:" + preset.GetEntityId();
             bool expanded = Foldout(key, defaultValue: false);
             expanded = EditorGUILayout.Foldout(
                 expanded,

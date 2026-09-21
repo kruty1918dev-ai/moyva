@@ -17,7 +17,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
         private const string AutoSyncKey = "Moyva.HomeMenu.UnityHTML.EditorAutoSyncHierarchyToHtml";
         private const double HierarchyDebounceSeconds = 0.35d;
 
-        private static readonly HashSet<int> DirtyAnchorIds = new();
+        private static readonly HashSet<EntityId> DirtyAnchorIds = new();
         private static double _nextHierarchySyncTime;
         private static bool _queuedHierarchySync;
         private static bool _syncInProgress;
@@ -165,7 +165,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
             if (anchor == null || !anchor.EditorLivePreview)
                 return;
 
-            DirtyAnchorIds.Add(anchor.GetInstanceID());
+            DirtyAnchorIds.Add(anchor.GetEntityId());
             _nextHierarchySyncTime = EditorApplication.timeSinceStartup + HierarchyDebounceSeconds;
             _queuedHierarchySync = true;
         }
@@ -180,9 +180,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
             _queuedHierarchySync = false;
             foreach (var id in DirtyAnchorIds)
             {
-#pragma warning disable CS0618 // EntityIdToObject is not available in all supported Unity editor versions.
-                if (EditorUtility.InstanceIDToObject(id) is HomeMenuMoyvaUiAnchor anchor &&
-#pragma warning restore CS0618
+                if (EditorUtility.EntityIdToObject(id) is HomeMenuMoyvaUiAnchor anchor &&
                     anchor != null &&
                     anchor.EditorLivePreview)
                     WriteHierarchyToHtml(anchor);

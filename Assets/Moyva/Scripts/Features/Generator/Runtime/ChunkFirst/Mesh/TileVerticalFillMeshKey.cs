@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     {
         private const float Quantization = 10000f;
 
-        private readonly int _meshId;
+        private readonly EntityId _meshId;
         private readonly int _m00;
         private readonly int _m01;
         private readonly int _m02;
@@ -33,7 +33,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private TileVerticalFillMeshKey(TileMeshSource source)
         {
             Matrix4x4 matrix = source.LocalMatrix;
-            _meshId = source.Mesh != null ? source.Mesh.GetInstanceID() : 0;
+            _meshId = source.Mesh != null ? source.Mesh.GetEntityId() : default;
             _m00 = Quantize(matrix.m00);
             _m01 = Quantize(matrix.m01);
             _m02 = Quantize(matrix.m02);
@@ -96,7 +96,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             unchecked
             {
                 int hash = 17;
-                hash = hash * 31 + _meshId;
+                hash = hash * 31 + _meshId.GetHashCode();
                 hash = hash * 31 + _m00;
                 hash = hash * 31 + _m01;
                 hash = hash * 31 + _m02;

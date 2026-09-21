@@ -20,9 +20,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public int PreviousTileTransformCount = -1;
         public int PreviousSkippedSideWallRendererCount = -1;
 
-        public readonly Dictionary<int, float> AppliedYOffsetByTransformId = new Dictionary<int, float>();
+        public readonly Dictionary<EntityId, float> AppliedYOffsetByTransformId = new Dictionary<EntityId, float>();
         internal readonly List<TileWorldCreatorTileTransformSample> ScratchBuffer = new List<TileWorldCreatorTileTransformSample>(256);
-        public readonly HashSet<int> CollectedTransformIds = new HashSet<int>();
+        public readonly HashSet<EntityId> CollectedTransformIds = new HashSet<EntityId>();
         public readonly HashSet<Vector2Int> UsedCells = new HashSet<Vector2Int>();
 
         public void ResetRuntime()

@@ -40,7 +40,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int level = state.TerrainLevelMap[cellX, cellY];
             stats.RegisterLevel(level);
             state.UsedCells.Add(new Vector2Int(cellX, cellY));
-            float previous = state.AppliedYOffsetByTransformId.TryGetValue(sample.Transform.GetInstanceID(), out float stored) ? stored : 0f;
+            float previous = state.AppliedYOffsetByTransformId.TryGetValue(sample.Transform.GetEntityId(), out float stored) ? stored : 0f;
             float next = level * state.HeightStep;
             if (Mathf.Approximately(previous, next))
             {
@@ -51,7 +51,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var pos = sample.Transform.position;
             pos.y += next - previous;
             sample.Transform.position = pos;
-            state.AppliedYOffsetByTransformId[sample.Transform.GetInstanceID()] = next;
+            state.AppliedYOffsetByTransformId[sample.Transform.GetEntityId()] = next;
             stats.Changed++;
         }
     }

@@ -60,7 +60,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly GameplaySupplyPanel _supplyPanel;
         private readonly IConstructionSupplyService _supply;
         private readonly ICaravanService _caravans;
-        private readonly Dictionary<int, Sprite> _prefabSpriteCache = new();
+        private readonly Dictionary<EntityId, Sprite> _prefabSpriteCache = new();
         private readonly Dictionary<string, Sprite> _icons = new(StringComparer.Ordinal);
         private readonly HashSet<string> _reportedMissingIcons = new(StringComparer.Ordinal);
         private IReadOnlyDictionary<string, Sprite> _publishedIcons;
@@ -1214,7 +1214,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (prefab == null)
                 return null;
 
-            int prefabId = prefab.GetInstanceID();
+            EntityId prefabId = prefab.GetEntityId();
             if (_prefabSpriteCache.TryGetValue(prefabId, out Sprite cached))
                 return cached;
 

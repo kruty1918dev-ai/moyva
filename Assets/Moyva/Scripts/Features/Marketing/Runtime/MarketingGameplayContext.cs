@@ -175,7 +175,7 @@ namespace Kruty1918.Moyva.Marketing.Runtime
                     world.buildings.Add(new Contracts.ShotSubject
                     {
                         contentId = entry.id,
-                        instanceId = t.GetInstanceID().ToString(),
+                        instanceId = t.GetEntityId().ToString(),
                         worldX = t.position.x, worldY = t.position.y, worldZ = t.position.z,
                         approximateRadius = BoundsRadius(t.gameObject, 2.5f),
                     });

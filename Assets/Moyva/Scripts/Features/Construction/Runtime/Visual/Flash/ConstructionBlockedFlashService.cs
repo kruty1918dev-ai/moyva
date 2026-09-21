@@ -13,8 +13,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         private readonly ConstructionVisualStyleService _styleService;
-        private readonly Dictionary<int, FlashRestore> _flashRestoresByTarget = new();
-        private readonly List<int> _keysBuffer = new();
+        private readonly Dictionary<EntityId, FlashRestore> _flashRestoresByTarget = new();
+        private readonly List<EntityId> _keysBuffer = new();
         private readonly float _blockedFlashDuration;
 
         public ConstructionBlockedFlashService(
@@ -31,7 +31,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
 
             _styleService.ApplyGhostStyle(target, false);
-            _flashRestoresByTarget[target.GetInstanceID()] = new FlashRestore
+            _flashRestoresByTarget[target.GetEntityId()] = new FlashRestore
             {
                 Target = target,
                 IsGhostPreview = isGhostPreview,
@@ -46,12 +46,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             float now = Time.time;
             _keysBuffer.Clear();
-            foreach (int key in _flashRestoresByTarget.Keys)
+            foreach (EntityId key in _flashRestoresByTarget.Keys)
                 _keysBuffer.Add(key);
 
             for (int i = 0; i < _keysBuffer.Count; i++)
             {
-                int key = _keysBuffer[i];
+                EntityId key = _keysBuffer[i];
                 var entry = _flashRestoresByTarget[key];
                 if (now < entry.RestoreAt)
                     continue;
