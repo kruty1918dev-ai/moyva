@@ -13,7 +13,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             float landRatio,
             int nearestWaterDistance,
             float localHeightRange,
-            int sampledTiles)
+            int sampledTiles,
+            int connectedLandTiles)
         {
             HardValid = hardValid;
             Utility = utility;
@@ -21,6 +22,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             NearestWaterDistance = nearestWaterDistance;
             LocalHeightRange = localHeightRange;
             SampledTiles = sampledTiles;
+            ConnectedLandTiles = connectedLandTiles;
         }
 
         public bool HardValid { get; }
@@ -29,6 +31,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public int NearestWaterDistance { get; }
         public float LocalHeightRange { get; }
         public int SampledTiles { get; }
+        public int ConnectedLandTiles { get; }
         public string Reason
         {
             get
@@ -38,6 +41,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     : NearestWaterDistance.ToString();
                 return $"landRatio={LandRatio:0.00}; waterDistance={waterText}; " +
                     $"heightRange={LocalHeightRange:0.000}; sampled={SampledTiles}; " +
+                    $"connectedLand={ConnectedLandTiles}; " +
                     $"hardValid={HardValid}; utility={Utility}";
             }
         }
@@ -76,6 +80,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Vector2Int center)
         {
             int radius = Mathf.Max(1, _settings.startTerrainSampleRadius);
+            int diameter = radius * 2 + 1;
+            var landMask = new bool[diameter, diameter];
             int sampled = 0;
             int land = 0;
             int nearestWater = int.MaxValue;
@@ -106,6 +112,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     }
 
                     land++;
+                    landMask[dx + radius, dy + radius] = true;
 
                     if (hasHeight)
                     {
@@ -124,9 +131,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     ? maxHeight - minHeight
                     : 0f;
 
+            int connectedLand =
+                CountConnectedLand(landMask, radius, diameter);
+
             bool hardValid =
                 sampled > 0 &&
-                landRatio >= Mathf.Clamp01(_settings.minimumLandRatioAroundStart);
+                landRatio >= Mathf.Clamp01(_settings.minimumLandRatioAroundStart) &&
+                connectedLand >= Mathf.Max(0, _settings.minimumConnectedLandTiles);
 
             int utility = Mathf.RoundToInt(landRatio * 1000f);
 
@@ -161,7 +172,50 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 landRatio,
                 nearestWater,
                 heightRange,
-                sampled);
+                sampled,
+                connectedLand);
+        }
+
+        /// <summary>
+        /// Land cells reachable from the center inside the sampled window.
+        /// A high land ratio made of disconnected specks must not pass: the
+        /// castle footprint and the first buildings need one contiguous pad.
+        /// </summary>
+        private static int CountConnectedLand(
+            bool[,] landMask,
+            int radius,
+            int diameter)
+        {
+            if (!landMask[radius, radius])
+                return 0;
+
+            var visited = new bool[diameter, diameter];
+            var queue = new Queue<Vector2Int>(diameter * diameter);
+            visited[radius, radius] = true;
+            queue.Enqueue(new Vector2Int(radius, radius));
+            int connected = 0;
+
+            while (queue.Count > 0)
+            {
+                Vector2Int cell = queue.Dequeue();
+                connected++;
+
+                for (int direction = 0; direction < 4; direction++)
+                {
+                    int nx = cell.x + (direction == 0 ? 1 : direction == 1 ? -1 : 0);
+                    int ny = cell.y + (direction == 2 ? 1 : direction == 3 ? -1 : 0);
+                    if (nx < 0 || ny < 0 || nx >= diameter || ny >= diameter
+                        || visited[nx, ny] || !landMask[nx, ny])
+                    {
+                        continue;
+                    }
+
+                    visited[nx, ny] = true;
+                    queue.Enqueue(new Vector2Int(nx, ny));
+                }
+            }
+
+            return connected;
         }
 
         private bool IsWaterTileId(string tileId)
