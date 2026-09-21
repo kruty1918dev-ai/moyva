@@ -97,6 +97,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             for (int i = _pendingPlacements.Count - 1; i >= 0; i--)
             {
                 var placement = _pendingPlacements[i];
+
+                // Same reservation cleanup as RemovePendingAt: a cancelled
+                // session must not keep dispatched supply orders alive.
+                _economyInfoMediator?.ReleaseConstructionSupplyReservations(
+                    placement.Position);
+
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
                         Position = placement.Position,
