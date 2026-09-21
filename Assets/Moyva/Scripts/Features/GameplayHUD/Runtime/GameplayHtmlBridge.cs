@@ -468,8 +468,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_state.PanelClosing)
                 return UiActionResult.Rejected(UiActionReason.ModalBlocked,
                     "The panel is closing.");
-            return _actions?.Value?.Execute(id, source, context, targetId)
-                   ?? UiActionResult.Rejected(UiActionReason.ActionUnavailable, "UI action router is unavailable.");
+            if (_actions?.Value == null)
+                return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "UI action router is unavailable.");
+            try
+            {
+                return _actions.Value.Execute(id, source, context, targetId);
+            }
+            catch (Exception exception)
+            {
+                // A throwing command must still surface a rejection — the
+                // player sees the reason and every control stays interactive.
+                Debug.LogException(exception);
+                return UiActionResult.Rejected(UiActionReason.ActionUnavailable,
+                    "The command failed unexpectedly.");
+            }
         }
 
         private bool IsInitialCastleRequired()

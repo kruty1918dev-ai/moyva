@@ -134,9 +134,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 {
                     GameplayBuildingOptionSnapshot option = filteredOptions[index];
                     string cost = string.IsNullOrWhiteSpace(option.Cost) ? state.T("Free") : state.T(option.Cost);
+                    string rowTooltip = option.CanSelect
+                        ? state.T(option.Name)
+                        : string.IsNullOrWhiteSpace(option.UnavailableReason)
+                            ? state.T("Unavailable under current construction rules.")
+                            : state.T(option.UnavailableReason);
                     html.Append("<button data-key=\"").Append(E(option.Id)).Append("\" className=\"building-row ")
                         .Append(string.Equals(option.Id, snapshot.SelectedBuildingId, StringComparison.Ordinal) ? "selected" : string.Empty)
-                        .Append("\" ").Append(option.CanSelect ? string.Empty : "disabled=\"true\"")
+                        .Append("\" data-tooltip=\"").Append(E(rowTooltip)).Append("\" ")
+                        .Append(option.CanSelect ? string.Empty : "disabled=\"true\"")
                         .Append(" onClick=\"Globals.gameplay.SelectBuilding('").Append(J(option.Id)).Append("')\">");
                     RowIcon(html, option.HasIcon, option.IconGlobalKey, IconForBuilding(option), false);
                     html.Append("<view className=\"item-copy\"><text className=\"item-title\">")

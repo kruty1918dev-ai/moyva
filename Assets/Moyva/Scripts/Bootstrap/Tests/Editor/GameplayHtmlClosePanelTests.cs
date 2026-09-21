@@ -173,6 +173,7 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             public readonly Dictionary<string, UiActionResult> Results =
                 new(StringComparer.Ordinal);
             public readonly List<string> Executed = new();
+            public bool ThrowOnExecute;
 
             public UiActionResult Execute(in UiActionRequest request)
                 => Execute(request.ActionId, request.Source, request.ContextId, request.TargetId);
@@ -182,6 +183,8 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
                 string contextId = null, string targetId = null)
             {
                 Executed.Add(actionId.ToString());
+                if (ThrowOnExecute)
+                    throw new InvalidOperationException("simulated router failure");
                 return Results.TryGetValue(actionId.ToString(), out var result)
                     ? result
                     : UiActionResult.Performed();
@@ -451,6 +454,25 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             var bridge = CreateBridge(state, new FakeRouter());
             Assert.DoesNotThrow(() => bridge.ClosePanel());
             Assert.AreEqual(GameplayHtmlPanel.None, state.OpenPanelId);
+        }
+
+        [Test]
+        public void Execute_WhenRouterThrows_SurfacesRejection_AndKeepsPanel()
+        {
+            var state = new GameplayHtmlState();
+            state.OpenPanel(GameplayHtmlPanel.Construction);
+            var router = new FakeRouter { ThrowOnExecute = true };
+            var bridge = CreateBridge(state, router);
+
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Exception,
+                "InvalidOperationException: simulated router failure");
+            Assert.DoesNotThrow(() => bridge.ClosePanel(),
+                "A throwing action must not escape into the UI callback.");
+            Assert.AreEqual(GameplayHtmlPanel.Construction, state.OpenPanelId,
+                "A failed close leaves the panel open.");
+            Assert.IsFalse(state.PanelClosing);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(state.Feedback),
+                "The failure reason must reach the feedback line.");
         }
     }
 }
