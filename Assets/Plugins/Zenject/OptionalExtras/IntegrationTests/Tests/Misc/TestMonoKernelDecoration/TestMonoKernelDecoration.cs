@@ -36,8 +36,14 @@ namespace Zenject.Tests.Misc.TestMonoKernelDecoration
         
         private class InitializableManagerSpy : InitializableManager
         {
-            
-            public InitializableManagerSpy(List<IInitializable> initializables, List<ValuePair<Type, int>> priorities) : base(initializables, priorities){}
+
+            // Keep the base ctor's Local injection source — without it the list
+            // resolves across the whole hierarchy and re-initializes
+            // ProjectContext-owned services (double SignalBus subscription).
+            public InitializableManagerSpy(
+                [Inject(Optional = true, Source = InjectSources.Local)] List<IInitializable> initializables,
+                [Inject(Optional = true, Source = InjectSources.Local)] List<ValuePair<Type, int>> priorities)
+                : base(initializables, priorities){}
 
             public bool IsInitialized => _hasInitialized;
         }

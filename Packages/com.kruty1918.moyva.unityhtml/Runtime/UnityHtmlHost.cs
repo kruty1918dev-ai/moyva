@@ -26,6 +26,7 @@ namespace UnityHTML.Runtime
         private UnityHtmlDocumentTree _tree;
         private UnityHtmlTooltipLayer _tooltips;
         private Vector2 _layoutSize;
+        private readonly HashSet<ScrollRect> _seenScrollRects = new();
 
         public IUnityHtmlMotion Motion => _motion;
 
@@ -114,6 +115,7 @@ namespace UnityHTML.Runtime
             _root = null;
             _mountedCss = string.Empty;
             _tree = null;
+            _seenScrollRects.Clear();
             if (_tooltips != null)
             {
                 _tooltips.enabled = false;
@@ -233,9 +235,19 @@ namespace UnityHTML.Runtime
             _context.CalculateLayoutRecursively();
             _context.LateUpdateElementsRecursively();
             FlushReactElementLayout(_root);
+            // FlushReactElementLayout consumes HasNewLayout on every element, so the
+            // ScrollContentResizer LateUpdate gate never fires — resize scroll content
+            // here instead of waiting for a flag that is already cleared.
+            var resizers = _root.GetComponentsInChildren<ScrollContentResizer>(true);
+            for (var i = 0; i < resizers.Length; i++)
+            {
+                if (resizers[i] != null && resizers[i].Layout != null)
+                    resizers[i].RecalculateSize();
+            }
             ConfigureRenderedInputs(_root);
             Canvas.ForceUpdateCanvases();
             RestoreRenderedScrollPositions(scrollPositions);
+            InitializeNewScrollPositions();
             _tooltips?.RefreshTargets();
 #if UNITY_EDITOR
             MarkEditorPreviewObjectsDontSave(_root);
@@ -295,6 +307,26 @@ namespace UnityHTML.Runtime
 
             for (var i = 0; i < positions.Count; i++)
                 positions[i].Restore();
+        }
+
+        // ScrollRect defaults normalizedPosition to (0,0) — the bottom for vertical
+        // content — and nothing on the mount path initializes it, so a fresh scroll
+        // container would open scrolled to the end. Positions captured at pass start
+        // are restored above for scrolls that already existed; scrolls seen for the
+        // first time (new mount or added by a refresh) start at the top.
+        private void InitializeNewScrollPositions()
+        {
+            if (_root == null)
+                return;
+
+            _seenScrollRects.RemoveWhere(static scrollRect => scrollRect == null);
+            var scrollRects = _root.GetComponentsInChildren<ScrollRect>(true);
+            for (var i = 0; i < scrollRects.Length; i++)
+            {
+                var scrollRect = scrollRects[i];
+                if (scrollRect != null && scrollRect.vertical && _seenScrollRects.Add(scrollRect))
+                    scrollRect.verticalNormalizedPosition = 1f;
+            }
         }
 
         private readonly struct RenderedScrollPosition
@@ -433,18 +465,15 @@ namespace UnityHTML.Runtime
             if (!UGUIContext.ComponentCreators.ContainsKey("select"))
                 UGUIContext.ComponentCreators["select"] = (_, _, context) => new UnityHtmlSelectComponent(context);
 
-#if UNITY_EDITOR
-            PatchEditorScrollResizerCreator();
-#endif
+            PatchScrollComponentCreator();
         }
 
-#if UNITY_EDITOR
-        // ScrollContentResizer caches its RectTransform in OnEnable, which Unity
-        // never invokes for components created outside play mode (the script has
-        // no ExecuteAlways). Setting the scroll 'direction' property then throws
-        // inside RecalculateSize. Initialize the field after creation so edit-mode
-        // preview mounts behave like play mode.
-        private static void PatchEditorScrollResizerCreator()
+        // Wraps the scroll component creator: installs the accumulation-fixed
+        // MoyvaSmoothScrollRect, and in editor fixes ScrollContentResizer's
+        // RectTransform cache (it is filled in OnEnable, which Unity never invokes
+        // for components created outside play mode — the script has no
+        // ExecuteAlways).
+        private static void PatchScrollComponentCreator()
         {
             if (!UGUIContext.ComponentCreators.TryGetValue("scroll", out var creator))
                 return;
@@ -454,12 +483,73 @@ namespace UnityHTML.Runtime
             UGUIContext.ComponentCreators["scroll"] = (tag, text, context) =>
             {
                 var component = creator(tag, text, context);
+                ReplaceScrollRect(component);
+#if UNITY_EDITOR
                 if (!Application.isPlaying)
                     InitializeEditorScrollResizers(component);
+#endif
                 return component;
             };
         }
 
+        // Swaps the upstream SmoothScrollRect for the accumulation-fixed
+        // MoyvaSmoothScrollRect. Upstream computes each scroll event's target from
+        // the mid-animation position, so a continuous wheel/touchpad stream
+        // collapses to roughly a single step.
+        private static void ReplaceScrollRect(IReactComponent component)
+        {
+            if (component is not ScrollComponent scroll || scroll.ScrollRect == null)
+                return;
+
+            var oldRect = scroll.ScrollRect;
+            var go = oldRect.gameObject;
+
+            var content = oldRect.content;
+            var viewport = oldRect.viewport;
+            var horizontal = oldRect.horizontal;
+            var vertical = oldRect.vertical;
+            var scrollSensitivity = oldRect.scrollSensitivity;
+            var movementType = oldRect.movementType;
+            var elasticity = oldRect.elasticity;
+            var inertia = oldRect.inertia;
+            var decelerationRate = oldRect.decelerationRate;
+            var horizontalScrollbarVisibility = oldRect.horizontalScrollbarVisibility;
+            var verticalScrollbarVisibility = oldRect.verticalScrollbarVisibility;
+            var smoothness = oldRect.Smoothness;
+            var wheelDirectionTransposed = oldRect.WheelDirectionTransposed;
+            var horizontalScrollbar = oldRect.horizontalScrollbar;
+            var verticalScrollbar = oldRect.verticalScrollbar;
+
+            // ScrollRect is DisallowMultipleComponent — detach its scrollbar
+            // listeners first (so the dead instance does not stay subscribed to
+            // onValueChanged), then remove it before adding the replacement.
+            oldRect.horizontalScrollbar = null;
+            oldRect.verticalScrollbar = null;
+            UnityEngine.Object.DestroyImmediate(oldRect);
+
+            var fresh = go.AddComponent<MoyvaSmoothScrollRect>();
+            fresh.content = content;
+            fresh.viewport = viewport;
+            fresh.horizontal = horizontal;
+            fresh.vertical = vertical;
+            fresh.scrollSensitivity = scrollSensitivity;
+            fresh.movementType = movementType;
+            fresh.elasticity = elasticity;
+            fresh.inertia = inertia;
+            fresh.decelerationRate = decelerationRate;
+            fresh.horizontalScrollbarVisibility = horizontalScrollbarVisibility;
+            fresh.verticalScrollbarVisibility = verticalScrollbarVisibility;
+            fresh.Smoothness = smoothness;
+            fresh.WheelDirectionTransposed = wheelDirectionTransposed;
+            fresh.horizontalScrollbar = horizontalScrollbar;
+            fresh.verticalScrollbar = verticalScrollbar;
+
+            typeof(ScrollComponent)
+                .GetField("<ScrollRect>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(scroll, fresh);
+        }
+
+#if UNITY_EDITOR
         private static void InitializeEditorScrollResizers(IReactComponent component)
         {
             if (component is not UGUIComponent ugui || ugui.GameObject == null)

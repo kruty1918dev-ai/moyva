@@ -76,6 +76,20 @@ namespace Kruty1918.Moyva.Tests.Performance.PlayMode
         [OneTimeTearDown]
         public void FlushAll() => Flush();
 
+        [TearDown]
+        public void TearDown()
+        {
+            LogAssert.ignoreFailingMessages = false;
+            // Single-mode loads leave the last scene active; destroy its roots so
+            // canvas/event systems do not leak into unrelated fixtures.
+            var scene = SceneManager.GetActiveScene();
+            if (!scene.IsValid())
+                return;
+            foreach (var root in scene.GetRootGameObjects())
+                if (root != null)
+                    UnityEngine.Object.Destroy(root);
+        }
+
         [UnityTest]
         public IEnumerator HomeMenuScene_StartupAndIdleFrames()
         {

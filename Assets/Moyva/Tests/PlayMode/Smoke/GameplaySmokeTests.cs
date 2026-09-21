@@ -57,6 +57,19 @@ namespace Kruty1918.Moyva.Tests.Smoke.PlayMode
         private static SceneContext FindSceneContext()
             => UnityEngine.Object.FindObjectsByType<SceneContext>(FindObjectsSortMode.None).FirstOrDefault();
 
+        [TearDown]
+        public void TearDown()
+        {
+            // Single-mode loads leave the last scene active; destroy its roots so
+            // canvas/event systems do not leak into unrelated fixtures.
+            var scene = SceneManager.GetActiveScene();
+            if (!scene.IsValid())
+                return;
+            foreach (var root in scene.GetRootGameObjects())
+                if (root != null)
+                    UnityEngine.Object.Destroy(root);
+        }
+
         [UnityTest]
         public IEnumerator GameplayScene_LoadsDirectly_WithoutErrors()
         {

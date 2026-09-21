@@ -65,7 +65,10 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 return;
 
             NotifyManualControl();
-            ApplyScreenDelta(delta, _settings.ResolveMoveSpeed(), immediate: false);
+            // Drag pan must stay pointer-following: the world point under the
+            // cursor moves 1:1 with the drag. moveSpeed is for rate-based input
+            // (keyboard/edge scroll), not for grab-and-drag.
+            ApplyScreenDelta(delta, 1f, immediate: false);
         }
 
         /// <summary>Переміщує камери клавіатури.</summary>
