@@ -15,7 +15,9 @@
     "Kruty1918.Moyva.Signals",
     "Kruty1918.Moyva.Turns",
     "Kruty1918.Moyva.UIActions",
-    "Kruty1918.Moyva.Units"
+    "Kruty1918.Moyva.Units",
+    "UnityHTML.Runtime",
+    "UnityEngine.UI"
   ],
   "includePlatforms": ["Editor"],
   "overrideReferences": true,
