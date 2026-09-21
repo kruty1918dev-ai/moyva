@@ -49,6 +49,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public GameplaySupplyResourceSnapshot[] Resources = Array.Empty<GameplaySupplyResourceSnapshot>();
         public GameplaySupplySourceSnapshot[] Sources = Array.Empty<GameplaySupplySourceSnapshot>();
         public GameplaySupplyWagonSnapshot[] Wagons = Array.Empty<GameplaySupplyWagonSnapshot>();
+        public string PlannedShipment;
+        public bool PlannedNeedsRepeat;
+        public float PlannedRouteDistance;
         public int SourceIndex = -1;
         public int WagonIndex = -1;
         public bool CanDispatch;
@@ -192,6 +195,29 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             else if (wagons[snapshot.WagonIndex].FreeCapacity <= 0f)
                 snapshot.DispatchUnavailableReason = "This wagon has no free capacity.";
             snapshot.CanDispatch = string.IsNullOrWhiteSpace(snapshot.DispatchUnavailableReason);
+
+            if (snapshot.SourceIndex >= 0 && snapshot.WagonIndex >= 0)
+            {
+                var preview = _supply.PreviewShipment(new ConstructionSupplyDispatchRequest(
+                    ownerId, status.BuildingId, position,
+                    _sourceSettlementId, _sourceWarehouseKey, _wagonId), required);
+                if (preview != null && preview.Count > 0)
+                {
+                    float planned = 0f, deficitTotal = 0f;
+                    var parts = new List<string>();
+                    foreach (var pair in preview)
+                    {
+                        planned += pair.Value;
+                        parts.Add($"{pair.Key} {pair.Value:0.#}");
+                    }
+                    foreach (var line in snapshot.Resources)
+                        if (line.Deficit > 0.0001f) deficitTotal += line.Deficit;
+                    snapshot.PlannedShipment = string.Join(", ", parts);
+                    snapshot.PlannedNeedsRepeat = planned < deficitTotal - 0.0001f;
+                    snapshot.PlannedRouteDistance =
+                        sources[snapshot.SourceIndex].RouteDistance;
+                }
+            }
             _lastSnapshot = snapshot;
             return snapshot;
         }

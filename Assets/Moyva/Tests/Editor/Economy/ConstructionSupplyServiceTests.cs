@@ -171,6 +171,39 @@ namespace Kruty1918.Moyva.Tests.Economy
         }
 
         [Test]
+        public void PreviewShipment_ReportsPlannedCargo_WithoutReserving()
+        {
+            AddWagon("wagon-small", new Vector2Int(2, 0), 30f);
+            var request = new ConstructionSupplyDispatchRequest("player_0", "lumber-camp",
+                PlacementPosition, "source", SourceWarehouseKey, "wagon-small");
+
+            var preview = _supply.PreviewShipment(request, Required(50f));
+
+            Assert.AreEqual(30f, preview["wood"], 0.001f,
+                "Preview clamps the shipment to the wagon's free capacity.");
+            Assert.AreEqual(0f, _source.GetTotalReservedResource("wood"), 0.001f,
+                "Preview must not reserve source stock.");
+            Assert.IsFalse(_caravans.TryGetRoute("player_0", "wagon-small", out _),
+                "Preview must not start a route.");
+            Assert.IsFalse(_supply.TryGetOrderAt(PlacementPosition, out _),
+                "Preview must not create an order.");
+        }
+
+        [Test]
+        public void PreviewShipment_ReturnsEmpty_ForForeignSource()
+        {
+            var foreign = AddSourceSettlement("enemy", "Enemy",
+                new Vector2Int(8, 10), "8:10");
+            foreign.OwnerId = "player_1";
+
+            var preview = _supply.PreviewShipment(new ConstructionSupplyDispatchRequest(
+                "player_0", "lumber-camp", PlacementPosition,
+                "enemy", "8:10", "wagon-1"), Required(50f));
+
+            Assert.AreEqual(0, preview.Count);
+        }
+
+        [Test]
         public void DispatchSupply_ReservesSourceStock_AndStartsRoute()
         {
             var result = Dispatch();

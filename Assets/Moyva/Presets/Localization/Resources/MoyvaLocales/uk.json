@@ -814,6 +814,9 @@
     "This placement was rejected. Try another tile.": "Розміщення відхилено. Спробуйте іншу клітинку.",
     "No pending construction placements to confirm.": "Немає розміщень для підтвердження.",
     "Placed {0} building(s); {1} rejected.": "Розміщено споруд: {0}; відхилено: {1}.",
-    "Placed {0} building(s); {1} rejected: {2}": "Розміщено споруд: {0}; відхилено: {1}: {2}"
+    "Placed {0} building(s); {1} rejected: {2}": "Розміщено споруд: {0}; відхилено: {1}: {2}",
+    "route": "маршрут",
+    "Delivery plan": "План доставки",
+    "wagon repeats until the deficit is covered": "віз повторює рейси, доки дефіцит не закрито"
   }
 }

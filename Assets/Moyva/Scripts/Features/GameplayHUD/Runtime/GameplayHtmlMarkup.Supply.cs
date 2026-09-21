@@ -64,6 +64,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     .Append("\" onClick=\"Globals.gameplay.SetSupplySource(")
                     .Append(index.ToString(CultureInfo.InvariantCulture)).Append(")\"><text className=\"tab-label\">")
                     .Append(E(source.SettlementName)).Append(" · ").Append(E(source.WarehouseKey))
+                    .Append(" · ").Append(state.T("route")).Append(" ")
+                    .Append(Amount(source.RouteDistance))
                     .Append("</text></button><text className=\"item-meta\">")
                     .Append(E(source.StockSummary)).Append("</text>");
             }
@@ -81,6 +83,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     .Append(index.ToString(CultureInfo.InvariantCulture)).Append(")\"><text className=\"tab-label\">")
                     .Append(E(wagon.UnitId)).Append(" · ").Append(E(status))
                     .Append("</text></button>");
+            }
+
+            if (supply.PlannedShipment != null)
+            {
+                html.Append("<text className=\"item-meta\">").Append(state.T("Delivery plan"))
+                    .Append(": ").Append(E(supply.PlannedShipment))
+                    .Append(" · ").Append(state.T("route")).Append(" ")
+                    .Append(Amount(supply.PlannedRouteDistance));
+                if (supply.PlannedNeedsRepeat)
+                    html.Append(" · ").Append(state.T("wagon repeats until the deficit is covered"));
+                html.Append("</text>");
             }
 
             html.Append("<text className=\"item-meta\">Resources move only by wagon — deliveries are reserved for this construction.</text>");

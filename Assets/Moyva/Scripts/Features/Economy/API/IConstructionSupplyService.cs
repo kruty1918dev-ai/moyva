@@ -145,6 +145,13 @@ namespace Kruty1918.Moyva.Economy.API
         CaravanTransferResult DispatchSupply(ConstructionSupplyDispatchRequest request,
             IReadOnlyDictionary<string, float> requiredCosts);
 
+        /// <summary>Read-only preview of what the dispatch would load at the source:
+        /// per-resource min(deficit, free stock, wagon free capacity). Empty when the
+        /// dispatch would be rejected or nothing can ship.</summary>
+        IReadOnlyDictionary<string, float> PreviewShipment(
+            ConstructionSupplyDispatchRequest request,
+            IReadOnlyDictionary<string, float> requiredCosts);
+
         IReadOnlyList<ConstructionSupplyOrderSnapshot> GetOrders(string ownerId);
 
         bool TryGetOrderAt(Vector2Int position, out ConstructionSupplyOrderSnapshot snapshot);

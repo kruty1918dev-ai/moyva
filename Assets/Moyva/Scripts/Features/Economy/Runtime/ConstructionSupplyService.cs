@@ -21,6 +21,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private const float Epsilon = 0.0001f;
         private static readonly IReadOnlyList<ConstructionSupplyResourceLine> NoLines =
             new List<ConstructionSupplyResourceLine>();
+        private static readonly IReadOnlyDictionary<string, float> EmptyShipment =
+            new ReadOnlyDictionary<string, float>(new Dictionary<string, float>());
         private static readonly IReadOnlyList<ConstructionSupplySourceSnapshot> NoSources =
             new List<ConstructionSupplySourceSnapshot>();
         private static readonly IReadOnlyList<ConstructionSupplyWagonSnapshot> NoWagons =
@@ -205,6 +207,34 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (!order.WagonIds.Contains(request.UnitId)) order.WagonIds.Add(request.UnitId);
             Changed?.Invoke();
             return CaravanTransferResult.Success();
+        }
+
+        public IReadOnlyDictionary<string, float> PreviewShipment(
+            ConstructionSupplyDispatchRequest request,
+            IReadOnlyDictionary<string, float> requiredCosts)
+        {
+            var evaluation = Evaluate(request.OwnerId, request.BuildingId,
+                request.Position, requiredCosts);
+            if (!evaluation.Resolved || !evaluation.HasDeficit) return EmptyShipment;
+
+            var sourceSettlement = _settlements.GetSettlement(request.SourceSettlementId);
+            if (sourceSettlement == null || !sourceSettlement.IsActive
+                || !string.Equals(sourceSettlement.OwnerId, request.OwnerId, StringComparison.Ordinal)
+                || string.Equals(sourceSettlement.SettlementId, evaluation.SettlementId,
+                    StringComparison.Ordinal))
+                return EmptyShipment;
+            if (!sourceSettlement.WarehouseResourcePools.TryGetValue(request.SourceWarehouseKey,
+                    out var sourcePool) || sourcePool == null)
+                return EmptyShipment;
+            if (!_gameplay.Value.TryGetWagon(request.UnitId, out var wagon)
+                || !string.Equals(wagon.OwnerId, request.OwnerId, StringComparison.Ordinal))
+                return EmptyShipment;
+
+            float cargoUsed = 0f;
+            if (_caravans.TryGetCargo(request.OwnerId, request.UnitId, out var cargo))
+                foreach (var pair in cargo.Resources) cargoUsed += pair.Value;
+            return BuildShipment(evaluation.Resources, sourcePool, sourceSettlement,
+                request.SourceWarehouseKey, Mathf.Max(0f, wagon.Capacity - cargoUsed));
         }
 
         public IReadOnlyList<ConstructionSupplyOrderSnapshot> GetOrders(string ownerId)
