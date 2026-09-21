@@ -55,12 +55,13 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
 
         private static void AssertPhysicalCloseButton(
             Action<GameplayHtmlState> open,
-            GameplayHtmlSnapshot snapshot = null)
+            GameplayHtmlSnapshot snapshot = null,
+            string viewportClass = "vp-wide")
         {
             var state = new GameplayHtmlState();
             snapshot ??= new GameplayHtmlSnapshot();
             open(state);
-            string html = GameplayHtmlMarkup.Build(snapshot, state, "vp-wide");
+            string html = GameplayHtmlMarkup.Build(snapshot, state, viewportClass);
 
             var root = CreateRoot();
             var globals = new FakeGameplayGlobals();
@@ -99,6 +100,21 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
                 Assert.IsTrue(RectTransformUtility.RectangleContainsScreenPoint(
                     rect, edge, null), "Edge of the close button misses its hit area.");
 
+                // The close control must stay inside the mounted viewport on
+                // every size class — a panel that overflows the screen leaves
+                // the X unreachable.
+                var rootRect = root.GetComponent<RectTransform>();
+                var rootCorners = new Vector3[4];
+                rootRect.GetWorldCorners(rootCorners);
+                Assert.GreaterOrEqual(corners[0].x, rootCorners[0].x - 0.5f,
+                    "Close button overflows the left edge.");
+                Assert.LessOrEqual(corners[2].x, rootCorners[2].x + 0.5f,
+                    "Close button overflows the right edge.");
+                Assert.GreaterOrEqual(corners[0].y, rootCorners[0].y - 0.5f,
+                    "Close button overflows the bottom edge.");
+                Assert.LessOrEqual(corners[2].y, rootCorners[2].y + 0.5f,
+                    "Close button overflows the top edge.");
+
                 close.onClick.Invoke();
                 Assert.AreEqual(1, globals.CloseCalls,
                     "Clicking the close button must route to Globals.gameplay.ClosePanel().");
@@ -123,6 +139,24 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
         public void CloseButton_ConstructionPanel_PhysicalClickCloses()
             => AssertPhysicalCloseButton(
                 state => state.OpenPanel(GameplayHtmlPanel.Construction));
+
+        [Test]
+        public void CloseButton_ConstructionPanel_ShortViewport_KeepsCloseOnScreen()
+            => AssertPhysicalCloseButton(
+                state => state.OpenPanel(GameplayHtmlPanel.Construction),
+                viewportClass: "vp-short");
+
+        [Test]
+        public void CloseButton_ConstructionPanel_CompactViewport_KeepsCloseOnScreen()
+            => AssertPhysicalCloseButton(
+                state => state.OpenPanel(GameplayHtmlPanel.Construction),
+                viewportClass: "vp-compact");
+
+        [Test]
+        public void CloseButton_KingdomDashboard_ShortViewport_KeepsCloseOnScreen()
+            => AssertPhysicalCloseButton(
+                state => state.OpenPanel(GameplayHtmlPanel.Kingdom),
+                viewportClass: "vp-short");
 
         [Test]
         public void CloseButton_KingdomDashboard_PhysicalClickCloses()
