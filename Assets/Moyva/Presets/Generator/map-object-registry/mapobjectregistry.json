@@ -580,6 +580,54 @@
     "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/rock_single_E.prefab",
     "required": true
    }
+  },
+  {
+   "id": "grass-bilboard",
+   "visualPrefab": {
+    "$asset": "asset.game-object.grass-bilboard-prefab.b65a457a",
+    "editorPath": "Assets/Moyva/Generated/Grass/Grass_bilboard_Prefab.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "grass-kreuz",
+   "visualPrefab": {
+    "$asset": "asset.game-object.grass-kreuz-prefab.611ea348",
+    "editorPath": "Assets/Moyva/Generated/Grass/Grass_kreuz_Prefab.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "kaykit-trees-a-cut",
+   "visualPrefab": {
+    "$asset": "asset.game-object.trees-a-cut.38dac44e",
+    "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/trees_A_cut.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "kaykit-trees-b-cut",
+   "visualPrefab": {
+    "$asset": "asset.game-object.trees-b-cut.d1588903",
+    "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/trees_B_cut.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "kaykit-tree-single-a-cut",
+   "visualPrefab": {
+    "$asset": "asset.game-object.tree-single-a-cut.a1d43a80",
+    "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/tree_single_A_cut.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "kaykit-tree-single-b-cut",
+   "visualPrefab": {
+    "$asset": "asset.game-object.tree-single-b-cut.e8f31f78",
+    "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/tree_single_B_cut.prefab",
+    "required": true
+   }
   }
  ],
  "migration": {

@@ -463,14 +463,17 @@ namespace Kruty1918.Moyva.Tests.Units
 
         private sealed class FakeSaveContext : ISaveContext
         {
+            private readonly MemoryStream _stream;
+            private BinaryWriter _writer;
+            private BinaryReader _reader;
+
             public FakeSaveContext(MemoryStream stream)
             {
-                Writer = new BinaryWriter(stream);
-                Reader = new BinaryReader(stream);
+                _stream = stream;
             }
 
-            public BinaryWriter Writer { get; }
-            public BinaryReader Reader { get; }
+            public BinaryWriter Writer => _writer ??= new BinaryWriter(_stream);
+            public BinaryReader Reader => _reader ??= new BinaryReader(_stream);
         }
 
         private sealed class SignalFiringUnitFactory : IUnitFactory

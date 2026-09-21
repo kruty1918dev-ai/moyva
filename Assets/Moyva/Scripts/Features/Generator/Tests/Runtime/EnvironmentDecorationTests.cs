@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using NUnit.Framework;
@@ -241,6 +242,76 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         }
 
         [Test]
+        public void HighDensity_ReachesMultipleObjectsPerTile()
+        {
+            // Arrange: forest biome doubles density, so density can exceed 1
+            // and MaxObjectsPerTile=3 must be reachable.
+            var worldData = CreateTestWorldData(10, 10, seed: 12345);
+            for (int x = 0; x < worldData.Width; x++)
+            for (int y = 0; y < worldData.Height; y++)
+            {
+                worldData.BiomeMap[x, y] = "forest-dense";
+                worldData.GameplayTileMap[x, y] = "forest-dense";
+            }
+
+            // Act
+            var result = _generator.Generate(worldData);
+
+            // Assert
+            var perTile = result.Placements
+                .GroupBy(p => (p.TileX, p.TileY))
+                .Select(g => g.Count())
+                .ToArray();
+            Assert.Greater(perTile.Length, 0, "Forest world should produce decorations");
+            Assert.Greater(perTile.Max(), 1,
+                "Density > 1 must be able to place more than one object per tile");
+            Assert.LessOrEqual(perTile.Max(), _config.MaxObjectsPerTile,
+                "Placement count must respect MaxObjectsPerTile");
+        }
+
+        [Test]
+        public void ZeroMaxObjectsPerTile_ProducesNoDecorations()
+        {
+            // Arrange
+            _config.MaxObjectsPerTile = 0;
+            var worldData = CreateTestWorldData(10, 10, seed: 12345);
+
+            // Act
+            var result = _generator.Generate(worldData);
+
+            // Assert
+            Assert.AreEqual(0, result.Count);
+        }
+
+        [Test]
+        public void BushAndGrassTypes_SpawnWhenPoolsConfigured()
+        {
+            // Arrange: pools for every type emitted by SelectDecorationType.
+            _mockRegistry.AddDefinition("test-bush-001");
+            _mockRegistry.AddDefinition("test-grass-001");
+            _config.AssetPools["bush"] = new[] { "test-bush-001" };
+            _config.AssetPools["grass"] = new[] { "test-grass-001" };
+            _config.TypeDensities = new EnvironmentTypeDensities
+            {
+                TreeDensity = 0.25f,
+                BushDensity = 0.25f,
+                GrassDensity = 0.25f,
+                RockDensity = 0.25f
+            };
+            var worldData = CreateTestWorldData(20, 20, seed: 12345);
+
+            // Act
+            var result = _generator.Generate(worldData);
+
+            // Assert
+            var ids = result.Placements.Select(p => p.AssetId).Distinct().ToArray();
+            Assert.Contains("test-bush-001", ids,
+                "Bush band must produce placements when a bush pool exists");
+            Assert.Contains("test-grass-001", ids,
+                "Grass band must produce placements when a grass pool exists");
+        }
+
+        [Test]
         public void BiomeMultipliers_AffectDecorationDensity()
         {
             // Arrange
@@ -300,6 +371,16 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
                 _definitions["green-tree-object-001"] = new MapObjectDefinition();
                 _definitions["green-tree-object-002"] = new MapObjectDefinition();
                 _definitions["stone-object-001"] = new MapObjectDefinition();
+            }
+
+            public void AddDefinition(string id)
+            {
+                _definitions[id] = new MapObjectDefinition();
+            }
+
+            public void SetDefinition(string id, GameObject visualPrefab)
+            {
+                _definitions[id] = new MapObjectDefinition(id, visualPrefab);
             }
 
             public bool TryGetDefinition(string id, out MapObjectDefinition definition)

@@ -15,16 +15,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IMapObjectRegistryService _objectRegistry;
         private readonly IMapChunkLayoutService _layout;
         private readonly IMapVisualChunkRootService _roots;
+        private readonly IGeneratorTerrainLevelService _terrainLevels;
         private readonly Dictionary<MapChunkCoord, Transform> _decorationRoots = new Dictionary<MapChunkCoord, Transform>();
 
         public EnvironmentDecorationSpawner(
             IMapObjectRegistryService objectRegistry,
             IMapChunkLayoutService layout,
-            IMapVisualChunkRootService roots)
+            IMapVisualChunkRootService roots,
+            [Zenject.InjectOptional] IGeneratorTerrainLevelService terrainLevels = null)
         {
             _objectRegistry = objectRegistry ?? throw new ArgumentNullException(nameof(objectRegistry));
             _layout = layout ?? throw new ArgumentNullException(nameof(layout));
             _roots = roots ?? throw new ArgumentNullException(nameof(roots));
+            _terrainLevels = terrainLevels;
         }
 
         /// <summary>
@@ -32,10 +35,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// </summary>
         public int Spawn(DecorationPlacementResult placementResult)
         {
+            Clear();
             if (placementResult == null || placementResult.Count == 0)
                 return 0;
 
-            Clear();
             int spawned = 0;
 
             foreach (var placement in placementResult.Placements)
@@ -84,21 +87,32 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Transform root = GetDecorationRoot(coord);
             var instance = UnityEngine.Object.Instantiate(definition.VisualPrefab, root, false);
             instance.name = $"{definition.Id}_{placement.TileX}_{placement.TileY}";
-            instance.transform.localPosition = placement.Position;
+            var localPosition = placement.Position;
+            if (_terrainLevels != null
+                && _terrainLevels.TryGetSurfaceHeight(cell, out float surfaceY))
+            {
+                localPosition.y = surfaceY;
+            }
+            instance.transform.localPosition = localPosition;
             instance.transform.localRotation = placement.Rotation;
             instance.transform.localScale = placement.Scale;
 
             // Ensure decorations don't cast shadows or have colliders (purely visual)
-            var renderer = instance.GetComponent<Renderer>();
-            if (renderer != null)
+            var renderers = instance.GetComponentsInChildren<Renderer>(true);
+            foreach (var renderer in renderers)
             {
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 renderer.receiveShadows = true;
             }
 
-            var collider = instance.GetComponent<Collider>();
-            if (collider != null)
-                UnityEngine.Object.Destroy(collider);
+            var colliders = instance.GetComponentsInChildren<Collider>(true);
+            foreach (var collider in colliders)
+            {
+                if (Application.isPlaying)
+                    UnityEngine.Object.Destroy(collider);
+                else
+                    UnityEngine.Object.DestroyImmediate(collider);
+            }
 
             return true;
         }

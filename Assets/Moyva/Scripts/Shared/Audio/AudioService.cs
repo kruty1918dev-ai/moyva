@@ -410,7 +410,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
             if (!activeScene.IsValid())
                 return;
 
-            if (activeScene.handle == _lastProcessedSceneHandle)
+            if ((int)activeScene.handle.GetRawData() == _lastProcessedSceneHandle)
                 return;
 
             RefreshAutoPlayForScene(activeScene);
@@ -421,7 +421,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
         private void RefreshAutoPlayForScene(UnityEngine.SceneManagement.Scene scene)
         {
-            _lastProcessedSceneHandle = scene.handle;
+            _lastProcessedSceneHandle = (int)scene.handle.GetRawData();
 
             for (int i = _awakeSources.Count - 1; i >= 0; i--)
             {
