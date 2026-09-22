@@ -13,6 +13,20 @@ namespace UnityHTML.Runtime
         /// <inheritdoc />
         public event Action<string> ExitFinished;
 
+        private bool _reducedMotion;
+
+        /// <inheritdoc />
+        public bool ReducedMotion
+        {
+            get => _reducedMotion;
+            set
+            {
+                _reducedMotion = value;
+                if (value)
+                    StopAll();
+            }
+        }
+
         private readonly Dictionary<string, ActiveMotion> _active = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _declared = new(StringComparer.Ordinal);
         private readonly HashSet<string> _seen = new(StringComparer.Ordinal);
@@ -175,6 +189,14 @@ namespace UnityHTML.Runtime
                 return;
 
             Stop(id);
+            if (_reducedMotion)
+            {
+                // Snap to the final state: entries rest at their declared pose,
+                // exits complete instantly so close flows keep their callback.
+                if (isExit)
+                    ExitFinished?.Invoke(id);
+                return;
+            }
             duration = Mathf.Clamp(duration, 0.04f, 2f);
             delay = Mathf.Clamp(delay, 0f, 2f);
             distance = Mathf.Clamp(Mathf.Abs(distance), 0f, 160f);

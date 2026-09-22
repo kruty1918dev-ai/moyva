@@ -57,7 +57,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly GameplayHtmlAnchor[] _anchors;
         private bool _controlHintsDirty = true;
         private ControlProfile _hintProfile;
-        private void OnControlSettingsChanged(PlayerControlSettingsData _) => _controlHintsDirty = true;
+        private void OnControlSettingsChanged(PlayerControlSettingsData data)
+        {
+            _controlHintsDirty = true;
+            if (_host?.Motion != null)
+                _host.Motion.ReducedMotion = data.ReduceMotion;
+        }
         private readonly IInputDeviceContext _inputDevices;
         private readonly IPlayerControlSettingsService _controlSettings;
         private readonly LazyInject<IUiActionRouter> _actions;
@@ -145,7 +150,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _anchor.SetLegacyUiVisible(false);
             _state.Changed += MarkDirty;
             if (_host?.Motion != null)
+            {
                 _host.Motion.ExitFinished += OnMotionExitFinished;
+                _host.Motion.ReducedMotion = _controlSettings?.Settings.ReduceMotion ?? false;
+            }
             GameplayNotificationStream.Published += OnNotificationPublished;
             if (_turns != null)
                 _turns.StateChanged += MarkDirty;

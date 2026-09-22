@@ -33,6 +33,12 @@ namespace UnityHTML.Runtime
         /// </summary>
         event Action<string> ExitFinished;
 
+        /// <summary>Global reduced-motion gate. When true, declared motions snap
+        /// straight to their final state: entries start at their resting pose,
+        /// and exits fire <see cref="ExitFinished"/> immediately so close flows
+        /// keep their callbacks. Setting it mid-motion cancels in-flight tweens.</summary>
+        bool ReducedMotion { get; set; }
+
         void Play(string targetId, string preset, float duration, float delay);
         void Stop(string targetId);
 

@@ -39,6 +39,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly HomeMenuMoyvaUiState _state;
         private readonly ILocalizationService _localization;
         private readonly IUiMotionService _uiMotion;
+        private readonly IPlayerControlSettingsService _controlSettings;
         private readonly List<GameObject> _ownedObjects = new();
         private readonly List<GameSlotInfo> _slots = new();
         private readonly List<RoomInfo> _rooms = new();
@@ -65,6 +66,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state = state;
             _localization = localization;
             _uiMotion = uiMotion;
+            _controlSettings = controlSettings;
             FlowContext = lobbyFlowContext;
             Controls = new HomeMenuControlsEditor(state, this, hotkeys, controlSettings, devices);
             _botDifficulties = BotDifficultyRegistry.Load();
@@ -400,9 +402,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (_localization != null)
                 _localization.LanguageChanged += OnLanguageChanged;
+            if (_controlSettings != null)
+                _controlSettings.OnSettingsChanged += OnControlSettingsChanged;
             _state.SetReducedMotion(ReducedMotion);
             _state.MarkDirty();
         }
+
+        private void OnControlSettingsChanged(PlayerControlSettingsData data)
+            => _state.SetReducedMotion(data.ReduceMotion);
 
         private void OnLanguageChanged() => _state.MarkDirty();
 
@@ -452,6 +459,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (_localization != null)
                 _localization.LanguageChanged -= OnLanguageChanged;
+            if (_controlSettings != null)
+                _controlSettings.OnSettingsChanged -= OnControlSettingsChanged;
             for (int i = 0; i < _ownedObjects.Count; i++)
             {
                 if (_ownedObjects[i] == null)

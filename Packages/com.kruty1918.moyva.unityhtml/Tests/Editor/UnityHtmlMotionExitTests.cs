@@ -97,5 +97,70 @@ namespace UnityHTML.Tests
                 UnityEngine.Object.DestroyImmediate(go);
             }
         }
+
+        [Test]
+        public void ReducedMotion_Exit_FiresCallbackImmediatelyWithoutTween()
+        {
+            var bridge = new UnityHtmlMotionBridge { ReducedMotion = true };
+            var go = new GameObject("exit-target", typeof(RectTransform));
+            int calls = 0;
+            bridge.ExitFinished += _ => calls++;
+            try
+            {
+                PlayExit(bridge, "panel", (RectTransform)go.transform);
+                Assert.AreEqual(1, calls,
+                    "Under reduced motion an exit must complete instantly, keeping the callback.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void ReducedMotion_Enter_LeavesElementAtRestingPose()
+        {
+            var bridge = new UnityHtmlMotionBridge { ReducedMotion = true };
+            var go = new GameObject("enter-target", typeof(RectTransform));
+            var rect = (RectTransform)go.transform;
+            var resting = rect.anchoredPosition;
+            int calls = 0;
+            bridge.ExitFinished += _ => calls++;
+            try
+            {
+                PlayEnter(bridge, "panel", rect);
+                Assert.AreEqual(0, calls);
+                Assert.AreEqual(resting, rect.anchoredPosition,
+                    "Reduced motion must not move the element before its final pose.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void ReducedMotion_ToggledMidExit_CompletesCallbackOnce()
+        {
+            var bridge = new UnityHtmlMotionBridge();
+            var go = new GameObject("exit-target", typeof(RectTransform));
+            int calls = 0;
+            bridge.ExitFinished += _ => calls++;
+            try
+            {
+                PlayExit(bridge, "panel", (RectTransform)go.transform);
+                bridge.ReducedMotion = true; // toggled mid-close — in-flight exit snaps finished
+
+                Assert.AreEqual(1, calls,
+                    "Enabling reduced motion mid-exit must finish the close callback.");
+
+                bridge.Stop("panel");
+                Assert.AreEqual(1, calls, "The exit callback stays exactly-once.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+            }
+        }
     }
 }
