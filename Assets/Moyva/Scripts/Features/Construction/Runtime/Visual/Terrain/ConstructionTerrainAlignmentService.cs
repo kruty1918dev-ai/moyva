@@ -17,6 +17,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionTileSurfaceOffsetService _tileSurfaceOffsets;
         private readonly ConstructionVisualBoundsAlignmentService _boundsAlignment;
         private readonly IGeneratedTerrainLevelQuery _generatedTerrainLevelQuery;
+        private readonly ITerrainPassageMap _terrainPassages;
         private readonly ConditionalWeakTable<GameObject, CachedVisualMetrics> _visualMetrics = new();
         private readonly float _buildingSurfaceOffsetY;
         private readonly float _previewSurfaceOffsetY;
@@ -29,7 +30,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] ConstructionTileSurfaceOffsetService tileSurfaceOffsets = null,
             [InjectOptional] ConstructionVisualBoundsAlignmentService boundsAlignment = null,
             [InjectOptional] IGeneratedTerrainLevelQuery generatedTerrainLevelQuery = null,
-            [InjectOptional] IConstructionVisualSettingsProvider visualSettingsProvider = null)
+            [InjectOptional] IConstructionVisualSettingsProvider visualSettingsProvider = null,
+            [InjectOptional] ITerrainPassageMap terrainPassages = null)
         {
             _gridService = gridService;
             _gridProjection = gridProjection;
@@ -38,8 +40,72 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _boundsAlignment = boundsAlignment;
             _ = _boundsAlignment; // Constructor compatibility; hot-path alignment now uses cached metrics.
             _generatedTerrainLevelQuery = generatedTerrainLevelQuery;
+            _terrainPassages = terrainPassages;
             _buildingSurfaceOffsetY = visualSettingsProvider?.BuildingSurfaceOffsetY ?? BuildingSurfaceOffsetY;
             _previewSurfaceOffsetY = visualSettingsProvider?.PreviewSurfaceOffsetY ?? PreviewSurfaceOffsetY;
+        }
+
+        /// <summary>
+        /// Sloped surface info for a generated stair module occupying the cell.
+        /// Returns false for flat tiles. <paramref name="climbDirection"/> is the
+        /// grid-space direction the surface rises toward (one of ±X/±Y, mapping
+        /// to world ±X/±Z). Edge heights are raw surface Y (without layer
+        /// offset): <paramref name="lowEdgeSurfaceY"/> at the edge opposite the
+        /// climb, <paramref name="highEdgeSurfaceY"/> at the climb-side edge.
+        /// </summary>
+        public bool TryResolveTileSlope(
+            Vector2Int tile,
+            out Vector2Int climbDirection,
+            out float lowEdgeSurfaceY,
+            out float highEdgeSurfaceY)
+        {
+            climbDirection = default;
+            lowEdgeSurfaceY = 0f;
+            highEdgeSurfaceY = 0f;
+
+            if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection)
+                || _terrainPassages == null
+                || !_terrainPassages.TryGetModule(tile, out TerrainPassageModule module))
+            {
+                return false;
+            }
+
+            climbDirection = StairDirectionOffset(module.DirectionIndex);
+            if (climbDirection == Vector2Int.zero)
+                return false;
+
+            highEdgeSurfaceY = module.TopY;
+            // The module's bottom edge meets the previous module's top, or the
+            // low plateau surface for the first module of a flight.
+            Vector2Int prevCell = tile - climbDirection;
+            lowEdgeSurfaceY =
+                _terrainPassages.TryGetModule(prevCell, out TerrainPassageModule prev)
+                    ? prev.TopY
+                    : module.LowSurfaceY;
+            return true;
+        }
+
+        /// <summary>
+        /// Per-corner surface heights of one tile in world Y, corners ordered
+        /// (-x,-z), (+x,-z), (+x,+z), (-x,+z) around the tile center. Flat tiles
+        /// return four equal heights; stair cells slope toward the climb edge.
+        /// </summary>
+        public TileSurfaceQuad ResolveTileSurfaceQuad(Vector2Int tile, float layerOffset)
+        {
+            if (TryResolveTileSlope(tile, out Vector2Int climb, out float lowY, out float highY))
+            {
+                float lo = lowY + layerOffset;
+                float hi = highY + layerOffset;
+                float y00 = lo, y10 = lo, y11 = lo, y01 = lo;
+                if (climb.y > 0) { y11 = hi; y01 = hi; }
+                else if (climb.y < 0) { y00 = hi; y10 = hi; }
+                else if (climb.x > 0) { y10 = hi; y11 = hi; }
+                else { y00 = hi; y01 = hi; }
+                return new TileSurfaceQuad(y00, y10, y11, y01);
+            }
+
+            float flatY = ResolveWorldPosition(tile, layerOffset).y;
+            return new TileSurfaceQuad(flatY, flatY, flatY, flatY);
         }
 
         public Vector3 ResolveWorldPosition(Vector2Int tile, float layerOffset)
@@ -173,6 +239,21 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return baseY;
         }
 
+        // Mirrors TerrainPassagePlan.DirectionIndex: 0=+Y(grid/+Z world),
+        // 1=+X, 2=-Y(-Z), 3=-X. Kept local — Generator.Runtime is not a
+        // dependency of this assembly.
+        private static Vector2Int StairDirectionOffset(int directionIndex)
+        {
+            return directionIndex switch
+            {
+                0 => new Vector2Int(0, 1),
+                1 => new Vector2Int(1, 0),
+                2 => new Vector2Int(0, -1),
+                3 => new Vector2Int(-1, 0),
+                _ => Vector2Int.zero,
+            };
+        }
+
         private bool TryGetGeneratedTerrainSurfaceY(Vector2Int tile, out float surfaceY)
         {
             surfaceY = 0f;
@@ -216,6 +297,43 @@ namespace Kruty1918.Moyva.Construction.Runtime
             public float CenterOffsetX { get; }
             public float CenterOffsetZ { get; }
             public float BottomOffsetY { get; }
+        }
+    }
+
+    /// <summary>
+    /// World-space surface heights at the four corners of one tile, ordered
+    /// (-x,-z), (+x,-z), (+x,+z), (-x,+z) relative to the tile centre. Flat
+    /// tiles carry four equal heights; generated stair cells slope toward the
+    /// climb edge so overlay geometry hugs the ramp instead of hovering.
+    /// </summary>
+    internal readonly struct TileSurfaceQuad
+    {
+        public TileSurfaceQuad(float y00, float y10, float y11, float y01)
+        {
+            Y00 = y00;
+            Y10 = y10;
+            Y11 = y11;
+            Y01 = y01;
+        }
+
+        public float Y00 { get; }
+        public float Y10 { get; }
+        public float Y11 { get; }
+        public float Y01 { get; }
+
+        public float MinY => Mathf.Min(Mathf.Min(Y00, Y10), Mathf.Min(Y11, Y01));
+        public float MaxY => Mathf.Max(Mathf.Max(Y00, Y10), Mathf.Max(Y11, Y01));
+        public float CenterY => (Y00 + Y10 + Y11 + Y01) * 0.25f;
+        public bool IsSloped => MaxY - MinY > 0.0001f;
+
+        /// <summary>Geometric normal of the quad (world space, up-facing).</summary>
+        public Vector3 ComputeNormal(Vector3 center, float halfX, float halfZ)
+        {
+            Vector3 v0 = new(center.x - halfX, Y00, center.z - halfZ);
+            Vector3 v1 = new(center.x + halfX, Y10, center.z - halfZ);
+            Vector3 v3 = new(center.x - halfX, Y01, center.z + halfZ);
+            Vector3 normal = Vector3.Cross(v3 - v0, v1 - v0);
+            return normal.sqrMagnitude > 1e-10f ? normal.normalized : Vector3.up;
         }
     }
 }

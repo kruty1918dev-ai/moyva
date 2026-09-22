@@ -23,6 +23,7 @@ namespace Kruty1918.Moyva.Tests.Construction
         private FakeGridGeometry _geometry;
         private FakeTerrainQuery _terrain;
         private FakeGridProjection _projection;
+        private FakePassageMap _passages;
 
         [SetUp]
         public void SetUp()
@@ -31,6 +32,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             _geometry = new FakeGridGeometry { CellSize = new Vector2(2f, 2f) };
             _terrain = new FakeTerrainQuery();
             _projection = new FakeGridProjection(new Vector2(2f, 2f));
+            _passages = new FakePassageMap();
         }
 
         [Test]
@@ -177,6 +179,116 @@ namespace Kruty1918.Moyva.Tests.Construction
             Object.DestroyImmediate(mesh);
         }
 
+        [Test]
+        public void Build_StairCell_QuadSlopesTowardClimbEdge()
+        {
+            // Модуль сходів у (1,0): сходить до +Z, верх = 2.25, низ = 2.0.
+            // Плаский quad на висоті центру висів би над нижнім краєм рампи.
+            var tile = new Vector2Int(1, 0);
+            _grid.SetTileData(tile, "grass");
+            _terrain.ExplicitSurfaceMap = true;
+            _terrain.SurfaceY[tile] = 2.25f;
+            _passages.Modules[tile] = new TerrainPassageModule
+            {
+                Cell = tile,
+                DirectionIndex = 0,
+                TopY = 2.25f,
+                LowSurfaceY = 2.0f,
+                HighSurfaceY = 3.0f,
+            };
+
+            var builder = CreateBuilder();
+            Assert.IsTrue(builder.TryBuild(CreateDescriptor(0, 0, 2, 1), out Mesh mesh));
+
+            float halfZ = 2f * (1f - DefaultInsetNormalized * 2f) * 0.5f;
+            float centerZ = tile.y * 2f;
+            foreach (Vector3 v in mesh.vertices)
+            {
+                bool highEdge = v.z > centerZ;
+                float expected = (highEdge ? 2.25f : 2.0f) + DefaultSurfaceOffsetY;
+                Assert.AreEqual(expected, v.y, 0.001f,
+                    $"corner z={v.z} must sit on the ramp edge, halfZ={halfZ}");
+            }
+            foreach (Vector3 n in mesh.normals)
+            {
+                Assert.Greater(n.y, 0.5f, "stair quad still faces up");
+                Assert.Less(n.y, 1f, "stair quad normal leans, not flat-up");
+                Assert.Less(n.z, 0f, "normal leans away from the +Z climb");
+            }
+            Object.DestroyImmediate(mesh);
+        }
+
+        [Test]
+        public void Build_StairCell_LowEdgeFollowsPreviousModuleTop()
+        {
+            // Другий модуль прольоту: низ quad'а = TopY попереднього модуля.
+            var tile = new Vector2Int(1, 0);
+            var prev = new Vector2Int(1, -1);
+            _grid.SetTileData(tile, "grass");
+            _terrain.ExplicitSurfaceMap = true;
+            _terrain.SurfaceY[tile] = 2.5f;
+            _passages.Modules[tile] = new TerrainPassageModule
+            {
+                Cell = tile, DirectionIndex = 0, TopY = 2.5f,
+                LowSurfaceY = 2.0f, HighSurfaceY = 3.0f,
+            };
+            _passages.Modules[prev] = new TerrainPassageModule
+            {
+                Cell = prev, DirectionIndex = 0, TopY = 2.25f,
+                LowSurfaceY = 2.0f, HighSurfaceY = 3.0f,
+            };
+
+            var builder = CreateBuilder();
+            Assert.IsTrue(builder.TryBuild(CreateDescriptor(0, 0, 2, 1), out Mesh mesh));
+
+            float centerZ = tile.y * 2f;
+            foreach (Vector3 v in mesh.vertices)
+            {
+                float expected = (v.z > centerZ ? 2.5f : 2.25f) + DefaultSurfaceOffsetY;
+                Assert.AreEqual(expected, v.y, 0.001f);
+            }
+            Object.DestroyImmediate(mesh);
+        }
+
+        [Test]
+        public void Collect_StairCell_TiltsQuadAlongClimb()
+        {
+            var tile = new Vector2Int(1, 0);
+            _grid.SetTileData(tile, "grass");
+            _terrain.ExplicitSurfaceMap = true;
+            _terrain.SurfaceY[tile] = 2.25f;
+            _passages.Modules[tile] = new TerrainPassageModule
+            {
+                Cell = tile, DirectionIndex = 0, TopY = 2.25f,
+                LowSurfaceY = 2.0f, HighSurfaceY = 3.0f,
+            };
+
+            var alignment = new ConstructionTerrainAlignmentService(
+                _grid,
+                gridProjection: _projection,
+                gridGeometry: _geometry,
+                generatedTerrainLevelQuery: _terrain,
+                terrainPassages: _passages);
+            var collector = new ConstructionBuildGridTileCollector(
+                _grid, alignment, _geometry);
+
+            var entries = new List<ConstructionBuildGridOverlayEntry>();
+            collector.Collect(entries, _ => ConstructionBuildGridTileVisualState.General);
+
+            Assert.AreEqual(1, entries.Count);
+            Matrix4x4 m = entries[0].Matrix;
+
+            // Верхній край (локальний +Y) сидить на TopY, нижній — на LowSurfaceY.
+            Vector3 topEdge = m.MultiplyPoint(new Vector3(0f, 0.5f, 0f));
+            Vector3 lowEdge = m.MultiplyPoint(new Vector3(0f, -0.5f, 0f));
+            Assert.AreEqual(2.25f + DefaultSurfaceOffsetY, topEdge.y, 0.01f);
+            Assert.AreEqual(2.0f + DefaultSurfaceOffsetY, lowEdge.y, 0.01f);
+            Assert.Greater(topEdge.z, lowEdge.z, "quad climbs toward +Z");
+            // Перпендикулярна ширина квада не змінюється.
+            Vector3 right = m.MultiplyVector(new Vector3(1f, 0f, 0f));
+            Assert.AreEqual(0f, right.y, 0.001f);
+        }
+
         private ConstructionBuildGridChunkSurfaceBuilder CreateBuilder(
             bool withGeometry = true,
             bool withProjection = true)
@@ -185,7 +297,8 @@ namespace Kruty1918.Moyva.Tests.Construction
                 _grid,
                 gridProjection: withProjection ? _projection : null,
                 gridGeometry: withGeometry ? _geometry : null,
-                generatedTerrainLevelQuery: _terrain);
+                generatedTerrainLevelQuery: _terrain,
+                terrainPassages: _passages);
             return new ConstructionBuildGridChunkSurfaceBuilder(
                 _grid,
                 alignment,
@@ -261,6 +374,21 @@ namespace Kruty1918.Moyva.Tests.Construction
 
             public bool TryGetTerrainSurfaceY(Vector2Int position, out float surfaceY)
                 => SurfaceY.TryGetValue(position, out surfaceY);
+        }
+
+        private sealed class FakePassageMap : ITerrainPassageMap
+        {
+            public readonly Dictionary<Vector2Int, TerrainPassageModule> Modules = new();
+
+            public int Version => 1;
+            public bool HasPassages => Modules.Count > 0;
+
+            public bool TryGetModule(Vector2Int cell, out TerrainPassageModule module)
+                => Modules.TryGetValue(cell, out module);
+
+            public bool IsStairCell(Vector2Int cell) => Modules.ContainsKey(cell);
+
+            public bool IsStairStep(Vector2Int from, Vector2Int to) => false;
         }
 
         private sealed class FakeGridProjection : IGridProjection

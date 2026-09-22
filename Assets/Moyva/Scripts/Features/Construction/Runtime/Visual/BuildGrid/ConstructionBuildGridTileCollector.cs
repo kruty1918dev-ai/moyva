@@ -71,8 +71,22 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (_terrainAlignment == null)
                 return false;
 
-            Vector3 center = _terrainAlignment.ResolveWorldPosition(position, ResolveSurfaceOffsetY());
-            Matrix4x4 matrix = Matrix4x4.TRS(center, Quaternion.Euler(90f, 0f, 0f), cellScale);
+            float offsetY = ResolveSurfaceOffsetY();
+            Vector3 center = _terrainAlignment.ResolveWorldPosition(position, offsetY);
+            Matrix4x4 matrix;
+            if (_terrainAlignment.TryResolveTileSlope(
+                    position,
+                    out Vector2Int climb,
+                    out float lowEdgeY,
+                    out float highEdgeY)
+                && highEdgeY > lowEdgeY)
+            {
+                matrix = CreateSlopedMatrix(position, climb, lowEdgeY, highEdgeY, offsetY);
+            }
+            else
+            {
+                matrix = Matrix4x4.TRS(center, Quaternion.Euler(90f, 0f, 0f), cellScale);
+            }
             entry = new ConstructionBuildGridOverlayEntry(
                 position,
                 visualState,
@@ -82,6 +96,45 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ResolveEdgeMask(position),
                 null);
             return true;
+        }
+
+        /// <summary>
+        /// Tilted quad matrix for a stair cell: the quad's local +Y axis (which
+        /// the flat path maps to world +Z) is aligned with the slope so the
+        /// quad rises from the low edge to the module top while keeping the
+        /// same horizontal footprint as a flat tile.
+        /// </summary>
+        private Matrix4x4 CreateSlopedMatrix(
+            Vector2Int position,
+            Vector2Int climb,
+            float lowEdgeY,
+            float highEdgeY,
+            float offsetY)
+        {
+            Vector2 cellSize =
+                _gridGeometry != null && _gridGeometry.TryGetCellSize(out Vector2 size)
+                    ? size
+                    : Vector2.one;
+            float tileScale = 1f - ResolveTileInsetNormalized() * 2f;
+            Vector3 climb3 = new(climb.x, 0f, climb.y);
+            bool climbsAlongZ = climb.y != 0;
+            float run = Mathf.Max(0.01f, (climbsAlongZ ? cellSize.y : cellSize.x) * tileScale);
+            float perpExtent = Mathf.Max(0.01f, (climbsAlongZ ? cellSize.x : cellSize.y) * tileScale);
+            float rise = highEdgeY - lowEdgeY;
+
+            Vector3 col0 = Vector3.Cross(Vector3.up, climb3) * perpExtent;
+            Vector3 col1 = climb3 * run + Vector3.up * rise;
+            Vector3 col2 = Vector3.Cross(col0.normalized, col1.normalized);
+
+            Vector3 center = _terrainAlignment.ResolveWorldPosition(position, offsetY);
+            center.y = (lowEdgeY + highEdgeY) * 0.5f + offsetY;
+
+            var matrix = new Matrix4x4();
+            matrix.SetColumn(0, new Vector4(col0.x, col0.y, col0.z, 0f));
+            matrix.SetColumn(1, new Vector4(col1.x, col1.y, col1.z, 0f));
+            matrix.SetColumn(2, new Vector4(col2.x, col2.y, col2.z, 0f));
+            matrix.SetColumn(3, new Vector4(center.x, center.y, center.z, 1f));
+            return matrix;
         }
 
         private Vector3 ResolveCellScale()

@@ -94,17 +94,23 @@ namespace Kruty1918.Moyva.Construction.Runtime
             List<int> triangles)
         {
             Vector3 center = _terrainAlignment.ResolveWorldPosition(tile, ResolveSurfaceOffsetY());
+            TileSurfaceQuad surface =
+                _terrainAlignment.ResolveTileSurfaceQuad(tile, ResolveSurfaceOffsetY());
             int start = vertices.Count;
 
-            vertices.Add(center + new Vector3(-halfX, 0f, -halfZ));
-            vertices.Add(center + new Vector3( halfX, 0f, -halfZ));
-            vertices.Add(center + new Vector3( halfX, 0f,  halfZ));
-            vertices.Add(center + new Vector3(-halfX, 0f,  halfZ));
+            vertices.Add(new Vector3(center.x - halfX, surface.Y00, center.z - halfZ));
+            vertices.Add(new Vector3(center.x + halfX, surface.Y10, center.z - halfZ));
+            vertices.Add(new Vector3(center.x + halfX, surface.Y11, center.z + halfZ));
+            vertices.Add(new Vector3(center.x - halfX, surface.Y01, center.z + halfZ));
 
-            normals.Add(Vector3.up);
-            normals.Add(Vector3.up);
-            normals.Add(Vector3.up);
-            normals.Add(Vector3.up);
+            Vector3 quadNormal =
+                surface.IsSloped
+                    ? surface.ComputeNormal(center, halfX, halfZ)
+                    : Vector3.up;
+            normals.Add(quadNormal);
+            normals.Add(quadNormal);
+            normals.Add(quadNormal);
+            normals.Add(quadNormal);
 
             uvs.Add(new Vector2(0f, 0f));
             uvs.Add(new Vector2(1f, 0f));
