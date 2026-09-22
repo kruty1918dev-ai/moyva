@@ -147,7 +147,35 @@ namespace UnityHTML.Runtime
             finally
             {
                 ClearRootChildren(root);
+                RemoveMountLeftovers(root);
             }
+        }
+
+        // HostComponent attaches ResponsiveElement (and on styled roots,
+        // BorderAndBackground / MaskAndImage) to the mount root itself. Its
+        // DestroySelf calls Object.Destroy, which is a silent no-op in edit
+        // mode — the leftover keeps the entire UGUIContext graph, JS engine
+        // included, rooted on the still-alive root object.
+        private static void RemoveMountLeftovers(RectTransform root)
+        {
+            if (root == null)
+                return;
+
+            bool deferred = ShouldDestroyDeferred();
+            void DestroyAll<T>() where T : Component
+            {
+                foreach (T leftover in root.GetComponents<T>())
+                {
+                    if (leftover == null)
+                        continue;
+                    if (deferred) UnityEngine.Object.Destroy(leftover);
+                    else UnityEngine.Object.DestroyImmediate(leftover);
+                }
+            }
+
+            DestroyAll<ReactUnity.UGUI.Behaviours.ResponsiveElement>();
+            DestroyAll<ReactUnity.UGUI.Internal.BorderAndBackground>();
+            DestroyAll<ReactUnity.UGUI.Internal.MaskAndImage>();
         }
 
         public void Dispose() => Unmount();
@@ -776,6 +804,11 @@ namespace UnityHTML.Runtime
         {
             if (context == null)
                 return;
+
+            // Every mounted/pooled YogaNode holds a rooted GCHandle that would
+            // otherwise keep this whole context graph (JS engine included) alive
+            // forever — release before disposal.
+            UnityHtmlDocumentTree.ReleaseContextNodes(context);
 
 #if UNITY_EDITOR
             if (!Application.isPlaying)
