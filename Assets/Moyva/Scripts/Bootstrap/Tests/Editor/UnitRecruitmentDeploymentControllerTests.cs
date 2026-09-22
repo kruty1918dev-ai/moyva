@@ -14,6 +14,8 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using Zenject;
+using Kruty1918.Localization;
+using Kruty1918.UIActions.API;
 
 namespace Kruty1918.Moyva.Tests.Bootstrap
 {

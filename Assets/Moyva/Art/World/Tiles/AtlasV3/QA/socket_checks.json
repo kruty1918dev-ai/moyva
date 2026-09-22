@@ -1,0 +1,9 @@
+{
+  "compatible_pairs_tested": 114,
+  "maximum_socket_gap_m": 2.852529262797887e-08,
+  "failed_pairs": [],
+  "tolerance_m": 1e-05,
+  "actual_exported_meshes_checked": 90,
+  "max_export_socket_error_m": 5.551115123125783e-17,
+  "export_failures": []
+}

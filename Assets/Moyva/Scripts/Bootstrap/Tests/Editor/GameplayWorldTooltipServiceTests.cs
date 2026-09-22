@@ -8,6 +8,9 @@ using Kruty1918.Moyva.Shared.Localization;
 using NUnit.Framework;
 using UnityEngine;
 using UnityHTML.Runtime;
+using Kruty1918.Localization;
+using Kruty1918.Notifications.API;
+using Kruty1918.UIActions.API;
 
 namespace Kruty1918.Moyva.Tests.Bootstrap
 {
@@ -18,11 +21,19 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
     {
         private GameObject _targetGo;
         private ConstructionBuildingPointerTarget _target;
+        private GameObject _cameraGo;
 
         [TearDown]
         public void TearDown()
         {
             if (_targetGo != null) UnityEngine.Object.DestroyImmediate(_targetGo);
+            if (_cameraGo != null) UnityEngine.Object.DestroyImmediate(_cameraGo);
+        }
+
+        private UnityEngine.Camera CreateCamera()
+        {
+            _cameraGo = new GameObject("tooltip test camera");
+            return _cameraGo.AddComponent<UnityEngine.Camera>();
         }
 
         [Test]
@@ -33,7 +44,8 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             var service = new GameplayWorldTooltipService(
                 host, pointer, inputPolicy: null,
                 buildings: new StubRegistry("mill", "Water Mill"),
-                localization: new EchoLocalization());
+                localization: new EchoLocalization(),
+                camera: CreateCamera());
             _targetGo = new GameObject("mill visual");
             _target = ConstructionBuildingPointerTarget.AttachOrUpdate(_targetGo, "mill", Vector2Int.zero, false);
             service.RaycastTarget = _ => _target;
@@ -80,7 +92,8 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             var host = new RecordingHost();
             var service = new GameplayWorldTooltipService(
                 host, new StubPointer(Vector2.one * 50), inputPolicy: null,
-                buildings: new StubRegistry("mill", "Water Mill"));
+                buildings: new StubRegistry("mill", "Water Mill"),
+                camera: CreateCamera());
             service.RaycastTarget = _ => null;
 
             service.Tick();

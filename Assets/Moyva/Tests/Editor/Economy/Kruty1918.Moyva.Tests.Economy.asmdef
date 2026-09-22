@@ -13,7 +13,9 @@
         "Kruty1918.Moyva.FogOfWar",
         "Kruty1918.Moyva.Grid",
         "Zenject",
-        "Kruty1918.EntityHealth"
+        "Kruty1918.EntityHealth",
+        "Kruty1918.Calendar",
+        "Kruty1918.SaveSystem"
     ],
     "includePlatforms": [
         "Editor"

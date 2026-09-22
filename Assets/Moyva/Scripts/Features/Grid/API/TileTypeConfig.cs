@@ -93,6 +93,24 @@ namespace Kruty1918.Moyva.Grid.API
     }
 
     /// <summary>
+    /// Physical height limits for a movement profile: how large a surface
+    /// step can be walked directly, and which generated stair passages are
+    /// allowed. Values are world-space meters.
+    /// </summary>
+    [Serializable]
+    public sealed class MovementHeightRuleConfig
+    {
+        [Tooltip("Largest surface delta a unit crosses by plain walking. 0.25 matches one terrace step.")]
+        [Min(0f)] public float AutoStepMaxMeters = 0.25f;
+
+        [Tooltip("Rise covered by one authored stair module.")]
+        [Min(0.01f)] public float StairModuleRiseMeters = 0.25f;
+
+        [Tooltip("Largest total rise a stair flight may cover for this profile.")]
+        [Min(0f)] public float MaxStairRiseMeters = 1f;
+    }
+
+    /// <summary>
     /// Reusable terrain traversal rules referenced by movable entity configs.
     /// </summary>
     [Serializable]
@@ -101,5 +119,6 @@ namespace Kruty1918.Moyva.Grid.API
         public MovementFallbackConfig Fallback = new();
         public List<MovementClassRuleConfig> ClassRules = new();
         public List<MovementTileOverrideConfig> TileOverrides = new();
+        public MovementHeightRuleConfig HeightLimits = new();
     }
 }

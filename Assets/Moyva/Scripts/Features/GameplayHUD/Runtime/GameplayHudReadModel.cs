@@ -14,6 +14,7 @@ using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Interactions.API;
 using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Localization;
 using Kruty1918.Notifications.API;
 using Kruty1918.SaveSystem;
 using Kruty1918.Moyva.Signals;

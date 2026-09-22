@@ -30,6 +30,15 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Ordered object scatter passes evaluated after all layer masks.")]
         public List<GeneratorObjectPlacement> ObjectPlacements = new();
 
+        [Tooltip("Deterministic 0.25 m terrace relief field; feeds terrain-level mask steps and per-cell surface heights.")]
+        public TerrainReliefConfig TerrainRelief = new();
+
+        [Tooltip("Generated stair passages across ledges (atlas pack contract).")]
+        public TerrainPassageConfig Passages = new();
+
+        [Tooltip("Generated road/footpath routes between seeded anchors.")]
+        public TerrainRouteConfig Routes = new();
+
         public IEnumerable<GeneratorMapLayer> OrderedEnabledLayers()
         {
             if (Layers == null)

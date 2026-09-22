@@ -1,5 +1,68 @@
 {
   "dependencies": {
+    "com.kruty1918.adaptive-performance": {
+      "version": "file:com.kruty1918.adaptive-performance",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.kruty1918.audio": {
+      "version": "file:com.kruty1918.audio",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.ugui": "2.0.0"
+      }
+    },
+    "com.kruty1918.connectivity": {
+      "version": "file:com.kruty1918.connectivity",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.kruty1918.entity-health": {
+      "version": "file:com.kruty1918.entity-health",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.kruty1918.game-calendar": {
+      "version": "file:com.kruty1918.game-calendar",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.kruty1918.input-context": {
+      "version": "file:com.kruty1918.input-context",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.ugui": "2.0.0"
+      }
+    },
+    "com.kruty1918.json-config": {
+      "version": "file:com.kruty1918.json-config",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.2.0"
+      }
+    },
+    "com.kruty1918.localization": {
+      "version": "file:com.kruty1918.localization",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.ugui": "2.0.0",
+        "com.unity.nuget.newtonsoft-json": "3.2.0"
+      }
+    },
+    "com.kruty1918.motion": {
+      "version": "file:com.kruty1918.motion",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.kruty1918.moyva.unityhtml": {
       "version": "file:com.kruty1918.moyva.unityhtml",
       "depth": 0,
@@ -10,6 +73,56 @@
         "com.reactunity.quickjs": "0.23.2",
         "com.unity.ugui": "2.0.0"
       }
+    },
+    "com.kruty1918.notifications": {
+      "version": "file:com.kruty1918.notifications",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.ugui": "2.0.0"
+      }
+    },
+    "com.kruty1918.runtime-diagnostics": {
+      "version": "file:com.kruty1918.runtime-diagnostics",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.kruty1918.save-system": {
+      "version": "file:com.kruty1918.save-system",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.kruty1918.telemetry": {
+      "version": "file:com.kruty1918.telemetry",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.kruty1918.ui-actions": {
+      "version": "file:com.kruty1918.ui-actions",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.inputsystem": "1.11.2",
+        "com.unity.ugui": "2.0.0",
+        "com.kruty1918.input-context": "0.1.0"
+      }
+    },
+    "com.kruty1918.ui-foundation": {
+      "version": "file:com.kruty1918.ui-foundation",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.ugui": "2.0.0"
+      }
+    },
+    "com.kruty1918.vfx": {
+      "version": "file:com.kruty1918.vfx",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
     },
     "com.reactunity.core": {
       "version": "https://github.com/ReactUnity/core.git#8c4caa95f49b45e8fb7bb1f833eaa08adaa31496",

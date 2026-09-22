@@ -53,12 +53,17 @@ namespace Kruty1918.Moyva.Tests.Telemetry
         private SignalBus _bus;
         private CaptureSink _sink;
         private MoyvaSignalTelemetryAdapter _adapter;
+        private GameObject _installerGo;
 
         [SetUp]
         public void SetUp()
         {
             _container = new DiContainer();
-            global::Zenject.SignalBusInstaller.Install(_container);
+            _installerGo = new GameObject(nameof(Moyva.Signals.SignalBusInstaller));
+            var installer =
+                _installerGo.AddComponent<Moyva.Signals.SignalBusInstaller>();
+            _container.Inject(installer);
+            installer.InstallBindings();
             _bus = _container.Resolve<SignalBus>();
             _sink = new CaptureSink();
             _adapter = new MoyvaSignalTelemetryAdapter(_bus, _sink);
@@ -66,7 +71,12 @@ namespace Kruty1918.Moyva.Tests.Telemetry
         }
 
         [TearDown]
-        public void TearDown() => _adapter.Dispose();
+        public void TearDown()
+        {
+            _adapter.Dispose();
+            if (_installerGo != null)
+                UnityEngine.Object.DestroyImmediate(_installerGo);
+        }
 
         [Test]
         public void SignalBus_BridgesGameplaySignals()

@@ -54,11 +54,13 @@ namespace Kruty1918.Moyva.Generator.API
         public GeneratorMaskContext(
             int seed,
             Vector2Int mapSize,
-            IReadOnlyDictionary<string, bool[,]> layerMasks)
+            IReadOnlyDictionary<string, bool[,]> layerMasks,
+            float[,] terrainHeightField = null)
         {
             Seed = seed;
             MapSize = mapSize;
             LayerMasks = layerMasks;
+            TerrainHeightField = terrainHeightField;
         }
 
         public int Seed { get; }
@@ -66,6 +68,13 @@ namespace Kruty1918.Moyva.Generator.API
 
         /// <summary>Final masks of previously evaluated layers, keyed by layer id.</summary>
         public IReadOnlyDictionary<string, bool[,]> LayerMasks { get; }
+
+        /// <summary>
+        /// Optional deterministic per-cell terrain height in meters, produced by
+        /// the recipe's <see cref="TerrainReliefConfig"/>. Read by
+        /// <see cref="TerrainLevelMaskStep"/>; null when relief is disabled.
+        /// </summary>
+        public float[,] TerrainHeightField { get; }
     }
 
     /// <summary>Deterministic tiled Perlin noise threshold mask.</summary>
@@ -162,6 +171,44 @@ namespace Kruty1918.Moyva.Generator.API
                 bool inside = Shape == ShapeMaskKind.Rectangle
                     ? Mathf.Abs(dx) <= 1f && Mathf.Abs(dy) <= 1f
                     : dx * dx + dy * dy <= 1f;
+                mask[x, y] = inside != Invert;
+            }
+            return mask;
+        }
+    }
+
+    /// <summary>
+    /// Selects cells whose terrain relief height (meters) falls inside
+    /// [MinMeters, MaxMeters]. Requires the recipe's terrain relief field;
+    /// produces an empty mask when relief is disabled.
+    /// </summary>
+    [System.Serializable]
+    public sealed class TerrainLevelMaskStep : GeneratorMaskSourceStep
+    {
+        [Tooltip("Inclusive lower height bound in meters.")]
+        public float MinMeters = float.NegativeInfinity;
+        [Tooltip("Inclusive upper height bound in meters.")]
+        public float MaxMeters = float.PositiveInfinity;
+        public bool Invert;
+
+        public override bool[,] GenerateMask(GeneratorMaskContext context)
+        {
+            int width = Mathf.Max(1, context?.MapSize.x ?? 1);
+            int height = Mathf.Max(1, context?.MapSize.y ?? 1);
+            var mask = new bool[width, height];
+            float[,] field = context?.TerrainHeightField;
+            if (field == null)
+                return mask;
+
+            int w = Mathf.Min(width, field.GetLength(0));
+            int h = Mathf.Min(height, field.GetLength(1));
+            const float epsilon = 0.0001f;
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+            {
+                float value = field[x, y];
+                bool inside = value >= MinMeters - epsilon
+                              && value <= MaxMeters + epsilon;
                 mask[x, y] = inside != Invert;
             }
             return mask;

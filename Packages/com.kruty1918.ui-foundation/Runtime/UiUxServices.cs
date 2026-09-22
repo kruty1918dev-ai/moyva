@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Zenject;
 
 namespace Kruty1918.UiFoundation
 {
@@ -51,16 +52,25 @@ namespace Kruty1918.UiFoundation
         void Cancel(object target);
     }
 
+    /// <summary>External source for the persisted reduced-motion setting.
+    /// Implemented on the application side (player control settings) so this
+    /// package stays free of project dependencies.</summary>
+    public interface IUiReducedMotionSource
+    {
+        bool ReduceMotion { get; }
+        void SetReduceMotion(bool value);
+    }
+
     public sealed class UiMotionService : IUiMotionService
     {
         private readonly List<Motion> _motions = new List<Motion>();
         private readonly Dictionary<RectTransform, Vector2> _shownPositions = new Dictionary<RectTransform, Vector2>();
-        private readonly Controls.IPlayerControlSettingsService _controlSettings;
+        private readonly IUiReducedMotionSource _reducedMotionSource;
         private bool _sessionReducedMotion;
 
         public UiMotionService(
-            [InjectOptional] Controls.IPlayerControlSettingsService controlSettings = null)
-            => _controlSettings = controlSettings;
+            [InjectOptional] IUiReducedMotionSource reducedMotionSource = null)
+            => _reducedMotionSource = reducedMotionSource;
 
         /// <summary>Single persistent reduced-motion gate — reads through to the
         /// player's control settings when bound, falls back to a session flag.
@@ -68,11 +78,11 @@ namespace Kruty1918.UiFoundation
         /// to camera/marker/HTML consumers).</summary>
         public bool ReducedMotion
         {
-            get => _controlSettings?.Settings.ReduceMotion ?? _sessionReducedMotion;
+            get => _reducedMotionSource?.ReduceMotion ?? _sessionReducedMotion;
             set
             {
-                if (_controlSettings != null)
-                    _controlSettings.SetReduceMotion(value);
+                if (_reducedMotionSource != null)
+                    _reducedMotionSource.SetReduceMotion(value);
                 else
                     _sessionReducedMotion = value;
             }

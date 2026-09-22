@@ -15,6 +15,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _samples.Add(sample);
         }
 
+        public void SetAt(int index, TileLayerSample sample)
+        {
+            _samples[index] = sample;
+        }
+
+        public int RemoveAll(System.Predicate<TileLayerSample> match)
+        {
+            return _samples.RemoveAll(match);
+        }
+
         public void Clear()
         {
             _samples.Clear();

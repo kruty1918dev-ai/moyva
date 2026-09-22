@@ -48,10 +48,28 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ApplyCompatibilityProjection(x, y);
         }
 
+        /// <summary>
+        /// Recomputes the per-cell compatibility projection for every cell.
+        /// Required after planner passes mutate stacks in place.
+        /// </summary>
+        public void ReprojectAll()
+        {
+            for (int x = 0; x < Width; x++)
+            for (int y = 0; y < Height; y++)
+                ApplyCompatibilityProjection(x, y);
+        }
+
         private void ApplyCompatibilityProjection(int x, int y)
         {
             if (!CellStacks[x, y].TryGetTopCompatibilitySample(out var sample))
+            {
+                TileIds[x, y] = string.Empty;
+                LayerIds[x, y] = string.Empty;
+                LayerNames[x, y] = string.Empty;
+                LayerHeights[x, y] = 0f;
+                SurfaceHeights[x, y] = float.NaN;
                 return;
+            }
 
             TileIds[x, y] = sample.TileId;
             LayerIds[x, y] = sample.LayerId;

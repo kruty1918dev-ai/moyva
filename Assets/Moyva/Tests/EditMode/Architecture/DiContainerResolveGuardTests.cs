@@ -46,8 +46,6 @@ namespace Kruty1918.Moyva.Architecture.Tests
                 ["Assets/Moyva/Scripts/Features/Generator/Runtime/OwnedGameplayMap.cs"] = 1,
                 // Marketing studio boundary: optional gameplay services.
                 ["Assets/Moyva/Scripts/Features/Marketing/Runtime/MarketingGameplayContext.cs"] = 1,
-                // Legacy static UI lookup; new UI code must use constructor injection.
-                ["Assets/Moyva/Scripts/Shared/UI/UiUxServices.cs"] = 1,
                 // Headless training composition root: builds and owns its container.
                 ["Assets/Moyva/AI/Training/Runtime/Integration/GameplayTrainingEpisode.cs"] = 38,
                 // Training bootstrap: creates the headless episode container.

@@ -21,6 +21,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityHTML.Runtime;
 using Zenject;
+using Kruty1918.InputRouting.API;
+using Kruty1918.Notifications.API;
+using Kruty1918.UIActions.API;
 
 namespace Kruty1918.Moyva.Tests.Bootstrap
 {

@@ -128,7 +128,55 @@ namespace Kruty1918.Moyva.Grid.Runtime
                 }
             }
 
-            _byId.Add(id, new MovementProfileSnapshot(id, fallback, classRules, tileOverrides));
+            _byId.Add(id, new MovementProfileSnapshot(
+                id,
+                fallback,
+                classRules,
+                tileOverrides,
+                BuildHeightLimits(id, config.HeightLimits)));
+        }
+
+        private static MovementHeightLimits BuildHeightLimits(
+            string profileId,
+            MovementHeightRuleConfig config)
+        {
+            if (config == null)
+                return MovementHeightLimits.Default;
+
+            if (config.AutoStepMaxMeters < 0f
+                || float.IsNaN(config.AutoStepMaxMeters)
+                || float.IsInfinity(config.AutoStepMaxMeters))
+            {
+                throw ValidationError(
+                    profileId,
+                    "/heightLimits/autoStepMaxMeters",
+                    "auto step limit must be a finite value >= 0");
+            }
+
+            if (config.StairModuleRiseMeters <= 0f
+                || float.IsNaN(config.StairModuleRiseMeters)
+                || float.IsInfinity(config.StairModuleRiseMeters))
+            {
+                throw ValidationError(
+                    profileId,
+                    "/heightLimits/stairModuleRiseMeters",
+                    "stair module rise must be a finite value > 0");
+            }
+
+            if (config.MaxStairRiseMeters < 0f
+                || float.IsNaN(config.MaxStairRiseMeters)
+                || float.IsInfinity(config.MaxStairRiseMeters))
+            {
+                throw ValidationError(
+                    profileId,
+                    "/heightLimits/maxStairRiseMeters",
+                    "max stair rise must be a finite value >= 0");
+            }
+
+            return new MovementHeightLimits(
+                config.AutoStepMaxMeters,
+                config.StairModuleRiseMeters,
+                config.MaxStairRiseMeters);
         }
 
         private static MovementRuleSnapshot BuildRule(
@@ -173,7 +221,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
         }
     }
 
-    internal sealed class TraversalCostResolver : ITraversalCostResolver
+    internal sealed class TraversalCostResolver : ITraversalCostResolver, IMovementHeightPolicy
     {
         private readonly ITileTypeRepository _tiles;
         private readonly MovementProfileRepository _profiles;
@@ -184,6 +232,18 @@ namespace Kruty1918.Moyva.Grid.Runtime
         {
             _tiles = tiles;
             _profiles = profiles;
+        }
+
+        public bool TryGetLimits(string movementProfileId, out MovementHeightLimits limits)
+        {
+            if (_profiles.TryGet(movementProfileId, out MovementProfileSnapshot profile))
+            {
+                limits = profile.HeightLimits;
+                return true;
+            }
+
+            limits = null;
+            return false;
         }
 
         public bool TryResolve(

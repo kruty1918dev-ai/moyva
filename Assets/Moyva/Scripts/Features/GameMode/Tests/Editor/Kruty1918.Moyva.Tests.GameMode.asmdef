@@ -6,6 +6,8 @@
     "Kruty1918.Moyva.Signals",
     "Kruty1918.Moyva.InputRouting",
     "Kruty1918.Moyva.UIActions",
+    "Kruty1918.InputRouting",
+    "Kruty1918.UIActions",
     "Zenject"
   ],
   "includePlatforms": ["Editor"],

@@ -108,7 +108,7 @@ namespace Kruty1918.Performance
 
         public StartupPrewarmService(PrewarmSettings settings)
         {
-            _settings = settings ?? PrewarmSettings.CreateDefault();
+            _settings = settings;
         }
 
         public async Task PrewarmAsync(CancellationToken ct = default)

@@ -9,6 +9,8 @@ using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
 
+using Kruty1918.JsonConfig;
+
 namespace Kruty1918.Moyva.Jsonization.Editor
 {
     internal sealed class MoyvaJsonValidationIssue

@@ -4,6 +4,7 @@ using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.GameMode.Runtime;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.UIActions.API;
+using Kruty1918.UIActions.API;
 using NUnit.Framework;
 using Zenject;
 

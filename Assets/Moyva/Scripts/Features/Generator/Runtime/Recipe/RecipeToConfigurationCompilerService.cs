@@ -13,7 +13,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             TileWorldCreatorManager manager,
             int seed,
             ISet<string> skippedLayerIds = null,
-            Vector2Int? mapSizeOverride = null);
+            Vector2Int? mapSizeOverride = null,
+            float[,] terrainHeightField = null);
     }
 
     /// <summary>
@@ -56,7 +57,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             TileWorldCreatorManager manager,
             int seed,
             ISet<string> skippedLayerIds = null,
-            Vector2Int? mapSizeOverride = null)
+            Vector2Int? mapSizeOverride = null,
+            float[,] terrainHeightField = null)
         {
             int effectiveSeed = GlobalSeed.Normalize(seed);
             using var randomScope = new DeterministicRandomScope(effectiveSeed);
@@ -72,7 +74,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 recipe,
                 effectiveSeed,
                 mapSize,
-                skippedLayerIds);
+                skippedLayerIds,
+                terrainHeightField);
 
             RecipeBlueprintSyncResult sync = _blueprints.Sync(recipe, config, skippedLayerIds);
             _buildLayers.Sync(recipe, config, manager, sync, skippedLayerIds);

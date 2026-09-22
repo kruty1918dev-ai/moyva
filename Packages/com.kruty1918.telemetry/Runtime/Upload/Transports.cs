@@ -34,7 +34,7 @@ namespace Kruty1918.Telemetry.Upload
             return Classify(status, body);
         }
 
-        internal static UploadResult Classify(int status, string body)
+        public static UploadResult Classify(int status, string body)
         {
             if (status >= 200 && status < 300)
             {

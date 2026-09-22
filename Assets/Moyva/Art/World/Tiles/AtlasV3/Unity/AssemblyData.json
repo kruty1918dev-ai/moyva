@@ -1,0 +1,234 @@
+{
+  "instances": [
+    {
+      "mesh": "grass_corner",
+      "position": [
+        -2,
+        0,
+        -2
+      ],
+      "rotationY": 180,
+      "mask": 4
+    },
+    {
+      "mesh": "grass_edge",
+      "position": [
+        -1,
+        0,
+        -2
+      ],
+      "rotationY": 180,
+      "mask": 12
+    },
+    {
+      "mesh": "grass_edge",
+      "position": [
+        0,
+        0,
+        -2
+      ],
+      "rotationY": 180,
+      "mask": 12
+    },
+    {
+      "mesh": "grass_edge",
+      "position": [
+        1,
+        0,
+        -2
+      ],
+      "rotationY": 180,
+      "mask": 12
+    },
+    {
+      "mesh": "grass_corner",
+      "position": [
+        2,
+        0,
+        -2
+      ],
+      "rotationY": 90,
+      "mask": 8
+    },
+    {
+      "mesh": "grass_edge",
+      "position": [
+        -2,
+        0,
+        -1
+      ],
+      "rotationY": 270,
+      "mask": 6
+    },
+    {
+      "mesh": "grass_fill",
+      "position": [
+        -1,
+        0,
+        -1
+      ],
+      "rotationY": 0,
+      "mask": 15
+    },
+    {
+      "mesh": "grass_interior",
+      "position": [
+        0,
+        0,
+        -1
+      ],
+      "rotationY": 180,
+      "mask": 11
+    },
+    {
+      "mesh": "grass_interior",
+      "position": [
+        1,
+        0,
+        -1
+      ],
+      "rotationY": 90,
+      "mask": 7
+    },
+    {
+      "mesh": "grass_edge",
+      "position": [
+        2,
+        0,
+        -1
+      ],
+      "rotationY": 90,
+      "mask": 9
+    },
+    {
+      "mesh": "grass_edge",
+      "position": [
+        -2,
+        0,
+        0
+      ],
+      "rotationY": 270,
+      "mask": 6
+    },
+    {
+      "mesh": "grass_fill",
+      "position": [
+        -1,
+        0,
+        0
+      ],
+      "rotationY": 0,
+      "mask": 15
+    },
+    {
+      "mesh": "grass_interior",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationY": 270,
+      "mask": 13
+    },
+    {
+      "mesh": "grass_interior",
+      "position": [
+        1,
+        0,
+        0
+      ],
+      "rotationY": 0,
+      "mask": 14
+    },
+    {
+      "mesh": "grass_edge",
+      "position": [
+        2,
+        0,
+        0
+      ],
+      "rotationY": 90,
+      "mask": 9
+    },
+    {
+      "mesh": "grass_corner",
+      "position": [
+        -2,
+        0,
+        1
+      ],
+      "rotationY": 270,
+      "mask": 2
+    },
+    {
+      "mesh": "grass_interior",
+      "position": [
+        -1,
+        0,
+        1
+      ],
+      "rotationY": 90,
+      "mask": 7
+    },
+    {
+      "mesh": "grass_fill",
+      "position": [
+        0,
+        0,
+        1
+      ],
+      "rotationY": 0,
+      "mask": 15
+    },
+    {
+      "mesh": "grass_interior",
+      "position": [
+        1,
+        0,
+        1
+      ],
+      "rotationY": 180,
+      "mask": 11
+    },
+    {
+      "mesh": "grass_corner",
+      "position": [
+        2,
+        0,
+        1
+      ],
+      "rotationY": 0,
+      "mask": 1
+    },
+    {
+      "mesh": "grass_corner",
+      "position": [
+        -1,
+        0,
+        2
+      ],
+      "rotationY": 270,
+      "mask": 2
+    },
+    {
+      "mesh": "grass_edge",
+      "position": [
+        0,
+        0,
+        2
+      ],
+      "rotationY": 0,
+      "mask": 3
+    },
+    {
+      "mesh": "grass_corner",
+      "position": [
+        1,
+        0,
+        2
+      ],
+      "rotationY": 0,
+      "mask": 1
+    }
+  ]
+}

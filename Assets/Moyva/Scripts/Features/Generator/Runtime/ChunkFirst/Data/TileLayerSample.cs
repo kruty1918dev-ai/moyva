@@ -55,6 +55,31 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         public TileGeometryMode TileGeometryMode { get; }
         public AuthoredClosurePolicy AuthoredClosurePolicy { get; }
 
+        /// <summary>Copies the sample with a new base height and surface height.</summary>
+        public TileLayerSample WithHeights(float height, float surfaceHeight)
+        {
+            return new TileLayerSample(
+                LayerId,
+                LayerName,
+                BlueprintLayerGuid,
+                BuildLayerGuid,
+                TileId,
+                PresetId,
+                LayerKind,
+                SortingOrder,
+                LayerOrder,
+                TerrainPriority,
+                height,
+                surfaceHeight,
+                SourceLayerId,
+                TileGeometryMode,
+                AuthoredClosurePolicy);
+        }
+
+        /// <summary>Copies the sample with the relief surface applied as both heights.</summary>
+        public TileLayerSample WithSurfaceHeight(float surfaceHeight)
+            => WithHeights(surfaceHeight, surfaceHeight);
+
         public string StableTieBreakKey
         {
             get

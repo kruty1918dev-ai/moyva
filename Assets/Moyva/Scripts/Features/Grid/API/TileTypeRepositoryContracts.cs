@@ -178,16 +178,19 @@ namespace Kruty1918.Moyva.Grid.API
             string id,
             MovementRuleSnapshot fallback,
             IReadOnlyDictionary<string, MovementRuleSnapshot> classRules,
-            IReadOnlyDictionary<string, MovementRuleSnapshot> tileOverrides)
+            IReadOnlyDictionary<string, MovementRuleSnapshot> tileOverrides,
+            MovementHeightLimits heightLimits = null)
         {
             Id = id ?? string.Empty;
             Fallback = fallback ?? new MovementRuleSnapshot(false, 0f);
+            HeightLimits = heightLimits ?? MovementHeightLimits.Default;
             _classRules = classRules ?? new Dictionary<string, MovementRuleSnapshot>();
             _tileOverrides = tileOverrides ?? new Dictionary<string, MovementRuleSnapshot>();
         }
 
         public string Id { get; }
         public MovementRuleSnapshot Fallback { get; }
+        public MovementHeightLimits HeightLimits { get; }
 
         public bool TryGetTileOverride(string tileTypeId, out MovementRuleSnapshot rule)
             => _tileOverrides.TryGetValue(tileTypeId ?? string.Empty, out rule);

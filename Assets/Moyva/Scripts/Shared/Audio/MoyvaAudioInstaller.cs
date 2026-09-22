@@ -51,8 +51,8 @@ namespace Kruty1918.Moyva.Audio.Runtime
             {
                 container.BindInterfacesAndSelfTo<AudioService>()
                     .AsSingle()
-                    .NonLazy()
-                    .OnInstantiated<AudioService>((_, service) => service.Initialize());
+                    .OnInstantiated<AudioService>((_, service) => service.Initialize())
+                    .NonLazy();
                 container.Bind<ITickable>()
                     .To<AudioServiceTickable>()
                     .AsSingle()
@@ -100,8 +100,8 @@ namespace Kruty1918.Moyva.Audio.Runtime
             container.BindInstance(list.Cast<IMusicSceneProfile>().ToList()).AsSingle();
             container.BindInterfacesAndSelfTo<MusicService>()
                 .AsSingle()
-                .NonLazy()
-                .OnInstantiated<MusicService>((_, service) => service.Initialize());
+                .OnInstantiated<MusicService>((_, service) => service.Initialize())
+                .NonLazy();
         }
     }
 }

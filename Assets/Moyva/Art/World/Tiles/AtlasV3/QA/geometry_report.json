@@ -1,0 +1,857 @@
+[
+  {
+    "mesh": "grass_corner",
+    "source_vertices": 65,
+    "vertices": 65,
+    "triangles": 99,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.03,
+        0.0,
+        0.03
+      ]
+    ]
+  },
+  {
+    "mesh": "grass_edge",
+    "source_vertices": 37,
+    "vertices": 37,
+    "triangles": 50,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.0,
+        0.03395867347717285
+      ]
+    ]
+  },
+  {
+    "mesh": "grass_interior",
+    "source_vertices": 53,
+    "vertices": 53,
+    "triangles": 70,
+    "hidden_polygons_removed": 1,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.0,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "grass_merged",
+    "source_vertices": 75,
+    "vertices": 75,
+    "triangles": 98,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.0,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "grass_fill",
+    "source_vertices": 4,
+    "vertices": 4,
+    "triangles": 2,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      [
+        0.5,
+        0.0,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "sand_corner",
+    "source_vertices": 65,
+    "vertices": 86,
+    "triangles": 117,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.04019950469894873,
+        0.02838424703187722,
+        0.03
+      ]
+    ]
+  },
+  {
+    "mesh": "sand_edge",
+    "source_vertices": 37,
+    "vertices": 58,
+    "triangles": 68,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.03150894033827979,
+        0.03342856321193631
+      ]
+    ]
+  },
+  {
+    "mesh": "sand_interior",
+    "source_vertices": 53,
+    "vertices": 74,
+    "triangles": 88,
+    "hidden_polygons_removed": 1,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.022872341946312887,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "sand_merged",
+    "source_vertices": 75,
+    "vertices": 96,
+    "triangles": 116,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.023731464405612454,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "sand_fill",
+    "source_vertices": 4,
+    "vertices": 25,
+    "triangles": 20,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      [
+        0.5,
+        0.02990756330989215,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "dirt_corner",
+    "source_vertices": 65,
+    "vertices": 100,
+    "triangles": 129,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.03,
+        0.029537910276164342,
+        0.03016896781227136
+      ]
+    ]
+  },
+  {
+    "mesh": "dirt_edge",
+    "source_vertices": 37,
+    "vertices": 72,
+    "triangles": 80,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.029172154067541627,
+        0.035115863217084806
+      ]
+    ]
+  },
+  {
+    "mesh": "dirt_interior",
+    "source_vertices": 53,
+    "vertices": 88,
+    "triangles": 100,
+    "hidden_polygons_removed": 1,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.024152556385895283,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "dirt_merged",
+    "source_vertices": 75,
+    "vertices": 110,
+    "triangles": 128,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.03195537251088122,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "dirt_fill",
+    "source_vertices": 4,
+    "vertices": 39,
+    "triangles": 32,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      [
+        0.5,
+        0.027629485722140724,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "stone_corner",
+    "source_vertices": 65,
+    "vertices": 100,
+    "triangles": 129,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.04047824402846181,
+        0.029643115308637103,
+        0.04075711398293305
+      ]
+    ]
+  },
+  {
+    "mesh": "stone_edge",
+    "source_vertices": 37,
+    "vertices": 72,
+    "triangles": 80,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.034341088621125115,
+        0.03205100189970761
+      ]
+    ]
+  },
+  {
+    "mesh": "stone_interior",
+    "source_vertices": 53,
+    "vertices": 88,
+    "triangles": 100,
+    "hidden_polygons_removed": 1,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.015022155524130863,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "stone_merged",
+    "source_vertices": 75,
+    "vertices": 110,
+    "triangles": 128,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.025829287992651696,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "stone_fill",
+    "source_vertices": 4,
+    "vertices": 39,
+    "triangles": 32,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      [
+        0.5,
+        0.03268489497492186,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "snow_corner",
+    "source_vertices": 65,
+    "vertices": 86,
+    "triangles": 117,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.03024358743322655,
+        0.030644590545442826,
+        0.03420417526267783
+      ]
+    ]
+  },
+  {
+    "mesh": "snow_edge",
+    "source_vertices": 37,
+    "vertices": 58,
+    "triangles": 68,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.028962652407669064,
+        0.03387446172911515
+      ]
+    ]
+  },
+  {
+    "mesh": "snow_interior",
+    "source_vertices": 53,
+    "vertices": 74,
+    "triangles": 88,
+    "hidden_polygons_removed": 1,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.030672342723221953,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "snow_merged",
+    "source_vertices": 75,
+    "vertices": 96,
+    "triangles": 116,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.023818844910919196,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "snow_fill",
+    "source_vertices": 4,
+    "vertices": 25,
+    "triangles": 20,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      [
+        0.5,
+        0.025321601397033405,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "swamp_corner",
+    "source_vertices": 65,
+    "vertices": 93,
+    "triangles": 123,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.03567060320510989,
+        0.0956448762483317,
+        0.03
+      ]
+    ]
+  },
+  {
+    "mesh": "swamp_edge",
+    "source_vertices": 37,
+    "vertices": 65,
+    "triangles": 74,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.09116388317668045,
+        0.03804160274748417
+      ]
+    ]
+  },
+  {
+    "mesh": "swamp_interior",
+    "source_vertices": 53,
+    "vertices": 81,
+    "triangles": 94,
+    "hidden_polygons_removed": 1,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.07800673092152531,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "swamp_merged",
+    "source_vertices": 75,
+    "vertices": 103,
+    "triangles": 122,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.08275520558113406,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "swamp_fill",
+    "source_vertices": 4,
+    "vertices": 32,
+    "triangles": 26,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      [
+        0.5,
+        0.08717068079953609,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "rock_cliff_corner",
+    "source_vertices": 65,
+    "vertices": 114,
+    "triangles": 141,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.030396672473675564,
+        0.11495416270540416,
+        0.06360905827387586
+      ]
+    ]
+  },
+  {
+    "mesh": "rock_cliff_edge",
+    "source_vertices": 37,
+    "vertices": 86,
+    "triangles": 92,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.10686635048462129,
+        0.07158091811599471
+      ]
+    ]
+  },
+  {
+    "mesh": "rock_cliff_interior",
+    "source_vertices": 53,
+    "vertices": 102,
+    "triangles": 112,
+    "hidden_polygons_removed": 1,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.12769287392639367,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "rock_cliff_merged",
+    "source_vertices": 75,
+    "vertices": 124,
+    "triangles": 140,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.12991236043917842,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "rock_cliff_fill",
+    "source_vertices": 4,
+    "vertices": 53,
+    "triangles": 44,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      [
+        0.5,
+        0.10916554111650445,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "road_corner",
+    "source_vertices": 65,
+    "vertices": 128,
+    "triangles": 153,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.03,
+        0.0323010330158889,
+        0.03
+      ]
+    ]
+  },
+  {
+    "mesh": "road_edge",
+    "source_vertices": 37,
+    "vertices": 100,
+    "triangles": 104,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.03326754731703589,
+        0.03
+      ]
+    ]
+  },
+  {
+    "mesh": "road_interior",
+    "source_vertices": 53,
+    "vertices": 116,
+    "triangles": 124,
+    "hidden_polygons_removed": 1,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.033269691218055654,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "road_merged",
+    "source_vertices": 75,
+    "vertices": 138,
+    "triangles": 152,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.029391760867394482,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "road_fill",
+    "source_vertices": 4,
+    "vertices": 67,
+    "triangles": 56,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      [
+        0.5,
+        0.03421836354182871,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "footpath_corner",
+    "source_vertices": 65,
+    "vertices": 93,
+    "triangles": 123,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.03,
+        0.026770175910105935,
+        0.034095477581868955
+      ]
+    ]
+  },
+  {
+    "mesh": "footpath_edge",
+    "source_vertices": 37,
+    "vertices": 65,
+    "triangles": 74,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.0273813473738373,
+        0.03
+      ]
+    ]
+  },
+  {
+    "mesh": "footpath_interior",
+    "source_vertices": 53,
+    "vertices": 81,
+    "triangles": 94,
+    "hidden_polygons_removed": 1,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.03428557635711591,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "footpath_merged",
+    "source_vertices": 75,
+    "vertices": 103,
+    "triangles": 122,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      [
+        0.5,
+        0.0198675935160258,
+        0.5
+      ]
+    ]
+  },
+  {
+    "mesh": "footpath_fill",
+    "source_vertices": 4,
+    "vertices": 32,
+    "triangles": 26,
+    "hidden_polygons_removed": 0,
+    "bounds": [
+      [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      [
+        0.5,
+        0.02297298499209227,
+        0.5
+      ]
+    ]
+  }
+]

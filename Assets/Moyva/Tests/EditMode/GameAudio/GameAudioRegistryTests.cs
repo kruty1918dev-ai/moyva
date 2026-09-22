@@ -19,7 +19,8 @@ namespace Kruty1918.Moyva.GameAudio.Tests
         [SetUp]
         public void SetUp()
         {
-            _service = new AudioService(null, null);
+            _service = new AudioService(
+                JsonConfigRuntime.Get<AudioRegistrySO>("moyvaaudioregistry"), null);
             _service.Initialize();
         }
 

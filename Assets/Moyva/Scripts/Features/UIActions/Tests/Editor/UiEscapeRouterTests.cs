@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.UIActions.API;
 using Kruty1918.Moyva.UIActions.Runtime;
+using Kruty1918.UIActions.API;
+using Kruty1918.UIActions.Runtime;
 using NUnit.Framework;
 
 namespace Kruty1918.Moyva.Tests.UIActions

@@ -1,0 +1,13 @@
+{
+  "set_count": 9,
+  "mesh_count": 99,
+  "water_model_files": 0,
+  "water_mesh_records": 0,
+  "water_atlas_cells_cleared": 2,
+  "fbx_geometry_readback_verified": 99,
+  "remaining_geometry_unchanged": true,
+  "remaining_uv_layout_unchanged": true,
+  "unity_execution_performed": false,
+  "repository_modified": false,
+  "source_archive_sha256": "ad0006bed9553376430596d9e00722f9ea9fc663e9d1031023489c78ec9765e7"
+}

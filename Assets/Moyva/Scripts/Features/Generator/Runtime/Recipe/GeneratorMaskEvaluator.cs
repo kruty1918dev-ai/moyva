@@ -21,7 +21,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             GeneratorMapRecipe recipe,
             int seed,
             Vector2Int mapSize,
-            ISet<string> skippedLayerIds = null)
+            ISet<string> skippedLayerIds = null,
+            float[,] terrainHeightField = null)
         {
             var masks = new Dictionary<string, bool[,]>(System.StringComparer.Ordinal);
             var layers = OrderedLayers(recipe, skippedLayerIds);
@@ -31,7 +32,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var safeSize = new Vector2Int(Mathf.Max(1, mapSize.x), Mathf.Max(1, mapSize.y));
             foreach (var layer in layers)
             {
-                var context = new GeneratorMaskContext(seed, safeSize, masks);
+                var context = new GeneratorMaskContext(seed, safeSize, masks, terrainHeightField);
                 masks[layer.Id] = EvaluateLayerMask(layer, context);
             }
             return masks;

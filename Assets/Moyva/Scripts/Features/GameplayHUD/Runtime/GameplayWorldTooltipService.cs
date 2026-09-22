@@ -3,6 +3,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.InputRouting.API;
 using Kruty1918.Moyva.Shared.Localization;
+using Kruty1918.Localization;
 using UnityEngine;
 using UnityHTML.Runtime;
 using Zenject;

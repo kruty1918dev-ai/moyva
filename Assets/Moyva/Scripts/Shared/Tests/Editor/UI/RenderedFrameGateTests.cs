@@ -18,12 +18,11 @@ namespace Kruty1918.Moyva.Shared.UI.Tests
         }
 
         [Test]
-        public void NextAsync_CompletesOnNextEditorUpdate()
+        public async Task NextAsync_CompletesOnNextEditorUpdate()
         {
             // In EditMode there is no render pass; the gate falls back to the
             // next editor update. Awaiting must not hang.
-            Task task = RenderedFrameGate.NextAsync();
-            Assert.DoesNotThrowAsync(async () => await task);
+            await RenderedFrameGate.NextAsync();
         }
 
         [Test]
@@ -31,7 +30,7 @@ namespace Kruty1918.Moyva.Shared.UI.Tests
         {
             var cts = new CancellationTokenSource();
             cts.Cancel();
-            Assert.ThrowsAsync<System.OperationCanceledException>(
+            Assert.CatchAsync<System.OperationCanceledException>(
                 async () => await RenderedFrameGate.NextAsync(cts.Token));
         }
     }

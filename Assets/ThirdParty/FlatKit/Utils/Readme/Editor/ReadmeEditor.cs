@@ -286,7 +286,7 @@ public class ReadmeEditor : Editor {
         if (path == null) {
             Debug.LogError($"<b>[{AssetName}]</b> Could not find the URP package.");
         } else {
-            UnityEditor.AssetPackage.Package.Import(path, false);
+            AssetDatabase.ImportPackage(path, false);
         }
     }
 
@@ -295,7 +295,7 @@ public class ReadmeEditor : Editor {
         if (path == null) {
             Debug.LogError($"<b>[{AssetName}]</b> Could not find the Built-in RP package.");
         } else {
-            UnityEditor.AssetPackage.Package.Import(path, false);
+            AssetDatabase.ImportPackage(path, false);
         }
     }
 

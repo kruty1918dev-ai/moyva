@@ -53,7 +53,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
 			MapChunkFeatureBindings.Install(container);
 			container.BindInterfacesAndSelfTo<TileTypeRepository>().AsSingle();
 			container.Bind<MovementProfileRepository>().AsSingle();
-			container.Bind<ITraversalCostResolver>().To<TraversalCostResolver>().AsSingle();
+			container.BindInterfacesTo<TraversalCostResolver>().AsSingle();
 			container.BindInterfacesTo<ChunkedGridService>().AsSingle().WithArguments(width, height);
 			container.Bind<ITileSettingsService>().To<TileSettingsService>().AsSingle();
 		}
@@ -93,8 +93,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
 			Container.Bind<MovementProfileRepository>()
 				.AsSingle()
 				.NonLazy();
-			Container.Bind<ITraversalCostResolver>()
-				.To<TraversalCostResolver>()
+			Container.BindInterfacesTo<TraversalCostResolver>()
 				.AsSingle();
 
 			Container.BindInterfacesTo<ChunkedGridService>().AsSingle()

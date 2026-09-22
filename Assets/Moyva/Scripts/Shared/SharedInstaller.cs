@@ -1,8 +1,10 @@
+using System;
 using Kruty1918.Localization;
 using Kruty1918.Moyva.Shared.Common;
 using Kruty1918.Connectivity;
 using Kruty1918.Diagnostics;
 using Kruty1918.Moyva.Shared.Graphics;
+using Kruty1918.Moyva.Shared.Localization;
 using Kruty1918.Moyva.Shared.Performance;
 using Kruty1918.Performance;
 using Kruty1918.Moyva.Shared.Controls;
@@ -85,13 +87,16 @@ namespace Kruty1918.Moyva.Shared
 
             container.Bind<AsyncGlobalErrorHandlerService>()
                 .AsSingle()
-                .NonLazy()
-                .OnInstantiated<AsyncGlobalErrorHandlerService>((_, service) => service.Initialize());
+                .OnInstantiated<AsyncGlobalErrorHandlerService>((_, service) => service.Initialize())
+                .NonLazy();
             container.Bind<IDisposable>()
                 .To<AsyncGlobalErrorHandlerService>()
                 .FromResolve();
 
             container.BindInterfacesAndSelfTo<SceneTransitionService>().AsSingle();
+            container.Bind<IUiReducedMotionSource>()
+                .To<UiReducedMotionSource>()
+                .AsSingle();
             container.BindInterfacesAndSelfTo<UiMotionService>().AsSingle();
             container.BindInterfacesAndSelfTo<UiTooltipService>().AsSingle();
             container.Bind<ITickable>()
@@ -116,8 +121,8 @@ namespace Kruty1918.Moyva.Shared
             container.BindInterfacesAndSelfTo<InternetConnectivityHealthReporter>().AsSingle();
             container.Bind<HealthCheckService>()
                 .AsSingle()
-                .NonLazy()
-                .OnInstantiated<HealthCheckService>((_, service) => service.Initialize());
+                .OnInstantiated<HealthCheckService>((_, service) => service.Initialize())
+                .NonLazy();
             container.Bind<IHealthCheckService>().To<HealthCheckService>().FromResolve();
         }
 

@@ -93,7 +93,7 @@ namespace Kruty1918.Moyva.Tests.Economy
                 .FromInstance(new FakeCombatTargets());
             container.Bind<Kruty1918.Moyva.Construction.API.IBuildingRegistry>()
                 .FromInstance(new FakeBuildingRegistry());
-            container.Bind<Kruty1918.Moyva.Combat.API.IHealthRegistry>().FromInstance(_health);
+            container.Bind<IHealthRegistry>().FromInstance(_health);
 
             var capture = new SettlementCaptureService(registry, transfer, container.Resolve<SignalBus>());
             container.Inject(capture);

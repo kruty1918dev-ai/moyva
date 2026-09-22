@@ -11,6 +11,8 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+using Kruty1918.JsonConfig;
+
 namespace Kruty1918.Moyva.Jsonization.Editor
 {
     internal static class JsonizationEditorUtil

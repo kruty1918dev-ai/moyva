@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 
+using Kruty1918.JsonConfig;
+
 namespace Kruty1918.Moyva.Jsonization.Editor
 {
     /// <summary>

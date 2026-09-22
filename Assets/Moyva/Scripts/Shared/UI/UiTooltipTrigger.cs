@@ -25,7 +25,7 @@ namespace Kruty1918.Moyva.Shared.UI
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            ResolveService()?.Request(new UiTooltipRequest(
+            _service?.Request(new UiTooltipRequest(
                 this,
                 _text,
                 eventData.position,
@@ -34,12 +34,12 @@ namespace Kruty1918.Moyva.Shared.UI
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            ResolveService()?.Hide(this);
+            _service?.Hide(this);
         }
 
         public void OnSelect(BaseEventData eventData)
         {
-            ResolveService()?.Request(new UiTooltipRequest(
+            _service?.Request(new UiTooltipRequest(
                 this,
                 _text,
                 Vector2.zero,
@@ -49,16 +49,7 @@ namespace Kruty1918.Moyva.Shared.UI
 
         public void OnDeselect(BaseEventData eventData)
         {
-            ResolveService()?.Hide(this);
-        }
-
-        private IUiTooltipService ResolveService()
-        {
-            if (_service != null)
-                return _service;
-            if (ProjectContext.Instance != null)
-                _service = ProjectContext.Instance.Container.TryResolve<IUiTooltipService>();
-            return _service;
+            _service?.Hide(this);
         }
     }
 

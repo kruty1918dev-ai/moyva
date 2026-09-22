@@ -32,7 +32,15 @@
         "UnityHTML.Runtime",
         "Unity.TextMeshPro",
         "Unity.InputSystem",
-        "Kruty1918.EntityHealth"
+        "Kruty1918.EntityHealth",
+        "Kruty1918.UIActions",
+        "Kruty1918.Localization",
+        "Kruty1918.InputRouting",
+        "Kruty1918.Notifications",
+        "Kruty1918.UiFoundation",
+        "Kruty1918.SaveSystem",
+        "Kruty1918.Performance",
+        "Kruty1918.Audio"
     ],
     "includePlatforms": [
         "Editor"

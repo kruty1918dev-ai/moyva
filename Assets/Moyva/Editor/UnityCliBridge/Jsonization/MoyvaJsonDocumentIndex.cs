@@ -5,6 +5,8 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 
+using Kruty1918.JsonConfig;
+
 namespace Kruty1918.Moyva.Jsonization.Editor
 {
     /// <summary>

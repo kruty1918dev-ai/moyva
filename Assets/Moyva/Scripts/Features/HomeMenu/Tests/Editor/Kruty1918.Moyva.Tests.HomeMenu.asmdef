@@ -8,6 +8,12 @@
     "Kruty1918.Moyva.WorldCreation.API",
     "Kruty1918.Moyva.Multiplayer",
     "Kruty1918.Moyva.SaveSystem",
+    "Kruty1918.Performance",
+    "Kruty1918.SaveSystem",
+    "Kruty1918.JsonConfig",
+    "Kruty1918.UiFoundation",
+    "Kruty1918.UIActions",
+    "Kruty1918.Localization",
     "UnityHTML.Runtime",
     "Zenject"
   ],

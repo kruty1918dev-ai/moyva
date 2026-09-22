@@ -2,7 +2,8 @@
   "name": "Kruty1918.Moyva.Tests.UIActions",
   "rootNamespace": "Kruty1918.Moyva.Tests.UIActions",
   "references": [
-    "Kruty1918.Moyva.UIActions"
+    "Kruty1918.Moyva.UIActions",
+    "Kruty1918.UIActions"
   ],
   "includePlatforms": ["Editor"],
   "overrideReferences": true,

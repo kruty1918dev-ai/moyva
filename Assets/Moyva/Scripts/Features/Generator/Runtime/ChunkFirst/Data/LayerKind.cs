@@ -10,6 +10,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         ObjectSpawn = 5,
         Building = 6,
         Decoration = 7,
-        MaskOnly = 8
+        MaskOnly = 8,
+        /// <summary>Generated stair corridor cell; not terrain-like, owns its tile id.</summary>
+        StairPassage = 9
     }
 }

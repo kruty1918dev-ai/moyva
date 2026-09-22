@@ -9,6 +9,8 @@ using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Shared.Graphics;
 using Kruty1918.Moyva.Shared.Performance;
+using Kruty1918.Performance;
+using Kruty1918.SaveSystem;
 using Kruty1918.Moyva.WorldCreation.API;
 using NUnit.Framework;
 using UnityEngine;
@@ -30,7 +32,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             var overlay = new RecordingOverlay(order);
             var graphics = new RecordingGraphics(order);
             var prewarm = new RecordingPrewarm(order);
-            var config = ScriptableObject.CreateInstance<HomeMenuConfigSO>();
+            var config = new HomeMenuConfigSO();
             config.gameplaySceneName = "__p082_missing_scene__";
 
             var pipeline = new GameplayStartupPipeline(

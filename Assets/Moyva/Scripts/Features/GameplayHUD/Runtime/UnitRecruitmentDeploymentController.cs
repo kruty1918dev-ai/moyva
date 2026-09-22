@@ -9,6 +9,7 @@ using Kruty1918.Notifications.API;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Shared.Localization;
+using Kruty1918.Localization;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.UIActions.API;

@@ -399,7 +399,7 @@ namespace Kruty1918.Audio
             if (!activeScene.IsValid())
                 return;
 
-            if ((int)activeScene.handle.GetRawData() == _lastProcessedSceneHandle)
+            if (activeScene.handle.Equals(_lastProcessedSceneHandle))
                 return;
 
             RefreshAutoPlayForScene(activeScene);
@@ -410,7 +410,7 @@ namespace Kruty1918.Audio
 
         private void RefreshAutoPlayForScene(UnityEngine.SceneManagement.Scene scene)
         {
-            _lastProcessedSceneHandle = (int)scene.handle.GetRawData();
+            _lastProcessedSceneHandle = scene.handle;
 
             for (int i = _awakeSources.Count - 1; i >= 0; i--)
             {

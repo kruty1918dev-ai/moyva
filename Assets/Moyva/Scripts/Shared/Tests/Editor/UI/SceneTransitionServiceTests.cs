@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using Kruty1918.Moyva.Shared.UI;
+using Kruty1918.UiFoundation;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -23,7 +23,7 @@ namespace Kruty1918.Moyva.Shared.UI.Tests
         public void TearDown()
         {
             foreach (var leftover in Object.FindObjectsByType<CanvasGroup>(
-                         FindObjectsInactive.Include, FindObjectsSortMode.None))
+                         FindObjectsInactive.Include))
                 if (leftover != null && leftover.gameObject.name == "MoyvaSceneTransition")
                     Object.DestroyImmediate(leftover.gameObject);
         }
@@ -112,7 +112,7 @@ namespace Kruty1918.Moyva.Shared.UI.Tests
         private static CanvasGroup FindOverlay()
         {
             foreach (var group in Object.FindObjectsByType<CanvasGroup>(
-                         FindObjectsInactive.Include, FindObjectsSortMode.None))
+                         FindObjectsInactive.Include))
                 if (group != null && group.gameObject.name == "MoyvaSceneTransition")
                     return group;
             return null;
@@ -122,7 +122,7 @@ namespace Kruty1918.Moyva.Shared.UI.Tests
         {
             int count = 0;
             foreach (var group in Object.FindObjectsByType<CanvasGroup>(
-                         FindObjectsInactive.Include, FindObjectsSortMode.None))
+                         FindObjectsInactive.Include))
                 if (group != null && group.gameObject.name == "MoyvaSceneTransition")
                     count++;
             return count;
