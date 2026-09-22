@@ -10,12 +10,12 @@ Base: `.`
 |---|---|
 | Project lifetime | `Bootstrap/Runtime/ProjectServicesInstaller.cs` → Shared, Audio, SaveSystem, Multiplayer |
 | Gameplay composition | `Bootstrap/Runtime/BootstrapInstaller.cs` → feature bindings; startup below |
-| Input routing | `Infrastructure/InputRouting/API/GameplayInputPolicy.cs`; `Infrastructure/InputRouting/Runtime/InputRoutingBindings.cs`; `Infrastructure/InputRouting/Runtime/GameplayInputPolicy.cs` |
+| Input routing | `Packages/com.kruty1918.input-context/Runtime/`; game bindings `Infrastructure/InputRouting/Runtime/InputRoutingBindings.cs` |
 | Camera shortcuts | `Shared/PlayerControlBinding.cs`; `Shared/PlayerControlSettingsService.cs` |
-| Audio / graphics / performance / UI | `Shared/SharedInstaller.cs`; `Shared/Audio/AudioContracts.cs`; `Shared/Audio/AudioService.cs`; `Shared/GraphicsSettingsService.cs`; `Shared/Performance/`; `Shared/UI/` |
-| Diagnostic logging | `Shared/Diagnostics/RuntimeDiagnostics.cs` (no DI installer) |
-| Localization | `Shared/Localization/`; `Features/HomeMenu/Runtime/Services/LanguageSwitchCoordinator.cs` |
-| JSON / asset catalog | `Jsonization/Runtime/MoyvaJsonRuntime.cs`; `Jsonization/Runtime/MoyvaJsonTypeRegistry.cs`; `Jsonization/Runtime/MoyvaJsonAssetCatalog.cs` |
+| Audio / graphics / performance / UI | `Shared/SharedInstaller.cs`; audio `Packages/com.kruty1918.audio/` + `Shared/Audio/MoyvaAudioInstaller.cs`; perf `Packages/com.kruty1918.adaptive-performance/` + `Shared/Performance/`; UI `Packages/com.kruty1918.ui-foundation/` + `Shared/UI/` |
+| Diagnostic logging | `Packages/com.kruty1918.runtime-diagnostics/` (composed in SharedInstaller); game capture `Shared/Diagnostics/` |
+| Localization | `Packages/com.kruty1918.localization/`; `Features/HomeMenu/Runtime/Services/LanguageSwitchCoordinator.cs` |
+| JSON / asset catalog | `Packages/com.kruty1918.json-config/`; game adapter `Jsonization/Runtime/` |
 
 ## Feature entry points
 
@@ -24,7 +24,7 @@ Base: `Features/`
 | Task | Entry points |
 |---|---|
 | Turns / rounds | `Turns/API/TurnContracts.cs`; `Turns/Runtime/TurnBindings.cs`; `Turns/Runtime/TurnService.cs`; `Turns/Runtime/RoundResolutionService.cs` |
-| Combat / health | `Combat/API/ICombatCommandService.cs`; `Combat/API/IHealthRegistry.cs`; `Combat/Runtime/CombatInstaller.cs`; `Combat/Runtime/HealthRegistry.cs` |
+| Combat / health | `Combat/API/ICombatCommandService.cs`; `Combat/Runtime/CombatInstaller.cs`; health mechanics `Packages/com.kruty1918.entity-health/` |
 | Economy state | `Economy/Runtime/EconomyInstaller.cs`; `Economy/Runtime/EconomyManager.cs`; `Economy/Runtime/EconomySettlementRegistryService.cs`; `Economy/Runtime/EconomyOwnerResourcePoolService.cs` |
 | Economy queries | `Economy/Runtime/IEconomyRuntimeApi.cs`; `Economy/Runtime/EconomyRuntimeApi.cs`; `Economy/API/IMapObjectEconomyService.cs` |
 | Factions | `Faction/API/`; `Faction/Runtime/FactionInstaller.cs`; `Faction/Runtime/FactionOwnershipService.cs` |
@@ -32,15 +32,15 @@ Base: `Features/`
 | Occupancy | `ObjectsMap/API/IObjectsMapService.cs`; `ObjectsMap/Runtime/ObjectsMapInstaller.cs`; `ObjectsMap/Runtime/ChunkedObjectsMapService.cs` |
 | Map chunks | `MapChunks/API/`; `MapChunks/Runtime/Installers/MapChunkFeatureBindings.cs`; `MapChunks/Runtime/Core/MapChunkLayoutService.cs` |
 | Path queries | `Pathfinding/API/IPathfinder.cs`; `Pathfinding/Runtime/PathfinderInstaller.cs`; `Pathfinding/Runtime/Pathfinder.cs` |
-| Calendar | `Calendar/API/ICalendarService.cs`; `Calendar/Runtime/CalendarInstaller.cs`; `Calendar/Runtime/GameCalendarService.cs` |
+| Calendar | `Packages/com.kruty1918.game-calendar/`; game config `Calendar/Runtime/CalendarInstaller.cs`; `Calendar/Runtime/CalendarSessionConfigSO.cs` |
 | Game mode / pause / exit | `GameMode/API/`; `GameMode/Runtime/GameModeInstaller.cs`; `GameMode/Runtime/GameModeService.cs`; `GameMode/Runtime/GameStateService.cs`; `GameMode/Runtime/ExitMatchCoordinator.cs` |
-| Save / restore / launch options | `SaveSystem/API/`; `SaveSystem/Runtime/SaveSystemInstaller.cs`; `SaveSystem/Runtime/SaveService.cs`; `SaveSystem/Runtime/SaveModuleRegistry.cs`; `SaveSystem/Runtime/SavePlayModeOptions.cs` |
+| Save / restore / launch options | `Packages/com.kruty1918.save-system/`; game composition `SaveSystem/Runtime/SaveSystemInstaller.cs`; `SaveSystem/Runtime/SaveService.cs`; `SaveSystem/Runtime/MoyvaSaveModuleOrdering.cs` |
 | World settings | `WorldCreation/API/IWorldCreationService.cs`; `WorldCreation/Runtime/WorldCreationInstaller.cs`; `WorldCreation/Runtime/WorldCreationService.cs` |
 | Signals / events | `Signals/API/`; `Signals/Runtime/SignalBusInstaller.cs`; `Signals/Runtime/WorldGenerationSignalState.cs` |
-| UI actions | `UIActions/API/`; `UIActions/Runtime/UiActionsInstaller.cs`; `UIActions/Runtime/UiActionRouter.cs` |
+| UI actions | `Packages/com.kruty1918.ui-actions/`; game composition `UIActions/Runtime/UiActionsInstaller.cs`; action catalog `UIActions/API/UiActionIds.cs` |
 | Tile selection | `Interactions/API/ITileInteractionService.cs`; `Interactions/Runtime/InteractionsInstaller.cs`; `Interactions/Runtime/WorldInfoSelectionCoordinator.cs` |
 | Info panel | `InfoPanel/UI/WorldInfoPanelInstaller.cs` |
-| Notifications | `Notifications/API/IGameplayNotificationService.cs`; `Notifications/Runtime/NotificationsInstaller.cs`; `Notifications/Runtime/GameplayNotificationService.cs` |
+| Notifications | `Packages/com.kruty1918.notifications/`; game composition `Notifications/Runtime/NotificationsInstaller.cs` |
 | Game audio layer | `GameAudio/API/AudioAmbienceConfig.cs`; `GameAudio/API/AudioFeedbackConfig.cs`; `GameAudio/Runtime/GameAudioInstaller.cs` (shared→ProjectServices, gameplay→Bootstrap installers); presets: Presets/Systems/audio-* |
 | Camera | `Camera/API/`; `Camera/Runtime/CameraInstaller.cs`; `Camera/Runtime/CameraMovement.cs`; `Camera/Runtime/CameraZoom.cs` |
 | Camera zoom state | `Camera/API/ICameraZoomState.cs`; `Camera/Runtime/CameraZoomStateService.cs` |

@@ -40,14 +40,21 @@ for document, limit in {"AGENTS.md": 6 * 1024, "CODEMAP.md": 16 * 1024}.items():
         violations.append((f"context budget exceeded ({path.stat().st_size} > {limit} bytes)", document))
 
 source_root = Path("Assets/Moyva/Scripts").resolve()
+repo_root = Path(".").resolve()
+packages_root = Path("Packages").resolve()
 
 def check_reference(value, base, location, directory=False):
     relative = PurePosixPath(value)
     if relative.is_absolute() or ".." in relative.parts or "\\" in value:
         violations.append((f"invalid CODEMAP path: {value}", location))
         return
-    target = (base / value).resolve()
-    if not target.is_relative_to(source_root):
+    if value.startswith("Packages/"):
+        target = (repo_root / value).resolve()
+        roots = (packages_root,)
+    else:
+        target = (base / value).resolve()
+        roots = (source_root, packages_root)
+    if not any(target.is_relative_to(root) for root in roots):
         violations.append((f"CODEMAP path leaves production root: {value}", location))
     elif not (target.is_dir() if directory else target.is_file()):
         violations.append((f"missing CODEMAP {'directory' if directory else 'file'}: {value}", location))
