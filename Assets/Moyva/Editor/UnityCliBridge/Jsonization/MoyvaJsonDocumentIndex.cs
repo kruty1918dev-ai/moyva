@@ -164,7 +164,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
         private static HashSet<string> BuildRuntimeModelKeys()
         {
             var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (Type type in TypeCache.GetTypesDerivedFrom<MoyvaJsonConfigObject>())
+            foreach (Type type in TypeCache.GetTypesDerivedFrom<JsonConfigObject>())
             {
                 if (type == null || type.IsAbstract)
                     continue;
@@ -177,9 +177,9 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                     continue;
                 }
 
-                keys.Add("model:" + MoyvaJsonTypeRegistry.StableId(type));
+                keys.Add("model:" + JsonConfigTypeRegistry.StableId(type));
                 keys.Add("model:" + type.Name);
-                keys.Add("schema:" + MoyvaJsonTypeRegistry.SchemaForConfigType(type));
+                keys.Add("schema:" + JsonConfigTypeRegistry.SchemaForConfigType(type));
             }
 
             return keys;

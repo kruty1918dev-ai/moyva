@@ -1,14 +1,14 @@
 using System;
 using Newtonsoft.Json;
 
-namespace Kruty1918.Moyva.Jsonization
+namespace Kruty1918.JsonConfig
 {
     /// <summary>
-    /// Plain C# base for migrated Moyva configuration objects.
+    /// Plain C# base for migrated host configuration objects.
     /// It intentionally does NOT derive from UnityEngine.Object or ScriptableObject.
     /// </summary>
     [Serializable]
-    public abstract class MoyvaJsonConfigObject
+    public abstract class JsonConfigObject
     {
         [JsonIgnore] public string JsonId { get; internal set; } = string.Empty;
         [JsonIgnore] public string JsonSchema { get; internal set; } = string.Empty;

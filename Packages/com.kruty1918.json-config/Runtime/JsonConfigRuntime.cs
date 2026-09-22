@@ -9,10 +9,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Jsonization
+namespace Kruty1918.JsonConfig
 {
     /// <summary>
-    /// Центральне runtime-сховище JSON-конфігурації Moyva.
+    /// Центральне runtime-сховище JSON-конфігурації хоста.
     /// </summary>
     /// <remarks>
     /// Runtime-потік:
@@ -23,16 +23,39 @@ namespace Kruty1918.Moyva.Jsonization
     /// runtime-об'єкти. Завдяки цьому gameplay-код виконує лише пошук у словниках замість
     /// повторного парсингу JSON.
     /// </remarks>
-    public static class MoyvaJsonRuntime
+    public static class JsonConfigRuntime
     {
         private static readonly object Sync = new();
+        private static JsonConfigRuntimeSettings _settings = JsonConfigRuntimeSettings.Default;
         private static bool _loaded;
         private static Dictionary<string, JObject> _rawByTypeAndId;
         private static Dictionary<string, JObject> _rawBySchemaAndId;
         private static Dictionary<string, object> _frozen;
-        private static MoyvaJsonAssetCatalog _catalog;
+        private static JsonAssetCatalog _catalog;
         private static JsonSerializer _serializer;
         private static string _fingerprint = string.Empty;
+
+        /// <summary>
+        /// Active host-supplied settings. See <see cref="JsonConfigRuntimeSettings"/>.
+        /// </summary>
+        public static JsonConfigRuntimeSettings Settings => _settings;
+
+        /// <summary>
+        /// Installs host-supplied settings. Must be called before the first
+        /// <see cref="EnsureLoaded"/>; reconfiguring after a load forces a reload.
+        /// </summary>
+        public static void Configure(JsonConfigRuntimeSettings settings)
+        {
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
+
+            lock (Sync)
+            {
+                _settings = settings;
+                if (_loaded)
+                    ResetForExplicitReload();
+            }
+        }
 
         /// <summary>
         /// Повертає, чи було вже завантажено згенероване runtime-сховище JSON.
@@ -155,7 +178,7 @@ namespace Kruty1918.Moyva.Jsonization
             if (string.IsNullOrWhiteSpace(fullTypeName))
                 return null;
 
-            Type type = MoyvaJsonRuntimeTypeResolver.Resolve(fullTypeName);
+            Type type = JsonConfigRuntimeTypeResolver.Resolve(fullTypeName);
             if (type == null)
                 return null;
 
@@ -340,7 +363,7 @@ namespace Kruty1918.Moyva.Jsonization
                 _catalog = null;
                 _serializer = null;
                 _fingerprint = string.Empty;
-                MoyvaJsonTypeRegistry.ClearCache();
+                JsonConfigTypeRegistry.ClearCache();
             }
         }
 
@@ -360,21 +383,27 @@ namespace Kruty1918.Moyva.Jsonization
             _frozen = new Dictionary<string, object>(
                 StringComparer.OrdinalIgnoreCase);
 
-            var catalogPrefab =
-                Resources.Load<GameObject>("MoyvaRuntimeAssetCatalog");
-            _catalog = catalogPrefab != null
-                ? catalogPrefab.GetComponent<MoyvaJsonAssetCatalog>()
-                : null;
+            _catalog = null;
+            if (!string.IsNullOrWhiteSpace(_settings.AssetCatalogResourcePath))
+            {
+                var catalogPrefab =
+                    Resources.Load<GameObject>(_settings.AssetCatalogResourcePath);
+                _catalog = catalogPrefab != null
+                    ? catalogPrefab.GetComponent<JsonAssetCatalog>()
+                    : null;
+            }
 
             // Згенерований runtime JSON — єдине редаговане джерело gameplay-конфігурації, яке читає цей runtime.
-            TextAsset[] files =
-                Resources.LoadAll<TextAsset>("MoyvaConfigGenerated");
+            TextAsset[] files = string.IsNullOrWhiteSpace(_settings.GeneratedResourcesFolder)
+                ? Resources.LoadAll<TextAsset>(string.Empty)
+                : Resources.LoadAll<TextAsset>(_settings.GeneratedResourcesFolder);
 
             if (files == null || files.Length == 0)
             {
                 throw new InvalidOperationException(
-                    "[MoyvaJson] No generated runtime JSON TextAssets found. " +
-                    "Run the Jsonization build sync.");
+                    "[JsonConfig] No generated runtime JSON TextAssets found under " +
+                    $"Resources/{_settings.GeneratedResourcesFolder}. " +
+                    "Run the JSON config build sync.");
             }
 
             var canonicalForHash = new List<string>();
@@ -394,7 +423,7 @@ namespace Kruty1918.Moyva.Jsonization
                 catch (Exception ex)
                 {
                     throw new InvalidOperationException(
-                        $"[MoyvaJson] {file.name}: invalid JSON. {ex.Message}",
+                        $"[JsonConfig] {file.name}: invalid JSON. {ex.Message}",
                         ex);
                 }
 
@@ -407,21 +436,21 @@ namespace Kruty1918.Moyva.Jsonization
                     string.IsNullOrWhiteSpace(model))
                 {
                     throw new InvalidOperationException(
-                        $"[MoyvaJson] {file.name}: root metadata " +
+                        $"[JsonConfig] {file.name}: root metadata " +
                         "schema/version/id/model is required.");
                 }
 
-                // Pass82 exported two Construction editor-authoring families into the generated
-                // Resources folder. They were never runtime MoyvaJsonConfigObject models, so
-                // they must not participate in the runtime registry. Keep the exception below
+                // Host filter may exclude documents that must never enter the runtime
+                // registry (e.g. legacy editor-only exports). Keep the exception below
                 // fail-closed for every other unresolved model/schema pair.
-                if (IsLegacyEditorOnlyConstructionDocument(root, model, schema))
+                if (_settings.DocumentFilter != null &&
+                    _settings.DocumentFilter(root, model, schema))
                     continue;
 
-                Type resolvedType = MoyvaJsonTypeRegistry.ResolveConfigModel(model, schema);
+                Type resolvedType = JsonConfigTypeRegistry.ResolveConfigModel(model, schema);
                 if (resolvedType == null)
                     throw new InvalidOperationException(
-                        $"[MoyvaJson] {file.name}: no allow-listed runtime config type " +
+                        $"[JsonConfig] {file.name}: no allow-listed runtime config type " +
                         $"for model='{model}', schema='{schema}'.");
 
                 string sourceType = resolvedType.FullName;
@@ -429,7 +458,7 @@ namespace Kruty1918.Moyva.Jsonization
                 if (_rawByTypeAndId.ContainsKey(typeKey))
                 {
                     throw new InvalidOperationException(
-                        $"[MoyvaJson] Duplicate config ID '{id}' " +
+                        $"[JsonConfig] Duplicate config ID '{id}' " +
                         $"for sourceType '{sourceType}'.");
                 }
 
@@ -437,7 +466,7 @@ namespace Kruty1918.Moyva.Jsonization
                 if (_rawBySchemaAndId.ContainsKey(schemaKey))
                 {
                     throw new InvalidOperationException(
-                        $"[MoyvaJson] Duplicate schema/id '{schema}/{id}'.");
+                        $"[JsonConfig] Duplicate schema/id '{schema}/{id}'.");
                 }
 
                 // Зберігаємо обидва індекси: runtime-consumer-и переважно шукають за CLR-типом,
@@ -445,7 +474,7 @@ namespace Kruty1918.Moyva.Jsonization
                 _rawByTypeAndId[typeKey] = root;
                 _rawBySchemaAndId[schemaKey] = root;
 
-                JObject runtimeRoot = MoyvaJsonDocumentMetadata.CloneRuntimeDocument(root);
+                JObject runtimeRoot = JsonDocumentMetadata.CloneRuntimeDocument(root);
                 canonicalForHash.Add(runtimeRoot.ToString(Formatting.None));
             }
 
@@ -460,46 +489,14 @@ namespace Kruty1918.Moyva.Jsonization
             _serializer = CreateSerializer();
         }
 
-        /// <summary>
-        /// Виявляє legacy-документи Construction authoring, які випадково були експортовані
-        /// у runtime Resources, хоча ніколи не були валідними runtime config-моделями.
-        /// </summary>
-        /// <param name="root">Розпарсений JSON root.</param>
-        /// <param name="model">Ідентифікатор моделі документа.</param>
-        /// <param name="schema">Ідентифікатор схеми документа.</param>
-        /// <returns><c>true</c> лише для явно дозволених legacy editor-only сімейств.</returns>
-        private static bool IsLegacyEditorOnlyConstructionDocument(
-            JObject root,
-            string model,
-            string schema)
-        {
-            if (root == null || string.IsNullOrWhiteSpace(model) || string.IsNullOrWhiteSpace(schema))
-                return false;
 
-            var migration = root["migration"] as JObject;
-            string sourceAssetPath = migration?.Value<string>("sourceAssetPath");
-            if (string.IsNullOrWhiteSpace(sourceAssetPath))
-                return false;
-
-            string normalizedPath = sourceAssetPath.Replace('\\', '/');
-            const string legacyTemplateRoot =
-                "Assets/Moyva/Data/ScriptableObjects/Construction/Templates/";
-            if (!normalizedPath.StartsWith(legacyTemplateRoot, StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            return
-                (string.Equals(model, "building-archetype", StringComparison.OrdinalIgnoreCase) &&
-                 string.Equals(schema, "moyva.building-archetype", StringComparison.OrdinalIgnoreCase)) ||
-                (string.Equals(model, "building-template-library", StringComparison.OrdinalIgnoreCase) &&
-                 string.Equals(schema, "moyva.building-template-library", StringComparison.OrdinalIgnoreCase));
-        }
 
         /// <summary>
         /// Матеріалізує один сирий JSON-документ у runtime-конфігураційний об'єкт і кешує його.
         /// </summary>
         /// <param name="type">Конкретний runtime-тип конфігурації.</param>
         /// <param name="id">Стабільний ID конфігурації.</param>
-        /// <param name="root">Сирий проіндексований JSON-документ разом із метаданими Moyva.</param>
+        /// <param name="root">Сирий проіндексований JSON-документ разом із метаданими документа.</param>
         /// <returns>Заповнений frozen runtime-екземпляр.</returns>
         /// <exception cref="InvalidOperationException">
         /// Викидається, якщо об'єкт неможливо створити, заповнити, знайти або провалідувати.
@@ -516,13 +513,13 @@ namespace Kruty1918.Moyva.Jsonization
             object instance;
             try
             {
-                instance = MoyvaJsonObjectFactory.Create(type);
+                instance = JsonObjectFactory.Create(type);
                 if (instance == null) throw new InvalidOperationException("factory returned null");
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException(
-                    $"[MoyvaJson] Cannot create {type.FullName} for '{id}'.",
+                    $"[JsonConfig] Cannot create {type.FullName} for '{id}'.",
                     ex);
             }
 
@@ -530,8 +527,8 @@ namespace Kruty1918.Moyva.Jsonization
             _frozen[key] = instance;
 
             // У десеріалізацію передаємо лише дані моделі. Runtime/export metadata належать
-            // самому MoyvaJson і не повинні трактуватися як поля config-моделі.
-            JObject data = MoyvaJsonDocumentMetadata.CloneConfigPayload(root);
+            // самому JsonConfig і не повинні трактуватися як поля config-моделі.
+            JObject data = JsonDocumentMetadata.CloneConfigPayload(root);
 
             try
             {
@@ -546,14 +543,14 @@ namespace Kruty1918.Moyva.Jsonization
             {
                 _frozen.Remove(key);
                 throw new InvalidOperationException(
-                    $"[MoyvaJson] Failed to deserialize '{id}' " +
+                    $"[JsonConfig] Failed to deserialize '{id}' " +
                     $"as {type.FullName}: {ex.Message}",
                     ex);
             }
 
             ValidateObjectGraph(instance, id);
 
-            if (instance is MoyvaJsonConfigObject config)
+            if (instance is JsonConfigObject config)
             {
                 config.JsonId = id;
                 config.JsonSchema = root.Value<string>("schema") ?? string.Empty;
@@ -609,16 +606,16 @@ namespace Kruty1918.Moyva.Jsonization
                     continue;
 
                 Debug.LogWarning(
-                    $"[MoyvaJson] Unknown JSON member '{property.Name}' " +
+                    $"[JsonConfig] Unknown JSON member '{property.Name}' " +
                     $"in config '{configId}' for type '{type.FullName}'. " +
                     "The member will be ignored.");
             }
         }
 
         /// <summary>
-        /// Створює спільний Newtonsoft serializer для runtime-конфігурації Moyva.
+        /// Створює спільний Newtonsoft serializer для runtime-конфігурації хоста.
         /// </summary>
-        /// <returns>Serializer з Moyva contract resolution і безпечними custom converter-ами.</returns>
+        /// <returns>Serializer з host contract resolution і безпечними custom converter-ами.</returns>
         /// <remarks>
         /// Невідомі/застарілі JSON-поля ігноруються Newtonsoft після того, як вони були виведені
         /// як Warning через <see cref="WarnAboutUnknownJsonMembers"/>.
@@ -635,7 +632,7 @@ namespace Kruty1918.Moyva.Jsonization
                 ObjectCreationHandling = ObjectCreationHandling.Replace,
                 NullValueHandling = NullValueHandling.Include,
                 Culture = System.Globalization.CultureInfo.InvariantCulture,
-                ContractResolver = new MoyvaJsonContractResolver(),
+                ContractResolver = new JsonConfigContractResolver(),
             };
 
             settings.Converters.Add(new UnityValueConverter());
@@ -719,7 +716,7 @@ namespace Kruty1918.Moyva.Jsonization
                         double numeric = Convert.ToDouble(convertible, System.Globalization.CultureInfo.InvariantCulture);
                         if (numeric < min.min)
                             throw new InvalidOperationException(
-                                $"[MoyvaJson] {sourceId} {fieldPath}: expected >= {min.min}, got {numeric}.");
+                                $"[JsonConfig] {sourceId} {fieldPath}: expected >= {min.min}, got {numeric}.");
                     }
 
                     var range = field.GetCustomAttribute<RangeAttribute>();
@@ -728,7 +725,7 @@ namespace Kruty1918.Moyva.Jsonization
                         double numeric = Convert.ToDouble(convertible, System.Globalization.CultureInfo.InvariantCulture);
                         if (numeric < range.min || numeric > range.max)
                             throw new InvalidOperationException(
-                                $"[MoyvaJson] {sourceId} {fieldPath}: expected {range.min}..{range.max}, got {numeric}.");
+                                $"[JsonConfig] {sourceId} {fieldPath}: expected {range.min}..{range.max}, got {numeric}.");
                     }
                 }
 

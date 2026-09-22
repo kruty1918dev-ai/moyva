@@ -43,7 +43,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4c4d8eb3e719bbfb39a7bd9fbed3bab0, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Jsonization::Kruty1918.Moyva.Jsonization.MoyvaJsonAssetCatalog
+  m_EditorClassIdentifier: Kruty1918.JsonConfig::Kruty1918.JsonConfig.JsonAssetCatalog
   _entries:
   - Key: asset.audio-clip.animal-rooster-01.d9cc0181
     Asset: {fileID: 8300000, guid: d9cc018128a794a2c80f40951e1bfa59, type: 3}

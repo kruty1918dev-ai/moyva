@@ -6,16 +6,16 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Jsonization
+namespace Kruty1918.JsonConfig
 {
     /// <summary>
     /// Serializes exactly the gameplay fields Unity used to serialize: public fields
     /// plus [SerializeField]/[SerializeReference] private fields. Editor caches and
     /// [NonSerialized] values never become JSON authoring data.
     /// </summary>
-    public sealed class MoyvaJsonContractResolver : DefaultContractResolver
+    public sealed class JsonConfigContractResolver : DefaultContractResolver
     {
-        public MoyvaJsonContractResolver()
+        public JsonConfigContractResolver()
         {
             NamingStrategy = new CamelCaseNamingStrategy(
                 processDictionaryKeys: false,

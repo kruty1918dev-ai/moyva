@@ -135,7 +135,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
 
             foreach (JProperty property in value.Properties().ToList())
             {
-                if (isRoot && property.Name == MoyvaJsonDocumentMetadata.Editor)
+                if (isRoot && property.Name == JsonDocumentMetadata.Editor)
                     continue;
 
                 JObject propertySchema = properties?[property.Name] as JObject ?? new JObject();

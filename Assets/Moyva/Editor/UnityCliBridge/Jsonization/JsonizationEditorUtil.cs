@@ -26,14 +26,14 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             if (type == null) return false;
             string ns = type.Namespace ?? string.Empty;
             return ns.StartsWith(MoyvaNamespace, StringComparison.Ordinal) &&
-                   !ns.StartsWith("Kruty1918.Moyva.Jsonization", StringComparison.Ordinal);
+                   !ns.StartsWith("Kruty1918.JsonConfig", StringComparison.Ordinal);
         }
 
         internal static bool IsProjectConfigType(Type type)
         {
             if (type == null || !IsProjectOwned(type)) return false;
             return typeof(ScriptableObject).IsAssignableFrom(type) ||
-                   typeof(MoyvaJsonConfigObject).IsAssignableFrom(type);
+                   typeof(JsonConfigObject).IsAssignableFrom(type);
         }
 
         internal static string StableId(UnityEngine.Object obj, Type type = null)
@@ -134,7 +134,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             if (n == "UnitClassConfig") return "moyva.unit";
             if (n == "GeneratorMapRecipe") return "moyva.generator-recipe";
             if (n == "WorldCreationDefaultsSO") return "moyva.world-creation";
-            string id = MoyvaJsonTypeRegistry.StableId(type);
+            string id = JsonConfigTypeRegistry.StableId(type);
             return "moyva." + (string.IsNullOrWhiteSpace(id) ? Slug(type.Name) : id);
         }
 
@@ -216,7 +216,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             if (asset == null) return string.Empty;
             string path = AssetDatabase.GetAssetPath(asset);
             string guid = string.IsNullOrWhiteSpace(path) ? string.Empty : AssetDatabase.AssetPathToGUID(path);
-            string typeId = MoyvaJsonTypeRegistry.StableId(asset.GetType());
+            string typeId = JsonConfigTypeRegistry.StableId(asset.GetType());
             string baseName = Slug(asset.name);
             string guidPart = string.IsNullOrWhiteSpace(guid) ? "scene" : guid.Substring(0, Math.Min(8, guid.Length));
             return $"asset.{typeId}.{baseName}.{guidPart}";

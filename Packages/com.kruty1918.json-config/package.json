@@ -1,0 +1,19 @@
+{
+  "name": "com.kruty1918.json-config",
+  "version": "0.1.0",
+  "displayName": "Kruty1918 JSON Config",
+  "description": "Schema-driven JSON configuration runtime for Unity: Load -> Validate -> Resolve -> Freeze -> Consume. Host supplies Resources folder names, model type allow-list prefixes and legacy document filters via JsonConfigRuntimeSettings.",
+  "unity": "6000.3",
+  "author": {
+    "name": "Kruty1918"
+  },
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.0"
+  },
+  "keywords": [
+    "json",
+    "configuration",
+    "serialization",
+    "newtonsoft"
+  ]
+}

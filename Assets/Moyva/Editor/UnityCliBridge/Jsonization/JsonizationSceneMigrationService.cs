@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -82,7 +82,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                     var records = CollectBindings(new[] { root });
                     if (records.Count > 0)
                     {
-                        var marker = root.GetComponent<MoyvaJsonBindingMarker>() ?? root.AddComponent<MoyvaJsonBindingMarker>();
+                        var marker = root.GetComponent<JsonBindingMarker>() ?? root.AddComponent<JsonBindingMarker>();
                         marker.ReplaceBindings(records);
                         EditorUtility.SetDirty(marker);
                         PrefabUtility.SaveAsPrefabAsset(root, path);
@@ -124,7 +124,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                         Scene scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
                         int cleared = 0;
                         foreach (GameObject root in scene.GetRootGameObjects())
-                            foreach (MoyvaJsonBindingMarker marker in root.GetComponentsInChildren<MoyvaJsonBindingMarker>(true))
+                            foreach (JsonBindingMarker marker in root.GetComponentsInChildren<JsonBindingMarker>(true))
                                 cleared += ClearMarkerTargets(marker);
                         if (cleared > 0)
                         {
@@ -158,7 +158,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 {
                     root = PrefabUtility.LoadPrefabContents(path);
                     int cleared = 0;
-                    foreach (MoyvaJsonBindingMarker marker in root.GetComponentsInChildren<MoyvaJsonBindingMarker>(true))
+                    foreach (JsonBindingMarker marker in root.GetComponentsInChildren<JsonBindingMarker>(true))
                         cleared += ClearMarkerTargets(marker);
                     if (cleared > 0) PrefabUtility.SaveAsPrefabAsset(root, path);
                     host.cleared = cleared;
@@ -258,7 +258,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 {
                     int cleared = 0;
                     foreach (GameObject root in scene.GetRootGameObjects())
-                        foreach (MoyvaJsonBindingMarker marker in root.GetComponentsInChildren<MoyvaJsonBindingMarker>(true))
+                        foreach (JsonBindingMarker marker in root.GetComponentsInChildren<JsonBindingMarker>(true))
                             cleared += ClearMarkerTargets(marker);
                     if (cleared > 0)
                     {
@@ -297,7 +297,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 if (clear)
                 {
                     int cleared = 0;
-                    foreach (MoyvaJsonBindingMarker marker in root.GetComponentsInChildren<MoyvaJsonBindingMarker>(true))
+                    foreach (JsonBindingMarker marker in root.GetComponentsInChildren<JsonBindingMarker>(true))
                         cleared += ClearMarkerTargets(marker);
                     if (cleared > 0) PrefabUtility.SaveAsPrefabAsset(root, path);
                     host.cleared = cleared;
@@ -306,10 +306,10 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 else
                 {
                     var records = CollectBindings(new[] { root });
-                    var marker = root.GetComponent<MoyvaJsonBindingMarker>();
+                    var marker = root.GetComponent<JsonBindingMarker>();
                     if (records.Count > 0)
                     {
-                        marker ??= root.AddComponent<MoyvaJsonBindingMarker>();
+                        marker ??= root.AddComponent<JsonBindingMarker>();
                         marker.ReplaceBindings(records);
                         EditorUtility.SetDirty(marker);
                         PrefabUtility.SaveAsPrefabAsset(root, path);
@@ -335,15 +335,15 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             }
         }
 
-        private static List<MoyvaJsonBindingRecord> CollectBindings(IEnumerable<GameObject> roots)
+        private static List<JsonBindingRecord> CollectBindings(IEnumerable<GameObject> roots)
         {
-            var result = new List<MoyvaJsonBindingRecord>();
+            var result = new List<JsonBindingRecord>();
             foreach (GameObject root in roots)
             {
                 if (root == null) continue;
                 foreach (Component component in root.GetComponentsInChildren<Component>(true))
                 {
-                    if (component == null || component is MoyvaJsonBindingMarker) continue;
+                    if (component == null || component is JsonBindingMarker) continue;
                     SerializedObject so;
                     try { so = new SerializedObject(component); }
                     catch { continue; }
@@ -355,7 +355,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                         if (it.propertyType != SerializedPropertyType.ObjectReference || it.propertyPath == "m_Script") continue;
                         UnityEngine.Object target = it.objectReferenceValue;
                         if (target == null || !JsonizationEditorUtil.IsProjectConfigType(target.GetType())) continue;
-                        result.Add(new MoyvaJsonBindingRecord
+                        result.Add(new JsonBindingRecord
                         {
                             Target = component,
                             PropertyPath = it.propertyPath,
@@ -368,12 +368,12 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             return result;
         }
 
-        private static void UpsertSceneMarker(Scene scene, List<MoyvaJsonBindingRecord> records)
+        private static void UpsertSceneMarker(Scene scene, List<JsonBindingRecord> records)
         {
-            MoyvaJsonBindingMarker marker = null;
+            JsonBindingMarker marker = null;
             foreach (GameObject root in scene.GetRootGameObjects())
             {
-                marker = root.GetComponent<MoyvaJsonBindingMarker>();
+                marker = root.GetComponent<JsonBindingMarker>();
                 if (marker != null && root.name == "__MoyvaJsonBindings") break;
                 marker = null;
             }
@@ -388,16 +388,16 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             {
                 var go = new GameObject("__MoyvaJsonBindings");
                 SceneManager.MoveGameObjectToScene(go, scene);
-                marker = go.AddComponent<MoyvaJsonBindingMarker>();
+                marker = go.AddComponent<JsonBindingMarker>();
             }
             marker.ReplaceBindings(records);
             EditorUtility.SetDirty(marker);
         }
 
-        private static int ClearMarkerTargets(MoyvaJsonBindingMarker marker)
+        private static int ClearMarkerTargets(JsonBindingMarker marker)
         {
             int count = 0;
-            foreach (MoyvaJsonBindingRecord binding in marker.Bindings)
+            foreach (JsonBindingRecord binding in marker.Bindings)
             {
                 if (binding?.Target == null || string.IsNullOrWhiteSpace(binding.PropertyPath)) continue;
                 try
@@ -406,7 +406,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogWarning($"[MoyvaJson] Could not clear {binding.Target.GetType().Name}.{binding.PropertyPath}: {ex.Message}");
+                    Debug.LogWarning($"[JsonConfig] Could not clear {binding.Target.GetType().Name}.{binding.PropertyPath}: {ex.Message}");
                 }
             }
             return count;

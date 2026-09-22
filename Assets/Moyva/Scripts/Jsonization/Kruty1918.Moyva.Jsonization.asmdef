@@ -2,6 +2,7 @@
   "name": "Kruty1918.Moyva.Jsonization",
   "rootNamespace": "Kruty1918.Moyva.Jsonization",
   "references": [
+    "Kruty1918.JsonConfig",
     "Unity.Newtonsoft.Json"
   ],
   "includePlatforms": [],

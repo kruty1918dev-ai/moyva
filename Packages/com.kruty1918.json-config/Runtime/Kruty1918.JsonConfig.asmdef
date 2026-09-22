@@ -1,12 +1,10 @@
 {
-  "name": "Kruty1918.Moyva.Jsonization.Editor",
-  "rootNamespace": "Kruty1918.Moyva.Jsonization.Editor",
+  "name": "Kruty1918.JsonConfig",
+  "rootNamespace": "Kruty1918.JsonConfig",
   "references": [
-    "Kruty1918.JsonConfig",
-    "Kruty1918.Moyva.Jsonization",
     "Unity.Newtonsoft.Json"
   ],
-  "includePlatforms": ["Editor"],
+  "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": false,

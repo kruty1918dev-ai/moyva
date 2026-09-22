@@ -1,11 +1,11 @@
 using Newtonsoft.Json.Linq;
 
-namespace Kruty1918.Moyva.Jsonization
+namespace Kruty1918.JsonConfig
 {
     /// <summary>
     /// Спільні імена службових JSON-гілок, які не є gameplay-даними.
     /// </summary>
-    public static class MoyvaJsonDocumentMetadata
+    public static class JsonDocumentMetadata
     {
         public const string Editor = "editor";
         public const string DocumentLink = "documentLink";
@@ -27,7 +27,7 @@ namespace Kruty1918.Moyva.Jsonization
         }
 
         /// <summary>
-        /// Клонує лише payload config-моделі: без Moyva metadata і без editor-only налаштувань.
+        /// Клонує лише payload config-моделі: без службових metadata і без editor-only налаштувань.
         /// </summary>
         public static JObject CloneConfigPayload(JObject source)
         {

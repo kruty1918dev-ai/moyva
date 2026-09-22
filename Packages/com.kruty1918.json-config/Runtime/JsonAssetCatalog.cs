@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Jsonization
+namespace Kruty1918.JsonConfig
 {
     /// <summary>
     /// Machine-generated build-safe catalog. It stores only Unity object references;
     /// gameplay/configuration values remain in JSON.
     /// </summary>
-    public sealed class MoyvaJsonAssetCatalog : MonoBehaviour
+    public sealed class JsonAssetCatalog : MonoBehaviour
     {
         [Serializable]
         public sealed class Entry

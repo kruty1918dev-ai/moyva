@@ -147,7 +147,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ea688967269dbc51aa030e7381716f56, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Jsonization::Kruty1918.Moyva.Jsonization.MoyvaJsonBindingMarker
+  m_EditorClassIdentifier: Kruty1918.JsonConfig::Kruty1918.JsonConfig.JsonBindingMarker
   _bindings:
   - Target: {fileID: 678375842}
     PropertyPath: _projectSettings

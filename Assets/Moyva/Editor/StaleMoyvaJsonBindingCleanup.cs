@@ -1,14 +1,14 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Removes MoyvaJsonBindingMarker records whose config type or JSON id no longer
+/// Removes JsonBindingMarker records whose config type or JSON id no longer
 /// resolves (e.g. deleted generator-graph types or renamed audio presets).
 /// Invoke via CLI: -executeMethod StaleMoyvaJsonBindingCleanup.Run
 /// </summary>
@@ -21,7 +21,7 @@ public static class StaleMoyvaJsonBindingCleanup
         SceneSetup[] setup = EditorSceneManager.GetSceneManagerSetup();
         try
         {
-            MoyvaJsonRuntime.EnsureLoaded();
+            JsonConfigRuntime.EnsureLoaded();
             foreach (string guid in AssetDatabase.FindAssets("t:Scene", new[] { "Assets/Moyva" }))
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
@@ -29,13 +29,13 @@ public static class StaleMoyvaJsonBindingCleanup
                 int sceneRemoved = 0;
                 foreach (GameObject root in scene.GetRootGameObjects())
                 {
-                    foreach (MoyvaJsonBindingMarker marker in root.GetComponentsInChildren<MoyvaJsonBindingMarker>(true))
+                    foreach (JsonBindingMarker marker in root.GetComponentsInChildren<JsonBindingMarker>(true))
                     {
-                        var kept = new List<MoyvaJsonBindingRecord>();
-                        foreach (MoyvaJsonBindingRecord record in marker.Bindings)
+                        var kept = new List<JsonBindingRecord>();
+                        foreach (JsonBindingRecord record in marker.Bindings)
                         {
                             if (record != null && record.Target != null &&
-                                MoyvaJsonRuntime.GetByTypeName(record.ConfigType, record.ConfigId) != null)
+                                JsonConfigRuntime.GetByTypeName(record.ConfigType, record.ConfigId) != null)
                             {
                                 kept.Add(record);
                                 continue;

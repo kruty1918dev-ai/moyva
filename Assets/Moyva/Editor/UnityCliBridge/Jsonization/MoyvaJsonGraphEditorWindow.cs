@@ -171,7 +171,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
 
         private void OnDestroy()
         {
-            if (_dirty) Debug.LogWarning("[MoyvaJson] Graph editor closed with unsaved JSON changes: " + _path);
+            if (_dirty) Debug.LogWarning("[JsonConfig] Graph editor closed with unsaved JSON changes: " + _path);
         }
     }
 }

@@ -184,8 +184,8 @@ namespace Kruty1918.Moyva.Jsonization.Editor
 
             GameObject catalogPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 JsonizationEditorUtil.CatalogPath);
-            MoyvaJsonAssetCatalog catalog = catalogPrefab != null
-                ? catalogPrefab.GetComponent<MoyvaJsonAssetCatalog>()
+            JsonAssetCatalog catalog = catalogPrefab != null
+                ? catalogPrefab.GetComponent<JsonAssetCatalog>()
                 : null;
             return catalog?.Resolve(key);
         }
@@ -585,7 +585,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             List<MoyvaJsonValidationIssue> issues)
         {
             bool hasEditorMetadata =
-                document?[MoyvaJsonDocumentMetadata.Editor] != null;
+                document?[JsonDocumentMetadata.Editor] != null;
             if (!hasEditorMetadata)
                 return;
 
@@ -753,7 +753,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
 
         private static bool IsRootEditorMetadata(string pointer, string propertyName)
             => string.IsNullOrEmpty(pointer)
-               && propertyName == MoyvaJsonDocumentMetadata.Editor;
+               && propertyName == JsonDocumentMetadata.Editor;
 
         private static string JoinPointer(string pointer, string segment)
         {

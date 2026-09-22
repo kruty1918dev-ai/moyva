@@ -164,7 +164,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 $"MOYVA_JSON_AUDIT types={report.typeCount} assets={report.assetCount} " +
                 $"sceneRefs={report.sceneReferenceCount} prefabRefs={report.prefabReferenceCount} " +
                 $"unsupportedBindings={report.unsupportedNestedReferenceCount} warnings={report.warnings.Count}";
-            Debug.Log("[MoyvaJson] " + summary);
+            Debug.Log("[JsonConfig] " + summary);
             return summary;
         }
 
@@ -257,7 +257,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 $"MOYVA_JSON_DATA_AUDIT types={report.typeCount} " +
                 $"assets={report.assetCount} sceneScan=deferred prefabScan=deferred";
 
-            Debug.Log("[MoyvaJson] " + summary);
+            Debug.Log("[JsonConfig] " + summary);
             return summary;
         }
 

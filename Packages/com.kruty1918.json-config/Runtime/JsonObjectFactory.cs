@@ -2,10 +2,10 @@ using System;
 using System.Reflection;
 using System.Runtime.Serialization;
 
-namespace Kruty1918.Moyva.Jsonization
+namespace Kruty1918.JsonConfig
 {
     /// <summary>Replacement for migration-era ScriptableObject.CreateInstance for plain JSON models.</summary>
-    public static class MoyvaJsonObjectFactory
+    public static class JsonObjectFactory
     {
         public static T Create<T>() where T : class
         {

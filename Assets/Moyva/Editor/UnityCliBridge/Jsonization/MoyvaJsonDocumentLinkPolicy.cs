@@ -29,12 +29,12 @@ namespace Kruty1918.Moyva.Jsonization.Editor
         {
             JObject linkSettings = LinkSettings(document);
             JToken enabledToken = linkSettings?[
-                MoyvaJsonDocumentMetadata.DocumentLinkEnabled];
+                JsonDocumentMetadata.DocumentLinkEnabled];
             bool enabled = enabledToken?.Type == JTokenType.Boolean
                 ? enabledToken.Value<bool>()
                 : true;
             JToken pathToken = linkSettings?[
-                MoyvaJsonDocumentMetadata.DocumentLinkPath];
+                JsonDocumentMetadata.DocumentLinkPath];
             string rawPath = pathToken?.Type == JTokenType.String
                 ? pathToken.Value<string>()
                 : string.Empty;
@@ -59,28 +59,28 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             pointer = null;
             message = null;
 
-            JToken editorToken = document?[MoyvaJsonDocumentMetadata.Editor];
+            JToken editorToken = document?[JsonDocumentMetadata.Editor];
             if (editorToken == null)
                 return true;
 
             if (editorToken is not JObject editor)
             {
-                pointer = "/" + MoyvaJsonDocumentMetadata.Editor;
+                pointer = "/" + JsonDocumentMetadata.Editor;
                 message = "editor metadata must be an object";
                 return false;
             }
 
             foreach (JProperty property in editor.Properties())
             {
-                if (property.Name != MoyvaJsonDocumentMetadata.DocumentLink)
+                if (property.Name != JsonDocumentMetadata.DocumentLink)
                 {
-                    pointer = "/" + MoyvaJsonDocumentMetadata.Editor + "/" + property.Name;
+                    pointer = "/" + JsonDocumentMetadata.Editor + "/" + property.Name;
                     message = "unknown editor metadata property";
                     return false;
                 }
             }
 
-            JToken linkToken = editor[MoyvaJsonDocumentMetadata.DocumentLink];
+            JToken linkToken = editor[JsonDocumentMetadata.DocumentLink];
             if (linkToken == null)
                 return true;
 
@@ -93,8 +93,8 @@ namespace Kruty1918.Moyva.Jsonization.Editor
 
             foreach (JProperty property in link.Properties())
             {
-                if (property.Name != MoyvaJsonDocumentMetadata.DocumentLinkEnabled
-                    && property.Name != MoyvaJsonDocumentMetadata.DocumentLinkPath)
+                if (property.Name != JsonDocumentMetadata.DocumentLinkEnabled
+                    && property.Name != JsonDocumentMetadata.DocumentLinkPath)
                 {
                     pointer = "/editor/documentLink/" + property.Name;
                     message = "unknown documentLink property";
@@ -102,7 +102,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 }
             }
 
-            JToken enabledToken = link[MoyvaJsonDocumentMetadata.DocumentLinkEnabled];
+            JToken enabledToken = link[JsonDocumentMetadata.DocumentLinkEnabled];
             if (enabledToken != null && enabledToken.Type != JTokenType.Boolean)
             {
                 pointer = "/editor/documentLink/enabled";
@@ -110,7 +110,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 return false;
             }
 
-            JToken pathToken = link[MoyvaJsonDocumentMetadata.DocumentLinkPath];
+            JToken pathToken = link[JsonDocumentMetadata.DocumentLinkPath];
             if (pathToken != null && pathToken.Type != JTokenType.String)
             {
                 pointer = "/editor/documentLink/path";
@@ -142,22 +142,22 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 return;
             }
 
-            JObject editor = document[MoyvaJsonDocumentMetadata.Editor] as JObject;
+            JObject editor = document[JsonDocumentMetadata.Editor] as JObject;
             if (editor == null)
             {
                 editor = new JObject();
-                document[MoyvaJsonDocumentMetadata.Editor] = editor;
+                document[JsonDocumentMetadata.Editor] = editor;
             }
 
             var link = new JObject
             {
-                [MoyvaJsonDocumentMetadata.DocumentLinkEnabled] = enabled,
+                [JsonDocumentMetadata.DocumentLinkEnabled] = enabled,
             };
 
             if (!string.IsNullOrWhiteSpace(normalizedPath))
-                link[MoyvaJsonDocumentMetadata.DocumentLinkPath] = normalizedPath;
+                link[JsonDocumentMetadata.DocumentLinkPath] = normalizedPath;
 
-            editor[MoyvaJsonDocumentMetadata.DocumentLink] = link;
+            editor[JsonDocumentMetadata.DocumentLink] = link;
         }
 
         public static string DefaultPathFor(string jsonPath)
@@ -202,19 +202,19 @@ namespace Kruty1918.Moyva.Jsonization.Editor
         }
 
         private static JObject LinkSettings(JObject document)
-            => document?[MoyvaJsonDocumentMetadata.Editor] is JObject editor
-               && editor[MoyvaJsonDocumentMetadata.DocumentLink] is JObject link
+            => document?[JsonDocumentMetadata.Editor] is JObject editor
+               && editor[JsonDocumentMetadata.DocumentLink] is JObject link
                 ? link
                 : null;
 
         private static void RemoveEditorLinkMetadataIfDefault(JObject document)
         {
-            if (document[MoyvaJsonDocumentMetadata.Editor] is not JObject editor)
+            if (document[JsonDocumentMetadata.Editor] is not JObject editor)
                 return;
 
-            editor.Remove(MoyvaJsonDocumentMetadata.DocumentLink);
+            editor.Remove(JsonDocumentMetadata.DocumentLink);
             if (!editor.Properties().Any())
-                document.Remove(MoyvaJsonDocumentMetadata.Editor);
+                document.Remove(JsonDocumentMetadata.Editor);
         }
 
         private static string Normalize(string path)

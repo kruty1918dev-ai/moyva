@@ -116,9 +116,9 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             var report = new ValidationReport { generatedUtc = DateTime.UtcNow.ToString("O") };
             try
             {
-                MoyvaJsonRuntime.ResetForExplicitReload();
-                MoyvaJsonRuntime.EnsureLoaded();
-                report.fingerprint = MoyvaJsonRuntime.ConfigFingerprint;
+                JsonConfigRuntime.ResetForExplicitReload();
+                JsonConfigRuntime.EnsureLoaded();
+                report.fingerprint = JsonConfigRuntime.ConfigFingerprint;
 
                 foreach (TextAsset file in Resources.LoadAll<TextAsset>("MoyvaConfigGenerated"))
                 {
@@ -131,7 +131,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                     string model = root.Value<string>("model");
                     string id = root.Value<string>("id");
                     if (string.IsNullOrWhiteSpace(schema) || string.IsNullOrWhiteSpace(model) || string.IsNullOrWhiteSpace(id)) continue;
-                    Type type = MoyvaJsonTypeRegistry.ResolveConfigModel(model, schema);
+                    Type type = JsonConfigTypeRegistry.ResolveConfigModel(model, schema);
                     if (type == null)
                     {
                         report.deserializationFailures++;
@@ -140,7 +140,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                     }
                     try
                     {
-                        object value = MoyvaJsonRuntime.Get(type, id);
+                        object value = JsonConfigRuntime.Get(type, id);
                         if (value == null) throw new InvalidOperationException("returned null");
                     }
                     catch (Exception ex)
@@ -194,7 +194,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
         {
             var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(JsonizationEditorUtil.CatalogPath);
-            var catalog = prefab != null ? prefab.GetComponent<MoyvaJsonAssetCatalog>() : null;
+            var catalog = prefab != null ? prefab.GetComponent<JsonAssetCatalog>() : null;
             if (catalog == null) return result;
             foreach (var entry in catalog.Entries)
                 if (entry != null && !string.IsNullOrWhiteSpace(entry.Key) && entry.Asset != null)

@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Jsonization
+namespace Kruty1918.JsonConfig
 {
     [Serializable]
-    public sealed class MoyvaJsonBindingRecord
+    public sealed class JsonBindingRecord
     {
         public Component Target;
         public string PropertyPath;
@@ -20,24 +20,24 @@ namespace Kruty1918.Moyva.Jsonization
     /// scene Component references; no gameplay values are serialized here.
     /// </summary>
     [DefaultExecutionOrder(-32000)]
-    public sealed class MoyvaJsonBindingMarker : MonoBehaviour
+    public sealed class JsonBindingMarker : MonoBehaviour
     {
-        [SerializeField] private List<MoyvaJsonBindingRecord> _bindings = new();
+        [SerializeField] private List<JsonBindingRecord> _bindings = new();
 
-        public IReadOnlyList<MoyvaJsonBindingRecord> Bindings => _bindings;
+        public IReadOnlyList<JsonBindingRecord> Bindings => _bindings;
 
-        public void ReplaceBindings(IEnumerable<MoyvaJsonBindingRecord> bindings)
+        public void ReplaceBindings(IEnumerable<JsonBindingRecord> bindings)
         {
             _bindings = bindings != null
-                ? new List<MoyvaJsonBindingRecord>(bindings)
-                : new List<MoyvaJsonBindingRecord>();
+                ? new List<JsonBindingRecord>(bindings)
+                : new List<JsonBindingRecord>();
         }
 
         private void Awake() => ApplyBindings();
 
         public void ApplyBindings()
         {
-            MoyvaJsonRuntime.EnsureLoaded();
+            JsonConfigRuntime.EnsureLoaded();
 
             for (int i = 0; i < _bindings.Count; i++)
             {
@@ -47,7 +47,7 @@ namespace Kruty1918.Moyva.Jsonization
 
                 try
                 {
-                    object config = MoyvaJsonRuntime.GetByTypeName(
+                    object config = JsonConfigRuntime.GetByTypeName(
                         binding.ConfigType,
                         binding.ConfigId);
 
@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.Jsonization
                     // must not leave later scene components unconfigured (e.g. a stale
                     // preview graph would otherwise disable the Home Menu config binding).
                     Debug.LogError(
-                        "[MoyvaJson] Binding failed " +
+                        "[JsonConfig] Binding failed " +
                         $"{binding.Target.GetType().FullName}.{binding.PropertyPath} " +
                         $"id={binding.ConfigId}: {ex.GetType().Name}: {ex.Message}",
                         this);

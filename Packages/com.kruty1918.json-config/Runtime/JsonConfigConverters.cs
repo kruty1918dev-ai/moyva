@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Jsonization
+namespace Kruty1918.JsonConfig
 {
     /// <summary>
     /// Newtonsoft converter-и runtime JSON. Усі працюють тільки на читання:
@@ -220,7 +220,7 @@ namespace Kruty1918.Moyva.Jsonization
             if (!string.IsNullOrWhiteSpace(inlineTypeName))
                 return ReadInlineUnityObject(token, inlineTypeName, objectType, serializer);
 
-            UnityEngine.Object asset = MoyvaJsonRuntime.ResolveAsset(token.Value<string>("$asset"));
+            UnityEngine.Object asset = JsonConfigRuntime.ResolveAsset(token.Value<string>("$asset"));
             if (asset == null)
             {
                 bool required = token.Value<bool?>("required") ?? false;
@@ -248,14 +248,14 @@ namespace Kruty1918.Moyva.Jsonization
             Type expectedType,
             JsonSerializer serializer)
         {
-            Type inlineType = MoyvaJsonRuntimeTypeResolver.Resolve(inlineTypeName);
+            Type inlineType = JsonConfigRuntimeTypeResolver.Resolve(inlineTypeName);
             if (!IsAllowedInlineUnityObjectType(inlineType, expectedType))
             {
                 throw new JsonSerializationException(
                     $"Inline Unity object type '{inlineTypeName}' is not allow-listed for {expectedType.FullName}.");
             }
 
-            object instance = MoyvaJsonObjectFactory.Create(inlineType);
+            object instance = JsonObjectFactory.Create(inlineType);
             if (instance == null)
                 throw new JsonSerializationException(
                     $"Could not create inline Unity object '{inlineTypeName}'.");
@@ -277,21 +277,20 @@ namespace Kruty1918.Moyva.Jsonization
                 return false;
             }
 
-            string ns = type.Namespace ?? string.Empty;
-            return ns.StartsWith("Kruty1918.Moyva", StringComparison.Ordinal) ||
-                   ns.StartsWith("GiantGrey.TileWorldCreator", StringComparison.Ordinal);
+            return JsonConfigTypeRegistry.NamespaceAllowed(
+                type, JsonConfigRuntime.Settings.RegistryNamespacePrefixes);
         }
     }
 
     /// <summary>
-    /// Резолвить `$config` між Moyva JSON-документами і безпечно читає inline config values.
+    /// Резолвить `$config` між JSON-документами хоста і безпечно читає inline config values.
     /// </summary>
     internal sealed class ConfigReferenceConverter : JsonConverter
     {
         public override bool CanWrite => false;
 
         public override bool CanConvert(Type objectType)
-            => typeof(MoyvaJsonConfigObject).IsAssignableFrom(objectType);
+            => typeof(JsonConfigObject).IsAssignableFrom(objectType);
 
         public override object ReadJson(
             JsonReader reader,
@@ -318,16 +317,16 @@ namespace Kruty1918.Moyva.Jsonization
             string typeName = reference.Value<string>("sourceType");
             string model = reference.Value<string>("model");
             Type actual = !string.IsNullOrWhiteSpace(typeName)
-                ? MoyvaJsonRuntimeTypeResolver.Resolve(typeName)
-                : MoyvaJsonTypeRegistry.ResolveConfigModel(
+                ? JsonConfigRuntimeTypeResolver.Resolve(typeName)
+                : JsonConfigTypeRegistry.ResolveConfigModel(
                     model,
-                    MoyvaJsonTypeRegistry.SchemaForConfigType(expectedType));
+                    JsonConfigTypeRegistry.SchemaForConfigType(expectedType));
             actual ??= expectedType;
 
             if (actual == null || !expectedType.IsAssignableFrom(actual))
                 actual = expectedType;
 
-            object resolved = MoyvaJsonRuntime.Get(actual, id);
+            object resolved = JsonConfigRuntime.Get(actual, id);
             if (resolved == null)
                 throw new JsonSerializationException(
                     $"Unknown config reference '{actual.FullName}/{id}'.");
@@ -344,7 +343,7 @@ namespace Kruty1918.Moyva.Jsonization
             if (objectType.IsAbstract || objectType.IsInterface)
             {
                 string typeId = token.Value<string>("$type") ?? token.Value<string>("type");
-                inlineType = MoyvaJsonTypeRegistry.Resolve(objectType, typeId);
+                inlineType = JsonConfigTypeRegistry.Resolve(objectType, typeId);
                 if (inlineType == null)
                 {
                     throw new JsonSerializationException(
@@ -353,7 +352,7 @@ namespace Kruty1918.Moyva.Jsonization
                 token.Remove("$type");
             }
 
-            object instance = existingValue ?? MoyvaJsonObjectFactory.Create(inlineType);
+            object instance = existingValue ?? JsonObjectFactory.Create(inlineType);
             using JsonReader nested = token.CreateReader();
             serializer.Populate(nested, instance);
             return instance;
@@ -361,7 +360,7 @@ namespace Kruty1918.Moyva.Jsonization
     }
 
     /// <summary>
-    /// Безпечний polymorphic converter: створює тільки типи, дозволені MoyvaJsonTypeRegistry.
+    /// Безпечний polymorphic converter: створює тільки типи, дозволені JsonConfigTypeRegistry.
     /// </summary>
     internal sealed class SafePolymorphicConverter : JsonConverter
     {
@@ -373,7 +372,7 @@ namespace Kruty1918.Moyva.Jsonization
                 objectType.IsPrimitive ||
                 objectType.IsEnum ||
                 typeof(UnityEngine.Object).IsAssignableFrom(objectType) ||
-                typeof(MoyvaJsonConfigObject).IsAssignableFrom(objectType))
+                typeof(JsonConfigObject).IsAssignableFrom(objectType))
             {
                 return false;
             }
@@ -392,7 +391,7 @@ namespace Kruty1918.Moyva.Jsonization
 
             JObject token = JObject.Load(reader);
             string typeId = token.Value<string>("$type") ?? token.Value<string>("type");
-            Type actual = MoyvaJsonTypeRegistry.Resolve(objectType, typeId);
+            Type actual = JsonConfigTypeRegistry.Resolve(objectType, typeId);
             if (actual == null)
             {
                 throw new JsonSerializationException(
@@ -400,7 +399,7 @@ namespace Kruty1918.Moyva.Jsonization
             }
 
             token.Remove("$type");
-            object instance = MoyvaJsonObjectFactory.Create(actual);
+            object instance = JsonObjectFactory.Create(actual);
             using JsonReader nested = token.CreateReader();
             serializer.Populate(nested, instance);
             return instance;
@@ -410,7 +409,7 @@ namespace Kruty1918.Moyva.Jsonization
             => throw new NotSupportedException();
     }
 
-    internal static class MoyvaJsonRuntimeTypeResolver
+    internal static class JsonConfigRuntimeTypeResolver
     {
         public static Type Resolve(string fullName)
         {

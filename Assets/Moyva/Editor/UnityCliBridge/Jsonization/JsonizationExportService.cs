@@ -90,7 +90,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                     try { root = JObject.Parse(File.ReadAllText(jsonFile)); }
                     catch { continue; }
 
-                    Type type = MoyvaJsonTypeRegistry.ResolveConfigModel(
+                    Type type = JsonConfigTypeRegistry.ResolveConfigModel(
                         root.Value<string>("model"), root.Value<string>("schema"));
                     if (type != null)
                         schemaTypes.Add(type);
@@ -110,19 +110,19 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogWarning($"[MoyvaJson] Schema failed for {type.FullName}: {ex.Message}");
+                        Debug.LogWarning($"[JsonConfig] Schema failed for {type.FullName}: {ex.Message}");
                     }
                 }
-                Debug.Log($"[MoyvaJson] Schemas written: {schemas}");
+                Debug.Log($"[JsonConfig] Schemas written: {schemas}");
 
                 BuildAssetCatalog("Temp/moyva-json-catalog.json");
                 SyncGeneratedResources("Temp/moyva-json-sync.json");
                 AssetDatabase.SaveAssets();
-                Debug.Log("[MoyvaJson] SyncRuntimeConfigBatch completed.");
+                Debug.Log("[JsonConfig] SyncRuntimeConfigBatch completed.");
             }
             catch (Exception exception)
             {
-                Debug.LogError($"[MoyvaJson] SyncRuntimeConfigBatch failed: {exception}");
+                Debug.LogError($"[JsonConfig] SyncRuntimeConfigBatch failed: {exception}");
                 EditorApplication.Exit(1);
             }
         }
@@ -206,7 +206,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             string summary =
                 $"MOYVA_JSON_EXPORT roots={report.roots} units={report.unitDefinitions} " +
                 $"schemas={report.schemas} assetRefs={report.assetReferences} errors={report.errors}";
-            Debug.Log("[MoyvaJson] " + summary);
+            Debug.Log("[JsonConfig] " + summary);
             if (report.errors > 0)
                 throw new InvalidOperationException(summary + " — see export report.");
             return summary;
@@ -241,10 +241,10 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             var go = new GameObject("MoyvaRuntimeAssetCatalog");
             try
             {
-                var catalog = go.AddComponent<MoyvaJsonAssetCatalog>();
+                var catalog = go.AddComponent<JsonAssetCatalog>();
                 catalog.ReplaceEntries(references
                     .OrderBy(x => x.Key, StringComparer.Ordinal)
-                    .Select(x => new MoyvaJsonAssetCatalog.Entry { Key = x.Key, Asset = x.Value }));
+                    .Select(x => new JsonAssetCatalog.Entry { Key = x.Key, Asset = x.Value }));
                 PrefabUtility.SaveAsPrefabAsset(go, JsonizationEditorUtil.CatalogPath);
             }
             finally
@@ -276,7 +276,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             var generatedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var runtimeModels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var runtimeSchemas = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (Type type in TypeCache.GetTypesDerivedFrom<MoyvaJsonConfigObject>())
+            foreach (Type type in TypeCache.GetTypesDerivedFrom<JsonConfigObject>())
             {
                 if (type == null || type.IsAbstract)
                     continue;
@@ -285,9 +285,9 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 if (!ns.StartsWith(JsonizationEditorUtil.MoyvaNamespace, StringComparison.Ordinal))
                     continue;
 
-                runtimeModels.Add(MoyvaJsonTypeRegistry.StableId(type));
+                runtimeModels.Add(JsonConfigTypeRegistry.StableId(type));
                 runtimeModels.Add(type.Name);
-                runtimeSchemas.Add(MoyvaJsonTypeRegistry.SchemaForConfigType(type));
+                runtimeSchemas.Add(JsonConfigTypeRegistry.SchemaForConfigType(type));
             }
 
             foreach (string source in Directory.GetFiles(JsonizationEditorUtil.PresetsRoot, "*.json", SearchOption.AllDirectories))
@@ -401,7 +401,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
 
         private static string UniqueAssetPathId(string assetPath, Type type)
         {
-            string prefix = MoyvaJsonTypeRegistry.StableId(type);
+            string prefix = JsonConfigTypeRegistry.StableId(type);
             string path = assetPath ?? string.Empty;
             if (path.StartsWith("Assets/Moyva/Data/ScriptableObjects/", StringComparison.OrdinalIgnoreCase))
                 path = path.Substring("Assets/Moyva/Data/ScriptableObjects/".Length);
@@ -459,7 +459,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 ["schema"] = JsonizationEditorUtil.SchemaName(type),
                 ["version"] = 1,
                 ["id"] = id,
-                ["model"] = MoyvaJsonTypeRegistry.StableId(type)
+                ["model"] = JsonConfigTypeRegistry.StableId(type)
             };
             foreach (JProperty property in data.Properties())
                 doc[property.Name] = property.Value;
@@ -470,7 +470,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
         {
             var result = new JObject();
             if (declaredType != null && (declaredType.IsAbstract || declaredType.IsInterface || declaredType != actualType))
-                result["$type"] = MoyvaJsonTypeRegistry.StableId(actualType);
+                result["$type"] = JsonConfigTypeRegistry.StableId(actualType);
 
             bool track = !actualType.IsValueType && !(value is string);
             if (track && !context.Stack.Add(value))
@@ -577,7 +577,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                     {
                         ["$config"] = new JObject
                         {
-                            ["model"] = MoyvaJsonTypeRegistry.StableId(type),
+                            ["model"] = JsonConfigTypeRegistry.StableId(type),
                             ["id"] = JsonizationEditorUtil.StableId(unityObject, type)
                         }
                     };
@@ -631,7 +631,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                     ["title"] = "Стабільний ID",
                     ["description"] = "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
                 },
-                ["model"] = new JObject { ["const"] = MoyvaJsonTypeRegistry.StableId(type) },
+                ["model"] = new JObject { ["const"] = JsonConfigTypeRegistry.StableId(type) },
                 ["migration"] = new JObject { ["type"] = "object", ["additionalProperties"] = true }
             };
 
@@ -1103,7 +1103,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             {
                 ids = ProjectOwnedConcreteTypes()
                     .Where(t => baseType.IsAssignableFrom(t))
-                    .Select(MoyvaJsonTypeRegistry.StableId)
+                    .Select(JsonConfigTypeRegistry.StableId)
                     .Distinct(StringComparer.Ordinal)
                     .OrderBy(x => x, StringComparer.Ordinal)
                     .ToArray();
@@ -1125,7 +1125,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                     .Where(t =>
                         t != baseType &&
                         baseType.IsAssignableFrom(t))
-                    .Select(MoyvaJsonTypeRegistry.StableId)
+                    .Select(JsonConfigTypeRegistry.StableId)
                     .Distinct(StringComparer.Ordinal)
                     .OrderBy(x => x, StringComparer.Ordinal)
                     .ToArray();
@@ -1143,7 +1143,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                     .Where(t =>
                         declaredType.IsAssignableFrom(t) &&
                         JsonizationEditorUtil.IsProjectConfigType(t))
-                    .Select(MoyvaJsonTypeRegistry.StableId)
+                    .Select(JsonConfigTypeRegistry.StableId)
                     .Distinct(StringComparer.Ordinal)
                     .OrderBy(x => x, StringComparer.Ordinal));
 
@@ -1215,7 +1215,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
         {
             string domain = JsonizationEditorUtil.DomainFolder(type);
             if (type.Name == "BuildingDefinitionAsset") return Path.Combine(JsonizationEditorUtil.PresetsRoot, "Buildings", id + ".json").Replace('\\','/');
-            string typeFolder = MoyvaJsonTypeRegistry.StableId(type);
+            string typeFolder = JsonConfigTypeRegistry.StableId(type);
             return Path.Combine(JsonizationEditorUtil.PresetsRoot, domain, typeFolder, id + ".json").Replace('\\','/');
         }
 

@@ -1,3 +1,4 @@
+using Kruty1918.JsonConfig;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Jsonization
@@ -9,16 +10,13 @@ namespace Kruty1918.Moyva.Jsonization
         {
             try
             {
-                MoyvaJsonRuntime.EnsureLoaded();
-
-                if (Application.isEditor || Debug.isDebugBuild)
-                {
-                }
+                JsonConfigRuntime.Configure(MoyvaJsonRuntimeSettings.Create());
+                JsonConfigRuntime.EnsureLoaded();
             }
             catch (System.Exception ex)
             {
                 Debug.LogError(
-                    "[MoyvaJson] CRITICAL bootstrap failure: " + ex);
+                    "[JsonConfig] CRITICAL bootstrap failure: " + ex);
                 throw;
             }
         }
