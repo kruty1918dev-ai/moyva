@@ -10,6 +10,9 @@ namespace UnityHTML.Runtime
 {
     public sealed class UnityHtmlMotionBridge : IUnityHtmlMotion
     {
+        /// <inheritdoc />
+        public event Action<string> ExitFinished;
+
         private readonly Dictionary<string, ActiveMotion> _active = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _declared = new(StringComparer.Ordinal);
         private readonly HashSet<string> _seen = new(StringComparer.Ordinal);
@@ -23,7 +26,8 @@ namespace UnityHTML.Runtime
                 return;
 
             Play(targetId, target, preset, duration, delay,
-                UnityHtmlMotionPolicy.DefaultDistance, UnityHtmlMotionPolicy.DefaultEase(preset));
+                UnityHtmlMotionPolicy.DefaultDistance, UnityHtmlMotionPolicy.DefaultEase(preset),
+                isExit: false);
         }
 
         public void Stop(string targetId)
@@ -31,8 +35,7 @@ namespace UnityHTML.Runtime
             if (string.IsNullOrWhiteSpace(targetId) || !_active.Remove(targetId, out ActiveMotion motion))
                 return;
 
-            motion.Tween?.Kill(false);
-            motion.Restore();
+            CancelMotion(motion);
         }
 
         public void RestoreResting(string targetId)
@@ -42,8 +45,7 @@ namespace UnityHTML.Runtime
 
             if (_active.Remove(targetId, out ActiveMotion motion))
             {
-                motion.Tween?.Kill(false);
-                motion.Restore();
+                CancelMotion(motion);
                 return;
             }
 
@@ -130,7 +132,8 @@ namespace UnityHTML.Runtime
                         motion.Duration,
                         motion.Delay,
                         motion.Distance,
-                        motion.Ease);
+                        motion.Ease,
+                        motion.IsExit);
                 }
                 catch (Exception exception)
                 {
@@ -165,7 +168,8 @@ namespace UnityHTML.Runtime
             float duration,
             float delay,
             float distance,
-            Ease ease)
+            Ease ease,
+            bool isExit)
         {
             if (target == null || string.IsNullOrWhiteSpace(id))
                 return;
@@ -262,6 +266,31 @@ namespace UnityHTML.Runtime
                 if (_active.TryGetValue(id, out ActiveMotion current) && ReferenceEquals(current, motion))
                     _active.Remove(id);
             });
+            if (isExit)
+            {
+                // Guaranteed exactly-once completion: the flag converges every
+                // path — OnComplete, OnKill (link-destroy), and bridge-driven
+                // cancellation via CancelMotion, which invokes it directly so
+                // teardown can never leave the callback hanging.
+                bool exitFinished = false;
+                void FinishExit()
+                {
+                    if (exitFinished)
+                        return;
+                    exitFinished = true;
+                    ExitFinished?.Invoke(id);
+                }
+                motion.FinishExit = FinishExit;
+                sequence.OnComplete(FinishExit);
+                sequence.OnKill(FinishExit);
+            }
+        }
+
+        private static void CancelMotion(ActiveMotion motion)
+        {
+            motion.Tween?.Kill(false);
+            motion.Restore();
+            motion.FinishExit?.Invoke();
         }
 
         private static void AppendMoveAndFade(Sequence sequence, ActiveMotion motion, float duration, Ease ease)
@@ -370,6 +399,9 @@ namespace UnityHTML.Runtime
             public Vector3 Rotation { get; }
             public float Alpha { get; }
             public Tween Tween { get; set; }
+            /// <summary>Exactly-once exit completion for declarative exits —
+            /// invoked by tween callbacks or by CancelMotion on teardown.</summary>
+            public Action FinishExit { get; set; }
 
             public void Restore()
             {

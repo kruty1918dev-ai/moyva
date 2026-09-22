@@ -40,6 +40,8 @@ Prefer `data-motion-role` over hand-tuned attributes — it applies the shared p
 
 Roles: `panel`, `dialog`, `scrim`, `toast`, `edge-top`, `edge-bottom`, `none`. Each role owns an entry preset, an exit preset, and duration/distance/easing tokens (`UnityHtmlMotionPolicy`). Any `data-motion`, `data-motion-duration`, `data-motion-delay`, `data-motion-distance`, or `data-motion-ease` attribute overrides the role locally. `data-motion="exit"` plays the role's exit preset — closable surfaces stay mounted with that attribute until their close window elapses. `data-motion="none"` or `data-motion-role="none"` disables motion for the element.
 
+`IUnityHtmlMotion.ExitFinished` fires exactly once per declarative exit — whether the tween completes, is cancelled by a replacement motion, or is torn down mid-exit — so a close flow can settle on the callback instead of guessing a fixed duration.
+
 ## Requirements
 
 ReactUnity Core and QuickJS stay as commit-pinned UPM git dependencies. Unity must be launched from an environment where `git` is on `PATH`, otherwise Package Manager cannot resolve `com.reactunity.core` or `com.reactunity.quickjs`. Node, npm, and TypeScript are not required for runtime HTML/CSS assets.

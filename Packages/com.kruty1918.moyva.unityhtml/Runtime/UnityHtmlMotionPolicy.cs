@@ -58,7 +58,7 @@ namespace UnityHTML.Runtime
     public readonly struct UnityHtmlDeclaredMotion
     {
         internal UnityHtmlDeclaredMotion(string preset, float duration, float delay,
-            float distance, Ease ease)
+            float distance, Ease ease, bool isExit)
         {
             Animated = !string.IsNullOrWhiteSpace(preset);
             Preset = preset ?? string.Empty;
@@ -66,6 +66,7 @@ namespace UnityHTML.Runtime
             Delay = delay;
             Distance = distance;
             Ease = ease;
+            IsExit = isExit;
         }
 
         /// <summary>False → the element declares no motion (or opted out).</summary>
@@ -75,6 +76,9 @@ namespace UnityHTML.Runtime
         public float Delay { get; }
         public float Distance { get; }
         public Ease Ease { get; }
+        /// <summary>True when the motion was declared via data-motion="exit" —
+        /// the bridge wires a guaranteed completion callback on these.</summary>
+        public bool IsExit { get; }
     }
 
     /// <summary>
@@ -169,7 +173,8 @@ namespace UnityHTML.Runtime
                 Number(durationText, fallbackDuration),
                 Number(delayText, 0f),
                 Number(distanceText, fallbackDistance),
-                ResolveEase(easeText, fallbackEase));
+                ResolveEase(easeText, fallbackEase),
+                exit);
         }
 
         // Exits accelerate out (ease-in); entrances decelerate in (ease-out).

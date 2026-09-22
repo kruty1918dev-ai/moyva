@@ -144,6 +144,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _css = _anchor.CssAsset.text;
             _anchor.SetLegacyUiVisible(false);
             _state.Changed += MarkDirty;
+            if (_host?.Motion != null)
+                _host.Motion.ExitFinished += OnMotionExitFinished;
             GameplayNotificationStream.Published += OnNotificationPublished;
             if (_turns != null)
                 _turns.StateChanged += MarkDirty;
@@ -234,6 +236,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             if (_controlSettings != null) _controlSettings.OnSettingsChanged -= OnControlSettingsChanged;
             _state.Changed -= MarkDirty;
+            if (_host?.Motion != null)
+                _host.Motion.ExitFinished -= OnMotionExitFinished;
             GameplayNotificationStream.Published -= OnNotificationPublished;
             if (_turns != null)
                 _turns.StateChanged -= MarkDirty;
@@ -251,6 +255,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _initialCastleContext?.Dispose();
             _initialCastleContext = null;
             _host?.Dispose();
+        }
+
+        /// <summary>The exit tween for the closing surface finished (completed
+        /// or cancelled). Settle the close now instead of waiting out the fixed
+        /// window — AdvancePanelClose remains the fallback for surfaces without
+        /// a declarative exit motion.</summary>
+        private void OnMotionExitFinished(string elementId)
+        {
+            if (!_state.PanelClosing)
+                return;
+            if (elementId != "gameplay-side-panel" && elementId != "kingdom-scrim")
+                return;
+            _state.NotifyPanelExitFinished();
         }
 
         private void OnProgressed(GameplayProgressTick _)

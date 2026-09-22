@@ -23,6 +23,16 @@ namespace UnityHTML.Runtime
 
     public interface IUnityHtmlMotion
     {
+        /// <summary>
+        /// Raised exactly once when an element's declarative exit motion
+        /// (data-motion="exit") finishes — whether the tween completed or was
+        /// cancelled because the element was removed or destroyed mid-exit.
+        /// The argument is the element's stable markup id. A close flow that
+        /// stays mounted for its exit motion can settle on this callback
+        /// instead of guessing a fixed duration.
+        /// </summary>
+        event Action<string> ExitFinished;
+
         void Play(string targetId, string preset, float duration, float delay);
         void Stop(string targetId);
 

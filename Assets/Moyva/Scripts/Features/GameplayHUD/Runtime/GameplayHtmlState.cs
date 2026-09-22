@@ -137,6 +137,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return true;
         }
 
+        /// <summary>The exit tween for the closing panel completed (or was
+        /// cancelled). Settles the close immediately instead of waiting out
+        /// the time window; a panel without an exit motion still closes via
+        /// AdvancePanelClose.</summary>
+        public void NotifyPanelExitFinished()
+        {
+            if (!PanelClosing)
+                return;
+            SettlePanelClose();
+        }
+
         private void SettlePanelClose()
         {
             PanelClosing = false;
