@@ -83,7 +83,7 @@ namespace Kruty1918.Telemetry.Core
                     return TelemetryResult.Rejected("contract.missing:" + contractId + "@" + contractVersion);
                 }
             }
-            if (contract.EventType != eventType)
+            if (!contract.MatchesEventType(eventType))
             {
                 _diag.EventsRejected++;
                 return TelemetryResult.Rejected("contract.eventType-mismatch");

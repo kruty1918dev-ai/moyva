@@ -50,6 +50,20 @@ namespace Kruty1918.Telemetry.Contracts
             ContractId = contractId; Version = version; EventType = eventType; Producer = producer;
         }
 
+        /// <summary>
+        /// Exact match, or family wildcard: contract EventType "moyva.match.*" governs
+        /// every type under the "moyva.match." prefix. Wildcards keep related lifecycle
+        /// event types under one versioned contract; field rules still apply to all.
+        /// </summary>
+        public bool MatchesEventType(string eventType)
+        {
+            if (EventType == eventType) return true;
+            if (EventType != null && EventType.EndsWith(".*", StringComparison.Ordinal))
+                return eventType != null && eventType.StartsWith(
+                    EventType.Substring(0, EventType.Length - 1), StringComparison.Ordinal);
+            return false;
+        }
+
         public EventContract Add(ContractField f) { Fields.Add(f); _byName = null; return this; }
 
         public ContractField Find(string name)

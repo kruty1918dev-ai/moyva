@@ -1,0 +1,22 @@
+{
+  "name": "Kruty1918.Moyva.Tests.Telemetry",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Telemetry",
+  "references": [
+    "Kruty1918.Moyva.Telemetry",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.Turns",
+    "Kruty1918.Moyva.AI.Bot.Core",
+    "Kruty1918.Moyva.Multiplayer",
+    "Kruty1918.Telemetry",
+    "Kruty1918.Telemetry.Unity",
+    "Zenject"
+  ],
+  "includePlatforms": ["Editor"],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll",
+    "Zenject-usage.dll"
+  ],
+  "autoReferenced": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}
