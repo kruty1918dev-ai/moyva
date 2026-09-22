@@ -35,6 +35,7 @@ namespace Kruty1918.Telemetry.Harness
             t.Add(("sink.consent", SinkConsent));
             t.Add(("ack.validation", AckValidation));
             t.Add(("retry.backoff", RetryBackoff));
+            t.Add(("perf.track-throughput", TrackThroughput));
             t.Add(("remoteconfig.parse", RemoteConfigParse));
         }
 
@@ -328,6 +329,29 @@ namespace Kruty1918.Telemetry.Harness
             TestRunner.Assert(RetryPolicy.IsRetryableStatus(503), "503 retryable");
             TestRunner.Assert(RetryPolicy.IsPermanentStatus(400), "400 permanent");
             TestRunner.Assert(rp.DelayFor(1, 30).TotalSeconds == 30, "server retry-after honored");
+        }
+
+        private static void TrackThroughput()
+        {
+            var root = Program.TempRoot("perf");
+            var r = new ContractRegistry();
+            r.Register(Program.UnitMovedContract());
+            var rt = new TelemetryRuntime(new TelemetryConfig { Compression = "none" },
+                r, new FingerprintInput().WithContract(Program.UnitMovedContract()),
+                Path.Combine(root, "c"), new NullTelemetryTransport());
+            const int n = 20000;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < n; i++)
+            {
+                var e = new Program.UnitMovedEvent { UnitId = "u" + (i % 64), X = i % 32, Y = i % 32, Distance = 1f };
+                rt.Sink.Track(in e);
+            }
+            rt.Sink.Flush();
+            sw.Stop();
+            double eps = n / sw.Elapsed.TotalSeconds;
+            Console.WriteLine($"  perf.track-throughput: {eps:F0} events/s ({sw.ElapsedMilliseconds}ms for {n})");
+            TestRunner.Assert(eps > 10000, "throughput floor 10k events/s");
+            rt.Dispose();
         }
 
         private static void RemoteConfigParse()
