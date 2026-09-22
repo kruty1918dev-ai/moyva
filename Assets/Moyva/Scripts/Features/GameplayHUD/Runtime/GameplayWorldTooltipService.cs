@@ -1,6 +1,7 @@
 using System;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
+using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.InputRouting.API;
 using Kruty1918.Moyva.Shared.Localization;
 using Kruty1918.Localization;
@@ -21,6 +22,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IGameplayInputPolicy _inputPolicy;
         private readonly IBuildingRegistry _buildings;
         private readonly ILocalizationService _localization;
+        private readonly IFogStateReader _fogState;
         private UnityEngine.Camera _camera;
         private bool _cameraSearched;
 
@@ -34,7 +36,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IGameplayInputPolicy inputPolicy = null,
             [InjectOptional] IBuildingRegistry buildings = null,
             [InjectOptional] ILocalizationService localization = null,
-            [InjectOptional] UnityEngine.Camera camera = null)
+            [InjectOptional] UnityEngine.Camera camera = null,
+            [InjectOptional] IFogStateReader fogState = null)
         {
             _host = host;
             _pointerSource = pointerSource;
@@ -42,6 +45,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _buildings = buildings;
             _localization = localization;
             _camera = camera;
+            _fogState = fogState;
         }
 
         public void Tick()
@@ -71,6 +75,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             var target = RaycastTarget?.Invoke(camera.ScreenPointToRay(pointer.Position));
             if (target == null || target.IsPreviewVisual)
+            {
+                Clear();
+                return;
+            }
+
+            // Fog gate: a building under non-visible fog must not leak its
+            // identity on hover — mirrors the placement rule that only
+            // FogStateType.Visible tiles are interactive.
+            if (_fogState != null && !_fogState.IsVisible(target.TilePosition))
             {
                 Clear();
                 return;

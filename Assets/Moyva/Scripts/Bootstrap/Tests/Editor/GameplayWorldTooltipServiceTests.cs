@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
+using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.InputRouting.API;
 using Kruty1918.Moyva.Shared.Localization;
 using NUnit.Framework;
@@ -108,6 +109,67 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
         }
 
         [Test]
+        public void FogHiddenTile_ProducesNoTooltip()
+        {
+            var host = new RecordingHost();
+            var fog = new StubFog { Visible = false };
+            var service = new GameplayWorldTooltipService(
+                host, new StubPointer(new Vector2(320, 240)), inputPolicy: null,
+                buildings: new StubRegistry("mill", "Water Mill"),
+                localization: new EchoLocalization(),
+                camera: CreateCamera(),
+                fogState: fog);
+            var tile = new Vector2Int(12, 8);
+            _targetGo = new GameObject("fogged mill");
+            _target = ConstructionBuildingPointerTarget.AttachOrUpdate(_targetGo, "mill", tile, false);
+            service.RaycastTarget = _ => _target;
+
+            service.Tick();
+
+            Assert.That(host.WorldText, Is.Null,
+                "A building hidden by fog must not leak its name on hover.");
+            Assert.That(fog.LastQueriedPosition, Is.EqualTo(tile));
+        }
+
+        [Test]
+        public void FogExploredButNotVisible_ProducesNoTooltip()
+        {
+            var host = new RecordingHost();
+            var fog = new StubFog { Visible = false, Explored = true };
+            var service = new GameplayWorldTooltipService(
+                host, new StubPointer(new Vector2(320, 240)), inputPolicy: null,
+                buildings: new StubRegistry("mill", "Water Mill"),
+                camera: CreateCamera(),
+                fogState: fog);
+            _targetGo = new GameObject("explored mill");
+            _target = ConstructionBuildingPointerTarget.AttachOrUpdate(_targetGo, "mill", new Vector2Int(4, 4), false);
+            service.RaycastTarget = _ => _target;
+
+            service.Tick();
+
+            Assert.That(host.WorldText, Is.Null);
+        }
+
+        [Test]
+        public void FogVisibleTile_ShowsTooltip()
+        {
+            var host = new RecordingHost();
+            var service = new GameplayWorldTooltipService(
+                host, new StubPointer(new Vector2(320, 240)), inputPolicy: null,
+                buildings: new StubRegistry("mill", "Water Mill"),
+                localization: new EchoLocalization(),
+                camera: CreateCamera(),
+                fogState: new StubFog { Visible = true });
+            _targetGo = new GameObject("visible mill");
+            _target = ConstructionBuildingPointerTarget.AttachOrUpdate(_targetGo, "mill", new Vector2Int(4, 4), false);
+            service.RaycastTarget = _ => _target;
+
+            service.Tick();
+
+            Assert.That(host.WorldText, Is.EqualTo("Water Mill"));
+        }
+
+        [Test]
         public void NoPointer_ClearsTooltip()
         {
             var host = new RecordingHost();
@@ -152,6 +214,30 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             public BuildingDefinition[] GetByCategory(BuildingCategory category) => new[] { _definition };
             public WallCollectionDefinition[] GetWallCollections() => Array.Empty<WallCollectionDefinition>();
             public WallCollectionDefinition GetWallCollectionByBuildingId(string buildingId) => null;
+        }
+
+        private sealed class StubFog : IFogStateReader
+        {
+            public bool Visible;
+            public bool Explored;
+            public Vector2Int LastQueriedPosition;
+            public FogStateType GetFogState(Vector2Int position)
+            {
+                LastQueriedPosition = position;
+                return Visible ? FogStateType.Visible
+                    : Explored ? FogStateType.Explored
+                    : FogStateType.Unexplored;
+            }
+            public bool IsVisible(Vector2Int position)
+            {
+                LastQueriedPosition = position;
+                return Visible;
+            }
+            public bool IsExplored(Vector2Int position)
+            {
+                LastQueriedPosition = position;
+                return Visible || Explored;
+            }
         }
 
         private sealed class EchoLocalization : ILocalizationService
