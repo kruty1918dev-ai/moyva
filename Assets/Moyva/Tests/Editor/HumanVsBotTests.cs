@@ -118,7 +118,8 @@ namespace Kruty1918.Moyva.Tests.Startup
             var config = new BotRuntimeConfig { visibleDelay = 0f, maxInvalidDecisions = 64 };
             var orchestrator = new BotDecisionOrchestrator(gateway, registry, new EmptyBotPerceptionSource(),
                 new HeuristicBotPolicyDriver(), config, new BotTelemetryHub());
-            _controller = Activator.CreateInstance(type, new object[] { turns, input, null, orchestrator, config });
+            _controller = Activator.CreateInstance(type, new object[] {
+                turns, input, null, new Func<IBotDecisionOrchestrator>(() => orchestrator), config });
             type.GetMethod("Initialize").Invoke(_controller, null);
             return input;
         }

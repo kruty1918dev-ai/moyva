@@ -38,6 +38,8 @@ namespace Kruty1918.Moyva.Tests.Units
         public void SetUp()
         {
             _bus = CreateSignalBus();
+            _garrisonSignals.Clear();
+            _interrupts.Clear();
             _bus.Subscribe<UnitGarrisonStateChangedSignal>(
                 signal => _garrisonSignals.Add(signal));
             _bus.Subscribe<InterruptMovementSignal>(

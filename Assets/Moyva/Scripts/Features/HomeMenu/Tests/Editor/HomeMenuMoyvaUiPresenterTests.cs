@@ -59,7 +59,6 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
                 // document path (regional updates cannot retarget root classes).
                 state.Open("SettingsPanel");
                 yield return null; // let Time.frameCount move past the change frame
-                ClearStateChangeFrame(presenter); // Time.frameCount may not advance in edit mode
                 presenter.Tick();
 
                 Assert.AreEqual(1, CountPlays(host, "fade-out"), "Expected exactly one route exit fade.");
@@ -83,7 +82,6 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
                 // and stays on the regional update path.
                 state.SetSettingsSection(HomeMenuSettingsSection.Audio);
                 yield return null;
-                ClearStateChangeFrame(presenter);
                 presenter.Tick();
 
                 Assert.AreEqual(1, CountPlays(host, "fade-out"),
@@ -97,7 +95,6 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
                 // root element, so this switch must take the full mount path.
                 state.SetSettingsSection(HomeMenuSettingsSection.Controls);
                 yield return null;
-                ClearStateChangeFrame(presenter);
                 presenter.Tick();
 
                 Assert.AreEqual(1, CountPlays(host, "fade-out"),
@@ -112,7 +109,6 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
                 // Leaving Controls restores the base settings root class.
                 state.SetSettingsSection(HomeMenuSettingsSection.General);
                 yield return null;
-                ClearStateChangeFrame(presenter);
                 presenter.Tick();
 
                 Assert.AreEqual(4, host.MountCalls,
@@ -129,16 +125,10 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
 
         private static void ExpirePendingRender(HomeMenuMoyvaUiPresenter presenter)
         {
-            typeof(HomeMenuMoyvaUiPresenter)
-                .GetField("_pendingRenderAt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                ?.SetValue(presenter, 0f);
-        }
-
-        private static void ClearStateChangeFrame(HomeMenuMoyvaUiPresenter presenter)
-        {
-            typeof(HomeMenuMoyvaUiPresenter)
-                .GetField("_lastStateChangeFrame", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                ?.SetValue(presenter, -1);
+            var field = typeof(HomeMenuMoyvaUiPresenter)
+                .GetField("_phaseDeadline", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?? throw new System.MissingFieldException(nameof(HomeMenuMoyvaUiPresenter), "_phaseDeadline");
+            field.SetValue(presenter, -1f);
         }
 
         private static int CountPlays(RecordingHost host, string preset)
