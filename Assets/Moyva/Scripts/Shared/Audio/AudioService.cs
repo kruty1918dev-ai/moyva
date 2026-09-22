@@ -7,11 +7,11 @@ using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.Rendering;
 using Zenject;
-using Kruty1918.Moyva.Shared.Connectivity;
+using Kruty1918.Connectivity;
 using Kruty1918.Moyva.Shared.Graphics;
 using Kruty1918.Moyva.Shared.Common;
-using Kruty1918.Moyva.Shared.Performance;
-using Kruty1918.Moyva.Shared.Diagnostics;
+using Kruty1918.Performance;
+using Kruty1918.Diagnostics;
 using Kruty1918.Moyva.Shared.UI;
 
 using Kruty1918.JsonConfig;

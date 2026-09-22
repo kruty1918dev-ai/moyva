@@ -2,8 +2,8 @@
     "name": "Kruty1918.Moyva.Multiplayer",
     "rootNamespace": "Kruty1918.Moyva.Multiplayer",
     "references": [
-    "Kruty1918.SaveSystem",
-    "Kruty1918.Calendar",
+        "Kruty1918.SaveSystem",
+        "Kruty1918.Calendar",
         "Zenject",
         "Kruty1918.Moyva.Combat",
         "Kruty1918.Moyva.Signals",
@@ -22,7 +22,8 @@
         "Unity.Services.Relay",
         "Unity.Services.Multiplayer",
         "Unity.Networking.Transport",
-        "Unity.Collections"
+        "Unity.Collections",
+        "Kruty1918.Connectivity"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

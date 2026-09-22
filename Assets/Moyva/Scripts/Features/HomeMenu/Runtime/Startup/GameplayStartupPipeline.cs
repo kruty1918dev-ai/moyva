@@ -9,7 +9,7 @@ using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.SaveSystem;
 using Kruty1918.Moyva.Shared.Common;
 using Kruty1918.Moyva.Shared.Graphics;
-using Kruty1918.Moyva.Shared.Performance;
+using Kruty1918.Performance;
 using Kruty1918.Moyva.Shared.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;

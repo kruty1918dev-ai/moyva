@@ -4,9 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.U2D;
-using Zenject;
 
-namespace Kruty1918.Moyva.Shared.Performance
+namespace Kruty1918.Performance
 {
     public struct FrameTimeSnapshot
     {
@@ -24,16 +23,16 @@ namespace Kruty1918.Moyva.Shared.Performance
         void SetDegradationReason(string reason);
     }
 
-    public sealed class FrameBudgetMonitorService : IFrameBudgetMonitorService, ITickable
+    public sealed class FrameBudgetMonitorService : IFrameBudgetMonitorService
     {
         private readonly FrameBudgetSettings _budget;
         private readonly Queue<float> _frameTimes;
         private readonly float[] _sortedBuffer;
         private string _lastDegradationReason;
 
-        public FrameBudgetMonitorService()
+        public FrameBudgetMonitorService(FrameBudgetSettings budget)
         {
-            _budget = AdaptivePerformanceDefaultsProvider.LoadFrameBudget();
+            _budget = budget.Normalize();
             _frameTimes = new Queue<float>(_budget.PercentileWindow);
             _sortedBuffer = new float[_budget.PercentileWindow];
         }
@@ -107,9 +106,9 @@ namespace Kruty1918.Moyva.Shared.Performance
     {
         private readonly PrewarmSettings _settings;
 
-        public StartupPrewarmService()
+        public StartupPrewarmService(PrewarmSettings settings)
         {
-            _settings = AdaptivePerformanceDefaultsProvider.LoadPrewarmSettings();
+            _settings = settings ?? PrewarmSettings.CreateDefault();
         }
 
         public async Task PrewarmAsync(CancellationToken ct = default)

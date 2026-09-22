@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Zenject;
 
-namespace Kruty1918.Moyva.Shared.Diagnostics
+namespace Kruty1918.Diagnostics
 {
     public enum HealthStatus
     {
@@ -61,7 +60,7 @@ namespace Kruty1918.Moyva.Shared.Diagnostics
         HealthCheckResult Report();
     }
 
-    internal sealed class HealthCheckService : IHealthCheckService, IInitializable
+    public sealed class HealthCheckService : IHealthCheckService
     {
         private readonly List<IHealthReporter> _reporters;
         private readonly List<HealthCheckResult> _cache = new List<HealthCheckResult>();

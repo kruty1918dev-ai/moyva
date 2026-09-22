@@ -10,7 +10,7 @@ using Unity.Services.Core;
 using Zenject;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Shared.Common;
-using Kruty1918.Moyva.Shared.Connectivity;
+using Kruty1918.Connectivity;
 using Kruty1918.Moyva.Shared.Graphics;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
@@ -26,7 +26,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly IGameplaySession _gameplaySession;
         private readonly IOverlayLoader _overlayLoader;
         private readonly IConfirmationService _confirmationService;
-        private readonly Kruty1918.Moyva.Shared.Connectivity.IConnectivityService _connectivityService;
+        private readonly Kruty1918.Connectivity.IConnectivityService _connectivityService;
         private readonly IGraphicsSettingsService _graphicsSettingsService;
         private readonly ServiceModeProfile _menuProfile;
         private CancellationTokenSource _lifecycleCts;
@@ -36,7 +36,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             [InjectOptional] IGameplaySession gameplaySession = null,
             [InjectOptional] IConfirmationService confirmation = null,
             [InjectOptional] IOverlayLoader overlayLoader = null,
-            [InjectOptional] Kruty1918.Moyva.Shared.Connectivity.IConnectivityService connectivityService = null,
+            [InjectOptional] Kruty1918.Connectivity.IConnectivityService connectivityService = null,
             [InjectOptional] IGraphicsSettingsService graphicsSettingsService = null,
             [InjectOptional] IServiceModeProfileProvider serviceModeProfileProvider = null)
         {

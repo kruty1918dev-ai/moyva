@@ -2,11 +2,10 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using Zenject;
 
-namespace Kruty1918.Moyva.Shared.Connectivity
+namespace Kruty1918.Connectivity
 {
-    internal class ConnectivityService : IConnectivityService, IInitializable, IDisposable
+    public sealed class ConnectivityService : IConnectivityService, IDisposable
     {
         private const string Prefix = "[ConnectivityService]";
         private const float DefaultPollingSeconds = 2f;
@@ -20,6 +19,9 @@ namespace Kruty1918.Moyva.Shared.Connectivity
 
         public void Initialize()
         {
+            if (_cts != null)
+                return;
+
             _cts = new CancellationTokenSource();
             _ = MonitorLoopAsync(_cts.Token);
         }

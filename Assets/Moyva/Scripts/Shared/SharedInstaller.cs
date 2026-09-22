@@ -1,10 +1,10 @@
 using Kruty1918.Localization;
 using Kruty1918.Moyva.Shared.Common;
-using Kruty1918.Moyva.Shared.Connectivity;
-using Kruty1918.Moyva.Shared.Diagnostics;
+using Kruty1918.Connectivity;
+using Kruty1918.Diagnostics;
 using Kruty1918.Moyva.Shared.Graphics;
-using Kruty1918.Localization;
 using Kruty1918.Moyva.Shared.Performance;
+using Kruty1918.Performance;
 using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.UI;
 using Zenject;
@@ -32,9 +32,17 @@ namespace Kruty1918.Moyva.Shared
                     .AsSingle();
             }
 
+            container.Bind<ConnectivityService>()
+                .AsSingle()
+                .OnInstantiated<ConnectivityService>((_, service) => service.Initialize());
+
             container.Bind<IConnectivityService>()
                 .To<ConnectivityService>()
-                .AsSingle();
+                .FromResolve();
+
+            container.Bind<IDisposable>()
+                .To<ConnectivityService>()
+                .FromResolve();
 
             container.Bind<IServiceModeProfileProvider>()
                 .To<ServiceModeProfileProvider>()
@@ -50,11 +58,23 @@ namespace Kruty1918.Moyva.Shared
                 .AsSingle()
                 .NonLazy();
 
+            container.Bind<FrameBudgetSettings>()
+                .FromMethod(_ => AdaptivePerformanceDefaultsProvider.LoadFrameBudget())
+                .AsSingle();
+            container.Bind<FrameBudgetMonitorService>()
+                .AsSingle()
+                .NonLazy();
             container.Bind<IFrameBudgetMonitorService>()
                 .To<FrameBudgetMonitorService>()
+                .FromResolve();
+            container.Bind<ITickable>()
+                .To<FrameBudgetMonitorTickable>()
                 .AsSingle()
                 .NonLazy();
 
+            container.Bind<PrewarmSettings>()
+                .FromMethod(_ => AdaptivePerformanceDefaultsProvider.LoadPrewarmSettings())
+                .AsSingle();
             container.Bind<StartupPrewarmService>()
                 .AsSingle();
 
@@ -62,7 +82,13 @@ namespace Kruty1918.Moyva.Shared
                 .To<StartupPrewarmService>()
                 .FromResolve();
 
-            container.BindInterfacesTo<AsyncGlobalErrorHandlerService>().AsSingle().NonLazy();
+            container.Bind<AsyncGlobalErrorHandlerService>()
+                .AsSingle()
+                .NonLazy()
+                .OnInstantiated<AsyncGlobalErrorHandlerService>((_, service) => service.Initialize());
+            container.Bind<IDisposable>()
+                .To<AsyncGlobalErrorHandlerService>()
+                .FromResolve();
 
             container.BindInterfacesTo<UiMotionService>().AsSingle();
             container.BindInterfacesTo<UiTooltipService>().AsSingle();
@@ -79,7 +105,23 @@ namespace Kruty1918.Moyva.Shared
             container.Bind<LocalizationFontService>().AsSingle();
 
             container.BindInterfacesAndSelfTo<InternetConnectivityHealthReporter>().AsSingle();
-            container.Bind<IHealthCheckService>().To<HealthCheckService>().AsSingle().NonLazy();
+            container.Bind<HealthCheckService>()
+                .AsSingle()
+                .NonLazy()
+                .OnInstantiated<HealthCheckService>((_, service) => service.Initialize());
+            container.Bind<IHealthCheckService>().To<HealthCheckService>().FromResolve();
+        }
+
+        private sealed class FrameBudgetMonitorTickable : ITickable
+        {
+            private readonly FrameBudgetMonitorService _monitor;
+
+            public FrameBudgetMonitorTickable(FrameBudgetMonitorService monitor)
+            {
+                _monitor = monitor;
+            }
+
+            public void Tick() => _monitor.Tick();
         }
     }
 }

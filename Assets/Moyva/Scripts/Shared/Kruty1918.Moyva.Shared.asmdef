@@ -1,21 +1,24 @@
 {
-  "name": "Kruty1918.Moyva.Shared",
-  "rootNamespace": "Kruty1918.Moyva.Shared",
-  "references": [
-    "Kruty1918.Localization",
-    "Zenject",
-    "Unity.InputSystem",
-    "Unity.TextMeshPro",
-    "Unity.Newtonsoft.Json",
-    "Kruty1918.JsonConfig"
-  ],
-  "includePlatforms": [],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": true,
-  "defineConstraints": [],
-  "versionDefines": [],
-  "noEngineReferences": false
+    "name": "Kruty1918.Moyva.Shared",
+    "rootNamespace": "Kruty1918.Moyva.Shared",
+    "references": [
+        "Kruty1918.Localization",
+        "Zenject",
+        "Unity.InputSystem",
+        "Unity.TextMeshPro",
+        "Unity.Newtonsoft.Json",
+        "Kruty1918.JsonConfig",
+        "Kruty1918.Connectivity",
+        "Kruty1918.Diagnostics",
+        "Kruty1918.Performance"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

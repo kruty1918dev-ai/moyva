@@ -1,0 +1,17 @@
+{
+  "name": "com.kruty1918.connectivity",
+  "version": "0.1.0",
+  "displayName": "Kruty1918 Connectivity",
+  "description": "Reusable connectivity monitoring: internet reachability probes, online/offline status events, and wait-for-connectivity helpers.",
+  "unity": "6000.0",
+  "unityRelease": "0f1",
+  "author": {
+    "name": "Kruty1918"
+  },
+  "dependencies": {},
+  "keywords": [
+    "kruty1918",
+    "moyva",
+    "reusable"
+  ]
+}

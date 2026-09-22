@@ -1,11 +1,10 @@
 using System;
 using System.Threading.Tasks;
 using UnityEngine;
-using Zenject;
 
-namespace Kruty1918.Moyva.Shared.Diagnostics
+namespace Kruty1918.Diagnostics
 {
-    internal sealed class AsyncGlobalErrorHandlerService : IInitializable, IDisposable
+    public sealed class AsyncGlobalErrorHandlerService : IDisposable
     {
         public void Initialize()
         {

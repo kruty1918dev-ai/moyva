@@ -63,7 +63,10 @@
     "com.unity.modules.unitywebrequesttexture": "1.0.0",
     "com.unity.modules.unitywebrequestwww": "1.0.0",
     "com.unity.modules.vectorgraphics": "1.0.0",
-    "com.unity.modules.video": "1.0.0"
+    "com.unity.modules.video": "1.0.0",
+    "com.kruty1918.connectivity": "file:com.kruty1918.connectivity",
+    "com.kruty1918.runtime-diagnostics": "file:com.kruty1918.runtime-diagnostics",
+    "com.kruty1918.adaptive-performance": "file:com.kruty1918.adaptive-performance"
   },
   "testables": [
     "com.kruty1918.moyva.unityhtml"

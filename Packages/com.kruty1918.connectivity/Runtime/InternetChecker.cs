@@ -2,7 +2,7 @@ using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace Kruty1918.Moyva.Shared.Connectivity
+namespace Kruty1918.Connectivity
 {
     public static class InternetChecker
     {

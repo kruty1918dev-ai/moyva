@@ -1,7 +1,7 @@
 using System;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.Multiplayer.Networking;
-using Kruty1918.Moyva.Shared.Connectivity;
+using Kruty1918.Connectivity;
 using UnityEngine;
 using Zenject;
 

@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Kruty1918.Moyva.Shared.Connectivity
+namespace Kruty1918.Connectivity
 {
     public interface IConnectivityService
     {
