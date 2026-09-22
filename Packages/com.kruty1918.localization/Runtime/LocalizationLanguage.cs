@@ -1,4 +1,4 @@
-namespace Kruty1918.Moyva.Shared.Localization
+namespace Kruty1918.Localization
 {
     /// <summary>
     /// Immutable description of a supported UI language.

@@ -3,7 +3,7 @@ using Kruty1918.Moyva.Audio.API;
 using UnityEngine;
 using UnityEngine.Audio;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Audio.Runtime
 {
     // ─── Data ────────────────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
     /// Завантажується MusicService при зміні сцени.
     /// </summary>
 [System.Serializable]
-public sealed class SceneMusicProfileSO : MoyvaJsonConfigObject
+public sealed class SceneMusicProfileSO : JsonConfigObject
     {
         [Header("Target Scenes")]
         [Tooltip("Список сцен, для яких діє цей профіль. Порожній список = Global Profile (застосовується до будь-якої сцени без власного профілю).")]

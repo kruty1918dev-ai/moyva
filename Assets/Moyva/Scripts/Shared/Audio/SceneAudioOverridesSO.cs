@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Audio.Runtime
 {
     /// <summary>
@@ -46,7 +46,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
     /// Runtime завантажує з Resources/MoyvaSceneAudioOverrides.
     /// </summary>
 [System.Serializable]
-public sealed class SceneAudioOverridesSO : MoyvaJsonConfigObject
+public sealed class SceneAudioOverridesSO : JsonConfigObject
     {
         [SerializeField] private List<SoundSceneOverride> _overrides = new List<SoundSceneOverride>();
 

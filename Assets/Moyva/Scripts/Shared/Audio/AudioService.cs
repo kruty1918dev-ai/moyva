@@ -14,7 +14,7 @@ using Kruty1918.Moyva.Shared.Performance;
 using Kruty1918.Moyva.Shared.Diagnostics;
 using Kruty1918.Moyva.Shared.UI;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Audio.Runtime
 {
     using Kruty1918.Moyva.Audio.API;
@@ -56,8 +56,8 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
         public AudioService([InjectOptional] AudioRegistrySO registry, [InjectOptional] SceneAudioOverridesSO sceneOverrides)
         {
-            _registry = registry != null ? registry : MoyvaJsonRuntime.GetLegacyResource<AudioRegistrySO>(DefaultRegistryResourcePath);
-            _sceneOverrides = sceneOverrides ?? MoyvaJsonRuntime.GetLegacyResource<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
+            _registry = registry != null ? registry : JsonConfigRuntime.GetLegacyResource<AudioRegistrySO>(DefaultRegistryResourcePath);
+            _sceneOverrides = sceneOverrides ?? JsonConfigRuntime.GetLegacyResource<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
         }
 
         public void Initialize()
@@ -813,7 +813,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
             {
                 // Serialized plain-class config fields deserialize as non-null but empty,
                 // which would shadow the JSON source of truth — prefer JSON when present.
-                AudioRegistrySO jsonRegistry = MoyvaJsonRuntime.GetLegacyResource<AudioRegistrySO>(DefaultRegistryResourcePath);
+                AudioRegistrySO jsonRegistry = JsonConfigRuntime.GetLegacyResource<AudioRegistrySO>(DefaultRegistryResourcePath);
                 registry = jsonRegistry ?? registry;
                 if (registry != null)
                     container.BindInstance(registry).AsSingle();
@@ -821,7 +821,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
             if (!container.HasBinding<SceneAudioOverridesSO>())
             {
-                SceneAudioOverridesSO jsonOverrides = MoyvaJsonRuntime.GetLegacyResource<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
+                SceneAudioOverridesSO jsonOverrides = JsonConfigRuntime.GetLegacyResource<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
                 sceneOverrides = jsonOverrides ?? sceneOverrides;
                 if (sceneOverrides != null)
                     container.BindInstance(sceneOverrides).AsSingle();

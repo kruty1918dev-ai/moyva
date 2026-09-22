@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Kruty1918.Moyva.Shared.Localization
+namespace Kruty1918.Localization
 {
     /// <summary>
     /// Canonical runtime localization boundary for all visible UI text.

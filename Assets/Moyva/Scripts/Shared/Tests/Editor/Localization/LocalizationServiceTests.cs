@@ -1,5 +1,5 @@
 using System.IO;
-using Kruty1918.Moyva.Shared.Localization;
+using Kruty1918.Localization;
 using NUnit.Framework;
 
 namespace Kruty1918.Moyva.Shared.Localization.Tests
@@ -26,7 +26,8 @@ namespace Kruty1918.Moyva.Shared.Localization.Tests
             if (File.Exists(_persistPath)) File.Delete(_persistPath);
         }
 
-        private LocalizationService Create() => new LocalizationService(_persistPath);
+        private LocalizationService Create() => new LocalizationService(
+            MoyvaLocalizationDefaults.CreateOptions(_persistPath));
 
         [Test]
         public void SupportedLanguages_ContainsEnglishAndUkrainian()

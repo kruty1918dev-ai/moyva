@@ -1,27 +1,28 @@
 using System.Collections.Generic;
-using System.Text;
 using TMPro;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Shared.Localization
+namespace Kruty1918.Localization
 {
     /// <summary>
     /// Guarantees glyph coverage for every supported language.
-    /// The project fonts (LiberationSans-derived SDF, homerun, pixont) ship with
-    /// ASCII-only static atlases, so Cyrillic and other scripts render as missing
-    /// glyphs. This service creates one dynamic-atlas <see cref="TMP_FontAsset"/>
-    /// from the raw LiberationSans TTF (full Latin + Cyrillic coverage) and wires
+    /// Creates one dynamic-atlas <see cref="TMP_FontAsset"/> from a raw font
+    /// resource supplied via <see cref="LocalizationFontOptions"/> and wires
     /// it as a fallback both globally (<c>TMP_Settings.fallbackFontAssets</c>) and
-    /// on every primary font asset registered via <see cref="RegisterPrimaryFont"/>
-    /// (the <c>moyvaFont</c> global used by UnityHTML, tooltip fonts, etc).
-    /// Fallback resolution in TMP keeps Latin metrics identical and only routes
+    /// on every primary font asset registered via <see cref="RegisterPrimaryFont"/>.
+    /// Fallback resolution in TMP keeps primary metrics identical and only routes
     /// missing codepoints through the dynamic asset — no artifacts for existing text.
     /// </summary>
     public sealed class LocalizationFontService
     {
-        private const string FontResourcePath = "Fonts/LiberationSans";
+        private readonly LocalizationFontOptions _options;
         private readonly HashSet<TMP_FontAsset> _registered = new HashSet<TMP_FontAsset>();
         private TMP_FontAsset _fallback;
+
+        public LocalizationFontService(LocalizationFontOptions options)
+        {
+            _options = options ?? new LocalizationFontOptions();
+        }
 
         /// <summary>
         /// Підключає primary font asset до multilingual fallback-ланцюга.
@@ -45,7 +46,7 @@ namespace Kruty1918.Moyva.Shared.Localization
             // MissingReferenceException inside TMP_MaterialManager.
             primary.fallbackFontAssetTable.RemoveAll(a =>
                 a == null ||
-                (a.name == "LocalizationFallback (Dynamic)" && a.material == null));
+                (a.name == _options.FallbackAssetName && a.material == null));
             primary.fallbackFontAssetTable.Remove(fallback);
             primary.fallbackFontAssetTable.Insert(0, fallback);
         }
@@ -89,7 +90,7 @@ namespace Kruty1918.Moyva.Shared.Localization
         /// Повторно використовує fallback-асет, який залишився у глобальному
         /// списку TMP від попереднього екземпляра сервісу (перехід сцен).
         /// </summary>
-        private static TMP_FontAsset FindLiveGlobalFallback()
+        private TMP_FontAsset FindLiveGlobalFallback()
         {
             var globalList = TMP_Settings.instance != null ? TMP_Settings.fallbackFontAssets : null;
             if (globalList == null) return null;
@@ -97,7 +98,7 @@ namespace Kruty1918.Moyva.Shared.Localization
             for (int i = globalList.Count - 1; i >= 0; i--)
             {
                 TMP_FontAsset asset = globalList[i];
-                if (asset == null || asset.name != "LocalizationFallback (Dynamic)")
+                if (asset == null || asset.name != _options.FallbackAssetName)
                     continue;
                 // A leftover asset with a dead material must not stay in the
                 // global list: glyph lookups hit it first and throw.
@@ -109,17 +110,17 @@ namespace Kruty1918.Moyva.Shared.Localization
             return live;
         }
 
-        private static TMP_FontAsset CreateFallbackFont()
+        private TMP_FontAsset CreateFallbackFont()
         {
-            Font source = Resources.Load<Font>(FontResourcePath);
+            Font source = Resources.Load<Font>(_options.FontResourcePath);
             if (source == null)
             {
-                Debug.LogError($"[Localization] Font '{FontResourcePath}' not found in Resources; " +
+                Debug.LogError($"[Localization] Font '{_options.FontResourcePath}' not found in Resources; " +
                                "non-ASCII glyphs will be missing.");
                 return null;
             }
             TMP_FontAsset fallback = TMP_FontAsset.CreateFontAsset(source);
-            fallback.name = "LocalizationFallback (Dynamic)";
+            fallback.name = _options.FallbackAssetName;
             fallback.hideFlags = HideFlags.HideAndDontSave;
             ProtectSubAssets(fallback);
             return fallback;
@@ -148,22 +149,11 @@ namespace Kruty1918.Moyva.Shared.Localization
 
         /// <summary>
         /// Повертає набір символів, який потрібен мові понад ASCII.
-        /// Кирилиця покриває uk/ru/be; латинка повністю є у primary шрифтах.
+        /// Постачається хостом через <see cref="LocalizationFontOptions.CharsetForLanguage"/>.
         /// </summary>
-        private static string CharsetFor(string languageId)
+        private string CharsetFor(string languageId)
         {
-            var builder = new StringBuilder(128);
-            switch (languageId)
-            {
-                case "uk":
-                case "ru":
-                case "be":
-                    // U+0400–U+04FF — повний кириличний блок (вкл. Єє Її Іі Ґґ).
-                    for (char c = 'Ѐ'; c <= 'ӿ'; c++) builder.Append(c);
-                    builder.Append("—–«»„“”’‘…₴№");
-                    break;
-            }
-            return builder.ToString();
+            return _options.CharsetForLanguage?.Invoke(languageId) ?? string.Empty;
         }
     }
 }

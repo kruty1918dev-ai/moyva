@@ -1,7 +1,7 @@
 using UnityEngine;
 using Kruty1918.Moyva.Shared.Graphics;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Shared.Performance
 {
     [System.Serializable]
@@ -224,7 +224,7 @@ namespace Kruty1918.Moyva.Shared.Performance
         }
     }
 [System.Serializable]
-public sealed class AdaptivePerformanceSettingsSO : MoyvaJsonConfigObject
+public sealed class AdaptivePerformanceSettingsSO : JsonConfigObject
     {
         public const string DefaultResourcePath = "MoyvaAdaptivePerformance";
 
@@ -259,7 +259,7 @@ public sealed class AdaptivePerformanceSettingsSO : MoyvaJsonConfigObject
     {
         public static AdaptivePerformanceSettingsSO LoadAsset()
         {
-            return MoyvaJsonRuntime.GetLegacyResource<AdaptivePerformanceSettingsSO>(AdaptivePerformanceSettingsSO.DefaultResourcePath);
+            return JsonConfigRuntime.GetLegacyResource<AdaptivePerformanceSettingsSO>(AdaptivePerformanceSettingsSO.DefaultResourcePath);
         }
 
         public static FrameBudgetSettings LoadFrameBudget()

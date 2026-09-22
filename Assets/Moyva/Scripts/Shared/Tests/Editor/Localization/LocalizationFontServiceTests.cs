@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Kruty1918.Moyva.Shared.Localization;
+using Kruty1918.Localization;
 using NUnit.Framework;
 using TMPro;
 using UnityEditor;
@@ -43,7 +43,7 @@ namespace Kruty1918.Moyva.Shared.Localization.Tests
         [Test]
         public void RegisterPrimaryFont_InsertsRuntimeFallbackBeforeExistingEntries()
         {
-            var service = new LocalizationFontService();
+            var service = new LocalizationFontService(MoyvaLocalizationDefaults.CreateFontOptions());
             var existing = CreateFontAsset();
             var primary = CreateFontAsset();
             primary.fallbackFontAssetTable = new List<TMP_FontAsset> { existing };
@@ -64,7 +64,7 @@ namespace Kruty1918.Moyva.Shared.Localization.Tests
         [Test]
         public void RegisterPrimaryFont_IsIdempotent_KeepsRuntimeFallbackFirst()
         {
-            var service = new LocalizationFontService();
+            var service = new LocalizationFontService(MoyvaLocalizationDefaults.CreateFontOptions());
             var primary = CreateFontAsset();
 
             service.RegisterPrimaryFont(primary);

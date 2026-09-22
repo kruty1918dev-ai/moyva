@@ -1,6 +1,6 @@
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Shared.Graphics
 {
     [System.Serializable]
@@ -75,7 +75,7 @@ namespace Kruty1918.Moyva.Shared.Graphics
         }
     }
 [System.Serializable]
-public sealed class GraphicsStartupSettingsSO : MoyvaJsonConfigObject
+public sealed class GraphicsStartupSettingsSO : JsonConfigObject
     {
         public const string DefaultResourcePath = "MoyvaStartupGraphics";
 
@@ -129,19 +129,19 @@ public sealed class GraphicsStartupSettingsSO : MoyvaJsonConfigObject
     {
         public static GraphicsSettingsData LoadDefaults()
         {
-            var asset = MoyvaJsonRuntime.GetLegacyResource<GraphicsStartupSettingsSO>(GraphicsStartupSettingsSO.DefaultResourcePath);
+            var asset = JsonConfigRuntime.GetLegacyResource<GraphicsStartupSettingsSO>(GraphicsStartupSettingsSO.DefaultResourcePath);
             return asset != null ? asset.StartupSettings : GraphicsSettingsData.CreateDefault();
         }
 
         public static ZoomGraphicsSettings LoadZoomSettings()
         {
-            var asset = MoyvaJsonRuntime.GetLegacyResource<GraphicsStartupSettingsSO>(GraphicsStartupSettingsSO.DefaultResourcePath);
+            var asset = JsonConfigRuntime.GetLegacyResource<GraphicsStartupSettingsSO>(GraphicsStartupSettingsSO.DefaultResourcePath);
             return asset != null ? asset.ZoomSettings : ZoomGraphicsSettings.CreateDefault();
         }
 
         public static DeveloperPixelOptimizationSettings LoadDeveloperPixelOptimization()
         {
-            var asset = MoyvaJsonRuntime.GetLegacyResource<GraphicsStartupSettingsSO>(GraphicsStartupSettingsSO.DefaultResourcePath);
+            var asset = JsonConfigRuntime.GetLegacyResource<GraphicsStartupSettingsSO>(GraphicsStartupSettingsSO.DefaultResourcePath);
             return asset != null ? asset.DeveloperPixelOptimization : DeveloperPixelOptimizationSettings.CreateDefault();
         }
     }

@@ -1,13 +1,9 @@
 {
-  "name": "Kruty1918.Moyva.Shared",
-  "rootNamespace": "Kruty1918.Moyva.Shared",
+  "name": "Kruty1918.Localization",
+  "rootNamespace": "Kruty1918.Localization",
   "references": [
-    "Kruty1918.Localization",
-    "Zenject",
-    "Unity.InputSystem",
     "Unity.TextMeshPro",
-    "Unity.Newtonsoft.Json",
-    "Kruty1918.JsonConfig"
+    "Unity.Newtonsoft.Json"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

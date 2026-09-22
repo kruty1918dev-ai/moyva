@@ -1,8 +1,9 @@
+using Kruty1918.Localization;
 using Kruty1918.Moyva.Shared.Common;
 using Kruty1918.Moyva.Shared.Connectivity;
 using Kruty1918.Moyva.Shared.Diagnostics;
 using Kruty1918.Moyva.Shared.Graphics;
-using Kruty1918.Moyva.Shared.Localization;
+using Kruty1918.Localization;
 using Kruty1918.Moyva.Shared.Performance;
 using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.UI;
@@ -68,6 +69,12 @@ namespace Kruty1918.Moyva.Shared
             container.BindInterfacesTo<SceneTransitionService>().AsSingle();
 
             // Localization: project-scope singletons so language state survives scene changes.
+            container.Bind<LocalizationOptions>()
+                .FromMethod(_ => MoyvaLocalizationDefaults.CreateOptions())
+                .AsSingle();
+            container.Bind<LocalizationFontOptions>()
+                .FromMethod(_ => MoyvaLocalizationDefaults.CreateFontOptions())
+                .AsSingle();
             container.BindInterfacesAndSelfTo<LocalizationService>().AsSingle().NonLazy();
             container.Bind<LocalizationFontService>().AsSingle();
 

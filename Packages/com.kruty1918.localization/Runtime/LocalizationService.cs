@@ -5,30 +5,20 @@ using System.IO;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Shared.Localization
+namespace Kruty1918.Localization
 {
     /// <summary>
     /// Canonical runtime localization service (plain C#, project-scope singleton).
-    /// Loads JSON catalogs from <c>Assets/Moyva/Presets/Localization/Resources/MoyvaLocales/{id}.json</c>
+    /// Loads JSON catalogs from <see cref="LocalizationOptions.CatalogResourceFolder"/>
     /// via <c>Resources.Load&lt;TextAsset&gt;</c> (Load -> Validate -> Freeze -> Consume),
-    /// persists the selected language id to a small file under persistentDataPath,
+    /// persists the selected language id to a small file,
     /// and raises <see cref="LanguageChanged"/> exactly once per real language switch.
     /// Catalog value shapes: <c>"key": "text"</c> or
     /// <c>"key": {"one":..,"few":..,"many":..,"other":..}</c> for plurals.
     /// </summary>
     public sealed class LocalizationService : ILocalizationService
     {
-        /// <summary>Стабільні id підтримуваних мов у порядку відображення.</summary>
-        private static readonly (string id, string displayName)[] LanguageTable =
-        {
-            ("en", "English"),
-            ("uk", "Українська"),
-        };
-
-        private const string DefaultLanguageId = "en";
-        private const string ResourceFolder = "MoyvaLocales";
-        private const string PersistFileName = "moyva-language.txt";
-
+        private readonly LocalizationOptions _options;
         private readonly List<LocalizationLanguage> _languages = new List<LocalizationLanguage>();
         private readonly Dictionary<string, LocalizationCatalog> _catalogs =
             new Dictionary<string, LocalizationCatalog>(StringComparer.OrdinalIgnoreCase);
@@ -37,21 +27,19 @@ namespace Kruty1918.Moyva.Shared.Localization
 
         public event Action LanguageChanged;
 
-        /// <summary>Production ctor: завантажує каталоги з Resources і persisted id з диска.</summary>
-        public LocalizationService()
-            : this(Path.Combine(Application.persistentDataPath, PersistFileName))
+        /// <summary>Завантажує каталоги з Resources і persisted id з диска.</summary>
+        public LocalizationService(LocalizationOptions options)
         {
-        }
+            _options = options ?? throw new ArgumentNullException(nameof(options));
+            if (_options.Languages == null || _options.Languages.Count == 0)
+                throw new ArgumentException("LocalizationOptions.Languages must not be empty.");
 
-        /// <summary>Test seam ctor: каталоги теж з Resources, але persistence йде у вказаний файл.</summary>
-        internal LocalizationService(string persistPath)
-        {
-            _persistPath = persistPath;
-            for (int i = 0; i < LanguageTable.Length; i++)
+            _persistPath = _options.PersistFilePath;
+            for (int i = 0; i < _options.Languages.Count; i++)
             {
-                var (id, displayName) = LanguageTable[i];
-                _languages.Add(new LocalizationLanguage(id, displayName));
-                _catalogs[id] = LoadCatalog(id);
+                LocalizationLanguage language = _options.Languages[i];
+                _languages.Add(language);
+                _catalogs[language.Id] = LoadCatalog(language.Id);
             }
             _activeIndex = ResolveInitialIndex(ReadPersistedId());
         }
@@ -119,20 +107,18 @@ namespace Kruty1918.Moyva.Shared.Localization
             int index = IndexOf(persistedId);
             if (index >= 0) return index;
             index = IndexOf(MapSystemLanguage(Application.systemLanguage));
-            return index >= 0 ? index : IndexOf(DefaultLanguageId);
+            return index >= 0 ? index : IndexOf(_options.DefaultLanguageId);
         }
 
-        private static string MapSystemLanguage(SystemLanguage language)
+        private string MapSystemLanguage(SystemLanguage language)
         {
-            switch (language)
+            if (_options.SystemLanguageMap != null)
             {
-                case SystemLanguage.Ukrainian: return "uk";
-                case SystemLanguage.Russian:
-                case SystemLanguage.Belarusian:
-                    // Немає окремого каталогу — українська найближча за гліфами/аудиторією.
-                    return "uk";
-                default: return DefaultLanguageId;
+                string mapped = _options.SystemLanguageMap(language);
+                if (!string.IsNullOrWhiteSpace(mapped))
+                    return mapped;
             }
+            return _options.DefaultLanguageId;
         }
 
         private int IndexOf(string languageId)
@@ -144,10 +130,11 @@ namespace Kruty1918.Moyva.Shared.Localization
             return -1;
         }
 
-        private static LocalizationCatalog LoadCatalog(string languageId)
+        private LocalizationCatalog LoadCatalog(string languageId)
         {
             var language = new LocalizationLanguage(languageId, languageId);
-            TextAsset asset = Resources.Load<TextAsset>($"{ResourceFolder}/{languageId}");
+            TextAsset asset = Resources.Load<TextAsset>(
+                $"{_options.CatalogResourceFolder}/{languageId}");
             if (asset == null || string.IsNullOrWhiteSpace(asset.text))
                 return new LocalizationCatalog(language, new Dictionary<string, LocalizationPluralForms>());
 

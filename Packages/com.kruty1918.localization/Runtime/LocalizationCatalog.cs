@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 
-namespace Kruty1918.Moyva.Shared.Localization
+namespace Kruty1918.Localization
 {
     /// <summary>
     /// Immutable resolved snapshot of one language's translation table.
     /// Залежності: створюється <see cref="LocalizationService"/> з JSON preset
-    /// (<c>Assets/Moyva/Presets/Localization/Resources/MoyvaLocales/{id}.json</c>) і consume-ується read-only.
+    /// (the configured Resources folder) і consume-ується read-only.
     /// Key = source text exactly as written in code; Value = plural-aware forms
     /// (non-plural entries keep the translation in the "other" slot).
     /// </summary>

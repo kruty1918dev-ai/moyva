@@ -14,7 +14,7 @@ using Kruty1918.Moyva.Shared.Performance;
 using Kruty1918.Moyva.Shared.Diagnostics;
 using Kruty1918.Moyva.Shared.UI;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Shared.Graphics
 {
     public enum GraphicsQualityProfile
