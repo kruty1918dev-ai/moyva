@@ -59,7 +59,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
                         {
                             bursts[b] = _baseBursts[i][b];
                             var burstCount = bursts[b].count;
-                            burstCount.curveScalar = _baseBursts[i][b].count.curveScalar * countScale;
+                            burstCount.curveMultiplier = _baseBursts[i][b].count.curveMultiplier * countScale;
                             bursts[b].count = burstCount;
                         }
                         emission.SetBursts(bursts);
