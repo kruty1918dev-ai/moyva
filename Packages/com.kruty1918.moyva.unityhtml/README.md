@@ -28,7 +28,17 @@ Runtime motion is declared in HTML and executed by DOTween after layout. Every a
 <view id="inventory" data-motion="slide-left" data-motion-duration="0.16" data-motion-ease="out-cubic"></view>
 ```
 
-Supported presets are `fade`, `slide-left`, `slide-right`, `slide-up`, `slide-down`, `scale`, and `pulse`. Optional attributes are `data-motion-delay`, `data-motion-distance`, and `data-motion-ease`. Imperative feedback can call `Globals.motion.Play('inventory', 'pulse', 0.12, 0)` or `Globals.motion.Stop('inventory')`. Motion changes only opacity, anchored position, or scale and never triggers an HTML render.
+Supported presets are `fade`, `fade-out`, `slide-left`, `slide-right`, `slide-up`, `slide-down`, `scale`, and `pulse`. Optional attributes are `data-motion-delay`, `data-motion-distance`, and `data-motion-ease`. Imperative feedback can call `Globals.motion.Play('inventory', 'pulse', 0.12, 0)` or `Globals.motion.Stop('inventory')`. Motion changes only opacity, anchored position, or scale and never triggers an HTML render.
+
+### Motion roles
+
+Prefer `data-motion-role` over hand-tuned attributes — it applies the shared policy so new UI animates consistently without copying values:
+
+```html
+<view id="side-panel" data-motion-role="panel"></view>
+```
+
+Roles: `panel`, `dialog`, `scrim`, `toast`, `edge-top`, `edge-bottom`, `none`. Each role owns an entry preset, an exit preset, and duration/distance/easing tokens (`UnityHtmlMotionPolicy`). Any `data-motion`, `data-motion-duration`, `data-motion-delay`, `data-motion-distance`, or `data-motion-ease` attribute overrides the role locally. `data-motion="exit"` plays the role's exit preset — closable surfaces stay mounted with that attribute until their close window elapses. `data-motion="none"` or `data-motion-role="none"` disables motion for the element.
 
 ## Requirements
 

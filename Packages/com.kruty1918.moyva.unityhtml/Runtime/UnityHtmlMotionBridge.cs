@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using DG.Tweening;
 using ReactUnity;
 using ReactUnity.UGUI;
@@ -11,9 +10,6 @@ namespace UnityHTML.Runtime
 {
     public sealed class UnityHtmlMotionBridge : IUnityHtmlMotion
     {
-        private const float DefaultDuration = 0.16f;
-        private const float DefaultDistance = 20f;
-
         private readonly Dictionary<string, ActiveMotion> _active = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _declared = new(StringComparer.Ordinal);
         private readonly HashSet<string> _seen = new(StringComparer.Ordinal);
@@ -26,12 +22,9 @@ namespace UnityHTML.Runtime
             if (!Application.isPlaying || !TryFindTarget(targetId, out RectTransform target))
                 return;
 
-            Play(targetId, target, preset, duration, delay, DefaultDistance, DefaultEase(preset));
+            Play(targetId, target, preset, duration, delay,
+                UnityHtmlMotionPolicy.DefaultDistance, UnityHtmlMotionPolicy.DefaultEase(preset));
         }
-
-        // Exits accelerate out (ease-in); entrances decelerate in (ease-out).
-        private static Ease DefaultEase(string preset)
-            => string.Equals(preset, "fade-out", StringComparison.OrdinalIgnoreCase) ? Ease.InQuad : Ease.OutCubic;
 
         public void Stop(string targetId)
         {
@@ -96,23 +89,36 @@ namespace UnityHTML.Runtime
             for (int index = 0; index < _elements.Count; index++)
             {
                 UGUIComponent component = _elements[index] != null ? _elements[index].Component : null;
-                if (component == null
-                    || string.IsNullOrWhiteSpace(component.Id)
-                    || !TryData(component, "motion", out string preset))
-                {
+                if (component == null || string.IsNullOrWhiteSpace(component.Id))
                     continue;
-                }
+
+                string roleText = Data(component, "motion-role");
+                string presetText = Data(component, "motion");
+                if (string.IsNullOrWhiteSpace(roleText) && string.IsNullOrWhiteSpace(presetText))
+                    continue;
 
                 string id = component.Id;
+                _seen.Add(id);
+
                 string durationText = Data(component, "motion-duration");
                 string delayText = Data(component, "motion-delay");
                 string distanceText = Data(component, "motion-distance");
                 string easeText = Data(component, "motion-ease");
-                string signature = $"{component.RectTransform.GetEntityId()}|{preset}|{durationText}|{delayText}|{distanceText}|{easeText}";
-                _seen.Add(id);
+                string signature = $"{component.RectTransform.GetEntityId()}|{roleText}|{presetText}|{durationText}|{delayText}|{distanceText}|{easeText}";
 
                 if (_declared.TryGetValue(id, out string previous) && previous == signature)
                     continue;
+
+                UnityHtmlDeclaredMotion motion = UnityHtmlMotionPolicy.ResolveDeclared(
+                    roleText, presetText, durationText, delayText, distanceText, easeText);
+                if (!motion.Animated)
+                {
+                    // Opted out ("none") or an exit without a role: record the
+                    // declaration and restore any still-running prior motion.
+                    Stop(id);
+                    _declared[id] = signature;
+                    continue;
+                }
 
                 _declared[id] = signature;
                 try
@@ -120,15 +126,15 @@ namespace UnityHTML.Runtime
                     Play(
                         id,
                         component.RectTransform,
-                        preset,
-                        Number(durationText, DefaultDuration),
-                        Number(delayText, 0f),
-                        Number(distanceText, DefaultDistance),
-                        ResolveEase(easeText));
+                        motion.Preset,
+                        motion.Duration,
+                        motion.Delay,
+                        motion.Distance,
+                        motion.Ease);
                 }
                 catch (Exception exception)
                 {
-                    Debug.LogWarning($"[UnityHTML Motion] Skipped '{id}' motion '{preset}': {exception.GetBaseException().Message}");
+                    Debug.LogWarning($"[UnityHTML Motion] Skipped '{id}' motion '{motion.Preset}': {exception.GetBaseException().Message}");
                 }
             }
 
@@ -342,32 +348,8 @@ namespace UnityHTML.Runtime
                 Stop(_stale[index]);
         }
 
-        private static bool TryData(UGUIComponent component, string key, out string value)
-        {
-            value = Data(component, key);
-            return !string.IsNullOrWhiteSpace(value);
-        }
-
         private static string Data(UGUIComponent component, string key)
             => component.Data.TryGetValue(key, out object value) ? value?.ToString() ?? string.Empty : string.Empty;
-
-        private static float Number(string value, float fallback)
-            => float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed) ? parsed : fallback;
-
-        private static Ease ResolveEase(string value)
-        {
-            return (value ?? string.Empty).Trim().ToLowerInvariant() switch
-            {
-                "linear" => Ease.Linear,
-                "in-quad" => Ease.InQuad,
-                "in-cubic" => Ease.InCubic,
-                "out-quad" => Ease.OutQuad,
-                "out-cubic" => Ease.OutCubic,
-                "in-out-quad" => Ease.InOutQuad,
-                "out-back" => Ease.OutBack,
-                _ => Ease.OutCubic,
-            };
-        }
 
         private sealed class ActiveMotion
         {

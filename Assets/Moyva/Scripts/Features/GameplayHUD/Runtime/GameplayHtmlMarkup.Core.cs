@@ -443,13 +443,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             GameplayHtmlSnapshot snapshot,
             GameplayHtmlState state)
         {
-            string scrimMotion = state.PanelClosing ? "fade-out" : "fade";
-            string scrimDuration = state.PanelClosing
-                ? GameplayHtmlState.PanelCloseSeconds.ToString("0.00", CultureInfo.InvariantCulture)
-                : "0.12";
-            html.Append("<view id=\"kingdom-scrim\" className=\"scrim\" data-motion=\"").Append(scrimMotion)
-                .Append("\" data-motion-duration=\"").Append(scrimDuration)
-                .Append("\"><view id=\"kingdom-dashboard\" className=\"dashboard\" data-motion=\"scale\" data-motion-duration=\"0.18\" data-motion-ease=\"out-back\">");
+            // Role-driven motion: the shared policy owns preset/easing/duration;
+            // while closing the scrim replays the role's exit tween over the
+            // close window.
+            string scrimMotion = state.PanelClosing
+                ? " data-motion=\"exit\" data-motion-duration=\""
+                    + GameplayHtmlState.PanelCloseSeconds.ToString("0.00", CultureInfo.InvariantCulture)
+                    + "\""
+                : string.Empty;
+            html.Append("<view id=\"kingdom-scrim\" className=\"scrim\" data-motion-role=\"scrim\"").Append(scrimMotion)
+                .Append("><view id=\"kingdom-dashboard\" className=\"dashboard\" data-motion-role=\"dialog\">");
             PanelHeaderContent(html, state.T("KINGDOM"), snapshot.KingdomName, true, state);
             html.Append("<view className=\"tabs\">");
             Tab(html, state, KingdomDashboardTab.Overview, state.T("OVERVIEW"), "ShowOverview");
@@ -597,7 +600,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private static void AppendPause(StringBuilder html, GameplayHtmlState state)
         {
-            html.Append("<view id=\"pause-scrim\" className=\"scrim\" data-motion=\"fade\" data-motion-duration=\"0.12\"><view id=\"pause-modal\" className=\"modal\" data-motion=\"scale\" data-motion-duration=\"0.16\" data-motion-ease=\"out-back\"><text className=\"eyebrow\">").Append(state.T("GAME PAUSED")).Append("</text><text className=\"modal-title\">Moyva</text><text className=\"modal-copy\">").Append(state.T("Return to the realm or leave this session.")).Append("</text><view className=\"row gap\">")
+            html.Append("<view id=\"pause-scrim\" className=\"scrim\" data-motion-role=\"scrim\"><view id=\"pause-modal\" className=\"modal\" data-motion-role=\"dialog\"><text className=\"eyebrow\">").Append(state.T("GAME PAUSED")).Append("</text><text className=\"modal-title\">Moyva</text><text className=\"modal-copy\">").Append(state.T("Return to the realm or leave this session.")).Append("</text><view className=\"row gap\">")
                 .Append(Button(state.T("RESUME"), "Globals.gameplay.Resume()", "button positive", state.T("Resume game")))
                 .Append(Button(state.T("EXIT TO MENU"), "Globals.gameplay.ExitToMenu()", "button danger", state.T("Exit to main menu")))
                 .Append("</view></view></view>");
@@ -623,7 +626,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 : victory
                     ? state.T("Your kingdom is the last realm with a standing center.")
                     : state.TF("{0} controls the last standing center.", Display(state.WinnerId));
-            html.Append("<view id=\"gameover-scrim\" className=\"scrim\" data-motion=\"fade\" data-motion-duration=\"0.14\"><view id=\"gameover-modal\" className=\"modal result-modal\" data-motion=\"scale\" data-motion-duration=\"0.18\" data-motion-ease=\"out-back\"><text className=\"eyebrow\">").Append(state.T("MATCH ENDED")).Append("</text><text className=\"modal-title ")
+            html.Append("<view id=\"gameover-scrim\" className=\"scrim\" data-motion-role=\"scrim\"><view id=\"gameover-modal\" className=\"modal result-modal\" data-motion-role=\"dialog\"><text className=\"eyebrow\">").Append(state.T("MATCH ENDED")).Append("</text><text className=\"modal-title ")
                 .Append(victory ? "status-good" : "status-bad")
                 .Append("\">").Append(E(title)).Append("</text><text className=\"modal-copy\">")
                 .Append(E(copy)).Append("</text><view className=\"result-summary\">");
@@ -638,15 +641,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private static void PanelHeader(StringBuilder html, GameplayHtmlState state, string eyebrow, string title, bool close)
         {
-            // While the panel is closing the node stays mounted but swaps its
-            // entry motion for the exit tween; reconciliation then unmounts it
-            // after the close window expires.
-            string motion = state.PanelClosing ? "fade-out" : "slide-left";
-            string duration = state.PanelClosing
-                ? GameplayHtmlState.PanelCloseSeconds.ToString("0.00", CultureInfo.InvariantCulture)
-                : "0.16";
-            html.Append("<view id=\"gameplay-side-panel\" className=\"side-panel\" data-motion=\"")
-                .Append(motion).Append("\" data-motion-duration=\"").Append(duration).Append("\">");
+            // While the panel is closing the node stays mounted but replays the
+            // role's exit tween; reconciliation then unmounts it after the
+            // close window expires.
+            string exitMotion = state.PanelClosing
+                ? " data-motion=\"exit\" data-motion-duration=\""
+                    + GameplayHtmlState.PanelCloseSeconds.ToString("0.00", CultureInfo.InvariantCulture)
+                    + "\""
+                : string.Empty;
+            html.Append("<view id=\"gameplay-side-panel\" className=\"side-panel\" data-motion-role=\"panel\"")
+                .Append(exitMotion).Append('>');
             PanelHeaderContent(html, eyebrow, title, close, null);
         }
 

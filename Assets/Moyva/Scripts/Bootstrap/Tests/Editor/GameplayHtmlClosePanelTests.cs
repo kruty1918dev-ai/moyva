@@ -406,16 +406,16 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
                 new GameplayHtmlSnapshot(), state, "vp-wide");
             Assert.IsTrue(open.Contains("id=\"gameplay-side-panel\""),
                 "Open panel must render the side panel node.");
-            Assert.IsTrue(open.Contains("slide-left"),
-                "Open panel must play its entry motion.");
+            Assert.IsTrue(open.Contains("data-motion-role=\"panel\""),
+                "Open panel must carry the shared panel motion role.");
 
             state.ClosePanel();
             string closing = GameplayHtmlMarkup.Build(
                 new GameplayHtmlSnapshot(), state, "vp-wide");
             Assert.IsTrue(closing.Contains("id=\"gameplay-side-panel\""),
                 "The panel node must stay mounted during closing.");
-            Assert.IsTrue(closing.Contains("fade-out"),
-                "Closing must swap the node to its exit motion.");
+            Assert.IsTrue(closing.Contains("data-motion=\"exit\""),
+                "Closing must swap the node to its declarative exit motion.");
 
             state.AdvancePanelClose(0f);
             state.AdvancePanelClose(GameplayHtmlState.PanelCloseSeconds + 0.01f);
@@ -436,8 +436,8 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
                 new GameplayHtmlSnapshot(), state, "vp-wide");
             Assert.IsTrue(closing.Contains("id=\"kingdom-scrim\""),
                 "The dashboard scrim must stay mounted during closing.");
-            Assert.IsTrue(closing.Contains("fade-out"),
-                "The dashboard must fade out while closing.");
+            Assert.IsTrue(closing.Contains("data-motion=\"exit\""),
+                "The dashboard must replay its exit motion while closing.");
         }
 
         [Test]
