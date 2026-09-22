@@ -19,6 +19,8 @@
         "Kruty1918.Moyva.Turns",
         "Kruty1918.Moyva.UIActions",
         "Kruty1918.Moyva.Units",
+        "ReactUnity",
+        "ReactUnity.UGUI",
         "Unity.TextMeshPro",
         "UnityEngine.UI",
         "UnityHTML.Runtime",
