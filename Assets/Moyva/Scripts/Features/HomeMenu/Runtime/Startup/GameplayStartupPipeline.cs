@@ -123,6 +123,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             Debug.Log($"{Prefix} Run started. ConfigScene='{_config.gameplaySceneName}', " +
                       $"LaunchContextBefore={DescribeLaunchContext()}, Session={DescribeSession()}");
 
+            // Одна операція володіє cover→load→reveal: повторний запуск чекає
+            // завершення чужого переходу замість паралельного завантаження сцени.
+            using ISceneTransitionLease transitionLease = await AcquireTransitionLeaseAsync(ct);
+
             // 1: Перед стартом сцени вирівнюємо графічний профіль під gameplay-режим.
             ApplyGameplayGraphicsPolicy();
 
@@ -150,6 +154,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             EnterPhase(GameplayStartupPhase.Completed);
             Debug.Log($"{Prefix} Run completed. ActiveScene='{SceneManager.GetActiveScene().name}', " +
                       $"LaunchContextAfter={DescribeLaunchContext()}");
+        }
+
+        /// <summary>Отримати виняткове володіння переходом: якщо інший перехід
+        /// уже активний, чекаємо його завершення (join) і повторюємо спробу,
+        /// а не стартуємо конкуруючу операцію.</summary>
+        private async Task<ISceneTransitionLease> AcquireTransitionLeaseAsync(CancellationToken ct)
+        {
+            while (_sceneTransitionService != null)
+            {
+                ISceneTransitionLease lease = _sceneTransitionService.TryBeginTransition();
+                if (lease != null)
+                    return lease;
+                await _sceneTransitionService.WaitForActiveTransitionAsync(ct);
+            }
+            return null;
         }
 
         /// <summary>Перевести pipeline у нову фазу і, за потреби, залогувати її.</summary>

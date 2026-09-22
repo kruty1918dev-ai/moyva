@@ -162,20 +162,67 @@ namespace UnityHTML.Runtime
                 return;
 
             bool deferred = ShouldDestroyDeferred();
-            void DestroyAll<T>() where T : Component
+            foreach (var element in root.GetComponents<ReactUnity.UGUI.Behaviours.ResponsiveElement>())
             {
-                foreach (T leftover in root.GetComponents<T>())
-                {
-                    if (leftover == null)
-                        continue;
-                    if (deferred) UnityEngine.Object.Destroy(leftover);
-                    else UnityEngine.Object.DestroyImmediate(leftover);
-                }
+                if (element == null)
+                    continue;
+                // Sever the root→context edge first — a leftover holding
+                // Context roots the whole disposed graph even while its
+                // destruction waits for a safe moment.
+                element.Context = null;
+                element.Layout = null;
+                DestroyLeftover(element, deferred);
             }
 
-            DestroyAll<ReactUnity.UGUI.Behaviours.ResponsiveElement>();
-            DestroyAll<ReactUnity.UGUI.Internal.BorderAndBackground>();
-            DestroyAll<ReactUnity.UGUI.Internal.MaskAndImage>();
+            foreach (var background in root.GetComponents<ReactUnity.UGUI.Internal.BorderAndBackground>())
+            {
+                if (background == null)
+                    continue;
+                BorderContextField?.SetValue(background, null);
+                DestroyLeftover(background, deferred);
+            }
+
+            foreach (var mask in root.GetComponents<ReactUnity.UGUI.Internal.MaskAndImage>())
+            {
+                if (mask == null)
+                    continue;
+                MaskContextField?.SetValue(mask, null);
+                DestroyLeftover(mask, deferred);
+            }
+        }
+
+        private static readonly System.Reflection.FieldInfo BorderContextField =
+            typeof(ReactUnity.UGUI.Internal.BorderAndBackground)
+                .GetField("Context", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        private static readonly System.Reflection.FieldInfo MaskContextField =
+            typeof(ReactUnity.UGUI.Internal.MaskAndImage)
+                .GetField("Context", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+        private static void DestroyLeftover(Component component, bool deferred)
+        {
+            if (component == null)
+                return;
+            if (deferred)
+            {
+                UnityEngine.Object.Destroy(component);
+                return;
+            }
+#if UNITY_EDITOR
+            if (!component.gameObject.scene.isLoaded)
+                return; // scene teardown destroys the whole root anyway
+            // Edit-mode unmount can run while the root is mid-deactivation or
+            // mid-destruction, where DestroyImmediate on a component errors —
+            // the references are already severed, so deferring the cleanup to
+            // the next editor tick is safe.
+            Component captured = component;
+            UnityEditor.EditorApplication.delayCall += () =>
+            {
+                if (captured != null)
+                    UnityEngine.Object.DestroyImmediate(captured);
+            };
+#else
+            UnityEngine.Object.DestroyImmediate(component);
+#endif
         }
 
         public void Dispose() => Unmount();

@@ -129,8 +129,22 @@ namespace Kruty1918.Moyva.GameMode.Runtime
         public async Task LoadHomeMenuAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (_sceneTransitionService != null)
-                await _sceneTransitionService.CoverAsync(cancellationToken);
+
+            // Один перехід за раз: якщо інший cover→load→reveal уже активний,
+            // дочекаємось його завершення, а не запускаємо паралельне
+            // завантаження сцени з другим overlay.
+            ISceneTransitionLease transition = null;
+            while (_sceneTransitionService != null && transition == null)
+            {
+                transition = _sceneTransitionService.TryBeginTransition();
+                if (transition == null)
+                    await _sceneTransitionService.WaitForActiveTransitionAsync(cancellationToken);
+            }
+
+            using (transition)
+            {
+                if (transition != null)
+                    await transition.CoverAsync(cancellationToken);
             AsyncOperation operation = SceneManager.LoadSceneAsync(
                 HomeMenuSceneName,
                 LoadSceneMode.Single);
@@ -141,8 +155,8 @@ namespace Kruty1918.Moyva.GameMode.Runtime
 
             if (operation.isDone)
             {
-                if (_sceneTransitionService != null)
-                    await _sceneTransitionService.RevealAsync(cancellationToken);
+                if (transition != null)
+                    await transition.RevealAsync(cancellationToken);
                 return;
             }
 
@@ -150,8 +164,9 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 TaskCreationOptions.RunContinuationsAsynchronously);
             operation.completed += _ => completion.TrySetResult(true);
             await completion.Task;
-            if (_sceneTransitionService != null)
-                await _sceneTransitionService.RevealAsync(cancellationToken);
+            if (transition != null)
+                await transition.RevealAsync(cancellationToken);
+            }
         }
     }
 }

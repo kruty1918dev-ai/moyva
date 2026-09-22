@@ -1,0 +1,6 @@
+{
+  "name": "Kruty1918.Moyva.Shared.UI.Tests",
+  "references": ["Kruty1918.Moyva.Shared"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}
