@@ -283,16 +283,78 @@ namespace UnityHTML.Runtime
     }
 
     internal sealed class UnityHtmlTooltipTarget : MonoBehaviour, IPointerEnterHandler,
-        IPointerExitHandler, ISelectHandler, IDeselectHandler
+        IPointerExitHandler, ISelectHandler, IDeselectHandler,
+        IPointerDownHandler, IPointerUpHandler
     {
+        // P078: the same data-tooltip is reachable without a mouse — keyboard
+        // focus (OnSelect) and a sustained touch hold both show it. A plain tap
+        // never flashes the tooltip; completing the hold clears the press's
+        // click eligibility so a long-press explains instead of activating.
+        internal const float DefaultTouchHoldSeconds = 0.5f;
+        internal float TouchHoldSeconds = DefaultTouchHoldSeconds;
+
         internal UnityHtmlTooltipLayer Layer;
         internal UGUIComponent Source;
         internal string Tooltip => Source?.Data != null && Source.Data.TryGetValue("tooltip", out object text)
             ? text as string : null;
-        public void OnPointerEnter(PointerEventData data) => Layer?.Show(this);
-        public void OnPointerExit(PointerEventData data) => Layer?.Hide(this);
+
+        private float _touchHoldUntil = float.NegativeInfinity;
+        private PointerEventData _touchEvent;
+
+        // uGUI convention: mouse buttons carry negative pointer ids while
+        // touches report their fingerId (>= 0) — that is the only reliable
+        // mouse-vs-touch split on PointerEventData.
+        private static bool IsTouch(PointerEventData data) => data != null && data.pointerId >= 0;
+
+        public void OnPointerEnter(PointerEventData data)
+        {
+            if (IsTouch(data)) return;
+            Layer?.Show(this);
+        }
+
+        public void OnPointerDown(PointerEventData data)
+        {
+            if (!IsTouch(data)) return;
+            _touchEvent = data;
+            _touchHoldUntil = Time.unscaledTime + TouchHoldSeconds;
+        }
+
+        public void OnPointerUp(PointerEventData data)
+        {
+            _touchHoldUntil = float.NegativeInfinity;
+            _touchEvent = null;
+            if (IsTouch(data)) Layer?.Hide(this);
+        }
+
+        private void Update()
+        {
+            if (_touchHoldUntil == float.NegativeInfinity
+                || Time.unscaledTime < _touchHoldUntil)
+                return;
+            _touchHoldUntil = float.NegativeInfinity;
+            // A completed hold suppresses the tap's click so the same gesture
+            // explains the control instead of toggling it.
+            if (_touchEvent != null)
+                _touchEvent.eligibleForClick = false;
+            _touchEvent = null;
+            Layer?.Show(this);
+        }
+
+        public void OnPointerExit(PointerEventData data)
+        {
+            _touchHoldUntil = float.NegativeInfinity;
+            _touchEvent = null;
+            Layer?.Hide(this);
+        }
+
         public void OnSelect(BaseEventData data) => Layer?.Show(this);
         public void OnDeselect(BaseEventData data) => Layer?.Hide(this);
-        private void OnDisable() => Layer?.Hide(this);
+
+        private void OnDisable()
+        {
+            _touchHoldUntil = float.NegativeInfinity;
+            _touchEvent = null;
+            Layer?.Hide(this);
+        }
     }
 }

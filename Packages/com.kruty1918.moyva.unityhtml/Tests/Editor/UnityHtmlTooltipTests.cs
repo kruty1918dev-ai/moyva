@@ -124,6 +124,70 @@ namespace UnityHTML.Tests
             Assert.That(group.alpha, Is.EqualTo(1f));
         }
 
+        [Test]
+        public void KeyboardFocus_ShowsAndHidesTooltip()
+        {
+            Mount("<view id='target' data-tooltip='Focus tip'><text>x</text></view>");
+            CreateLayer();
+            _layer.ShowDelaySeconds = 0f;
+            _layer.ReducedMotion = true;
+
+            UnityHtmlTooltipTarget target = Target("target");
+            var eventData = new BaseEventData(EventSystem.current);
+            target.OnSelect(eventData);
+            Tick();
+            Assert.That(PanelRect().gameObject.activeSelf, Is.True);
+
+            target.OnDeselect(eventData);
+            Tick();
+            Assert.That(PanelRect().gameObject.activeSelf, Is.False);
+        }
+
+        [Test]
+        public void TouchTap_DoesNotFlashTooltip()
+        {
+            Mount("<view id='target' data-tooltip='Hold tip'><text>x</text></view>");
+            CreateLayer();
+            _layer.ShowDelaySeconds = 0f;
+
+            // Touch enter fires on finger-down — it must not arm the hover path.
+            var down = new PointerEventData(EventSystem.current) { pointerId = 0 };
+            Target("target").OnPointerEnter(down);
+            Target("target").OnPointerDown(down);
+            TickHold();
+            Assert.That(PanelRect().gameObject.activeSelf, Is.False);
+        }
+
+        [Test]
+        public void TouchHold_ShowsTooltipAndSuppressesTheTapClick()
+        {
+            Mount("<view id='target' data-tooltip='Hold tip'><text>x</text></view>");
+            CreateLayer();
+            _layer.ShowDelaySeconds = 0f;
+            UnityHtmlTooltipTarget target = Target("target");
+            target.TouchHoldSeconds = 0f;
+
+            var down = new PointerEventData(EventSystem.current)
+            { pointerId = 0, eligibleForClick = true };
+            target.OnPointerDown(down);
+            TickHold();
+            Tick();
+
+            Assert.That(PanelRect().gameObject.activeSelf, Is.True);
+            Assert.That(down.eligibleForClick, Is.False);
+
+            target.OnPointerUp(down);
+            Assert.That(PanelRect().gameObject.activeSelf, Is.False);
+        }
+
+        private UnityHtmlTooltipTarget Target(string id) => _root
+            .GetComponentsInChildren<UnityHtmlTooltipTarget>(true)
+            .Single(t => t.Source != null && t.Source.Id == id);
+
+        private void TickHold() => typeof(UnityHtmlTooltipTarget)
+            .GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic)
+            .Invoke(Target("target"), null);
+
         private void Mount(string html)
         {
             UnityHtmlMountResult result = _host.Mount(
