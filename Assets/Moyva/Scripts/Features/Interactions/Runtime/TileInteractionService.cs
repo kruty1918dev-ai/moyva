@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Interactions.API;
 using Kruty1918.Moyva.Combat.API;
+using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.ObjectsMap.API;
@@ -43,6 +44,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly ICombatCommandService _combatCommandService;
         private readonly ICombatRemoteCommandRequester _remoteCombat;
         private readonly ILocalGameplayRoleResolver _roleResolver;
+        private readonly IFogStateReader _fogState;
         private readonly IConstructionSessionCommands _constructionService;
         private readonly IConstructionLifecycle _constructionLifecycle;
         private readonly IGameplayNotificationService _notifications;
@@ -77,6 +79,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             [InjectOptional] ICombatCommandService combatCommandService,
             [InjectOptional] ICombatRemoteCommandRequester remoteCombat,
             [InjectOptional] ILocalGameplayRoleResolver roleResolver,
+            [InjectOptional] IFogStateReader fogState,
             [InjectOptional] IConstructionSessionCommands constructionService,
             [InjectOptional] ITurnService turns,
             [InjectOptional] IConstructionLifecycle constructionLifecycle,
@@ -98,6 +101,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _combatCommandService = combatCommandService;
             _remoteCombat = remoteCombat;
             _roleResolver = roleResolver;
+            _fogState = fogState;
             _constructionService = constructionService;
             _turns = turns;
             _constructionLifecycle = constructionLifecycle;
@@ -229,7 +233,13 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 return;
             }
 
+            // Fog gate: occupants on non-visible tiles are not inspectable or
+            // selectable — the click falls through to movement instead of
+            // leaking building/unit presence to the local player.
+            bool tileVisible = _fogState == null || _fogState.IsVisible(position);
             _objectsMapService.TryGetOccupant(position, out var occupantId);
+            if (!tileVisible)
+                occupantId = null;
 
             bool isBuilding = !string.IsNullOrEmpty(occupantId)
                 && _buildingRegistry != null
