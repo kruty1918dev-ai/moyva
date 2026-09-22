@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Reflection;
-using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.InputRouting.API;
 using Kruty1918.Moyva.InputRouting.Runtime;
 using NUnit.Framework;
 using TMPro;

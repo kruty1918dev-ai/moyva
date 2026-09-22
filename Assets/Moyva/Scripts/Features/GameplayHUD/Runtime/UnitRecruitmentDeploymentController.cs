@@ -5,7 +5,7 @@ using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.InputRouting.API;
 using Kruty1918.Moyva.Multiplayer.Core;
-using Kruty1918.Moyva.Notifications.API;
+using Kruty1918.Notifications.API;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Shared.Localization;

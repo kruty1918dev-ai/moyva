@@ -1,7 +1,7 @@
 using System;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.GameMode.Runtime;
-using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.InputRouting.API;
 using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
 using UnityEngine;

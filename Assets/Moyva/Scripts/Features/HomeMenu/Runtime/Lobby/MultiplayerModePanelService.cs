@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.UI;
-using Kruty1918.Moyva.Multiplayer;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using UnityEngine;
 using Zenject;

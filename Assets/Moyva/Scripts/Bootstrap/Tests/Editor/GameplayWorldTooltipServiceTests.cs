@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
-using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.InputRouting.API;
 using Kruty1918.Moyva.Shared.Localization;
 using NUnit.Framework;
 using UnityEngine;

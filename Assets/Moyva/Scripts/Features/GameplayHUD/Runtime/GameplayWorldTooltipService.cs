@@ -1,7 +1,7 @@
 using System;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
-using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.InputRouting.API;
 using Kruty1918.Moyva.Shared.Localization;
 using UnityEngine;
 using UnityHTML.Runtime;
