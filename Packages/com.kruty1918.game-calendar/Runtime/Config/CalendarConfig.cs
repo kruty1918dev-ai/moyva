@@ -1,4 +1,4 @@
-namespace Kruty1918.Moyva.Calendar.Config
+namespace Kruty1918.Calendar.Config
 {
     /// <summary>
     /// Immutable configuration for the in-game calendar system.
@@ -7,12 +7,6 @@ namespace Kruty1918.Moyva.Calendar.Config
     public sealed class CalendarConfig
     {
         public const int CurrentSchemaVersion = 1;
-
-        /// <summary>
-        /// Easter egg: рік смерті Ярослава Мудрого і кінець золотої доби Київської Русі —
-        /// найпотужнішого державного утворення в історії України (1054 р.).
-        /// </summary>
-        public const int PeakUkraineYear = 1054;
 
         /// <summary>Binary format version for forward compatibility.</summary>
         public int SchemaVersion { get; }
@@ -71,21 +65,5 @@ namespace Kruty1918.Moyva.Calendar.Config
             DuskDurationHours = duskDurationHours;
             HoursPerTurn      = hoursPerTurn;
         }
-
-        public static CalendarConfig Default() =>
-            new CalendarConfig(
-                schemaVersion:     CurrentSchemaVersion,
-                startYear:         PeakUkraineYear,
-                startMonth:        1,
-                startDay:          1,
-                startHour:         6,
-                monthsInYear:      12,
-                daysInMonth:       30,
-                hoursInDay:        24,
-                dayStartHour:      6,
-                nightStartHour:    20,
-                dawnDurationHours: 1,
-                duskDurationHours: 1,
-                hoursPerTurn:      1);
     }
 }

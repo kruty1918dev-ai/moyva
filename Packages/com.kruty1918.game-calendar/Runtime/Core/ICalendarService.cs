@@ -1,8 +1,8 @@
 using System;
-using Kruty1918.Moyva.Calendar.Config;
-using Kruty1918.Moyva.Calendar.Domain;
+using Kruty1918.Calendar.Config;
+using Kruty1918.Calendar.Domain;
 
-namespace Kruty1918.Moyva.Calendar.Core
+namespace Kruty1918.Calendar.Core
 {
     /// <summary>
     /// Public contract for the in-game calendar service.

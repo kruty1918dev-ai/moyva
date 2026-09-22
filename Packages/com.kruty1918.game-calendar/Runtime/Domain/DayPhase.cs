@@ -1,4 +1,4 @@
-namespace Kruty1918.Moyva.Calendar.Domain
+namespace Kruty1918.Calendar.Domain
 {
     /// <summary>
     /// Phase of the in-game day.

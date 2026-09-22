@@ -1,7 +1,7 @@
 using System;
-using Kruty1918.Moyva.Calendar.Core;
+using Kruty1918.Calendar.Core;
 
-namespace Kruty1918.Moyva.Calendar.Multiplayer
+namespace Kruty1918.Calendar.Multiplayer
 {
     /// <summary>
     /// Multiplayer integration point for the calendar.

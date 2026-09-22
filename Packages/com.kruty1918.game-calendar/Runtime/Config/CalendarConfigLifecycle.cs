@@ -1,6 +1,6 @@
 using System;
 
-namespace Kruty1918.Moyva.Calendar.Config
+namespace Kruty1918.Calendar.Config
 {
     /// <summary>
     /// Unified runtime lifecycle for calendar config:
@@ -8,23 +8,34 @@ namespace Kruty1918.Moyva.Calendar.Config
     /// </summary>
     public static class CalendarConfigLifecycle
     {
-        public static CalendarConfig LoadValidateFreeze(ICalendarConfigStore store, Action<string> warn = null)
+        public static CalendarConfig LoadValidateFreeze(
+            ICalendarConfigStore store,
+            Func<CalendarConfig> createDefault,
+            Action<string> warn = null)
         {
             if (store == null)
                 throw new ArgumentNullException(nameof(store));
+            if (createDefault == null)
+                throw new ArgumentNullException(nameof(createDefault));
 
-            CalendarConfig loaded = store.Exists() ? store.Load() : CalendarConfig.Default();
-            return ValidateAndFreeze(loaded, warn);
+            CalendarConfig loaded = store.Exists() ? store.Load() : createDefault();
+            return ValidateAndFreeze(loaded, createDefault, warn);
         }
 
-        public static CalendarConfig ValidateAndFreeze(CalendarConfig config, Action<string> warn = null)
+        public static CalendarConfig ValidateAndFreeze(
+            CalendarConfig config,
+            Func<CalendarConfig> createDefault,
+            Action<string> warn = null)
         {
+            if (createDefault == null)
+                throw new ArgumentNullException(nameof(createDefault));
+
             bool corrected = false;
 
             if (config == null)
             {
                 corrected = true;
-                config = CalendarConfig.Default();
+                config = createDefault();
             }
 
             int schemaVersion = config.SchemaVersion > 0 ? config.SchemaVersion : CalendarConfig.CurrentSchemaVersion;

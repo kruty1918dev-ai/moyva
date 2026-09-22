@@ -1,8 +1,8 @@
 using System;
-using Kruty1918.Moyva.Calendar.Core;
-using Kruty1918.Moyva.Calendar.Multiplayer;
+using Kruty1918.Calendar.Core;
+using Kruty1918.Calendar.Multiplayer;
 
-namespace Kruty1918.Moyva.Calendar.Runtime
+namespace Kruty1918.Calendar.Runtime
 {
     /// <summary>
     /// Default implementation of <see cref="ICalendarSyncAdapter"/>.

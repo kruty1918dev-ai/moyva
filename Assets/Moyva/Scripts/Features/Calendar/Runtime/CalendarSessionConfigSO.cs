@@ -1,22 +1,22 @@
-using Kruty1918.Moyva.Calendar.Config;
+using Kruty1918.Calendar.Config;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Calendar.Runtime
 {
     /// <summary>
     /// ScriptableObject — конфігурація початку гри для календаря.
     /// Дозволяє обирати початковий рік, місяць, день та годину при налаштуванні сесії.
     ///
-    /// За замовчуванням встановлено рік <see cref="CalendarConfig.PeakUkraineYear"/> (1054) —
+    /// За замовчуванням встановлено рік <see cref="MoyvaCalendarDefaults.PeakUkraineYear"/> (1054) —
     /// пасхалка: рік смерті Ярослава Мудрого і кінець золотої доби Київської Русі.
     /// </summary>
 [System.Serializable]
-public sealed class CalendarSessionConfigSO : MoyvaJsonConfigObject
+public sealed class CalendarSessionConfigSO : JsonConfigObject
     {
         [Header("Початкова дата гри")]
         [Tooltip("Рік початку гри. За замовчуванням — розквіт Київської Русі (1054).")]
-        [SerializeField] private int _startYear  = CalendarConfig.PeakUkraineYear;
+        [SerializeField] private int _startYear  = MoyvaCalendarDefaults.PeakUkraineYear;
 
         [Tooltip("Місяць початку гри (1–12).")]
         [SerializeField] private int _startMonth = 1;
@@ -33,7 +33,7 @@ public sealed class CalendarSessionConfigSO : MoyvaJsonConfigObject
         /// </summary>
         public CalendarConfig BuildConfig()
         {
-            CalendarConfig def = CalendarConfig.Default();
+            CalendarConfig def = MoyvaCalendarDefaults.Create();
             return new CalendarConfig(
                 schemaVersion:     def.SchemaVersion,
                 startYear:         _startYear,

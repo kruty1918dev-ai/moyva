@@ -1,6 +1,6 @@
-using Kruty1918.Moyva.Calendar.Config;
+using Kruty1918.Calendar.Config;
 
-namespace Kruty1918.Moyva.Calendar.Config
+namespace Kruty1918.Calendar.Config
 {
     /// <summary>
     /// Runtime abstraction for loading and saving CalendarConfig.

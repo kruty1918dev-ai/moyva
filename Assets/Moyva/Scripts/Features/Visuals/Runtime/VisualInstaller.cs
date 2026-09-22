@@ -1,6 +1,7 @@
-using Kruty1918.Moyva.Calendar.Runtime;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.Calendar.Runtime;
+using Kruty1918.JsonConfig;
 using Zenject;
+using Kruty1918.Moyva.Calendar.Runtime;
 
 namespace Kruty1918.Moyva.Visuals
 {
@@ -20,7 +21,7 @@ namespace Kruty1918.Moyva.Visuals
             {
                 Container.Bind<FarViewAtmosphereConfig>()
                     .FromMethod(_ =>
-                        MoyvaJsonRuntime.GetLegacyResource<FarViewAtmosphereConfig>(
+                        JsonConfigRuntime.GetLegacyResource<FarViewAtmosphereConfig>(
                             nameof(FarViewAtmosphereConfig)))
                     .AsSingle()
                     .IfNotBound();

@@ -1,6 +1,6 @@
-using Kruty1918.Moyva.Calendar.Config;
-using Kruty1918.Moyva.Calendar.Core;
-using Kruty1918.Moyva.Calendar.Multiplayer;
+using Kruty1918.Calendar.Config;
+using Kruty1918.Calendar.Core;
+using Kruty1918.Calendar.Multiplayer;
 using UnityEngine;
 using Zenject;
 
@@ -16,9 +16,9 @@ namespace Kruty1918.Moyva.Calendar.Runtime
         {
             CalendarConfig rawConfig = _sessionConfig != null
                 ? _sessionConfig.BuildConfig()
-                : CalendarConfig.Default();
+                : MoyvaCalendarDefaults.Create();
 
-            CalendarConfig config = CalendarConfigLifecycle.ValidateAndFreeze(rawConfig);
+            CalendarConfig config = CalendarConfigLifecycle.ValidateAndFreeze(rawConfig, MoyvaCalendarDefaults.Create);
 
             InstallIfMissing(Container, config);
         }
@@ -27,7 +27,7 @@ namespace Kruty1918.Moyva.Calendar.Runtime
         {
             InstallIfMissing(
                 container,
-                CalendarConfigLifecycle.ValidateAndFreeze(CalendarConfig.Default()));
+                CalendarConfigLifecycle.ValidateAndFreeze(MoyvaCalendarDefaults.Create(), MoyvaCalendarDefaults.Create));
         }
 
         private static void InstallIfMissing(

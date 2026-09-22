@@ -1,11 +1,7 @@
 {
-  "name": "Kruty1918.Moyva.Calendar",
-  "rootNamespace": "Kruty1918.Moyva.Calendar",
-  "references": [
-    "Kruty1918.Calendar",
-    "Zenject",
-    "Kruty1918.JsonConfig"
-  ],
+  "name": "Kruty1918.Calendar",
+  "rootNamespace": "Kruty1918.Calendar",
+  "references": [],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

@@ -1,9 +1,9 @@
 using System;
 using System.IO;
-using Kruty1918.Moyva.Calendar.Config;
+using Kruty1918.Calendar.Config;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Calendar.Runtime
+namespace Kruty1918.Calendar.Runtime
 {
     /// <summary>
     /// Stores and retrieves <see cref="CalendarConfig"/> from a local binary file.
@@ -23,17 +23,17 @@ namespace Kruty1918.Moyva.Calendar.Runtime
         public CalendarConfig Load()
         {
             if (!Exists())
-                return CalendarConfigLifecycle.ValidateAndFreeze(CalendarConfig.Default());
+                return CalendarConfigLifecycle.ValidateAndFreeze(null, MoyvaCalendarDefaults.Create);
 
             try
             {
                 using var fs = File.OpenRead(_filePath);
                 using var br = new BinaryReader(fs);
-                return CalendarConfigLifecycle.ValidateAndFreeze(ReadConfig(br));
+                return CalendarConfigLifecycle.ValidateAndFreeze(ReadConfig(br), MoyvaCalendarDefaults.Create);
             }
             catch (Exception)
             {
-                return CalendarConfigLifecycle.ValidateAndFreeze(CalendarConfig.Default());
+                return CalendarConfigLifecycle.ValidateAndFreeze(null, MoyvaCalendarDefaults.Create);
             }
         }
 

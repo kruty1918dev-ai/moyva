@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Kruty1918.Moyva.AI.Bot;
 using Kruty1918.Moyva.Animations.Runtime;
-using Kruty1918.Moyva.Calendar.Runtime;
+using Kruty1918.Calendar.Runtime;
 using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
@@ -18,7 +18,7 @@ using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.ObjectsMap.Runtime;
 using Kruty1918.Moyva.Pathfinding.Runtime;
 using Kruty1918.Moyva.Signals;
@@ -28,6 +28,7 @@ using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Units.Runtime;
 using UnityEngine;
 using Zenject;
+using Kruty1918.Moyva.Calendar.Runtime;
 
 namespace Kruty1918.Moyva.AI.Training
 {
@@ -89,8 +90,8 @@ namespace Kruty1918.Moyva.AI.Training
             try
             {
                 UnityEngine.Random.InitState(context.Seed);
-                MoyvaJsonRuntime.EnsureLoaded();
-                var recipe = MoyvaJsonRuntime.Get<GeneratorMapRecipe>(config.generatorRecipeId);
+                JsonConfigRuntime.EnsureLoaded();
+                var recipe = JsonConfigRuntime.Get<GeneratorMapRecipe>(config.generatorRecipeId);
                 Install<Kruty1918.Moyva.Signals.SignalBusInstaller>();
                 var tiles = recipe.TileRegistry ?? Required<TileRegistrySO>();
                 int worldSize = context.WorldSize > 0 ? context.WorldSize : config.worldSize;
@@ -587,7 +588,7 @@ namespace Kruty1918.Moyva.AI.Training
         }
 
         private static T Required<T>() where T : class
-            => MoyvaJsonRuntime.GetAll<T>().FirstOrDefault() ?? throw new InvalidOperationException("Missing JSON configuration: " + typeof(T).Name);
+            => JsonConfigRuntime.GetAll<T>().FirstOrDefault() ?? throw new InvalidOperationException("Missing JSON configuration: " + typeof(T).Name);
         private void Install<T>() where T : MonoInstaller
         {
             var installer = _root.AddComponent<T>();

@@ -1,6 +1,6 @@
 using System;
 
-namespace Kruty1918.Moyva.Calendar.Domain
+namespace Kruty1918.Calendar.Domain
 {
     /// <summary>
     /// Immutable value object representing a point in game time.
