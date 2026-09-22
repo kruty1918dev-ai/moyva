@@ -181,7 +181,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     Select(sb, view.T("Map type"), view.TOptions(MapTypeOptions), (int)view.MapType, "Globals.moyvaMenu.SetMapTypeValue(event)");
                     if (state.PlayFlow == HomeMenuPlayFlow.HumanVsBot)
                         Select(sb, view.T("Bot difficulty"), view.TOptions(view.BotDifficultyOptions), view.SelectedBotDifficultyIndex, "Globals.moyvaMenu.SetBotDifficultyValue(event)");
-                    else
+                    else if (state.PlayFlow == HomeMenuPlayFlow.Multiplayer)
                         Select(sb, view.T("Difficulty"), view.TOptions(DifficultyOptions), (int)view.Difficulty, "Globals.moyvaMenu.SetDifficultyValue(event)");
                     sb.Append("</view>");
                     ActionButton(

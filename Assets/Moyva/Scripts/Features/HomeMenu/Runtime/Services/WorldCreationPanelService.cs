@@ -163,6 +163,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 : currentLobby != null && currentLobby.MaxPlayers > 0
                     ? currentLobby.MaxPlayers
                     : 2;
+            // Solo sandbox hides the difficulty select: a hidden field must
+            // never leak a stale pick into the created world.
+            Difficulty difficulty = soloFlow && !botMatch
+                ? Difficulty.Normal
+                : _viewController.Difficulty;
 
             var worldSettings = new WorldSettingsDto(
                 _viewController.WorldName,
@@ -171,7 +176,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 ResolveWorldWidth(),
                 ResolveWorldHeight(),
                 _viewController.MapType,
-                _viewController.Difficulty,
+                difficulty,
                 maxPlayers,
                 soloFlow || (currentLobby?.IsPrivate ?? true));
 

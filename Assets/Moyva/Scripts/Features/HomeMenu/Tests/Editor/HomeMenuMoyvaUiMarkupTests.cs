@@ -115,6 +115,43 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
         }
 
         [Test]
+        public void WorldSetup_Solo_HidesDifficultyAndBotFields()
+        {
+            _state.SetPlayFlow(HomeMenuPlayFlow.Solo);
+            _state.Open("WorldSetupPanel");
+
+            var markup = HomeMenuMoyvaUiMarkup.Build(_state, _view, "vp-wide");
+
+            Assert.That(markup, Does.Not.Contain("SetDifficultyValue"),
+                "Solo sandbox must not offer the AI/match difficulty field.");
+            Assert.That(markup, Does.Not.Contain("SetBotDifficultyValue"));
+        }
+
+        [Test]
+        public void WorldSetup_Multiplayer_KeepsDifficultyField()
+        {
+            _state.SetPlayFlow(HomeMenuPlayFlow.Multiplayer);
+            _state.Open("WorldSetupPanel");
+
+            var markup = HomeMenuMoyvaUiMarkup.Build(_state, _view, "vp-wide");
+
+            Assert.That(markup, Does.Contain("SetDifficultyValue"));
+            Assert.That(markup, Does.Not.Contain("SetBotDifficultyValue"));
+        }
+
+        [Test]
+        public void WorldSetup_HumanVsBot_ShowsBotDifficultyOnly()
+        {
+            _state.SetPlayFlow(HomeMenuPlayFlow.HumanVsBot);
+            _state.Open("WorldSetupPanel");
+
+            var markup = HomeMenuMoyvaUiMarkup.Build(_state, _view, "vp-wide");
+
+            Assert.That(markup, Does.Contain("SetBotDifficultyValue"));
+            Assert.That(markup, Does.Not.Contain("SetDifficultyValue"));
+        }
+
+        [Test]
         public void ReducedMotionRemovesDeclarativeAnimations()
         {
             _state.Open("JoinRoomPanel");
