@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Vfx.API;
 using Kruty1918.Moyva.Vfx.Runtime;
+using Kruty1918.Vfx;
 using NUnit.Framework;
 using UnityEngine;
 

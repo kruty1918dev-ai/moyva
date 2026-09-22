@@ -1,0 +1,18 @@
+{
+  "name": "com.kruty1918.vfx",
+  "version": "0.1.0",
+  "displayName": "Kruty1918 VFX",
+  "description": "Reusable VFX runtime: pooled effect spawning with budgets, cooldowns, quality scaling and renderer flashes. Host supplies event ids, catalog config and domain wiring.",
+  "unity": "6000.0",
+  "unityRelease": "0f1",
+  "author": {
+    "name": "Kruty1918"
+  },
+  "dependencies": {},
+  "keywords": [
+    "kruty1918",
+    "vfx",
+    "effects",
+    "pool"
+  ]
+}

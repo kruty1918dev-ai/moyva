@@ -1,5 +1,6 @@
 using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.Vfx.API;
+using Kruty1918.Vfx;
 using Zenject;
 
 namespace Kruty1918.Moyva.Vfx.Runtime

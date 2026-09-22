@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using Kruty1918.Moyva.Vfx.API;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Vfx.Runtime
+namespace Kruty1918.Vfx
 {
     /// <summary>Пул VFX-ефектів: переuse інстансів префабів, ліміти активних ефектів, витіснення найстаріших.</summary>
     public sealed class VfxPool : IVfxSpawner, IDisposable

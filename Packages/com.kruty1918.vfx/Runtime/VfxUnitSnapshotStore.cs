@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Vfx.Runtime
+namespace Kruty1918.Vfx
 {
     /// <summary>Зберігає знімки стану юнітів для VFX: позиція, тип, власник; дедуплікація спавн-ефектів у часовому вікні.</summary>
     public sealed class VfxUnitSnapshotStore

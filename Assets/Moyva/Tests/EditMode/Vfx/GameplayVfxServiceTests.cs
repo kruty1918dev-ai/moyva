@@ -8,6 +8,7 @@ using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Vfx.API;
 using Kruty1918.Moyva.Vfx.Runtime;
+using Kruty1918.Vfx;
 using NUnit.Framework;
 using UnityEngine;
 using Zenject;

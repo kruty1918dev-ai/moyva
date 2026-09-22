@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Kruty1918.Moyva.Vfx.API;
 
-namespace Kruty1918.Moyva.Vfx.Runtime
+namespace Kruty1918.Vfx
 {
     /// <summary>Реєстр правил VFX-ефектів: резолвить подію+контекст у правило спавну.</summary>
     public sealed class VfxDefinitionRegistry
@@ -15,14 +14,14 @@ namespace Kruty1918.Moyva.Vfx.Runtime
         /// <summary>Усі зареєстровані правила.</summary>
         public IReadOnlyCollection<VfxEffectRule> Rules => _rules.Values;
 
-        /// <summary>Будує реєстр із каталогу конфігурації.</summary>
-        public static VfxDefinitionRegistry Build(VfxCatalogConfig config)
+        /// <summary>Будує реєстр із набору правил ефектів.</summary>
+        public static VfxDefinitionRegistry Build(IEnumerable<VfxEffectRule> effects)
         {
             var registry = new VfxDefinitionRegistry();
-            if (config?.effects == null)
+            if (effects == null)
                 return registry;
 
-            foreach (VfxEffectRule rule in config.effects)
+            foreach (VfxEffectRule rule in effects)
             {
                 if (rule == null || string.IsNullOrWhiteSpace(rule.eventName))
                     continue;

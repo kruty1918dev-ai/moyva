@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Vfx.Runtime
+namespace Kruty1918.Vfx
 {
     /// <summary>Екземпляр VFX-ефекту на сцені: керує часом життя, тінтом частинок та поверненням у пул.</summary>
     [DisallowMultipleComponent]
@@ -29,7 +29,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
         public float Duration => duration;
 
         /// <summary>Запускає ефект із параметрами запиту.</summary>
-        public void Play(in API.VfxSpawnRequest request)
+        public void Play(in VfxSpawnRequest request)
         {
             Capture();
 

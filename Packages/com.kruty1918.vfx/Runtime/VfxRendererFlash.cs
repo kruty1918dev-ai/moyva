@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Vfx.Runtime
+namespace Kruty1918.Vfx
 {
     /// <summary>Спалах рендерерів через MaterialPropertyBlock: короткий tint-імпульс без мутації матеріалів.</summary>
     public sealed class VfxRendererFlash

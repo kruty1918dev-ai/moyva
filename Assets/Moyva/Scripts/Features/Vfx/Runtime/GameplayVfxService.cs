@@ -7,6 +7,7 @@ using Kruty1918.Moyva.Shared.Graphics;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Vfx.API;
+using Kruty1918.Vfx;
 using UnityEngine;
 using Zenject;
 
@@ -78,7 +79,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
         /// <summary>Підписує сервіс на gameplay-події.</summary>
         public void Initialize()
         {
-            _registry = VfxDefinitionRegistry.Build(_config);
+            _registry = VfxDefinitionRegistry.Build(_config?.effects);
             _quality = ResolveQuality();
             if (_graphics != null)
                 _graphics.OnSettingsChanged += OnGraphicsSettingsChanged;
@@ -156,7 +157,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             Color? factionTint)
         {
             if (_registry == null)
-                _registry = VfxDefinitionRegistry.Build(_config);
+                _registry = VfxDefinitionRegistry.Build(_config?.effects);
 
             VfxEffectRule rule = _registry.Resolve(eventName, context);
             if (rule == null)
@@ -488,11 +489,11 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             => string.IsNullOrWhiteSpace(unitTypeId) ? null : "unit:" + unitTypeId;
 
         private VfxQualityState ResolveQuality()
-            => VfxQualityState.ForProfile(
+            => MoyvaVfxQualityPolicy.ForProfile(
                 _graphics?.Settings.Profile ?? GraphicsQualityProfile.Balanced,
                 _config?.budget);
 
         private void OnGraphicsSettingsChanged(GraphicsSettingsData data)
-            => _quality = VfxQualityState.ForProfile(data.Profile, _config?.budget);
+            => _quality = MoyvaVfxQualityPolicy.ForProfile(data.Profile, _config?.budget);
     }
 }

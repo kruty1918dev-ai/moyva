@@ -68,7 +68,8 @@
     "com.kruty1918.runtime-diagnostics": "file:com.kruty1918.runtime-diagnostics",
     "com.kruty1918.adaptive-performance": "file:com.kruty1918.adaptive-performance",
     "com.kruty1918.ui-foundation": "file:com.kruty1918.ui-foundation",
-    "com.kruty1918.audio": "file:com.kruty1918.audio"
+    "com.kruty1918.audio": "file:com.kruty1918.audio",
+    "com.kruty1918.vfx": "file:com.kruty1918.vfx"
   },
   "testables": [
     "com.kruty1918.moyva.unityhtml"

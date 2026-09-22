@@ -1,38 +1,12 @@
 using Kruty1918.Moyva.Shared.Graphics;
-using Kruty1918.Moyva.Vfx.API;
+using Kruty1918.Vfx;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Vfx.Runtime
 {
-    /// <summary>Знімок якісного стану VFX: ліміти активних ефектів, масштаби кількості, дистанції відсікання.</summary>
-    public readonly struct VfxQualityState
+    /// <summary>Maps the Moyva graphics quality profile onto package VfxQualityState budgets.</summary>
+    public static class MoyvaVfxQualityPolicy
     {
-        /// <summary>Створює стан якості з явними лімітами.</summary>
-        public VfxQualityState(
-            int maxActive,
-            float countScale,
-            float cullDistance,
-            float lowPriorityMaxOrthoSize,
-            int maxSpawnsPerFrame)
-        {
-            MaxActive = Mathf.Max(1, maxActive);
-            CountScale = Mathf.Max(0.05f, countScale);
-            CullDistance = Mathf.Max(0f, cullDistance);
-            LowPriorityMaxOrthoSize = Mathf.Max(0f, lowPriorityMaxOrthoSize);
-            MaxSpawnsPerFrame = Mathf.Max(1, maxSpawnsPerFrame);
-        }
-
-        /// <summary>Максимум активних ефектів.</summary>
-        public int MaxActive { get; }
-        /// <summary>Масштаб кількості частинок.</summary>
-        public float CountScale { get; }
-        /// <summary>Дистанція відсікання ефектів.</summary>
-        public float CullDistance { get; }
-        /// <summary>Максимальний орто-розмір для низькопріоритетних ефектів.</summary>
-        public float LowPriorityMaxOrthoSize { get; }
-        /// <summary>Максимум спавнів за кадр.</summary>
-        public int MaxSpawnsPerFrame { get; }
-
         /// <summary>Будує стан якості для вказаного профілю.</summary>
         public static VfxQualityState ForProfile(
             GraphicsQualityProfile profile,

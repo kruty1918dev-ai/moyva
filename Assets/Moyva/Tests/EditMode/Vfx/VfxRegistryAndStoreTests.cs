@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Vfx.API;
 using Kruty1918.Moyva.Vfx.Runtime;
+using Kruty1918.Vfx;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -25,7 +26,7 @@ namespace Kruty1918.Moyva.Vfx.Tests
             {
                 effects = new[] { Rule("building-placed") },
             };
-            var registry = VfxDefinitionRegistry.Build(config);
+            var registry = VfxDefinitionRegistry.Build(config?.effects);
 
             Assert.NotNull(registry.Resolve("building-placed"));
             Assert.IsNull(registry.Resolve("unit-destroyed"));
@@ -44,7 +45,7 @@ namespace Kruty1918.Moyva.Vfx.Tests
             var baseRule = Rule("unit-move-dust");
             var contextRule = Rule("unit-move-dust", "tile:water");
             var config = new VfxCatalogConfig { effects = new[] { baseRule, contextRule } };
-            var registry = VfxDefinitionRegistry.Build(config);
+            var registry = VfxDefinitionRegistry.Build(config?.effects);
 
             Assert.AreSame(contextRule, registry.Resolve("unit-move-dust", "tile:water"));
             Assert.AreSame(baseRule, registry.Resolve("unit-move-dust", "tile:grass"));
@@ -55,7 +56,7 @@ namespace Kruty1918.Moyva.Vfx.Tests
         public void Resolve_IsCaseInsensitive()
         {
             var config = new VfxCatalogConfig { effects = new[] { Rule("building-placed") } };
-            var registry = VfxDefinitionRegistry.Build(config);
+            var registry = VfxDefinitionRegistry.Build(config?.effects);
             Assert.NotNull(registry.Resolve("Building-Placed"));
         }
 
