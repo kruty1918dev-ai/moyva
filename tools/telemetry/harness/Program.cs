@@ -15,6 +15,7 @@ namespace Kruty1918.Telemetry.Harness
             var tests = new List<(string, Action)>();
             CoreTests.Register(tests);
             ScenarioATests.Register(tests);
+            ScenarioBTests.Register(tests);
             return TestRunner.Run(tests);
         }
 
