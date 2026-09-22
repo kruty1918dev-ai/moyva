@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     /// <summary>
     /// Кодує та декодує бінарний файл збереження формату .mvs.
@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.SaveSystem
     ///   Blocks  : [blockId (uint) + blockSize (uint) + blockCrc32 (uint) + payload (blockSize bytes)] × N
     ///   Footer  : globalCrc32 (uint, 4 bytes) — CRC32 усіх попередніх байтів
     /// </summary>
-    internal static class SaveFileCodec
+    public static class SaveFileCodec
     {
         internal static class FileLayout
         {

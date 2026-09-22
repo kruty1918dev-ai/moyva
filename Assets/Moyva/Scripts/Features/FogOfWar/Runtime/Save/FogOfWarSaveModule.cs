@@ -1,5 +1,5 @@
 using Kruty1918.Moyva.FogOfWar.API;
-using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.SaveSystem;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime

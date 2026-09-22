@@ -5,6 +5,7 @@
     "com.kruty1918.json-config": "file:com.kruty1918.json-config",
     "com.kruty1918.localization": "file:com.kruty1918.localization",
     "com.kruty1918.notifications": "file:com.kruty1918.notifications",
+    "com.kruty1918.save-system": "file:com.kruty1918.save-system",
     "com.kruty1918.ui-actions": "file:com.kruty1918.ui-actions",
     "com.kruty1918.moyva.unityhtml": "file:com.kruty1918.moyva.unityhtml",
     "com.reactunity.core": "https://github.com/ReactUnity/core.git#8c4caa95f49b45e8fb7bb1f833eaa08adaa31496",

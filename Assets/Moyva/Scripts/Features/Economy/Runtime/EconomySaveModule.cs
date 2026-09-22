@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Stopwatch = System.Diagnostics.Stopwatch;
-using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.SaveSystem;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Economy.Runtime

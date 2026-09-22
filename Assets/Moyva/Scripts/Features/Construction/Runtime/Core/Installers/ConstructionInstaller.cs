@@ -2,7 +2,7 @@ using Kruty1918.Moyva.Combat;
 using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Notifications.Runtime;
-using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.SaveSystem;
 using Kruty1918.UIActions.Runtime;
 using Kruty1918.Moyva.WorldCreation.API;
 using Kruty1918.InputRouting.Runtime;
@@ -12,6 +12,7 @@ using UnityEngine;
 using Zenject;
 
 using Kruty1918.JsonConfig;
+using Kruty1918.Moyva.SaveSystem;
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     public sealed class ConstructionInstaller : MonoInstaller

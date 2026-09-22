@@ -1,11 +1,11 @@
 using System;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     /// <summary>
     /// Розв'язує стабільні ідентифікатори save-модулів із сумісним fallback на CLR-ім'я.
     /// </summary>
-    internal static class SaveModuleIdentity
+    public static class SaveModuleIdentity
     {
         /// <summary>Повертає явно заданий ID або legacy повне ім'я типу.</summary>
         /// <param name="moduleType">Тип зареєстрованого save-модуля.</param>

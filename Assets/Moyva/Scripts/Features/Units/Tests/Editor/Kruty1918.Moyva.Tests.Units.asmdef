@@ -2,6 +2,7 @@
   "name": "Kruty1918.Moyva.Tests.Units",
   "rootNamespace": "Kruty1918.Moyva.Tests.Units",
   "references": [
+    "Kruty1918.SaveSystem",
     "Zenject",
     "Kruty1918.Moyva.Units",
     "Kruty1918.Moyva.Combat",

@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
-using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.SaveSystem;
 using NUnit.Framework;
 using UnityEngine;
 

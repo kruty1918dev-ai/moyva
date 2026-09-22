@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     /// <summary>
     /// Контекст, що передається ISaveModule під час збереження або завантаження.

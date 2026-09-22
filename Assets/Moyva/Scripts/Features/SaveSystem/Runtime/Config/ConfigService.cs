@@ -4,7 +4,7 @@ using System.IO;
 using UnityEngine;
 using Zenject;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     /// <summary>
     /// Сервіс для збереження глобального конфігу (config.mvs).

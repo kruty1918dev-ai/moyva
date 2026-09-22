@@ -1,6 +1,6 @@
 using System;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     /// <summary>
     /// Фіксує стабільний ідентифікатор save-модуля незалежно від його CLR-імені або namespace.

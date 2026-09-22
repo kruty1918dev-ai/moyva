@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     public interface ISaveModuleRegistry
     {

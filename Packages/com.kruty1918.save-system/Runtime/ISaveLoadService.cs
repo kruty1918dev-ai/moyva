@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
-    internal interface ISaveLoadService
+    public interface ISaveLoadService
     {
         bool TryLoad(
             int slot,

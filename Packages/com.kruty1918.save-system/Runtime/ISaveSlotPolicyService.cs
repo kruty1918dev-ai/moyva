@@ -1,6 +1,6 @@
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
-    internal interface ISaveSlotPolicyService
+    public interface ISaveSlotPolicyService
     {
         bool HasSave(int slot);
         void Delete(int slot);

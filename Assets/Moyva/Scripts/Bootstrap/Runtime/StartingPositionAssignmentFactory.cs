@@ -31,8 +31,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int maxPlayers)
         {
             bool isDirectGameplay = GameplayLaunchTopology.IsDirectGameplay(
-                Kruty1918.Moyva.SaveSystem.GameLaunchContext.Mode,
-                Kruty1918.Moyva.SaveSystem.GameLaunchContext.Source,
+                Kruty1918.SaveSystem.GameLaunchContext.Mode,
+                Kruty1918.SaveSystem.GameLaunchContext.Source,
                 hasWorldSettings,
                 maxPlayers,
                 localPlayerId);
@@ -90,13 +90,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string resolvedParticipantId,
             string localPlayerId)
         {
-            if (!isDirectGameplay && Kruty1918.Moyva.SaveSystem.GameLaunchContext.HasBotOpponent)
+            if (!isDirectGameplay && Kruty1918.SaveSystem.GameLaunchContext.HasBotOpponent)
                 return resolvedParticipantId;
 
             if (!isDirectGameplay
                 && (participant?.IsHost == true || participant == null && slotIndex == 0)
-                && Kruty1918.Moyva.SaveSystem.GameLaunchContext.HasLocalPlayerRole
-                && Kruty1918.Moyva.SaveSystem.GameLaunchContext.IsLocalPlayerHost
+                && Kruty1918.SaveSystem.GameLaunchContext.HasLocalPlayerRole
+                && Kruty1918.SaveSystem.GameLaunchContext.IsLocalPlayerHost
                 && !string.IsNullOrWhiteSpace(localPlayerId))
             {
                 return localPlayerId.Trim();

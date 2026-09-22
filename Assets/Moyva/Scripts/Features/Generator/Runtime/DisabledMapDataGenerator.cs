@@ -15,7 +15,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var heightMap = new float[safeWidth, safeHeight];
             var buildingMap = new string[safeWidth, safeHeight];
 
-            int seed = Kruty1918.Moyva.SaveSystem.GameLaunchContext.Seed;
+            int seed = Kruty1918.SaveSystem.GameLaunchContext.Seed;
             if (seed == 0)
                 seed = safeWidth * 73856093 ^ safeHeight * 19349663;
             var random = new System.Random(seed);

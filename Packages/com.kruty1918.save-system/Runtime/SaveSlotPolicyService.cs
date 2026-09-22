@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
-    internal sealed class SaveSlotPolicyService : ISaveSlotPolicyService
+    public sealed class SaveSlotPolicyService : ISaveSlotPolicyService
     {
         private readonly Dictionary<int, SaveSlotInfo> _metadata = new();
 

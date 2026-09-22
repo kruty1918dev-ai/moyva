@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
-    internal sealed class SaveModuleRegistry : ISaveModuleRegistry
+    public sealed class SaveModuleRegistry : ISaveModuleRegistry
     {
         private readonly List<ISaveModule> _modules = new List<ISaveModule>();
 

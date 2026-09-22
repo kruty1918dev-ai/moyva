@@ -5,6 +5,8 @@ using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.SaveSystem;
+
 namespace Kruty1918.Moyva.SaveSystem
 {
     /// <summary>

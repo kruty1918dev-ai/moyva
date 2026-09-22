@@ -1,4 +1,4 @@
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     /// <summary>
     /// Контракт для будь-якої системи, що хоче брати участь у циклі збереження/завантаження.

@@ -1,4 +1,4 @@
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     using System;
 

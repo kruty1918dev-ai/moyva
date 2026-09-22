@@ -1,7 +1,7 @@
 using System;
 using Zenject;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     public sealed class SaveModuleRegistrar<TModule> : IInitializable, IDisposable
         where TModule : ISaveModule

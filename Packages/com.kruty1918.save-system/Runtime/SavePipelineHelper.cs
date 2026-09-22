@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     /// <summary>
     /// Спільна логіка для конвеєрів збереження/завантаження даних.
@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.SaveSystem
     /// Містить: збирання блоків, верифікацію буфера, атомарний запис,
     /// завантаження з декодуванням, утиліти файлової системи.
     /// </summary>
-    internal static class SavePipelineHelper
+    public static class SavePipelineHelper
     {
         /// <summary>Максимальний розмір одного блоку даних (10 МБ).</summary>
         internal const int MaxBlockBytes = 10 * 1024 * 1024;

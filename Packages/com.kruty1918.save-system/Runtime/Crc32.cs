@@ -1,10 +1,10 @@
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     /// <summary>
     /// Реалізація CRC-32 (IEEE 802.3 polynomial).
     /// Використовується для верифікації цілісності блоків і глобального файлу.
     /// </summary>
-    internal static class Crc32
+    public static class Crc32
     {
         private static readonly uint[] Table = BuildTable();
 

@@ -2,6 +2,7 @@
   "name": "Kruty1918.Moyva.FogOfWar",
   "rootNamespace": "Kruty1918.Moyva.FogOfWar",
   "references": [
+    "Kruty1918.SaveSystem",
     "Kruty1918.Moyva.Signals",
     "Kruty1918.Moyva.Grid",
     "Kruty1918.Moyva.MapChunks",

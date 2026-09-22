@@ -2,6 +2,7 @@
   "name": "Kruty1918.Moyva.Bootstrap",
   "rootNamespace": "Kruty1918.Moyva.Bootstrap",
   "references": [
+    "Kruty1918.SaveSystem",
     "Kruty1918.Calendar",
     "Kruty1918.UIActions",
     "Kruty1918.InputRouting",

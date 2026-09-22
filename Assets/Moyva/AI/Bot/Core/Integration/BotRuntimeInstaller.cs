@@ -56,7 +56,7 @@ namespace Kruty1918.Moyva.AI.Bot
 
         private static string ReadLaunchBotDifficultyId()
         {
-            var type = Type.GetType("Kruty1918.Moyva.SaveSystem.GameLaunchContext, Kruty1918.Moyva.SaveSystem");
+            var type = Type.GetType("Kruty1918.SaveSystem.GameLaunchContext, Kruty1918.SaveSystem");
             var property = type?.GetProperty("BotDifficultyId", BindingFlags.Public | BindingFlags.Static);
             return property?.GetValue(null) as string;
         }

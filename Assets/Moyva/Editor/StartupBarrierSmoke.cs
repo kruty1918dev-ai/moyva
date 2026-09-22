@@ -6,7 +6,7 @@ using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.InputRouting.API;
 using Kruty1918.Moyva.Multiplayer.Core;
-using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using UnityEditor;
 using UnityEditor.SceneManagement;

@@ -2,7 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.GameMode.API;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     internal sealed class ExitMatchSaveHandler : IExitMatchSaveHandler
     {

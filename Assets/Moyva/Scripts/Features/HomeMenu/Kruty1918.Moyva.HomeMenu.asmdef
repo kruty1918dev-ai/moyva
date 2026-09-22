@@ -2,6 +2,7 @@
   "name": "Kruty1918.Moyva.HomeMenu",
   "rootNamespace": "Kruty1918.Moyva.HomeMenu",
   "references": [
+    "Kruty1918.SaveSystem",
     "Kruty1918.UIActions",
     "Kruty1918.Localization",
     "Zenject",

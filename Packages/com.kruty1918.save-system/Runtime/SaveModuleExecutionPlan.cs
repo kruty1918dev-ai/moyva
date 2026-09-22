@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     /// <summary>
     /// Builds one deterministic execution plan for both save capture and restore.
     /// Known gameplay modules receive dependency-aware phases while unknown modules
     /// fall back to a stable type-name order. Explicit module order always wins.
     /// </summary>
-    internal static class SaveModuleExecutionPlan
+    public static class SaveModuleExecutionPlan
     {
         internal const int GeneratedWorldOrder = 100;
         internal const int ConstructionOrder = 200;

@@ -2,6 +2,7 @@
   "name": "Kruty1918.Moyva.Economy",
   "rootNamespace": "Kruty1918.Moyva.Economy",
   "references": [
+    "Kruty1918.SaveSystem",
     "Kruty1918.Calendar",
         "Kruty1918.Moyva.Units",
         "Kruty1918.Moyva.Turns",

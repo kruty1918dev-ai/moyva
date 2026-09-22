@@ -1,8 +1,8 @@
 using System.IO;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
-    internal sealed class SaveContext : ISaveContext
+    public sealed class SaveContext : ISaveContext
     {
         public BinaryWriter Writer { get; }
         public BinaryReader Reader { get; }

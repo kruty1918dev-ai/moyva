@@ -10,7 +10,7 @@ using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Runtime;
-using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.SaveSystem;
 using Kruty1918.Moyva.Shared.Common;
 using Kruty1918.Moyva.WorldCreation.API;
 using Zenject;

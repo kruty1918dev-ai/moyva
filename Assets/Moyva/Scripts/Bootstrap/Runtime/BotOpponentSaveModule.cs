@@ -1,5 +1,5 @@
 using System.IO;
-using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.SaveSystem;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {

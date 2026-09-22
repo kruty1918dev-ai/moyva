@@ -4,7 +4,7 @@ using System.Reflection;
 using Kruty1918.Moyva.AI.Bot;
 using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.InputRouting.API;
-using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using NUnit.Framework;

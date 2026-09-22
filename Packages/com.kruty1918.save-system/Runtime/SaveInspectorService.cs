@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.SaveSystem
+namespace Kruty1918.SaveSystem
 {
     /// <summary>
     /// Сервіс для інспектування вмісту файлів збереження без їх завантаження.
     /// Дозволяє перевіряти наявність окремих блоків (модулів) у save-файлі
     /// за типом, повним ім'ям типу або узагальненим типом.
     /// </summary>
-    internal sealed class SaveInspectorService : ISaveInspectorService
+    public sealed class SaveInspectorService : ISaveInspectorService
     {
         private const int FogFormatVersionWithFixedVisionAreas = -2;
         private const int FogFormatVersionWithOwnerSnapshots = -3;

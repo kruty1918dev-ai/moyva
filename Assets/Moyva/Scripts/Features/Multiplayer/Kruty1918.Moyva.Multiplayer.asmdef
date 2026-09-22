@@ -2,6 +2,7 @@
     "name": "Kruty1918.Moyva.Multiplayer",
     "rootNamespace": "Kruty1918.Moyva.Multiplayer",
     "references": [
+    "Kruty1918.SaveSystem",
     "Kruty1918.Calendar",
         "Zenject",
         "Kruty1918.Moyva.Combat",

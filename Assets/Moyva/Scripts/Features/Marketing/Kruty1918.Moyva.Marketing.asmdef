@@ -2,6 +2,7 @@
   "name": "Kruty1918.Moyva.Marketing",
   "rootNamespace": "Kruty1918.Moyva.Marketing",
   "references": [
+    "Kruty1918.SaveSystem",
     "Zenject",
     "Kruty1918.Moyva.SaveSystem",
     "Kruty1918.Moyva.Grid",

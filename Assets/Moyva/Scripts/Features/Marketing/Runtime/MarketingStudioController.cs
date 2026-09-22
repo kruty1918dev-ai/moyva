@@ -9,7 +9,7 @@ using Kruty1918.Moyva.Marketing.Output;
 using Kruty1918.Moyva.Marketing.Planning;
 using Kruty1918.Moyva.Marketing.Text;
 using Kruty1918.Moyva.Marketing.Validation;
-using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.SaveSystem;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;

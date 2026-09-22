@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.MapChunks.API;
-using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.SaveSystem;
 using UnityEngine;
 using Zenject;
 

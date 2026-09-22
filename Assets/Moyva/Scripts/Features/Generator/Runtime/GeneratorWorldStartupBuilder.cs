@@ -1,5 +1,5 @@
 using Kruty1918.Moyva.Generator.Runtime;
-using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.SaveSystem;
 using UnityEngine;
 using Zenject;
 

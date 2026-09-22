@@ -135,7 +135,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
 			width = 0;
 			height = 0;
 
-			var contextType = System.Type.GetType("Kruty1918.Moyva.SaveSystem.GameLaunchContext, Kruty1918.Moyva.SaveSystem");
+			var contextType = System.Type.GetType("Kruty1918.SaveSystem.GameLaunchContext, Kruty1918.SaveSystem");
 
 			var method = contextType?.GetMethod("TryGetWorldDimensions", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
 
