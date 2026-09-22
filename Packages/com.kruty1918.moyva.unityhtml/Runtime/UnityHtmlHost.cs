@@ -29,8 +29,21 @@ namespace UnityHTML.Runtime
         private readonly HashSet<ScrollRect> _seenScrollRects = new();
         private string _autofocusedElementId;
         private GameObject _selectionBeforeAutofocus;
+        private UnityHtmlScrollSettings _scrollSettings = UnityHtmlScrollSettings.Default;
 
         public IUnityHtmlMotion Motion => _motion;
+
+        public UnityHtmlScrollSettings ScrollSettings
+        {
+            get => _scrollSettings;
+            set
+            {
+                if (_scrollSettings.Equals(value))
+                    return;
+                _scrollSettings = value;
+                ApplyScrollSettings();
+            }
+        }
 
         public UnityHtmlMountResult Mount(
             RectTransform root,
@@ -248,6 +261,7 @@ namespace UnityHTML.Runtime
             }
             ConfigureRenderedInputs(_root);
             Canvas.ForceUpdateCanvases();
+            ApplyScrollSettings();
             RestoreRenderedScrollPositions(scrollPositions);
             InitializeNewScrollPositions();
             ApplyAutofocus();
@@ -310,6 +324,21 @@ namespace UnityHTML.Runtime
 
             for (var i = 0; i < positions.Count; i++)
                 positions[i].Restore();
+        }
+
+        // Push the host's scroll configuration into every mounted scroll control.
+        // Settings are applied per control instance, so a regional update that
+        // remounts some scrolls leaves the surviving ones configured identically.
+        private void ApplyScrollSettings()
+        {
+            if (_root == null)
+                return;
+            var scrollRects = _root.GetComponentsInChildren<MoyvaSmoothScrollRect>(true);
+            for (var i = 0; i < scrollRects.Length; i++)
+            {
+                if (scrollRects[i] != null)
+                    scrollRects[i].ApplySettings(_scrollSettings);
+            }
         }
 
         // ScrollRect defaults normalizedPosition to (0,0) — the bottom for vertical

@@ -170,6 +170,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
 
             public RecordingHost() => _motion = new RecordingMotion(MotionLog);
             public IUnityHtmlMotion Motion => _motion;
+            public UnityHtmlScrollSettings ScrollSettings { get; set; } = UnityHtmlScrollSettings.Default;
 
             public UnityHtmlMountResult Mount(
                 RectTransform root,

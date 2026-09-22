@@ -8,6 +8,13 @@ namespace UnityHTML.Runtime
     {
         IUnityHtmlMotion Motion { get; }
 
+        /// <summary>
+        /// Wheel sensitivity, easing, inertia and reduced-motion settings applied
+        /// to every scroll control this host renders. Changing it re-applies the
+        /// settings to already-mounted controls; scroll positions are untouched.
+        /// </summary>
+        UnityHtmlScrollSettings ScrollSettings { get; set; }
+
         UnityHtmlMountResult Mount(
             RectTransform root,
             UnityHtmlDocument document,

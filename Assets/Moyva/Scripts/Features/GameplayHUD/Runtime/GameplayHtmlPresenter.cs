@@ -60,8 +60,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private void OnControlSettingsChanged(PlayerControlSettingsData data)
         {
             _controlHintsDirty = true;
-            if (_host?.Motion != null)
-                _host.Motion.ReducedMotion = data.ReduceMotion;
+            ApplyReducedMotion(data.ReduceMotion);
+        }
+
+        private void ApplyReducedMotion(bool reduced)
+        {
+            if (_host == null)
+                return;
+            if (_host.Motion != null)
+                _host.Motion.ReducedMotion = reduced;
+            _host.ScrollSettings = _host.ScrollSettings.WithReducedMotion(reduced);
         }
         private readonly IInputDeviceContext _inputDevices;
         private readonly IPlayerControlSettingsService _controlSettings;
@@ -150,10 +158,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _anchor.SetLegacyUiVisible(false);
             _state.Changed += MarkDirty;
             if (_host?.Motion != null)
-            {
                 _host.Motion.ExitFinished += OnMotionExitFinished;
-                _host.Motion.ReducedMotion = _controlSettings?.Settings.ReduceMotion ?? false;
-            }
+            ApplyReducedMotion(_controlSettings?.Settings.ReduceMotion ?? false);
             GameplayNotificationStream.Published += OnNotificationPublished;
             if (_turns != null)
                 _turns.StateChanged += MarkDirty;

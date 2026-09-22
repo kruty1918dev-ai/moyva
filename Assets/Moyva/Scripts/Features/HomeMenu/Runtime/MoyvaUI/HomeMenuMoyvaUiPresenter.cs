@@ -229,6 +229,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _state.ConsumeDirty();
             _mountedAnchor.SetMoyvaUiVisible(true);
             _mountedAnchor.SetLegacyUiVisible(false);
+            if (_host != null)
+                _host.ScrollSettings = _host.ScrollSettings.WithReducedMotion(_state.ReducedMotion);
             PlayRouteEnter(previousRoute, desired.Route, routeExitPlayed);
         }
 

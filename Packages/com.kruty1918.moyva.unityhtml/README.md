@@ -42,6 +42,12 @@ Roles: `panel`, `dialog`, `scrim`, `toast`, `edge-top`, `edge-bottom`, `none`. E
 
 `IUnityHtmlMotion.ExitFinished` fires exactly once per declarative exit — whether the tween completes, is cancelled by a replacement motion, or is torn down mid-exit — so a close flow can settle on the callback instead of guessing a fixed duration.
 
+## Scrolling
+
+`<scroll>` mounts `MoyvaSmoothScrollRect`, which completes any in-flight wheel animation to its target before applying the next delta — continuous wheel streams accumulate instead of collapsing to one step, and abrupt reversals move in the new direction immediately rather than drifting against the input.
+
+`IUnityHtmlHost.ScrollSettings` (`UnityHtmlScrollSettings`) carries the per-host scroll configuration: `WheelSensitivity` (multiplier on the control's own sensitivity baseline), `Inertia`, `DecelerationRate`, `Smoothness` (seconds of easing per wheel step), and `ReducedMotion` (snaps to the final position — no easing, no inertia — and settles an in-flight animation). Settings apply to every mounted scroll control on mount, on regional updates, and when the property is reassigned; scroll position and velocity stay per control and are preserved only for controls that survive the update.
+
 ## Requirements
 
 ReactUnity Core and QuickJS stay as commit-pinned UPM git dependencies. Unity must be launched from an environment where `git` is on `PATH`, otherwise Package Manager cannot resolve `com.reactunity.core` or `com.reactunity.quickjs`. Node, npm, and TypeScript are not required for runtime HTML/CSS assets.
