@@ -5,6 +5,13 @@ namespace Kruty1918.SaveSystem
 {
     public sealed class SaveWriteService : ISaveWriteService
     {
+        private readonly SaveModuleOrdering _ordering;
+
+        public SaveWriteService(SaveModuleOrdering ordering = null)
+        {
+            _ordering = ordering;
+        }
+
         public bool TrySave(int slot, IReadOnlyList<ISaveModule> modules, string requiredBlockModuleFullName, out string errorMessage)
         {
             errorMessage = null;
@@ -22,7 +29,7 @@ namespace Kruty1918.SaveSystem
             }
 
             List<(uint blockId, byte[] payload)> blocks;
-            try { blocks = SavePipelineHelper.CollectBlocks(modules); }
+            try { blocks = SavePipelineHelper.CollectBlocks(modules, _ordering); }
             catch (Exception exception)
             {
                 errorMessage = exception.Message;
@@ -41,7 +48,7 @@ namespace Kruty1918.SaveSystem
                 return false;
             }
 
-            if (!SavePipelineHelper.AtomicWrite(SaveService.GetPath(slot), data))
+            if (!SavePipelineHelper.AtomicWrite(SavePipelineHelper.GetPath(slot), data))
             {
                 errorMessage = "Write failed";
                 return false;

@@ -6,6 +6,13 @@ namespace Kruty1918.SaveSystem
 {
     public sealed class SaveLoadService : ISaveLoadService
     {
+        private readonly SaveModuleOrdering _ordering;
+
+        public SaveLoadService(SaveModuleOrdering ordering = null)
+        {
+            _ordering = ordering;
+        }
+
         public bool TryLoad(int slot, IReadOnlyList<ISaveModule> modules, string requiredBlockModuleFullName, out string errorMessage)
         {
             errorMessage = null;
@@ -15,7 +22,7 @@ namespace Kruty1918.SaveSystem
                 return false;
             }
 
-            string path = SaveService.GetPath(slot);
+            string path = SavePipelineHelper.GetPath(slot);
             if (TryLoadFile(path, modules, requiredBlockModuleFullName, $"slot {slot}",
                     out errorMessage, out bool restoreStarted)) return true;
             // A failed legacy restore may already have changed the scene. Do not apply a second save over it.
@@ -32,7 +39,7 @@ namespace Kruty1918.SaveSystem
             return false;
         }
 
-        private static bool TryLoadFile(string path, IReadOnlyList<ISaveModule> modules,
+        private bool TryLoadFile(string path, IReadOnlyList<ISaveModule> modules,
             string requiredBlockModuleFullName, string label, out string errorMessage, out bool restoreStarted)
         {
             errorMessage = null;
@@ -51,7 +58,7 @@ namespace Kruty1918.SaveSystem
                 return false;
             }
             return SavePipelineHelper.ExecuteLoad(bytes, modules, label, out errorMessage, out restoreStarted,
-                requiredBlockModuleFullName);
+                requiredBlockModuleFullName, _ordering);
         }
     }
 }

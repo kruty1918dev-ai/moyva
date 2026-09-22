@@ -6,34 +6,13 @@ namespace Kruty1918.SaveSystem
 {
     /// <summary>
     /// Builds one deterministic execution plan for both save capture and restore.
-    /// Known gameplay modules receive dependency-aware phases while unknown modules
-    /// fall back to a stable type-name order. Explicit module order always wins.
+    /// Module order comes from an injected <see cref="SaveModuleOrdering"/> while
+    /// unknown modules fall back to a stable type-name order. Explicit module
+    /// order (ISaveModuleExecutionOrder) always wins.
     /// </summary>
     public static class SaveModuleExecutionPlan
     {
-        internal const int GeneratedWorldOrder = 100;
-        internal const int ConstructionOrder = 200;
-        internal const int EconomyOrder = 300;
-        internal const int BootstrapStateOrder = 350;
-        internal const int UnitsOrder = 400;
-        internal const int FogOfWarOrder = 500;
         internal const int DefaultOrder = 600;
-        internal const int TurnStateOrder = 900;
-
-        private const string GeneratedWorldModule =
-            "Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule";
-        private const string ConstructionModule =
-            "Kruty1918.Moyva.Construction.Runtime.ConstructionSaveModule";
-        private const string EconomyModule =
-            "Kruty1918.Moyva.Economy.Runtime.EconomySaveModule";
-        private const string BootstrapStarterPackModule =
-            "Kruty1918.Moyva.Bootstrap.Runtime.BootstrapStarterPackSaveModule";
-        private const string UnitsModule =
-            "Kruty1918.Moyva.Bootstrap.Runtime.UnitsSaveModule";
-        private const string FogOfWarModule =
-            "Kruty1918.Moyva.FogOfWar.Runtime.FogOfWarSaveModule";
-        private const string TurnModule =
-            "Kruty1918.Moyva.Bootstrap.Runtime.TurnSaveModule";
 
         private readonly struct Candidate
         {
@@ -49,7 +28,8 @@ namespace Kruty1918.SaveSystem
             public string TypeName { get; }
         }
 
-        internal static List<ISaveModule> Build(IReadOnlyList<ISaveModule> modules)
+        internal static List<ISaveModule> Build(IReadOnlyList<ISaveModule> modules,
+            SaveModuleOrdering ordering = null)
         {
             if (modules == null || modules.Count == 0)
                 return new List<ISaveModule>();
@@ -70,7 +50,7 @@ namespace Kruty1918.SaveSystem
                 }
 
                 string typeName = SaveModuleIdentity.GetStableId(type);
-                candidates.Add(new Candidate(module, ResolveOrder(module, typeName), typeName));
+                candidates.Add(new Candidate(module, ResolveOrder(module, typeName, ordering), typeName));
             }
 
             candidates.Sort(CompareCandidates);
@@ -81,30 +61,14 @@ namespace Kruty1918.SaveSystem
             return result;
         }
 
-        internal static int ResolveBuiltInOrder(string fullTypeName)
-        {
-            if (string.Equals(fullTypeName, GeneratedWorldModule, StringComparison.Ordinal))
-                return GeneratedWorldOrder;
-            if (string.Equals(fullTypeName, ConstructionModule, StringComparison.Ordinal))
-                return ConstructionOrder;
-            if (string.Equals(fullTypeName, EconomyModule, StringComparison.Ordinal))
-                return EconomyOrder;
-            if (string.Equals(fullTypeName, BootstrapStarterPackModule, StringComparison.Ordinal))
-                return BootstrapStateOrder;
-            if (string.Equals(fullTypeName, UnitsModule, StringComparison.Ordinal))
-                return UnitsOrder;
-            if (string.Equals(fullTypeName, FogOfWarModule, StringComparison.Ordinal))
-                return FogOfWarOrder;
-            if (string.Equals(fullTypeName, TurnModule, StringComparison.Ordinal))
-                return TurnStateOrder;
-            return DefaultOrder;
-        }
-
-        private static int ResolveOrder(ISaveModule module, string typeName)
+        private static int ResolveOrder(ISaveModule module, string typeName,
+            SaveModuleOrdering ordering)
         {
             if (module is ISaveModuleExecutionOrder ordered)
                 return ordered.SaveLoadOrder;
-            return ResolveBuiltInOrder(typeName);
+
+            int configured = ordering?.OrderFor(typeName) ?? -1;
+            return configured >= 0 ? configured : DefaultOrder;
         }
 
         private static int CompareCandidates(Candidate left, Candidate right)

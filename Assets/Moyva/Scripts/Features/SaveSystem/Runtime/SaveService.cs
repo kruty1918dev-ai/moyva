@@ -30,12 +30,13 @@ namespace Kruty1918.Moyva.SaveSystem
             [InjectOptional] ISaveWriteService writeService = null,
             [InjectOptional] ISaveLoadService loadService = null,
             [InjectOptional] ISaveSlotPolicyService slotPolicyService = null,
-            [InjectOptional] ISaveModuleRegistry moduleRegistry = null)
+            [InjectOptional] ISaveModuleRegistry moduleRegistry = null,
+            [InjectOptional] SaveModuleOrdering ordering = null)
         {
             _modules = modules ?? new List<ISaveModule>();
             _signalBus = signalBus;
-            _writeService = writeService ?? new SaveWriteService();
-            _loadService = loadService ?? new SaveLoadService();
+            _writeService = writeService ?? new SaveWriteService(ordering);
+            _loadService = loadService ?? new SaveLoadService(ordering);
             _slotPolicyService = slotPolicyService ?? new SaveSlotPolicyService();
             _moduleRegistry = moduleRegistry;
         }
@@ -91,7 +92,7 @@ namespace Kruty1918.Moyva.SaveSystem
         // ─── Helpers ──────────────────────────────────────────────────────
 
         internal static string GetPath(int slot)
-            => Path.Combine(SavePipelineHelper.GetDirectory(), $"slot{slot:D2}.mvs");
+            => SavePipelineHelper.GetPath(slot);
 
         private List<ISaveModule> GetCurrentModulesSnapshot()
         {

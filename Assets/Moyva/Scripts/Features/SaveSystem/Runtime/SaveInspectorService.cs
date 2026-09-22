@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Kruty1918.SaveSystem;
 using UnityEngine;
 
-namespace Kruty1918.SaveSystem
+namespace Kruty1918.Moyva.SaveSystem
 {
     /// <summary>
     /// Сервіс для інспектування вмісту файлів збереження без їх завантаження.

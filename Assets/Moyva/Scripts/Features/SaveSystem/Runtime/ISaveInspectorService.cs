@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Kruty1918.SaveSystem
+namespace Kruty1918.Moyva.SaveSystem
 {
     /// <summary>
     /// Read-only helper for inspecting slot contents without fully loading game state.

@@ -1,4 +1,6 @@
-namespace Kruty1918.SaveSystem
+using Kruty1918.SaveSystem;
+
+namespace Kruty1918.Moyva.SaveSystem
 {
     public interface ISaveSlotPolicyService
     {

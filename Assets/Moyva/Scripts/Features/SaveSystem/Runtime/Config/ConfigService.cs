@@ -14,6 +14,13 @@ namespace Kruty1918.SaveSystem
     /// </summary>
     internal sealed class ConfigService : IConfigService
     {
+        private readonly SaveModuleOrdering _ordering;
+
+        public ConfigService([InjectOptional] SaveModuleOrdering ordering = null)
+        {
+            _ordering = ordering;
+        }
+
         // ─── IInitializable / IDisposable ──────────────────────────────────
 
         public void Initialize()
@@ -42,7 +49,7 @@ namespace Kruty1918.SaveSystem
             }
 
             List<(uint blockId, byte[] payload)> blocks;
-            try { blocks = SavePipelineHelper.CollectBlocks(modules); }
+            try { blocks = SavePipelineHelper.CollectBlocks(modules, _ordering); }
             catch (System.Exception exception)
             {
                 Debug.LogError($"[SaveSystem] Config save aborted: {exception.Message}");
@@ -84,7 +91,7 @@ namespace Kruty1918.SaveSystem
                 return;
             }
 
-            SavePipelineHelper.ExecuteLoad(bytes, modules, "config");
+            SavePipelineHelper.ExecuteLoad(bytes, modules, "config", _ordering);
         }
 
         public bool HasConfig()

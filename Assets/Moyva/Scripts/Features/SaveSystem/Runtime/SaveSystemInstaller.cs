@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Kruty1918.Moyva.SaveSystem;
 using Zenject;
 
 namespace Kruty1918.SaveSystem
@@ -26,6 +27,8 @@ namespace Kruty1918.SaveSystem
 
         public static void Install(DiContainer container)
         {
+            container.BindInstance(MoyvaSaveModuleOrdering.Create());
+
             container.Bind<ISaveWriteService>()
                 .To<SaveWriteService>()
                 .AsSingle();

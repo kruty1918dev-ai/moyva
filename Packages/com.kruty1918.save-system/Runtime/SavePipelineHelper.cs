@@ -25,9 +25,9 @@ namespace Kruty1918.SaveSystem
         /// не створює дубльований blockId у файлі.
         /// </summary>
         internal static List<(uint blockId, byte[] payload)> CollectBlocks(
-            IReadOnlyList<ISaveModule> modules)
+            IReadOnlyList<ISaveModule> modules, SaveModuleOrdering ordering = null)
         {
-            List<ISaveModule> orderedModules = SaveModuleExecutionPlan.Build(modules);
+            List<ISaveModule> orderedModules = SaveModuleExecutionPlan.Build(modules, ordering);
             var blocks = new List<(uint, byte[])>(orderedModules.Count);
             var blockIds = new HashSet<uint>();
 
@@ -145,16 +145,18 @@ namespace Kruty1918.SaveSystem
         /// модулів, а не у фізичному порядку блоків у .mvs. Це робить legacy saves
         /// незалежними від історичного порядку Zenject/registrar реєстрації.
         /// </summary>
-        internal static bool ExecuteLoad(byte[] bytes, IReadOnlyList<ISaveModule> modules, string contextLabel)
+        internal static bool ExecuteLoad(byte[] bytes, IReadOnlyList<ISaveModule> modules,
+            string contextLabel, SaveModuleOrdering ordering = null)
         {
-            bool loaded = ExecuteLoad(bytes, modules, contextLabel, out string error, out _);
+            bool loaded = ExecuteLoad(bytes, modules, contextLabel, out string error, out _,
+                ordering: ordering);
             if (!loaded) Debug.LogError($"[SaveSystem] {error}");
             return loaded;
         }
 
         internal static bool ExecuteLoad(byte[] bytes, IReadOnlyList<ISaveModule> modules,
             string contextLabel, out string errorMessage, out bool restoreStarted,
-            string requiredBlockModuleFullName = null)
+            string requiredBlockModuleFullName = null, SaveModuleOrdering ordering = null)
         {
             restoreStarted = false;
             errorMessage = null;
@@ -178,7 +180,7 @@ namespace Kruty1918.SaveSystem
 
             var prepared = new List<(string Name, Action Commit)>();
             var blockNames = new Dictionary<uint, string>();
-            foreach (var module in SaveModuleExecutionPlan.Build(modules))
+            foreach (var module in SaveModuleExecutionPlan.Build(modules, ordering))
             {
                 string name = SaveModuleIdentity.GetStableId(module.GetType());
                 uint id = SaveFileCodec.ComputeBlockId(module.GetType());
@@ -273,6 +275,10 @@ namespace Kruty1918.SaveSystem
         /// <summary>Шлях до директорії збережень.</summary>
         internal static string GetDirectory()
             => Path.Combine(Application.persistentDataPath, "saves");
+
+        /// <summary>Шлях до файлу ігрового слота (slot00–slot99).</summary>
+        internal static string GetPath(int slot)
+            => Path.Combine(GetDirectory(), $"slot{slot:D2}.mvs");
 
         /// <summary>Безпечне видалення файлу з логуванням.</summary>
         internal static void TryDelete(string path)
