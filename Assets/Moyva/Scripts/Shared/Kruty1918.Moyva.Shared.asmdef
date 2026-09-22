@@ -11,7 +11,8 @@
         "Kruty1918.Connectivity",
         "Kruty1918.Diagnostics",
         "Kruty1918.Performance",
-        "Kruty1918.UiFoundation"
+        "Kruty1918.UiFoundation",
+        "Kruty1918.Audio"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

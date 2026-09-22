@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Kruty1918.Moyva.Audio.API;
+using Kruty1918.Audio;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
     /// Runtime registry for audio sounds. Loaded via Resources.Load("MoyvaAudioRegistry") by ProjectServicesInstaller.
     /// </summary>
 [System.Serializable]
-public sealed class AudioRegistrySO : JsonConfigObject
+public sealed class AudioRegistrySO : JsonConfigObject, IAudioCatalog
     {
         [SerializeField] private AudioSoundDefinition[] _sounds = Array.Empty<AudioSoundDefinition>();
         [SerializeField] private AudioChannelDefinition[] _channels = Array.Empty<AudioChannelDefinition>();

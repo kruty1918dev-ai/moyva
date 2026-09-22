@@ -4,49 +4,16 @@ using UnityEngine;
 using UnityEngine.Audio;
 
 using Kruty1918.JsonConfig;
+using Kruty1918.Audio;
 namespace Kruty1918.Moyva.Audio.Runtime
 {
-    /// <summary>
-    /// Per-scene override для окремого звуку.
-    /// SceneName = "" означає глобальний override (всі сцени).
-    /// </summary>
-    [Serializable]
-    public sealed class SoundSceneOverride
-    {
-        [HideInInspector] public string SceneName;
-        [HideInInspector] public string SoundKey;
-
-        public bool OverrideVolume;
-        [Range(0f, 1f)] public float Volume = 1f;
-
-        public bool OverridePitch;
-        [Range(-3f, 3f)] public float Pitch = 1f;
-
-        public bool OverrideMixerGroup;
-        public AudioMixerGroup MixerGroup;
-
-        public bool OverrideLoop;
-        public bool Loop;
-
-        public bool OverrideSpatialBlend;
-        [Range(0f, 1f)] public float SpatialBlend;
-
-        public bool OverridePriority;
-        [Range(0, 256)] public int Priority = 128;
-
-        /// <summary>
-        /// Автоматично відтворити цей звук при завантаженні сцени.
-        /// Не вимагає окремого OverrideXxx — просто встановіть true.
-        /// </summary>
-        public bool PlayOnAwake;
-    }
 
     /// <summary>
     /// Реєстр per-scene overrides для звуків.
     /// Runtime завантажує з Resources/MoyvaSceneAudioOverrides.
     /// </summary>
 [System.Serializable]
-public sealed class SceneAudioOverridesSO : JsonConfigObject
+public sealed class SceneAudioOverridesSO : JsonConfigObject, IAudioSceneOverrides
     {
         [SerializeField] private List<SoundSceneOverride> _overrides = new List<SoundSceneOverride>();
 

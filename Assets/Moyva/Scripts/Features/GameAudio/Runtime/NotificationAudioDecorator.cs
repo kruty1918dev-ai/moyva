@@ -1,4 +1,4 @@
-using Kruty1918.Moyva.Audio.API;
+using Kruty1918.Audio;
 using Kruty1918.Moyva.GameAudio.API;
 using Kruty1918.Notifications.API;
 using Zenject;

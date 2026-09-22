@@ -1,56 +1,12 @@
 using System;
-using Kruty1918.Moyva.Audio.API;
+using Kruty1918.Audio;
 using UnityEngine;
 using UnityEngine.Audio;
 
 using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Audio.Runtime
 {
-    // ─── Data ────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Налаштування одного музичного треку (стартові значення — можна змінити в runtime).
-    /// </summary>
-    [Serializable]
-    public sealed class MusicTrackSettings
-    {
-        [Tooltip("AudioClip що грає. null = тиша.")]
-        public AudioClip Clip;
-
-        [Tooltip("AudioMixerGroup для маршрутизації (Music-група).")]
-        public AudioMixerGroup MixerGroup;
-
-        [Range(0f, 1f), Tooltip("Стартова гучність.")]
-        public float Volume = 0.7f;
-
-        [Tooltip("Чи грати в циклі.")]
-        public bool Loop = true;
-
-        [Min(0f), Tooltip("Затримка (сек) перед першим запуском.")]
-        public float StartDelay = 0f;
-
-        [Tooltip("Тривалість fade-in при запуску (сек).")]
-        [Min(0f)] public float FadeInDuration = 1.5f;
-
-        [Tooltip("Тривалість fade-out при зупинці (сек).")]
-        [Min(0f)] public float FadeOutDuration = 1.5f;
-
-        [Tooltip("Якщо true — при переході до нового треку (або сцени) crossfade, інакше: fade-out → fade-in.")]
-        public bool UseCrossfade = true;
-    }
-
-    /// <summary>
-    /// Посилання на сцену за іменем і шляхом.
-    /// </summary>
-    [Serializable]
-    public sealed class SceneReference
-    {
-        [Tooltip("Відображуване ім'я сцени (має збігатися із зареєстрованою сценою в Build Settings або бути просто ідентифікатором).")]
-        public string SceneName;
-
-        [Tooltip("Повний шлях до .unity-файлу (опційно, для зручності).")]
-        public string ScenePath;
-    }
 
     // ─── ScriptableObject ────────────────────────────────────────────────────────
 
@@ -59,7 +15,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
     /// Завантажується MusicService при зміні сцени.
     /// </summary>
 [System.Serializable]
-public sealed class SceneMusicProfileSO : JsonConfigObject
+public sealed class SceneMusicProfileSO : JsonConfigObject, IMusicSceneProfile
     {
         [Header("Target Scenes")]
         [Tooltip("Список сцен, для яких діє цей профіль. Порожній список = Global Profile (застосовується до будь-якої сцени без власного профілю).")]

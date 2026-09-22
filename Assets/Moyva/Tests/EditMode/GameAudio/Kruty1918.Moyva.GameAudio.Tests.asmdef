@@ -1,25 +1,26 @@
 {
-  "name": "Kruty1918.Moyva.GameAudio.Tests",
-  "rootNamespace": "Kruty1918.Moyva.GameAudio.Tests",
-  "references": [
-    "Kruty1918.Moyva.Shared",
-    "Kruty1918.Moyva.GameAudio",
-    "Kruty1918.Moyva.Camera",
-    "Kruty1918.JsonConfig",
-    "Zenject"
-  ],
-  "includePlatforms": [
-    "Editor"
-  ],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": false,
-  "defineConstraints": [],
-  "versionDefines": [],
-  "noEngineReferences": false,
-  "optionalUnityReferences": [
-    "TestAssemblies"
-  ]
+    "name": "Kruty1918.Moyva.GameAudio.Tests",
+    "rootNamespace": "Kruty1918.Moyva.GameAudio.Tests",
+    "references": [
+        "Kruty1918.Moyva.Shared",
+        "Kruty1918.Moyva.GameAudio",
+        "Kruty1918.Moyva.Camera",
+        "Kruty1918.JsonConfig",
+        "Zenject",
+        "Kruty1918.Audio"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
 }

@@ -2,27 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using Kruty1918.Moyva.Audio.Runtime;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.Rendering;
-using Zenject;
-using Kruty1918.Connectivity;
-using Kruty1918.Moyva.Shared.Graphics;
-using Kruty1918.Moyva.Shared.Common;
-using Kruty1918.Performance;
-using Kruty1918.Diagnostics;
-using Kruty1918.Moyva.Shared.UI;
 
-using Kruty1918.JsonConfig;
-namespace Kruty1918.Moyva.Audio.Runtime
+namespace Kruty1918.Audio
 {
-    using Kruty1918.Moyva.Audio.API;
 
-    public sealed class AudioService : IAudioService, IInitializable, ITickable, IDisposable
+    public sealed class AudioService : IAudioService, IDisposable
     {
-        private const string DefaultRegistryResourcePath = "MoyvaAudioRegistry";
-        private const string RootName = "MoyvaAudioPool";
+        private const string RootName = "AudioPool";
 
         private sealed class BusDuck
         {
@@ -35,8 +24,8 @@ namespace Kruty1918.Moyva.Audio.Runtime
             public float StartMultiplier;
         }
 
-        private readonly AudioRegistrySO _registry;
-        private readonly SceneAudioOverridesSO _sceneOverrides;
+        private readonly IAudioCatalog _registry;
+        private readonly IAudioSceneOverrides _sceneOverrides;
         private readonly Queue<AudioSource> _available = new Queue<AudioSource>();
         private readonly List<AudioSource> _active = new List<AudioSource>();
         private readonly Dictionary<AudioSource, string> _activeKeys = new Dictionary<AudioSource, string>();
@@ -54,10 +43,10 @@ namespace Kruty1918.Moyva.Audio.Runtime
         private GameObject _root;
         private int _lastProcessedSceneHandle = -1;
 
-        public AudioService([InjectOptional] AudioRegistrySO registry, [InjectOptional] SceneAudioOverridesSO sceneOverrides)
+        public AudioService(IAudioCatalog catalog, IAudioSceneOverrides sceneOverrides)
         {
-            _registry = registry != null ? registry : JsonConfigRuntime.GetLegacyResource<AudioRegistrySO>(DefaultRegistryResourcePath);
-            _sceneOverrides = sceneOverrides ?? JsonConfigRuntime.GetLegacyResource<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
+            _registry = catalog;
+            _sceneOverrides = sceneOverrides;
         }
 
         public void Initialize()
@@ -801,36 +790,4 @@ namespace Kruty1918.Moyva.Audio.Runtime
         }
     }
 
-    public static class AudioInstaller
-    {
-        private const string DefaultRegistryResourcePath = "MoyvaAudioRegistry";
-
-        public static void Install(DiContainer container, AudioRegistrySO registry = null,
-            IEnumerable<SceneMusicProfileSO> musicProfiles = null,
-            SceneAudioOverridesSO sceneOverrides = null)
-        {
-            if (!container.HasBinding<AudioRegistrySO>())
-            {
-                // Serialized plain-class config fields deserialize as non-null but empty,
-                // which would shadow the JSON source of truth — prefer JSON when present.
-                AudioRegistrySO jsonRegistry = JsonConfigRuntime.GetLegacyResource<AudioRegistrySO>(DefaultRegistryResourcePath);
-                registry = jsonRegistry ?? registry;
-                if (registry != null)
-                    container.BindInstance(registry).AsSingle();
-            }
-
-            if (!container.HasBinding<SceneAudioOverridesSO>())
-            {
-                SceneAudioOverridesSO jsonOverrides = JsonConfigRuntime.GetLegacyResource<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
-                sceneOverrides = jsonOverrides ?? sceneOverrides;
-                if (sceneOverrides != null)
-                    container.BindInstance(sceneOverrides).AsSingle();
-            }
-
-            if (!container.HasBinding<IAudioService>())
-                container.BindInterfacesAndSelfTo<AudioService>().AsSingle().NonLazy();
-
-            MusicInstaller.Install(container, musicProfiles);
-        }
-    }
 }

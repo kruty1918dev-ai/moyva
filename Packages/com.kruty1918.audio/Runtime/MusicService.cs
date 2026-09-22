@@ -1,13 +1,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Kruty1918.Moyva.Audio.API;
+using Kruty1918.Audio;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Zenject;
 
-using Kruty1918.JsonConfig;
-namespace Kruty1918.Moyva.Audio.Runtime
+namespace Kruty1918.Audio
 {
     // ─── Public API ──────────────────────────────────────────────────────────────
 
@@ -49,7 +47,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
         /// Явно активувати профіль для поточної сцени.
         /// Викликається автоматично при зміні сцени, але може бути викликаний вручну.
         /// </summary>
-        void ApplyProfile(SceneMusicProfileSO profile);
+        void ApplyProfile(IMusicSceneProfile profile);
 
         // ── Epic Music ─────────────────────────────────────────────────────
 
@@ -101,11 +99,11 @@ namespace Kruty1918.Moyva.Audio.Runtime
     /// - Epic music тільки для локального гравця.
     /// - Всі переходи через корутину Coroutine(FadeTransition).
     /// </summary>
-    public sealed class MusicService : IMusicService, IInitializable, IDisposable
+    public sealed class MusicService : IMusicService, IDisposable
     {
         // ── Injected ───────────────────────────────────────────────────────
 
-        private readonly List<SceneMusicProfileSO> _profiles;
+        private readonly List<IMusicSceneProfile> _profiles;
 
         // ── State ──────────────────────────────────────────────────────────
 
@@ -115,7 +113,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
         private AudioSource _activeSource;
         private AudioSource _fadingSource;
 
-        private SceneMusicProfileSO _currentProfile;
+        private IMusicSceneProfile _currentProfile;
         private MusicTrackSettings _currentTrackSettings; // default чи epic
         private MusicTrackSettings _runtimeDefaultSettings; // mutable copy
         private MusicTrackSettings _runtimeEpicSettings;   // mutable copy
@@ -127,9 +125,9 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
         // ─────────────────────────────────────────────────────────────────────
 
-        public MusicService([InjectOptional] List<SceneMusicProfileSO> profiles)
+        public MusicService(List<IMusicSceneProfile> profiles)
         {
-            _profiles = profiles ?? new List<SceneMusicProfileSO>();
+            _profiles = profiles ?? new List<IMusicSceneProfile>();
         }
 
         public void Initialize()
@@ -167,7 +165,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
         // ── IMusicService ──────────────────────────────────────────────────
 
-        public void ApplyProfile(SceneMusicProfileSO profile)
+        public void ApplyProfile(IMusicSceneProfile profile)
         {
             if (profile == null) return;
             ApplyProfileInternal(profile, force: false);
@@ -263,7 +261,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
             ApplyProfileInternal(profile, force: false);
         }
 
-        private void ApplyProfileInternal(SceneMusicProfileSO profile, bool force)
+        private void ApplyProfileInternal(IMusicSceneProfile profile, bool force)
         {
             _currentProfile = profile;
 
@@ -433,9 +431,9 @@ namespace Kruty1918.Moyva.Audio.Runtime
             };
         }
 
-        private SceneMusicProfileSO FindProfileForScene(string sceneName)
+        private IMusicSceneProfile FindProfileForScene(string sceneName)
         {
-            SceneMusicProfileSO globalFallback = null;
+            IMusicSceneProfile globalFallback = null;
             for (int i = 0; i < _profiles.Count; i++)
             {
                 var p = _profiles[i];
@@ -463,31 +461,4 @@ namespace Kruty1918.Moyva.Audio.Runtime
     /// </summary>
     internal sealed class CoroutineRunner : MonoBehaviour { }
 
-    // ─── Installer helper ─────────────────────────────────────────────────────────
-
-    public static class MusicInstaller
-    {
-        /// <summary>
-        /// Реєструє IMusicService. Виклик з AudioInstaller або окремого installer.
-        /// profiles — список профілів, знайдених у Resources або прив'язаних вручну.
-        /// </summary>
-        public static void Install(DiContainer container, IEnumerable<SceneMusicProfileSO> profiles = null)
-        {
-            if (container.HasBinding<IMusicService>()) return;
-
-            var list = new List<SceneMusicProfileSO>(profiles ?? Array.Empty<SceneMusicProfileSO>());
-            // Serialized plain-class entries can be empty stubs (no clips); drop them so
-            // they don't shadow the JSON source of truth.
-            list.RemoveAll(p => p == null
-                || (p.DefaultMusic?.Clip == null && p.EpicMusic?.Clip == null));
-            if (list.Count == 0)
-            {
-                var found = JsonConfigRuntime.GetAllLegacyResources<SceneMusicProfileSO>("MusicProfiles");
-                list.AddRange(found);
-            }
-
-            container.BindInstance(list).AsSingle();
-            container.BindInterfacesAndSelfTo<MusicService>().AsSingle().NonLazy();
-        }
-    }
 }

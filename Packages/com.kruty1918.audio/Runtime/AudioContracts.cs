@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Audio;
 
-namespace Kruty1918.Moyva.Audio.API
+namespace Kruty1918.Audio
 {
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class AudioKeyAttribute : PropertyAttribute { }
