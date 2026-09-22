@@ -30,7 +30,12 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             var overlay = new RecordingOverlay(order);
             var graphics = new RecordingGraphics(order);
             var prewarm = new RecordingPrewarm(order);
+<<<<<<< Updated upstream
             var config = new HomeMenuConfigSO { gameplaySceneName = "__p082_missing_scene__" };
+=======
+            var config = ScriptableObject.CreateInstance<HomeMenuConfigSO>();
+            config.gameplaySceneName = "__p082_missing_scene__";
+>>>>>>> Stashed changes
 
             var pipeline = new GameplayStartupPipeline(
                 config,
