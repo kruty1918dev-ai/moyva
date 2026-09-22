@@ -1,6 +1,6 @@
 using System;
 
-namespace Kruty1918.Moyva.Notifications.API
+namespace Kruty1918.Notifications.API
 {
     public readonly struct GameplayNotificationRequest
     {
@@ -24,7 +24,7 @@ namespace Kruty1918.Moyva.Notifications.API
         public bool HasDedupKey
             => !string.IsNullOrWhiteSpace(DedupKey);
 
-        internal GameplayNotificationRequest Normalized()
+        public GameplayNotificationRequest Normalized()
         {
             return new GameplayNotificationRequest(
                 Message?.Trim(),

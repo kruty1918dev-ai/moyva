@@ -1,4 +1,4 @@
-namespace Kruty1918.Moyva.Notifications.API
+namespace Kruty1918.Notifications.API
 {
     public interface IGameplayNotificationService
     {

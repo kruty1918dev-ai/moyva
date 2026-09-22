@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Notifications.Runtime
+namespace Kruty1918.Notifications.Runtime
 {
     [Serializable]
     public sealed class GameplayNotificationSettings

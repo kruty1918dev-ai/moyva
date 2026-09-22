@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using Kruty1918.Moyva.Notifications.API;
-using Zenject;
+using Kruty1918.Notifications.API;
 
-namespace Kruty1918.Moyva.Notifications.Runtime
+namespace Kruty1918.Notifications.Runtime
 {
-    internal sealed class GameplayNotificationService : IGameplayNotificationService, IDisposable
+    public sealed class GameplayNotificationService : IGameplayNotificationService, IDisposable
     {
         private readonly Queue<GameplayNotificationRequest> _queue = new();
         private readonly HashSet<string> _dedupKeys = new(StringComparer.Ordinal);
@@ -18,7 +17,7 @@ namespace Kruty1918.Moyva.Notifications.Runtime
 
         public GameplayNotificationService(
             GameplayNotificationSettings settings,
-            [InjectOptional] IGameplayNotificationPresenter presenter = null)
+            IGameplayNotificationPresenter presenter = null)
         {
             _settings = settings ?? new GameplayNotificationSettings();
             _settings.Normalize();

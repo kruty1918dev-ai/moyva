@@ -1,9 +1,7 @@
 {
-  "name": "Kruty1918.Moyva.Notifications",
-  "rootNamespace": "Kruty1918.Moyva.Notifications",
+  "name": "Kruty1918.Notifications",
+  "rootNamespace": "Kruty1918.Notifications",
   "references": [
-    "Kruty1918.Notifications",
-    "Zenject",
     "Unity.TextMeshPro"
   ],
   "includePlatforms": [],

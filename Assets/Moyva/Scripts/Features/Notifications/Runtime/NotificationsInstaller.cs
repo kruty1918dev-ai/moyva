@@ -1,5 +1,6 @@
 using Zenject;
-using Kruty1918.Moyva.Notifications.API;
+using Kruty1918.Notifications.API;
+using Kruty1918.Notifications.Runtime;
 
 namespace Kruty1918.Moyva.Notifications.Runtime
 {
@@ -13,6 +14,9 @@ namespace Kruty1918.Moyva.Notifications.Runtime
             if (!container.HasBinding(typeof(IGameplayNotificationService)))
             {
                 container.BindInterfacesAndSelfTo<GameplayNotificationService>()
+                    .FromMethod(ctx => new GameplayNotificationService(
+                        ctx.Container.Resolve<GameplayNotificationSettings>(),
+                        ctx.Container.TryResolve<IGameplayNotificationPresenter>()))
                     .AsSingle()
                     .NonLazy();
             }

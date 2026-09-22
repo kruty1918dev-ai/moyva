@@ -1,6 +1,6 @@
-namespace Kruty1918.Moyva.Notifications.Runtime
+namespace Kruty1918.Notifications.Runtime
 {
-    internal readonly struct GameplayNotificationVisualState
+    public readonly struct GameplayNotificationVisualState
     {
         public GameplayNotificationVisualState(
             bool isActive,

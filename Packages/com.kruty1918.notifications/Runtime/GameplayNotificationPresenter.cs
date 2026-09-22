@@ -1,5 +1,5 @@
 using System;
-using Kruty1918.Moyva.Notifications.API;
+using Kruty1918.Notifications.API;
 using UnityEngine;
 
 #if DOTWEEN_ENABLED
@@ -8,7 +8,7 @@ using DG.Tweening;
 using System.Collections;
 #endif
 
-namespace Kruty1918.Moyva.Notifications.Runtime
+namespace Kruty1918.Notifications.Runtime
 {
     public sealed class GameplayNotificationPresenter : MonoBehaviour, IGameplayNotificationPresenter
     {

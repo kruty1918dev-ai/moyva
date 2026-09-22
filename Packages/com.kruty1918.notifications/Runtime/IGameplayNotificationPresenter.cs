@@ -1,9 +1,9 @@
 using System;
-using Kruty1918.Moyva.Notifications.API;
+using Kruty1918.Notifications.API;
 
-namespace Kruty1918.Moyva.Notifications.Runtime
+namespace Kruty1918.Notifications.Runtime
 {
-    internal interface IGameplayNotificationPresenter
+    public interface IGameplayNotificationPresenter
     {
         void Present(
             GameplayNotificationRequest request,

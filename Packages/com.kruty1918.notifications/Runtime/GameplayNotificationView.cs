@@ -1,9 +1,9 @@
-using Kruty1918.Moyva.Notifications.API;
+using Kruty1918.Notifications.API;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Kruty1918.Moyva.Notifications.Runtime
+namespace Kruty1918.Notifications.Runtime
 {
     public sealed class GameplayNotificationView : MonoBehaviour
     {

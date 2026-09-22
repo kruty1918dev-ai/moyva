@@ -1,8 +1,8 @@
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Notifications.Runtime
+namespace Kruty1918.Notifications.Runtime
 {
-    internal static class GameplayNotificationAnimation
+    public static class GameplayNotificationAnimation
     {
         public static GameplayNotificationVisualState Evaluate(
             GameplayNotificationSettings settings,
