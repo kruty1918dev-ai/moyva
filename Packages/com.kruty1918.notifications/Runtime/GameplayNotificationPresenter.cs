@@ -22,7 +22,10 @@ namespace Kruty1918.Notifications.Runtime
         private Coroutine _routine;
 #endif
 
-        [Zenject.Inject]
+        /// <summary>
+        /// Supplies presenter settings. Call from the game's composition root when
+        /// the presenter component is created (e.g. via a DI factory).
+        /// </summary>
         public void Construct(GameplayNotificationSettings settings)
         {
             _settings = settings ?? new GameplayNotificationSettings();
