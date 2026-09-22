@@ -8,6 +8,7 @@ using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Units.API;
+using Kruty1918.EntityHealth;
 
 namespace Kruty1918.Moyva.AI.Bot
 {

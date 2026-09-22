@@ -23,7 +23,8 @@
         "Unity.Services.Multiplayer",
         "Unity.Networking.Transport",
         "Unity.Collections",
-        "Kruty1918.Connectivity"
+        "Kruty1918.Connectivity",
+        "Kruty1918.EntityHealth"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

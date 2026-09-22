@@ -9,6 +9,7 @@ using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
+using Kruty1918.EntityHealth;
 
 // Test doubles declare interface events they never raise.
 #pragma warning disable CS0067

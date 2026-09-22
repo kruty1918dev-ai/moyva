@@ -1,24 +1,25 @@
 {
-  "name": "Kruty1918.Moyva.AI.Training.Tests",
-  "references": [
-    "Kruty1918.Moyva.Economy",
-    "Kruty1918.Moyva.Units",
-    "Kruty1918.Moyva.Combat",
-    "Kruty1918.Moyva.Signals",
-    "Kruty1918.Moyva.AI.Training",
-    "Kruty1918.Moyva.Turns",
-    "Unity.ML-Agents",
-    "Unity.InferenceEngine",
-    "Kruty1918.Moyva.AI.Bot.Core",
-    "Kruty1918.Moyva.Construction",
-    "Kruty1918.Moyva.FogOfWar",
-    "Zenject"
-  ],
-  "includePlatforms": [
-    "Editor"
-  ],
-  "optionalUnityReferences": [
-    "TestAssemblies"
-  ],
-  "autoReferenced": false
+    "name": "Kruty1918.Moyva.AI.Training.Tests",
+    "references": [
+        "Kruty1918.Moyva.Economy",
+        "Kruty1918.Moyva.Units",
+        "Kruty1918.Moyva.Combat",
+        "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.AI.Training",
+        "Kruty1918.Moyva.Turns",
+        "Unity.ML-Agents",
+        "Unity.InferenceEngine",
+        "Kruty1918.Moyva.AI.Bot.Core",
+        "Kruty1918.Moyva.Construction",
+        "Kruty1918.Moyva.FogOfWar",
+        "Zenject",
+        "Kruty1918.EntityHealth"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "autoReferenced": false
 }

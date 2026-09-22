@@ -12,6 +12,7 @@ using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Turns.API;
 using UnityEngine;
 using Zenject;
+using Kruty1918.EntityHealth;
 
 namespace Kruty1918.Moyva.Multiplayer.Runtime
 {

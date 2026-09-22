@@ -13,6 +13,7 @@ using Kruty1918.Moyva.Units.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 using Zenject;
+using Kruty1918.EntityHealth;
 
 namespace Kruty1918.Moyva.Tests.Units
 {

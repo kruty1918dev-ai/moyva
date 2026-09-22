@@ -24,6 +24,7 @@ using UnityEngine;
 using UnityHTML.Runtime;
 using Zenject;
 using System.Text;
+using Kruty1918.EntityHealth;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {

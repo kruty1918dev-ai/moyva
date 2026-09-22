@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Animations.API;
-using Kruty1918.Moyva.Animations.Runtime.Motion;
+using Kruty1918.Motion;
+using Kruty1918.Motion;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;

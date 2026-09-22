@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Presentation.API;
 using Sirenix.OdinInspector;
+using Kruty1918.EntityHealth;
 
 namespace Kruty1918.Moyva.Construction.API
 {

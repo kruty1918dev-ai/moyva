@@ -7,6 +7,7 @@ using Kruty1918.SaveSystem;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.WorldCreation.API;
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.EntityHealth;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {

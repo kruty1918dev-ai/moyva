@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Kruty1918.Moyva.Combat.API;
 
-namespace Kruty1918.Moyva.Combat.Runtime
+namespace Kruty1918.EntityHealth
 {
     /// <summary>
     /// Стандартна реалізація <see cref="IHealthRegistry"/>.

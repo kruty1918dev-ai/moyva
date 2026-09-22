@@ -69,7 +69,9 @@
     "com.kruty1918.adaptive-performance": "file:com.kruty1918.adaptive-performance",
     "com.kruty1918.ui-foundation": "file:com.kruty1918.ui-foundation",
     "com.kruty1918.audio": "file:com.kruty1918.audio",
-    "com.kruty1918.vfx": "file:com.kruty1918.vfx"
+    "com.kruty1918.vfx": "file:com.kruty1918.vfx",
+    "com.kruty1918.motion": "file:com.kruty1918.motion",
+    "com.kruty1918.entity-health": "file:com.kruty1918.entity-health"
   },
   "testables": [
     "com.kruty1918.moyva.unityhtml"

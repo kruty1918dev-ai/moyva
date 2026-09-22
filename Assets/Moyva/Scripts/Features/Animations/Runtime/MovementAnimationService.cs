@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Animations.API;
-using Kruty1918.Moyva.Animations.Runtime.Motion;
+using Kruty1918.Motion;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Animations.Runtime

@@ -1,10 +1,7 @@
 {
-    "name": "Kruty1918.Moyva.Combat",
-    "rootNamespace": "Kruty1918.Moyva.Combat",
-    "references": [
-        "Zenject",
-        "Kruty1918.EntityHealth"
-    ],
+    "name": "Kruty1918.Motion",
+    "rootNamespace": "Kruty1918.Motion",
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

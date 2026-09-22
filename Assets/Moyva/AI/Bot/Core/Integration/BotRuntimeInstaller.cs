@@ -10,6 +10,7 @@ using Kruty1918.Moyva.Grid.API;
 using Zenject;
 using System;
 using System.Reflection;
+using Kruty1918.EntityHealth;
 
 namespace Kruty1918.Moyva.AI.Bot
 {

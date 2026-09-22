@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Kruty1918.Moyva.Combat.API
+namespace Kruty1918.EntityHealth
 {
     /// <summary>
     /// Централізований реєстр усіх активних health-сутностей у грі.

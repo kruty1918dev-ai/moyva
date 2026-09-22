@@ -1,7 +1,6 @@
 using System;
-using Kruty1918.Moyva.Combat.API;
 
-namespace Kruty1918.Moyva.Combat.Runtime
+namespace Kruty1918.EntityHealth
 {
     /// <summary>
     /// Базова реалізація <see cref="IHealth"/>, придатна для вбудовування у будь-яку сутність.

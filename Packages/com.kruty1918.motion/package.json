@@ -1,0 +1,18 @@
+{
+  "name": "com.kruty1918.motion",
+  "version": "0.1.0",
+  "displayName": "Kruty1918 Motion",
+  "description": "Reusable motion primitives: easing kinds/evaluator, slot-based EntityMotion component (follow/ease/punch/custom) and path traversal motion.",
+  "unity": "6000.0",
+  "unityRelease": "0f1",
+  "author": {
+    "name": "Kruty1918"
+  },
+  "dependencies": {},
+  "keywords": [
+    "kruty1918",
+    "motion",
+    "tween",
+    "easing"
+  ]
+}

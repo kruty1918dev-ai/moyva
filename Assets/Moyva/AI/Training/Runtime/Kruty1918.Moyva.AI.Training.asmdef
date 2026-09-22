@@ -2,7 +2,7 @@
     "name": "Kruty1918.Moyva.AI.Training",
     "rootNamespace": "Kruty1918.Moyva.AI.Training",
     "references": [
-    "Kruty1918.Calendar",
+        "Kruty1918.Calendar",
         "Unity.ML-Agents",
         "Kruty1918.Moyva.Turns",
         "Kruty1918.Moyva.Units",
@@ -25,7 +25,8 @@
         "Kruty1918.Moyva.Economy",
         "Kruty1918.Moyva.Bootstrap",
         "Unity.InputSystem",
-        "Unity.InferenceEngine"
+        "Unity.InferenceEngine",
+        "Kruty1918.EntityHealth"
     ],
     "autoReferenced": false
 }

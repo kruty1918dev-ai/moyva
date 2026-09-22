@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using UnityEngine;
+using Kruty1918.EntityHealth;
 
 namespace Kruty1918.Moyva.Multiplayer.Runtime
 {

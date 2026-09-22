@@ -1,8 +1,7 @@
 using System;
-using Kruty1918.Moyva.Animations.API;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Animations.Runtime.Motion
+namespace Kruty1918.Motion
 {
     /// <summary>
     /// Канонічний presentation-motion для сутності. Замінює розкидані tween-виклики:

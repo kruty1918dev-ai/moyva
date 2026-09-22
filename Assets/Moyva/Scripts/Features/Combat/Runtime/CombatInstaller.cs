@@ -1,6 +1,6 @@
 using Kruty1918.Moyva.Combat.API;
-using Kruty1918.Moyva.Combat.Runtime;
 using Zenject;
+using Kruty1918.EntityHealth;
 
 namespace Kruty1918.Moyva.Combat
 {

@@ -13,6 +13,7 @@ using Zenject;
 
 using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.EntityHealth;
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     public sealed class ConstructionInstaller : MonoInstaller

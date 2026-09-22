@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Animations.Runtime.Motion
+namespace Kruty1918.Motion
 {
     /// <summary>Безперервний рух юніта шляхом: інтерполює позицію/yaw між тайлами з прискоренням, поворотами і bob.</summary>
     public sealed class PathTraversalMotion

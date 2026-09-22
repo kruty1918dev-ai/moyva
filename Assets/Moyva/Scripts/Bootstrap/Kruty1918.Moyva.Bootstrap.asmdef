@@ -36,7 +36,8 @@
         "Unity.InputSystem",
         "Unity.TextMeshPro",
         "Kruty1918.JsonConfig",
-        "Kruty1918.UiFoundation"
+        "Kruty1918.UiFoundation",
+        "Kruty1918.EntityHealth"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

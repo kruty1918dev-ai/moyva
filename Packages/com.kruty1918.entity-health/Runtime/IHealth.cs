@@ -1,6 +1,6 @@
 using System;
 
-namespace Kruty1918.Moyva.Combat.API
+namespace Kruty1918.EntityHealth
 {
     /// <summary>
     /// Централізований інтерфейс здоров'я для всіх ігрових сутностей (будівлі, юніти тощо).

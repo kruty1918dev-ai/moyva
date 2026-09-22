@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Combat.API;
-using Kruty1918.Moyva.Combat.Runtime;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Economy.Runtime;
 using Kruty1918.Moyva.FogOfWar.API;
@@ -13,6 +12,7 @@ using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
 using Zenject;
+using Kruty1918.EntityHealth;
 
 namespace Kruty1918.Moyva.AI.Training
 {

@@ -8,6 +8,7 @@ using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Combat.API;
+using Kruty1918.EntityHealth;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {

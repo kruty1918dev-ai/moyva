@@ -2,13 +2,13 @@ using System.Collections.Generic;
 using System;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Combat.API;
-using Kruty1918.Moyva.Combat.Runtime;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
+using Kruty1918.EntityHealth;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {

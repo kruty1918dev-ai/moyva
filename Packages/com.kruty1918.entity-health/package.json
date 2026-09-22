@@ -1,0 +1,17 @@
+{
+  "name": "com.kruty1918.entity-health",
+  "version": "0.1.0",
+  "displayName": "Kruty1918 Entity Health",
+  "description": "Reusable entity health primitives: IHealth contract, HealthComponent MonoBehaviour and IHealthRegistry/HealthRegistry keyed lookup.",
+  "unity": "6000.0",
+  "unityRelease": "0f1",
+  "author": {
+    "name": "Kruty1918"
+  },
+  "dependencies": {},
+  "keywords": [
+    "kruty1918",
+    "health",
+    "combat"
+  ]
+}

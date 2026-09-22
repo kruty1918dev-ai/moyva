@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Animations.API
+namespace Kruty1918.Motion
 {
     /// <summary>Види easing-кривих для gameplay-рухів.</summary>
     public enum MotionEaseKind
