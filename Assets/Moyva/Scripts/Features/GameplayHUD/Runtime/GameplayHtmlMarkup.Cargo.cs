@@ -113,7 +113,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 html.Append("<view className=\"cargo-field\"><text className=\"cargo-label\">").Append(state.T("Amount")).Append("</text>")
                     .Append("<input id=\"route-amount\" className=\"cargo-input\" contentType=\"DecimalNumber\" characterLimit=\"12\" value=\"")
                     .Append(E(form.Amount)).Append("\" onChange=\"Globals.gameplay.SetCargoAmount(event)\"></input></view>")
-                    .Append("<view className=\"route-toggle\"><text className=\"cargo-label\">").Append(state.T("Repeat delivery")).Append("</text><toggle checked=\"")
+                    .Append("<view className=\"route-toggle\"><label className=\"cargo-label\" for=\"#cargo-repeat-toggle\">").Append(state.T("Repeat delivery")).Append("</label><toggle id=\"cargo-repeat-toggle\" checked=\"")
                     .Append(form.Repeat ? "true" : "false")
                     .Append("\" onChange=\"Globals.gameplay.SetCargoRepeat(event)\"><view className=\"toggle-knob\"></view></toggle></view>");
             }

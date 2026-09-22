@@ -131,7 +131,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     Header(sb, view.T("LOBBY"), view.T(view.CreateRoomTitle), showBack, view);
                     sb.Append("<view className=\"form-grid\">");
                     Input(sb, view.T("Room name"), view.RoomName, view.T("Moyva Lobby"), "Globals.moyvaMenu.PreviewRoomName(event)", "Globals.moyvaMenu.CommitRoomName(event)", 48, true, "Standard", "full");
-                    Toggle(sb, view.T("Private room"), view.T("Require a password to enter."), !view.IsPublic, "Globals.moyvaMenu.SetPrivate(event)");
+                    Toggle(sb, "private-room", view.T("Private room"), view.T("Require a password to enter."), !view.IsPublic, "Globals.moyvaMenu.SetPrivate(event)");
                     Stepper(sb, view.T("Players"), view.T("Lobby capacity"), view.MaxPlayers, "Globals.moyvaMenu.MaxPlayersMinus()", "Globals.moyvaMenu.MaxPlayersPlus()");
                     if (!view.IsPublic)
                         Input(sb, view.T("Password"), view.Password, view.T("Optional password"), "Globals.moyvaMenu.PreviewRoomPassword(event)", "Globals.moyvaMenu.CommitRoomPassword(event)", 48, true, "Password", "full");
@@ -276,7 +276,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 case HomeMenuSettingsSection.Audio:
                     SectionIntro(sb, view.T("AUDIO"), view.T("Mix game sound without leaving the menu."));
                     sb.Append("<view className=\"settings-grid\">");
-                    Toggle(sb, view.T("Mute all audio"), view.T("Disable every audio bus."), view.IsMuted, "Globals.moyvaMenu.SetMuted(event)", "full");
+                    Toggle(sb, "mute-audio", view.T("Mute all audio"), view.T("Disable every audio bus."), view.IsMuted, "Globals.moyvaMenu.SetMuted(event)", "full");
                     Slider(sb, view.T("Master"), view.MasterVolume, 0f, 1f, "Globals.moyvaMenu.CommitMasterValue(event)", "percent", view.SettingsInteractable);
                     Slider(sb, view.T("Music"), view.MusicVolume, 0f, 1f, "Globals.moyvaMenu.CommitMusicValue(event)", "percent", view.SettingsInteractable);
                     Slider(sb, view.T("Sound effects"), view.SfxVolume, 0f, 1f, "Globals.moyvaMenu.CommitSfxValue(event)", "percent", view.SettingsInteractable);
@@ -293,9 +293,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     Select(sb, view.T("Texture quality"), view.TOptions(TextureQualityOptions), view.TextureMipmapLimit, "Globals.moyvaMenu.SetTextureQualityOption(event)", view.GraphicsSettingsInteractable);
                     Select(sb, view.T("Anti-aliasing"), view.TOptions(AntiAliasingOptions), AntiAliasingIndex(view.AntiAliasing), "Globals.moyvaMenu.SetAntiAliasingOption(event)", view.GraphicsSettingsInteractable);
                     Slider(sb, view.T("Level of detail"), view.LodBias, 0.4f, 2f, "Globals.moyvaMenu.CommitLodBiasValue(event)", "decimal1", view.GraphicsSettingsInteractable, "x");
-                    Toggle(sb, view.T("Vertical sync"), view.T("Match frames to the display refresh."), view.VSync, "Globals.moyvaMenu.SetVSync(event)", null, view.GraphicsSettingsInteractable);
-                    Toggle(sb, view.T("Shadows"), view.T("Render realtime world shadows."), view.Shadows, "Globals.moyvaMenu.SetShadows(event)", null, view.GraphicsSettingsInteractable);
-                    Toggle(sb, view.T("Anisotropic filtering"), view.T("Keep angled textures sharp."), view.AnisotropicFiltering, "Globals.moyvaMenu.SetAnisotropic(event)", null, view.GraphicsSettingsInteractable);
+                    Toggle(sb, "vsync", view.T("Vertical sync"), view.T("Match frames to the display refresh."), view.VSync, "Globals.moyvaMenu.SetVSync(event)", null, view.GraphicsSettingsInteractable);
+                    Toggle(sb, "shadows", view.T("Shadows"), view.T("Render realtime world shadows."), view.Shadows, "Globals.moyvaMenu.SetShadows(event)", null, view.GraphicsSettingsInteractable);
+                    Toggle(sb, "aniso-filter", view.T("Anisotropic filtering"), view.T("Keep angled textures sharp."), view.AnisotropicFiltering, "Globals.moyvaMenu.SetAnisotropic(event)", null, view.GraphicsSettingsInteractable);
                     sb.Append("</view>");
                     CompactButton(sb, view.T("RESET GRAPHICS"), "Globals.moyvaMenu.ResetGraphics()", false, view.GraphicsSettingsInteractable);
                     break;
@@ -306,12 +306,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     Slider(sb, view.T("Movement speed"), view.MovementSpeed, 0.25f, 3f, "Globals.moyvaMenu.CommitMovementSpeedValue(event)", "decimal1", view.SettingsInteractable, "x");
                     Slider(sb, view.T("Orbit speed"), view.OrbitSpeed, 0.25f, 3f, "Globals.moyvaMenu.CommitOrbitSpeedValue(event)", "decimal1", view.SettingsInteractable, "x");
                     Slider(sb, view.T("Zoom speed"), view.ZoomSpeed, 0.25f, 3f, "Globals.moyvaMenu.CommitZoomSpeedValue(event)", "decimal1", view.SettingsInteractable, "x");
-                    Toggle(sb, view.T("Camera effects"), view.T("Camera pulses and event accents."), view.CameraEffects, "Globals.moyvaMenu.SetCameraEffects(event)", null, view.SettingsInteractable);
+                    Toggle(sb, "camera-effects", view.T("Camera effects"), view.T("Camera pulses and event accents."), view.CameraEffects, "Globals.moyvaMenu.SetCameraEffects(event)", null, view.SettingsInteractable);
                     Slider(sb, view.T("Camera shake"), view.CameraShakeIntensity, 0f, 1f, "Globals.moyvaMenu.CommitCameraShakeValue(event)", "percent", view.SettingsInteractable);
-                    Toggle(sb, view.T("Smooth camera focus"), view.T("Glide to focused targets instead of snapping."), view.SmoothCameraFocus, "Globals.moyvaMenu.SetSmoothCameraFocus(event)", null, view.SettingsInteractable);
-                    Toggle(sb, view.T("Automatic camera focus"), view.T("Focus the camera on important events."), view.AutomaticCameraFocus, "Globals.moyvaMenu.SetAutomaticCameraFocus(event)", null, view.SettingsInteractable);
-                    Toggle(sb, view.T("Reduce camera motion"), view.T("Minimize camera shake and focus glides."), view.ReduceCameraMotion, "Globals.moyvaMenu.SetReduceCameraMotion(event)", null, view.SettingsInteractable);
-                    Toggle(sb, view.T("Zoom toward fingers"), view.T("Pinch zoom keeps the map under your fingers."), view.ZoomTowardFingers, "Globals.moyvaMenu.SetZoomTowardFingers(event)", null, view.SettingsInteractable);
+                    Toggle(sb, "smooth-camera-focus", view.T("Smooth camera focus"), view.T("Glide to focused targets instead of snapping."), view.SmoothCameraFocus, "Globals.moyvaMenu.SetSmoothCameraFocus(event)", null, view.SettingsInteractable);
+                    Toggle(sb, "auto-camera-focus", view.T("Automatic camera focus"), view.T("Focus the camera on important events."), view.AutomaticCameraFocus, "Globals.moyvaMenu.SetAutomaticCameraFocus(event)", null, view.SettingsInteractable);
+                    Toggle(sb, "reduce-camera-motion", view.T("Reduce camera motion"), view.T("Minimize camera shake and focus glides."), view.ReduceCameraMotion, "Globals.moyvaMenu.SetReduceCameraMotion(event)", null, view.SettingsInteractable);
+                    Toggle(sb, "zoom-fingers", view.T("Zoom toward fingers"), view.T("Pinch zoom keeps the map under your fingers."), view.ZoomTowardFingers, "Globals.moyvaMenu.SetZoomTowardFingers(event)", null, view.SettingsInteractable);
                     sb.Append("</view>");
                     CompactButton(sb, view.T("RESET CONTROLS"), "Globals.moyvaMenu.ResetControls()");
                     break;
@@ -320,7 +320,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     sb.Append("<view className=\"settings-grid\">");
                     Input(sb, view.T("Player name"), view.PlayerName, view.T("Player"), "Globals.moyvaMenu.PreviewPlayerName(event)", "Globals.moyvaMenu.CommitPlayerName(event)", 32, view.SettingsInteractable, "Standard", "full");
                     Select(sb, view.T("Language"), view.LanguageOptions, view.LanguageIndex, "Globals.moyvaMenu.SetLanguageValue(event)", view.SettingsInteractable);
-                    Toggle(sb, view.T("Reduced motion"), view.T("Disable menu transitions and animated indicators."), view.ReducedMotion, "Globals.moyvaMenu.SetReducedMotion(event)", null, view.SettingsInteractable);
+                    Toggle(sb, "reduce-motion", view.T("Reduced motion"), view.T("Disable menu transitions and animated indicators."), view.ReducedMotion, "Globals.moyvaMenu.SetReducedMotion(event)", null, view.SettingsInteractable);
                     sb.Append("<view className=\"danger-zone full\"><view className=\"control-copy\"><text className=\"control-label\">").Append(view.T("LOCAL SAVES")).Append("</text><text className=\"control-help\">").Append(view.T("Permanently remove all saved realms from this device.")).Append("</text></view>");
                     CompactButton(sb, view.T("DELETE SAVES"), "Globals.moyvaMenu.DeleteSaves()", false, view.SettingsInteractable, "danger");
                     sb.Append("</view></view>");
@@ -607,13 +607,29 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             sb.Append("></slider></view>");
         }
 
-        private static void Toggle(StringBuilder sb, string label, string help, bool value, string changed, string extraClass = null, bool enabled = true)
+        private static void Toggle(StringBuilder sb, string id, string label, string help, bool value, string changed, string extraClass = null, bool enabled = true)
         {
             sb.Append("<view className=\"control-row toggle-row");
             if (!string.IsNullOrWhiteSpace(extraClass)) sb.Append(' ').Append(E(extraClass));
-            sb.Append("\"><view className=\"control-copy\"><text className=\"control-label\">").Append(E(label))
-                .Append("</text><text className=\"control-help\">").Append(E(help))
-                .Append("</text></view><toggle className=\"menu-toggle\" checked=\"").Append(value ? "true" : "false")
+            // Label, indicator and click target stay separate: the label activates
+            // the toggle through `for` (one pointer click = one state flip), the
+            // toggle itself is the only click target, and a disabled row renders a
+            // plain view so a label click cannot flip a locked control.
+            if (enabled)
+            {
+                sb.Append("\"><label className=\"control-copy\" for=\"#").Append(E(id))
+                    .Append("\"><text className=\"control-label\">").Append(E(label))
+                    .Append("</text><text className=\"control-help\">").Append(E(help))
+                    .Append("</text></label>");
+            }
+            else
+            {
+                sb.Append("\"><view className=\"control-copy\"><text className=\"control-label\">").Append(E(label))
+                    .Append("</text><text className=\"control-help\">").Append(E(help))
+                    .Append("</text></view>");
+            }
+            sb.Append("<toggle id=\"").Append(E(id)).Append("\" className=\"menu-toggle\" checked=\"")
+                .Append(value ? "true" : "false")
                 .Append("\" onChange=\"").Append(changed).Append('"');
             if (!enabled) sb.Append(" disabled=\"true\"");
             sb.Append("><view className=\"toggle-knob\"></view></toggle></view>");
