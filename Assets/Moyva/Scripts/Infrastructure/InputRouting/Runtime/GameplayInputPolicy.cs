@@ -52,7 +52,9 @@ namespace Kruty1918.Moyva.InputRouting.Runtime
                 if (hitObject == null)
                     continue;
 
-                if (IsBlockingUiHit(hitObject))
+                // interactiveOnly=false answers "is any UI under the pointer";
+                // true restricts to regions that actually consume input.
+                if (!interactiveOnly || IsBlockingUiHit(hitObject))
                     return true;
             }
 
