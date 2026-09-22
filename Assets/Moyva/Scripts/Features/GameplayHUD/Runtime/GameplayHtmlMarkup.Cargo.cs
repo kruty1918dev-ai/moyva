@@ -44,9 +44,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 html.Append("<text className=\"cargo-label\">").Append(state.T("ON BOARD")).Append("</text>");
                 foreach (var resource in form.Cargo.Resources.OrderBy(r => r.Key))
                 {
-                    string key = GameplayHtmlIconKeys.Resource(resource.Key);
+                    string iconKey = GameplayHtmlIconKeys.Resource(resource.Key);
                     DataRow(html, state.T(DisplayResource(resource.Key)), Amount(resource.Value), state.T("In transit"),
-                        snapshot.Icons.ContainsKey(key) ? key : null);
+                        snapshot.Icons.ContainsKey(iconKey) ? iconKey : null, key: $"cargo-{resource.Key}");
                 }
             }
             html.Append("<view className=\"route-card\"><text className=\"route-title\">").Append(state.T("Found settlement")).Append("</text><text className=\"route-meta\">")
@@ -94,9 +94,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 html.Append("<text className=\"cargo-label\">").Append(state.T("SHIPMENT")).Append("</text>");
                 foreach (var resource in route.Request.Resources.OrderBy(r => r.Key))
                 {
-                    string key = GameplayHtmlIconKeys.Resource(resource.Key);
+                    string iconKey = GameplayHtmlIconKeys.Resource(resource.Key);
                     DataRow(html, state.T(DisplayResource(resource.Key)), Amount(resource.Value), state.T("Per trip"),
-                        snapshot.Icons.ContainsKey(key) ? key : null);
+                        snapshot.Icons.ContainsKey(iconKey) ? iconKey : null, key: $"route-res-{resource.Key}");
                 }
             }
             else
@@ -122,9 +122,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 html.Append("<text className=\"cargo-label\">").Append(state.T("ON BOARD")).Append("</text>");
                 foreach (var resource in form.Cargo.Resources.OrderBy(r => r.Key))
                 {
-                    string key = GameplayHtmlIconKeys.Resource(resource.Key);
+                    string iconKey = GameplayHtmlIconKeys.Resource(resource.Key);
                     DataRow(html, state.T(DisplayResource(resource.Key)), Amount(resource.Value), state.T("In transit"),
-                        snapshot.Icons.ContainsKey(key) ? key : null);
+                        snapshot.Icons.ContainsKey(iconKey) ? iconKey : null, key: $"cargo-{resource.Key}");
                 }
             }
             html.Append("</view></scroll><view className=\"cargo-actions\"><text className=\"cargo-status\">");
