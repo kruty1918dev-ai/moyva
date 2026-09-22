@@ -183,6 +183,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             }
 
             public void Unmount() { }
+            public void SetWorldTooltip(string text, Vector2 screenPosition) { }
             public bool UpdateRegion(string elementId, string html) => true;
 
             public bool UpdateRegions(

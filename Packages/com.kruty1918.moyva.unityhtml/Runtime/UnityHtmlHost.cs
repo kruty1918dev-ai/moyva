@@ -181,6 +181,9 @@ namespace UnityHTML.Runtime
         }
         public bool SetValue(string elementId, string value) => _tree?.SetValue(elementId, value) == true;
 
+        public void SetWorldTooltip(string text, Vector2 screenPosition)
+            => _tooltips?.SetWorldTooltip(text, screenPosition);
+
         private bool CanUpdateMountedDocument(RectTransform root, UnityHtmlDocument document)
         {
             return _context != null &&
@@ -243,6 +246,8 @@ namespace UnityHTML.Runtime
                 _tooltips = _root.gameObject.AddComponent<UnityHtmlTooltipLayer>();
                 _tooltips.Bind(_context, _root);
             }
+            if (_tooltips != null)
+                _tooltips.ReducedMotion = _motion.ReducedMotion;
             _context.UpdateElementsRecursively();
             _layoutSize = _root.rect.size;
             _context.Host.Layout.Width = _layoutSize.x;

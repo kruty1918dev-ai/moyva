@@ -26,6 +26,14 @@ namespace UnityHTML.Runtime
             IReadOnlyDictionary<string, string> regions,
             IReadOnlyDictionary<string, object> globals = null);
         bool SetValue(string elementId, string value);
+
+        /// <summary>
+        /// Shows a world-object tooltip through the same tooltip layer used by
+        /// data-tooltip elements — same delay, fade, clamp and hot-window rules.
+        /// The pointer's screen position anchors the panel. Pass null or empty
+        /// text to clear. Element (UI) tooltips take precedence while hovered.
+        /// </summary>
+        void SetWorldTooltip(string text, Vector2 screenPosition);
     }
 
     public interface IUnityHtmlMotion

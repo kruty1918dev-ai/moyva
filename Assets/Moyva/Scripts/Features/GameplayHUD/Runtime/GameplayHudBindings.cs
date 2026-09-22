@@ -27,6 +27,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             container.BindInterfacesAndSelfTo<GameplayWorldFocusPingPresenter>()
                 .AsSingle()
                 .NonLazy();
+            container.BindInterfacesAndSelfTo<GameplayWorldTooltipService>()
+                .AsSingle()
+                .NonLazy();
             container.BindInterfacesAndSelfTo<GameplayHtmlPresenter>()
                 .AsSingle()
                 .NonLazy();
