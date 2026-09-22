@@ -1,7 +1,7 @@
-using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.InputRouting.API;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.InputRouting.Runtime
+namespace Kruty1918.InputRouting.Runtime
 {
     [DisallowMultipleComponent]
     public sealed class GameplayInputBlocker : MonoBehaviour

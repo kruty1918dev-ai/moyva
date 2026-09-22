@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Kruty1918.Moyva.InputRouting.API
+namespace Kruty1918.InputRouting.API
 {
     [Flags]
     public enum GameplayInputKind

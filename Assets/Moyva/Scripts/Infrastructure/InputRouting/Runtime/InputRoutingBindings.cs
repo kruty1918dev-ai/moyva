@@ -1,4 +1,6 @@
-using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.InputRouting.API;
+using Kruty1918.InputRouting.Runtime;
+using UnityEngine.EventSystems;
 using Zenject;
 
 namespace Kruty1918.Moyva.InputRouting.Runtime
@@ -11,7 +13,8 @@ namespace Kruty1918.Moyva.InputRouting.Runtime
                 return;
 
             container.Bind<IGameplayInputPolicy>()
-                .To<GameplayInputPolicy>()
+                .FromMethod(ctx => (IGameplayInputPolicy)new GameplayInputPolicy(
+                    ctx.Container.TryResolve<EventSystem>()))
                 .AsSingle();
         }
     }

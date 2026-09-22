@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
-using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.InputRouting.API;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using Zenject;
 
-namespace Kruty1918.Moyva.InputRouting.Runtime
+namespace Kruty1918.InputRouting.Runtime
 {
-    internal sealed class GameplayInputPolicy : IGameplayInputPolicy
+    public sealed class GameplayInputPolicy : IGameplayInputPolicy
     {
         private readonly EventSystem _eventSystemOverride;
         private readonly Dictionary<int, PointerRaycastCache> _raycastCaches = new();
@@ -20,7 +19,7 @@ namespace Kruty1918.Moyva.InputRouting.Runtime
         private GameplayInputKind _globalBlockMask;
 
         public GameplayInputPolicy(
-            [InjectOptional] EventSystem eventSystem = null)
+            EventSystem eventSystem = null)
         {
             _eventSystemOverride = eventSystem;
         }
