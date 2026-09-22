@@ -24,6 +24,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public int[,] TerrainLevelMap;
         public string[,] BuildingMap;
         public LogicalTileMap LogicalTileMap;
+        /// <summary>Generated stair passages (atlas pack terrain plan). Null when disabled.</summary>
+        public TerrainPassagePlan TerrainPassages;
         public System.Collections.Generic.IReadOnlyList<CompiledLayerMap> CompiledLayers;
         public bool ForceChunkFirstCompositeBuild;
         /// <summary>
@@ -67,6 +69,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 TerrainLevelMap = MapArrayUtils.CloneIntMap(TerrainLevelMap),
                 BuildingMap = MapArrayUtils.CloneStringMap(BuildingMap),
                 LogicalTileMap = LogicalTileMap,
+                TerrainPassages = TerrainPassages,
                 CompiledLayers = CompiledLayers,
                 ForceChunkFirstCompositeBuild = ForceChunkFirstCompositeBuild,
                 HasAuthoredGeography = HasAuthoredGeography,

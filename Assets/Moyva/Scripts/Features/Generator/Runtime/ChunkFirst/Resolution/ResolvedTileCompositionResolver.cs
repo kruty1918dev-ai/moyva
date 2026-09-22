@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             bool hasMain = TryResolveMainTerrain(neighborhood, out var main);
             bool hasOverlay = TryResolveOverlay(neighborhood, out var overlay);
+            bool hasPassage = TryResolvePassage(neighborhood.Center, out var passage);
             string reason = hasMain ? TerrainWinnerReason : "no terrain-like layer in stack";
 
             float supportHeight = hasMain
@@ -57,7 +58,30 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 northEastSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.NorthEast),
                 southEastSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.SouthEast),
                 southWestSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.SouthWest),
-                northWestSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.NorthWest));
+                northWestSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.NorthWest),
+                passage: passage,
+                hasPassage: hasPassage);
+        }
+
+        private static bool TryResolvePassage(TileStackCell cell, out TileLayerSample sample)
+        {
+            sample = default;
+            if (cell == null)
+                return false;
+
+            bool found = false;
+            for (int i = 0; i < cell.Samples.Count; i++)
+            {
+                var candidate = cell.Samples[i];
+                if (candidate.LayerKind != LayerKind.StairPassage)
+                    continue;
+                if (!found || candidate.CompareTo(sample) > 0)
+                {
+                    sample = candidate;
+                    found = true;
+                }
+            }
+            return found;
         }
 
         private float ResolveNeighborSurfaceHeight(TileStackCell cell)

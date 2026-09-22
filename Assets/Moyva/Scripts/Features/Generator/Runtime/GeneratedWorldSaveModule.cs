@@ -15,7 +15,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     [SaveModuleId("Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule")]
     internal sealed class GeneratedWorldSaveModule : IStagedSaveModule
     {
-        private const int CurrentVersion = 5;
+        private const int CurrentVersion = 6;
         private const int MaxCompiledLayers = 1024;
         private const int MaxSamplesPerCell = 64;
 
@@ -57,6 +57,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             context.Writer.Write(data.HasAuthoredGeography);
             WriteCompiledLayers(context, data.CompiledLayers);
             WriteLogicalTileMap(context, data.LogicalTileMap, data.Width, data.Height);
+            WriteTerrainPassages(context, data.TerrainPassages, data.Width, data.Height);
 
             context.Writer.Write(data.WorldName ?? string.Empty);
             context.Writer.Write(data.Seed);
@@ -141,6 +142,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 data.LogicalTileMap = version >= 4
                     ? ReadLogicalTileMap(context, width, height)
                     : ReadLogicalTileMapV3(context, width, height);
+                if (version >= 6)
+                    data.TerrainPassages = ReadTerrainPassages(context, width, height);
             }
 
             return data;
@@ -470,6 +473,97 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 }
 
             return map;
+        }
+
+        private static void WriteTerrainPassages(
+            ISaveContext context,
+            TerrainPassagePlan plan,
+            int width,
+            int height)
+        {
+            int count = plan?.Flights?.Count ?? 0;
+            context.Writer.Write(count);
+            for (int f = 0; f < count; f++)
+            {
+                StairFlight flight = plan.Flights[f];
+                int modules = flight?.Modules?.Length ?? 0;
+                context.Writer.Write(flight?.DirectionIndex ?? 0);
+                context.Writer.Write(flight?.LowSurfaceY ?? 0f);
+                context.Writer.Write(flight?.HighSurfaceY ?? 0f);
+                context.Writer.Write(flight?.ThemeId ?? string.Empty);
+                context.Writer.Write(flight?.Entrance.x ?? 0);
+                context.Writer.Write(flight?.Entrance.y ?? 0);
+                context.Writer.Write(flight?.Exit.x ?? 0);
+                context.Writer.Write(flight?.Exit.y ?? 0);
+                context.Writer.Write(flight?.ExitModule.x ?? 0);
+                context.Writer.Write(flight?.ExitModule.y ?? 0);
+                context.Writer.Write(modules);
+                for (int i = 0; i < modules; i++)
+                    context.Writer.Write(flight.ModuleTopY[i]);
+            }
+        }
+
+        private static TerrainPassagePlan ReadTerrainPassages(
+            ISaveContext context,
+            int width,
+            int height)
+        {
+            int count = context.Reader.ReadInt32();
+            if (count < 0 || count > (long)width * height)
+                throw new InvalidDataException("Invalid saved stair flight count.");
+            if (count == 0)
+                return null;
+
+            var plan = new TerrainPassagePlan();
+            for (int f = 0; f < count; f++)
+            {
+                int directionIndex = context.Reader.ReadInt32();
+                if (directionIndex < 0 || directionIndex > 3)
+                    throw new InvalidDataException($"Invalid saved stair direction {directionIndex}.");
+                float lowSurfaceY = ReadFiniteFloat(context, nameof(StairFlight.LowSurfaceY));
+                float highSurfaceY = ReadFiniteFloat(context, nameof(StairFlight.HighSurfaceY));
+                string themeId = context.Reader.ReadString();
+                var entrance = new Vector2Int(
+                    context.Reader.ReadInt32(), context.Reader.ReadInt32());
+                var exit = new Vector2Int(
+                    context.Reader.ReadInt32(), context.Reader.ReadInt32());
+                var exitModule = new Vector2Int(
+                    context.Reader.ReadInt32(), context.Reader.ReadInt32());
+                int modules = context.Reader.ReadInt32();
+                if (modules < 1 || modules > (long)width * height)
+                    throw new InvalidDataException("Invalid saved stair module count.");
+
+                var tops = new float[modules];
+                for (int i = 0; i < modules; i++)
+                    tops[i] = ReadFiniteFloat(context, nameof(StairFlight.ModuleTopY));
+
+                Vector2Int dir = TerrainPassagePlan.DirectionOffset(directionIndex);
+                var cells = new Vector2Int[modules];
+                for (int i = 0; i < modules; i++)
+                {
+                    cells[i] = exitModule - dir * (modules - 1 - i);
+                    if (cells[i].x < 0 || cells[i].y < 0
+                        || cells[i].x >= width || cells[i].y >= height)
+                    {
+                        throw new InvalidDataException(
+                            $"Saved stair module cell {cells[i]} is out of bounds.");
+                    }
+                }
+
+                plan.Flights.Add(new StairFlight
+                {
+                    Entrance = entrance,
+                    ExitModule = exitModule,
+                    Exit = exit,
+                    DirectionIndex = directionIndex,
+                    Modules = cells,
+                    ModuleTopY = tops,
+                    LowSurfaceY = lowSurfaceY,
+                    HighSurfaceY = highSurfaceY,
+                    ThemeId = themeId,
+                });
+            }
+            return plan;
         }
 
         private static List<TileLayerSample> CollectLogicalSamples(

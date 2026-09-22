@@ -102,7 +102,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             TerrainPassagePlan plan,
             TerrainPassageConfig config)
         {
-            float midDrop = 0.125f;
             foreach (StairFlight flight in plan.Flights)
             {
                 for (int i = 0; i < flight.Modules.Length; i++)
@@ -114,7 +113,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                     // The corridor removes the terrain tile: its neighbours
                     // open borders/skirts toward the trench. Non-terrain
-                    // samples (decorations, spawns) are kept.
+                    // samples (decorations, spawns) are kept. The module's
+                    // top edge is the walkable surface of the stair cell.
                     stack.RemoveAll(sample => sample.IsTerrainLike);
                     float top = flight.ModuleTopY[i];
                     stack.Add(new TileLayerSample(
@@ -129,7 +129,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         layerOrder: 0,
                         terrainPriority: 0,
                         height: top,
-                        surfaceHeight: top - midDrop,
+                        surfaceHeight: top,
                         sourceLayerId: null,
                         tileGeometryMode: TileGeometryMode.SolidTerrain,
                         authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored));
@@ -168,11 +168,22 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     continue;
 
                 // Never overwrite generated stair modules or an existing route.
-                if (stack.TryGetTopCompatibilitySample(out var top)
-                    && (top.LayerKind == LayerKind.StairPassage
-                        || top.LayerKind == LayerKind.Road))
+                bool occupied = false;
+                for (int i = 0; i < stack.Samples.Count; i++)
+                {
+                    LayerKind kind = stack.Samples[i].LayerKind;
+                    if (kind == LayerKind.StairPassage || kind == LayerKind.Road)
+                    {
+                        occupied = true;
+                        break;
+                    }
+                }
+                if (occupied)
                     continue;
 
+                // Road/footpath are full dual-grid tile themes: the route
+                // sample rides a few millimetres above the terrain surface so
+                // it wins the visual composition while traversal stays flat.
                 stack.Add(new TileLayerSample(
                     layerId: layerId,
                     layerName: tileId,
@@ -187,8 +198,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     height: surface,
                     surfaceHeight: surface + Mathf.Max(0f, config.OverlaySurfaceOffsetMeters),
                     sourceLayerId: null,
-                    tileGeometryMode: TileGeometryMode.SurfaceOnly,
-                    authoredClosurePolicy: AuthoredClosurePolicy.TopOnlyTemplate));
+                    tileGeometryMode: TileGeometryMode.SolidTerrain,
+                    authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored));
             }
         }
 

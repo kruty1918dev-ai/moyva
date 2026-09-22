@@ -10,6 +10,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 return;
 
             container.Bind<ChunkFirstRuntimeMeshRegistry>().AsSingle();
+            container.BindInterfacesAndSelfTo<AtlasTileSetCatalog>()
+                .AsSingle();
             container.Bind<IChunkBuildAreaPlanner>().To<ChunkBuildAreaPlanner>().AsSingle();
             container.Bind<ITileNeighborhoodFactory>().To<TileNeighborhoodFactory>().AsSingle();
             container.Bind<ICompositionRuleTable>().To<DefaultCompositionRuleTable>().AsSingle();

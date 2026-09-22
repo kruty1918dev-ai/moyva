@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Units.API
@@ -19,6 +20,16 @@ namespace Kruty1918.Moyva.Units.API
             UnitTraversalMode mode,
             out float cost,
             out string reason);
+
+        /// <summary>
+        /// Classifies the physical terrain transition between two adjacent cells
+        /// for a movement profile: direct walk, generated stair step or blocked.
+        /// </summary>
+        bool TryEvaluateTransition(
+            Vector2Int from,
+            Vector2Int to,
+            string movementProfileId,
+            out TerrainTransitionEvaluation evaluation);
 
         void InvalidateStaticCache();
     }

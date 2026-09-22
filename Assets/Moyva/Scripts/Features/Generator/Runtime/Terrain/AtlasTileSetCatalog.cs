@@ -97,7 +97,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public float StairMidSurfaceDropMeters { get; } = 0.125f;
 
         public bool TryGetByPreset(TilePreset preset, out AtlasTileTheme theme)
-            => preset != null && _byPreset.TryGetValue(preset, out theme);
+        {
+            theme = null;
+            return preset != null && _byPreset.TryGetValue(preset, out theme);
+        }
 
         public bool TryGetByPresetId(string presetId, out AtlasTileTheme theme)
         {

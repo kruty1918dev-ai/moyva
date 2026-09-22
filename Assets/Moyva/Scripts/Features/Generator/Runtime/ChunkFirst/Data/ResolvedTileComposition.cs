@@ -27,13 +27,17 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             float northEastSurfaceHeight = float.NaN,
             float southEastSurfaceHeight = float.NaN,
             float southWestSurfaceHeight = float.NaN,
-            float northWestSurfaceHeight = float.NaN)
+            float northWestSurfaceHeight = float.NaN,
+            TileLayerSample passage = default,
+            bool hasPassage = false)
         {
             Cell = cell;
             MainTerrain = mainTerrain;
             Overlay = overlay;
+            Passage = passage;
             HasMainTerrain = hasMainTerrain;
             HasOverlay = hasOverlay;
+            HasPassage = hasPassage;
             Reason = reason;
             NorthMatches = northMatches;
             EastMatches = eastMatches;
@@ -57,8 +61,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         public Vector2Int Cell { get; }
         public TileLayerSample MainTerrain { get; }
         public TileLayerSample Overlay { get; }
+        /// <summary>Generated stair-passage sample occupying the cell, if any.</summary>
+        public TileLayerSample Passage { get; }
         public bool HasMainTerrain { get; }
         public bool HasOverlay { get; }
+        public bool HasPassage { get; }
         public string Reason { get; }
         public bool NorthMatches { get; }
         public bool EastMatches { get; }

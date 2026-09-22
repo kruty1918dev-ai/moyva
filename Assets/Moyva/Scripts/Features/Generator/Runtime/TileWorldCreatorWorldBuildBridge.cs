@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly ITileWorldCreatorTerrainVisualPostProcessor _visualPostProcessor;
         private readonly ITileWorldCreatorTerrainHeightPublisher _heightPublisher;
         private readonly IChunkFirstWorldBuildService _chunkFirstBuild;
+        private readonly TerrainPassageStore _passageStore;
 
         public TileWorldCreatorWorldBuildBridge(
             ITileWorldCreatorBuildEnvironment environment,
@@ -38,7 +39,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ITileWorldCreatorTerrainHeightPublisher heightPublisher,
             [InjectOptional] IGeneratorTerrainLevelService terrainLevelService = null,
             [InjectOptional] IMapChunkSettingsProvider chunkSettings = null,
-            [InjectOptional] IChunkFirstWorldBuildService chunkFirstBuild = null)
+            [InjectOptional] IChunkFirstWorldBuildService chunkFirstBuild = null,
+            [InjectOptional] TerrainPassageStore passageStore = null)
         {
             _environment = environment;
             _terrainPolicyService = terrainPolicyService;
@@ -53,6 +55,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _terrainLevelService = terrainLevelService;
             _chunkSettings = chunkSettings;
             _chunkFirstBuild = chunkFirstBuild;
+            _passageStore = passageStore;
         }
 
         public TileWorldCreatorWorldBuildResult Build(GeneratedWorldData worldData)
@@ -76,6 +79,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     _chunkSettings?.ChunkSize ?? 0,
                     options.ApplyIntegerTerrainHeights)
                 : _terrainPolicyService.Resolve(options, _chunkSettings?.ChunkSize ?? 0);
+            _passageStore?.Replace(worldData.TerrainPassages);
             PrepareTerrainData(worldData, options);
 
             if (terrainPolicy.UsesChunkFirstComposite)

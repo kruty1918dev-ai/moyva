@@ -31,6 +31,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         IReadOnlyList<CompiledLayerMap> LastCompiledLayers { get; }
         LogicalTileMap LastLogicalMap { get; }
+        TerrainPassagePlan LastPassages { get; }
         float LastCellSize { get; }
         bool TryGetLastBaseMapWorldBounds(out Bounds bounds);
     }
@@ -47,6 +48,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public IReadOnlyList<CompiledLayerMap> LastCompiledLayers { get; private set; }
         public LogicalTileMap LastLogicalMap { get; private set; }
+        public TerrainPassagePlan LastPassages { get; private set; }
         public float LastCellSize { get; private set; } = 1f;
 
         public bool TryGetLastBaseMapWorldBounds(out Bounds bounds)
@@ -62,6 +64,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (result.CompiledLayers != null)
                 LastCompiledLayers = result.CompiledLayers;
             LastLogicalMap = result.LogicalMap;
+            LastPassages = result.TerrainPassages;
             LastCellSize = result.CellSize > 0.0001f ? result.CellSize : 1f;
             _hasLastBaseMapWorldBounds = result.HasBaseMapWorldBounds;
             _lastBaseMapWorldBounds = result.BaseMapWorldBounds;
@@ -101,6 +104,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public float[,] HeightMap;
         public string[,] BuildingMap;
         public LogicalTileMap LogicalMap;
+        public TerrainPassagePlan TerrainPassages;
         public IReadOnlyList<CompiledLayerMap> CompiledLayers;
         public float CellSize = 1f;
         public bool HasBaseMapWorldBounds;
@@ -276,6 +280,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IMapLogicalMapExportService _logicalMapExport;
         private readonly ITerrainHeightPublisher _terrainHeightPublisher;
         private readonly IEmptyMapFactory _emptyMapFactory;
+        private readonly ITerrainReliefFieldPlanner _reliefPlanner;
+        private readonly ITerrainPlanApplier _terrainPlanApplier;
 
         public MapGenerationPipeline(
             IMapSeedService seedService,
@@ -284,7 +290,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IRecipeToConfigurationCompilerService compiler,
             IMapLogicalMapExportService logicalMapExport,
             ITerrainHeightPublisher terrainHeightPublisher,
-            IEmptyMapFactory emptyMapFactory)
+            IEmptyMapFactory emptyMapFactory,
+            [InjectOptional] ITerrainReliefFieldPlanner reliefPlanner = null,
+            [InjectOptional] ITerrainPlanApplier terrainPlanApplier = null)
         {
             _seedService = seedService;
             _sizeResolver = sizeResolver;
@@ -293,6 +301,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _logicalMapExport = logicalMapExport;
             _terrainHeightPublisher = terrainHeightPublisher;
             _emptyMapFactory = emptyMapFactory;
+            _reliefPlanner = reliefPlanner;
+            _terrainPlanApplier = terrainPlanApplier;
         }
 
         public MapGenerationResult Generate(MapGenerationRequest request)
@@ -327,8 +337,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (validation.HasGlobalErrors)
                 return FailValidation(mapSize, validation);
 
+            float[,] reliefField =
+                _reliefPlanner?.Build(seed, mapSize, request.Recipe?.TerrainRelief);
             IReadOnlyList<CompiledLayerMap> compiled =
-                _compiler.Compile(request.Recipe, request.Manager, seed, validation.SkippedLayerIds, mapSize);
+                _compiler.Compile(
+                    request.Recipe,
+                    request.Manager,
+                    seed,
+                    validation.SkippedLayerIds,
+                    mapSize,
+                    reliefField);
             float cellSize = ResolveCellSize(request);
             bool hasBounds =
                 GeneratedWorldBoundsUtility.TryCreateTileWorldBounds(
@@ -345,8 +363,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     compiled,
                     mapSize.x,
                     mapSize.y);
+            TerrainPassagePlan passages = _terrainPlanApplier?.Apply(
+                logicalMap,
+                request.Recipe,
+                reliefField,
+                seed);
             _terrainHeightPublisher.Publish(logicalMap.SurfaceHeights);
-            return CreateResult(logicalMap, compiled, cellSize, hasBounds, bounds);
+            var result = CreateResult(logicalMap, compiled, cellSize, hasBounds, bounds);
+            result.TerrainPassages = passages;
+            return result;
         }
 
         private MapGenerationResult FailValidation(Vector2Int mapSize, MapRecipeValidationResult validation)

@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
@@ -10,29 +12,44 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private const float FlatSurfaceBoundsHeightTolerance = 0.0001f;
 
         private readonly ITileWorldCreatorBuildEnvironment _environment;
+        private readonly IAtlasTileSetCatalog _atlas;
+        private readonly ITerrainPassageMap _passages;
         private readonly Dictionary<string, TilesBuildLayer> _buildLayerByGuid = new Dictionary<string, TilesBuildLayer>(System.StringComparer.Ordinal);
         private readonly Dictionary<GameObject, PrefabMeshTemplate[]> _meshTemplatesByPrefab =
             new Dictionary<GameObject, PrefabMeshTemplate[]>();
 
-        public TwcTileMeshSourceProvider(ITileWorldCreatorBuildEnvironment environment)
+        public TwcTileMeshSourceProvider(
+            ITileWorldCreatorBuildEnvironment environment,
+            [InjectOptional] IAtlasTileSetCatalog atlas = null,
+            [InjectOptional] ITerrainPassageMap passages = null)
         {
             _environment = environment;
+            _atlas = atlas;
+            _passages = passages;
         }
 
         public int CollectMeshSources(ResolvedTileComposition composition, List<TileMeshSource> results)
         {
-            if (!composition.HasMainTerrain || results == null)
+            if (results == null)
                 return 0;
+
+            int added = 0;
+            if (composition.HasPassage)
+                added += CollectStairPassageSource(composition, results);
+            if (!composition.HasMainTerrain)
+                return added;
 
             var sample = composition.MainTerrain;
             TilesBuildLayer buildLayer = ResolveBuildLayer(sample);
-            TilePreset preset = ResolvePreset(buildLayer, sample, composition.Cell, GlobalSeed.Current);
-            if (buildLayer == null || preset == null)
-                return 0;
+            TilePreset preset = ResolvePreset(buildLayer, sample, composition.Cell, GlobalSeed.Current)
+                                ?? ResolveAtlasPreset(sample);
+            if (preset == null)
+                return added;
 
-            return preset.gridtype == TilePreset.GridType.dual
+            added += preset.gridtype == TilePreset.GridType.dual
                 ? CollectDualGridSources(composition, buildLayer, preset, results)
                 : CollectNormalGridSource(composition, buildLayer, preset, results);
+            return added;
         }
 
         private int CollectNormalGridSource(
@@ -179,6 +196,38 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     composition.Cell.x + offset.x + 0.5f,
                     composition.Cell.y + offset.y + 0.5f)
             };
+
+            TileMeshOccludedSides occludedSides = ResolveDualOccludedSides(
+                composition.MainTerrain.SurfaceHeight,
+                topLeftSurface,
+                topRightSurface,
+                bottomLeftSurface,
+                bottomRightSurface);
+            TileMeshEdgeBottoms edgeBottoms = ResolveDualEdgeBottoms(
+                composition,
+                topLeftSurface,
+                topRightSurface,
+                bottomLeftSurface,
+                bottomRightSurface);
+
+            int packMask = AtlasDualGridShapes.BuildMask(
+                northWest: topLeft,
+                northEast: topRight,
+                southWest: bottomLeft,
+                southEast: bottomRight);
+            if (TryAddAtlasDualSource(
+                    composition,
+                    buildLayer,
+                    preset,
+                    packMask,
+                    tileData.tilePosition,
+                    occludedSides,
+                    edgeBottoms,
+                    results))
+            {
+                return;
+            }
+
             var tileType = ResolveTileType(preset.gridtype, configuration, out int yRotation);
             if (tileType == TilePreset.TileType.none)
                 return;
@@ -191,19 +240,150 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 tileData.tilePosition,
                 yRotation,
                 Vector3.one,
-                ResolveDualOccludedSides(
-                    composition.MainTerrain.SurfaceHeight,
-                    topLeftSurface,
-                    topRightSurface,
-                    bottomLeftSurface,
-                    bottomRightSurface),
-                ResolveDualEdgeBottoms(
-                    composition,
-                    topLeftSurface,
-                    topRightSurface,
-                    bottomLeftSurface,
-                    bottomRightSurface),
+                occludedSides,
+                edgeBottoms,
                 results);
+        }
+
+        /// <summary>
+        /// Atlas-pack dual-grid dispatch: resolves the fragment's canonical form
+        /// and rotation in pack space, demotes flat biome seams to fill, and
+        /// picks the low (0.25 m) variant when every open drop fits it.
+        /// </summary>
+        private bool TryAddAtlasDualSource(
+            ResolvedTileComposition composition,
+            TilesBuildLayer buildLayer,
+            TilePreset preset,
+            int packMask,
+            Vector2 tilePosition,
+            TileMeshOccludedSides occludedSides,
+            TileMeshEdgeBottoms edgeBottoms,
+            List<TileMeshSource> results)
+        {
+            if (_atlas == null
+                || !_atlas.IsLoaded
+                || !_atlas.TryGetByPreset(preset, out AtlasTileTheme theme))
+            {
+                return false;
+            }
+
+            AtlasTileForm form;
+            int yRotation;
+            if (AtlasDualGridShapes.ShouldDemoteToFill(packMask, occludedSides)
+                || !AtlasDualGridShapes.TryResolve(packMask, out form, out yRotation))
+            {
+                form = AtlasTileForm.Fill;
+                yRotation = 0;
+            }
+
+            float maxOpenDrop = AtlasDualGridShapes.ResolveMaxOpenDrop(
+                packMask,
+                occludedSides,
+                composition.MainTerrain.SurfaceHeight,
+                edgeBottoms.North,
+                edgeBottoms.East,
+                edgeBottoms.South,
+                edgeBottoms.West);
+            bool lowVariant = IsFinite(maxOpenDrop)
+                              && maxOpenDrop <= _atlas.LowBorderDropMaxMeters + 0.0001f;
+            GameObject prefab = theme.ResolveForm(form, lowVariant);
+            if (prefab == null)
+                return false;
+
+            return TryAddPrefabMeshSources(
+                       composition,
+                       buildLayer,
+                       preset,
+                       prefab,
+                       xRotationOffset: 0f,
+                       yRotationOffset: 0f,
+                       tilePosition,
+                       yRotation,
+                       Vector3.one,
+                       occludedSides,
+                       edgeBottoms,
+                       results) > 0;
+        }
+
+        /// <summary>
+        /// Emits the generated stair module occupying the cell: the pack stair
+        /// prefab rotated so it climbs toward the flight's exit direction, with
+        /// its top edge flush at the module's top height.
+        /// </summary>
+        private int CollectStairPassageSource(
+            ResolvedTileComposition composition,
+            List<TileMeshSource> results)
+        {
+            var sample = composition.Passage;
+            AtlasTileTheme theme = null;
+            int directionIndex = 0;
+            float topY = sample.Height;
+
+            if (_passages != null
+                && _passages.TryGetModule(composition.Cell, out TerrainPassageModule module))
+            {
+                directionIndex = module.DirectionIndex;
+                topY = module.TopY;
+                if (!string.IsNullOrWhiteSpace(module.ThemeId))
+                    _atlas?.TryGetByThemeId(module.ThemeId, out theme);
+            }
+            if (theme == null && _atlas != null)
+            {
+                if (!_atlas.TryGetByThemeId(sample.PresetId, out theme))
+                    _atlas.TryGetByTileId(sample.TileId, out theme);
+            }
+
+            GameObject prefab = theme?.Stair;
+            if (prefab == null || !TryGetMeshTemplates(prefab, out PrefabMeshTemplate[] templates))
+                return 0;
+
+            float cellSize = ResolveCellSize();
+            Quaternion rotation = Quaternion.Euler(0f, directionIndex * 90f, 0f);
+            var position = new Vector3(
+                composition.Cell.x * cellSize,
+                topY,
+                composition.Cell.y * cellSize);
+            Matrix4x4 rootMatrix = Matrix4x4.TRS(position, rotation, prefab.transform.localScale);
+            Material materialOverride = theme.Preset != null ? theme.Preset.GetMaterialOverride() : null;
+
+            int added = 0;
+            for (int i = 0; i < templates.Length; i++)
+            {
+                PrefabMeshTemplate template = templates[i];
+                var meshSource = new TileMeshSource(
+                    template.Mesh,
+                    template.ResolveMaterials(materialOverride),
+                    rootMatrix * template.ChildMatrix,
+                    sample.LayerId,
+                    sample.LayerName,
+                    visibleBottomY: float.NaN,
+                    occludedSides: TileMeshOccludedSides.None,
+                    tileCenterXZ: new Vector2(position.x, position.z),
+                    tileHalfExtent: cellSize * 0.5f,
+                    authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored,
+                    edgeBottoms: default,
+                    tileGeometryMode: TileGeometryMode.SolidTerrain);
+                if (!meshSource.IsValid)
+                    continue;
+
+                results.Add(meshSource);
+                added++;
+            }
+            return added;
+        }
+
+        private TilePreset ResolveAtlasPreset(TileLayerSample sample)
+        {
+            if (_atlas == null || !_atlas.IsLoaded)
+                return null;
+
+            AtlasTileTheme theme;
+            if (_atlas.TryGetByPresetId(sample.PresetId, out theme)
+                || _atlas.TryGetByTileId(sample.TileId, out theme))
+            {
+                return theme?.Preset;
+            }
+            return null;
         }
 
         private int TryAddMeshSources(
@@ -218,23 +398,53 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             TileMeshEdgeBottoms edgeBottoms,
             List<TileMeshSource> results)
         {
-            var sample = composition.MainTerrain;
             GameObject prefab = preset.GetTile(tileType, out float xRotationOffset, out float yRotationOffset);
             if (prefab == null)
                 return 0;
 
+            return TryAddPrefabMeshSources(
+                composition,
+                buildLayer,
+                preset,
+                prefab,
+                xRotationOffset,
+                yRotationOffset,
+                tilePosition,
+                yRotation,
+                scaleSign,
+                occludedSides,
+                edgeBottoms,
+                results);
+        }
+
+        private int TryAddPrefabMeshSources(
+            ResolvedTileComposition composition,
+            TilesBuildLayer buildLayer,
+            TilePreset preset,
+            GameObject prefab,
+            float xRotationOffset,
+            float yRotationOffset,
+            Vector2 tilePosition,
+            int yRotation,
+            Vector3 scaleSign,
+            TileMeshOccludedSides occludedSides,
+            TileMeshEdgeBottoms edgeBottoms,
+            List<TileMeshSource> results)
+        {
+            var sample = composition.MainTerrain;
             if (!TryGetMeshTemplates(prefab, out PrefabMeshTemplate[] templates))
                 return 0;
 
             float cellSize = ResolveCellSize();
             Vector3 scale = prefab.transform.localScale;
-            if (buildLayer.scaleTileToCellSize)
+            if (buildLayer != null && buildLayer.scaleTileToCellSize)
                 scale *= cellSize;
 
+            Vector3 scaleOffset = buildLayer != null ? buildLayer.scaleOffset : Vector3.one;
             scale = new Vector3(
-                scale.x * buildLayer.scaleOffset.x * scaleSign.x,
-                scale.y * buildLayer.scaleOffset.y * scaleSign.y,
-                scale.z * buildLayer.scaleOffset.z * scaleSign.z);
+                scale.x * scaleOffset.x * scaleSign.x,
+                scale.y * scaleOffset.y * scaleSign.y,
+                scale.z * scaleOffset.z * scaleSign.z);
 
             Quaternion rotation = Quaternion.Euler(xRotationOffset, yRotation + yRotationOffset, 0f);
             float fallbackPlacementHeight = ResolvePlacementHeight(sample, buildLayer);
@@ -270,7 +480,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                         prefabTopOffset)
                     : -1;
             int added = 0;
-            Material materialOverride = preset.GetMaterialOverride();
+            Material materialOverride = preset != null ? preset.GetMaterialOverride() : null;
             for (int i = 0; i < templates.Length; i++)
             {
                 PrefabMeshTemplate template = templates[i];

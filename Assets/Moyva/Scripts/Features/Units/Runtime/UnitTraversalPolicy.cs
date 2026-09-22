@@ -24,6 +24,9 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IUnitPlacementValidator _placementValidator;
         private readonly SignalBus _signals;
         private readonly IGeneratedTerrainSurfaceVersionQuery _terrainVersionQuery;
+        private readonly IGridTerrainSurfaceQuery _terrainSurface;
+        private readonly ITerrainPassageMap _passageMap;
+        private readonly IMovementHeightPolicy _heightPolicy;
 
         private readonly Dictionary<Vector2Int, StaticTraversalCell> _staticCache = new();
         private int _lastTerrainVersion = int.MinValue;
@@ -50,7 +53,10 @@ namespace Kruty1918.Moyva.Units.Runtime
             IUnitClassConfig unitConfigs,
             IUnitPlacementValidator placementValidator,
             SignalBus signals,
-            [InjectOptional] IGeneratedTerrainSurfaceVersionQuery terrainVersionQuery = null)
+            [InjectOptional] IGeneratedTerrainSurfaceVersionQuery terrainVersionQuery = null,
+            [InjectOptional] IGridTerrainSurfaceQuery terrainSurface = null,
+            [InjectOptional] ITerrainPassageMap passageMap = null,
+            [InjectOptional] IMovementHeightPolicy heightPolicy = null)
         {
             _grid = grid;
             _traversalCosts = traversalCosts;
@@ -60,6 +66,9 @@ namespace Kruty1918.Moyva.Units.Runtime
             _placementValidator = placementValidator;
             _signals = signals;
             _terrainVersionQuery = terrainVersionQuery;
+            _terrainSurface = terrainSurface;
+            _passageMap = passageMap;
+            _heightPolicy = heightPolicy;
         }
 
         public void Initialize()
@@ -136,6 +145,14 @@ namespace Kruty1918.Moyva.Units.Runtime
                 }
             }
 
+            TerrainTransitionEvaluation transition =
+                EvaluateTransition(from, to, movementProfileId);
+            if (transition.Kind == TerrainTransitionKind.Blocked)
+            {
+                reason = "Перехід заблоковано рельєфом.";
+                return false;
+            }
+
             cost = baseCost * (diagonal ? DiagonalFactor : 1f);
 
             if (!float.IsPositiveInfinity(availableMovement)
@@ -148,11 +165,51 @@ namespace Kruty1918.Moyva.Units.Runtime
             return true;
         }
 
+        public bool TryEvaluateTransition(
+            Vector2Int from,
+            Vector2Int to,
+            string movementProfileId,
+            out TerrainTransitionEvaluation evaluation)
+        {
+            evaluation = EvaluateTransition(from, to, movementProfileId);
+            return evaluation.Kind != TerrainTransitionKind.Blocked;
+        }
+
         public void InvalidateStaticCache()
         {
             _staticCache.Clear();
             _lastTerrainVersion =
                 _terrainVersionQuery?.TerrainSurfaceVersion ?? int.MinValue;
+        }
+
+        private TerrainTransitionEvaluation EvaluateTransition(
+            Vector2Int from,
+            Vector2Int to,
+            string movementProfileId)
+        {
+            float rise = 0f;
+            if (_terrainSurface != null
+                && _terrainSurface.TryGetTerrainSurfaceY(from, out float fromY)
+                && _terrainSurface.TryGetTerrainSurfaceY(to, out float toY))
+            {
+                rise = toY - fromY;
+            }
+
+            Vector2Int lowCell = rise >= 0f ? from : to;
+            Vector2Int highCell = rise >= 0f ? to : from;
+            bool stair = _passageMap != null && _passageMap.IsStairStep(from, to);
+            var kind = TerrainTransitionClassifier.Classify(
+                rise,
+                Mathf.Max(0f, -rise),
+                stair,
+                _heightPolicy,
+                movementProfileId);
+            return new TerrainTransitionEvaluation(
+                kind,
+                Mathf.Max(0f, rise),
+                Mathf.Max(0f, -rise),
+                lowCell,
+                highCell);
         }
 
         private void OnGridTileChanged(GridTileChangedSignal signal)

@@ -94,4 +94,63 @@ namespace Kruty1918.Moyva.Grid.API
     {
         bool TryGetLimits(string movementProfileId, out MovementHeightLimits limits);
     }
+
+    /// <summary>
+    /// Result of evaluating one orthogonal step between adjacent cells.
+    /// </summary>
+    public readonly struct TerrainTransitionEvaluation
+    {
+        public TerrainTransitionEvaluation(
+            TerrainTransitionKind kind,
+            float riseMeters,
+            float dropMeters,
+            Vector2Int lowCell,
+            Vector2Int highCell)
+        {
+            Kind = kind;
+            RiseMeters = riseMeters;
+            DropMeters = dropMeters;
+            LowCell = lowCell;
+            HighCell = highCell;
+        }
+
+        public TerrainTransitionKind Kind { get; }
+        /// <summary>Signed surface delta in the direction of travel (positive = climb).</summary>
+        public float RiseMeters { get; }
+        public float DropMeters { get; }
+        public Vector2Int LowCell { get; }
+        public Vector2Int HighCell { get; }
+    }
+
+    /// <summary>
+    /// Classifies an adjacent-cell step using surface heights, generated stair
+    /// passages and the movement profile's height limits.
+    /// </summary>
+    public static class TerrainTransitionClassifier
+    {
+        private const float Epsilon = 0.001f;
+
+        public static TerrainTransitionKind Classify(
+            float riseMeters,
+            float dropMeters,
+            bool isStairStep,
+            IMovementHeightPolicy heightPolicy,
+            string movementProfileId)
+        {
+            MovementHeightLimits limits = MovementHeightLimits.Default;
+            if (heightPolicy != null
+                && heightPolicy.TryGetLimits(movementProfileId, out MovementHeightLimits resolved)
+                && resolved != null)
+            {
+                limits = resolved;
+            }
+
+            float delta = Mathf.Max(riseMeters, dropMeters);
+            if (isStairStep && delta <= limits.StairModuleRiseMeters + Epsilon)
+                return TerrainTransitionKind.Stair;
+            if (delta <= limits.AutoStepMaxMeters + Epsilon)
+                return TerrainTransitionKind.DirectWalk;
+            return TerrainTransitionKind.Blocked;
+        }
+    }
 }

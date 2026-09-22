@@ -25,6 +25,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             container.Bind<ITerrainHeightPublisher>().To<TerrainHeightPublisher>().AsSingle();
             container.Bind<IEmptyMapFactory>().To<EmptyMapFactory>().AsSingle();
             container.Bind<IMapGenerationPipeline>().To<MapGenerationPipeline>().AsSingle();
+
+            container.BindInterfacesAndSelfTo<TerrainPassageStore>()
+                .AsSingle();
+            container.Bind<ITerrainReliefFieldPlanner>().To<TerrainReliefPlanner>().AsSingle();
+            container.Bind<ITerrainPassagePlanner>().To<TerrainPassagePlanner>().AsSingle();
+            container.Bind<ITerrainRoutePlanner>().To<TerrainRoutePlanner>().AsSingle();
+            container.Bind<ITerrainPlanApplier>().To<TerrainPlanApplicationService>().AsSingle();
         }
     }
 }
