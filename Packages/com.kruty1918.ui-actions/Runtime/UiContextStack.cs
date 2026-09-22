@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Kruty1918.Moyva.UIActions.API;
+using Kruty1918.UIActions.API;
 
-namespace Kruty1918.Moyva.UIActions.Runtime
+namespace Kruty1918.UIActions.Runtime
 {
-    internal sealed class UiContextStack : IUiContextStack
+    public sealed class UiContextStack : IUiContextStack
     {
         private readonly List<UiContextRegistration> _registrations = new();
 

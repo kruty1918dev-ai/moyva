@@ -1,7 +1,7 @@
 using System;
 using System.Text.RegularExpressions;
 
-namespace Kruty1918.Moyva.UIActions.API
+namespace Kruty1918.UIActions.API
 {
     public readonly struct UiActionId : IEquatable<UiActionId>
     {

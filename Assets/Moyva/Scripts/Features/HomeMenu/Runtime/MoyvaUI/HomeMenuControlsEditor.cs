@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Shared.Controls;
-using Kruty1918.Moyva.UIActions.API;
+using Kruty1918.UIActions.API;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Kruty1918.Moyva.UIActions.API;
+using Kruty1918.Moyva.UIActions.Runtime;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
@@ -13,7 +15,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly HomeMenuMoyvaUiState _state;
         private readonly HomeMenuMoyvaUiViewController _view;
         private readonly IUiHotkeyService _hotkeys;
-        private readonly IReadOnlyList<UiHotkeyBinding> _defaultHotkeys = UiHotkeyBinding.CreateDefaults();
+        private readonly IReadOnlyList<UiHotkeyBinding> _defaultHotkeys = MoyvaUiActionCatalog.CreateDefaultHotkeys();
         private int _captureStartFrame;
         private float _captureDeadline;
         private bool _captureArmed;

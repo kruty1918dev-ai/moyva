@@ -1,30 +1,36 @@
-using Kruty1918.Moyva.UIActions.API;
+using Kruty1918.UIActions.API;
 using TMPro;
 using UnityEngine.EventSystems;
 
-namespace Kruty1918.Moyva.UIActions.Runtime
+namespace Kruty1918.UIActions.Runtime
 {
-    internal sealed class UiEscapeRouter : IUiEscapeRouter
+    public sealed class UiEscapeRouter : IUiEscapeRouter
     {
         private readonly IUiContextStack _contexts;
         private readonly IUiActionRouter _actions;
         private readonly IUiActionJournal _journal;
+        private readonly UiEscapeRoutingOptions _options;
 
         public UiEscapeRouter(
             IUiContextStack contexts,
             IUiActionRouter actions,
-            IUiActionJournal journal)
+            IUiActionJournal journal,
+            UiEscapeRoutingOptions options = null)
         {
             _contexts = contexts;
             _actions = actions;
             _journal = journal;
+            _options = options ?? new UiEscapeRoutingOptions();
         }
 
         public bool TryHandleEscape()
         {
-            _journal?.Record(
-                new UiActionRequest(UiActionIds.Diagnostics.InputEscape, UiActionSource.Escape, _contexts?.ActiveContextId),
-                UiActionResult.Performed());
+            if (UiActionId.IsValid(_options.EscapeAction.Value))
+            {
+                _journal?.Record(
+                    new UiActionRequest(_options.EscapeAction, UiActionSource.Escape, _contexts?.ActiveContextId),
+                    UiActionResult.Performed());
+            }
 
             if (TryUnfocusTextInput())
                 return true;
@@ -64,9 +70,12 @@ namespace Kruty1918.Moyva.UIActions.Runtime
                 return false;
 
             eventSystem.SetSelectedGameObject(null);
-            _journal?.Record(
-                new UiActionRequest(UiActionIds.Diagnostics.TextUnfocus, UiActionSource.Escape, "TextEditing"),
-                UiActionResult.Performed());
+            if (UiActionId.IsValid(_options.TextUnfocusAction.Value))
+            {
+                _journal?.Record(
+                    new UiActionRequest(_options.TextUnfocusAction, UiActionSource.Escape, _options.TextEditingContextId),
+                    UiActionResult.Performed());
+            }
             return true;
         }
     }

@@ -1,32 +1,34 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Kruty1918.Moyva.InputRouting.API;
-using Kruty1918.Moyva.UIActions.API;
+using Kruty1918.InputRouting.API;
+using Kruty1918.UIActions.API;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using Zenject;
 
-namespace Kruty1918.Moyva.UIActions.Runtime
+namespace Kruty1918.UIActions.Runtime
 {
-    internal sealed class UiHotkeyService : IUiHotkeyService, ITickable
+    public sealed class UiHotkeyService : IUiHotkeyService
     {
         private readonly IUiActionRouter _actions;
         private readonly IUiContextStack _contexts;
         private readonly IGameplayInputPolicy _inputPolicy;
+        private readonly IReadOnlyList<UiHotkeyBinding> _defaultBindings;
         private readonly List<UiHotkeyBinding> _bindings = new();
         private readonly HashSet<UiActionId> _heldActionsTriggered = new();
 
         public UiHotkeyService(
             IUiActionRouter actions,
             IUiContextStack contexts,
-            [InjectOptional] IGameplayInputPolicy inputPolicy = null)
+            IGameplayInputPolicy inputPolicy = null,
+            IReadOnlyList<UiHotkeyBinding> defaultBindings = null)
         {
             _actions = actions;
             _contexts = contexts;
             _inputPolicy = inputPolicy;
+            _defaultBindings = defaultBindings ?? Array.Empty<UiHotkeyBinding>();
             ResetDefaults();
         }
 
@@ -93,7 +95,7 @@ namespace Kruty1918.Moyva.UIActions.Runtime
         public void ResetDefaults()
         {
             _bindings.Clear();
-            _bindings.AddRange(UiHotkeyBinding.CreateDefaults());
+            _bindings.AddRange(_defaultBindings);
         }
 
         public IReadOnlyList<string> DetectConflicts()

@@ -1,13 +1,10 @@
 {
-  "name": "Kruty1918.Moyva.UIActions",
-  "rootNamespace": "Kruty1918.Moyva.UIActions",
+  "name": "Kruty1918.UIActions",
+  "rootNamespace": "Kruty1918.UIActions",
   "references": [
-    "Kruty1918.UIActions",
-    "Kruty1918.InputRouting",
-    "Zenject",
     "Unity.InputSystem",
     "Unity.TextMeshPro",
-    "Kruty1918.Moyva.InputRouting"
+    "Kruty1918.InputRouting"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

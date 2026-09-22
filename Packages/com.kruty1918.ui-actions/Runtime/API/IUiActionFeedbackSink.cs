@@ -1,4 +1,4 @@
-namespace Kruty1918.Moyva.UIActions.API
+namespace Kruty1918.UIActions.API
 {
     /// <summary>
     /// Необов'язковий sink, який отримує результат кожної дії після виконання.

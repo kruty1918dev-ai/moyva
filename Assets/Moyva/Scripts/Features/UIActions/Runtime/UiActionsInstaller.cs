@@ -1,4 +1,7 @@
-using Kruty1918.Moyva.UIActions.API;
+using System.Collections.Generic;
+using Kruty1918.InputRouting.API;
+using Kruty1918.UIActions.API;
+using Kruty1918.UIActions.Runtime;
 using Zenject;
 
 namespace Kruty1918.Moyva.UIActions.Runtime
@@ -17,13 +20,56 @@ namespace Kruty1918.Moyva.UIActions.Runtime
                 container.Bind<IUiContextStack>().To<UiContextStack>().AsSingle();
 
             if (!container.HasBinding<IUiActionRouter>())
-                container.Bind<IUiActionRouter>().To<UiActionRouter>().AsSingle();
+            {
+                container.Bind<IUiActionRouter>()
+                    .FromMethod(ctx => (IUiActionRouter)new UiActionRouter(
+                        ctx.Container.Resolve<List<IUiActionHandler>>(),
+                        ctx.Container.Resolve<IUiActionJournal>(),
+                        ctx.Container.TryResolve<IUiActionFeedbackSink>()))
+                    .AsSingle();
+            }
 
             if (!container.HasBinding<IUiEscapeRouter>())
-                container.Bind<IUiEscapeRouter>().To<UiEscapeRouter>().AsSingle();
+            {
+                if (!container.HasBinding<UiEscapeRoutingOptions>())
+                {
+                    container.Bind<UiEscapeRoutingOptions>()
+                        .FromInstance(MoyvaUiActionCatalog.CreateEscapeRoutingOptions());
+                }
+
+                container.Bind<IUiEscapeRouter>()
+                    .FromMethod(ctx => (IUiEscapeRouter)new UiEscapeRouter(
+                        ctx.Container.Resolve<IUiContextStack>(),
+                        ctx.Container.Resolve<IUiActionRouter>(),
+                        ctx.Container.Resolve<IUiActionJournal>(),
+                        ctx.Container.Resolve<UiEscapeRoutingOptions>()))
+                    .AsSingle();
+            }
 
             if (!container.HasBinding<IUiHotkeyService>())
-                container.BindInterfacesTo<UiHotkeyService>().AsSingle().NonLazy();
+            {
+                container.BindInterfacesAndSelfTo<UiHotkeyService>()
+                    .FromMethod(ctx => new UiHotkeyService(
+                        ctx.Container.Resolve<IUiActionRouter>(),
+                        ctx.Container.Resolve<IUiContextStack>(),
+                        ctx.Container.TryResolve<IGameplayInputPolicy>(),
+                        MoyvaUiActionCatalog.CreateDefaultHotkeys()))
+                    .AsSingle().NonLazy();
+
+                container.Bind<ITickable>().To<UiHotkeyServiceTickAdapter>().AsSingle().NonLazy();
+            }
+        }
+
+        private sealed class UiHotkeyServiceTickAdapter : ITickable
+        {
+            private readonly UiHotkeyService _service;
+
+            public UiHotkeyServiceTickAdapter(UiHotkeyService service)
+            {
+                _service = service;
+            }
+
+            public void Tick() => _service.Tick();
         }
     }
 }

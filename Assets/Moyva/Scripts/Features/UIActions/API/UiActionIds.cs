@@ -1,3 +1,5 @@
+using Kruty1918.UIActions.API;
+
 namespace Kruty1918.Moyva.UIActions.API
 {
     public static class UiActionIds

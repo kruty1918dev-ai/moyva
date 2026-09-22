@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Kruty1918.Moyva.UIActions.API
+namespace Kruty1918.UIActions.API
 {
     public interface IUiContextStack
     {

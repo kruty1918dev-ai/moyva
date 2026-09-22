@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Kruty1918.Moyva.UIActions.API;
+using Kruty1918.UIActions.API;
 using UnityEngine;
-using Zenject;
 
-namespace Kruty1918.Moyva.UIActions.Runtime
+namespace Kruty1918.UIActions.Runtime
 {
-    internal sealed class UiActionRouter : IUiActionRouter
+    public sealed class UiActionRouter : IUiActionRouter
     {
         private readonly Dictionary<UiActionId, IUiActionHandler> _handlers = new();
         private readonly IUiActionJournal _journal;
@@ -15,7 +14,7 @@ namespace Kruty1918.Moyva.UIActions.Runtime
         public UiActionRouter(
             List<IUiActionHandler> handlers,
             IUiActionJournal journal,
-            [InjectOptional] IUiActionFeedbackSink feedbackSink = null)
+            IUiActionFeedbackSink feedbackSink = null)
         {
             _journal = journal;
             _feedbackSink = feedbackSink;
