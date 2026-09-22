@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Faction.Runtime
 {
     /// <summary>
@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Faction.Runtime
     /// Визначає локальних і мережевих учасників сесії.
     /// </summary>
 [System.Serializable]
-public sealed class GameSessionConfigSO : MoyvaJsonConfigObject
+public sealed class GameSessionConfigSO : JsonConfigObject
     {
         [SerializeField]
         private List<FactionSlot> _factions = new List<FactionSlot>();

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.API
@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.Generator.API
     /// Controls density, clustering, biome rules, and asset selection for visual-only decorations.
     /// </summary>
     [Serializable]
-    public sealed class EnvironmentDecorationConfig : MoyvaJsonConfigObject
+    public sealed class EnvironmentDecorationConfig : JsonConfigObject
     {
         /// <summary>
         /// Master switch for environment decoration generation.

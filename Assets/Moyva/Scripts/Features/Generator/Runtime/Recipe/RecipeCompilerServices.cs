@@ -6,7 +6,7 @@ using GiantGrey.TileWorldCreator.Components;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime.ObjectPlacement;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -520,7 +520,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     || mask == null)
                     continue;
 
-                var modifier = MoyvaJsonObjectFactory.Create<MoyvaPrecomputedMaskBlueprintModifier>();
+                var modifier = JsonObjectFactory.Create<MoyvaPrecomputedMaskBlueprintModifier>();
                 modifier.name = "Moyva Authoritative Recipe Output Mask";
                 modifier.isEnabled = true;
                 modifier.asset = config;

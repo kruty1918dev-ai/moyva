@@ -2,7 +2,7 @@
     "name": "Kruty1918.Moyva.Generator.Tests.Runtime",
     "references": [
         "Kruty1918.Moyva.Generator",
-        "Kruty1918.Moyva.Jsonization",
+        "Kruty1918.JsonConfig",
         "Kruty1918.Moyva.Grid.API",
         "Kruty1918.Moyva.MapChunks"
     ],

@@ -2,6 +2,11 @@
   "name": "Kruty1918.Moyva.Construction",
   "rootNamespace": "Kruty1918.Moyva.Construction",
   "references": [
+    "Kruty1918.Calendar",
+    "Kruty1918.Notifications",
+    "Kruty1918.UIActions",
+    "Kruty1918.InputRouting",
+    "Kruty1918.Localization",
     "Zenject",
     "Kruty1918.Moyva.Shared",
     "Kruty1918.Moyva.Signals",
@@ -22,7 +27,7 @@
     "Kruty1918.Moyva.Presentation",
     "Kruty1918.Moyva.Notifications",
     "Kruty1918.Moyva.Animations",
-    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+    "Kruty1918.JsonConfig"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

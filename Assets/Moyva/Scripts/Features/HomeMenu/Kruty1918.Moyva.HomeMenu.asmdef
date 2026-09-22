@@ -2,6 +2,8 @@
   "name": "Kruty1918.Moyva.HomeMenu",
   "rootNamespace": "Kruty1918.Moyva.HomeMenu",
   "references": [
+    "Kruty1918.UIActions",
+    "Kruty1918.Localization",
     "Zenject",
     "Kruty1918.Moyva.AI.Bot.Core",
     "Kruty1918.Moyva.Signals",
@@ -27,7 +29,7 @@
     "Unity.TextMeshPro",
     "Unity.Services.Core",
     "Unity.Services.Authentication",
-    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+    "Kruty1918.JsonConfig"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

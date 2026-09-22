@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using Kruty1918.Moyva.Shared.Localization;
+using Kruty1918.Localization;
 using UnityEngine;
 using Zenject;
 

@@ -1,10 +1,10 @@
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Economy.API
 {
 [System.Serializable]
-public sealed class EconomyProductionProfile : MoyvaJsonConfigObject
+public sealed class EconomyProductionProfile : JsonConfigObject
     {
         [SerializeField] private string _buildingId;
         [SerializeField] private bool _isActiveByDefault = true;

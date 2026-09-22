@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Economy.API
 {
     /// <summary>
@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Economy.API
     /// Зберігає дефолтні значення та метаінформацію про кожен параметр.
     /// </summary>
 [System.Serializable]
-public sealed class EconomyRulesConfiguration : MoyvaJsonConfigObject
+public sealed class EconomyRulesConfiguration : JsonConfigObject
     {
         [SerializeField] private List<EconomyRuleParameter> _parameters = new List<EconomyRuleParameter>();
 

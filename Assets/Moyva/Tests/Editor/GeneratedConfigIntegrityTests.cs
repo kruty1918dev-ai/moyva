@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Tests.Startup
@@ -18,8 +18,8 @@ namespace Kruty1918.Moyva.Tests.Startup
         [Test]
         public void GeneratedConfigRuntimeLoadsWithoutErrors()
         {
-            Assert.DoesNotThrow(() => MoyvaJsonRuntime.EnsureLoaded());
-            Assert.IsTrue(MoyvaJsonRuntime.IsLoaded);
+            Assert.DoesNotThrow(() => JsonConfigRuntime.EnsureLoaded());
+            Assert.IsTrue(JsonConfigRuntime.IsLoaded);
         }
 
         [Test]
@@ -70,7 +70,7 @@ namespace Kruty1918.Moyva.Tests.Startup
                 if (IsLegacyEditorOnlyDocument(header, model, schema))
                     continue;
 
-                Type resolved = MoyvaJsonTypeRegistry.ResolveConfigModel(model, schema);
+                Type resolved = JsonConfigTypeRegistry.ResolveConfigModel(model, schema);
                 if (resolved == null)
                 {
                     failures.Add(
@@ -104,7 +104,7 @@ namespace Kruty1918.Moyva.Tests.Startup
             public string sourceAssetPath;
         }
 
-        // Mirrors MoyvaJsonRuntime.IsLegacyEditorOnlyConstructionDocument: Pass82 exported
+        // Mirrors JsonConfigRuntime.IsLegacyEditorOnlyConstructionDocument: Pass82 exported
         // editor-only Construction authoring docs that intentionally have no runtime model.
         private static bool IsLegacyEditorOnlyDocument(GeneratedDocHeader root, string model, string schema)
         {

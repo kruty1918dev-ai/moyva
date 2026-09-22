@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Kruty1918.Moyva.Calendar.Core;
+using Kruty1918.Calendar.Core;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Turns.API;
 using Zenject;

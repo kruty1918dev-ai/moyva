@@ -21,7 +21,7 @@ namespace Kruty1918.Moyva.Construction.API
             BuildingDefinition definition,
             StringBuilder output,
             Func<string, string> resourceDisplayNameResolver = null,
-            Kruty1918.Moyva.Shared.Localization.ILocalizationService loca = null)
+            Kruty1918.Localization.ILocalizationService loca = null)
         {
             if (definition == null || output == null)
                 return false;
@@ -129,10 +129,10 @@ namespace Kruty1918.Moyva.Construction.API
             return output.Length > startLength;
         }
 
-        private static string L(Kruty1918.Moyva.Shared.Localization.ILocalizationService loca, string key)
+        private static string L(Kruty1918.Localization.ILocalizationService loca, string key)
             => loca?.T(key) ?? key;
 
-        private static string LF(Kruty1918.Moyva.Shared.Localization.ILocalizationService loca, string key, params object[] args)
+        private static string LF(Kruty1918.Localization.ILocalizationService loca, string key, params object[] args)
             => loca?.TF(key, args) ?? string.Format(System.Globalization.CultureInfo.CurrentCulture, key, args);
 
         private static string ResolveResourceDisplayName(string resourceId, Func<string, string> resolver)

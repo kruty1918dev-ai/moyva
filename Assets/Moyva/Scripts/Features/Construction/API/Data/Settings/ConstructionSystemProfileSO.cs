@@ -2,11 +2,11 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 using Kruty1918.Moyva.Construction.Runtime;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Construction.API
 {
 [System.Serializable]
-public sealed class ConstructionSystemProfileSO : MoyvaJsonConfigObject
+public sealed class ConstructionSystemProfileSO : JsonConfigObject
     {
         [BoxGroup("Registry"), Required]
         [SerializeField] private BuildingRegistrySO _buildingRegistry;
@@ -24,10 +24,10 @@ public sealed class ConstructionSystemProfileSO : MoyvaJsonConfigObject
         [SerializeField] private ConstructionWallProfileSO _wallProfile;
 
         [BoxGroup("Integrations")]
-        [SerializeField] private MoyvaJsonConfigObject _economyRulesProfile;
+        [SerializeField] private JsonConfigObject _economyRulesProfile;
 
         [BoxGroup("Integrations")]
-        [SerializeField] private MoyvaJsonConfigObject _fogOfWarSettings;
+        [SerializeField] private JsonConfigObject _fogOfWarSettings;
 
         [BoxGroup("Registry")]
         [SerializeField] private BuildingDefinitionAsset[] _highlightedDefinitions = new BuildingDefinitionAsset[0];
@@ -37,8 +37,8 @@ public sealed class ConstructionSystemProfileSO : MoyvaJsonConfigObject
         public ConstructionVisualProfileSO VisualProfile => _visualProfile;
         public ConstructionInputProfileSO InputProfile => _inputProfile;
         public ConstructionWallProfileSO WallProfile => _wallProfile;
-        public MoyvaJsonConfigObject EconomyRulesProfile => _economyRulesProfile;
-        public MoyvaJsonConfigObject FogOfWarSettings => _fogOfWarSettings;
+        public JsonConfigObject EconomyRulesProfile => _economyRulesProfile;
+        public JsonConfigObject FogOfWarSettings => _fogOfWarSettings;
         public BuildingDefinitionAsset[] HighlightedDefinitions => _highlightedDefinitions;
     }
 }

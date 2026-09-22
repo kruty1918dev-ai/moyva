@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using Zenject;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Camera.Runtime
 {
     internal sealed class CameraMapRenderMaskService : IInitializable, ITickable, IDisposable

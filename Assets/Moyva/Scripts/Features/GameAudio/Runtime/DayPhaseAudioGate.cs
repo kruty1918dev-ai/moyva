@@ -1,5 +1,5 @@
 using System;
-using Kruty1918.Moyva.Calendar.Domain;
+using Kruty1918.Calendar.Domain;
 
 namespace Kruty1918.Moyva.GameAudio.Runtime
 {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Kruty1918.Moyva.Economy.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.AI.Training
@@ -202,7 +202,7 @@ namespace Kruty1918.Moyva.AI.Training
             var result = new HashSet<string>(ScenarioResourceFallback, StringComparer.Ordinal);
             try
             {
-                foreach (var resource in MoyvaJsonRuntime.GetAll<EconomyResourceDefinition>() ?? Array.Empty<EconomyResourceDefinition>())
+                foreach (var resource in JsonConfigRuntime.GetAll<EconomyResourceDefinition>() ?? Array.Empty<EconomyResourceDefinition>())
                     if (resource != null && !string.IsNullOrWhiteSpace(resource.Id)) result.Add(resource.Id);
             }
             catch (Exception exception)

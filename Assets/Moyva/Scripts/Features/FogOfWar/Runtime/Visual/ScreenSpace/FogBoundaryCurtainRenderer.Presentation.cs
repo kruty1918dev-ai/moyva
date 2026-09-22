@@ -1,5 +1,5 @@
 using Kruty1918.Moyva.FogOfWar.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -18,9 +18,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 .ClearDrawData(
                     _mesh);
 
-            MoyvaJsonObjectFactory.DestroyImmediate(_material);
-            MoyvaJsonObjectFactory.DestroyImmediate(_mesh);
-            MoyvaJsonObjectFactory.DestroyImmediate(_root);
+            JsonObjectFactory.DestroyImmediate(_material);
+            JsonObjectFactory.DestroyImmediate(_mesh);
+            JsonObjectFactory.DestroyImmediate(_root);
             _material = null;
             _mesh = null;
             _root = null;
@@ -127,7 +127,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         "Material does not contain the " +
                         "MoyvaFogCurtain pass.");
 
-                    MoyvaJsonObjectFactory.DestroyImmediate(
+                    JsonObjectFactory.DestroyImmediate(
                         _material);
                     _material = null;
 

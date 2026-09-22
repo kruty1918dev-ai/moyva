@@ -1,4 +1,4 @@
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.Vfx.API;
 using Zenject;
 
@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.Vfx.Runtime
             if (!container.HasBinding<VfxCatalogConfig>())
             {
                 container.Bind<VfxCatalogConfig>()
-                    .FromMethod(_ => MoyvaJsonRuntime.GetLegacyResource<VfxCatalogConfig>(
+                    .FromMethod(_ => JsonConfigRuntime.GetLegacyResource<VfxCatalogConfig>(
                         nameof(VfxCatalogConfig)))
                     .AsSingle()
                     .IfNotBound();

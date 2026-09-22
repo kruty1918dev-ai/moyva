@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Economy.API
 {
     [Serializable]
@@ -20,7 +20,7 @@ namespace Kruty1918.Moyva.Economy.API
         public int ExcessThreshold => _excessThreshold;
     }
 [System.Serializable]
-public sealed class EconomyAiRuleProfile : MoyvaJsonConfigObject
+public sealed class EconomyAiRuleProfile : JsonConfigObject
     {
         [Tooltip("Унікальний ідентифікатор профілю AI-правил.\nВикористовується для прив'язки профілю до фракції або поселення.\nПриклад: \"ai-aggressive\", \"ai-passive-merchant\".")]
         [SerializeField] private string _profileId;

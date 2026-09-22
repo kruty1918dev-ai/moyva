@@ -1,7 +1,7 @@
 using GiantGrey.TileWorldCreator;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Grid.API
 {
     /// <summary>
@@ -104,7 +104,7 @@ namespace Kruty1918.Moyva.Grid.API
     /// Є джерелом даних для сервісів сітки, генерації та візуалізації.
     /// </summary>
 [System.Serializable]
-public class TileRegistrySO : MoyvaJsonConfigObject
+public class TileRegistrySO : JsonConfigObject
     {
         /// <summary>
         /// Масив визначень тайлів, налаштований у інспекторі Unity.

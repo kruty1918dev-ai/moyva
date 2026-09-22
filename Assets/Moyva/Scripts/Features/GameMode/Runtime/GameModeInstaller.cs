@@ -1,5 +1,5 @@
 using Kruty1918.Moyva.GameMode.API;
-using Kruty1918.Moyva.UIActions.Runtime;
+using Kruty1918.UIActions.Runtime;
 using Kruty1918.Moyva.Turns.Runtime;
 using Zenject;
 

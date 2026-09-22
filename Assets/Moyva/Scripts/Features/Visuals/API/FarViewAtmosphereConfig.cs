@@ -1,5 +1,5 @@
 using System;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Visuals
@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.Visuals
     /// надходить із ICameraZoomState — пороги переходу живуть у camera-settings.
     /// </summary>
     [Serializable]
-    public sealed class FarViewAtmosphereConfig : MoyvaJsonConfigObject
+    public sealed class FarViewAtmosphereConfig : JsonConfigObject
     {
         /// <summary>Чи ввімкнена далека атмосфера.</summary>
         public bool enabled = true;

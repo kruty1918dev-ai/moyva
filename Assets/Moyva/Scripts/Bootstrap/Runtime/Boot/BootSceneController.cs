@@ -64,7 +64,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private BootScreenArtSet _art;
         private BootScreenView _view;
         private CancellationTokenSource _cts;
-        private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private Kruty1918.Localization.ILocalizationService _loca;
 
         private void Start()
         {
@@ -74,7 +74,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             // Локалізація доступна до ProjectContext: сервіс читає каталоги з Resources
             // і persisted вибір з диска, тож boot-екран одразу говорить мовою гравця.
-            _loca = new Kruty1918.Moyva.Shared.Localization.LocalizationService();
+            _loca = new Kruty1918.Localization.LocalizationService(
+                Shared.Localization.MoyvaLocalizationDefaults.CreateOptions());
             var rawHints = _hints != null && _hints.Length > 0 ? _hints : DefaultHints;
             var hints = new string[rawHints.Length];
             for (int i = 0; i < rawHints.Length; i++)
@@ -199,7 +200,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     return null;
 
                 // 2: Transition-сервіс опційний — boot має працювати й без нього.
-                var sharedLoca = context.Container.TryResolve<Kruty1918.Moyva.Shared.Localization.ILocalizationService>();
+                var sharedLoca = context.Container.TryResolve<Kruty1918.Localization.ILocalizationService>();
                 if (sharedLoca != null)
                     _loca = sharedLoca;
                 return context.Container.TryResolve<ISceneTransitionService>();

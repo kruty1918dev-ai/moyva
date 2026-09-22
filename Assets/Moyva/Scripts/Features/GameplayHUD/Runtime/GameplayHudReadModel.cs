@@ -12,13 +12,13 @@ using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Interactions.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.Multiplayer.Core;
-using Kruty1918.Moyva.Notifications.API;
+using Kruty1918.Notifications.API;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
-using Kruty1918.Moyva.UIActions.API;
+using Kruty1918.UIActions.API;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
 using UnityHTML.Runtime;
@@ -56,7 +56,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly ILocalGameplayRoleResolver _roleResolver;
         private readonly IGameplayProgressClock _progressClock;
         private readonly GameplayCargoPanel _cargoPanel;
-        private readonly Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private readonly Kruty1918.Localization.ILocalizationService _loca;
         private readonly GameplaySupplyPanel _supplyPanel;
         private readonly IConstructionSupplyService _supply;
         private readonly ICaravanService _caravans;
@@ -111,7 +111,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] ICaravanService caravans = null,
             [InjectOptional] IConstructionLifecycle lifecycle = null,
             [InjectOptional] IEconomyInfoMediator population = null,
-            [InjectOptional] Kruty1918.Moyva.Shared.Localization.ILocalizationService localization = null)
+            [InjectOptional] Kruty1918.Localization.ILocalizationService localization = null)
         {
             _loca = localization;
             _turns = turns;
@@ -145,7 +145,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _supply = supply;
             _caravans = caravans;
 
-            foreach (var resource in MoyvaJsonRuntime.GetAll<EconomyResourceDefinition>())
+            foreach (var resource in JsonConfigRuntime.GetAll<EconomyResourceDefinition>())
                 if (resource != null && resource.Icon != null)
                     _icons[GameplayHtmlIconKeys.Resource(resource.Id)] = resource.Icon;
 

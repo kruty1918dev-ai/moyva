@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 
 namespace Kruty1918.Moyva.Grid.Runtime
 {
@@ -59,7 +59,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
         {
             try
             {
-                return MoyvaJsonRuntime.GetAll<MovementProfileConfig>();
+                return JsonConfigRuntime.GetAll<MovementProfileConfig>();
             }
             catch (Exception ex)
             {

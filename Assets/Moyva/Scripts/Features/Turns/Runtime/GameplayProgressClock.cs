@@ -1,5 +1,5 @@
 using System;
-using Kruty1918.Moyva.Calendar.Core;
+using Kruty1918.Calendar.Core;
 using Kruty1918.Moyva.Turns.API;
 using UnityEngine;
 using Zenject;

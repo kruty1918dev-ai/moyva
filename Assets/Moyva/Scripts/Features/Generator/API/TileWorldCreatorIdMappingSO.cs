@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Generator.API
 {
 [System.Serializable]
-public sealed class TileWorldCreatorIdMappingSO : MoyvaJsonConfigObject
+public sealed class TileWorldCreatorIdMappingSO : JsonConfigObject
     {
         [SerializeField] private LayerMapping[] _terrainLayers = Array.Empty<LayerMapping>();
         [SerializeField] private LayerMapping[] _objectLayers = Array.Empty<LayerMapping>();

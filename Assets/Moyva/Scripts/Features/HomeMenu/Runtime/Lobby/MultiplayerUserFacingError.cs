@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
         /// Зібрати фінальний текст для відображення у UI.
         /// </summary>
         public string BuildDisplayMessage(
-            Kruty1918.Moyva.Shared.Localization.ILocalizationService loca = null)
+            Kruty1918.Localization.ILocalizationService loca = null)
         {
             // 1: Повідомлення й порада локалізуються на межі рендеру, якщо сервіс доступний.
             string userMessage = loca?.T(UserMessage) ?? UserMessage;

@@ -1,6 +1,6 @@
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Interactions.API;
-using Kruty1918.Moyva.InputRouting.Runtime;
+using Kruty1918.InputRouting.Runtime;
 using Zenject;
 
 namespace Kruty1918.Moyva.Interactions.Runtime

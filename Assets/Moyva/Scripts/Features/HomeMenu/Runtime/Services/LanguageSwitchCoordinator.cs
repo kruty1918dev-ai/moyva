@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Kruty1918.Moyva.Shared.Localization;
+using Kruty1918.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

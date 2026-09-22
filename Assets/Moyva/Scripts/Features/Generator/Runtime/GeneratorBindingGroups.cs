@@ -142,7 +142,7 @@ namespace Kruty1918.Moyva.Generator
             EnvironmentDecorationConfig decorationConfig = null;
             try
             {
-                decorationConfig = Kruty1918.Moyva.Jsonization.MoyvaJsonRuntime.Get<EnvironmentDecorationConfig>("environment-decoration-config");
+                decorationConfig = Kruty1918.JsonConfig.JsonConfigRuntime.Get<EnvironmentDecorationConfig>("environment-decoration-config");
             }
             catch (System.Exception ex)
             {

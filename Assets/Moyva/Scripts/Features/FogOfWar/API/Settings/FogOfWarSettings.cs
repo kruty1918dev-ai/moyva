@@ -1,14 +1,14 @@
 using Kruty1918.Moyva.FogOfWar.Runtime.SettingsValidation;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.FogOfWar.API
 {
     /// <summary>
-    /// Root MoyvaJsonConfigObject config for FogOfWar. Serialized fields live in partial files
+    /// Root JsonConfigObject config for FogOfWar. Serialized fields live in partial files
     /// so Unity keeps existing field names while feature sections stay isolated.
     /// </summary>
-public partial class FogOfWarSettings : MoyvaJsonConfigObject
+public partial class FogOfWarSettings : JsonConfigObject
     {
         /// <summary>
         /// Tint used for remembered entities rendered by the ghost presenter.

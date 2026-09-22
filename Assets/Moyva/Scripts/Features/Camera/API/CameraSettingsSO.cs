@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Camera.API
 {
     /// <summary>CameraControlProfile — struct: камери керування профілю.</summary>
@@ -237,7 +237,7 @@ namespace Kruty1918.Moyva.Camera.API
 
     /// <summary>CameraSettingsSO — class: камери налаштування SO.</summary>
     [System.Serializable]
-    public class CameraSettingsSO : MoyvaJsonConfigObject
+    public class CameraSettingsSO : JsonConfigObject
     {
         /// <summary>керування профілю — CameraControlProfile.</summary>
         [Header("Control Profile")]

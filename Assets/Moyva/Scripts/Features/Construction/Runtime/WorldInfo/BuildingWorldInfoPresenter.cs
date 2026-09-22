@@ -13,13 +13,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly SignalBus _signalBus;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IEconomyInfoMediator _economyInfoMediator;
-        private readonly Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private readonly Kruty1918.Localization.ILocalizationService _loca;
 
         public BuildingWorldInfoPresenter(
             SignalBus signalBus,
             IBuildingRegistry buildingRegistry,
             [InjectOptional] IEconomyInfoMediator economyInfoMediator,
-            [InjectOptional] Kruty1918.Moyva.Shared.Localization.ILocalizationService localization = null)
+            [InjectOptional] Kruty1918.Localization.ILocalizationService localization = null)
         {
             _signalBus = signalBus;
             _buildingRegistry = buildingRegistry;

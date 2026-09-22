@@ -4,12 +4,12 @@ using Kruty1918.Moyva.Presentation.API;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Construction.API
 {
 /// <summary>Асет-визначення будівлі: ідентичність, вигляд, footprint, правила розміщення, економіка, runtime-параметри та модулі. Редагується в інспекторі, конвертується у runtime-знімок.</summary>
 [System.Serializable]
-public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
+public sealed class BuildingDefinitionAsset : JsonConfigObject
     {
         [NonSerialized] private BuildingDefinition _editorRuntimeCache;
         [NonSerialized] private IReadOnlyList<BuildingValidationIssue> _editorValidationCache;

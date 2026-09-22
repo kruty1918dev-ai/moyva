@@ -1,7 +1,7 @@
 using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.InputRouting.API;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;

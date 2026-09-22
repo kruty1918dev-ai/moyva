@@ -1,12 +1,12 @@
 using System;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Animations.API
 {
     /// <summary>Централізований тюнінг gameplay-рухів. Модель JSON-пресета "gameplay-motion" (schema moyva.gameplay-motion). Перевизначення за класом юніта живуть у PathAnimationSettings; ці профілі — спільні усталені значення та канонічний словник переходів будівель/юнітів.</summary>
     [Serializable]
-    public sealed class GameplayMotionConfig : MoyvaJsonConfigObject
+    public sealed class GameplayMotionConfig : JsonConfigObject
     {
         /// <summary>Профіль безперервного переміщення юнітів.</summary>
         public UnitLocomotionMotionProfile unitLocomotion = new UnitLocomotionMotionProfile();

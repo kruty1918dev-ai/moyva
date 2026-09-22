@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Economy.API
 {
 [System.Serializable]
-public sealed class EconomyCaravanTemplate : MoyvaJsonConfigObject
+public sealed class EconomyCaravanTemplate : JsonConfigObject
     {
         [SerializeField] private string _templateId;
         [SerializeField] private List<string> _allowedResourceIds = new List<string>();

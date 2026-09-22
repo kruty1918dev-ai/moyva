@@ -2,11 +2,11 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 using Kruty1918.Moyva.WorldCreation.API;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Construction.API
 {
 [System.Serializable]
-public sealed class ConstructionPlacementRulesProfileSO : MoyvaJsonConfigObject
+public sealed class ConstructionPlacementRulesProfileSO : JsonConfigObject
     {
         [BoxGroup("Відступ")]
         [MinValue(0)]

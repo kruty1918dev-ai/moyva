@@ -3,7 +3,7 @@
   "rootNamespace": "Kruty1918.Moyva.Vfx.EditorTools",
   "references": [
     "Kruty1918.Moyva.Vfx",
-    "Kruty1918.Moyva.Jsonization",
+    "Kruty1918.JsonConfig",
     "Kruty1918.Moyva.Jsonization.Editor"
   ],
   "includePlatforms": [

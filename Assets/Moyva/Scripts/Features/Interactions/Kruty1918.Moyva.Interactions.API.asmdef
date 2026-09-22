@@ -2,6 +2,8 @@
   "name": "Kruty1918.Moyva.Interactions.API",
   "rootNamespace": "Kruty1918.Moyva.Interactions.API",
   "references": [
+    "Kruty1918.Notifications",
+    "Kruty1918.InputRouting",
     "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
     "GUID:2184a61147db9a3028e020da0232f700",
     "GUID:c1642f5cae15ed69da041d910650a38e",
@@ -18,7 +20,7 @@
     "Kruty1918.Moyva.InputRouting",
     "Kruty1918.Moyva.Turns",
     "Kruty1918.Moyva.Notifications",
-    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1",
+    "Kruty1918.JsonConfig",
     "Kruty1918.Moyva.Shared"
   ],
   "includePlatforms": [],

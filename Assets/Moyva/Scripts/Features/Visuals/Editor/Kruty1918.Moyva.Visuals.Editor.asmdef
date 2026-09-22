@@ -5,7 +5,7 @@
     "Kruty1918.Moyva.Visuals",
     "Unity.RenderPipelines.Core.Runtime",
     "Unity.RenderPipelines.Universal.Runtime",
-    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+    "Kruty1918.JsonConfig"
   ],
   "includePlatforms": [
     "Editor"

@@ -3,7 +3,7 @@
   "rootNamespace": "Kruty1918.Moyva.Clouds.Editor",
   "references": [
     "Kruty1918.Moyva.Clouds",
-    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+    "Kruty1918.JsonConfig"
   ],
   "includePlatforms": [
     "Editor"

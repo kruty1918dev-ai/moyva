@@ -7,7 +7,7 @@ using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Pathfinding.API;
-using Kruty1918.Moyva.UIActions.Runtime;
+using Kruty1918.UIActions.Runtime;
 using Kruty1918.Moyva.Units.API;
 
 namespace Kruty1918.Moyva.Bootstrap

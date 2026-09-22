@@ -4,7 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.HomeMenu.API;
-using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.InputRouting.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;

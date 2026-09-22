@@ -2,7 +2,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Kruty1918.Moyva.UIActions.Runtime;
+using Kruty1918.UIActions.Runtime;
 using Zenject;
 
 namespace Kruty1918.Moyva.InfoPanel.UI

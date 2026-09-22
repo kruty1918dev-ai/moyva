@@ -5,12 +5,13 @@ using System.Linq;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Runtime;
 using Kruty1918.Moyva.Multiplayer.Core;
-using Kruty1918.Moyva.Notifications.API;
+using Kruty1918.Notifications.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
-using Kruty1918.Moyva.UIActions.API;
+using Kruty1918.UIActions.API;
 using UnityEngine;
 using Zenject;
+using Kruty1918.Moyva.UIActions.API;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {

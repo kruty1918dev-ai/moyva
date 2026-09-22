@@ -1,6 +1,6 @@
 using System;
 using System.Globalization;
-using Kruty1918.Moyva.Shared.Localization;
+using Kruty1918.Localization;
 using Kruty1918.Moyva.Turns.API;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime

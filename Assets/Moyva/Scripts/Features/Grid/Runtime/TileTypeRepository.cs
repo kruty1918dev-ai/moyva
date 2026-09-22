@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 using Zenject;
 
@@ -76,7 +76,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
         {
             try
             {
-                return MoyvaJsonRuntime.GetAll<TileTypeConfig>();
+                return JsonConfigRuntime.GetAll<TileTypeConfig>();
             }
             catch (Exception ex)
             {

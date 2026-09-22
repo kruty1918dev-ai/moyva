@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.API;
-using Kruty1918.Moyva.Shared.Localization;
+using Kruty1918.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;

@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 
 namespace Kruty1918.Moyva.GameAudio.API
 {
@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.GameAudio.API
     /// Модель пресету: "audio-ambience" (схема moyva.audio-ambience).
     /// </summary>
     [Serializable]
-    public sealed class AudioAmbienceConfig : MoyvaJsonConfigObject
+    public sealed class AudioAmbienceConfig : JsonConfigObject
     {
         /// <summary>Налаштування реакції амбієнсу на зум.</summary>
         public AudioAmbienceZoom zoom = new AudioAmbienceZoom();

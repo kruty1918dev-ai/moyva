@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Economy.API
 {
     [Serializable]
@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.Economy.API
         public int ReserveAmount => _reserveAmount;
     }
 [System.Serializable]
-public sealed class EconomyWarehousePolicy : MoyvaJsonConfigObject
+public sealed class EconomyWarehousePolicy : JsonConfigObject
     {
         [SerializeField] private EconomyWarehouseType _warehouseType;
         [SerializeField] private List<EconomyWarehousePolicyEntry> _entries = new List<EconomyWarehousePolicyEntry>();

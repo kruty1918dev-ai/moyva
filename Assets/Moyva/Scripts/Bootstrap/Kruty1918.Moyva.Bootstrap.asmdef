@@ -2,6 +2,10 @@
   "name": "Kruty1918.Moyva.Bootstrap",
   "rootNamespace": "Kruty1918.Moyva.Bootstrap",
   "references": [
+    "Kruty1918.Calendar",
+    "Kruty1918.UIActions",
+    "Kruty1918.InputRouting",
+    "Kruty1918.Localization",
     "Zenject",
     "Kruty1918.Moyva.AI.Bot.Core",
     "Kruty1918.Moyva.AI.Bot.MLAgents",
@@ -30,7 +34,7 @@
     "UnityHTML.Runtime",
     "Unity.InputSystem",
     "Unity.TextMeshPro",
-    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+    "Kruty1918.JsonConfig"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Generator.API
 {
     public enum Neighborhood8
@@ -39,7 +39,7 @@ namespace Kruty1918.Moyva.Generator.API
         public float MatchThreshold ;
     }
 [System.Serializable]
-public class WFCDataSettings : MoyvaJsonConfigObject
+public class WFCDataSettings : JsonConfigObject
     {
         [Header("Tile Registry")]
         [Tooltip("Реєстр тайлів для WFC. Якщо не вказано — редактор шукає перший TileRegistrySO у проєкті.")]

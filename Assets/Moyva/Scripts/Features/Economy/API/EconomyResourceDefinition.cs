@@ -1,10 +1,10 @@
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Economy.API
 {
 [System.Serializable]
-public sealed class EconomyResourceDefinition : MoyvaJsonConfigObject
+public sealed class EconomyResourceDefinition : JsonConfigObject
     {
         [SerializeField] private string _id;
         [SerializeField] private string _displayName;
@@ -14,7 +14,7 @@ public sealed class EconomyResourceDefinition : MoyvaJsonConfigObject
         [SerializeField] [Min(1)] private int _weightGrams = 1000;
 
         // JSON root metadata "id" is intentionally removed before object Populate()
-        // and is stored by MoyvaJsonRuntime in MoyvaJsonConfigObject.JsonId.
+        // and is stored by JsonConfigRuntime in JsonConfigObject.JsonId.
         // Keep _id as a legacy/compatibility source, but JsonId is the canonical
         // runtime identity for migrated JSON resource definitions.
         public string Id => string.IsNullOrWhiteSpace(_id) ? JsonId : _id;

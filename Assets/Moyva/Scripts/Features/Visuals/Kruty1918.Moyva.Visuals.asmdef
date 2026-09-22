@@ -2,6 +2,7 @@
   "name": "Kruty1918.Moyva.Visuals",
   "rootNamespace": "Kruty1918.Moyva.Visuals",
   "references": [
+    "Kruty1918.Calendar",
     "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
     "GUID:dbeb150ae01f08dd59e8e397e8ee8e2a",
     "Kruty1918.Moyva.ObjectsMap",
@@ -10,7 +11,7 @@
     "Kruty1918.Moyva.Shared",
     "Unity.RenderPipelines.Core.Runtime",
     "Unity.RenderPipelines.Universal.Runtime",
-    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+    "Kruty1918.JsonConfig"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

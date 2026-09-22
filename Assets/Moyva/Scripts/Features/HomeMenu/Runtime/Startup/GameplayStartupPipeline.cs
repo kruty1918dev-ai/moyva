@@ -15,7 +15,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zenject;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
 {
     /// <summary>
@@ -85,7 +85,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             [InjectOptional] IServiceModeProfileProvider serviceModeProfileProvider = null,
             [InjectOptional] IMultiplayerStartupBarrier startupBarrier = null,
             [InjectOptional] ISessionManager networkSession = null,
-            [InjectOptional] Kruty1918.Moyva.Shared.Localization.ILocalizationService localization = null)
+            [InjectOptional] Kruty1918.Localization.ILocalizationService localization = null)
         {
             _config = Guard.NotNull(config, nameof(config));
             _overlayLoader = Guard.NotNull(overlayLoader, nameof(overlayLoader));
@@ -100,7 +100,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             _gameplayProfile = serviceModeProfileProvider?.Get(ServiceRuntimeMode.Gameplay) ?? ServiceModeProfileDefaults.Gameplay;
         }
 
-        private readonly Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private readonly Kruty1918.Localization.ILocalizationService _loca;
 
         /// <summary>Локалізований статус-рядок під прогресом overlay (ключ = source text).</summary>
         private void SetStatus(string key) => _overlayLoader?.SetOverlayStatus(_loca?.T(key) ?? key);

@@ -2,6 +2,7 @@
   "name": "Kruty1918.Moyva.Turns",
   "rootNamespace": "Kruty1918.Moyva.Turns",
   "references": [
+    "Kruty1918.Calendar",
     "Zenject",
     "Kruty1918.Moyva.Signals",
     "Kruty1918.Moyva.Calendar"

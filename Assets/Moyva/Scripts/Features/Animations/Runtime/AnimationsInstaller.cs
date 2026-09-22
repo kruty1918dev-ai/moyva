@@ -1,5 +1,5 @@
 using Kruty1918.Moyva.Animations.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Zenject;
 
 namespace Kruty1918.Moyva.Animations.Runtime
@@ -29,7 +29,7 @@ namespace Kruty1918.Moyva.Animations.Runtime
         {
             // JSON preset is authoritative; a missing document falls back to
             // the coded defaults so headless/test contexts still work.
-            return MoyvaJsonRuntime.GetLegacyResource<GameplayMotionConfig>(nameof(GameplayMotionConfig))
+            return JsonConfigRuntime.GetLegacyResource<GameplayMotionConfig>(nameof(GameplayMotionConfig))
                    ?? new GameplayMotionConfig();
         }
     }

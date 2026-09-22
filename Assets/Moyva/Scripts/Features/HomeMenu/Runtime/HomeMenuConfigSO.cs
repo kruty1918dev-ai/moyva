@@ -1,6 +1,6 @@
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     /// <summary>
@@ -8,7 +8,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     /// Залежності: використовується HomeMenuGameStarter та startup pipeline.
     /// </summary>
     [System.Serializable]
-    public sealed class HomeMenuConfigSO : MoyvaJsonConfigObject
+    public sealed class HomeMenuConfigSO : JsonConfigObject
     {
         /// <summary>Назва gameplay-сцени.</summary>
         public string gameplaySceneName = "Gamplay_Scene";

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -133,7 +133,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (modifierType == null || !typeof(BlueprintModifier).IsAssignableFrom(modifierType))
                 return null;
 
-            step.Modifier = MoyvaJsonObjectFactory.Create(modifierType) as BlueprintModifier;
+            step.Modifier = JsonObjectFactory.Create(modifierType) as BlueprintModifier;
             if (step.Modifier != null)
                 step.Modifier.name = modifierType.Name;
             return step.Modifier;

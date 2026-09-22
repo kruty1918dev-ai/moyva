@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.InfoPanel.UI
     internal static class ResourcePresentationResolver
     {
         private const string JsonRuntimeTypeName =
-            "Kruty1918.Moyva.Jsonization.MoyvaJsonRuntime";
+            "Kruty1918.JsonConfig.JsonConfigRuntime";
 
         private static EconomyDatabaseSO _cachedDatabase;
         private static bool _loggedDatabaseResolution;

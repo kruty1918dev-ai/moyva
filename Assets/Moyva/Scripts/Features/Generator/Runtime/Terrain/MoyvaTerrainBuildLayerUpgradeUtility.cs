@@ -1,7 +1,7 @@
 using GiantGrey.TileWorldCreator;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Generator.Runtime
 {
     public static class MoyvaTerrainBuildLayerUpgradeUtility
@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (CanUseManagerAssetApi(manager))
                 return manager.AddNewBuildLayer<MoyvaTerrainHeightAwareTilesBuildLayer>(layerName);
 
-            var layer = MoyvaJsonObjectFactory.Create<MoyvaTerrainHeightAwareTilesBuildLayer>();
+            var layer = JsonObjectFactory.Create<MoyvaTerrainHeightAwareTilesBuildLayer>();
             layer.layerName = layerName;
             ; // JSON config object has no Unity hideFlags.
             Configuration configuration = manager != null ? manager.configuration : null;

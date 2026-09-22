@@ -3,7 +3,7 @@
   "rootNamespace": "Kruty1918.Moyva.Tests.Camera",
   "references": [
     "Kruty1918.Moyva.Camera",
-    "Kruty1918.Moyva.Jsonization",
+    "Kruty1918.JsonConfig",
     "Zenject"
   ],
   "includePlatforms": [

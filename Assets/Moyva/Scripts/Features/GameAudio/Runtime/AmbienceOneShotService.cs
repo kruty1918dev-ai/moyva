@@ -1,7 +1,7 @@
 using System;
 using Kruty1918.Moyva.Audio.API;
-using Kruty1918.Moyva.Calendar.Core;
-using Kruty1918.Moyva.Calendar.Domain;
+using Kruty1918.Calendar.Core;
+using Kruty1918.Calendar.Domain;
 using Kruty1918.Moyva.GameAudio.API;
 using UnityEngine;
 using Zenject;

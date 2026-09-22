@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IUnitOwnershipQuery _ownershipQuery;
         private readonly IConstructionSessionCommands _constructionService;
         private readonly IConstructionUnitGarrisonRuntime _garrisonRuntime;
-        private readonly Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        private readonly Kruty1918.Localization.ILocalizationService _loca;
 
         public UnitWorldInfoPresenter(
             SignalBus signalBus,
@@ -30,7 +30,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             [InjectOptional] IUnitOwnershipQuery ownershipQuery = null,
             [InjectOptional] IConstructionSessionCommands constructionService = null,
             [InjectOptional] IConstructionUnitGarrisonRuntime garrisonRuntime = null,
-            [InjectOptional] Kruty1918.Moyva.Shared.Localization.ILocalizationService localization = null)
+            [InjectOptional] Kruty1918.Localization.ILocalizationService localization = null)
         {
             _signalBus = signalBus;
             _unitClassConfig = unitClassConfig;

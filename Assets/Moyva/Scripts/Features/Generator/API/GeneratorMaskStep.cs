@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.Generator.API
     /// Source steps produce a bool mask that is merged via <see cref="Combine"/>;
     /// transform steps rewrite the accumulated mask in place.
     /// Concrete step types are resolved by stable polymorphic ids
-    /// (see <c>MoyvaJsonTypeRegistry</c>).
+    /// (see <c>JsonConfigTypeRegistry</c>).
     /// </summary>
     [System.Serializable]
     public abstract class GeneratorMaskStep

@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.MapChunks.API
 {
 [System.Serializable]
-public sealed class MapChunkSettingsSO : MoyvaJsonConfigObject, IMapChunkSettingsProvider
+public sealed class MapChunkSettingsSO : JsonConfigObject, IMapChunkSettingsProvider
     {
         [Tooltip("Розмір чанка у grid-тайлах: 16 означає 16x16 тайлів. Крайові неповні чанки заборонені; розмір мапи обрізається до повних 16x16 чанків.")]
         [Min(1)] public int ChunkSize = 16;

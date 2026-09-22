@@ -1,15 +1,15 @@
 using System;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.API
 {
     /// <summary>
     /// JSON-authored parameters for the deterministic world-geography engine.
-    /// Loaded via <c>MoyvaJsonRuntime.Get&lt;WorldGenerationConfig&gt;</c>.
+    /// Loaded via <c>JsonConfigRuntime.Get&lt;WorldGenerationConfig&gt;</c>.
     /// </summary>
     [Serializable]
-    public sealed class WorldGenerationConfig : MoyvaJsonConfigObject
+    public sealed class WorldGenerationConfig : JsonConfigObject
     {
         /// <summary>Master switch. When false the graph-driven generator stays canonical.</summary>
         public bool Enabled = true;

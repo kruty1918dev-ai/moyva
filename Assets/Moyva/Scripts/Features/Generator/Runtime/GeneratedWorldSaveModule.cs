@@ -4,7 +4,7 @@ using System.IO;
 using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Generator.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
@@ -38,7 +38,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             context.Writer.Write(-CurrentVersion);
             context.Writer.Write(data.Width);
             context.Writer.Write(data.Height);
-            context.Writer.Write(MoyvaJsonRuntime.ConfigFingerprint ?? string.Empty);
+            context.Writer.Write(JsonConfigRuntime.ConfigFingerprint ?? string.Empty);
 
             string[,] gameplayTiles = CanonicalizeGameplayMap(
                 data.GameplayTileMap ?? data.BiomeMap,
@@ -103,7 +103,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int height = context.Reader.ReadInt32();
             string savedFingerprint = context.Reader.ReadString();
             ValidateDimensions(context.Reader, width, height, 8);
-            string localFingerprint = MoyvaJsonRuntime.ConfigFingerprint ?? string.Empty;
+            string localFingerprint = JsonConfigRuntime.ConfigFingerprint ?? string.Empty;
             if (!string.IsNullOrEmpty(savedFingerprint)
                 && !string.Equals(savedFingerprint, localFingerprint, StringComparison.Ordinal))
             {

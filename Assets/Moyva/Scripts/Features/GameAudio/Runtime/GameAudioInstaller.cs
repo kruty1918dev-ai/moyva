@@ -1,7 +1,7 @@
 using Kruty1918.Moyva.GameAudio.API;
-using Kruty1918.Moyva.Jsonization;
-using Kruty1918.Moyva.Notifications.API;
-using Kruty1918.Moyva.UIActions.API;
+using Kruty1918.JsonConfig;
+using Kruty1918.Notifications.API;
+using Kruty1918.UIActions.API;
 using Zenject;
 
 namespace Kruty1918.Moyva.GameAudio.Runtime
@@ -53,6 +53,6 @@ namespace Kruty1918.Moyva.GameAudio.Runtime
         }
 
         private static T ResolveConfig<T>() where T : class
-            => MoyvaJsonRuntime.GetLegacyResource<T>(typeof(T).Name);
+            => JsonConfigRuntime.GetLegacyResource<T>(typeof(T).Name);
     }
 }

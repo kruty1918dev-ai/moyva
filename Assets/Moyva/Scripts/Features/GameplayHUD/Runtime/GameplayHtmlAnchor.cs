@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Kruty1918.Moyva.InputRouting.Runtime;
+using Kruty1918.InputRouting.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

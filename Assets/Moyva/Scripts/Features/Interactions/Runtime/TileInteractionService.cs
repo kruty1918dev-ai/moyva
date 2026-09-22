@@ -9,7 +9,7 @@ using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
-using Kruty1918.Moyva.Notifications.API;
+using Kruty1918.Notifications.API;
 using UnityEngine;
 using Zenject;
 using System;

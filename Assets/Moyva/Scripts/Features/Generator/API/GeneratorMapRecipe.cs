@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.API
@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.Generator.API
     /// source of truth for procedural map generation (replaces the node graph).
     /// </summary>
     [System.Serializable]
-    public sealed class GeneratorMapRecipe : MoyvaJsonConfigObject
+    public sealed class GeneratorMapRecipe : JsonConfigObject
     {
         [Tooltip("0 = resolve seed from the launch context; non-zero pins this recipe's seed.")]
         public int Seed;

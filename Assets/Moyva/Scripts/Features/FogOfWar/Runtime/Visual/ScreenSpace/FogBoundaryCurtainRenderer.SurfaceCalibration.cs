@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 using UnityEngine.Rendering;
 

@@ -1,6 +1,6 @@
 using System;
-using Kruty1918.Moyva.Calendar.Core;
-using Kruty1918.Moyva.Calendar.Domain;
+using Kruty1918.Calendar.Core;
+using Kruty1918.Calendar.Domain;
 using UnityEngine;
 using Zenject;
 
@@ -147,7 +147,7 @@ namespace Kruty1918.Moyva.Visuals
             };
         }
 
-        private static float ComputeDayNightLerp(Kruty1918.Moyva.Calendar.Config.CalendarConfig cfg, int hour)
+        private static float ComputeDayNightLerp(Kruty1918.Calendar.Config.CalendarConfig cfg, int hour)
         {
             int dayStart = cfg.DayStartHour;
             int nightStart = cfg.NightStartHour;

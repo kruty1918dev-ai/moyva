@@ -1,5 +1,5 @@
 using System;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Vfx.API
@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.Vfx.API
     /// резолвляться у GameObject через runtime asset catalog.
     /// </summary>
     [Serializable]
-    public sealed class VfxCatalogConfig : MoyvaJsonConfigObject
+    public sealed class VfxCatalogConfig : JsonConfigObject
     {
         /// <summary>Події → ефекти. Перше співпадіння (eventName + context) виграє.</summary>
         public VfxEffectRule[] effects = Array.Empty<VfxEffectRule>();

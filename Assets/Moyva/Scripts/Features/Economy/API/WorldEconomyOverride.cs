@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Economy.API
 {
     /// <summary>
@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.Economy.API
     /// Зберігає тільки змінені параметри (спільно з базовою конфіг).
     /// </summary>
 [System.Serializable]
-public sealed class WorldEconomyOverride : MoyvaJsonConfigObject
+public sealed class WorldEconomyOverride : JsonConfigObject
     {
         /// <summary>
         /// Пара: ID параметра -> нове значення.

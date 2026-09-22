@@ -1,11 +1,11 @@
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Generator.API
 {
 [System.Serializable]
-public class HeightMapSettings : MoyvaJsonConfigObject
+public class HeightMapSettings : JsonConfigObject
     {
         [Tooltip("Набір шарів висоти, які перетворюють числову карту висот у базову карту тайлів. Кожен шар задає інтервал висот і Tile ID, що має використовуватись у цьому інтервалі.")]
         public HeightLayer[] HeightLayers;

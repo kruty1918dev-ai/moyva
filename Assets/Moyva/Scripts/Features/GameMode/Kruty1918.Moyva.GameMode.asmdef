@@ -2,6 +2,8 @@
   "name": "Kruty1918.Moyva.GameMode",
   "rootNamespace": "Kruty1918.Moyva.GameMode",
   "references": [
+    "Kruty1918.UIActions",
+    "Kruty1918.InputRouting",
     "Zenject",
     "Kruty1918.Moyva.Signals",
     "Kruty1918.Moyva.InputRouting",
@@ -10,7 +12,7 @@
     "Kruty1918.Moyva.Shared",
     "Unity.InputSystem",
     "Unity.TextMeshPro",
-    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+    "Kruty1918.JsonConfig"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

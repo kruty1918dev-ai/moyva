@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Grid.API
 {
     /// <summary>
@@ -66,7 +66,7 @@ namespace Kruty1918.Moyva.Grid.API
     /// сітка зберігає id шару у клітинці, а цей ассет визначає правила руху/будівництва.
     /// </summary>
 [System.Serializable]
-public class TerrainLayerProfileSO : MoyvaJsonConfigObject
+public class TerrainLayerProfileSO : JsonConfigObject
     {
         [SerializeField] private TerrainLayerProfile[] _profiles = System.Array.Empty<TerrainLayerProfile>();
 

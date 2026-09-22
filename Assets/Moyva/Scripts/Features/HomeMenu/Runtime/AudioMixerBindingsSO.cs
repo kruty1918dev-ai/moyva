@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Audio;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     /// <summary>
@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     /// Залежності: використовується LocalGameSettingsService і GameSettingsPanelService.
     /// </summary>
 [System.Serializable]
-public sealed class AudioMixerBindingsSO : MoyvaJsonConfigObject
+public sealed class AudioMixerBindingsSO : JsonConfigObject
     {
         /// <summary>Посилання на Unity AudioMixer.</summary>
         public AudioMixer mixer;

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public SwitchableLobbyService(MultiplayerConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _configFingerprint = MoyvaJsonRuntime.ConfigFingerprint;
+            _configFingerprint = JsonConfigRuntime.ConfigFingerprint;
 
             _requestedProviderType = _config.ProviderType;
             _inner = CreateByType(_requestedProviderType, out _effectiveProviderType);

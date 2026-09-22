@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -60,7 +60,7 @@ namespace Kruty1918.Moyva.Grid.API
     /// Canonical JSON-authored definition of one semantic terrain tile.
     /// </summary>
     [Serializable]
-    public sealed class TileTypeConfig : MoyvaJsonConfigObject
+    public sealed class TileTypeConfig : JsonConfigObject
     {
         public string DisplayName;
         public List<string> Aliases = new();
@@ -96,7 +96,7 @@ namespace Kruty1918.Moyva.Grid.API
     /// Reusable terrain traversal rules referenced by movable entity configs.
     /// </summary>
     [Serializable]
-    public sealed class MovementProfileConfig : MoyvaJsonConfigObject
+    public sealed class MovementProfileConfig : JsonConfigObject
     {
         public MovementFallbackConfig Fallback = new();
         public List<MovementClassRuleConfig> ClassRules = new();

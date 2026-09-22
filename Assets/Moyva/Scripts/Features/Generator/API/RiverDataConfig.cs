@@ -1,10 +1,10 @@
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Generator.API
 {
 [System.Serializable]
-public class RiverDataConfig : MoyvaJsonConfigObject
+public class RiverDataConfig : JsonConfigObject
     {
         [Tooltip("ID об'єкта, яким буде промальовано русло річки в ObjectMap.")]
         [MapObjectId] public string BaseObjectId = "river";

@@ -1,11 +1,11 @@
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Generator.API
 {
 [System.Serializable]
-public class DataBiomesSettings : MoyvaJsonConfigObject
+public class DataBiomesSettings : JsonConfigObject
     {
         [Tooltip("Список правил біомів. Кожен елемент описує, який Tile ID треба поставити, якщо клітинка потрапляє в заданий діапазон висоти та вологості. Порядок важливий: перший відповідний запис буде застосований раніше за наступні.")]
         public BiomeData[] Biomes;

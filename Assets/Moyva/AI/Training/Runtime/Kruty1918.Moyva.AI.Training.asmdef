@@ -2,6 +2,7 @@
     "name": "Kruty1918.Moyva.AI.Training",
     "rootNamespace": "Kruty1918.Moyva.AI.Training",
     "references": [
+    "Kruty1918.Calendar",
         "Unity.ML-Agents",
         "Kruty1918.Moyva.Turns",
         "Kruty1918.Moyva.Units",
@@ -15,7 +16,7 @@
         "Kruty1918.Moyva.GameMode",
         "Kruty1918.Moyva.Generator",
         "Kruty1918.Moyva.Grid",
-        "Kruty1918.Moyva.Jsonization",
+        "Kruty1918.JsonConfig",
         "Kruty1918.Moyva.ObjectsMap",
         "Kruty1918.Moyva.Pathfinding",
         "Kruty1918.Moyva.Shared",

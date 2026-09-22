@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Kruty1918.Moyva.Calendar.Core;
+using Kruty1918.Calendar.Core;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Signals;

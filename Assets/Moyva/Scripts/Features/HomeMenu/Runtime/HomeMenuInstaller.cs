@@ -4,7 +4,7 @@ using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.Runtime.Services;
 using Kruty1918.Moyva.HomeMenu.Runtime.Startup;
 using Kruty1918.Moyva.HomeMenu.UI;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.Multiplayer.Runtime;
 using Kruty1918.Moyva.Shared.UI;
 using Kruty1918.Moyva.WorldCreation.API;
@@ -39,7 +39,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public override void InstallBindings()
         {
-            var config = _config != null ? _config : MoyvaJsonObjectFactory.Create<HomeMenuConfigSO>();
+            var config = _config != null ? _config : JsonObjectFactory.Create<HomeMenuConfigSO>();
 
             MenuWorldPreviewKingdomPlacementFeatureBindings.Install(Container);
             MenuWorldPreviewTextureBuilderFeatureBindings.Install(Container);
@@ -69,7 +69,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             var mixerBindings = _audioMixerBindings != null && _audioMixerBindings.mixer != null
                 ? _audioMixerBindings
-                : MoyvaJsonRuntime.GetLegacyResource<AudioMixerBindingsSO>("audio-mixer-bindings");
+                : JsonConfigRuntime.GetLegacyResource<AudioMixerBindingsSO>("audio-mixer-bindings");
             if (mixerBindings != null)
                 Container.BindInstance(mixerBindings).AsSingle();
 

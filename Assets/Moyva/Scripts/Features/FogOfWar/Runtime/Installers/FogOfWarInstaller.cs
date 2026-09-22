@@ -1,5 +1,5 @@
 using Kruty1918.Moyva.FogOfWar.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.MapChunks.API;
 using Kruty1918.Moyva.MapChunks.Runtime;
 using Kruty1918.Moyva.SaveSystem;
@@ -132,7 +132,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private static FogOfWarSettings TryResolveSettings()
         {
-            return MoyvaJsonRuntime.Get<FogOfWarSettings>("fogofwarsettings");
+            return JsonConfigRuntime.Get<FogOfWarSettings>("fogofwarsettings");
         }
     }
 }

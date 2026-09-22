@@ -13,7 +13,7 @@ using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.Runtime;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.ObjectsMap.Runtime;
 using Kruty1918.Moyva.Pathfinding.Runtime;
@@ -124,13 +124,13 @@ namespace Kruty1918.Moyva.Tests.Performance
         private static void JsonAndConfig()
         {
             const string C = "json-startup";
-            MeasureCold(C, "MoyvaJsonRuntime.EnsureLoaded (cold, all presets)",
-                () => MoyvaJsonRuntime.EnsureLoaded());
-            Measure(C, "MoyvaJsonRuntime.GetAll<GeneratorMapRecipe>", 20,
-                () => MoyvaJsonRuntime.GetAll<GeneratorMapRecipe>());
-            Measure(C, "MoyvaJsonRuntime.Get<GeneratorMapRecipe> cached", 50,
-                () => MoyvaJsonRuntime.Get<GeneratorMapRecipe>(
-                    MoyvaJsonRuntime.GetAll<GeneratorMapRecipe>().FirstOrDefault()?.JsonId ?? "none"));
+            MeasureCold(C, "JsonConfigRuntime.EnsureLoaded (cold, all presets)",
+                () => JsonConfigRuntime.EnsureLoaded());
+            Measure(C, "JsonConfigRuntime.GetAll<GeneratorMapRecipe>", 20,
+                () => JsonConfigRuntime.GetAll<GeneratorMapRecipe>());
+            Measure(C, "JsonConfigRuntime.Get<GeneratorMapRecipe> cached", 50,
+                () => JsonConfigRuntime.Get<GeneratorMapRecipe>(
+                    JsonConfigRuntime.GetAll<GeneratorMapRecipe>().FirstOrDefault()?.JsonId ?? "none"));
         }
 
         private static HomeMenuMoyvaUiState _uiState;
@@ -306,7 +306,7 @@ namespace Kruty1918.Moyva.Tests.Performance
             const string C = "menu-preview";
             GeneratorMapRecipe recipe = null;
             IReadOnlyList<GeneratorMapRecipe> recipes = null;
-            try { recipes = MoyvaJsonRuntime.GetAll<GeneratorMapRecipe>(); } catch { }
+            try { recipes = JsonConfigRuntime.GetAll<GeneratorMapRecipe>(); } catch { }
             MenuWorldPreviewData data = null;
             foreach (var r in recipes ?? (IReadOnlyList<GeneratorMapRecipe>)Array.Empty<GeneratorMapRecipe>())
             {
@@ -337,8 +337,8 @@ namespace Kruty1918.Moyva.Tests.Performance
                 data = new MenuWorldPreviewData(w, h, 1, Fill(w, h, "grass"), Fill(w, h, ""), FillF(w, h, 0.5f), Fill(w, h, ""));
             }
             TileRegistrySO tiles = null; MoyvaProjectSettingsSO proj = null;
-            try { tiles = MoyvaJsonRuntime.GetAll<TileRegistrySO>().FirstOrDefault();
-                  proj = MoyvaJsonRuntime.Get<MoyvaProjectSettingsSO>("moyvaprojectsettings"); } catch { }
+            try { tiles = JsonConfigRuntime.GetAll<TileRegistrySO>().FirstOrDefault();
+                  proj = JsonConfigRuntime.Get<MoyvaProjectSettingsSO>("moyvaprojectsettings"); } catch { }
             if (tiles == null) return;
             Measure(C, "MenuWorldPreviewTextureBuilder.Build 192x108 (synthetic)", 3,
                 () => MenuWorldPreviewTextureBuilder.Build(data, tiles, null, null, 4, 1024, proj));
@@ -370,8 +370,8 @@ namespace Kruty1918.Moyva.Tests.Performance
         {
             const string C = "grid-path";
             TileRegistrySO tiles = null; MoyvaProjectSettingsSO proj = null;
-            try { tiles = MoyvaJsonRuntime.GetAll<TileRegistrySO>().FirstOrDefault();
-                  proj = MoyvaJsonRuntime.Get<MoyvaProjectSettingsSO>("moyvaprojectsettings"); } catch { }
+            try { tiles = JsonConfigRuntime.GetAll<TileRegistrySO>().FirstOrDefault();
+                  proj = JsonConfigRuntime.Get<MoyvaProjectSettingsSO>("moyvaprojectsettings"); } catch { }
             if (tiles == null || proj == null) { Rows.Add(new Row { Category = C, Name = "grid", Error = "registries null" }); return; }
             const int w = 128, h = 128;
             var c = new DiContainer();
@@ -404,7 +404,7 @@ namespace Kruty1918.Moyva.Tests.Performance
         {
             const string C = "fog-texture";
             MoyvaProjectSettingsSO proj = null;
-            try { proj = MoyvaJsonRuntime.Get<MoyvaProjectSettingsSO>("moyvaprojectsettings"); } catch { }
+            try { proj = JsonConfigRuntime.Get<MoyvaProjectSettingsSO>("moyvaprojectsettings"); } catch { }
             var projection = proj != null ? GridProjectionFactory.Create(proj) : null;
 
             foreach (var sz in new[] { 128, 256, 512, 1024 })

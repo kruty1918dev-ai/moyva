@@ -1,10 +1,10 @@
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Signals
 {
 [System.Serializable]
-public sealed class SelectionHighlightSettingsSO : MoyvaJsonConfigObject
+public sealed class SelectionHighlightSettingsSO : JsonConfigObject
     {
         [Header("Outline")]
         [Min(0.25f)] public float OutlineSizePixels = 2f;

@@ -1,5 +1,5 @@
 using Kruty1918.Moyva.Camera.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.Visuals;
 using NUnit.Framework;
 using UnityEngine;
@@ -46,7 +46,7 @@ namespace Kruty1918.Moyva.Tests.Visuals
         [Test]
         public void Preset_Resolves_From_Generated_Resources()
         {
-            var cfg = MoyvaJsonRuntime.GetLegacyResource<FarViewAtmosphereConfig>(
+            var cfg = JsonConfigRuntime.GetLegacyResource<FarViewAtmosphereConfig>(
                 nameof(FarViewAtmosphereConfig));
 
             Assert.NotNull(cfg, "far-view-atmosphere preset must resolve");

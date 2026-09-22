@@ -3,7 +3,7 @@
   "rootNamespace": "Kruty1918.Moyva.Vfx",
   "references": [
     "Zenject",
-    "Kruty1918.Moyva.Jsonization",
+    "Kruty1918.JsonConfig",
     "Kruty1918.Moyva.Shared",
     "Kruty1918.Moyva.Signals",
     "Kruty1918.Moyva.Grid",

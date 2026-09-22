@@ -12,7 +12,7 @@
     "Zenject",
     "UnityEngine.UI",
     "Unity.TextMeshPro",
-    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+    "Kruty1918.JsonConfig"
   ],
   "includePlatforms": [
     "Editor"

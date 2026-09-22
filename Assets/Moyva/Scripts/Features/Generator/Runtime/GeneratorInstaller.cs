@@ -2,7 +2,7 @@ using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.MapChunks.Runtime;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
@@ -82,8 +82,8 @@ namespace Kruty1918.Moyva.Generator
         {
             try
             {
-                MoyvaJsonRuntime.EnsureLoaded();
-                foreach (var recipe in MoyvaJsonRuntime.GetAll<GeneratorMapRecipe>())
+                JsonConfigRuntime.EnsureLoaded();
+                foreach (var recipe in JsonConfigRuntime.GetAll<GeneratorMapRecipe>())
                 {
                     if (recipe != null)
                         return recipe;
@@ -121,7 +121,7 @@ namespace Kruty1918.Moyva.Generator
                 "[GeneratorInstaller] TileRegistrySO is missing; using an " +
                 "empty runtime registry.",
                 this);
-            var empty = MoyvaJsonObjectFactory.Create<TileRegistrySO>();
+            var empty = JsonObjectFactory.Create<TileRegistrySO>();
             empty.name = "RuntimeEmptyTileRegistry";
             return empty;
         }

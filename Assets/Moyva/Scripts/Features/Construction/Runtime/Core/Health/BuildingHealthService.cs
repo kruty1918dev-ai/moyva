@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Combat.Runtime;
-using Kruty1918.Moyva.Calendar.Core;
+using Kruty1918.Calendar.Core;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;

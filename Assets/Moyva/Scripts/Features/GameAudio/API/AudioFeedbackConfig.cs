@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 
 namespace Kruty1918.Moyva.GameAudio.API
 {
@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.GameAudio.API
     /// Модель пресету: "audio-feedback" (схема moyva.audio-feedback).
     /// </summary>
     [Serializable]
-    public sealed class AudioFeedbackConfig : MoyvaJsonConfigObject
+    public sealed class AudioFeedbackConfig : JsonConfigObject
     {
         /// <summary>Події домену → звук. eventName: "unit-moved", "building-placed" тощо.</summary>
         public AudioFeedbackEventRule[] eventSounds = Array.Empty<AudioFeedbackEventRule>();

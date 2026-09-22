@@ -1,17 +1,17 @@
 using Kruty1918.Moyva.Combat;
 using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.Notifications.Runtime;
+using Kruty1918.Notifications.Runtime;
 using Kruty1918.Moyva.SaveSystem;
-using Kruty1918.Moyva.UIActions.Runtime;
+using Kruty1918.UIActions.Runtime;
 using Kruty1918.Moyva.WorldCreation.API;
-using Kruty1918.Moyva.InputRouting.Runtime;
+using Kruty1918.InputRouting.Runtime;
 using System;
 using System.Reflection;
 using UnityEngine;
 using Zenject;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     public sealed class ConstructionInstaller : MonoInstaller
@@ -305,7 +305,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return resolved;
         }
 
-        private static bool TryResolveTownHallBuildRadiusFromProfile(MoyvaJsonConfigObject economyRulesProfile, out int radius)
+        private static bool TryResolveTownHallBuildRadiusFromProfile(JsonConfigObject economyRulesProfile, out int radius)
         {
             radius = 0;
             if (economyRulesProfile == null)

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.WorldCreation.API
 {
 	[System.Serializable]
@@ -27,7 +27,7 @@ namespace Kruty1918.Moyva.WorldCreation.API
 		}
 	}
 [System.Serializable]
-public sealed class WorldCreationDefaultsSO : MoyvaJsonConfigObject
+public sealed class WorldCreationDefaultsSO : JsonConfigObject
 	{
 		[Header("Основні параметри")]
 		[Tooltip("Назва нового світу за замовчуванням.")]
@@ -94,7 +94,7 @@ public sealed class WorldCreationDefaultsSO : MoyvaJsonConfigObject
 		[Header("Обмеження розміщення (через редактор світу)")]
 		[Tooltip("Рецепт генерації (GeneratorMapRecipe), який використовується для читання TileRegistry та параметрів рельєфу у World Defaults Editor.")]
 		[SerializeReference]
-		public MoyvaJsonConfigObject PlacementRulesRecipe;
+		public JsonConfigObject PlacementRulesRecipe;
 
 		[Tooltip("Реєстр тайлів для обмежень розміщення. Якщо задано — перекриває TileRegistry з рецепту.")]
 		public TileRegistrySO TileRegistry;

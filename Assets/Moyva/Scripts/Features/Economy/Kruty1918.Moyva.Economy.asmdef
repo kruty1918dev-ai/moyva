@@ -2,6 +2,7 @@
   "name": "Kruty1918.Moyva.Economy",
   "rootNamespace": "Kruty1918.Moyva.Economy",
   "references": [
+    "Kruty1918.Calendar",
         "Kruty1918.Moyva.Units",
         "Kruty1918.Moyva.Turns",
         "Kruty1918.Moyva.FogOfWar",
@@ -11,7 +12,7 @@
     "Kruty1918.Moyva.Calendar",
     "Kruty1918.Moyva.Construction",
     "Kruty1918.Moyva.SaveSystem",
-    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+    "Kruty1918.JsonConfig"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

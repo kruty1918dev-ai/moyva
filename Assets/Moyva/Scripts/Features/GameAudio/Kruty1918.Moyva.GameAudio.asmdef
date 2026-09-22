@@ -2,9 +2,12 @@
   "name": "Kruty1918.Moyva.GameAudio",
   "rootNamespace": "Kruty1918.Moyva.GameAudio",
   "references": [
+    "Kruty1918.Calendar",
+    "Kruty1918.Notifications",
+    "Kruty1918.UIActions",
     "Zenject",
     "Unity.InputSystem",
-    "Kruty1918.Moyva.Jsonization",
+    "Kruty1918.JsonConfig",
     "Kruty1918.Moyva.Shared",
     "Kruty1918.Moyva.Signals",
     "Kruty1918.Moyva.Grid",

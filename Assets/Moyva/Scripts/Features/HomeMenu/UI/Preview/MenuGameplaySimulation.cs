@@ -10,7 +10,7 @@ using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
 using Kruty1918.Moyva.HomeMenu.Runtime;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.ObjectsMap.Runtime;
 using Kruty1918.Moyva.Pathfinding.API;
@@ -98,7 +98,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             Install<AnimationsInstaller>(root);
             _scope.Bind<IPathfinder>().To<Pathfinder>().AsSingle();
 
-            var registry = MoyvaJsonRuntime.GetAll<UnitRegistrySO>().FirstOrDefault();
+            var registry = JsonConfigRuntime.GetAll<UnitRegistrySO>().FirstOrDefault();
             if (registry == null)
                 throw new InvalidOperationException("Menu simulation requires the unit registry.");
 

@@ -2,20 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Newtonsoft.Json;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     /// <summary>JSON-backed compatibility facade. Definitions are auto-discovered from JSON.</summary>
     [Serializable]
-    public sealed class BuildingRegistrySO : MoyvaJsonConfigObject, IBuildingRegistry
+    public sealed class BuildingRegistrySO : JsonConfigObject, IBuildingRegistry
     {
         public WallCollectionDefinition[] WallCollections = Array.Empty<WallCollectionDefinition>();
 
         [JsonIgnore]
         public BuildingDefinitionAsset[] BuildingAssets =>
-            MoyvaJsonRuntime.GetAll<BuildingDefinitionAsset>().ToArray();
+            JsonConfigRuntime.GetAll<BuildingDefinitionAsset>().ToArray();
 
         [JsonIgnore]
         public BuildingDefinition[] LegacyBuildings => Array.Empty<BuildingDefinition>();
@@ -28,7 +28,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public BuildingDefinition[] GetAll()
         {
-            return MoyvaJsonRuntime.GetAll<BuildingDefinitionAsset>()
+            return JsonConfigRuntime.GetAll<BuildingDefinitionAsset>()
                 .Where(asset => asset != null)
                 .Select(asset => asset.ToRuntimeDefinition())
                 .Where(definition => definition != null)
@@ -38,7 +38,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public BuildingDefinition GetById(string id)
         {
             if (string.IsNullOrWhiteSpace(id)) return null;
-            BuildingDefinitionAsset asset = MoyvaJsonRuntime.Get<BuildingDefinitionAsset>(id);
+            BuildingDefinitionAsset asset = JsonConfigRuntime.Get<BuildingDefinitionAsset>(id);
             return asset?.ToRuntimeDefinition();
         }
 
@@ -46,7 +46,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             return string.IsNullOrWhiteSpace(id)
                 ? null
-                : MoyvaJsonRuntime.Get<BuildingDefinitionAsset>(id);
+                : JsonConfigRuntime.Get<BuildingDefinitionAsset>(id);
         }
 
         public BuildingDefinition[] GetByCategory(BuildingCategory category)

@@ -1,7 +1,7 @@
 using Kruty1918.Moyva.Audio.API;
 using Kruty1918.Moyva.Audio.Runtime;
 using Kruty1918.Moyva.GameAudio.API;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -33,7 +33,7 @@ namespace Kruty1918.Moyva.GameAudio.Tests
         [Test]
         public void Registry_Loads_All_Keys_Resolve_To_Clips()
         {
-            var registry = MoyvaJsonRuntime.Get<AudioRegistrySO>("moyvaaudioregistry");
+            var registry = JsonConfigRuntime.Get<AudioRegistrySO>("moyvaaudioregistry");
             Assert.NotNull(registry, "audio-registry preset must resolve");
             Assert.GreaterOrEqual(registry.Sounds.Length, 40, "expected full sound set");
 
@@ -48,7 +48,7 @@ namespace Kruty1918.Moyva.GameAudio.Tests
         [Test]
         public void Registry_BusGroups_Cover_All_Playable_Buses()
         {
-            var registry = MoyvaJsonRuntime.Get<AudioRegistrySO>("moyvaaudioregistry");
+            var registry = JsonConfigRuntime.Get<AudioRegistrySO>("moyvaaudioregistry");
             Assert.NotNull(registry);
             Assert.NotNull(registry.GetBusGroup(AudioBus.Music), "Music bus group");
             Assert.NotNull(registry.GetBusGroup(AudioBus.Sfx), "Sfx bus group");
@@ -116,7 +116,7 @@ namespace Kruty1918.Moyva.GameAudio.Tests
         [Test]
         public void Ambience_Config_Resolves_From_Json()
         {
-            var config = MoyvaJsonRuntime.Get<AudioAmbienceConfig>("moyvaaudioambience");
+            var config = JsonConfigRuntime.Get<AudioAmbienceConfig>("moyvaaudioambience");
             Assert.NotNull(config, "audio-ambience preset must resolve");
             Assert.NotNull(config.beds);
             Assert.NotNull(config.emitters);
@@ -126,8 +126,8 @@ namespace Kruty1918.Moyva.GameAudio.Tests
         [Test]
         public void Feedback_Config_SoundKeys_Exist_In_Registry()
         {
-            var config = MoyvaJsonRuntime.Get<AudioFeedbackConfig>("moyvaaudiofeedback");
-            var registry = MoyvaJsonRuntime.Get<AudioRegistrySO>("moyvaaudioregistry");
+            var config = JsonConfigRuntime.Get<AudioFeedbackConfig>("moyvaaudiofeedback");
+            var registry = JsonConfigRuntime.Get<AudioRegistrySO>("moyvaaudioregistry");
             Assert.NotNull(config);
             Assert.NotNull(registry);
 

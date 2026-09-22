@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.InputRouting.API;
+using Kruty1918.InputRouting.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
-using Kruty1918.Moyva.UIActions.API;
+using Kruty1918.UIActions.API;
 using Kruty1918.Moyva.Units.API;
 using TMPro;
 using UnityEngine;
@@ -19,6 +19,7 @@ using UnityEngine.Rendering;
 using UnityEngine.UI;
 using Zenject;
 using Object = UnityEngine.Object;
+using Kruty1918.Moyva.UIActions.API;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {

@@ -17,7 +17,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal class HomeMenuInitializer : IInitializable, IDisposable
     {
-        [Zenject.InjectOptional] private Kruty1918.Moyva.Shared.Localization.ILocalizationService _loca;
+        [Zenject.InjectOptional] private Kruty1918.Localization.ILocalizationService _loca;
         private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
         private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
 

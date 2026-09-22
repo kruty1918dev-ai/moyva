@@ -5,7 +5,7 @@
     "Kruty1918.Moyva.Visuals",
     "Kruty1918.Moyva.Camera",
     "Kruty1918.Moyva.Shared",
-    "Kruty1918.Moyva.Jsonization",
+    "Kruty1918.JsonConfig",
     "Unity.RenderPipelines.Universal.Runtime",
     "Zenject"
   ],

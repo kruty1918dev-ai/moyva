@@ -6,7 +6,7 @@ using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
 using Kruty1918.Moyva.HomeMenu.Runtime;
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
@@ -37,10 +37,10 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         private void ResolveSimulationSettings()
         {
-            _simulationSettings = MoyvaJsonRuntime.Get<HomeMenuConfigSO>("homemenuconfig")?.menuSimulation
+            _simulationSettings = JsonConfigRuntime.Get<HomeMenuConfigSO>("homemenuconfig")?.menuSimulation
                 ?? new MenuSimulationSettings();
 
-            _buildingRegistry ??= MoyvaJsonRuntime.GetAll<BuildingRegistrySO>().FirstOrDefault();
+            _buildingRegistry ??= JsonConfigRuntime.GetAll<BuildingRegistrySO>().FirstOrDefault();
         }
 
         private void StartSimulation(

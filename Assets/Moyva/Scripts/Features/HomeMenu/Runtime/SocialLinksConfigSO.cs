@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     /// <summary>
@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     /// Залежності: використовується UI-елементами соціальних кнопок та runtime factory.
     /// </summary>
 [System.Serializable]
-public sealed class SocialLinksConfigSO : MoyvaJsonConfigObject
+public sealed class SocialLinksConfigSO : JsonConfigObject
     {
         /// <summary>Масив усіх доступних соціальних посилань.</summary>
         public SocialLinkEntry[] entries = Array.Empty<SocialLinkEntry>();

@@ -1,10 +1,10 @@
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Generator.API
 {
 [System.Serializable]
-public class DataNoiseSettings : MoyvaJsonConfigObject
+public class DataNoiseSettings : JsonConfigObject
     {
 
         [Tooltip("Масштаб шуму. Визначає, наскільки 'розтягнутий' або 'стиснутий' буде шум. Великі значення — плавні області, малі — дрібні деталі. Приклад: 50 — великі континенти, 5 — дрібні острови.")]

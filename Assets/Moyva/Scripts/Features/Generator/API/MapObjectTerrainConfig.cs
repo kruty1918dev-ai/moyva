@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Generator.API
 {
     [Serializable]
@@ -20,7 +20,7 @@ namespace Kruty1918.Moyva.Generator.API
         [Range(0f, 1f)] public float SpawnChance;
     }
 [System.Serializable]
-public class MapObjectTerrainConfig : MoyvaJsonConfigObject
+public class MapObjectTerrainConfig : JsonConfigObject
     {
         [Tooltip("Список правил розміщення об'єктів по місцевості. Кожне правило описує, який об'єкт, на якій висоті та в якому біомі може з'явитися.")]
         public List<TerrainObjectRule> Rules;

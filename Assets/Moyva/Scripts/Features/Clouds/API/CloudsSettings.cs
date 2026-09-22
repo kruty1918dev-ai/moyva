@@ -1,6 +1,6 @@
 using UnityEngine;
 
-using Kruty1918.Moyva.Jsonization;
+using Kruty1918.JsonConfig;
 namespace Kruty1918.Moyva.Clouds.API
 {
     /// <summary>CloudSpawnAreaMode — enum: хмари спавну Area режим.</summary>
@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.Clouds.API
     }
 /// <summary>CloudsSettings — class: Clouds налаштування.</summary>
 [System.Serializable]
-public sealed class CloudsSettings : MoyvaJsonConfigObject
+public sealed class CloudsSettings : JsonConfigObject
     {
         /// <summary>увімкненої — bool.</summary>
         [Header("Загальне")]

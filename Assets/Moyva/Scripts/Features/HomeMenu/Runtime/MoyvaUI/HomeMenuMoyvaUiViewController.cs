@@ -8,7 +8,7 @@ using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.Graphics;
-using Kruty1918.Moyva.Shared.Localization;
+using Kruty1918.Localization;
 using Kruty1918.Moyva.Shared.UI;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
@@ -55,7 +55,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         /// <summary>Виконує HomeMenuMoyvaUiViewController.</summary>
         public HomeMenuMoyvaUiViewController(HomeMenuMoyvaUiState state,
-            [Zenject.InjectOptional] Kruty1918.Moyva.UIActions.API.IUiHotkeyService hotkeys = null,
+            [Zenject.InjectOptional] Kruty1918.UIActions.API.IUiHotkeyService hotkeys = null,
             [Zenject.InjectOptional] IPlayerControlSettingsService controlSettings = null,
             [Zenject.InjectOptional] IInputDeviceContext devices = null,
             [Zenject.InjectOptional] ILocalizationService localization = null,
