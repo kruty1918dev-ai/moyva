@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.GameMode.API;
-using Kruty1918.Moyva.Shared.UI;
+using Kruty1918.UiFoundation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zenject;

@@ -1,11 +1,8 @@
 {
-    "name": "Kruty1918.Moyva.Animations",
-    "rootNamespace": "Kruty1918.Moyva.Animations",
+    "name": "Kruty1918.UiFoundation",
+    "rootNamespace": "Kruty1918.UiFoundation",
     "references": [
-        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
-        "Kruty1918.Moyva.Shared",
-        "Kruty1918.JsonConfig",
-        "Kruty1918.UiFoundation"
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

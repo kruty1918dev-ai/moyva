@@ -10,7 +10,7 @@ using Kruty1918.SaveSystem;
 using Kruty1918.Moyva.Shared.Common;
 using Kruty1918.Moyva.Shared.Graphics;
 using Kruty1918.Performance;
-using Kruty1918.Moyva.Shared.UI;
+using Kruty1918.UiFoundation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zenject;

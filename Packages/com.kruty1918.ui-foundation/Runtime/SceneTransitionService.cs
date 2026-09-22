@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Kruty1918.Moyva.Shared.UI
+namespace Kruty1918.UiFoundation
 {
     public interface ISceneTransitionService
     {
@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.Shared.UI
         Task RevealAsync(CancellationToken ct = default);
     }
 
-    internal sealed class SceneTransitionService : ISceneTransitionService
+    public sealed class SceneTransitionService : ISceneTransitionService
     {
         private const int StripeCount = 7;
         private const float Duration = 0.32f;
@@ -70,7 +70,7 @@ namespace Kruty1918.Moyva.Shared.UI
             if (_group != null)
                 return;
 
-            var root = new GameObject("MoyvaSceneTransition", typeof(Canvas), typeof(CanvasScaler), typeof(CanvasGroup));
+            var root = new GameObject("SceneTransitionOverlay", typeof(Canvas), typeof(CanvasScaler), typeof(CanvasGroup));
             Object.DontDestroyOnLoad(root);
             var canvas = root.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;

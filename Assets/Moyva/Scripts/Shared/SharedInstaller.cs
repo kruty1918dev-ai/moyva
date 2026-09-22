@@ -7,6 +7,7 @@ using Kruty1918.Moyva.Shared.Performance;
 using Kruty1918.Performance;
 using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.UI;
+using Kruty1918.UiFoundation;
 using Zenject;
 
 namespace Kruty1918.Moyva.Shared
@@ -90,9 +91,17 @@ namespace Kruty1918.Moyva.Shared
                 .To<AsyncGlobalErrorHandlerService>()
                 .FromResolve();
 
-            container.BindInterfacesTo<UiMotionService>().AsSingle();
-            container.BindInterfacesTo<UiTooltipService>().AsSingle();
-            container.BindInterfacesTo<SceneTransitionService>().AsSingle();
+            container.BindInterfacesAndSelfTo<SceneTransitionService>().AsSingle();
+            container.BindInterfacesAndSelfTo<UiMotionService>().AsSingle();
+            container.BindInterfacesAndSelfTo<UiTooltipService>().AsSingle();
+            container.Bind<ITickable>()
+                .To<UiFoundationTickable>()
+                .AsSingle()
+                .NonLazy();
+            container.Bind<IDisposable>()
+                .To<UiTooltipService>()
+                .FromResolve();
+            UiTooltipPresenter.CanvasScaleApplier = UiCanvasScalePolicy.Apply;
 
             // Localization: project-scope singletons so language state survives scene changes.
             container.Bind<LocalizationOptions>()
@@ -122,6 +131,24 @@ namespace Kruty1918.Moyva.Shared
             }
 
             public void Tick() => _monitor.Tick();
+        }
+
+        private sealed class UiFoundationTickable : ITickable
+        {
+            private readonly UiMotionService _motion;
+            private readonly UiTooltipService _tooltip;
+
+            public UiFoundationTickable(UiMotionService motion, UiTooltipService tooltip)
+            {
+                _motion = motion;
+                _tooltip = tooltip;
+            }
+
+            public void Tick()
+            {
+                _motion.Tick();
+                _tooltip.Tick();
+            }
         }
     }
 }

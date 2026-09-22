@@ -32,7 +32,8 @@
         "Unity.Services.Authentication",
         "Kruty1918.JsonConfig",
         "Kruty1918.Connectivity",
-        "Kruty1918.Performance"
+        "Kruty1918.Performance",
+        "Kruty1918.UiFoundation"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

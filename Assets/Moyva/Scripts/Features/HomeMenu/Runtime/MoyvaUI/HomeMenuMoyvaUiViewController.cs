@@ -9,7 +9,7 @@ using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.Moyva.Shared.Graphics;
 using Kruty1918.Localization;
-using Kruty1918.Moyva.Shared.UI;
+using Kruty1918.UiFoundation;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
 using UnityEngine.UI;

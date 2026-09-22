@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Shared.Graphics;
-using Kruty1918.Moyva.Shared.UI;
+using Kruty1918.UiFoundation;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;

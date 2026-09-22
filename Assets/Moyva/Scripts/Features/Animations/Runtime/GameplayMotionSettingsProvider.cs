@@ -1,6 +1,6 @@
 using Kruty1918.Moyva.Animations.API;
 using Kruty1918.Moyva.Shared.Graphics;
-using Kruty1918.Moyva.Shared.UI;
+using Kruty1918.UiFoundation;
 using Zenject;
 
 namespace Kruty1918.Moyva.Animations.Runtime

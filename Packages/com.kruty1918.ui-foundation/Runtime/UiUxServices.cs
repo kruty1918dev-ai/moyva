@@ -4,9 +4,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using Zenject;
 
-namespace Kruty1918.Moyva.Shared.UI
+namespace Kruty1918.UiFoundation
 {
     public readonly struct UiTooltipRequest
     {
@@ -52,7 +51,7 @@ namespace Kruty1918.Moyva.Shared.UI
         void Cancel(object target);
     }
 
-    internal sealed class UiMotionService : IUiMotionService, ITickable
+    public sealed class UiMotionService : IUiMotionService
     {
         private readonly List<Motion> _motions = new List<Motion>();
         private readonly Dictionary<RectTransform, Vector2> _shownPositions = new Dictionary<RectTransform, Vector2>();
@@ -184,7 +183,7 @@ namespace Kruty1918.Moyva.Shared.UI
         }
     }
 
-    internal sealed class UiTooltipService : IUiTooltipService, ITickable, IDisposable
+    public sealed class UiTooltipService : IUiTooltipService, IDisposable
     {
         private const float DefaultDelay = 0.42f;
 
@@ -262,66 +261,12 @@ namespace Kruty1918.Moyva.Shared.UI
         }
     }
 
-    [DisallowMultipleComponent]
-    public sealed class UiTooltipTrigger : MonoBehaviour,
-        IPointerEnterHandler,
-        IPointerExitHandler,
-        ISelectHandler,
-        IDeselectHandler
-    {
-        [SerializeField, TextArea] private string _text;
-        [SerializeField] private RectTransform _anchor;
-
-        private IUiTooltipService _service;
-
-        [Inject]
-        public void Construct(IUiTooltipService service)
-        {
-            _service = service;
-        }
-
-        public void OnPointerEnter(PointerEventData eventData)
-        {
-            ResolveService()?.Request(new UiTooltipRequest(
-                this,
-                _text,
-                eventData.position,
-                _anchor != null ? _anchor : transform as RectTransform));
-        }
-
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            ResolveService()?.Hide(this);
-        }
-
-        public void OnSelect(BaseEventData eventData)
-        {
-            ResolveService()?.Request(new UiTooltipRequest(
-                this,
-                _text,
-                Vector2.zero,
-                _anchor != null ? _anchor : transform as RectTransform,
-                immediate: true));
-        }
-
-        public void OnDeselect(BaseEventData eventData)
-        {
-            ResolveService()?.Hide(this);
-        }
-
-        private IUiTooltipService ResolveService()
-        {
-            if (_service != null)
-                return _service;
-            if (ProjectContext.Instance != null)
-                _service = ProjectContext.Instance.Container.TryResolve<IUiTooltipService>();
-            return _service;
-        }
-    }
-
-    internal sealed class UiTooltipPresenter : MonoBehaviour
+    public sealed class UiTooltipPresenter : MonoBehaviour
     {
         private const float MaxWidth = 360f;
+
+        /// <summary>Applied to the runtime tooltip canvas so hosts control scaling policy.</summary>
+        public static Action<Canvas, CanvasScaler> CanvasScaleApplier;
         private RectTransform _rect;
         private TMP_Text _label;
 
@@ -330,7 +275,7 @@ namespace Kruty1918.Moyva.Shared.UI
             TMP_FontAsset font = ResolveFont();
             if (font == null)
             {
-                Debug.LogError("[MoyvaUI] Cannot create runtime tooltip: no TMP default font asset is configured.");
+                Debug.LogError("[UiFoundation] Cannot create runtime tooltip: no TMP default font asset is configured.");
                 return null;
             }
 
@@ -346,7 +291,7 @@ namespace Kruty1918.Moyva.Shared.UI
             canvas.sortingOrder = short.MaxValue;
             canvasObject.GetComponent<GraphicRaycaster>().enabled = false;
             CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-            UiCanvasScalePolicy.Apply(canvas, scaler);
+            CanvasScaleApplier?.Invoke(canvas, scaler);
 
             var panel = new GameObject("Tooltip", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(ContentSizeFitter), typeof(UiTooltipPresenter));
             panel.transform.SetParent(canvasObject.transform, false);
