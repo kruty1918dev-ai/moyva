@@ -36,7 +36,7 @@ namespace Kruty1918.Moyva.Marketing.Runtime
             if (ctx.Container == null)
             {
                 // SceneContext may live on a non-root object.
-                foreach (var sc in Object.FindObjectsByType<SceneContext>(FindObjectsSortMode.None))
+                foreach (var sc in Object.FindObjectsByType<SceneContext>())
                 {
                     if (sc.gameObject.scene == gameplayScene)
                     {

@@ -68,7 +68,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             // the package is not present so CreateRoomAsync doesn't silently return null.
                 try
                 {
-                    var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                    var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
                     foreach (var asm in assemblies)
                     {
                         var name = asm.GetName().Name;

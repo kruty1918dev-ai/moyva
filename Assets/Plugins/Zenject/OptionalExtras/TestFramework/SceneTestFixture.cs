@@ -49,13 +49,29 @@ namespace Zenject
             {
                 var sceneName = sceneNames[i];
 
-                Assert.That(Application.CanStreamedLevelBeLoaded(sceneName),
-                    "Cannot load scene '{0}' for test '{1}'.  The scenes used by SceneTestFixture derived classes must be added to the build settings for the test to work",
-                    sceneName, GetType());
-
                 Log.Info("Loading scene '{0}' for testing", sceneName);
 
-                var loader = SceneManager.LoadSceneAsync(sceneName, i == 0 ? LoadSceneMode.Single : LoadSceneMode.Additive);
+                // Scenes referenced via Resources/SceneTestFixtureSettings/<name>
+                // are loaded by path so they do not need to be in build settings.
+                var sceneRef = Resources.Load<SceneTestFixtureSceneReference>(
+                    "SceneTestFixtureSettings/" + sceneName);
+
+                AsyncOperation loader;
+
+                if (sceneRef != null && sceneRef.Scene != null)
+                {
+                    loader = UnityEditor.SceneManagement.EditorSceneManager.LoadSceneAsyncInPlayMode(
+                        UnityEditor.AssetDatabase.GetAssetPath(sceneRef.Scene),
+                        new LoadSceneParameters(i == 0 ? LoadSceneMode.Single : LoadSceneMode.Additive));
+                }
+                else
+                {
+                    Assert.That(Application.CanStreamedLevelBeLoaded(sceneName),
+                        "Cannot load scene '{0}' for test '{1}'.  The scenes used by SceneTestFixture derived classes must be added to the build settings for the test to work",
+                        sceneName, GetType());
+
+                    loader = SceneManager.LoadSceneAsync(sceneName, i == 0 ? LoadSceneMode.Single : LoadSceneMode.Additive);
+                }
 
                 while (!loader.isDone)
                 {

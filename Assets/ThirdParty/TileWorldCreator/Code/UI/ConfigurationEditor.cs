@@ -53,7 +53,7 @@ namespace GiantGrey.TileWorldCreator
 
         List<LayerFoldoutElement> layerFoldouts = new List<LayerFoldoutElement>();
         List<LayerFoldoutElement> buildLayerFoldouts = new List<LayerFoldoutElement>();
-        public List<VisualElement> previewTextures = new List<VisualElement>();
+        [System.NonSerialized] public List<VisualElement> previewTextures = new List<VisualElement>();
 
         ListView blueprintLayersListView;
         ListView buildLayersListView;
@@ -348,7 +348,7 @@ namespace GiantGrey.TileWorldCreator
 
             if (_manager == null)
             {
-                var _managers = GameObject.FindObjectsByType<TileWorldCreatorManager>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID);
+                var _managers = GameObject.FindObjectsByType<TileWorldCreatorManager>(FindObjectsInactive.Include);
                 for (int i = 0; i < _managers.Length; i++)
                 {
                     if (_managers[i].configuration == configuration)

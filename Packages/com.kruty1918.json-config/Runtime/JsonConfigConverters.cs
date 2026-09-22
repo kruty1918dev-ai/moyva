@@ -416,7 +416,7 @@ namespace Kruty1918.JsonConfig
             if (string.IsNullOrWhiteSpace(fullName))
                 return null;
 
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
             {
                 Type type = assembly.GetType(fullName, false, false);
                 if (type != null)

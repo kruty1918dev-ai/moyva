@@ -57,7 +57,7 @@ public static class StartupBarrierSmoke
         try
         {
             if (EditorApplication.timeSinceStartup - began > 160) { Finish(mode, "FAIL timeout"); return; }
-            foreach (var context in UnityEngine.Object.FindObjectsByType<SceneContext>(FindObjectsSortMode.None))
+            foreach (var context in UnityEngine.Object.FindObjectsByType<SceneContext>())
             {
                 if (mode == "host" && !launched && context.gameObject.scene.name == "HomeMenu")
                 {

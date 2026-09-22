@@ -26,8 +26,24 @@ namespace UnityHTML.Runtime
         private UnityHtmlDocumentTree _tree;
         private UnityHtmlTooltipLayer _tooltips;
         private Vector2 _layoutSize;
+        private readonly HashSet<ScrollRect> _seenScrollRects = new();
+        private string _autofocusedElementId;
+        private GameObject _selectionBeforeAutofocus;
+        private UnityHtmlScrollSettings _scrollSettings = UnityHtmlScrollSettings.Default;
 
         public IUnityHtmlMotion Motion => _motion;
+
+        public UnityHtmlScrollSettings ScrollSettings
+        {
+            get => _scrollSettings;
+            set
+            {
+                if (_scrollSettings.Equals(value))
+                    return;
+                _scrollSettings = value;
+                ApplyScrollSettings();
+            }
+        }
 
         public UnityHtmlMountResult Mount(
             RectTransform root,
@@ -114,6 +130,7 @@ namespace UnityHTML.Runtime
             _root = null;
             _mountedCss = string.Empty;
             _tree = null;
+            _seenScrollRects.Clear();
             if (_tooltips != null)
             {
                 _tooltips.enabled = false;
@@ -130,7 +147,82 @@ namespace UnityHTML.Runtime
             finally
             {
                 ClearRootChildren(root);
+                RemoveMountLeftovers(root);
             }
+        }
+
+        // HostComponent attaches ResponsiveElement (and on styled roots,
+        // BorderAndBackground / MaskAndImage) to the mount root itself. Its
+        // DestroySelf calls Object.Destroy, which is a silent no-op in edit
+        // mode — the leftover keeps the entire UGUIContext graph, JS engine
+        // included, rooted on the still-alive root object.
+        private static void RemoveMountLeftovers(RectTransform root)
+        {
+            if (root == null)
+                return;
+
+            bool deferred = ShouldDestroyDeferred();
+            foreach (var element in root.GetComponents<ReactUnity.UGUI.Behaviours.ResponsiveElement>())
+            {
+                if (element == null)
+                    continue;
+                // Sever the root→context edge first — a leftover holding
+                // Context roots the whole disposed graph even while its
+                // destruction waits for a safe moment.
+                element.Context = null;
+                element.Layout = null;
+                DestroyLeftover(element, deferred);
+            }
+
+            foreach (var background in root.GetComponents<ReactUnity.UGUI.Internal.BorderAndBackground>())
+            {
+                if (background == null)
+                    continue;
+                BorderContextField?.SetValue(background, null);
+                DestroyLeftover(background, deferred);
+            }
+
+            foreach (var mask in root.GetComponents<ReactUnity.UGUI.Internal.MaskAndImage>())
+            {
+                if (mask == null)
+                    continue;
+                MaskContextField?.SetValue(mask, null);
+                DestroyLeftover(mask, deferred);
+            }
+        }
+
+        private static readonly System.Reflection.FieldInfo BorderContextField =
+            typeof(ReactUnity.UGUI.Internal.BorderAndBackground)
+                .GetField("Context", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        private static readonly System.Reflection.FieldInfo MaskContextField =
+            typeof(ReactUnity.UGUI.Internal.MaskAndImage)
+                .GetField("Context", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+        private static void DestroyLeftover(Component component, bool deferred)
+        {
+            if (component == null)
+                return;
+            if (deferred)
+            {
+                UnityEngine.Object.Destroy(component);
+                return;
+            }
+#if UNITY_EDITOR
+            if (!component.gameObject.scene.isLoaded)
+                return; // scene teardown destroys the whole root anyway
+            // Edit-mode unmount can run while the root is mid-deactivation or
+            // mid-destruction, where DestroyImmediate on a component errors —
+            // the references are already severed, so deferring the cleanup to
+            // the next editor tick is safe.
+            Component captured = component;
+            UnityEditor.EditorApplication.delayCall += () =>
+            {
+                if (captured != null)
+                    UnityEngine.Object.DestroyImmediate(captured);
+            };
+#else
+            UnityEngine.Object.DestroyImmediate(component);
+#endif
         }
 
         public void Dispose() => Unmount();
@@ -163,6 +255,9 @@ namespace UnityHTML.Runtime
             }
         }
         public bool SetValue(string elementId, string value) => _tree?.SetValue(elementId, value) == true;
+
+        public void SetWorldTooltip(string text, Vector2 screenPosition)
+            => _tooltips?.SetWorldTooltip(text, screenPosition);
 
         private bool CanUpdateMountedDocument(RectTransform root, UnityHtmlDocument document)
         {
@@ -226,6 +321,8 @@ namespace UnityHTML.Runtime
                 _tooltips = _root.gameObject.AddComponent<UnityHtmlTooltipLayer>();
                 _tooltips.Bind(_context, _root);
             }
+            if (_tooltips != null)
+                _tooltips.ReducedMotion = _motion.ReducedMotion;
             _context.UpdateElementsRecursively();
             _layoutSize = _root.rect.size;
             _context.Host.Layout.Width = _layoutSize.x;
@@ -233,9 +330,21 @@ namespace UnityHTML.Runtime
             _context.CalculateLayoutRecursively();
             _context.LateUpdateElementsRecursively();
             FlushReactElementLayout(_root);
+            // FlushReactElementLayout consumes HasNewLayout on every element, so the
+            // ScrollContentResizer LateUpdate gate never fires — resize scroll content
+            // here instead of waiting for a flag that is already cleared.
+            var resizers = _root.GetComponentsInChildren<ScrollContentResizer>(true);
+            for (var i = 0; i < resizers.Length; i++)
+            {
+                if (resizers[i] != null && resizers[i].Layout != null)
+                    resizers[i].RecalculateSize();
+            }
             ConfigureRenderedInputs(_root);
             Canvas.ForceUpdateCanvases();
+            ApplyScrollSettings();
             RestoreRenderedScrollPositions(scrollPositions);
+            InitializeNewScrollPositions();
+            ApplyAutofocus();
             _tooltips?.RefreshTargets();
 #if UNITY_EDITOR
             MarkEditorPreviewObjectsDontSave(_root);
@@ -295,6 +404,97 @@ namespace UnityHTML.Runtime
 
             for (var i = 0; i < positions.Count; i++)
                 positions[i].Restore();
+        }
+
+        // Push the host's scroll configuration into every mounted scroll control.
+        // Settings are applied per control instance, so a regional update that
+        // remounts some scrolls leaves the surviving ones configured identically.
+        private void ApplyScrollSettings()
+        {
+            if (_root == null)
+                return;
+            var scrollRects = _root.GetComponentsInChildren<MoyvaSmoothScrollRect>(true);
+            for (var i = 0; i < scrollRects.Length; i++)
+            {
+                if (scrollRects[i] != null)
+                    scrollRects[i].ApplySettings(_scrollSettings);
+            }
+        }
+
+        // ScrollRect defaults normalizedPosition to (0,0) — the bottom for vertical
+        // content — and nothing on the mount path initializes it, so a fresh scroll
+        // container would open scrolled to the end. Positions captured at pass start
+        // are restored above for scrolls that already existed; scrolls seen for the
+        // first time (new mount or added by a refresh) start at the top.
+        private void InitializeNewScrollPositions()
+        {
+            if (_root == null)
+                return;
+
+            _seenScrollRects.RemoveWhere(static scrollRect => scrollRect == null);
+            var scrollRects = _root.GetComponentsInChildren<ScrollRect>(true);
+            for (var i = 0; i < scrollRects.Length; i++)
+            {
+                var scrollRect = scrollRects[i];
+                if (scrollRect != null && scrollRect.vertical && scrollRect.content != null
+                    && _seenScrollRects.Add(scrollRect))
+                    scrollRect.verticalNormalizedPosition = 1f;
+            }
+        }
+
+        // Focus the first element carrying data-autofocus when it is newly
+        // mounted; when that element unmounts, selection returns to whatever
+        // had it before. Focus is handed over only once per mount so a rerender
+        // never steals it back while the user is typing.
+        private void ApplyAutofocus()
+        {
+            // EventSystem.current may resolve to a destroyed instance left in
+            // the static registry (editor/test scenes); fall back to a live one.
+            EventSystem eventSystem = EventSystem.current;
+            if (eventSystem == null)
+                eventSystem = UnityEngine.Object.FindFirstObjectByType<EventSystem>();
+            if (eventSystem == null)
+                return;
+
+            Selectable target = null;
+            string targetId = null;
+            var elements = _root.GetComponentsInChildren<ReactElement>(true);
+            for (var i = 0; i < elements.Length; i++)
+            {
+                UGUIComponent component = elements[i] != null ? elements[i].Component : null;
+                if (component == null
+                    || !component.Data.TryGetValue("autofocus", out object flag)
+                    || !string.Equals(flag?.ToString(), "true", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                target = elements[i].GetComponent<Selectable>();
+                if (target == null)
+                    target = elements[i].GetComponentInChildren<Selectable>(true);
+                if (target == null)
+                    continue;
+                targetId = component.Id;
+                break;
+            }
+
+            if (target == null)
+            {
+                if (_autofocusedElementId != null)
+                {
+                    _autofocusedElementId = null;
+                    if (_selectionBeforeAutofocus != null)
+                        eventSystem.SetSelectedGameObject(_selectionBeforeAutofocus);
+                    _selectionBeforeAutofocus = null;
+                }
+                return;
+            }
+
+            if (string.Equals(targetId, _autofocusedElementId, StringComparison.Ordinal))
+                return;
+
+            _autofocusedElementId = targetId;
+            _selectionBeforeAutofocus = eventSystem.currentSelectedGameObject;
+            if (target.IsActive() && target.interactable)
+                target.Select();
         }
 
         private readonly struct RenderedScrollPosition
@@ -376,8 +576,7 @@ namespace UnityHTML.Runtime
                 return;
 
             var elements = UnityEngine.Object.FindObjectsByType<ReactElement>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
             for (var i = 0; i < elements.Length; i++)
             {
                 var element = elements[i];
@@ -433,18 +632,15 @@ namespace UnityHTML.Runtime
             if (!UGUIContext.ComponentCreators.ContainsKey("select"))
                 UGUIContext.ComponentCreators["select"] = (_, _, context) => new UnityHtmlSelectComponent(context);
 
-#if UNITY_EDITOR
-            PatchEditorScrollResizerCreator();
-#endif
+            PatchScrollComponentCreator();
         }
 
-#if UNITY_EDITOR
-        // ScrollContentResizer caches its RectTransform in OnEnable, which Unity
-        // never invokes for components created outside play mode (the script has
-        // no ExecuteAlways). Setting the scroll 'direction' property then throws
-        // inside RecalculateSize. Initialize the field after creation so edit-mode
-        // preview mounts behave like play mode.
-        private static void PatchEditorScrollResizerCreator()
+        // Wraps the scroll component creator: installs the accumulation-fixed
+        // MoyvaSmoothScrollRect, and in editor fixes ScrollContentResizer's
+        // RectTransform cache (it is filled in OnEnable, which Unity never invokes
+        // for components created outside play mode — the script has no
+        // ExecuteAlways).
+        private static void PatchScrollComponentCreator()
         {
             if (!UGUIContext.ComponentCreators.TryGetValue("scroll", out var creator))
                 return;
@@ -454,12 +650,73 @@ namespace UnityHTML.Runtime
             UGUIContext.ComponentCreators["scroll"] = (tag, text, context) =>
             {
                 var component = creator(tag, text, context);
+                ReplaceScrollRect(component);
+#if UNITY_EDITOR
                 if (!Application.isPlaying)
                     InitializeEditorScrollResizers(component);
+#endif
                 return component;
             };
         }
 
+        // Swaps the upstream SmoothScrollRect for the accumulation-fixed
+        // MoyvaSmoothScrollRect. Upstream computes each scroll event's target from
+        // the mid-animation position, so a continuous wheel/touchpad stream
+        // collapses to roughly a single step.
+        private static void ReplaceScrollRect(IReactComponent component)
+        {
+            if (component is not ScrollComponent scroll || scroll.ScrollRect == null)
+                return;
+
+            var oldRect = scroll.ScrollRect;
+            var go = oldRect.gameObject;
+
+            var content = oldRect.content;
+            var viewport = oldRect.viewport;
+            var horizontal = oldRect.horizontal;
+            var vertical = oldRect.vertical;
+            var scrollSensitivity = oldRect.scrollSensitivity;
+            var movementType = oldRect.movementType;
+            var elasticity = oldRect.elasticity;
+            var inertia = oldRect.inertia;
+            var decelerationRate = oldRect.decelerationRate;
+            var horizontalScrollbarVisibility = oldRect.horizontalScrollbarVisibility;
+            var verticalScrollbarVisibility = oldRect.verticalScrollbarVisibility;
+            var smoothness = oldRect.Smoothness;
+            var wheelDirectionTransposed = oldRect.WheelDirectionTransposed;
+            var horizontalScrollbar = oldRect.horizontalScrollbar;
+            var verticalScrollbar = oldRect.verticalScrollbar;
+
+            // ScrollRect is DisallowMultipleComponent — detach its scrollbar
+            // listeners first (so the dead instance does not stay subscribed to
+            // onValueChanged), then remove it before adding the replacement.
+            oldRect.horizontalScrollbar = null;
+            oldRect.verticalScrollbar = null;
+            UnityEngine.Object.DestroyImmediate(oldRect);
+
+            var fresh = go.AddComponent<MoyvaSmoothScrollRect>();
+            fresh.content = content;
+            fresh.viewport = viewport;
+            fresh.horizontal = horizontal;
+            fresh.vertical = vertical;
+            fresh.scrollSensitivity = scrollSensitivity;
+            fresh.movementType = movementType;
+            fresh.elasticity = elasticity;
+            fresh.inertia = inertia;
+            fresh.decelerationRate = decelerationRate;
+            fresh.horizontalScrollbarVisibility = horizontalScrollbarVisibility;
+            fresh.verticalScrollbarVisibility = verticalScrollbarVisibility;
+            fresh.Smoothness = smoothness;
+            fresh.WheelDirectionTransposed = wheelDirectionTransposed;
+            fresh.horizontalScrollbar = horizontalScrollbar;
+            fresh.verticalScrollbar = verticalScrollbar;
+
+            typeof(ScrollComponent)
+                .GetField("<ScrollRect>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(scroll, fresh);
+        }
+
+#if UNITY_EDITOR
         private static void InitializeEditorScrollResizers(IReactComponent component)
         {
             if (component is not UGUIComponent ugui || ugui.GameObject == null)
@@ -594,6 +851,11 @@ namespace UnityHTML.Runtime
         {
             if (context == null)
                 return;
+
+            // Every mounted/pooled YogaNode holds a rooted GCHandle that would
+            // otherwise keep this whole context graph (JS engine included) alive
+            // forever — release before disposal.
+            UnityHtmlDocumentTree.ReleaseContextNodes(context);
 
 #if UNITY_EDITOR
             if (!Application.isPlaying)

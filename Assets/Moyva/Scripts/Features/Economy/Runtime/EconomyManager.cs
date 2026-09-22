@@ -485,8 +485,16 @@ namespace Kruty1918.Moyva.Economy.Runtime
             }
             float minimum = Rules?.Population?.MinimumConstructionSpeed ?? 0.25f;
             float fullSpeed = Rules?.Population?.ConstructionWorkersForFullSpeed ?? 10;
+            var blocker = PopulationGrowthBlocker.None;
+            if ((Rules?.Population == null || Rules.Population.RequireHousingForFamilyCreation)
+                && state.Residents.Count >= state.TotalHousingCapacity)
+                blocker = PopulationGrowthBlocker.Housing;
+            if (blocker == PopulationGrowthBlocker.None
+                && state.GetAvailableResource("Food") <= 0f)
+                blocker = PopulationGrowthBlocker.Food;
             return new RecruitmentPopulationSnapshot(state.Residents.Count, available, training, military,
-                Mathf.Clamp(available / fullSpeed, minimum, 1f));
+                Mathf.Clamp(available / fullSpeed, minimum, 1f),
+                state.TotalHousingCapacity, state.GetAvailableResource("Food"), blocker);
         }
 
         /// <summary>Намагається Reserve найму населення.</summary>

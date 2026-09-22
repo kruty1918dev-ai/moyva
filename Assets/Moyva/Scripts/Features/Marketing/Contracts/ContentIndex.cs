@@ -72,14 +72,14 @@ namespace Kruty1918.Moyva.Marketing.Contracts
     public sealed class MarketingContentMetadata
     {
         public string contentId = string.Empty;
-        public MarketingValueTier? valueTier;
-        public MarketingSizeClass? sizeClass;
-        public SelectionOverride? selectionOverride;
-        public bool? marketingDisabled;
+        public MarketingValueTier? valueTier { get; set; }
+        public MarketingSizeClass? sizeClass { get; set; }
+        public SelectionOverride? selectionOverride { get; set; }
+        public bool? marketingDisabled { get; set; }
         public string biome;
-        public bool? suitsWide;
-        public bool? suitsMedium;
-        public bool? suitsClose;
+        public bool? suitsWide { get; set; }
+        public bool? suitsMedium { get; set; }
+        public bool? suitsClose { get; set; }
         public float scoreBias;
     }
 

@@ -1,5 +1,6 @@
 namespace Kruty1918.Moyva.Economy.Runtime
 {
+    [System.Serializable]
     public readonly struct EconomyResidentState
     {
         public EconomyResidentState(

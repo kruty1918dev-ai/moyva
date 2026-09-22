@@ -45,12 +45,16 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
 
             _settings = new CameraSettingsSO();
             _settings.controlProfile.zoomSpeed = 5f; // value from camerasettings.json
+            // unscaledDeltaTime is near-zero in batch PlayMode; keep smoothing
+            // minimal so LateTick converges within a few frames.
+            _settings.controlProfile.smoothTime = 0.01f;
 
             _movement = new CameraMovement(_camera, _settings);
             _movement.Initialize();
             _zoom = new CameraZoom(_camera, _settings, _movement);
             _zoom.Initialize();
-            _controller = new CameraPlayerController(_movement, _zoom, _settings, null);
+            _controller = new CameraPlayerController(_movement, _zoom, _settings, null,
+                applicationFocused: () => true);
         }
 
         [TearDown]
@@ -70,20 +74,29 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
             _zoom.LateTick();
         }
 
-        private void SettleSmoothing(int iterations = 600)
+        /// <summary>
+        /// LateTick smoothing is driven by Time.unscaledDeltaTime, so it only converges
+        /// across real frames — a synchronous loop would replay the same tiny dt.
+        /// Yields until the camera stops moving (or the frame budget is exhausted).
+        /// </summary>
+        private IEnumerator SettleSmoothing(int maxFrames = 600)
         {
-            for (var i = 0; i < iterations; i++)
+            for (var i = 0; i < maxFrames; i++)
             {
+                var before = _camera.transform.position;
+                var beforeSize = _camera.orthographicSize;
                 _movement.LateTick();
                 _zoom.LateTick();
+                if (_camera.transform.position == before
+                    && Mathf.Approximately(_camera.orthographicSize, beforeSize))
+                    yield break;
+                yield return null;
             }
         }
 
         [UnityTest]
         public IEnumerator MouseWheel_UnderNormalizedDeltas_ZoomIsMuchWeakerThanDesigned()
         {
-            Assert.That(Application.isFocused, Is.True,
-                "CameraPlayerController drops all input when the application is not focused.");
 
             var stream = SensorStreams.MouseWheelNotches(8, 1);
             var startSize = _camera.orthographicSize;
@@ -92,7 +105,7 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
                 InputSystem.QueueDeltaStateEvent(_mouse.scroll, delta);
                 yield return PumpFrame();
             }
-            SettleSmoothing();
+            yield return SettleSmoothing();
 
             var moved = _camera.orthographicSize - startSize;
             // Controller divides mouse.scroll by 120 — a constant designed for raw
@@ -108,7 +121,6 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
         [UnityTest]
         public IEnumerator TouchpadScrollStream_CameraZoomStillResponds()
         {
-            Assert.That(Application.isFocused, Is.True);
 
             var stream = SensorStreams.TouchpadGesture(totalUnits: 5f, activeFrames: 30, tailFrames: 0, seed: 7);
             var startSize = _camera.orthographicSize;
@@ -117,7 +129,7 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
                 InputSystem.QueueDeltaStateEvent(_mouse.scroll, delta);
                 yield return PumpFrame();
             }
-            SettleSmoothing();
+            yield return SettleSmoothing();
 
             var moved = _camera.orthographicSize - startSize;
             var expected = 5f * 5f / 120f;
@@ -129,7 +141,6 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
         [UnityTest]
         public IEnumerator MiddleMouseDrag_PansCameraByWorldMappedDelta()
         {
-            Assert.That(Application.isFocused, Is.True);
 
             var start = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
             Move(_mouse.position, start);
@@ -139,15 +150,19 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
             yield return PumpFrame(); // capture begins
 
             var positions = SensorStreams.DragPositions(start, new Vector2(200f, 0f), 30, seed: 3);
+            var deltas = SensorStreams.DeltasFrom(positions);
             var startPosition = _camera.transform.position;
-            foreach (var position in positions)
+            for (var i = 0; i < positions.Count; i++)
             {
-                Move(_mouse.position, position);
+                Move(_mouse.position, positions[i]);
+                // The test runtime does not derive mouse.delta from position moves —
+                // supply it explicitly like a real device report would.
+                Set(_mouse.delta, deltas[i]);
                 yield return PumpFrame();
             }
             Release(_mouse.middleButton);
             yield return PumpFrame();
-            SettleSmoothing();
+            yield return SettleSmoothing();
 
             var worldDelta = _camera.transform.position - startPosition;
             var worldPerPixel = 2f * _camera.orthographicSize / Screen.height;
@@ -160,7 +175,6 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
         [UnityTest]
         public IEnumerator TouchDrag_MovesCameraImmediately()
         {
-            Assert.That(Application.isFocused, Is.True);
             _touchscreen = InputSystem.AddDevice<Touchscreen>();
 
             var start = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
@@ -172,8 +186,15 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
             var startPosition = _camera.transform.position;
             for (var i = 1; i < positions.Count; i++)
             {
+                // Touch deltas are zeroed by Touchscreen.OnNextUpdate at the start of
+                // the next input update, so the controller must tick in the same frame
+                // the MoveTouch event lands — unlike mouse.delta, touch delta does not
+                // survive a yield.
                 MoveTouch(1, positions[i], deltas[i]);
-                yield return PumpFrame();
+                _controller.Tick();
+                _movement.LateTick();
+                _zoom.LateTick();
+                yield return null;
             }
             EndTouch(1, positions[positions.Count - 1]);
             yield return PumpFrame();
@@ -187,7 +208,6 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
         [UnityTest]
         public IEnumerator TwoFingerPinch_ZoomsCameraByScale()
         {
-            Assert.That(Application.isFocused, Is.True);
             _touchscreen = InputSystem.AddDevice<Touchscreen>();
 
             var center = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
@@ -204,12 +224,16 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
                 var delta = offset - prevOffset;
                 MoveTouch(1, center + new Vector2(-offset, 0f), new Vector2(-delta, 0f));
                 MoveTouch(2, center + new Vector2(offset, 0f), new Vector2(delta, 0f));
-                yield return PumpFrame();
+                // Same-frame tick: touch deltas are reset by the next input update.
+                _controller.Tick();
+                _movement.LateTick();
+                _zoom.LateTick();
+                yield return null;
             }
             EndTouch(1, center + new Vector2(-110f, 0f));
             EndTouch(2, center + new Vector2(110f, 0f));
             yield return PumpFrame();
-            SettleSmoothing();
+            yield return SettleSmoothing();
 
             var moved = _camera.orthographicSize - startSize;
             TestContext.Out.WriteLine($"[sensor] pinch out: orthoSize moved {moved:F3} from {startSize:F1}");

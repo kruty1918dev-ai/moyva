@@ -81,7 +81,7 @@ namespace Zenject.ReflectionBaking
             }
 
             var assemblyName = Path.GetFileNameWithoutExtension(assemblyAssetPath);
-            var assembly = AppDomain.CurrentDomain.GetAssemblies()
+            var assembly = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies()
                 .Where(x => x.GetName().Name == assemblyName).OnlyOrDefault();
 
             Assert.IsNotNull(assembly, "Could not find unique assembly '{0}' in currently loaded list of assemblies", assemblyName);

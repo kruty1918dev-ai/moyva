@@ -1,0 +1,22 @@
+{
+  "name": "Kruty1918.Moyva.Telemetry",
+  "rootNamespace": "Kruty1918.Moyva.Telemetry",
+  "references": [
+    "Kruty1918.Telemetry",
+    "Kruty1918.Telemetry.Unity",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.Turns",
+    "Kruty1918.Moyva.AI.Bot.Core",
+    "Kruty1918.Moyva.Multiplayer",
+    "Zenject"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

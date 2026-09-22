@@ -199,7 +199,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             if (direct != null)
                 return direct;
 
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (Assembly assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
             {
                 Type candidate = assembly.GetType(fullName, throwOnError: false);
                 if (candidate != null)

@@ -9,6 +9,7 @@ using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
+using Kruty1918.Localization;
 using Kruty1918.Notifications.API;
 using UnityEngine;
 using Zenject;
@@ -45,6 +46,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly IConstructionSessionCommands _constructionService;
         private readonly IConstructionLifecycle _constructionLifecycle;
         private readonly IGameplayNotificationService _notifications;
+        private readonly ILocalizationService _loca;
         private readonly SignalBus _signalBus;
         private readonly ITurnService _turns;
         private GameModeType _currentMode = GameModeType.Normal;
@@ -79,7 +81,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             [InjectOptional] ITurnService turns,
             [InjectOptional] IConstructionLifecycle constructionLifecycle,
             [InjectOptional] IGameplayNotificationService notifications,
-            SignalBus signalBus)
+            SignalBus signalBus,
+            [InjectOptional] ILocalizationService localization = null)
         {
             _gridService = gridService;
             _objectsMapService = objectsMapService;
@@ -100,7 +103,11 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _constructionLifecycle = constructionLifecycle;
             _notifications = notifications;
             _signalBus = signalBus;
+            _loca = localization;
         }
+
+        private string T(string key)
+            => _loca?.T(key) ?? key;
 
         public void Initialize()
         {
@@ -111,6 +118,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _signalBus.Subscribe<UnitMoveRejectedSignal>(OnUnitMoveRejected);
             _signalBus.Subscribe<UnitGroupCommandRejectedSignal>(OnUnitGroupCommandRejected);
             _signalBus.Subscribe<UnitRecruitmentCommandRejectedSignal>(OnUnitRecruitmentCommandRejected);
+            _signalBus.Subscribe<ConstructionPlacementRejectedSignal>(OnConstructionPlacementRejected);
         }
 
         public void Dispose()
@@ -122,6 +130,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _signalBus.TryUnsubscribe<UnitMoveRejectedSignal>(OnUnitMoveRejected);
             _signalBus.TryUnsubscribe<UnitGroupCommandRejectedSignal>(OnUnitGroupCommandRejected);
             _signalBus.TryUnsubscribe<UnitRecruitmentCommandRejectedSignal>(OnUnitRecruitmentCommandRejected);
+            _signalBus.TryUnsubscribe<ConstructionPlacementRejectedSignal>(OnConstructionPlacementRejected);
             CancelMovement(MovementCancelReason.Dispose);
         }
 
@@ -133,8 +142,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
             _notifications?.Show(
                 string.IsNullOrWhiteSpace(signal.Reason)
-                    ? "Рух неможливий"
-                    : signal.Reason,
+                    ? T("Movement is not possible.")
+                    : T(signal.Reason),
                 GameplayNotificationKind.Warning,
                 dedupKey: "unit-move-rejected");
         }
@@ -143,8 +152,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         {
             _notifications?.Show(
                 string.IsNullOrWhiteSpace(signal.Reason)
-                    ? "Команду групи відхилено"
-                    : signal.Reason,
+                    ? T("Unit group command rejected.")
+                    : T(signal.Reason),
                 GameplayNotificationKind.Warning,
                 dedupKey: "unit-group-rejected");
         }
@@ -153,10 +162,20 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         {
             _notifications?.Show(
                 string.IsNullOrWhiteSpace(signal.Reason)
-                    ? "Команду найму відхилено"
-                    : signal.Reason,
+                    ? T("Unit recruitment command rejected.")
+                    : T(signal.Reason),
                 GameplayNotificationKind.Warning,
                 dedupKey: "unit-recruitment-rejected");
+        }
+
+        private void OnConstructionPlacementRejected(ConstructionPlacementRejectedSignal signal)
+        {
+            _notifications?.Show(
+                string.IsNullOrWhiteSpace(signal.Reason)
+                    ? T("The placement was rejected by host.")
+                    : T(signal.Reason),
+                GameplayNotificationKind.Warning,
+                dedupKey: $"construction-place-rejected:{signal.Position}");
         }
 
         private void OnGameModeChanged(GameModeChangedSignal signal)
@@ -485,11 +504,11 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             if (!_unitCombatService.CanAttack(_selectedUnitId, targetUnitId, out rejectReason))
             {
                 if (rejectReason == UnitAttackRejectReason.TargetOutOfRange)
-                    _notifications?.Show("Ціль поза дальністю атаки", GameplayNotificationKind.Warning, dedupKey: "unit-attack-out-of-range");
+                    _notifications?.Show(T("Target is out of attack range."), GameplayNotificationKind.Warning, dedupKey: "unit-attack-out-of-range");
                 else if (rejectReason == UnitAttackRejectReason.TargetNotVisible)
-                    _notifications?.Show("Ціль поза зоною видимості", GameplayNotificationKind.Warning, dedupKey: "unit-attack-not-visible");
+                    _notifications?.Show(T("Target is outside the visible area."), GameplayNotificationKind.Warning, dedupKey: "unit-attack-not-visible");
                 else if (rejectReason == UnitAttackRejectReason.AttackUnavailable)
-                    _notifications?.Show("Цей юніт зараз не може атакувати", GameplayNotificationKind.Warning, dedupKey: "unit-attack-unavailable");
+                    _notifications?.Show(T("This unit cannot attack right now."), GameplayNotificationKind.Warning, dedupKey: "unit-attack-unavailable");
                 return true;
             }
 

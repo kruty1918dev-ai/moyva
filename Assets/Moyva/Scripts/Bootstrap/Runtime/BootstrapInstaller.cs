@@ -27,6 +27,7 @@ namespace Kruty1918.Moyva.Bootstrap
         {
             UiActionsInstaller.Install(Container);
             Kruty1918.Moyva.Multiplayer.Runtime.MultiplayerInstaller.InstallGameplayBindings(Container);
+            Kruty1918.Moyva.Telemetry.MoyvaTelemetryInstaller.Install(Container);
             var gameSettings = _config != null ? _config.GameSettings : _legacyGameSettings;
             var startingPositionSettings = _config != null ? _config.StartingPositionSettings : _legacyStartingPositionSettings;
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using UnityEngine;
 using Zenject.ReflectionBaking.Mono.Cecil;
 
 namespace Zenject.ReflectionBaking
@@ -16,22 +17,25 @@ namespace Zenject.ReflectionBaking
             _appDomainAssemblyLocations = new Dictionary<string, string>();
             _cache = new Dictionary<string, AssemblyDefinition>();
 
-            AppDomain domain = AppDomain.CurrentDomain;
-
-            Assembly[] assemblies = domain.GetAssemblies();
-
-            for (int i = 0; i < assemblies.Length; i++)
+            foreach (Assembly assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
             {
 #if NET_4_6
-                if (assemblies[i].IsDynamic)
+                if (assembly.IsDynamic)
                 {
                     continue;
                 }
 #endif
 
-                _appDomainAssemblyLocations[assemblies[i].FullName] = assemblies[i].Location;
+                string path = assembly.GetLoadedAssemblyPath();
 
-                AddSearchDirectory(Path.GetDirectoryName(assemblies[i].Location));
+                if (string.IsNullOrEmpty(path))
+                {
+                    continue;
+                }
+
+                _appDomainAssemblyLocations[assembly.FullName] = path;
+
+                AddSearchDirectory(Path.GetDirectoryName(path));
             }
         }
 

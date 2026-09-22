@@ -219,25 +219,93 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         public bool CanEnqueue(string ownerId, Vector2Int source, string unitTypeId, out string reason)
         {
+            if (TryGetEnqueueShortages(
+                    ownerId, source, unitTypeId,
+                    out IReadOnlyList<UnitRecruitmentShortage> shortages,
+                    out reason))
+                return true;
+
+            if (shortages != null && shortages.Count > 0)
+            {
+                UnitRecruitmentShortage first = shortages[0];
+                reason = first.IsPopulation
+                    ? "Not enough available settlement population."
+                    : "Insufficient recruitment resource: " + first.ResourceId;
+            }
+            return false;
+        }
+
+        public bool TryGetEnqueueShortages(
+            string ownerId,
+            Vector2Int source,
+            string unitTypeId,
+            out IReadOnlyList<UnitRecruitmentShortage> shortages,
+            out string reason)
+        {
+            shortages = null;
+            reason = null;
             if (!TryResolveEligibility(ownerId, source, unitTypeId, out var owner, out _, out var recipe, out reason))
                 return false;
-            if (_economy == null || _economy.GetRecruitmentPopulation(owner, source).Available < Math.Max(1, recipe.PopulationCost))
-            { reason = "Not enough available settlement population."; return false; }
-            var costs = BuildCostMap(recipe.Costs);
-            if (costs.Count == 0) return true;
-            IReadOnlyDictionary<string, float> available;
-            if (!_economy.OwnerHasAnyWarehouse(owner)) available = _economy.GetOwnerPoolResourceTotals(owner);
-            else
+
+            var collected = new List<UnitRecruitmentShortage>();
+            int requiredPopulation = Math.Max(1, recipe.PopulationCost);
+            RecruitmentPopulationSnapshot population =
+                _economy?.GetRecruitmentPopulation(owner, source) ?? default;
+            if (_economy == null || population.Available < requiredPopulation)
             {
-                if (!_economy.TryResolveConstructionSettlement(source, owner, out var settlement)
-                    || string.IsNullOrWhiteSpace(settlement.SettlementId) || settlement.OwnerId != owner)
-                { reason = "No owned settlement is available to fund recruitment at this building."; return false; }
-                available = _economy.GetSettlementResourceTotals(settlement.SettlementId);
+                collected.Add(new UnitRecruitmentShortage(
+                    resourceId: null,
+                    isPopulation: true,
+                    required: requiredPopulation,
+                    available: _economy == null ? 0 : population.Available,
+                    reserved: 0,
+                    populationBlocker: population.GrowthBlocker));
             }
-            foreach (var cost in costs)
-                if (available == null || !available.TryGetValue(cost.Key, out float amount) || amount + 0.0001f < cost.Value)
-                { reason = "Insufficient recruitment resource: " + cost.Key; return false; }
-            return true;
+
+            var costs = BuildCostMap(recipe.Costs);
+            if (costs.Count > 0 && _economy != null)
+            {
+                IReadOnlyDictionary<string, float> available;
+                IReadOnlyDictionary<string, float> reserved = null;
+                if (!_economy.OwnerHasAnyWarehouse(owner))
+                {
+                    available = _economy.GetOwnerPoolResourceTotals(owner);
+                }
+                else
+                {
+                    if (!_economy.TryResolveConstructionSettlement(source, owner, out var settlement)
+                        || string.IsNullOrWhiteSpace(settlement.SettlementId)
+                        || settlement.OwnerId != owner)
+                    {
+                        reason = "No owned settlement is available to fund recruitment at this building.";
+                        shortages = collected.Count > 0 ? collected : null;
+                        return false;
+                    }
+
+                    available = _economy.GetSettlementAvailableResourceTotals(settlement.SettlementId);
+                    reserved = _economy.GetSettlementReservedResourceTotals(settlement.SettlementId);
+                }
+
+                foreach (var cost in costs)
+                {
+                    float availableAmount =
+                        available != null && available.TryGetValue(cost.Key, out float amount)
+                            ? amount
+                            : 0f;
+                    if (availableAmount + 0.0001f >= cost.Value)
+                        continue;
+
+                    float reservedAmount =
+                        reserved != null && reserved.TryGetValue(cost.Key, out float held)
+                            ? held
+                            : 0f;
+                    collected.Add(new UnitRecruitmentShortage(
+                        cost.Key, false, cost.Value, availableAmount, reservedAmount));
+                }
+            }
+
+            shortages = collected;
+            return collected.Count == 0;
         }
 
         public bool TryCancel(string ownerId, Vector2Int recruitingBuildingPosition,

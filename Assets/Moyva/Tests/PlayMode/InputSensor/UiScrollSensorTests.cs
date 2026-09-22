@@ -93,9 +93,9 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
         /// </summary>
         private static void EmulateWindowsScrollUnits()
         {
-            var runtimeType = typeof(InputSystem).Assembly.GetType("UnityEngine.InputSystem.InputRuntime");
+            var runtimeType = typeof(InputSystem).Assembly.GetType("UnityEngine.InputSystem.LowLevel.InputRuntime");
             var instance = runtimeType
-                .GetField("s_Instance", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+                .GetField("s_Instance", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)
                 .GetValue(null);
             Assert.That(instance.GetType().Name, Is.EqualTo("InputTestRuntime"),
                 "Scroll emulation expects the Input System test runtime.");
@@ -259,12 +259,14 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
             var scroll = MountScrollDocument();
             yield return PointAtCenter((RectTransform)scroll.transform);
 
-            // Drag the list content down 200px with a held left button: real pointer
+            // Drag the list content up 200px with a held left button: real pointer
             // positions with sensor jitter, routed through the drag threshold (10px).
+            // The view starts at the top, so a downward pull (scroll-up) would be
+            // clamped — drag up to move content toward the bottom of the list.
             var corners = new Vector3[4];
             ((RectTransform)scroll.transform).GetWorldCorners(corners);
             var start = RectTransformUtility.WorldToScreenPoint(null, (corners[0] + corners[2]) * 0.5f);
-            var positions = SensorStreams.DragPositions(start, new Vector2(0f, -200f), 30, seed: 11);
+            var positions = SensorStreams.DragPositions(start, new Vector2(0f, 200f), 30, seed: 11);
 
             Press(_mouse.leftButton);
             yield return null;
@@ -278,8 +280,8 @@ namespace Kruty1918.Moyva.Tests.InputSensor.PlayMode
             yield return null;
 
             var moved = scroll.content.anchoredPosition.y - startY;
-            TestContext.Out.WriteLine($"[sensor] drag: pointer -200px moved content {moved:F1}px");
-            Assert.That(Mathf.Abs(moved + 200f), Is.LessThan(25f),
+            TestContext.Out.WriteLine($"[sensor] drag: pointer +200px moved content {moved:F1}px");
+            Assert.That(Mathf.Abs(moved - 200f), Is.LessThan(25f),
                 "Content should track a drag nearly 1:1 (minus the drag threshold).");
         }
     }

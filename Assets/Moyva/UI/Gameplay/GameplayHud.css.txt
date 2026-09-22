@@ -261,6 +261,27 @@
 .route-meta { color: rgb(184, 187, 193); }
 .route-toggle { flex-direction: row; align-items: center; justify-content: space-between; min-height: 44px; margin-bottom: 12px; }
 .route-toggle .cargo-label { margin-bottom: 0; }
+/* Label activates the toggle through `for`; the transparent background gives the
+   whole label rect a raycast target, not just the text pixels. */
+.route-toggle label.cargo-label { background-color: rgba(0, 0, 0, 0); }
+.route-toggle toggle {
+  flex-shrink: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  width: 46px;
+  height: 26px;
+  padding: 3px;
+  background-color: rgb(48, 51, 61);
+  border-width: 1px;
+  border-color: rgb(91, 93, 98);
+  border-radius: 3px;
+}
+.route-toggle toggle:checked { justify-content: flex-end; background-color: rgb(112, 85, 31); border-color: rgb(226, 183, 75); }
+.route-toggle toggle:hover,
+.route-toggle toggle:focus { border-color: rgb(229, 187, 85); }
+.route-toggle toggle[disabled] { opacity: 0.45; }
+.route-toggle .toggle-knob { flex-shrink: 0; width: 18px; height: 18px; background-color: rgb(246, 242, 231); border-radius: 2px; }
 
 .browser-search {
   flex-shrink: 0;

@@ -44,6 +44,7 @@ namespace Kruty1918.Moyva.Construction.API
     {
         BuildingPlacementState State { get; }
         bool IsDemolishMode { get; }
+        int PendingDemolitionCount { get; }
 
         void SelectBuilding(string buildingId);
         string GetSelectedBuildingId();

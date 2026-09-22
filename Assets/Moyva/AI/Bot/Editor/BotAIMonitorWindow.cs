@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.AI.Bot.Editor
         private void OnGUI()
         {
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
-            var views = Object.FindObjectsByType<BotTelemetryView>(FindObjectsSortMode.None);
+            var views = Object.FindObjectsByType<BotTelemetryView>();
             if (views.Length == 0) EditorGUILayout.HelpBox("No live bot runtime. Enter Play Mode.", MessageType.Info);
             foreach (var view in views)
             {

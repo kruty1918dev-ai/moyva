@@ -5,8 +5,10 @@ using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.InputRouting.API;
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Notifications.API;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
+using Kruty1918.Moyva.Shared.Localization;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.UIActions.API;
@@ -64,6 +66,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IGameplayInputPolicy _inputPolicy;
         private readonly IUiContextStack _uiContexts;
         private readonly IGameModeService _gameModeService;
+        private readonly IGameplayNotificationService _notifications;
+        private readonly ILocalizationService _localization;
         private readonly List<GridActionOverlayCell> _overlayCells = new();
         private readonly MaterialPropertyBlock _previewPropertyBlock = new();
 
@@ -96,7 +100,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             [InjectOptional] IGameModeService gameModeService = null,
             [InjectOptional] IGameplayProgressClock progressClock = null,
             [InjectOptional] IUnitRecruitmentRemoteCommandRequester remoteRecruitment = null,
-            [InjectOptional] ILocalGameplayRoleResolver roleResolver = null)
+            [InjectOptional] ILocalGameplayRoleResolver roleResolver = null,
+            [InjectOptional] IGameplayNotificationService notifications = null,
+            [InjectOptional] ILocalizationService localization = null)
         {
             _signalBus = signalBus;
             _turns = turns;
@@ -114,6 +120,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _inputPolicy = inputPolicy;
             _uiContexts = uiContexts;
             _gameModeService = gameModeService;
+            _notifications = notifications;
+            _localization = localization;
         }
 
         public void Initialize()
@@ -125,6 +133,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 OnRecruitmentQueueChanged);
             _signalBus.Subscribe<UnitRecruitmentDeployedSignal>(
                 OnRecruitmentDeployed);
+            _signalBus.Subscribe<UnitRecruitmentCommandRejectedSignal>(
+                OnRecruitmentCommandRejected);
             _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
             RegisterUiContexts();
         }
@@ -138,13 +148,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 OnRecruitmentQueueChanged);
             _signalBus.TryUnsubscribe<UnitRecruitmentDeployedSignal>(
                 OnRecruitmentDeployed);
+            _signalBus.TryUnsubscribe<UnitRecruitmentCommandRejectedSignal>(
+                OnRecruitmentCommandRejected);
             _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
             _deploymentContext?.Dispose();
 
             EndSession(destroyPreview: true);
             DestroyRuntimeRoot(_previewRoot);
             if (_controlsRoot != null)
-                Object.Destroy(_controlsRoot.gameObject);
+                DestroyUnityObject(_controlsRoot.gameObject);
             _previewRoot = null;
             _controlsRoot = null;
             _confirmButton = null;
@@ -159,13 +171,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
 
             if (_progressClock?.IsRealtime != true
-                && !_turns.CanOwnerAct(_session.OwnerId, out _))
+                && !_turns.CanOwnerAct(_session.OwnerId, out string turnLostReason))
             {
+                NotifyInfo(string.IsNullOrEmpty(turnLostReason)
+                    ? T("Deployment cancelled.")
+                    : turnLostReason);
                 ExecuteActionOrFallback(UiActionIds.Deployment.Cancel, UiActionSource.Programmatic);
                 return;
             }
 
-            HandleKeyboard();
             HandleMouse();
             FaceSpritePreviewToCamera();
         }

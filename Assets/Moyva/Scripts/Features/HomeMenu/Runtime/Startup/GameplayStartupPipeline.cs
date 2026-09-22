@@ -122,10 +122,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             Debug.Log($"{Prefix} Run started. ConfigScene='{_config.gameplaySceneName}', " +
                       $"LaunchContextBefore={DescribeLaunchContext()}, Session={DescribeSession()}");
 
-            // 1: Перед стартом сцени вирівнюємо графічний профіль під gameplay-режим.
-            ApplyGameplayGraphicsPolicy();
+            // Одна операція володіє cover→load→reveal: повторний запуск чекає
+            // завершення чужого переходу замість паралельного завантаження сцени.
+            using ISceneTransitionLease transitionLease = await AcquireTransitionLeaseAsync(ct);
 
-            // 2: Фіксуємо назву цільової сцени і скидаємо видимий прогрес overlay.
+            // 1: Фіксуємо назву цільової сцени і скидаємо видимий прогрес overlay.
             _sceneName = _config.gameplaySceneName;
             _displayProgress = 0f;
 
@@ -151,6 +152,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
                       $"LaunchContextAfter={DescribeLaunchContext()}");
         }
 
+        /// <summary>Отримати виняткове володіння переходом: якщо інший перехід
+        /// уже активний, чекаємо його завершення (join) і повторюємо спробу,
+        /// а не стартуємо конкуруючу операцію.</summary>
+        private async Task<ISceneTransitionLease> AcquireTransitionLeaseAsync(CancellationToken ct)
+        {
+            while (_sceneTransitionService != null)
+            {
+                ISceneTransitionLease lease = _sceneTransitionService.TryBeginTransition();
+                if (lease != null)
+                    return lease;
+                await _sceneTransitionService.WaitForActiveTransitionAsync(ct);
+            }
+            return null;
+        }
+
         /// <summary>Перевести pipeline у нову фазу і, за потреби, залогувати її.</summary>
         private void EnterPhase(GameplayStartupPhase phase)
         {
@@ -172,6 +188,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
             _overlayLoader.LoadOverlay(0f, 100f, "%");
             SetStatus("Preparing the world…");
             Debug.Log($"{Prefix} Preload started for scene '{_sceneName}'.");
+
+            // 2.5: Чекаємо, доки loading UI реально відрендерить перший кадр —
+            // Task.Yield відновлюється до render-проходу і не гарантує його.
+            await RenderedFrameGate.NextAsync(ct);
+
+            // 2.6: Синхронні ініціалізаційні етапи йдуть лише після першого
+            // видимого кадру — зміна графічного профілю може бути важкою.
+            ApplyGameplayGraphicsPolicy();
 
             // 3: Попередньо підвантажуємо базові startup-ресурси, від яких залежить сцена.
             await PreloadStartupResourcesAsync(ct);

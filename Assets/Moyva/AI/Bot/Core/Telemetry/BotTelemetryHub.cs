@@ -46,6 +46,9 @@ namespace Kruty1918.Moyva.AI.Bot
         public BotRunMetrics Metrics { get; } = new BotRunMetrics();
         public IEnumerable<BotDecisionTrace> Traces => _traces.ToArray();
         public BotDecisionTrace Last { get; private set; }
+        /// <summary>Fired after each recorded trace (not fired when telemetry is disabled).</summary>
+        public event Action<BotDecisionTrace> TraceRecorded;
+
         public BotTelemetryHub(int capacity = 128, bool enabled = true) { _capacity = Math.Clamp(capacity, 1, 4096); _enabled = enabled; }
         public void Record(BotDecisionTrace trace)
         {
@@ -53,11 +56,14 @@ namespace Kruty1918.Moyva.AI.Bot
             Last = trace; Metrics.Record(trace);
             if (_traces.Count == _capacity) _traces.Dequeue();
             _traces.Enqueue(trace);
+            TraceRecorded?.Invoke(trace);
         }
     }
     public sealed class BotRunMetrics
     {
         private readonly Queue<BotEpisodeMetrics> _episodes = new Queue<BotEpisodeMetrics>();
+        /// <summary>Fired after each recorded episode metrics row.</summary>
+        public event Action<BotEpisodeMetrics> EpisodeRecorded;
         public long Decisions, Invalid, Stale, CandidateTotal, EndTurns;
         public long[] IntentCounts { get; } = new long[12];
         public IReadOnlyList<BotEpisodeMetrics> Episodes => _episodes.ToArray();
@@ -73,6 +79,7 @@ namespace Kruty1918.Moyva.AI.Bot
         {
             if (_episodes.Count == 50) _episodes.Dequeue();
             _episodes.Enqueue(episode);
+            EpisodeRecorded?.Invoke(episode);
         }
     }
     public readonly struct BotEpisodeMetrics

@@ -55,7 +55,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private static void RebuildRenderers(ConstructionInfluenceRadiusOverlayState state, Transform excludedRoot)
         {
             state.Renderers.Clear();
-            MeshRenderer[] renderers = Object.FindObjectsByType<MeshRenderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            MeshRenderer[] renderers = Object.FindObjectsByType<MeshRenderer>(FindObjectsInactive.Exclude);
             for (int i = 0; i < renderers.Length; i++)
             {
                 if (IsCandidate(renderers[i], state.Bounds, excludedRoot))

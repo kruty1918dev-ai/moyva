@@ -64,12 +64,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _confirmButton = CreateControlButton(
                 _controlsRoot,
                 "Confirm",
-                "Підтвердити",
+                T("Confirm placement"),
                 () => ExecuteActionOrFallback(UiActionIds.Deployment.Confirm, UiActionSource.Button));
             _cancelButton = CreateControlButton(
                 _controlsRoot,
                 "Cancel",
-                "Скасувати",
+                T("Cancel placement"),
                 () => ExecuteActionOrFallback(UiActionIds.Deployment.Cancel, UiActionSource.Button));
 
             _controlsRoot.SetAsLastSibling();
@@ -126,7 +126,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private Canvas ResolveCanvas()
         {
-            return Object.FindFirstObjectByType<Canvas>(
+            return Object.FindAnyObjectByType<Canvas>(
                 FindObjectsInactive.Include);
         }
 

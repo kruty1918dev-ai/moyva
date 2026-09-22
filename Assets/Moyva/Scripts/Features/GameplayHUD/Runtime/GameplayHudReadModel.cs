@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -80,6 +80,196 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         /// <summary>Локалізує й форматує {0}..{n}.</summary>
         private string TF(string key, params object[] args) => _loca?.TF(key, args) ?? key ?? string.Empty;
+
+        private const string InsufficientResourcePrefix =
+            "Insufficient recruitment resource:";
+
+        private static string TryGetInsufficientResource(string reason)
+        {
+            if (string.IsNullOrEmpty(reason)
+                || !reason.StartsWith(InsufficientResourcePrefix, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            string resourceId = reason.Substring(InsufficientResourcePrefix.Length).Trim();
+            return resourceId.Length == 0 ? null : resourceId;
+        }
+
+        private string LocalizeRecruitmentRejection(string reason, string resourceId)
+        {
+            if (resourceId != null)
+            {
+                string display = _population?.GetResourceDisplayName(resourceId);
+                return TF(
+                    "Insufficient recruitment resource: {0}",
+                    string.IsNullOrWhiteSpace(display) ? resourceId : display);
+            }
+
+            return string.IsNullOrWhiteSpace(reason)
+                ? T("Recruitment could not be started.")
+                : T(reason);
+        }
+
+        internal static string[] ResolveProducedResourceIds(BuildingDefinition definition)
+        {
+            if (!BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition, out ProductionBuildingModule production))
+                return Array.Empty<string>();
+
+            var ids = new List<string>();
+            if (!string.IsNullOrWhiteSpace(production.ResourceId))
+                ids.Add(production.ResourceId.Trim());
+            if (production.Recipes != null)
+            {
+                foreach (var recipe in production.Recipes)
+                {
+                    if (recipe?.Outputs == null)
+                        continue;
+                    foreach (var output in recipe.Outputs)
+                    {
+                        if (output != null && !string.IsNullOrWhiteSpace(output.ResourceId))
+                            ids.Add(output.ResourceId.Trim());
+                    }
+                }
+            }
+            return ids.Count == 0
+                ? Array.Empty<string>()
+                : ids.Distinct(StringComparer.Ordinal).ToArray();
+        }
+
+        private bool TryResolveRecipeAvailability(
+            string ownerId, string unitTypeId, int populationCost,
+            out string reason, out string[] missingResourceIds)
+        {
+            missingResourceIds = Array.Empty<string>();
+            var query = _recruitment as IUnitRecruitmentQuery;
+            if (query != null)
+            {
+                if (query.TryGetEnqueueShortages(
+                        ownerId, _selectionPosition, unitTypeId,
+                        out IReadOnlyList<UnitRecruitmentShortage> shortages,
+                        out string eligibilityReason))
+                {
+                    reason = null;
+                    return true;
+                }
+
+                if (shortages != null && shortages.Count > 0)
+                {
+                    reason = FormatRecruitmentShortages(shortages);
+                    missingResourceIds = shortages
+                        .Where(s => !s.IsPopulation && !string.IsNullOrWhiteSpace(s.ResourceId))
+                        .Select(s => s.ResourceId)
+                        .Distinct(StringComparer.Ordinal)
+                        .ToArray();
+                    return false;
+                }
+
+                reason = LocalizeRecruitmentRejection(eligibilityReason, null);
+                return false;
+            }
+
+            int available =
+                _population?.GetRecruitmentPopulation(ownerId, _selectionPosition).Available ?? 0;
+            bool enough = available >= populationCost;
+            reason = enough ? null : TF("Requires {0} available residents.", populationCost);
+            return enough;
+        }
+
+        /// <summary>Bounded prerequisite search per missing resource: the
+        /// resource whose producers are achievable now (a prerequisite when the
+        /// direct producer is itself blocked, null when no chain resolves —
+        /// including cyclic producer graphs with no initial stock).</summary>
+        private string[] ResolveProducerActionIds(
+            string ownerId, string settlementId, string[] missingIds)
+        {
+            if (missingIds == null || missingIds.Length == 0 || _buildings == null)
+                return null;
+            var resolver = new ProducerFeasibilityResolver(
+                _buildings, _availability, _construction, _population);
+            var actionIds = new string[missingIds.Length];
+            for (int i = 0; i < missingIds.Length; i++)
+            {
+                ProducerSuggestion suggestion =
+                    resolver.Suggest(ownerId, settlementId, missingIds[i]);
+                if (suggestion.Kind == ProducerSuggestionKind.Direct
+                    || suggestion.Kind == ProducerSuggestionKind.ViaPrerequisite)
+                    actionIds[i] = suggestion.ProducedResourceId;
+            }
+            return actionIds;
+        }
+
+        private bool TryCollectRecruitmentShortages(
+            string ownerId, string unitTypeId,
+            out IReadOnlyList<UnitRecruitmentShortage> shortages)
+        {
+            shortages = null;
+            var query = _recruitment as IUnitRecruitmentQuery;
+            if (query == null)
+                return false;
+
+            query.TryGetEnqueueShortages(
+                ownerId, _selectionPosition, unitTypeId,
+                out shortages, out _);
+            return shortages != null && shortages.Count > 0;
+        }
+
+        private string FormatRecruitmentShortages(
+            IReadOnlyList<UnitRecruitmentShortage> shortages)
+        {
+            var parts = new List<string>(shortages.Count);
+            for (int i = 0; i < shortages.Count; i++)
+            {
+                UnitRecruitmentShortage shortage = shortages[i];
+                if (shortage.IsPopulation)
+                {
+                    string populationSegment = TF(
+                        "Population: need {0}, available {1}",
+                        shortage.Required.ToString("0.#"),
+                        shortage.Available.ToString("0.#"));
+                    if (shortage.PopulationBlocker == PopulationGrowthBlocker.Housing)
+                        populationSegment += TF("; housing is full — build {0}", HousingBuildingHint());
+                    else if (shortage.PopulationBlocker == PopulationGrowthBlocker.Food)
+                        populationSegment += T("; food shortage starves residents");
+                    parts.Add(populationSegment);
+                    continue;
+                }
+
+                string display = _population?.GetResourceDisplayName(shortage.ResourceId);
+                string name = string.IsNullOrWhiteSpace(display) ? shortage.ResourceId : display;
+                string segment = TF(
+                    "{0}: need {1}, available {2}",
+                    name,
+                    shortage.Required.ToString("0.#"),
+                    shortage.Available.ToString("0.#"));
+                if (shortage.Reserved > 0.0001f)
+                    segment += TF(" ({0} reserved)", shortage.Reserved.ToString("0.#"));
+                parts.Add(segment);
+            }
+
+            return TF("Missing: {0}", string.Join("; ", parts));
+        }
+
+        /// <summary>Names the first selectable building with a housing module,
+        /// so the housing hint suggests only a building that actually helps.</summary>
+        private string HousingBuildingHint()
+        {
+            if (_buildings == null) return "housing";
+            string ownerId = null;
+            foreach (var definition in _buildings.GetAll())
+            {
+                if (!BuildingDefinitionCapabilities.TryGetEnabledModule(
+                        definition, out HousingBuildingModule _))
+                    continue;
+                var availability = _availability?.EvaluateSelectionAvailability(
+                    definition.Id, ownerId);
+                if (availability.HasValue && !availability.Value.CanSelect)
+                    continue;
+                return definition.Id;
+            }
+            return "housing";
+        }
 
         public GameplayHudReadModel(
             ITurnService turns,
@@ -297,6 +487,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return factions == null || factions.Count > 1;
         }
 
+        public string ResolveResourceDisplayName(string resourceId)
+        {
+            if (string.IsNullOrWhiteSpace(resourceId))
+                return "resource";
+
+            string display = _population?.GetResourceDisplayName(resourceId.Trim());
+            return string.IsNullOrWhiteSpace(display) ? resourceId.Trim() : display;
+        }
+
         public string ResolveBuildingDisplayName(string buildingId)
         {
             if (string.IsNullOrWhiteSpace(buildingId))
@@ -471,7 +670,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             string actionMessage = _construction?.GetLastActionMessage();
             if (!string.IsNullOrWhiteSpace(actionMessage))
-                return actionMessage;
+                return T(actionMessage);
             return string.IsNullOrWhiteSpace(_lastPreviewMessage)
                 ? T("Choose a location on the map.")
                 : _lastPreviewMessage;
@@ -582,7 +781,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         string.IsNullOrWhiteSpace(availability.Reason)
                             ? T("Unavailable under current construction rules.")
                             : T(availability.Reason),
-                        definition.BuildTurns);
+                        definition.BuildTurns,
+                        ResolveProducedResourceIds(definition));
                 })
                 .ToArray();
         }
@@ -610,15 +810,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return UiActionResult.Rejected(
                     UiActionReason.ActionUnavailable,
                     string.IsNullOrWhiteSpace(remoteReason)
-                        ? "Recruitment request could not be sent to host."
-                        : remoteReason);
+                        ? T("Recruitment request could not be sent to host.")
+                        : T(remoteReason));
             }
 
             if (!_recruitment.TryEnqueue(ownerId, _selectionPosition, unitTypeId.Trim(), out string reason))
             {
+                string resourceId = TryGetInsufficientResource(reason);
+                bool hasShortages = TryCollectRecruitmentShortages(
+                    ownerId, unitTypeId.Trim(), out IReadOnlyList<UnitRecruitmentShortage> shortages);
                 return UiActionResult.Rejected(
-                    UiActionReason.ActionUnavailable,
-                    string.IsNullOrWhiteSpace(reason) ? T("Recruitment could not be started.") : T(reason));
+                    resourceId != null || hasShortages
+                        ? UiActionReason.InsufficientResources
+                        : UiActionReason.ActionUnavailable,
+                    hasShortages
+                        ? FormatRecruitmentShortages(shortages)
+                        : LocalizeRecruitmentRejection(reason, resourceId));
             }
 
             return UiActionResult.Performed();
@@ -643,13 +850,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return UiActionResult.Rejected(
                     UiActionReason.ActionUnavailable,
                     string.IsNullOrWhiteSpace(remoteReason)
-                        ? "Cancel request could not be sent to host."
-                        : remoteReason);
+                        ? T("Cancel request could not be sent to host.")
+                        : T(remoteReason));
             }
 
             return _recruitment.TryCancel(ResolveOwnerId(), _selectionPosition, id, out string reason)
                 ? UiActionResult.Performed()
-                : UiActionResult.Rejected(UiActionReason.ActionUnavailable, reason);
+                : UiActionResult.Rejected(
+                    UiActionReason.ActionUnavailable,
+                    LocalizeRecruitmentRejection(reason, TryGetInsufficientResource(reason)));
         }
 
         public bool TryResolveNotificationBuilding(Vector2Int position, out string buildingId)
@@ -727,12 +936,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (module.Recipes != null)
             {
+                string fundingSettlementId = null;
+                if (_population != null
+                    && _population.TryGetSettlementContext(
+                        _selectionPosition, out var settlementContext))
+                    fundingSettlementId = settlementContext.SettlementId;
                 snapshot.RecruitmentRecipes = module.Recipes
                     .Where(recipe => recipe != null && !string.IsNullOrWhiteSpace(recipe.UnitTypeId))
                     .Select(recipe =>
                     {
                         string unitTypeId = recipe.UnitTypeId.Trim();
                         UnitClassConfig config = _unitConfigs?.GetConfig(unitTypeId);
+                        bool affordable = TryResolveRecipeAvailability(
+                            ownerId, unitTypeId, Math.Max(1, recipe.PopulationCost),
+                            out string recipeReason, out string[] missingIds);
                         return new GameplayRecruitmentRecipeSnapshot(
                             unitTypeId,
                             string.IsNullOrWhiteSpace(config?.DisplayName) ? Display(unitTypeId) : config.DisplayName,
@@ -743,12 +960,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                             config?.HitPoints ?? 0,
                             config?.MovementPointsPerTurn ?? 0f,
                             config?.ResolveCustomSprite(),
-                            canRecruit && (_population?.GetRecruitmentPopulation(ownerId, _selectionPosition).Available ?? 0) >= Math.Max(1, recipe.PopulationCost),
-                            !canRecruit ? unavailableReason
-                                : TF("Requires {0} available residents.", Math.Max(1, recipe.PopulationCost)),
+                            canRecruit && affordable,
+                            !canRecruit ? unavailableReason : recipeReason,
                             recipe.TrainingSeconds > 0f ? recipe.TrainingSeconds
                                 : recipe.TrainingTurns * (_progressClock?.SandboxRoundSeconds ?? 10f),
-                            Math.Max(1, recipe.PopulationCost));
+                            Math.Max(1, recipe.PopulationCost),
+                            missingIds,
+                            ResolveProducerActionIds(ownerId, fundingSettlementId, missingIds));
                     })
                     .ToArray();
             }

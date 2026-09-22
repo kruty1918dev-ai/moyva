@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using ReactUnity.UGUI.Behaviours;
 using TMPro;
@@ -287,8 +288,7 @@ namespace UnityHTML.Tests
             var rootObject = CreateRoot();
             using var host = new UnityHtmlHost();
             var existingDetachedIds = Object.FindObjectsByType<ReactElement>(
-                    FindObjectsInactive.Include,
-                    FindObjectsSortMode.None)
+                    FindObjectsInactive.Include)
                 .Where(element => element != null && element.transform.parent == null)
                 .Select(element => element.GetEntityId())
                 .ToHashSet();
@@ -303,8 +303,7 @@ namespace UnityHTML.Tests
                         "UnityHtmlDetachedScroll"));
 
                 var leaked = Object.FindObjectsByType<ReactElement>(
-                        FindObjectsInactive.Include,
-                        FindObjectsSortMode.None)
+                        FindObjectsInactive.Include)
                     .Where(element =>
                         element != null &&
                         element.transform.parent == null &&
@@ -380,11 +379,152 @@ namespace UnityHTML.Tests
             return rootObject;
         }
 
+        // EditMode never runs EventSystem.OnEnable (no ExecuteAlways), so
+        // EventSystem.current stays null — activate it the way a live scene
+        // would before exercising selection behaviour.
+        private static GameObject CreateEventSystem()
+        {
+            var eventSystemObject = new GameObject("EventSystem", typeof(EventSystem));
+            var eventSystem = eventSystemObject.GetComponent<EventSystem>();
+            typeof(EventSystem)
+                .GetMethod("OnEnable", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.Invoke(eventSystem, null);
+            EventSystem.current = eventSystem;
+            return eventSystemObject;
+        }
+
+        [Test]
+        public void Mount_AutofocusElementReceivesSelection_AndRestoresPreviousOnUnmount()
+        {
+            var rootObject = CreateRoot();
+            var eventSystemObject = CreateEventSystem();
+            using var host = new UnityHtmlHost();
+
+            try
+            {
+                var document = new UnityHtmlDocument(
+                    "<view className='shell'><button id='before'><text>Before</text></button><input id='field' data-autofocus='true' value='' /></view>",
+                    ".shell { width: 300px; height: 100px; } #before { width: 80px; height: 24px; } #field { width: 120px; height: 24px; }",
+                    "UnityHtmlAutofocus");
+
+                var result = host.Mount(rootObject.GetComponent<RectTransform>(), document);
+
+                Assert.That(result.Succeeded, Is.True, result.ErrorMessage);
+                var input = rootObject.GetComponentInChildren<TMP_InputField>(true);
+                var button = rootObject.GetComponentInChildren<Button>(true);
+                Assert.That(input, Is.Not.Null);
+                Assert.That(EventSystem.current.currentSelectedGameObject, Is.EqualTo(input.gameObject),
+                    "data-autofocus element should receive selection on mount.");
+
+                // A later selection outside the autofocus element is preserved as
+                // the restore target only when captured before autofocus fired;
+                // here nothing was selected before, so unmount clears selection.
+                EventSystem.current.SetSelectedGameObject(input.gameObject);
+                var reduced = new UnityHtmlDocument(
+                    "<view className='shell'><button id='before'><text>Before</text></button></view>",
+                    ".shell { width: 300px; height: 100px; } #before { width: 80px; height: 24px; }",
+                    "UnityHtmlAutofocus");
+
+                var update = host.Mount(rootObject.GetComponent<RectTransform>(), reduced);
+
+                Assert.That(update.Succeeded, Is.True, update.ErrorMessage);
+                Assert.That(EventSystem.current.currentSelectedGameObject == null
+                            || EventSystem.current.currentSelectedGameObject == button.gameObject,
+                    Is.True, "Selection must not stay on a destroyed input.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(eventSystemObject);
+                Object.DestroyImmediate(rootObject);
+            }
+        }
+
+        [Test]
+        public void Mount_AutofocusDoesNotStealSelectionOnRerender()
+        {
+            var rootObject = CreateRoot();
+            var eventSystemObject = CreateEventSystem();
+            using var host = new UnityHtmlHost();
+
+            try
+            {
+                var document = new UnityHtmlDocument(
+                    "<view className='shell'><input id='field' data-autofocus='true' value='' /><button id='other'><text>Other</text></button></view>",
+                    ".shell { width: 300px; height: 100px; } #field { width: 120px; height: 24px; } #other { width: 80px; height: 24px; }",
+                    "UnityHtmlAutofocusRerender");
+
+                var result = host.Mount(rootObject.GetComponent<RectTransform>(), document);
+                Assert.That(result.Succeeded, Is.True, result.ErrorMessage);
+
+                var input = rootObject.GetComponentInChildren<TMP_InputField>(true);
+                var button = rootObject.GetComponentInChildren<Button>(true);
+                Assert.That(EventSystem.current.currentSelectedGameObject, Is.EqualTo(input.gameObject));
+
+                // User moves focus to the button; a rerender of the same mounted
+                // autofocus element must not pull focus back.
+                EventSystem.current.SetSelectedGameObject(button.gameObject);
+                var rerender = new UnityHtmlDocument(
+                    "<view className='shell'><input id='field' data-autofocus='true' value='x' /><button id='other'><text>Other</text></button></view>",
+                    ".shell { width: 300px; height: 100px; } #field { width: 120px; height: 24px; } #other { width: 80px; height: 24px; }",
+                    "UnityHtmlAutofocusRerender");
+
+                var update = host.Mount(rootObject.GetComponent<RectTransform>(), rerender);
+
+                Assert.That(update.Succeeded, Is.True, update.ErrorMessage);
+                Assert.That(EventSystem.current.currentSelectedGameObject, Is.EqualTo(button.gameObject),
+                    "Rerender must not steal selection back to the autofocus element.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(eventSystemObject);
+                Object.DestroyImmediate(rootObject);
+            }
+        }
+
         private sealed class TestBridge
         {
             public int TriggerCount { get; private set; }
 
             public void Trigger() => TriggerCount++;
+        }
+
+        [Test]
+        public void UpdateRegions_OnlyChangedRegionReconciles_UnchangedKeepInstances()
+        {
+            var rootObject = CreateRoot();
+            using var host = new UnityHtmlHost();
+
+            try
+            {
+                var document = new UnityHtmlDocument(
+                    "<view className='shell'><view id='r1'><text id='t1'>one</text></view><view id='r2'><text id='t2'>two</text></view></view>",
+                    ".shell { width: 400px; height: 100px; } #r1,#r2 { width: 100px; height: 40px; }",
+                    "UnityHtmlRegions");
+
+                var result = host.Mount(rootObject.GetComponent<RectTransform>(), document);
+                Assert.That(result.Succeeded, Is.True, result.ErrorMessage);
+
+                var texts = rootObject.GetComponentsInChildren<TextMeshProUGUI>(true);
+                var stable = texts.First(t => t.text == "one");
+                var updating = texts.First(t => t.text == "two");
+
+                var update = host.UpdateRegions(new Dictionary<string, string>
+                {
+                    ["r1"] = "<text id='t1'>one</text>",
+                    ["r2"] = "<text id='t2'>TWO</text>",
+                });
+
+                Assert.That(update, Is.True);
+                var after = rootObject.GetComponentsInChildren<TextMeshProUGUI>(true);
+                Assert.That(after.Any(t => ReferenceEquals(t, stable)), Is.True,
+                    "An identical region must not remount its elements.");
+                Assert.That(after.Any(t => t.text == "TWO"), Is.True,
+                    "The changed region must reflect its new content.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(rootObject);
+            }
         }
 
         private sealed class SliderBridge

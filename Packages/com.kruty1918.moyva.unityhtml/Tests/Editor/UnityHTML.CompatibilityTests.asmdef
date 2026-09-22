@@ -11,6 +11,11 @@
   "includePlatforms": [
     "Editor"
   ],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "DOTween.dll",
+    "nunit.framework.dll"
+  ],
   "autoReferenced": false,
   "optionalUnityReferences": [
     "TestAssemblies"

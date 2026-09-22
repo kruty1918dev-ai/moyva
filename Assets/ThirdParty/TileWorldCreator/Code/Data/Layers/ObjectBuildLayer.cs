@@ -170,7 +170,7 @@ namespace GiantGrey.TileWorldCreator
 
             if (_manager == null)
             {
-                var _managers = GameObject.FindObjectsByType<TileWorldCreatorManager>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID);
+                var _managers = GameObject.FindObjectsByType<TileWorldCreatorManager>(FindObjectsInactive.Include);
                 for (int i = 0; i < _managers.Length; i++)
                 {
                     if (_managers[i].configuration == configuration)
@@ -548,7 +548,7 @@ namespace GiantGrey.TileWorldCreator
                 {
                     if (manager == null)
                     {
-                        var _managers = GameObject.FindObjectsByType<TileWorldCreatorManager>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID);
+                        var _managers = GameObject.FindObjectsByType<TileWorldCreatorManager>(FindObjectsInactive.Include);
                         for (int i = 0; i < _managers.Length; i++)
                         {
                             if (_managers[i].configuration == configuration)

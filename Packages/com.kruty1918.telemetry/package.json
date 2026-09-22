@@ -1,0 +1,26 @@
+{
+  "name": "com.kruty1918.telemetry",
+  "version": "0.1.0",
+  "displayName": "Kruty1918 Telemetry",
+  "description": "Universal offline-first structured telemetry, data-integrity and ML-readiness platform for Unity. Typed events, versioned contracts, deterministic dataset fingerprints, crash-safe local spool, idempotent upload protocol and a reference ingestion backend.",
+  "unity": "6000.3",
+  "unityRelease": "0f1",
+  "keywords": [
+    "telemetry",
+    "analytics",
+    "data",
+    "ml",
+    "offline"
+  ],
+  "author": {
+    "name": "Kruty1918"
+  },
+  "dependencies": {},
+  "samples": [
+    {
+      "displayName": "Basic Offline Telemetry",
+      "description": "Minimal host behaviour, typed events and a local-only spool.",
+      "path": "Samples~/BasicOfflineTelemetry"
+    }
+  ]
+}

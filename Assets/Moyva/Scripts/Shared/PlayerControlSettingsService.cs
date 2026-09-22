@@ -39,6 +39,8 @@ namespace Kruty1918.Moyva.Shared.Controls
         public bool AutomaticCameraFocus;
         /// <summary>Reduce камери руху — bool.</summary>
         public bool ReduceCameraMotion;
+        /// <summary>зменшеного UI/HTML руху (меню, HUD, підказки, позначення) — bool.</summary>
+        public bool ReduceMotion;
         /// <summary>зум Toward пальців — bool.</summary>
         public bool ZoomTowardFingers;
         public Dictionary<PlayerControlAction, string> Bindings;
@@ -60,6 +62,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 SmoothCameraFocus = true,
                 AutomaticCameraFocus = false,
                 ReduceCameraMotion = false,
+                ReduceMotion = false,
                 ZoomTowardFingers = true,
                 Bindings = new Dictionary<PlayerControlAction, string>
                 {
@@ -94,6 +97,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 SmoothCameraFocus = SmoothCameraFocus,
                 AutomaticCameraFocus = AutomaticCameraFocus,
                 ReduceCameraMotion = ReduceCameraMotion,
+                ReduceMotion = ReduceMotion,
                 ZoomTowardFingers = ZoomTowardFingers,
                 Bindings = NormalizeBindings(Bindings, defaults.Bindings),
                 Devices = NormalizeDevices(Devices, Bindings)
@@ -189,6 +193,8 @@ namespace Kruty1918.Moyva.Shared.Controls
         void SetAutomaticCameraFocus(bool value);
         /// <summary>Встановлює Reduce камери руху.</summary>
         void SetReduceCameraMotion(bool value);
+        /// <summary>Встановлює зменшення UI/HTML руху.</summary>
+        void SetReduceMotion(bool value);
         /// <summary>Встановлює зум Toward пальців.</summary>
         void SetZoomTowardFingers(bool value);
         void ResetToDefaults();
@@ -294,6 +300,14 @@ namespace Kruty1918.Moyva.Shared.Controls
         {
             var next = Clone(Settings);
             next.ReduceCameraMotion = value;
+            Update(next);
+        }
+
+        /// <summary>Встановлює зменшення UI/HTML руху.</summary>
+        public void SetReduceMotion(bool value)
+        {
+            var next = Clone(Settings);
+            next.ReduceMotion = value;
             Update(next);
         }
 
@@ -418,6 +432,9 @@ namespace Kruty1918.Moyva.Shared.Controls
                     settings.AutomaticCameraFocus = (flags & 4) != 0;
                     settings.ReduceCameraMotion = (flags & 8) != 0;
                     settings.ZoomTowardFingers = (flags & 16) != 0;
+                    // Bit 32 (ReduceMotion) extends the v3 flags byte in place —
+                    // files written by older builds simply read it as unset.
+                    settings.ReduceMotion = (flags & 32) != 0;
                     settings.CameraShakeIntensity = reader.ReadSingle();
                 }
                 return settings.Normalized();
@@ -458,6 +475,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 if (data.AutomaticCameraFocus) flags |= 4;
                 if (data.ReduceCameraMotion) flags |= 8;
                 if (data.ZoomTowardFingers) flags |= 16;
+                if (data.ReduceMotion) flags |= 32;
                 writer.Write(flags);
                 writer.Write(data.CameraShakeIntensity);
                 }
@@ -484,6 +502,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 SmoothCameraFocus = source.SmoothCameraFocus,
                 AutomaticCameraFocus = source.AutomaticCameraFocus,
                 ReduceCameraMotion = source.ReduceCameraMotion,
+                ReduceMotion = source.ReduceMotion,
                 ZoomTowardFingers = source.ZoomTowardFingers,
                 Bindings = new Dictionary<PlayerControlAction, string>(
                     source.Bindings ?? PlayerControlSettingsData.CreateDefault().Bindings)
@@ -502,6 +521,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 first.SmoothCameraFocus != second.SmoothCameraFocus ||
                 first.AutomaticCameraFocus != second.AutomaticCameraFocus ||
                 first.ReduceCameraMotion != second.ReduceCameraMotion ||
+                first.ReduceMotion != second.ReduceMotion ||
                 first.ZoomTowardFingers != second.ZoomTowardFingers)
                 return false;
 

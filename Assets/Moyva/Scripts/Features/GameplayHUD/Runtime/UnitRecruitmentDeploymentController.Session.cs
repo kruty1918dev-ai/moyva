@@ -4,8 +4,10 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.InputRouting.API;
+using Kruty1918.Notifications.API;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
+using Kruty1918.Moyva.Shared.Localization;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Turns.API;
 using Kruty1918.UIActions.API;
@@ -41,14 +43,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             if (_progressClock?.IsRealtime != true
-                && !_turns.CanOwnerAct(owner, out _))
+                && !_turns.CanOwnerAct(owner, out string turnReason))
             {
+                NotifyWarning(string.IsNullOrEmpty(turnReason)
+                    ? T("You cannot deploy units during another player's turn.")
+                    : turnReason);
                 return;
             }
 
             if (_gameModeService != null
                 && _gameModeService.CurrentMode != GameModeType.Normal)
             {
+                NotifyWarning(T("Unit deployment is not available right now."));
                 return;
             }
 
@@ -57,7 +63,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (item.QueueId == signal.QueueId && item.IsReady)
                     ready = item;
             if (ready.QueueId == 0)
+            {
+                NotifyWarning(T("This recruitment is no longer ready to deploy."));
                 return;
+            }
 
             if (_session != null)
             {
@@ -92,22 +101,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 this);
             _session.OverlayAcquired =
                 _gridOverlay?.Acquire(GridActionOverlayOwner.Deployment) == true;
-            if (!_session.OverlayAcquired)
+            if (_gridOverlay != null && !_session.OverlayAcquired)
             {
+                EndSession(destroyPreview: false);
+                NotifyWarning(T("Another map action is already in progress."));
+                return;
             }
 
+            _signalBus.Fire<WorldInfoPanelClosedSignal>();
             EnsureWorldRoots();
             EnsureControls();
             RefreshDeploymentTiles();
             SetControlsVisible(true);
             UpdateConfirmInteractable();
-        }
-
-        private void HandleKeyboard()
-        {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard == null)
-                return;
         }
 
         private void HandleMouse()
@@ -181,6 +187,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             ClearSelectedTile(destroyPreview);
             SetControlsVisible(false);
         }
+
+        private string T(string key)
+            => _localization?.T(key) ?? key;
+
+        private void NotifyWarning(string message)
+            => _notifications?.Show(message, GameplayNotificationKind.Warning);
+
+        private void NotifyInfo(string message)
+            => _notifications?.Show(message, GameplayNotificationKind.Info);
 
     }
 }

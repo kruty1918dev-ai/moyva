@@ -158,7 +158,7 @@ namespace Kruty1918.SaveSystem
             if (Mode != GameLaunchMode.Unknown)
                 return false;
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || UNITY_ENABLE_CHECKS
             ConfigureDirectGameplayTest();
             return true;
 #else

@@ -45,7 +45,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
         }
 
-        private void SelectTile(Vector2Int tile)
+        // internal: EditMode-тести драйвлять вибір клітини без Mouse.current.
+        internal void SelectTile(Vector2Int tile)
         {
             if (_session == null)
                 return;
@@ -55,6 +56,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 if (_session.InvalidReasons.TryGetValue(tile, out string reason)
                     && !string.IsNullOrWhiteSpace(reason))
                 {
+                    NotifyWarning(T(reason));
                 }
 
                 return;
@@ -79,12 +81,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Vector2Int target = _session.SelectedTile.Value;
             if (!TryRevalidateTarget(target, out string reason))
             {
+                NotifyWarning(T(reason
+                    ?? "Selected tile is no longer a deployment candidate."));
                 RefreshDeploymentTiles();
                 return;
             }
 
             _confirmInProgress = true;
             UpdateConfirmInteractable();
+            // Клієнт тримає запит у стані очікування, поки хост не відповість
+            // (sync/deployed сигнал завершує сесію, Rejected знімає прапорець).
+            bool awaitingRemote = false;
             try
             {
                 if (_roleResolver?.Resolve().Role == LocalGameplayRole.Client)
@@ -105,7 +112,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     {
                         Debug.LogWarning(
                             $"{LogTag} Deploy request could not be sent: {remoteReason}");
+                        NotifyWarning(string.IsNullOrEmpty(remoteReason)
+                            ? T("Placement request could not be sent to the host.")
+                            : remoteReason);
                         RefreshDeploymentTiles();
+                    }
+                    else
+                    {
+                        awaitingRemote = true;
                     }
                     return;
                 }
@@ -120,6 +134,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                 if (!deployed)
                 {
+                    NotifyWarning(string.IsNullOrEmpty(reason)
+                        ? T("The unit could not be deployed on the selected tile.")
+                        : reason);
                     RefreshDeploymentTiles();
                     return;
                 }
@@ -128,7 +145,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
             finally
             {
-                _confirmInProgress = false;
+                if (!awaitingRemote)
+                    _confirmInProgress = false;
                 UpdateConfirmInteractable();
             }
         }
@@ -140,7 +158,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (destroyPreview && _previewObject != null)
             {
-                Object.Destroy(_previewObject);
+                DestroyUnityObject(_previewObject);
                 _previewObject = null;
             }
 

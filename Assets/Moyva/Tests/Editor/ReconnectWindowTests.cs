@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.Tests.Startup
         {
             // The lifecycle class lives in the HomeMenu assembly (internal),
             // not in LobbyRoom's Multiplayer assembly — search loaded domains.
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
             {
                 var type = assembly.GetType(
                     "Kruty1918.Moyva.HomeMenu.Runtime.Services.MultiplayerRoomLifecycle");

@@ -170,6 +170,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
 
             public RecordingHost() => _motion = new RecordingMotion(MotionLog);
             public IUnityHtmlMotion Motion => _motion;
+            public UnityHtmlScrollSettings ScrollSettings { get; set; } = UnityHtmlScrollSettings.Default;
 
             public UnityHtmlMountResult Mount(
                 RectTransform root,
@@ -182,6 +183,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
             }
 
             public void Unmount() { }
+            public void SetWorldTooltip(string text, Vector2 screenPosition) { }
             public bool UpdateRegion(string elementId, string html) => true;
 
             public bool UpdateRegions(
@@ -202,6 +204,8 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
         {
             private readonly List<(string id, string preset)> _log;
             public RecordingMotion(List<(string id, string preset)> log) => _log = log;
+            public event System.Action<string> ExitFinished { add { } remove { } }
+            public bool ReducedMotion { get; set; }
             public void Play(string targetId, string preset, float duration, float delay) => _log.Add((targetId, preset));
             public void Stop(string targetId) { }
             public void RestoreResting(string targetId) { }

@@ -59,7 +59,7 @@ namespace GiantGrey.TileWorldCreator
         private Configuration configuration;
         
         private HashSet<Vector2> paintGrid = new HashSet<Vector2>(); 
-        public HashSet<Vector2> allPositions = new HashSet<Vector2>();
+        [System.NonSerialized] public HashSet<Vector2> allPositions = new HashSet<Vector2>();
 
 
         [SerializeField]

@@ -11,6 +11,7 @@ namespace Zenject.Tests.AutoInjecter
     public class Bar : MonoBehaviour
     {
         [Inject]
+        [System.NonSerialized]
         public Foo Foo;
 
         public bool ConstructCalled;

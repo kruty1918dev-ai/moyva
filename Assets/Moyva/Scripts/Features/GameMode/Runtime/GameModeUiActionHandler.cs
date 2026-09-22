@@ -15,18 +15,21 @@ namespace Kruty1918.Moyva.GameMode.Runtime
         private readonly IGameModeService _gameMode;
         private readonly IUiContextStack _contexts;
         private readonly SignalBus _signalBus;
+        private readonly System.Collections.Generic.IReadOnlyList<IGameModeTransitionPolicy> _transitionPolicies;
         private System.IDisposable _pauseContext;
 
         public GameModeUiActionHandler(
             IGameStateService gameState,
             IGameModeService gameMode,
             IUiContextStack contexts,
-            SignalBus signalBus)
+            SignalBus signalBus,
+            [InjectOptional] System.Collections.Generic.List<IGameModeTransitionPolicy> transitionPolicies = null)
         {
             _gameState = gameState;
             _gameMode = gameMode;
             _contexts = contexts;
             _signalBus = signalBus;
+            _transitionPolicies = transitionPolicies;
         }
 
         public void Initialize()
@@ -95,6 +98,10 @@ namespace Kruty1918.Moyva.GameMode.Runtime
         {
             if (_gameMode.CurrentMode == requestedMode)
                 return UiActionResult.Ignored();
+
+            if (GameModeTransitionPolicyGuard.TryGetBlockReason(
+                    _transitionPolicies, _gameMode.CurrentMode, requestedMode, out string reason))
+                return UiActionResult.Rejected(UiActionReason.ActionUnavailable, consumed: true, reason);
 
             _signalBus.Fire(new GameModeChangeRequestedSignal
             {

@@ -379,6 +379,53 @@ namespace Kruty1918.Moyva.Tests.Controls
             }
         }
 
+        [Test]
+        public void ReduceMotionPersistsAcrossServiceInstances()
+        {
+            var scope = new TestScope();
+
+            string file = Path.Combine(
+                Application.persistentDataPath,
+                scope.BuildScopedFileName("player_controls.dat"));
+
+            try
+            {
+                var service = CreateService(scope);
+                Assert.That(service.Settings.ReduceMotion, Is.False,
+                    "ReduceMotion must default to off.");
+
+                service.SetReduceMotion(true);
+                Assert.That(service.Settings.ReduceMotion, Is.True);
+
+                // A fresh service on the same scope reloads the file —
+                // the flag must survive the restart.
+                var reloaded = CreateService(scope);
+                Assert.That(reloaded.Settings.ReduceMotion, Is.True,
+                    "ReduceMotion must persist in player_controls.dat.");
+
+                reloaded.SetReduceMotion(false);
+                var third = CreateService(scope);
+                Assert.That(third.Settings.ReduceMotion, Is.False);
+            }
+            finally
+            {
+                foreach (var suffix in new[]
+                         {
+                             "",
+                             ".tmp",
+                             ".bak"
+                         })
+                {
+                    string path = file + suffix;
+
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                    }
+                }
+            }
+        }
+
         private static IPlayerControlSettingsService CreateService(
             IClientInstanceScope scope)
         {

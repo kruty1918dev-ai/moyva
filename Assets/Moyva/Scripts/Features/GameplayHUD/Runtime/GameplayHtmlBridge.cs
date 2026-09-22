@@ -76,6 +76,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void ClosePanel()
         {
+            if (_state.PanelClosing)
+                return;
             if (_state.OpenPanelId == GameplayHtmlPanel.Construction)
             {
                 UiActionResult closeResult = Execute(UiActionIds.Construction.Close, "GameplayHTML");
@@ -85,7 +87,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     return;
                 }
             }
-            _state.ClosePanel();
+            if (_state.OpenPanelId != GameplayHtmlPanel.None)
+            {
+                _state.ClosePanel();
+                return;
+            }
+            // A selection details panel is not an OpenPanelId — mirror the
+            // Escape route so the X button dismisses it identically.
+            if (_readModel != null && _readModel.HasSelection)
+                _notificationSignals?.Fire(new WorldInfoPanelClosedSignal());
         }
 
         public void SelectBuilding(object value)
@@ -100,7 +110,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
             }
 
-            UiActionResult result = _actions.Value.Execute(
+            UiActionResult result = Execute(
                 UiActionIds.Construction.SelectBuilding,
                 UiActionSource.Button,
                 "GameplayHTML",
@@ -124,7 +134,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (confirmed > 0)
             {
-                _state.SetFeedback(_state.TF("Placed {0} building(s).", confirmed));
+                string lastReason = _construction?.GetLastActionMessage();
+                if (after > 0)
+                {
+                    _state.SetFeedback(string.IsNullOrWhiteSpace(lastReason)
+                        ? _state.TF("Placed {0} building(s); {1} rejected.", confirmed, after)
+                        : _state.TF("Placed {0} building(s); {1} rejected: {2}",
+                            confirmed, after, _state.T(lastReason)));
+                }
+                else
+                {
+                    _state.SetFeedback(_state.TF("Placed {0} building(s).", confirmed));
+                }
                 return;
             }
 
@@ -208,6 +229,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
         }
         public void Notifications() => OpenOverlayPanel(GameplayHtmlPanel.Notifications);
+        public void ShowProducersFor(object value)
+        {
+            string resourceId = value?.ToString()?.Trim();
+            if (string.IsNullOrWhiteSpace(resourceId))
+                return;
+            UiActionResult openResult = Execute(UiActionIds.Construction.Open, "GameplayHTML");
+            if (openResult.Status == UiActionStatus.Rejected)
+            {
+                SetResult(openResult, _state.T("Construction is unavailable."));
+                return;
+            }
+            _state.SetConstructionProducerFilter(resourceId);
+            _state.SetFeedback(_state.TF(
+                "Showing buildings producing {0}.",
+                _readModel.ResolveResourceDisplayName(resourceId)));
+        }
+
+        public void ClearProducerFilter()
+            => _state.SetConstructionProducerFilter(string.Empty);
+
         public void SetConstructionCategory(object value)
             => _state.SetConstructionCategory(value?.ToString());
         public void SetConstructionSearch(string value)
@@ -231,8 +272,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
             _state.OpenSupplyPanel(new Vector2Int(ToInt(x), ToInt(y)), buildingId?.ToString());
         }
-        public void SetSupplySource(object value) => _supply?.SetSource(ToInt(value));
-        public void SetSupplyWagon(object value) => _supply?.SetWagon(ToInt(value));
+        public void SetSupplySource(object value)
+        {
+            if (!_state.PanelClosing)
+                _supply?.SetSource(ToInt(value));
+        }
+        public void SetSupplyWagon(object value)
+        {
+            if (!_state.PanelClosing)
+                _supply?.SetWagon(ToInt(value));
+        }
         public void DispatchSupply()
         {
             var result = Execute(UiActionIds.Logistics.Supply, "GameplayHTML/Supply");
@@ -243,12 +292,30 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public void ShowRecruitmentQueue() => _state.SetSelectionTab(GameplaySelectionTab.Queue);
         public void ShowCargo() => _state.SetSelectionTab(GameplaySelectionTab.Cargo);
         public void ShowCargoRoute() => _state.SetSelectionTab(GameplaySelectionTab.Route);
-        public void SetCargoOperation(object value) => _cargo?.SetOperation(ToInt(value));
-        public void SetCargoWarehouse(object value) => _cargo?.SetWarehouse(ToInt(value) - 1);
-        public void SetCargoTarget(object value) => _cargo?.SetTargetWarehouse(ToInt(value) - 1);
-        public void SetCargoResource(object value) => _cargo?.SetResource(ToInt(value) - 1);
-        public void SetCargoRepeat(object value) => _cargo?.SetRepeat(ToBool(value));
-        public void SetCargoAmount(object value) => _cargo?.SetAmount(value);
+        public void SetCargoOperation(object value)
+        {
+            if (!_state.PanelClosing) _cargo?.SetOperation(ToInt(value));
+        }
+        public void SetCargoWarehouse(object value)
+        {
+            if (!_state.PanelClosing) _cargo?.SetWarehouse(ToInt(value) - 1);
+        }
+        public void SetCargoTarget(object value)
+        {
+            if (!_state.PanelClosing) _cargo?.SetTargetWarehouse(ToInt(value) - 1);
+        }
+        public void SetCargoResource(object value)
+        {
+            if (!_state.PanelClosing) _cargo?.SetResource(ToInt(value) - 1);
+        }
+        public void SetCargoRepeat(object value)
+        {
+            if (!_state.PanelClosing) _cargo?.SetRepeat(ToBool(value));
+        }
+        public void SetCargoAmount(object value)
+        {
+            if (!_state.PanelClosing) _cargo?.SetAmount(value);
+        }
         public void TransferCargo()
         {
             var result = Execute(UiActionIds.Logistics.Transfer, "GameplayHTML/Cargo");
@@ -331,7 +398,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string unitTypeId = value?.ToString()?.Trim();
             if (string.IsNullOrWhiteSpace(unitTypeId))
                 return;
-            UiActionResult result = _actions.Value.Execute(
+            UiActionResult result = Execute(
                 UiActionIds.Recruitment.Enqueue,
                 UiActionSource.Button,
                 "GameplayHTML/Recruitment",
@@ -340,12 +407,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         }
 
         public void CancelRecruitment(object value)
-            => SetResult(_actions.Value.Execute(UiActionIds.Recruitment.Cancel,
+            => SetResult(Execute(UiActionIds.Recruitment.Cancel,
                 UiActionSource.Button, "GameplayHTML/Recruitment", value?.ToString()),
                 _state.T("Training cancelled. Resources returned."));
 
         public void DeployRecruitment(object value)
-            => SetResult(_actions.Value.Execute(UiActionIds.Recruitment.Deploy,
+            => SetResult(Execute(UiActionIds.Recruitment.Deploy,
                 UiActionSource.Button, "GameplayHTML/Recruitment", value?.ToString()),
                 _state.T("Choose a deployment tile."));
 
@@ -376,7 +443,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void OpenOverlayPanel(GameplayHtmlPanel panel)
         {
-            if (_state.OpenPanelId == GameplayHtmlPanel.Construction)
+            // A closing panel already passed its close authorization — switching
+            // panels mid-close settles it without re-running the veto.
+            if (_state.OpenPanelId == GameplayHtmlPanel.Construction
+                && !_state.PanelClosing)
             {
                 UiActionResult closeResult = Execute(UiActionIds.Construction.Close, "GameplayHTML");
                 if (closeResult.Status == UiActionStatus.Rejected)
@@ -389,8 +459,31 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         }
 
         private UiActionResult Execute(UiActionId id, string context)
-            => _actions?.Value?.Execute(id, UiActionSource.Button, context)
-               ?? UiActionResult.Rejected(UiActionReason.ActionUnavailable, "UI action router is unavailable.");
+            => Execute(id, UiActionSource.Button, context, null);
+
+        private UiActionResult Execute(UiActionId id, UiActionSource source,
+            string context, string targetId)
+        {
+            // While a panel is playing its close motion, new commands from its
+            // controls are blocked; the panel settles on the next tick.
+            if (_state.PanelClosing)
+                return UiActionResult.Rejected(UiActionReason.ModalBlocked,
+                    "The panel is closing.");
+            if (_actions?.Value == null)
+                return UiActionResult.Rejected(UiActionReason.ActionUnavailable, "UI action router is unavailable.");
+            try
+            {
+                return _actions.Value.Execute(id, source, context, targetId);
+            }
+            catch (Exception exception)
+            {
+                // A throwing command must still surface a rejection — the
+                // player sees the reason and every control stays interactive.
+                Debug.LogException(exception);
+                return UiActionResult.Rejected(UiActionReason.ActionUnavailable,
+                    "The command failed unexpectedly.");
+            }
+        }
 
         private bool IsInitialCastleRequired()
         {

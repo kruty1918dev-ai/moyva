@@ -79,8 +79,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
 
             renderers.AddRange(
                 Object.FindObjectsByType<Renderer>(
-                    FindObjectsInactive.Include,
-                    FindObjectsSortMode.None));
+                    FindObjectsInactive.Include));
         }
     }
 }

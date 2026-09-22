@@ -56,8 +56,8 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             if (_projectOwnedConcreteTypes != null)
                 return _projectOwnedConcreteTypes;
 
-            _projectOwnedConcreteTypes = AppDomain.CurrentDomain
-                .GetAssemblies()
+            _projectOwnedConcreteTypes = UnityEngine.Assemblies.CurrentAssemblies
+                .GetLoadedAssemblies()
                 .SelectMany(SafeTypes)
                 .Where(t =>
                     t != null &&
@@ -1203,7 +1203,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
 
         private static Type ResolveType(string fullName)
         {
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (Assembly assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
             {
                 Type type = assembly.GetType(fullName, false);
                 if (type != null) return type;

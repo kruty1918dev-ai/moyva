@@ -64,7 +64,9 @@ namespace Kruty1918.Moyva.Vfx.Tests
 
         private sealed class StubCombat : IUnitCombatService
         {
+#pragma warning disable CS0067
             public event Action<string, string> AttackStarted;
+#pragma warning restore CS0067
             public event Action<UnitAttackResult> AttackResolved;
 
             public void RaiseResolved(UnitAttackResult result)

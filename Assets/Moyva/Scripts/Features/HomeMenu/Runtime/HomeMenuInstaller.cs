@@ -191,8 +191,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var graphics = _root != null
                 ? _root.GetComponentsInChildren<Graphic>(true)
                 : UnityEngine.Object.FindObjectsByType<Graphic>(
-                    FindObjectsInactive.Include,
-                    FindObjectsSortMode.None);
+                    FindObjectsInactive.Include);
 
             for (var i = 0; i < graphics.Length; i++)
             {
@@ -337,8 +336,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private static void ConfigureCanvases()
         {
             var canvases = UnityEngine.Object.FindObjectsByType<Canvas>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
 
             for (var i = 0; i < canvases.Length; i++)
             {
@@ -355,8 +353,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private static void AddBoundsGuards()
         {
             var guards = UnityEngine.Object.FindObjectsByType<HomeMenuScreenBoundsGuard>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
 
             for (var i = 0; i < guards.Length; i++)
                 guards[i]?.ApplyNow();

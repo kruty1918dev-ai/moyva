@@ -110,8 +110,8 @@ namespace Kruty1918.Moyva.InfoPanel.UI
             try
             {
                 Type runtimeType = null;
-                Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                for (int i = 0; i < assemblies.Length && runtimeType == null; i++)
+                var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
+                for (int i = 0; i < assemblies.Count && runtimeType == null; i++)
                     runtimeType = assemblies[i].GetType(JsonRuntimeTypeName, false);
 
                 if (runtimeType == null)

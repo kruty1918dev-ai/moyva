@@ -183,4 +183,18 @@ namespace Kruty1918.Moyva.Signals
     /// або надсилає запит до хоста (клієнт).
     /// </summary>
     public struct PlaceBuildingConfirmRequestSignal { }
+
+    /// <summary>
+    /// Надсилається, коли авторитетна сторона відхиляє підтвердження розміщення
+    /// будівлі (наприклад, хост відхилив запит клієнта). UI показує причину гравцю.
+    /// </summary>
+    public struct ConstructionPlacementRejectedSignal
+    {
+        /// <summary>будівлі ID — string.</summary>
+        public string BuildingId;
+        /// <summary>позицію — Vector2Int.</summary>
+        public Vector2Int Position;
+        /// <summary>причини — string.</summary>
+        public string Reason;
+    }
 }

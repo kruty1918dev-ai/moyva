@@ -21,6 +21,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private const float Epsilon = 0.0001f;
         private static readonly IReadOnlyList<ConstructionSupplyResourceLine> NoLines =
             new List<ConstructionSupplyResourceLine>();
+        private static readonly IReadOnlyDictionary<string, float> EmptyShipment =
+            new ReadOnlyDictionary<string, float>(new Dictionary<string, float>());
         private static readonly IReadOnlyList<ConstructionSupplySourceSnapshot> NoSources =
             new List<ConstructionSupplySourceSnapshot>();
         private static readonly IReadOnlyList<ConstructionSupplyWagonSnapshot> NoWagons =
@@ -130,8 +132,9 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             return new ConstructionSupplyEvaluation(true, settlement.SettlementId,
                 _economy.GetSettlementNameOrFallback(settlement.SettlementId), position, null,
-                resources, CollectSources(ownerId, settlement.SettlementId, resources),
-                CollectWagons(ownerId));
+                resources, CollectSources(ownerId, settlement, resources, position,
+                    out int unreachableSources),
+                CollectWagons(ownerId), unreachableSources);
         }
 
         public CaravanTransferResult DispatchSupply(ConstructionSupplyDispatchRequest request,
@@ -205,6 +208,34 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (!order.WagonIds.Contains(request.UnitId)) order.WagonIds.Add(request.UnitId);
             Changed?.Invoke();
             return CaravanTransferResult.Success();
+        }
+
+        public IReadOnlyDictionary<string, float> PreviewShipment(
+            ConstructionSupplyDispatchRequest request,
+            IReadOnlyDictionary<string, float> requiredCosts)
+        {
+            var evaluation = Evaluate(request.OwnerId, request.BuildingId,
+                request.Position, requiredCosts);
+            if (!evaluation.Resolved || !evaluation.HasDeficit) return EmptyShipment;
+
+            var sourceSettlement = _settlements.GetSettlement(request.SourceSettlementId);
+            if (sourceSettlement == null || !sourceSettlement.IsActive
+                || !string.Equals(sourceSettlement.OwnerId, request.OwnerId, StringComparison.Ordinal)
+                || string.Equals(sourceSettlement.SettlementId, evaluation.SettlementId,
+                    StringComparison.Ordinal))
+                return EmptyShipment;
+            if (!sourceSettlement.WarehouseResourcePools.TryGetValue(request.SourceWarehouseKey,
+                    out var sourcePool) || sourcePool == null)
+                return EmptyShipment;
+            if (!_gameplay.Value.TryGetWagon(request.UnitId, out var wagon)
+                || !string.Equals(wagon.OwnerId, request.OwnerId, StringComparison.Ordinal))
+                return EmptyShipment;
+
+            float cargoUsed = 0f;
+            if (_caravans.TryGetCargo(request.OwnerId, request.UnitId, out var cargo))
+                foreach (var pair in cargo.Resources) cargoUsed += pair.Value;
+            return BuildShipment(evaluation.Resources, sourcePool, sourceSettlement,
+                request.SourceWarehouseKey, Mathf.Max(0f, wagon.Capacity - cargoUsed));
         }
 
         public IReadOnlyList<ConstructionSupplyOrderSnapshot> GetOrders(string ownerId)
@@ -489,20 +520,37 @@ namespace Kruty1918.Moyva.Economy.Runtime
         }
 
         private List<ConstructionSupplySourceSnapshot> CollectSources(string ownerId,
-            string targetSettlementId, IReadOnlyList<ConstructionSupplyResourceLine> resources)
+            EconomySettlementState targetSettlement,
+            IReadOnlyList<ConstructionSupplyResourceLine> resources, Vector2Int position,
+            out int unreachableSources)
         {
+            unreachableSources = 0;
             var result = new List<ConstructionSupplySourceSnapshot>();
             if (resources == null) return result;
+
+            Vector2Int targetOrigin = position;
+            string targetKey = ResolveTargetWarehouseKey(position, targetSettlement);
+            if (!string.IsNullOrWhiteSpace(targetKey)
+                && TryParseWarehouseKey(targetKey, out var parsedTarget))
+                targetOrigin = parsedTarget;
+
             foreach (var pair in _settlements.AllSettlements)
             {
                 var settlement = pair.Value;
                 if (settlement == null || !settlement.IsActive
                     || !string.Equals(settlement.OwnerId, ownerId, StringComparison.Ordinal)
-                    || string.Equals(settlement.SettlementId, targetSettlementId, StringComparison.Ordinal))
+                    || string.Equals(settlement.SettlementId, targetSettlement.SettlementId, StringComparison.Ordinal))
                     continue;
                 foreach (var warehouse in settlement.WarehouseResourcePools)
                 {
                     if (warehouse.Value == null) continue;
+                    if (!TryParseWarehouseKey(warehouse.Key, out var sourceOrigin)
+                        || !_gameplay.Value.TryMeasureWarehouseRoute(ownerId, sourceOrigin,
+                            targetOrigin, out float routeDistance))
+                    {
+                        unreachableSources++;
+                        continue;
+                    }
                     var stock = new Dictionary<string, float>(StringComparer.Ordinal);
                     foreach (var line in resources)
                     {
@@ -516,11 +564,28 @@ namespace Kruty1918.Moyva.Economy.Runtime
                         settlement.SettlementId,
                         _economy.GetSettlementNameOrFallback(settlement.SettlementId),
                         warehouse.Key,
-                        new ReadOnlyDictionary<string, float>(stock)));
+                        new ReadOnlyDictionary<string, float>(stock),
+                        routeDistance));
                 }
             }
-            result.Sort((a, b) => string.CompareOrdinal(a.SettlementName, b.SettlementName));
+            result.Sort((a, b) =>
+            {
+                int cmp = a.RouteDistance.CompareTo(b.RouteDistance);
+                if (cmp != 0) return cmp;
+                cmp = string.CompareOrdinal(a.SettlementName, b.SettlementName);
+                return cmp != 0 ? cmp : string.CompareOrdinal(a.WarehouseKey, b.WarehouseKey);
+            });
             return result;
+        }
+
+        private static bool TryParseWarehouseKey(string key, out Vector2Int position)
+        {
+            position = default;
+            int separator = key.IndexOf(':');
+            if (separator < 1 || !int.TryParse(key.Substring(0, separator), out int x)
+                || !int.TryParse(key.Substring(separator + 1), out int y)) return false;
+            position = new Vector2Int(x, y);
+            return true;
         }
 
         private List<ConstructionSupplyWagonSnapshot> CollectWagons(string ownerId)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -46,8 +46,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
             }
 
             var anchors = UnityEngine.Object.FindObjectsByType<HomeMenuMoyvaUiAnchor>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
 
             _syncInProgress = true;
             try
@@ -180,7 +179,9 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
             _queuedHierarchySync = false;
             foreach (var id in DirtyAnchorIds)
             {
+#pragma warning disable CS0618 // EntityIdToObject is not available in all supported Unity editor versions.
                 if (EditorUtility.EntityIdToObject(id) is HomeMenuMoyvaUiAnchor anchor &&
+#pragma warning restore CS0618
                     anchor != null &&
                     anchor.EditorLivePreview)
                     WriteHierarchyToHtml(anchor);
@@ -210,8 +211,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
                 return;
 
             var anchors = UnityEngine.Object.FindObjectsByType<HomeMenuMoyvaUiAnchor>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
 
             for (var i = 0; i < anchors.Length; i++)
             {

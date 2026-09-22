@@ -32,8 +32,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
                 Assert.IsTrue(scene.IsValid(), "HomeMenu scene failed to open");
 
                 var anchor = Object.FindObjectsByType<HomeMenuMoyvaUiAnchor>(
-                    FindObjectsInactive.Include,
-                    FindObjectsSortMode.None)[0];
+                    FindObjectsInactive.Include)[0];
                 Assert.NotNull(anchor, "HomeMenuMoyvaUiAnchor missing in HomeMenu scene");
                 Assert.IsTrue(
                     anchor.TryGetEditorAuthoringTargets(out var mountRoot, out var html, out var css),

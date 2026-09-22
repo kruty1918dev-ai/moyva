@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Shared.Graphics
         Custom = 4
     }
 
+    [System.Serializable]
     public struct GraphicsSettingsData
     {
         public GraphicsQualityProfile Profile;

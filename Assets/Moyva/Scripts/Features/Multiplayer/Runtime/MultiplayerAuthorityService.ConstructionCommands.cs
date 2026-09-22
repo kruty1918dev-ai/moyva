@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.GameMode.API;
@@ -14,6 +15,14 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     internal sealed partial class MultiplayerAuthorityService
     {
         // ─── Локальні дії гравця (перехоплення) ─────────────────────────────────
+
+        /// <summary>
+        /// Клієнт: позиції, для яких вже надіслано Request і очікується
+        /// Confirmed/Rejected від хоста. Блокує дублікати запитів при повторних
+        /// натисканнях Confirm, доки pending-розміщення живі локально.
+        /// </summary>
+        private readonly HashSet<Vector2Int> _placementRequestsInFlight =
+            new();
 
         public bool TryHandleConfirmRequest()
         {
@@ -35,6 +44,15 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var pending = _constructionService.GetPendingPlacements();
             if (pending == null || pending.Count == 0)
             {
+                if (_constructionService.PendingDemolitionCount > 0)
+                {
+                    // Демоліційні запити клієнт→хост не реалізовані; не
+                    // скидаємо чергу мовчки — гравець може скасувати вручну.
+                    LogConstructionAuthorityWarning(
+                        "Confirm request carries only pending demolitions; client demolition requests are not supported — keeping the local session.");
+                    return true;
+                }
+
                 LogConstructionAuthorityWarning(
                     "Confirm request had no pending construction placements; cancelling local preview session.");
                 _constructionService.Cancel();
@@ -47,9 +65,15 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             var intentSource =
                 _constructionService
                     as IConstructionPendingPlacementIntentSource;
+            // Локально скасовані/підтверджені позиції більше не в польоті.
+            _placementRequestsInFlight.RemoveWhere(
+                position => !pending.ContainsKey(position));
             int sentCount = 0;
             foreach (var kv in pending)
             {
+                if (_placementRequestsInFlight.Contains(kv.Key))
+                    continue;
+
                 ConstructionPlacementCommitIntent intent =
                     intentSource != null
                     && intentSource.TryGetPendingPlacementIntent(
@@ -91,10 +115,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 SendRequestToHost(
                     GameCommandType.BuildingPlace,
                     payload.ToBytes());
+                _placementRequestsInFlight.Add(kv.Key);
                 sentCount++;
             }
 
-            if (sentCount == 0)
+            if (sentCount == 0 && _placementRequestsInFlight.Count == 0)
             {
                 LogConstructionAuthorityWarning(
                     $"Confirm request did not send any construction placement requests. owner='{ownerId}', pending={pending.Count}.");
@@ -167,9 +192,35 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         }
         // ─── Мережеві обробники (вхідні повідомлення) ────────────────────────────
 
-        private void OnNetworkBuildingPlace(string senderId, byte[] body)
+        internal void OnNetworkBuildingPlace(string senderId, byte[] body)
         {
             var data = BuildingPlacePayload.FromBytes(body);
+
+            if (data.Kind == GameActionMessageKind.Rejected)
+            {
+                // Клієнт: хост відхилив запит — знімаємо позицію з in-flight і
+                // показуємо причину. Pending-прев'ю лишається, щоб гравець міг
+                // повторити Confirm або скасувати його вручну.
+                if (IsOfflineOrHost() || !IsAuthorizedHostSender(senderId))
+                    return;
+                _placementRequestsInFlight.Remove(data.Position);
+                string localOwnerId = _roleResolver?.Resolve().PlayerId;
+                if (!string.IsNullOrWhiteSpace(localOwnerId)
+                    && !string.Equals(localOwnerId, data.OwnerId, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                _signalBus?.Fire(new ConstructionPlacementRejectedSignal
+                {
+                    BuildingId = data.BuildingId,
+                    Position = data.Position,
+                    Reason = string.IsNullOrWhiteSpace(data.RejectionReason)
+                        ? "The placement was rejected by host."
+                        : data.RejectionReason,
+                });
+                return;
+            }
 
             if (_constructionService == null)
             {
@@ -194,8 +245,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         out string authorizedOwnerId,
                         out string authorizationReason))
                 {
-                    LogConstructionAuthorityWarning(
-                        $"Rejected construction placement request from '{senderId}' for '{data.BuildingId}' at {data.Position}: {authorizationReason}");
+                    RejectBuildingPlace(senderId, data, authorizationReason);
                     return;
                 }
 
@@ -256,8 +306,13 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     }
                     else
                     {
-                        LogConstructionAuthorityWarning(
-                            $"Authoritative construction placement rejected for '{data.BuildingId}' at {data.Position}, owner='{authorizedOwnerId}'.");
+                        RejectBuildingPlace(
+                            senderId,
+                            data,
+                            DescribeAuthoritativePlacementRejection(
+                                data,
+                                authorizedOwnerId,
+                                intent));
                     }
                 }
                 finally
@@ -275,6 +330,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         $"Ignored confirmed construction placement from unauthorized sender '{senderId}' for '{data.BuildingId}' at {data.Position}.");
                     return;
                 }
+                _placementRequestsInFlight.Remove(data.Position);
 
                 _applyingNetworkEvent = true;
                 try
@@ -342,6 +398,71 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     _applyingNetworkEvent = false;
                 }
             }
+        }
+
+        private void RejectBuildingPlace(
+            string senderId,
+            BuildingPlacePayload request,
+            string reason)
+        {
+            string normalizedReason = string.IsNullOrWhiteSpace(reason)
+                ? "The placement was rejected by host."
+                : reason.Trim();
+            LogConstructionAuthorityWarning(
+                $"Rejected construction placement from '{senderId}' for '{request.BuildingId}' at {request.Position}: {normalizedReason}");
+
+            if (string.IsNullOrWhiteSpace(senderId))
+                return;
+
+            var rejected = new BuildingPlacePayload(
+                GameActionMessageKind.Rejected,
+                request.BuildingId,
+                request.Position,
+                request.OwnerId,
+                request.SourceFactionId,
+                request.HasRelocationSource,
+                request.RelocationSourcePosition,
+                request.SatisfiedReplacementBuildingId,
+                request.Rotation,
+                normalizedReason);
+            _syncService.SendCommandToPeer(
+                senderId,
+                GameCommandType.BuildingPlace,
+                rejected.ToBytes());
+        }
+
+        private string DescribeAuthoritativePlacementRejection(
+            BuildingPlacePayload data,
+            string authorizedOwnerId,
+            ConstructionPlacementCommitIntent intent)
+        {
+            if (_constructionService is IConstructionPlacementQuery placementQuery)
+            {
+                try
+                {
+                    var placement = placementQuery.EvaluatePlacement(
+                        CreateClientPlacementPreflightRequest(
+                            data.BuildingId,
+                            data.Position,
+                            authorizedOwnerId,
+                            intent.Rotation));
+                    if (!placement.CanPreview
+                        || !placement.AvailabilityValid
+                        || !placement.SpatialValid
+                        || !placement.ResourcesValid
+                        || !placement.AuthorityValid)
+                    {
+                        return DescribePlacementPreflightRejection(placement);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    LogConstructionAuthorityWarning(
+                        $"Placement rejection reason query failed for '{data.BuildingId}' at {data.Position}: {exception.Message}");
+                }
+            }
+
+            return "The placement was rejected by host.";
         }
 
         private void OnNetworkBuildingDemolish(string senderId, byte[] body)

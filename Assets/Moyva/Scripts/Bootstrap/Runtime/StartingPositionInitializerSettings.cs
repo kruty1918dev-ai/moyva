@@ -94,6 +94,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         [Range(0.25f, 1f)]
         public float minimumLandRatioAroundStart = 0.70f;
 
+        [Tooltip("Мінімальна кількість зв'язних сухих тайлів, доступних від центру старту всередині радіуса оцінки. Захищає від спеклої суші, де landRatio проходить, але немає суцільного майданчика для замку й перших споруд. 0 — вимкнути перевірку.")]
+        [Min(0)]
+        public int minimumConnectedLandTiles = 9;
+
         [Tooltip("Якщо увімкнено, вода в корисній відстані додає utility кандидату, але її наявність не є жорсткою вимогою.")]
         public bool preferWaterNearStart = true;
 

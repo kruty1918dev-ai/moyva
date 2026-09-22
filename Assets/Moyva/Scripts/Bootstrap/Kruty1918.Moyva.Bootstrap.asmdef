@@ -21,6 +21,7 @@
         "Kruty1918.Moyva.Economy",
         "Kruty1918.Moyva.GameMode",
         "Kruty1918.Moyva.Multiplayer",
+        "Kruty1918.Moyva.Telemetry",
         "Kruty1918.Moyva.Pathfinding",
         "Kruty1918.Moyva.Grid",
         "Kruty1918.Moyva.InputRouting",
@@ -37,7 +38,8 @@
         "Unity.TextMeshPro",
         "Kruty1918.JsonConfig",
         "Kruty1918.UiFoundation",
-        "Kruty1918.EntityHealth"
+        "Kruty1918.EntityHealth",
+        "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -117,9 +117,9 @@ namespace GiantGrey.TileWorldCreator
 
 
         // store tree with all smallest leafs
-		public List<Leaf> tree = new List<Leaf>();
+		[System.NonSerialized] public List<Leaf> tree = new List<Leaf>();
 		// store all parent leafs
-		public List<Leaf> parentTree = new List<Leaf>();
+		[System.NonSerialized] public List<Leaf> parentTree = new List<Leaf>();
 	
 		static bool _splitH = false;
 		BlueprintLayer blueprintLayer;

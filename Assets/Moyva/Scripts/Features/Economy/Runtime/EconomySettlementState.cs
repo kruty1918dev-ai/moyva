@@ -21,26 +21,26 @@ namespace Kruty1918.Moyva.Economy.Runtime
         public List<EconomyResidentState> Residents = new List<EconomyResidentState>();
 
         // Resources — shared pool per settlement (keyed by resource id)
-        public Dictionary<string, float> ResourcePool = new Dictionary<string, float>(StringComparer.Ordinal);
+        [UnityEngine.SerializeField] public Dictionary<string, float> ResourcePool = new Dictionary<string, float>(StringComparer.Ordinal);
 
         // Resources per warehouse instance (key = warehouse key e.g. "x:y")
-        public Dictionary<string, Dictionary<string, float>> WarehouseResourcePools =
+        [UnityEngine.SerializeField] public Dictionary<string, Dictionary<string, float>> WarehouseResourcePools =
             new Dictionary<string, Dictionary<string, float>>(StringComparer.Ordinal);
 
         // Reserved resources per warehouse instance. Reserved stock stays inside
         // the settlement pool but is only spendable by its owning consumer
         // (e.g. construction supply deliveries); released on confirm/cancel.
-        public Dictionary<string, Dictionary<string, float>> WarehouseReservedPools =
+        [UnityEngine.SerializeField] public Dictionary<string, Dictionary<string, float>> WarehouseReservedPools =
             new Dictionary<string, Dictionary<string, float>>(StringComparer.Ordinal);
 
-        public Dictionary<string, EconomyBuildingWarehousePolicy> WarehousePolicies =
+        [UnityEngine.SerializeField] public Dictionary<string, EconomyBuildingWarehousePolicy> WarehousePolicies =
             new Dictionary<string, EconomyBuildingWarehousePolicy>(StringComparer.Ordinal);
 
         [NonSerialized]
         private Dictionary<string, float> _warehouseReservationScratch;
 
         // Worker assignments — keyed by stable building instance key, not type ID.
-        public Dictionary<string, int> WorkerAssignments =
+        [UnityEngine.SerializeField] public Dictionary<string, int> WorkerAssignments =
             new Dictionary<string, int>(StringComparer.Ordinal);
 
         // Buildings with their active production state
@@ -586,7 +586,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         public string WorkerTypeId;
         public List<ProductionRecipeDefinition> ProductionRecipes =
             new List<ProductionRecipeDefinition>();
-        public Dictionary<string, float> RecipeProgress =
+        [UnityEngine.SerializeField] public Dictionary<string, float> RecipeProgress =
             new Dictionary<string, float>(StringComparer.Ordinal);
         public int RequiredWorkers;
         public int AssignedWorkers;

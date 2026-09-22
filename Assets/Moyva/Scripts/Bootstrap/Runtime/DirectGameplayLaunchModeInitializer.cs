@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.Bootstrap
 
             if (GameLaunchContext.Mode == GameLaunchMode.Unknown)
             {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || UNITY_ENABLE_CHECKS
                 GameLaunchContext.ConfigureDirectGameplayTest();
 #endif
             }

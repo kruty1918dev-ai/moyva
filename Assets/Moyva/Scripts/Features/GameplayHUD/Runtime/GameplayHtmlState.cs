@@ -75,6 +75,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public string Feedback { get; private set; } = string.Empty;
         public string ConstructionCategory { get; private set; } = string.Empty;
         public string ConstructionSearch { get; private set; } = string.Empty;
+        public string ConstructionProducerResource { get; private set; } = string.Empty;
         public int ConstructionPageIndex { get; private set; }
         public Vector2Int? SupplyPosition { get; private set; }
         public string SupplyBuildingId { get; private set; } = string.Empty;
@@ -85,28 +86,83 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly List<GameplayNotificationViewSnapshot> _notifications = new();
         private long _nextNotificationId;
 
+        /// <summary>Seconds a closing panel stays mounted while its exit
+        /// motion plays; input shields stay up for the whole window so a
+        /// trailing pointer-up cannot reach the map.</summary>
+        internal const float PanelCloseSeconds = 0.18f;
+
+        /// <summary>Panel lifecycle: a close request plays the exit motion and
+        /// settles on the next presenter tick past the deadline. While closing,
+        /// new panel commands are blocked and the DOM node stays mounted.</summary>
+        public bool PanelClosing { get; private set; }
+        private float _panelCloseEndsAt = -1f;
+
         public void OpenPanel(GameplayHtmlPanel panel)
         {
+            if (PanelClosing)
+                SettlePanelClose();
             if (OpenPanelId == panel)
-                OpenPanelId = GameplayHtmlPanel.None;
-            else
-                OpenPanelId = panel;
+            {
+                ClosePanel();
+                return;
+            }
+            OpenPanelId = panel;
             if (OpenPanelId == GameplayHtmlPanel.Notifications) UnreadNotifications = 0;
             MarkDirty();
         }
 
         public void ClosePanel()
         {
-            if (OpenPanelId == GameplayHtmlPanel.None)
+            if (OpenPanelId == GameplayHtmlPanel.None || PanelClosing)
                 return;
+            PanelClosing = true;
+            _panelCloseEndsAt = -1f;
+            MarkDirty();
+        }
+
+        /// <summary>Presenter ticks this every frame; when the exit window has
+        /// elapsed the panel finally unmounts. Returns true when it settled.</summary>
+        public bool AdvancePanelClose()
+            => AdvancePanelClose(Time.unscaledTime);
+
+        internal bool AdvancePanelClose(float now)
+        {
+            if (!PanelClosing)
+                return false;
+            if (_panelCloseEndsAt < 0f)
+                _panelCloseEndsAt = now + PanelCloseSeconds;
+            if (now < _panelCloseEndsAt)
+                return false;
+            SettlePanelClose();
+            return true;
+        }
+
+        /// <summary>The exit tween for the closing panel completed (or was
+        /// cancelled). Settles the close immediately instead of waiting out
+        /// the time window; a panel without an exit motion still closes via
+        /// AdvancePanelClose.</summary>
+        public void NotifyPanelExitFinished()
+        {
+            if (!PanelClosing)
+                return;
+            SettlePanelClose();
+        }
+
+        private void SettlePanelClose()
+        {
+            PanelClosing = false;
+            _panelCloseEndsAt = -1f;
             OpenPanelId = GameplayHtmlPanel.None;
             SupplyPosition = null;
             SupplyBuildingId = string.Empty;
+            ConstructionProducerResource = string.Empty;
             MarkDirty();
         }
 
         public void OpenSupplyPanel(Vector2Int position, string buildingId)
         {
+            if (PanelClosing)
+                SettlePanelClose();
             SupplyPosition = position;
             SupplyBuildingId = buildingId?.Trim() ?? string.Empty;
             OpenPanelId = GameplayHtmlPanel.Supply;
@@ -141,6 +197,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (string.Equals(ConstructionCategory, normalized, StringComparison.OrdinalIgnoreCase))
                 return;
             ConstructionCategory = normalized;
+            ConstructionProducerResource = string.Empty;
             ConstructionPageIndex = 0;
             MarkDirty();
         }
@@ -151,6 +208,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (string.Equals(ConstructionSearch, normalized, StringComparison.OrdinalIgnoreCase))
                 return;
             ConstructionSearch = normalized;
+            ConstructionProducerResource = string.Empty;
+            ConstructionPageIndex = 0;
+            MarkDirty();
+        }
+
+        public void SetConstructionProducerFilter(string resourceId)
+        {
+            string normalized = resourceId?.Trim() ?? string.Empty;
+            if (string.Equals(ConstructionProducerResource, normalized, StringComparison.Ordinal))
+                return;
+            ConstructionProducerResource = normalized;
             ConstructionPageIndex = 0;
             MarkDirty();
         }
@@ -331,7 +399,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Sprite icon,
             bool canSelect = true,
             string unavailableReason = null,
-            int buildTurns = 0)
+            int buildTurns = 0,
+            string[] producedResourceIds = null)
         {
             Id = id ?? string.Empty;
             Name = string.IsNullOrWhiteSpace(name) ? Id : name;
@@ -342,9 +411,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             CanSelect = canSelect;
             UnavailableReason = unavailableReason ?? string.Empty;
             BuildTurns = Math.Max(0, buildTurns);
+            ProducedResourceIds = producedResourceIds ?? Array.Empty<string>();
         }
 
         public int BuildTurns { get; }
+        public string[] ProducedResourceIds { get; }
         public string Id { get; }
         public string Name { get; }
         public string Category { get; }
@@ -469,7 +540,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool canRecruit,
             string unavailableReason,
             float trainingSeconds = 0f,
-            int populationCost = 1)
+            int populationCost = 1,
+            string[] missingResourceIds = null,
+            string[] producerActionResourceIds = null)
         {
             PopulationCost = populationCost;
             TrainingSeconds = trainingSeconds;
@@ -484,8 +557,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Icon = icon;
             CanRecruit = canRecruit;
             UnavailableReason = unavailableReason ?? string.Empty;
+            MissingResourceIds = missingResourceIds ?? Array.Empty<string>();
+            ProducerActionResourceIds = producerActionResourceIds;
         }
 
+        public string[] MissingResourceIds { get; }
+        /// <summary>Parallel to <see cref="MissingResourceIds"/>: the resource
+        /// whose producers the player can actually build next for that
+        /// shortage (a prerequisite resource when the direct producer is
+        /// itself blocked). Null entries mean no achievable producer; a null
+        /// array means feasibility was not evaluated.</summary>
+        public string[] ProducerActionResourceIds { get; }
         public string UnitTypeId { get; }
         public string Name { get; }
         public string Role { get; }

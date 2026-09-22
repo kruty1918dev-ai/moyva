@@ -24,7 +24,7 @@ namespace Kruty1918.Moyva.AI.Training.Editor
         }
         private void OnInspectorUpdate()
         {
-            if (_bootstrap == null) _bootstrap = UnityEngine.Object.FindFirstObjectByType<TrainingBootstrap>();
+            if (_bootstrap == null) _bootstrap = UnityEngine.Object.FindAnyObjectByType<TrainingBootstrap>();
             if (EditorApplication.isPlaying && _bootstrap?.Config?.enableEditorTelemetry == true
                 && _bootstrap.Config.presentationMode != TrainingPresentationMode.HeadlessFast) Repaint();
         }

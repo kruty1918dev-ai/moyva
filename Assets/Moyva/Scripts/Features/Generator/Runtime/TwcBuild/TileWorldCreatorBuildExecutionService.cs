@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (TileWorldCreatorChunkFirstGuard.IsActive)
             {
                 Debug.LogError($"{LogTag} ExecuteBuildLayers path reached through TileWorldCreatorBuildExecutionService during chunk-first mode.");
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || UNITY_ENABLE_CHECKS
                 throw new System.InvalidOperationException("TWC visual build is forbidden during chunk-first generation.");
 #endif
             }

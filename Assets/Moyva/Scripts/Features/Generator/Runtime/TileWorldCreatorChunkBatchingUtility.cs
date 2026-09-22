@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public static int ResolveSceneChunkSize()
         {
-            var settings = UnityEngine.Object.FindFirstObjectByType<MapChunkSceneSettings>(FindObjectsInactive.Include);
+            var settings = UnityEngine.Object.FindAnyObjectByType<MapChunkSceneSettings>(FindObjectsInactive.Include);
             return settings != null ? settings.ChunkSize : 0;
         }
 

@@ -274,6 +274,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             return snapshot.RequiresFirstCastle
                    || state.OpenPanelId == GameplayHtmlPanel.Construction
+                   || state.OpenPanelId == GameplayHtmlPanel.Supply
                    || state.OpenPanelId == GameplayHtmlPanel.Notifications
                    || !string.IsNullOrWhiteSpace(snapshot.SelectionKind);
         }

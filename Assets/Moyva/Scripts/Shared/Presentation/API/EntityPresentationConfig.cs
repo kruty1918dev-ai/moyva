@@ -11,9 +11,9 @@ namespace Kruty1918.Moyva.Presentation.API
 
         public Vector3 PositionOffset = Vector3.zero;
         public Vector3 RotationOffset = Vector3.zero;
-        public float? GroundOffsetY;
-        public Color? Tint;
-        public bool? TeamColorEnabled;
+        public float? GroundOffsetY { get; set; }
+        public Color? Tint { get; set; }
+        public bool? TeamColorEnabled { get; set; }
         public EntityOutlineConfig Outline = new EntityOutlineConfig();
         public EntityShadowConfig Shadows = new EntityShadowConfig();
         public GameObject PreviewPrefab;
@@ -43,17 +43,17 @@ namespace Kruty1918.Moyva.Presentation.API
     [Serializable]
     public sealed class EntityOutlineConfig
     {
-        public bool? Enabled;
+        public bool? Enabled { get; set; }
         [Min(0f)]
-        public float? Width;
-        public Color? Color;
+        public float? Width { get; set; }
+        public Color? Color { get; set; }
     }
 
     [Serializable]
     public sealed class EntityShadowConfig
     {
-        public bool? Cast;
-        public bool? Receive;
+        public bool? Cast { get; set; }
+        public bool? Receive { get; set; }
     }
 
     [Serializable]

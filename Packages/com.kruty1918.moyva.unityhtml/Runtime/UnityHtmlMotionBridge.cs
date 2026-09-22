@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using DG.Tweening;
 using ReactUnity;
 using ReactUnity.UGUI;
@@ -11,8 +10,22 @@ namespace UnityHTML.Runtime
 {
     public sealed class UnityHtmlMotionBridge : IUnityHtmlMotion
     {
-        private const float DefaultDuration = 0.16f;
-        private const float DefaultDistance = 20f;
+        /// <inheritdoc />
+        public event Action<string> ExitFinished;
+
+        private bool _reducedMotion;
+
+        /// <inheritdoc />
+        public bool ReducedMotion
+        {
+            get => _reducedMotion;
+            set
+            {
+                _reducedMotion = value;
+                if (value)
+                    StopAll();
+            }
+        }
 
         private readonly Dictionary<string, ActiveMotion> _active = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _declared = new(StringComparer.Ordinal);
@@ -26,20 +39,17 @@ namespace UnityHTML.Runtime
             if (!Application.isPlaying || !TryFindTarget(targetId, out RectTransform target))
                 return;
 
-            Play(targetId, target, preset, duration, delay, DefaultDistance, DefaultEase(preset));
+            Play(targetId, target, preset, duration, delay,
+                UnityHtmlMotionPolicy.DefaultDistance, UnityHtmlMotionPolicy.DefaultEase(preset),
+                isExit: false);
         }
-
-        // Exits accelerate out (ease-in); entrances decelerate in (ease-out).
-        private static Ease DefaultEase(string preset)
-            => string.Equals(preset, "fade-out", StringComparison.OrdinalIgnoreCase) ? Ease.InQuad : Ease.OutCubic;
 
         public void Stop(string targetId)
         {
             if (string.IsNullOrWhiteSpace(targetId) || !_active.Remove(targetId, out ActiveMotion motion))
                 return;
 
-            motion.Tween?.Kill(false);
-            motion.Restore();
+            CancelMotion(motion);
         }
 
         public void RestoreResting(string targetId)
@@ -49,8 +59,7 @@ namespace UnityHTML.Runtime
 
             if (_active.Remove(targetId, out ActiveMotion motion))
             {
-                motion.Tween?.Kill(false);
-                motion.Restore();
+                CancelMotion(motion);
                 return;
             }
 
@@ -96,23 +105,36 @@ namespace UnityHTML.Runtime
             for (int index = 0; index < _elements.Count; index++)
             {
                 UGUIComponent component = _elements[index] != null ? _elements[index].Component : null;
-                if (component == null
-                    || string.IsNullOrWhiteSpace(component.Id)
-                    || !TryData(component, "motion", out string preset))
-                {
+                if (component == null || string.IsNullOrWhiteSpace(component.Id))
                     continue;
-                }
+
+                string roleText = Data(component, "motion-role");
+                string presetText = Data(component, "motion");
+                if (string.IsNullOrWhiteSpace(roleText) && string.IsNullOrWhiteSpace(presetText))
+                    continue;
 
                 string id = component.Id;
+                _seen.Add(id);
+
                 string durationText = Data(component, "motion-duration");
                 string delayText = Data(component, "motion-delay");
                 string distanceText = Data(component, "motion-distance");
                 string easeText = Data(component, "motion-ease");
-                string signature = $"{component.RectTransform.GetEntityId()}|{preset}|{durationText}|{delayText}|{distanceText}|{easeText}";
-                _seen.Add(id);
+                string signature = $"{component.RectTransform.GetEntityId()}|{roleText}|{presetText}|{durationText}|{delayText}|{distanceText}|{easeText}";
 
                 if (_declared.TryGetValue(id, out string previous) && previous == signature)
                     continue;
+
+                UnityHtmlDeclaredMotion motion = UnityHtmlMotionPolicy.ResolveDeclared(
+                    roleText, presetText, durationText, delayText, distanceText, easeText);
+                if (!motion.Animated)
+                {
+                    // Opted out ("none") or an exit without a role: record the
+                    // declaration and restore any still-running prior motion.
+                    Stop(id);
+                    _declared[id] = signature;
+                    continue;
+                }
 
                 _declared[id] = signature;
                 try
@@ -120,15 +142,16 @@ namespace UnityHTML.Runtime
                     Play(
                         id,
                         component.RectTransform,
-                        preset,
-                        Number(durationText, DefaultDuration),
-                        Number(delayText, 0f),
-                        Number(distanceText, DefaultDistance),
-                        ResolveEase(easeText));
+                        motion.Preset,
+                        motion.Duration,
+                        motion.Delay,
+                        motion.Distance,
+                        motion.Ease,
+                        motion.IsExit);
                 }
                 catch (Exception exception)
                 {
-                    Debug.LogWarning($"[UnityHTML Motion] Skipped '{id}' motion '{preset}': {exception.GetBaseException().Message}");
+                    Debug.LogWarning($"[UnityHTML Motion] Skipped '{id}' motion '{motion.Preset}': {exception.GetBaseException().Message}");
                 }
             }
 
@@ -159,12 +182,21 @@ namespace UnityHTML.Runtime
             float duration,
             float delay,
             float distance,
-            Ease ease)
+            Ease ease,
+            bool isExit)
         {
             if (target == null || string.IsNullOrWhiteSpace(id))
                 return;
 
             Stop(id);
+            if (_reducedMotion)
+            {
+                // Snap to the final state: entries rest at their declared pose,
+                // exits complete instantly so close flows keep their callback.
+                if (isExit)
+                    ExitFinished?.Invoke(id);
+                return;
+            }
             duration = Mathf.Clamp(duration, 0.04f, 2f);
             delay = Mathf.Clamp(delay, 0f, 2f);
             distance = Mathf.Clamp(Mathf.Abs(distance), 0f, 160f);
@@ -256,6 +288,31 @@ namespace UnityHTML.Runtime
                 if (_active.TryGetValue(id, out ActiveMotion current) && ReferenceEquals(current, motion))
                     _active.Remove(id);
             });
+            if (isExit)
+            {
+                // Guaranteed exactly-once completion: the flag converges every
+                // path — OnComplete, OnKill (link-destroy), and bridge-driven
+                // cancellation via CancelMotion, which invokes it directly so
+                // teardown can never leave the callback hanging.
+                bool exitFinished = false;
+                void FinishExit()
+                {
+                    if (exitFinished)
+                        return;
+                    exitFinished = true;
+                    ExitFinished?.Invoke(id);
+                }
+                motion.FinishExit = FinishExit;
+                sequence.OnComplete(FinishExit);
+                sequence.OnKill(FinishExit);
+            }
+        }
+
+        private static void CancelMotion(ActiveMotion motion)
+        {
+            motion.Tween?.Kill(false);
+            motion.Restore();
+            motion.FinishExit?.Invoke();
         }
 
         private static void AppendMoveAndFade(Sequence sequence, ActiveMotion motion, float duration, Ease ease)
@@ -342,32 +399,8 @@ namespace UnityHTML.Runtime
                 Stop(_stale[index]);
         }
 
-        private static bool TryData(UGUIComponent component, string key, out string value)
-        {
-            value = Data(component, key);
-            return !string.IsNullOrWhiteSpace(value);
-        }
-
         private static string Data(UGUIComponent component, string key)
             => component.Data.TryGetValue(key, out object value) ? value?.ToString() ?? string.Empty : string.Empty;
-
-        private static float Number(string value, float fallback)
-            => float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed) ? parsed : fallback;
-
-        private static Ease ResolveEase(string value)
-        {
-            return (value ?? string.Empty).Trim().ToLowerInvariant() switch
-            {
-                "linear" => Ease.Linear,
-                "in-quad" => Ease.InQuad,
-                "in-cubic" => Ease.InCubic,
-                "out-quad" => Ease.OutQuad,
-                "out-cubic" => Ease.OutCubic,
-                "in-out-quad" => Ease.InOutQuad,
-                "out-back" => Ease.OutBack,
-                _ => Ease.OutCubic,
-            };
-        }
 
         private sealed class ActiveMotion
         {
@@ -388,6 +421,9 @@ namespace UnityHTML.Runtime
             public Vector3 Rotation { get; }
             public float Alpha { get; }
             public Tween Tween { get; set; }
+            /// <summary>Exactly-once exit completion for declarative exits —
+            /// invoked by tween callbacks or by CancelMotion on teardown.</summary>
+            public Action FinishExit { get; set; }
 
             public void Restore()
             {

@@ -111,8 +111,7 @@ namespace Kruty1918.Notifications.Runtime
         private static Canvas FindPrimaryCanvas()
         {
             Canvas[] canvases = FindObjectsByType<Canvas>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
 
             for (int i = 0; i < canvases.Length; i++)
             {

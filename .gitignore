@@ -195,3 +195,8 @@ __pycache__/
 # Marketing Content Studio generated output (masters, exports, caches, reports).
 /MarketingOutput/
 .vscode/settings.json
+
+# Dev tooling build artifacts (dotnet/obj, tool temp outputs).
+tools/**/obj/
+tools/**/bin/
+tools/Temp/

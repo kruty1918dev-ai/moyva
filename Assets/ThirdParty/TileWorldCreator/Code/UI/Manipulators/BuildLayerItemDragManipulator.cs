@@ -114,7 +114,7 @@ namespace GiantGrey.TileWorldCreator.UI
 #if UNITY_6000_2
             dragGhost.style.translate = root.WorldToLocal(_evt.mousePosition);
 #else
-            dragGhost.transform.position = root.WorldToLocal(_evt.mousePosition);
+            dragGhost.style.translate = root.WorldToLocal(_evt.mousePosition);
 #endif            
             dragGhost.BringToFront();
         }
@@ -177,7 +177,7 @@ namespace GiantGrey.TileWorldCreator.UI
 #if UNITY_6000_2
             dragGhost.style.translate = root.WorldToLocal(_evt.mousePosition);
 #else
-            dragGhost.transform.position = root.WorldToLocal(_evt.mousePosition);
+            dragGhost.style.translate = root.WorldToLocal(_evt.mousePosition);
 #endif
 
             var _pickElement = target.panel.Pick(_evt.mousePosition);
@@ -196,7 +196,7 @@ namespace GiantGrey.TileWorldCreator.UI
 #if UNITY_6000_2
                     highlightElement.style.translate = root.WorldToLocal(_pickedFolder.worldTransform.GetPosition());
 #else
-                    highlightElement.transform.position = root.WorldToLocal(_pickedFolder.worldTransform.GetPosition());
+                    highlightElement.style.translate = root.WorldToLocal(_pickedFolder.worldTransform.GetPosition());
 #endif
                     highlightElement.BringToFront();   
 

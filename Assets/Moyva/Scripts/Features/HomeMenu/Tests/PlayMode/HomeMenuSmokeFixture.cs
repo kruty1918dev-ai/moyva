@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.Tests.HomeMenu.PlayMode
             // Zenject SceneContext installs during scene Awake; resolve on the next frame.
             yield return null;
 
-            var sceneContext = UnityEngine.Object.FindFirstObjectByType<SceneContext>();
+            var sceneContext = UnityEngine.Object.FindAnyObjectByType<SceneContext>();
             Assert.IsNotNull(sceneContext, "SceneContext not found in HomeMenu scene.");
             Container = sceneContext.Container;
             Assert.IsNotNull(Container, "Zenject container is not initialized.");
@@ -104,6 +104,21 @@ namespace Kruty1918.Moyva.Tests.HomeMenu.PlayMode
             Application.logMessageReceived -= OnLog;
             LogAssert.ignoreFailingMessages = false;
             TeardownCaptureRig();
+            UnloadMenuScene();
+        }
+
+        // The menu scene was loaded in Single mode — PlayMode tests have no
+        // persistent scene to return to, so destroy its roots (canvas, event
+        // system, scene context) instead of leaking them into the next fixture.
+        private static void UnloadMenuScene()
+        {
+            var scene = SceneManager.GetSceneByName(MenuSceneName);
+            if (!scene.IsValid() || !scene.isLoaded)
+                return;
+
+            foreach (var root in scene.GetRootGameObjects())
+                if (root != null)
+                    UnityEngine.Object.Destroy(root);
         }
 
         private void SetupCaptureRig()

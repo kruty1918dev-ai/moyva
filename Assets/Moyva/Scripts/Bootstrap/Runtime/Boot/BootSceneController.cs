@@ -109,10 +109,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             float startTime = Time.realtimeSinceStartup;
             try
             {
-                // 1: Даємо першому кадру намалюватись перед важкою синхронною роботою.
+                // 1: Перший кадр має реально відрендеритись перед важкою
+                //    синхронною роботою — Task.Yield повертається до render-проходу.
                 SetStage("Preparation");
-                await Task.Yield();
-                Canvas.ForceUpdateCanvases();
+                await RenderedFrameGate.NextAsync(ct);
 
                 // 2: Ініціалізуємо project-контейнер: усі міжсценові сервіси створюються тут.
                 SetStage("Initializing services");

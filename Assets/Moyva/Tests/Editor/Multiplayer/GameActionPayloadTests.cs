@@ -1,4 +1,5 @@
 using System.IO;
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using NUnit.Framework;
 using UnityEngine;
@@ -205,6 +206,89 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             Assert.AreEqual("settlement-1", restored.FundingSettlementIds[0]);
             Assert.AreEqual(5.5f, restored.TrainingSeconds[0]);
             Assert.AreEqual(2.25f, restored.CompletedSeconds[0]);
+        }
+
+        [Test]
+        public void BuildingPlacePayload_RoundTripsRejectionReason()
+        {
+            var payload = new BuildingPlacePayload(
+                GameActionMessageKind.Rejected,
+                "castle",
+                new Vector2Int(2, 5),
+                "p1",
+                "p1",
+                hasRelocationSource: true,
+                relocationSourcePosition: new Vector2Int(1, 1),
+                satisfiedReplacementBuildingId: "gate",
+                rotation: ConstructionRotation.Degrees90,
+                rejectionReason: "Tile or footprint is occupied.");
+
+            BuildingPlacePayload restored =
+                BuildingPlacePayload.FromBytes(payload.ToBytes());
+
+            Assert.AreEqual(GameActionMessageKind.Rejected, restored.Kind);
+            Assert.AreEqual("castle", restored.BuildingId);
+            Assert.AreEqual(new Vector2Int(2, 5), restored.Position);
+            Assert.AreEqual("p1", restored.OwnerId);
+            Assert.IsTrue(restored.HasRelocationSource);
+            Assert.AreEqual(new Vector2Int(1, 1), restored.RelocationSourcePosition);
+            Assert.AreEqual("gate", restored.SatisfiedReplacementBuildingId);
+            Assert.AreEqual(ConstructionRotation.Degrees90, restored.Rotation);
+            Assert.AreEqual(
+                "Tile or footprint is occupied.",
+                restored.RejectionReason);
+        }
+
+        [Test]
+        public void BuildingPlacePayload_ReadsVersion2_WithoutRejectionReason()
+        {
+            // Extension format v2 (before RejectionReason was added) must stay
+            // readable: older peers serialize without the trailing reason.
+            byte[] bytes;
+            using (var ms = new MemoryStream())
+            using (var w = new BinaryWriter(ms))
+            {
+                w.Write((byte)GameActionMessageKind.Request);
+                w.Write("castle");
+                w.Write(3);
+                w.Write(4);
+                w.Write("p1");
+                w.Write("p1");
+                w.Write((byte)0xA7);
+                w.Write((byte)2);
+                w.Write(false);
+                w.Write(0);
+                w.Write(0);
+                w.Write("");
+                w.Write((byte)1);
+                bytes = ms.ToArray();
+            }
+
+            BuildingPlacePayload restored =
+                BuildingPlacePayload.FromBytes(bytes);
+
+            Assert.AreEqual(GameActionMessageKind.Request, restored.Kind);
+            Assert.AreEqual("castle", restored.BuildingId);
+            Assert.AreEqual(new Vector2Int(3, 4), restored.Position);
+            Assert.AreEqual(ConstructionRotation.Degrees90, restored.Rotation);
+            Assert.IsNull(restored.RejectionReason);
+        }
+
+        [Test]
+        public void BuildingPlacePayload_RequestWithoutReason_RoundTripsEmpty()
+        {
+            var payload = new BuildingPlacePayload(
+                GameActionMessageKind.Request,
+                "castle",
+                new Vector2Int(7, -3),
+                "p1",
+                "p1");
+
+            BuildingPlacePayload restored =
+                BuildingPlacePayload.FromBytes(payload.ToBytes());
+
+            Assert.AreEqual(GameActionMessageKind.Request, restored.Kind);
+            Assert.IsTrue(string.IsNullOrEmpty(restored.RejectionReason));
         }
 
         [Test]

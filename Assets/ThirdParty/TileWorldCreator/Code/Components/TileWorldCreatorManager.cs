@@ -57,8 +57,8 @@ namespace GiantGrey.TileWorldCreator
 		private Color colorGrey = new Color(0.5f, 0.5f, 0.5f, 0.5f);
 		private bool delayedExecutionRunning;
 
-		public HashSet<ClusterIdentifier> availableClusters;
-		public HashSet<BuildLayer> lateUpdateLayers;
+		[System.NonSerialized] public HashSet<ClusterIdentifier> availableClusters;
+		[System.NonSerialized] public HashSet<BuildLayer> lateUpdateLayers;
 
 		public Action<float> OnMapProgress;
 		public Action OnMapReady;
@@ -240,7 +240,7 @@ namespace GiantGrey.TileWorldCreator
 					}
 
 					var _layers = this.GetComponentsInChildren<LayerIdentifier>(true);
-					// var _layers = GameObject.FindObjectsByType<LayerIdentifier>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID);
+					// var _layers = GameObject.FindObjectsByType<LayerIdentifier>(FindObjectsInactive.Include);
 					foreach (var _layerIdentifier in _layers)
 					{
 						if (_layerIdentifier.guid == _layer.guid)
@@ -359,7 +359,7 @@ namespace GiantGrey.TileWorldCreator
 			}
 
 			var _layers = this.GetComponentsInChildren<LayerIdentifier>(true);
-			// var _layers = GameObject.FindObjectsByType<LayerIdentifier>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID);
+			// var _layers = GameObject.FindObjectsByType<LayerIdentifier>(FindObjectsInactive.Include);
 			foreach (var _layerIdentifier in _layers)
 			{
 				if (_layerIdentifier.guid == _layer.guid)

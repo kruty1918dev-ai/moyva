@@ -121,6 +121,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                     if (!canPlace)
                     {
+                        _lastActionMessage =
+                            ResolveConfirmPlacementUserMessage(
+                                tileOccupied,
+                                spacingBlocked,
+                                fogBlocked,
+                                influenceZoneBlocked,
+                                terrainBlocked);
                         LogPlacementCommitRejected(
                             id,
                             pos,
@@ -131,6 +138,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                                 fogBlocked,
                                 influenceZoneBlocked,
                                 terrainBlocked));
+                        _signalBus.Fire(
+                            new BuildingPreviewChangedSignal
+                            {
+                                Position = pos,
+                                BuildingId = id,
+                                PreviewState =
+                                    BuildingPreviewState.Blocked,
+                                RotationQuarterTurns =
+                                    (int)placement.Rotation,
+                            });
                         continue;
                     }
 
@@ -384,6 +401,27 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return "Terrain rules blocked placement.";
 
             return "Placement commit was rejected without a detailed reason.";
+        }
+
+        private static string ResolveConfirmPlacementUserMessage(
+            bool tileOccupied,
+            bool spacingBlocked,
+            bool fogBlocked,
+            bool influenceZoneBlocked,
+            bool terrainBlocked)
+        {
+            if (tileOccupied)
+                return "Tile or footprint is occupied.";
+            if (terrainBlocked)
+                return "Terrain rules blocked placement.";
+            if (spacingBlocked)
+                return "Minimum spacing rule blocked placement.";
+            if (fogBlocked)
+                return "Fog of war blocked placement.";
+            if (influenceZoneBlocked)
+                return "Influence-zone rules blocked placement.";
+
+            return "This placement was rejected. Try another tile.";
         }
 
         private void LogPlacementCommitRejected(

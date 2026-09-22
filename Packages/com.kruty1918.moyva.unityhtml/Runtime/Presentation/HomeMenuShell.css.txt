@@ -793,6 +793,26 @@
   border-color: rgb(239, 205, 118);
 }
 
+.menu-toggle:disabled {
+  background-color: rgb(34, 36, 42);
+  border-color: rgb(70, 72, 78);
+}
+
+.menu-toggle:checked:disabled {
+  background-color: rgb(74, 60, 32);
+  border-color: rgb(120, 103, 58);
+}
+
+.menu-toggle:disabled .toggle-knob {
+  background-color: rgb(122, 124, 130);
+}
+
+/* The label is the toggle's click-forwarding element; a transparent background
+   gives it a full-rect raycast target so clicks between the texts still reach it. */
+label.control-copy {
+  background-color: rgba(0, 0, 0, 0);
+}
+
 .toggle-knob {
   flex-shrink: 0;
   width: 20px;

@@ -69,7 +69,7 @@ namespace StylizedWater3
         private static void GetInstalled()
         {
             var allTypes = new List<System.Type>();
-            var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+            var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
                 
             foreach (var assembly in assemblies)
             {

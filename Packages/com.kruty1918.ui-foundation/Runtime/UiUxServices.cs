@@ -55,8 +55,28 @@ namespace Kruty1918.UiFoundation
     {
         private readonly List<Motion> _motions = new List<Motion>();
         private readonly Dictionary<RectTransform, Vector2> _shownPositions = new Dictionary<RectTransform, Vector2>();
+        private readonly Controls.IPlayerControlSettingsService _controlSettings;
+        private bool _sessionReducedMotion;
 
-        public bool ReducedMotion { get; set; }
+        public UiMotionService(
+            [InjectOptional] Controls.IPlayerControlSettingsService controlSettings = null)
+            => _controlSettings = controlSettings;
+
+        /// <summary>Single persistent reduced-motion gate — reads through to the
+        /// player's control settings when bound, falls back to a session flag.
+        /// Writing persists via the settings service (OnSettingsChanged fans out
+        /// to camera/marker/HTML consumers).</summary>
+        public bool ReducedMotion
+        {
+            get => _controlSettings?.Settings.ReduceMotion ?? _sessionReducedMotion;
+            set
+            {
+                if (_controlSettings != null)
+                    _controlSettings.SetReduceMotion(value);
+                else
+                    _sessionReducedMotion = value;
+            }
+        }
 
         public void SetPanelVisible(
             CanvasGroup canvasGroup,

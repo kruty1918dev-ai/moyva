@@ -25,16 +25,21 @@ namespace Kruty1918.Moyva.Economy.API
     public readonly struct ConstructionSupplySourceSnapshot
     {
         public ConstructionSupplySourceSnapshot(string settlementId, string settlementName,
-            string warehouseKey, IReadOnlyDictionary<string, float> available)
+            string warehouseKey, IReadOnlyDictionary<string, float> available,
+            float routeDistance)
         {
             SettlementId = settlementId; SettlementName = settlementName;
             WarehouseKey = warehouseKey; Available = available;
+            RouteDistance = routeDistance;
         }
 
         public string SettlementId { get; }
         public string SettlementName { get; }
         public string WarehouseKey { get; }
         public IReadOnlyDictionary<string, float> Available { get; }
+        /// <summary>Measured route distance to the target warehouse, or geometric
+        /// distance when no wagon is available to profile the route.</summary>
+        public float RouteDistance { get; }
     }
 
     public readonly struct ConstructionSupplyWagonSnapshot
@@ -61,11 +66,13 @@ namespace Kruty1918.Moyva.Economy.API
             string settlementName, Vector2Int position, string reason,
             IReadOnlyList<ConstructionSupplyResourceLine> resources,
             IReadOnlyList<ConstructionSupplySourceSnapshot> sources,
-            IReadOnlyList<ConstructionSupplyWagonSnapshot> wagons)
+            IReadOnlyList<ConstructionSupplyWagonSnapshot> wagons,
+            int unreachableSources = 0)
         {
             Resolved = resolved; SettlementId = settlementId; SettlementName = settlementName;
             Position = position; Reason = reason;
             Resources = resources; Sources = sources; Wagons = wagons;
+            UnreachableSources = unreachableSources;
         }
 
         public bool Resolved { get; }
@@ -76,6 +83,8 @@ namespace Kruty1918.Moyva.Economy.API
         public IReadOnlyList<ConstructionSupplyResourceLine> Resources { get; }
         public IReadOnlyList<ConstructionSupplySourceSnapshot> Sources { get; }
         public IReadOnlyList<ConstructionSupplyWagonSnapshot> Wagons { get; }
+        /// <summary>Warehouse sources skipped because no usable route reaches them.</summary>
+        public int UnreachableSources { get; }
         public bool HasDeficit { get { if (Resources == null) return false; for (int i = 0; i < Resources.Count; i++) if (Resources[i].Deficit > 0.0001f) return true; return false; } }
     }
 
@@ -138,6 +147,13 @@ namespace Kruty1918.Moyva.Economy.API
             Vector2Int position, IReadOnlyDictionary<string, float> requiredCosts);
 
         CaravanTransferResult DispatchSupply(ConstructionSupplyDispatchRequest request,
+            IReadOnlyDictionary<string, float> requiredCosts);
+
+        /// <summary>Read-only preview of what the dispatch would load at the source:
+        /// per-resource min(deficit, free stock, wagon free capacity). Empty when the
+        /// dispatch would be rejected or nothing can ship.</summary>
+        IReadOnlyDictionary<string, float> PreviewShipment(
+            ConstructionSupplyDispatchRequest request,
             IReadOnlyDictionary<string, float> requiredCosts);
 
         IReadOnlyList<ConstructionSupplyOrderSnapshot> GetOrders(string ownerId);

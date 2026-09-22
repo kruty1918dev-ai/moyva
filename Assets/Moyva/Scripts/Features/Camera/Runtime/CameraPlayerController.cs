@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly IPlayerControlSettingsService _controlSettings;
         private readonly IInputDeviceContext _devices;
         private readonly IGameplayCameraFocusService _gameplayFocus;
+        private readonly Func<bool> _applicationFocused;
         private readonly CameraGestureArbiter _gestureArbiter;
         private PlayerControlProfile _profile;
         private bool _panHeld;
@@ -42,7 +43,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
             [InjectOptional] IGameplayInputPolicy inputPolicy = null,
             [InjectOptional] IPlayerControlSettingsService controlSettings = null,
             [InjectOptional] IInputDeviceContext devices = null,
-            [InjectOptional] IGameplayCameraFocusService gameplayFocus = null)
+            [InjectOptional] IGameplayCameraFocusService gameplayFocus = null,
+            [InjectOptional] Func<bool> applicationFocused = null)
         {
             _cameraMovement = cameraMovement;
             _cameraZoom = cameraZoom;
@@ -51,6 +53,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _controlSettings = controlSettings;
             _devices = devices;
             _gameplayFocus = gameplayFocus;
+            _applicationFocused = applicationFocused ?? (() => Application.isFocused);
             _gestureArbiter = new CameraGestureArbiter(settings != null ? settings.ResolveTouchSettleFrames() : 2);
             if (_devices != null) _devices.Changed += OnProfileChanged;
             ApplyControlSettings(_controlSettings?.Settings ?? PlayerControlSettingsData.CreateDefault());
@@ -73,7 +76,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         public void Tick()
         {
-            if (!Application.isFocused)
+            if (!_applicationFocused())
             { ReleaseTouchCaptures(); ReleasePointerCapture(); _cameraMovement.SetCameraOrbitInput(0f); return; }
             if (TryHandleTouchGestures())
             { ReleasePointerCapture(); _cameraMovement.SetCameraOrbitInput(0f); return; }
@@ -131,7 +134,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         {
             if (!(_profile?.EdgePan ?? _settings.ResolveEdgeScrollEnabled())
                 || _devices?.ActiveProfile == ControlProfile.Gamepad || _devices?.ActiveProfile == ControlProfile.TouchPhone
-                || !Application.isFocused
+                || !_applicationFocused()
                 || !CanProcess(GameplayInputKind.PointerPan, pointerPosition))
             {
                 return;

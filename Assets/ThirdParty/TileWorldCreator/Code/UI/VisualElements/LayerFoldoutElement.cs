@@ -39,7 +39,6 @@ namespace GiantGrey.TileWorldCreator.UI
         private Color contentBGColor = new Color(50f/255f, 50f/255f, 50f/255f, 1f);
         
 
-        private float totalHeight = 0;
         private Texture2D arrowRight;
         private Texture2D arrowDown;
 
@@ -76,7 +75,6 @@ namespace GiantGrey.TileWorldCreator.UI
         SerializedProperty _lockPaintProperty, Texture2D _customIcon = null, IManipulator _manipulator = null,
         params Action[] _additionalButtons)
         {
-            totalHeight = 0;
             arrowRight = TileWorldCreatorUtilities.LoadImage("arrowRight.twc");
             arrowDown = TileWorldCreatorUtilities.LoadImage("arrowDown.twc");
             onFoldout = _onFoldoutCallback;

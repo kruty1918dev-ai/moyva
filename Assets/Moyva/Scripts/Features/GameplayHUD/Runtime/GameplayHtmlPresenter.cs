@@ -58,7 +58,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly GameplayHtmlAnchor[] _anchors;
         private bool _controlHintsDirty = true;
         private ControlProfile _hintProfile;
-        private void OnControlSettingsChanged(PlayerControlSettingsData _) => _controlHintsDirty = true;
+        private void OnControlSettingsChanged(PlayerControlSettingsData data)
+        {
+            _controlHintsDirty = true;
+            ApplyReducedMotion(data.ReduceMotion);
+        }
+
+        private void ApplyReducedMotion(bool reduced)
+        {
+            if (_host == null)
+                return;
+            if (_host.Motion != null)
+                _host.Motion.ReducedMotion = reduced;
+            _host.ScrollSettings = _host.ScrollSettings.WithReducedMotion(reduced);
+        }
         private readonly IInputDeviceContext _inputDevices;
         private readonly IPlayerControlSettingsService _controlSettings;
         private readonly LazyInject<IUiActionRouter> _actions;
@@ -145,6 +158,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _css = _anchor.CssAsset.text;
             _anchor.SetLegacyUiVisible(false);
             _state.Changed += MarkDirty;
+            if (_host?.Motion != null)
+                _host.Motion.ExitFinished += OnMotionExitFinished;
+            ApplyReducedMotion(_controlSettings?.Settings.ReduceMotion ?? false);
             GameplayNotificationStream.Published += OnNotificationPublished;
             if (_turns != null)
                 _turns.StateChanged += MarkDirty;
@@ -173,7 +189,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     UiActionIds.Construction.RotatePlacement,
                     UiActionIds.Construction.UndoPlacement,
                     UiActionIds.Construction.RedoPlacement,
-                }));
+                },
+                // No new commands while the exit motion plays — the panel
+                // settles, then hotkeys pass through again.
+                hotkeyAllowance: _ => !_state.PanelClosing));
             _initialCastleContext = _contexts?.Push(new UiContextRegistration(
                 "InitialCastlePlacement",
                 UiContextLayer.Modal,
@@ -218,6 +237,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
             }
             EnsureInitialCastlePlacement();
+            _state.AdvancePanelClose();
             string viewport = _anchor.ViewportClass;
             if (!string.Equals(viewport, _viewportClass, StringComparison.Ordinal))
                 _state.MarkDirty();
@@ -231,6 +251,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             if (_controlSettings != null) _controlSettings.OnSettingsChanged -= OnControlSettingsChanged;
             _state.Changed -= MarkDirty;
+            if (_host?.Motion != null)
+                _host.Motion.ExitFinished -= OnMotionExitFinished;
             GameplayNotificationStream.Published -= OnNotificationPublished;
             if (_turns != null)
                 _turns.StateChanged -= MarkDirty;
@@ -248,6 +270,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _initialCastleContext?.Dispose();
             _initialCastleContext = null;
             _host?.Dispose();
+        }
+
+        /// <summary>The exit tween for the closing surface finished (completed
+        /// or cancelled). Settle the close now instead of waiting out the fixed
+        /// window — AdvancePanelClose remains the fallback for surfaces without
+        /// a declarative exit motion.</summary>
+        private void OnMotionExitFinished(string elementId)
+        {
+            if (!_state.PanelClosing)
+                return;
+            if (elementId != "gameplay-side-panel" && elementId != "kingdom-scrim")
+                return;
+            _state.NotifyPanelExitFinished();
         }
 
         private void OnProgressed(GameplayProgressTick _)

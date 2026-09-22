@@ -23,6 +23,23 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _mainThreadId = Thread.CurrentThread.ManagedThreadId;
         }
 
+#if UNITY_EDITOR
+        // Edit mode never runs RuntimeInitializeOnLoadMethod, so EditMode
+        // tests and editor tooling would fall back to a worker thread —
+        // which Unity Transport 6.x forbids (Allocator.Temp is main-thread
+        // or job-worker only). Capture the editor's synchronization context
+        // on domain reload so the pump matches player behavior.
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void CaptureEditor()
+        {
+            if (_context != null)
+                return;
+
+            _context = SynchronizationContext.Current;
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+        }
+#endif
+
         public static bool IsMainThread
             => _context == null
                || Thread.CurrentThread.ManagedThreadId == _mainThreadId;

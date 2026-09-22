@@ -1,0 +1,19 @@
+{
+  "name": "Kruty1918.Moyva.Tests.GameMode",
+  "rootNamespace": "Kruty1918.Moyva.Tests.GameMode",
+  "references": [
+    "Kruty1918.Moyva.GameMode",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.InputRouting",
+    "Kruty1918.Moyva.UIActions",
+    "Zenject"
+  ],
+  "includePlatforms": ["Editor"],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "Zenject-usage.dll",
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

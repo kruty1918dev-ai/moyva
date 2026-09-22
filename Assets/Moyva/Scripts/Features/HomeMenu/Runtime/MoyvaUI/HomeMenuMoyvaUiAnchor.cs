@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Kruty1918.Moyva.Shared.UI;
 using TMPro;
 using UnityEngine;

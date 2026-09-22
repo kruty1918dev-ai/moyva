@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             GameplayHtmlState state)
         {
             var supply = snapshot.Supply;
-            PanelHeader(html, "CONSTRUCTION SUPPLY", "Deliver missing resources by wagon", true);
+            PanelHeader(html, state, "CONSTRUCTION SUPPLY", "Deliver missing resources by wagon", true);
             html.Append("<view className=\"panel-body\"><scroll className=\"panel-scroll context-scroll\"><view className=\"building-list\">");
 
             if (supply == null)
@@ -42,7 +42,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 string detail = $"need {Amount(line.Required)} · local {Amount(line.LocalAvailable)}";
                 if (line.Delivered > 0.0001f)
                     detail += $" · delivered {Amount(line.Delivered)}";
-                DataRow(html, DisplayResource(line.ResourceId), status, detail);
+                DataRow(html, DisplayResource(line.ResourceId), status, detail, key: $"supply-res-{line.ResourceId}");
             }
 
             if (supply.Order.HasValue)
@@ -61,9 +61,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 var source = supply.Sources[index];
                 html.Append("<button className=\"filter-button")
                     .Append(index == supply.SourceIndex ? " selected" : string.Empty)
+                    .Append("\" data-key=\"supply-src-").Append(E(source.SettlementId)).Append('-').Append(E(source.WarehouseKey))
                     .Append("\" onClick=\"Globals.gameplay.SetSupplySource(")
                     .Append(index.ToString(CultureInfo.InvariantCulture)).Append(")\"><text className=\"tab-label\">")
                     .Append(E(source.SettlementName)).Append(" · ").Append(E(source.WarehouseKey))
+                    .Append(" · ").Append(state.T("route")).Append(" ")
+                    .Append(Amount(source.RouteDistance))
                     .Append("</text></button><text className=\"item-meta\">")
                     .Append(E(source.StockSummary)).Append("</text>");
             }
@@ -77,10 +80,35 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 string status = wagon.Busy ? wagon.Status : $"free {Amount(wagon.FreeCapacity)}";
                 html.Append("<button className=\"filter-button")
                     .Append(index == supply.WagonIndex ? " selected" : string.Empty)
+                    .Append("\" data-key=\"supply-wagon-").Append(E(wagon.UnitId))
                     .Append("\" onClick=\"Globals.gameplay.SetSupplyWagon(")
                     .Append(index.ToString(CultureInfo.InvariantCulture)).Append(")\"><text className=\"tab-label\">")
                     .Append(E(wagon.UnitId)).Append(" · ").Append(E(status))
                     .Append("</text></button>");
+            }
+
+            if (supply.PlannedShipment != null)
+            {
+                html.Append("<text className=\"item-meta\">").Append(state.T("Delivery plan"))
+                    .Append(": ").Append(E(supply.PlannedShipment))
+                    .Append(" · ").Append(state.T("route")).Append(" ")
+                    .Append(Amount(supply.PlannedRouteDistance));
+                if (supply.PlannedNeedsRepeat)
+                    html.Append(" · ").Append(state.T("wagon repeats until the deficit is covered"));
+                html.Append("</text>");
+            }
+
+            if (supply.Hints.Length > 0)
+            {
+                html.Append("<text className=\"section-title\">NEXT STEP</text>");
+                foreach (var hint in supply.Hints)
+                {
+                    html.Append("<text className=\"item-meta\">").Append(E(hint.Text)).Append("</text>");
+                    if (!string.IsNullOrWhiteSpace(hint.ProducerResourceId))
+                        html.Append(Button(state.T("PRODUCE LOCALLY"),
+                            $"Globals.gameplay.ShowProducersFor('{J(hint.ProducerResourceId)}')",
+                            "button", state.T("Show buildings producing this resource"), false));
+                }
             }
 
             html.Append("<text className=\"item-meta\">Resources move only by wagon — deliveries are reserved for this construction.</text>");
@@ -100,13 +128,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             for (int index = 0; index < snapshot.Logistics.Length; index++)
             {
                 var entry = snapshot.Logistics[index];
-                DataRow(html, entry.Title, entry.Kind.ToUpperInvariant(), entry.Detail);
+                DataRow(html, entry.Title, entry.Kind.ToUpperInvariant(), entry.Detail, key: $"log-{entry.Kind}-{entry.Id}");
                 if (entry.FocusPosition.HasValue)
                 {
                     Vector2Int position = entry.FocusPosition.Value;
                     html.Append(Button("VIEW",
                         $"Globals.gameplay.FocusWarehouse({position.x},{position.y},'')",
-                        "button primary", "Go to this order", false));
+                        "button primary", "Go to this order", false, key: $"log-{entry.Kind}-{entry.Id}-view"));
                 }
             }
             if (snapshot.Logistics.Length == 0)

@@ -1,0 +1,27 @@
+{
+    "name": "Kruty1918.Moyva.Tests.InputRouting",
+    "rootNamespace": "Kruty1918.Moyva.Tests.InputRouting",
+    "references": [
+        "Kruty1918.Moyva.InputRouting",
+        "Zenject",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
+        "UnityEngine.TestTools",
+        "UnityEditor.TestTools"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -114,7 +114,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             Collider collider = preview.GetComponent<Collider>();
             if (collider != null)
-                Object.Destroy(collider);
+                DestroyUnityObject(collider);
 
             EnsureFallbackPreviewMaterial();
             Renderer renderer = preview.GetComponent<Renderer>();

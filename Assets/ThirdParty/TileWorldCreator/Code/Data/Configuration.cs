@@ -81,7 +81,6 @@ namespace GiantGrey.TileWorldCreator
             return padding;
         }
 
-        [FormerlySerializedAs("cellSize")]
         public int cellSizeOld = 1;
         public float cellSize = 1f;
         public float lastCellSize = 1f;

@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private bool _touchStartedOverUi;
         private bool _touchMovedBeyondTap;
         private bool _multiTouchObserved;
-        private Camera _cachedCamera;
+        private global::UnityEngine.Camera _cachedCamera;
 
         public TileClickInputService(
             SignalBus signalBus,
@@ -191,12 +191,12 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             return _inputPolicy?.IsPointerOverUi(screenPosition, pointerId, interactiveOnly: false) ?? false;
         }
 
-        private Camera ResolveCamera()
+        private global::UnityEngine.Camera ResolveCamera()
         {
             if (_cachedCamera != null && _cachedCamera.isActiveAndEnabled)
                 return _cachedCamera;
 
-            _cachedCamera = Camera.main;
+            _cachedCamera = global::UnityEngine.Camera.main;
             return _cachedCamera != null && _cachedCamera.isActiveAndEnabled
                 ? _cachedCamera
                 : null;
@@ -210,12 +210,12 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             if (!(_inputPolicy?.CanProcess(inputKind, screenPosition) ?? true))
                 return;
 
-            Camera cam = ResolveCamera();
+            global::UnityEngine.Camera cam = ResolveCamera();
             if (cam != null)
                 FireTileClick(screenPosition, cam, button);
         }
 
-        private void FireTileClick(Vector2 screenPos, Camera cam, TilePointerButton button)
+        private void FireTileClick(Vector2 screenPos, global::UnityEngine.Camera cam, TilePointerButton button)
         {
             Vector2Int tilePos;
             if (_pointerGridResolver != null

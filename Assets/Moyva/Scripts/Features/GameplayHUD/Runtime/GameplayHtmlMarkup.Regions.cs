@@ -26,7 +26,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             regions[CommandsRegion] = html.ToString();
             html.Clear();
             if (!string.IsNullOrWhiteSpace(state.Feedback) && !snapshot.RequiresFirstCastle)
-                html.Append("<text id=\"gameplay-toast\" className=\"toast\" data-motion=\"slide-up\" data-motion-duration=\"0.14\">")
+                html.Append("<text id=\"gameplay-toast\" className=\"toast\" data-motion-role=\"toast\">")
                     .Append(E(state.Feedback)).Append("</text>");
             html.Append("<view className=\"control-prompts\" style=\"position:absolute;bottom:82px;left:25%;width:50%;height:26px;align-items:center;\"><text style=\"font-size:12px;color:#e9eee7;\">")
                 .Append(E(state.ControlHints)).Append("</text></view>");
@@ -48,20 +48,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             var html = new StringBuilder(16384);
             html.Append("<view className=\"gameplay-ui ").Append(E(viewportClass)).Append("\">");
-            Region(html, regions, TopBarRegion, "topbar", "slide-down");
+            Region(html, regions, TopBarRegion, "topbar", "edge-top");
             Region(html, regions, ContextRegion, "workspace");
-            Region(html, regions, CommandsRegion, "command-bar", "slide-up");
+            Region(html, regions, CommandsRegion, "command-bar", "edge-bottom");
             Region(html, regions, FeedbackRegion, "presentation-region");
             Region(html, regions, OverlayRegion, "presentation-region");
             return html.Append("</view>").ToString();
         }
 
         private static void Region(StringBuilder html, IReadOnlyDictionary<string, string> regions,
-            string id, string css, string motion = null)
+            string id, string css, string motionRole = null)
         {
             html.Append("<view id=\"").Append(id).Append("\" className=\"").Append(css).Append('"');
-            if (motion != null)
-                html.Append(" data-motion=\"").Append(motion).Append("\" data-motion-duration=\"0.18\"");
+            if (motionRole != null)
+                html.Append(" data-motion-role=\"").Append(motionRole).Append('"');
             html.Append('>').Append(regions[id]).Append("</view>");
         }
     }

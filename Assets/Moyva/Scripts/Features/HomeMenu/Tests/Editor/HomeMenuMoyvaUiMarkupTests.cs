@@ -78,6 +78,31 @@ namespace Kruty1918.Moyva.Tests.HomeMenu
         }
 
         [Test]
+        public void SettingsToggles_PairLabelForWithToggleId()
+        {
+            _state.Open("SettingsPanel");
+            _state.SetSettingsSection(HomeMenuSettingsSection.Graphics);
+
+            var markup = HomeMenuMoyvaUiMarkup.Build(_state, _view, "vp-wide");
+
+            Assert.That(markup, Does.Contain("<label className=\"control-copy\" for=\"#vsync\">"));
+            Assert.That(markup, Does.Contain("<toggle id=\"vsync\""));
+        }
+
+        [Test]
+        public void SettingsToggles_DisabledRowsEmitPlainViewNotLabel()
+        {
+            _state.Open("SettingsPanel");
+            _state.SetSettingsSection(HomeMenuSettingsSection.Graphics);
+            _view.SetGraphicsInteractable(false);
+
+            var markup = HomeMenuMoyvaUiMarkup.Build(_state, _view, "vp-wide");
+
+            Assert.That(markup, Does.Not.Contain("for=\"#vsync\""));
+            Assert.That(markup, Does.Contain("<toggle id=\"vsync\" className=\"menu-toggle\" checked=\"false\" onChange=\"Globals.moyvaMenu.SetVSync(event)\" disabled=\"true\">"));
+        }
+
+        [Test]
         public void MarkupEscapesUserControlledStrings()
         {
             _view.SetInviteCode(new LobbyInviteCodePresentation("Invite Code", "<b>&\"</b>", "<room>"));

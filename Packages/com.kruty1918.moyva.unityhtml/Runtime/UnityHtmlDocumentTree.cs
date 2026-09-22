@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Xml;
 using ReactUnity;
 using ReactUnity.Helpers;
+using Yoga;
 
 namespace UnityHTML.Runtime
 {
@@ -125,6 +126,10 @@ namespace UnityHTML.Runtime
         private void Remove(IReactComponent component)
         {
             ComponentRemoved?.Invoke(component);
+            // Collect the subtree before Destroy() clears Children — every node
+            // carries a rooted GCHandle that must be released (see ReleaseYoga).
+            var subtree = new List<IReactComponent>();
+            CollectSubtree(component, subtree);
 #if UNITY_EDITOR
             if (!UnityEngine.Application.isPlaying && component is ReactUnity.UGUI.UGUIComponent ugui)
             {
@@ -142,10 +147,65 @@ namespace UnityHTML.Runtime
                     if (pooled is ReactUnity.UGUI.UGUIComponent native && native.GameObject != null)
                         UnityEngine.Object.DestroyImmediate(native.GameObject);
                 }
+                foreach (IReactComponent dead in subtree) ReleaseYoga(dead);
                 return;
             }
 #endif
             component.Destroy();
+            // Pooled components keep their YogaNode for reuse — releasing its
+            // handle would break GetManaged on the next native callback.
+            foreach (IReactComponent dead in subtree)
+                if (dead is not IPoolableComponent poolable || poolable.PoolStack == null)
+                    ReleaseYoga(dead);
+        }
+
+        private static void CollectSubtree(IReactComponent component, List<IReactComponent> flat)
+        {
+            if (component == null)
+                return;
+            flat.Add(component);
+            if (component is IContainerComponent container && container.Children != null)
+                foreach (IReactComponent child in container.Children)
+                    CollectSubtree(child, flat);
+        }
+
+        // Upstream leak: every YogaNode registers a strong GCHandle on itself
+        // (YGNodeHandle.SetContext) that only its own SafeHandle finalizer frees —
+        // but the handle keeps the node alive, so the finalizer never runs.
+        // Layout.Data then chains node -> component -> context -> JS engine, so a
+        // single leaked node roots the whole mounted graph. Release explicitly.
+        private static readonly System.Reflection.FieldInfo YogaHandleField = typeof(YogaNode)
+            .GetField("_ygNode", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        private static readonly System.Reflection.MethodInfo YogaReleaseManaged = YogaHandleField?.FieldType
+            .GetMethod("ReleaseManaged", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+
+        internal static void ReleaseYoga(IReactComponent component)
+        {
+            YogaNode node = component?.Layout;
+            if (node == null)
+                return;
+            object handle = YogaHandleField?.GetValue(node);
+            if (handle != null)
+                YogaReleaseManaged?.Invoke(handle, null);
+        }
+
+        /// <summary>
+        /// Releases every rooted Yoga handle under a context — mounted elements,
+        /// pooled leftovers and the host's own node. Call before disposing the
+        /// context; the whole object graph becomes collectable afterwards.
+        /// </summary>
+        internal static void ReleaseContextNodes(ReactUnity.UGUI.UGUIContext context)
+        {
+            if (context?.Host is not ReactUnity.UGUI.UGUIComponent host)
+                return;
+            ReleaseYoga(host);
+            var hostObject = host.GameObject;
+            if (hostObject == null)
+                return;
+            foreach (var element in hostObject
+                .GetComponentsInChildren<ReactUnity.UGUI.Behaviours.ReactElement>(true))
+                if (element != null)
+                    ReleaseYoga(element.Component);
         }
 
         private void UpdateNode(Node node, XmlNode xml)

@@ -105,7 +105,7 @@ namespace Kruty1918.Moyva.Marketing.EditorTools
             // FinalizeRun records the cancelled manifest (batch exits non-zero).
             if (EditorApplication.isPlaying)
             {
-                var controller = UnityEngine.Object.FindFirstObjectByType<MarketingStudioController>();
+                var controller = UnityEngine.Object.FindAnyObjectByType<MarketingStudioController>();
                 if (controller != null) controller.Cancel();
                 else EditorApplication.isPlaying = false;
             }

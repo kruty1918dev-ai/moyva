@@ -5,6 +5,9 @@
     "Kruty1918.Moyva.HomeMenu",
     "Kruty1918.Moyva.UIActions",
     "Kruty1918.Moyva.Shared",
+    "Kruty1918.Moyva.WorldCreation.API",
+    "Kruty1918.Moyva.Multiplayer",
+    "Kruty1918.Moyva.SaveSystem",
     "UnityHTML.Runtime",
     "Zenject"
   ],

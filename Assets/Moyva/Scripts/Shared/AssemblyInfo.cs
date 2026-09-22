@@ -4,5 +4,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Kruty1918.Moyva.GameMode")]
 [assembly: InternalsVisibleTo("Kruty1918.Moyva.HomeMenu")]
 [assembly: InternalsVisibleTo("Kruty1918.Moyva.Tests.Bootstrap")]
-[assembly: InternalsVisibleTo("Kruty1918.Localization.Tests")]
+[assembly: InternalsVisibleTo("Kruty1918.Moyva.Shared.Localization.Tests")]
+[assembly: InternalsVisibleTo("Kruty1918.Moyva.Shared.UI.Tests")]
 [assembly: InternalsVisibleTo("Assembly-CSharp")]
