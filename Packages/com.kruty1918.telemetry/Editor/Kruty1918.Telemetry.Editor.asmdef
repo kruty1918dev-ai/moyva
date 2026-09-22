@@ -1,0 +1,19 @@
+{
+  "name": "Kruty1918.Telemetry.Editor",
+  "rootNamespace": "Kruty1918.Telemetry.Editor",
+  "references": [
+    "Kruty1918.Telemetry",
+    "Kruty1918.Telemetry.Unity"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

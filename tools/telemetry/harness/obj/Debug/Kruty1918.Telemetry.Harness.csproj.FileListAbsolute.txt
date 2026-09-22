@@ -1,0 +1,15 @@
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\telemetry\harness\obj\Debug\Kruty1918.Telemetry.Harness.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\telemetry\harness\obj\Debug\Kruty1918.Telemetry.Harness.AssemblyInfoInputs.cache
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\telemetry\harness\obj\Debug\Kruty1918.Telemetry.Harness.AssemblyInfo.cs
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\telemetry\harness\obj\Debug\Kruty1918.Telemetry.Harness.csproj.CoreCompileInputs.cache
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\telemetry\harness\obj\Debug\Kruty1918.Telemetry.Harness.sourcelink.json
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\Temp\ai\telemetry-harness\Kruty1918.Telemetry.Harness.exe
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\Temp\ai\telemetry-harness\Kruty1918.Telemetry.Harness.deps.json
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\Temp\ai\telemetry-harness\Kruty1918.Telemetry.Harness.runtimeconfig.json
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\Temp\ai\telemetry-harness\Kruty1918.Telemetry.Harness.dll
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\Temp\ai\telemetry-harness\Kruty1918.Telemetry.Harness.pdb
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\telemetry\harness\obj\Debug\Kruty1918.Telemetry.Harness.dll
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\telemetry\harness\obj\Debug\refint\Kruty1918.Telemetry.Harness.dll
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\telemetry\harness\obj\Debug\Kruty1918.Telemetry.Harness.pdb
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\telemetry\harness\obj\Debug\Kruty1918.Telemetry.Harness.genruntimeconfig.cache
+C:\Users\yelyzaveta.khodos.TP-GE26-20\Documents\GitHub\moyva\moyva\tools\telemetry\harness\obj\Debug\ref\Kruty1918.Telemetry.Harness.dll

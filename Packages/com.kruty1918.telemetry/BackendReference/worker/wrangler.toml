@@ -1,0 +1,19 @@
+name = "moyva-telemetry-ingest"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+# Provision before deploy:
+#   wrangler r2 bucket create moyva-telemetry-raw
+#   wrangler d1 create moyva-telemetry-meta
+#   wrangler d1 execute moyva-telemetry-meta --file=schema.sql
+# Fill ids below from the create output. Never commit real secrets — the client
+# only needs the public endpoint URL, not these bindings.
+
+[[r2_buckets]]
+binding = "TELEMETRY_RAW"
+bucket_name = "moyva-telemetry-raw"
+
+[[d1_databases]]
+binding = "TELEMETRY_DB"
+database_name = "moyva-telemetry-meta"
+database_id = "REPLACE_WITH_D1_ID"

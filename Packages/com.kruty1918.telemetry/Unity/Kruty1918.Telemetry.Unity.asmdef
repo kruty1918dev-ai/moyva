@@ -1,0 +1,16 @@
+{
+  "name": "Kruty1918.Telemetry.Unity",
+  "rootNamespace": "Kruty1918.Telemetry.Unity",
+  "references": [
+    "Kruty1918.Telemetry"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
