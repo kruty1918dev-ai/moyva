@@ -16,8 +16,8 @@
     "variants": [
       {
         "preset": {
-          "$asset": "asset.tile-preset.atlas-stair.726a59ee",
-          "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-stair.asset",
+          "$asset": "asset.tile-preset.atlas-stone.211f9b2e",
+          "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-stone.asset",
           "required": true
         },
         "slot": "Top",
