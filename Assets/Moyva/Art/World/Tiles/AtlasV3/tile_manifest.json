@@ -1,0 +1,93 @@
+{
+  "version": 3,
+  "grid_m": 1,
+  "pivot": "cell centre, top surface y=0",
+  "top_y_m": 0,
+  "high_bottom_y_m": -0.5,
+  "low_bottom_y_m": -0.25,
+  "step_delta_m": 0.25,
+  "coordinate_system": "Y-up",
+  "source_sha256": "e4387afc5dffd3704f0fdf09f5ba6c0b257d3876e881223166dd0f22a494eafa",
+  "canonical_masks": {
+    "corner": 1,
+    "edge": 3,
+    "interior": 14,
+    "merged": 5,
+    "fill": 15
+  },
+  "corner_bits": {
+    "SW": 1,
+    "SE": 2,
+    "NE": 4,
+    "NW": 8
+  },
+  "sets": [
+    {
+      "theme": "grass",
+      "fbx": "Models/01_grass.fbx",
+      "obj": "Models/01_grass.obj",
+      "mesh_count": 11,
+      "render": "Renders/01_grass.png"
+    },
+    {
+      "theme": "sand",
+      "fbx": "Models/02_sand.fbx",
+      "obj": "Models/02_sand.obj",
+      "mesh_count": 11,
+      "render": "Renders/02_sand.png"
+    },
+    {
+      "theme": "dirt",
+      "fbx": "Models/03_dirt.fbx",
+      "obj": "Models/03_dirt.obj",
+      "mesh_count": 11,
+      "render": "Renders/03_dirt.png"
+    },
+    {
+      "theme": "stone",
+      "fbx": "Models/04_stone.fbx",
+      "obj": "Models/04_stone.obj",
+      "mesh_count": 11,
+      "render": "Renders/04_stone.png"
+    },
+    {
+      "theme": "snow",
+      "fbx": "Models/05_snow.fbx",
+      "obj": "Models/05_snow.obj",
+      "mesh_count": 11,
+      "render": "Renders/05_snow.png"
+    },
+    {
+      "theme": "swamp",
+      "fbx": "Models/06_swamp.fbx",
+      "obj": "Models/06_swamp.obj",
+      "mesh_count": 11,
+      "render": "Renders/06_swamp.png"
+    },
+    {
+      "theme": "rock_cliff",
+      "fbx": "Models/08_rock_cliff.fbx",
+      "obj": "Models/08_rock_cliff.obj",
+      "mesh_count": 11,
+      "render": "Renders/08_rock_cliff.png"
+    },
+    {
+      "theme": "road",
+      "fbx": "Models/09_road.fbx",
+      "obj": "Models/09_road.obj",
+      "mesh_count": 11,
+      "render": "Renders/09_road.png"
+    },
+    {
+      "theme": "footpath",
+      "fbx": "Models/10_footpath.fbx",
+      "obj": "Models/10_footpath.obj",
+      "mesh_count": 11,
+      "render": "Renders/10_footpath.png"
+    }
+  ],
+  "edition": "integration_no_water",
+  "reference_note": "Original sCLIFF geometry provenance hash retained; authoring sources are not included in this runtime handoff.",
+  "mesh_count": 99,
+  "set_count": 9
+}

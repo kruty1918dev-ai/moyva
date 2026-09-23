@@ -231,3 +231,4 @@ World build: generate/restore → Grid → signals.
 | Logical tile map | `Runtime/LogicalMap/LogicalTileMapBuilderService.cs`; `Runtime/LogicalTileMap.cs` |
 | Geography engine | `Runtime/Geography/`; `API/WorldGenerationConfig.cs` |
 | Chunk-first terrain mesh | `Runtime/ChunkFirst/Mesh/`; `Runtime/ChunkFirst/TwcAdapter/TwcTileMeshSourceProvider.cs` |
+| AtlasV3 tiles / relief / passages / routes | `Runtime/Terrain/`; `Editor/MoyvaAtlasPackImporter.cs`; `Editor/MoyvaAtlasValidationSceneBuilder.cs`; presets: Presets/Generator/atlas-tile-set |
