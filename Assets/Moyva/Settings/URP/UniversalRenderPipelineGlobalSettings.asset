@@ -70,7 +70,6 @@ MonoBehaviour:
       - rid: 6337474466152185860
       - rid: 6337474466152185861
       - rid: 6337474466152185862
-      - rid: 6337474466152185863
     m_RuntimeSettings:
       m_List: []
   m_AssetVersion: 11
@@ -310,12 +309,6 @@ MonoBehaviour:
         - {fileID: 2800000, guid: b4db8180660810945bf8d55ab44352ad, type: 3}
         - {fileID: 2800000, guid: fd2fd78b392986e42a12df2177d3b89c, type: 3}
         - {fileID: 2800000, guid: 5cdee82a77d13994f83b8fdabed7c301, type: 3}
-        m_Version: 0
-    - rid: 6337474466152185863
-      type: {class: ScreenSpaceReflectionPersistentResources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
-      data:
-        m_Shader: {fileID: 4800000, guid: 7b3e6785f5f6b634794df3a85a2a35da, type: 3}
-        m_BlitShader: {fileID: 4800000, guid: 815c625bb9d4fe240a4ccf42ca3899cb, type: 3}
         m_Version: 0
     - rid: 6852985685364965376
       type: {class: URPShaderStrippingSetting, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
