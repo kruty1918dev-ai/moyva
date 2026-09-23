@@ -24,6 +24,41 @@
       "id": "sharedgeneratorsettings"
     }
   },
+  "terrainRelief": {
+    "enabled": true,
+    "quantumMeters": 0.25,
+    "maxSteps": 6,
+    "noiseScale": 26.0,
+    "octaves": 4,
+    "persistence": 0.5,
+    "lacunarity": 2.0,
+    "offset": {
+      "x": 0.0,
+      "y": 0.0
+    },
+    "smoothingIterations": 2,
+    "seedSalt": 9137
+  },
+  "passages": {
+    "enabled": true,
+    "stairThemeId": "stone",
+    "stairTileId": "stair",
+    "moduleRiseMeters": 0.25,
+    "minLedgeDropMeters": 0.5,
+    "maxLedgeDropMeters": 1.0,
+    "minEntranceSpacingCells": 3,
+    "maxFlights": 64
+  },
+  "routes": {
+    "enabled": true,
+    "anchorCount": 6,
+    "roadTileId": "road",
+    "footpathTileId": "footpath",
+    "overlaySurfaceOffsetMeters": 0.003,
+    "heightPenaltyPerMeter": 4.0,
+    "roadFraction": 0.6,
+    "seedSalt": 4177
+  },
   "layers": [
     {
       "id": "b47a1390-a46d-4999-9780-f5e2769e8668",
@@ -39,7 +74,10 @@
           "octaves": 5,
           "persistence": 0.683,
           "lacunarity": 2.0,
-          "offset": { "x": 0.0, "y": 0.0 },
+          "offset": {
+            "x": 0.0,
+            "y": 0.0
+          },
           "threshold": 0.468
         },
         {
@@ -70,10 +108,89 @@
       ]
     },
     {
+      "id": "a1f2c3d4-1111-4a1a-9a01-aa11cc22ee01",
+      "name": "Swamp",
+      "sortingOrder": -8,
+      "enabled": true,
+      "defaultHeight": 0.0,
+      "outputKind": "Tiles",
+      "tileType": {
+        "$config": {
+          "model": "tile-type",
+          "id": "swamp"
+        }
+      },
+      "steps": [
+        {
+          "$type": "layer-mask-reference-step",
+          "sourceLayerId": "b47a1390-a46d-4999-9780-f5e2769e8668"
+        },
+        {
+          "$type": "terrain-level-mask-step",
+          "minMeters": 0.125,
+          "maxMeters": 0.375,
+          "combine": "Intersect"
+        },
+        {
+          "$type": "perlin-noise-mask-step",
+          "scale": 14.0,
+          "octaves": 3,
+          "persistence": 0.55,
+          "lacunarity": 2.0,
+          "offset": {
+            "x": 13.7,
+            "y": 7.3
+          },
+          "threshold": 0.58,
+          "combine": "Intersect"
+        }
+      ]
+    },
+    {
+      "id": "a1f2c3d4-2222-4a1a-9a02-aa11cc22ee02",
+      "name": "Dirt",
+      "sortingOrder": -7,
+      "enabled": true,
+      "defaultHeight": 0.0,
+      "outputKind": "Tiles",
+      "tileType": {
+        "$config": {
+          "model": "tile-type",
+          "id": "dirt"
+        }
+      },
+      "steps": [
+        {
+          "$type": "layer-mask-reference-step",
+          "sourceLayerId": "b47a1390-a46d-4999-9780-f5e2769e8668"
+        },
+        {
+          "$type": "terrain-level-mask-step",
+          "minMeters": 0.375,
+          "maxMeters": 0.875,
+          "combine": "Intersect"
+        },
+        {
+          "$type": "perlin-noise-mask-step",
+          "scale": 11.0,
+          "octaves": 3,
+          "persistence": 0.55,
+          "lacunarity": 2.0,
+          "offset": {
+            "x": 27.4,
+            "y": 14.6
+          },
+          "threshold": 0.66,
+          "combine": "Intersect"
+        }
+      ]
+    },
+    {
       "id": "78af69b7-740e-4a85-bad4-866f58c4c7c7",
       "name": "Sand",
-      "sortingOrder": -9,
+      "sortingOrder": -6,
       "enabled": true,
+      "defaultHeight": 0.0,
       "outputKind": "Tiles",
       "tileType": {
         "$config": {
@@ -85,13 +202,24 @@
         {
           "$type": "layer-mask-reference-step",
           "sourceLayerId": "b47a1390-a46d-4999-9780-f5e2769e8668"
+        },
+        {
+          "$type": "terrain-level-mask-step",
+          "maxMeters": 0.125,
+          "combine": "Intersect"
+        },
+        {
+          "$type": "layer-mask-reference-step",
+          "sourceLayerId": "a1f2c3d4-1111-4a1a-9a01-aa11cc22ee01",
+          "invert": true,
+          "combine": "Intersect"
         }
       ]
     },
     {
       "id": "f904bc0b-b8b6-4fdc-b371-76921129c59b",
       "name": "Grass",
-      "sortingOrder": -8,
+      "sortingOrder": -5,
       "enabled": true,
       "defaultHeight": 0.0,
       "outputKind": "Tiles",
@@ -107,10 +235,99 @@
           "sourceLayerId": "b47a1390-a46d-4999-9780-f5e2769e8668"
         },
         {
-          "$type": "mask-morphology-step",
-          "operation": "Erode",
-          "radius": 1,
-          "iterations": 2
+          "$type": "terrain-level-mask-step",
+          "minMeters": 0.125,
+          "maxMeters": 0.875,
+          "combine": "Intersect"
+        },
+        {
+          "$type": "layer-mask-reference-step",
+          "sourceLayerId": "a1f2c3d4-1111-4a1a-9a01-aa11cc22ee01",
+          "invert": true,
+          "combine": "Intersect"
+        },
+        {
+          "$type": "layer-mask-reference-step",
+          "sourceLayerId": "a1f2c3d4-2222-4a1a-9a02-aa11cc22ee02",
+          "invert": true,
+          "combine": "Intersect"
+        }
+      ]
+    },
+    {
+      "id": "a1f2c3d4-3333-4a1a-9a03-aa11cc22ee03",
+      "name": "Stone",
+      "sortingOrder": -4,
+      "enabled": true,
+      "defaultHeight": 0.0,
+      "outputKind": "Tiles",
+      "tileType": {
+        "$config": {
+          "model": "tile-type",
+          "id": "stone"
+        }
+      },
+      "steps": [
+        {
+          "$type": "layer-mask-reference-step",
+          "sourceLayerId": "b47a1390-a46d-4999-9780-f5e2769e8668"
+        },
+        {
+          "$type": "terrain-level-mask-step",
+          "minMeters": 0.875,
+          "maxMeters": 1.125,
+          "combine": "Intersect"
+        }
+      ]
+    },
+    {
+      "id": "a1f2c3d4-4444-4a1a-9a04-aa11cc22ee04",
+      "name": "RockCliff",
+      "sortingOrder": -3,
+      "enabled": true,
+      "defaultHeight": 0.0,
+      "outputKind": "Tiles",
+      "tileType": {
+        "$config": {
+          "model": "tile-type",
+          "id": "rock-cliff"
+        }
+      },
+      "steps": [
+        {
+          "$type": "layer-mask-reference-step",
+          "sourceLayerId": "b47a1390-a46d-4999-9780-f5e2769e8668"
+        },
+        {
+          "$type": "terrain-level-mask-step",
+          "minMeters": 1.125,
+          "maxMeters": 1.375,
+          "combine": "Intersect"
+        }
+      ]
+    },
+    {
+      "id": "a1f2c3d4-5555-4a1a-9a05-aa11cc22ee05",
+      "name": "Snow",
+      "sortingOrder": -2,
+      "enabled": true,
+      "defaultHeight": 0.0,
+      "outputKind": "Tiles",
+      "tileType": {
+        "$config": {
+          "model": "tile-type",
+          "id": "snow"
+        }
+      },
+      "steps": [
+        {
+          "$type": "layer-mask-reference-step",
+          "sourceLayerId": "b47a1390-a46d-4999-9780-f5e2769e8668"
+        },
+        {
+          "$type": "terrain-level-mask-step",
+          "minMeters": 1.375,
+          "combine": "Intersect"
         }
       ]
     }

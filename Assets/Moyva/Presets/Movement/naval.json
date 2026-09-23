@@ -9,16 +9,61 @@
     "staminaCost": 0.0
   },
   "classRules": [
-    { "classId": "water", "passable": true, "staminaCost": 1.0 },
-    { "classId": "road", "passable": false, "staminaCost": 0.0 },
-    { "classId": "grass", "passable": false, "staminaCost": 0.0 },
-    { "classId": "sand", "passable": true, "staminaCost": 1.35 },
-    { "classId": "swamp", "passable": true, "staminaCost": 1.6 },
-    { "classId": "hill", "passable": false, "staminaCost": 0.0 },
-    { "classId": "mountain", "passable": false, "staminaCost": 0.0 },
-    { "classId": "snow", "passable": false, "staminaCost": 0.0 },
-    { "classId": "forest-sparse", "passable": false, "staminaCost": 0.0 },
-    { "classId": "forest-dense", "passable": false, "staminaCost": 0.0 }
+    {
+      "classId": "water",
+      "passable": true,
+      "staminaCost": 1.0
+    },
+    {
+      "classId": "road",
+      "passable": false,
+      "staminaCost": 0.0
+    },
+    {
+      "classId": "grass",
+      "passable": false,
+      "staminaCost": 0.0
+    },
+    {
+      "classId": "sand",
+      "passable": true,
+      "staminaCost": 1.35
+    },
+    {
+      "classId": "swamp",
+      "passable": true,
+      "staminaCost": 1.6
+    },
+    {
+      "classId": "hill",
+      "passable": false,
+      "staminaCost": 0.0
+    },
+    {
+      "classId": "mountain",
+      "passable": false,
+      "staminaCost": 0.0
+    },
+    {
+      "classId": "snow",
+      "passable": false,
+      "staminaCost": 0.0
+    },
+    {
+      "classId": "forest-sparse",
+      "passable": false,
+      "staminaCost": 0.0
+    },
+    {
+      "classId": "forest-dense",
+      "passable": false,
+      "staminaCost": 0.0
+    }
   ],
-  "tileOverrides": []
+  "tileOverrides": [],
+  "heightLimits": {
+    "autoStepMaxMeters": 0.25,
+    "stairModuleRiseMeters": 0.25,
+    "maxStairRiseMeters": 1.0
+  }
 }

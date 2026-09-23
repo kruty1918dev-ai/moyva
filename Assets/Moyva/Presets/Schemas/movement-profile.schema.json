@@ -123,6 +123,37 @@
         "additionalProperties": false
       },
       "title": "Tile Overrides"
+    },
+    "heightLimits": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "autoStepMaxMeters": {
+          "type": "number",
+          "title": "Auto Step Max Meters",
+          "description": "Largest surface delta a unit crosses by plain walking. 0.25 matches one terrace step.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "stairModuleRiseMeters": {
+          "type": "number",
+          "title": "Stair Module Rise Meters",
+          "description": "Rise covered by one authored stair module.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "maxStairRiseMeters": {
+          "type": "number",
+          "title": "Max Stair Rise Meters",
+          "description": "Largest total rise a stair flight may cover for this profile.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Height Limits"
     }
   }
 }

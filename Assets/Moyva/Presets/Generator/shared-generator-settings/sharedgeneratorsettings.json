@@ -2,7 +2,7 @@
     "$schema": "../../Schemas/shared-generator-settings.schema.json",
     "schema": "moyva.shared-generator-settings",
     "version": 1,
-    "id": "archipelagosharedsettings",
+    "id": "sharedgeneratorsettings",
     "model": "shared-generator-settings",
     "waterLikeTileIds": [
         "water",

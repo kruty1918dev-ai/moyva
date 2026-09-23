@@ -893,6 +893,7 @@
                     "mask-morphology-step",
                     "perlin-noise-mask-step",
                     "shape-mask-step",
+                    "terrain-level-mask-step",
                     "twc-modifier-mask-step"
                   ]
                 }
@@ -1507,6 +1508,227 @@
       },
       "title": "Object Placements",
       "description": "Ordered object scatter passes evaluated after all layer masks."
+    },
+    "terrainRelief": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "quantumMeters": {
+          "type": "number",
+          "title": "Quantum Meters",
+          "description": "Terrace height step in meters. 0.25 matches the atlas tile contract.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "maxSteps": {
+          "type": "integer",
+          "title": "Max Steps",
+          "description": "Number of terrace steps above the minimum field height.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "noiseScale": {
+          "type": "number",
+          "title": "Noise Scale",
+          "description": "Noise scale in cells — larger values produce wider plateaus.",
+          "minimum": 0.0001,
+          "x-moyva-editorMinimum": 0.0001
+        },
+        "octaves": {
+          "type": "integer",
+          "title": "Octaves",
+          "minimum": 1.0,
+          "maximum": 8.0,
+          "x-moyva-editorMinimum": 1.0,
+          "x-moyva-editorMaximum": 8.0
+        },
+        "persistence": {
+          "type": "number",
+          "title": "Persistence",
+          "minimum": 0.01,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.01,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "lacunarity": {
+          "type": "number",
+          "title": "Lacunarity",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "offset": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false,
+          "title": "Offset"
+        },
+        "smoothingIterations": {
+          "type": "integer",
+          "title": "Smoothing Iterations",
+          "description": "Majority-smoothing passes over quantized levels; removes single-cell noise spikes.",
+          "minimum": 0.0,
+          "maximum": 8.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 8.0
+        },
+        "seedSalt": {
+          "type": "integer",
+          "title": "Seed Salt",
+          "description": "Seed salt so relief does not correlate with layer masks sharing the map seed."
+        }
+      },
+      "additionalProperties": false,
+      "title": "Terrain Relief",
+      "description": "Deterministic 0.25 m terrace relief field; feeds terrain-level mask steps and per-cell surface heights."
+    },
+    "passages": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "stairThemeId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Stair Theme Id",
+          "description": "Atlas theme used for generated stair modules (e.g. stone)."
+        },
+        "stairTileId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Stair Tile Id",
+          "description": "Semantic tile id written to stair cells."
+        },
+        "moduleRiseMeters": {
+          "type": "number",
+          "title": "Module Rise Meters",
+          "description": "Rise covered by one stair module.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "minLedgeDropMeters": {
+          "type": "number",
+          "title": "Min Ledge Drop Meters",
+          "description": "Minimum ledge drop that receives a stair flight.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "maxLedgeDropMeters": {
+          "type": "number",
+          "title": "Max Ledge Drop Meters",
+          "description": "Largest ledge drop a single flight may cover.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "minEntranceSpacingCells": {
+          "type": "integer",
+          "title": "Min Entrance Spacing Cells",
+          "description": "Minimum distance in cells between stair entrances along a ledge.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "maxFlights": {
+          "type": "integer",
+          "title": "Max Flights",
+          "description": "Maximum number of flights per map.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Passages",
+      "description": "Generated stair passages across ledges (atlas pack contract)."
+    },
+    "routes": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "anchorCount": {
+          "type": "integer",
+          "title": "Anchor Count",
+          "description": "Number of seeded route anchor cells.",
+          "minimum": 2.0,
+          "x-moyva-editorMinimum": 2.0
+        },
+        "roadTileId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Road Tile Id",
+          "description": "Tile/preset id used for primary route cells."
+        },
+        "footpathTileId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Footpath Tile Id",
+          "description": "Tile/preset id used for secondary route cells."
+        },
+        "overlaySurfaceOffsetMeters": {
+          "type": "number",
+          "title": "Overlay Surface Offset Meters",
+          "description": "Surface offset applied to route overlay tiles so they render above terrain.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "heightPenaltyPerMeter": {
+          "type": "number",
+          "title": "Height Penalty Per Meter",
+          "description": "Extra path cost per meter of height change; higher values keep roads on flat ground.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "roadFraction": {
+          "type": "number",
+          "title": "Road Fraction",
+          "description": "Fraction of routes rendered as roads; the rest become footpaths.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "seedSalt": {
+          "type": "integer",
+          "title": "Seed Salt",
+          "description": "Seed salt so routes do not correlate with relief or layer masks."
+        }
+      },
+      "additionalProperties": false,
+      "title": "Routes",
+      "description": "Generated road/footpath routes between seeded anchors."
     }
   }
 }
