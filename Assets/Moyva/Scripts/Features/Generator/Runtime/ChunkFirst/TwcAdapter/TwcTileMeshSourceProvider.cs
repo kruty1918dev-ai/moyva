@@ -318,12 +318,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             AtlasTileTheme theme = null;
             int directionIndex = 0;
             float topY = sample.Height;
+            float rise = 0f;
 
             if (_passages != null
                 && _passages.TryGetModule(composition.Cell, out TerrainPassageModule module))
             {
                 directionIndex = module.DirectionIndex;
                 topY = module.TopY;
+                rise = module.RiseMeters;
                 if (!string.IsNullOrWhiteSpace(module.ThemeId))
                     _atlas?.TryGetByThemeId(module.ThemeId, out theme);
             }
@@ -343,7 +345,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 composition.Cell.x * cellSize,
                 topY,
                 composition.Cell.y * cellSize);
-            Matrix4x4 rootMatrix = Matrix4x4.TRS(position, rotation, prefab.transform.localScale);
+            Vector3 scale = prefab.transform.localScale;
+            if (rise > 0f && _atlas != null)
+                scale.y *= rise / Mathf.Max(0.01f, _atlas.StairModuleRiseMeters);
+            Matrix4x4 rootMatrix = Matrix4x4.TRS(position, rotation, scale);
             Material materialOverride = theme.Preset != null ? theme.Preset.GetMaterialOverride() : null;
 
             int added = 0;

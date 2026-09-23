@@ -169,7 +169,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (!TryResolveMainTerrain(cell, new TileNeighborhood(cell, null, null, null, null, null, null, null, null), out var other))
                 return false;
 
-            return SameTerrainIdentity(main, other);
+            // Dual-grid fragments may merge only on the same terrace. Otherwise
+            // their shared edge needs a cliff/closure even within one biome.
+            return SameTerrainIdentity(main, other)
+                && Mathf.Abs(ResolveAuthoritativeSurfaceHeight(main)
+                    - ResolveAuthoritativeSurfaceHeight(other)) <= HeightEpsilon;
         }
 
         private static bool SameTerrainIdentity(TileLayerSample a, TileLayerSample b)

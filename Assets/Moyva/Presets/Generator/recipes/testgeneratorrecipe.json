@@ -26,8 +26,8 @@
   },
   "terrainRelief": {
     "enabled": true,
-    "quantumMeters": 0.25,
-    "maxSteps": 12,
+    "quantumMeters": 0.3,
+    "maxSteps": 10,
     "noiseScale": 26.0,
     "octaves": 4,
     "persistence": 0.5,
@@ -37,13 +37,14 @@
       "y": 0.0
     },
     "smoothingIterations": 2,
-    "seedSalt": 9137
+    "seedSalt": 9137,
+    "heightExponent": 2.0
   },
   "passages": {
     "enabled": true,
     "stairThemeId": "stone",
     "stairTileId": "stair",
-    "moduleRiseMeters": 0.25,
+    "moduleRiseMeters": 0.3,
     "minLedgeDropMeters": 0.5,
     "maxLedgeDropMeters": 1.5,
     "minEntranceSpacingCells": 3,
@@ -128,8 +129,8 @@
         },
         {
           "$type": "terrain-level-mask-step",
-          "minMeters": 0.125,
-          "maxMeters": 0.375,
+          "minMeters": 0.15,
+          "maxMeters": 0.45,
           "combine": "Intersect"
         },
         {
@@ -167,8 +168,8 @@
         },
         {
           "$type": "terrain-level-mask-step",
-          "minMeters": 0.375,
-          "maxMeters": 1.125,
+          "minMeters": 0.45,
+          "maxMeters": 1.05,
           "combine": "Intersect"
         },
         {
@@ -206,7 +207,7 @@
         },
         {
           "$type": "terrain-level-mask-step",
-          "maxMeters": 0.125,
+          "maxMeters": 0.15,
           "combine": "Intersect"
         },
         {
@@ -237,8 +238,8 @@
         },
         {
           "$type": "terrain-level-mask-step",
-          "minMeters": 0.125,
-          "maxMeters": 1.125,
+          "minMeters": 0.15,
+          "maxMeters": 1.05,
           "combine": "Intersect"
         },
         {
@@ -275,8 +276,8 @@
         },
         {
           "$type": "terrain-level-mask-step",
-          "minMeters": 1.125,
-          "maxMeters": 2.375,
+          "minMeters": 1.05,
+          "maxMeters": 1.95,
           "combine": "Intersect"
         }
       ]
@@ -301,8 +302,8 @@
         },
         {
           "$type": "terrain-level-mask-step",
-          "minMeters": 1.625,
-          "maxMeters": 2.625,
+          "minMeters": 1.95,
+          "maxMeters": 2.55,
           "combine": "Intersect"
         }
       ]
@@ -327,7 +328,7 @@
         },
         {
           "$type": "terrain-level-mask-step",
-          "minMeters": 2.125,
+          "minMeters": 2.55,
           "combine": "Intersect"
         }
       ]

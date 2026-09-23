@@ -19,6 +19,9 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Number of terrace steps above the minimum field height.")]
         [Min(0)] public int MaxSteps = 5;
 
+        [Tooltip("Exponent applied before terrace quantization. Values above 1 reserve high ground for peaks.")]
+        [Min(1f)] public float HeightExponent = 1f;
+
         [Tooltip("Noise scale in cells — larger values produce wider plateaus.")]
         [Min(0.0001f)] public float NoiseScale = 26f;
 

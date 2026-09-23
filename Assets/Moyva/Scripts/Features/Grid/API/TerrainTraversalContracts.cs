@@ -30,6 +30,8 @@ namespace Kruty1918.Moyva.Grid.API
         public int DirectionIndex;
         /// <summary>World-space height of the module's top (+end) surface.</summary>
         public float TopY;
+        /// <summary>World-space rise of this module, used to scale the authored stair mesh.</summary>
+        public float RiseMeters;
         /// <summary>Surface height of the low plateau the flight starts from.</summary>
         public float LowSurfaceY;
         /// <summary>Surface height of the high plateau the flight exits onto.</summary>

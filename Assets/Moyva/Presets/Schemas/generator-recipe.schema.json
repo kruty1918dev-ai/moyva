@@ -1526,6 +1526,13 @@
           "minimum": 0.01,
           "x-moyva-editorMinimum": 0.01
         },
+        "heightExponent": {
+          "type": "number",
+          "title": "Height Exponent",
+          "description": "Exponent applied before terrace quantization. Values above 1 reserve high ground for peaks.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
         "maxSteps": {
           "type": "integer",
           "title": "Max Steps",

@@ -34,11 +34,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 out float minValue, out float maxValue);
 
             var field = new float[width, height];
-            float range = Mathf.Max(0.0001f, maxValue - minValue);
             for (int x = 0; x < width; x++)
             for (int y = 0; y < height; y++)
             {
                 float normalized = Mathf.InverseLerp(minValue, maxValue, noise[x, y]);
+                normalized = Mathf.Pow(normalized, Mathf.Max(1f, config.HeightExponent));
                 int step = Mathf.Clamp(
                     Mathf.RoundToInt(normalized * maxSteps),
                     0,

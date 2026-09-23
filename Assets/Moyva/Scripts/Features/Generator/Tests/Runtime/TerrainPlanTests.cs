@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
+using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
 using Kruty1918.Moyva.Grid.API;
 using NUnit.Framework;
 using UnityEngine;
@@ -8,6 +9,131 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
 {
     public sealed class TerrainPlanTests
     {
+        [TestCase(0.3f, false)]
+        [TestCase(3f, false)]
+        [TestCase(0f, true)]
+        public void SameBiome_MergesOnlyAtEqualSurfaceHeight(float drop, bool matches)
+        {
+            var high = new TileStackCell();
+            var low = new TileStackCell();
+            var sample = new TileLayerSample("grass", "Grass", null, null,
+                "grass", null, LayerKind.BaseTerrain, 0, 0, 0, 3f, 3f, null);
+            high.Add(sample);
+            low.Add(sample.WithSurfaceHeight(3f - drop));
+            var neighborhood = new TileNeighborhood(high, low, low, low, low,
+                low, low, low, low);
+            var result = new ResolvedTileCompositionResolver().Resolve(Vector2Int.zero, neighborhood);
+
+            Assert.AreEqual(matches, result.NorthMatches);
+            Assert.AreEqual(matches, result.EastMatches);
+            Assert.AreEqual(matches, result.SouthMatches);
+            Assert.AreEqual(matches, result.WestMatches);
+            Assert.AreEqual(matches, result.NorthEastMatches);
+            Assert.AreEqual(matches, result.SouthEastMatches);
+            Assert.AreEqual(matches, result.SouthWestMatches);
+            Assert.AreEqual(matches, result.NorthWestMatches);
+            Assert.AreEqual(matches ? TileMeshOccludedSides.North : TileMeshOccludedSides.None,
+                TwcTileMeshSourceProvider.ResolveDualOccludedSides(true, result.NorthMatches, false, false));
+        }
+
+        [Test]
+        public void Relief_PeakBias_PreservesRangeAndFavorsLowGround()
+        {
+            var config = new TerrainReliefConfig
+            {
+                Enabled = true, QuantumMeters = 0.3f, MaxSteps = 10,
+                SmoothingIterations = 0
+            };
+            var planner = new TerrainReliefPlanner();
+            var linear = planner.Build(42, new Vector2Int(32, 32), config);
+            config.HeightExponent = 2f;
+            var biased = planner.Build(42, new Vector2Int(32, 32), config);
+            float maximum = 0f;
+            int lowCells = 0;
+            for (int x = 0; x < 32; x++)
+            for (int y = 0; y < 32; y++)
+            {
+                float value = biased[x, y];
+                Assert.That(value, Is.InRange(0f, 3f));
+                Assert.LessOrEqual(value, linear[x, y]);
+                Assert.AreEqual(Mathf.Round(value / 0.3f), value / 0.3f, 0.0001f);
+                maximum = Mathf.Max(maximum, value);
+                if (value <= 1f) lowCells++;
+            }
+            Assert.AreEqual(3f, maximum, 0.0001f);
+            Assert.Greater(lowCells, 32 * 32 / 2);
+        }
+
+        [TestCase(0.3f)]
+        [TestCase(3f)]
+        public void FlatTerrain_GeneratesSideGeometryDownToSupport(float drop)
+        {
+            var top = new Mesh
+            {
+                vertices = new[]
+                {
+                    new Vector3(-0.5f, 0f, -0.5f), new Vector3(-0.5f, 0f, 0.5f),
+                    new Vector3(0.5f, 0f, 0.5f), new Vector3(0.5f, 0f, -0.5f)
+                },
+                triangles = new[] { 0, 1, 2, 0, 2, 3 },
+                uv = new[] { Vector2.zero, Vector2.up, Vector2.one, Vector2.right }
+            };
+            var material = new Material(Shader.Find("Hidden/InternalErrorShader"));
+            Mesh closed = null;
+            try
+            {
+                var source = new TileMeshSource(top, new[] { material },
+                    Matrix4x4.Translate(Vector3.up * drop), visibleBottomY: 0f,
+                    tileHalfExtent: 0.5f);
+                Assert.IsTrue(TileVerticalFillMeshUtility.TryCreate(source, out closed));
+                Assert.Greater(closed.triangles.Length, top.triangles.Length);
+                Assert.AreEqual(-drop, closed.bounds.min.y, 0.0001f);
+                Assert.AreEqual(0f, closed.bounds.max.y, 0.0001f);
+            }
+            finally
+            {
+                if (closed != null) Object.DestroyImmediate(closed);
+                Object.DestroyImmediate(top);
+                Object.DestroyImmediate(material);
+            }
+        }
+
+        [Test]
+        public void WaterPreset_UsesStylizedWater3Material()
+        {
+            var preset = UnityEditor.AssetDatabase.LoadAssetAtPath<ScriptableObject>(
+                "Assets/Moyva/TileWater.asset");
+            Assert.IsNotNull(preset);
+            using var serialized = new UnityEditor.SerializedObject(preset);
+            var material = serialized.FindProperty("materialOverride").objectReferenceValue as Material;
+            Assert.IsNotNull(material);
+            Assert.AreEqual("Assets/ThirdParty/Stylized Water 3/Materials/StylizedWater3_Toon.mat",
+                UnityEditor.AssetDatabase.GetAssetPath(material));
+            Assert.IsNotNull(material.shader);
+            Assert.IsFalse(material.shader.name.Contains("InternalErrorShader"));
+        }
+
+        [TestCase("PC_Renderer")]
+        [TestCase("Mobile_Renderer")]
+        public void WorldRenderer_EnablesStylizedWaterFeature(string rendererName)
+        {
+            var renderer = UnityEditor.AssetDatabase.LoadAssetAtPath<ScriptableObject>(
+                $"Assets/Moyva/Settings/URP/{rendererName}.asset");
+            Assert.IsNotNull(renderer);
+            using var serialized = new UnityEditor.SerializedObject(renderer);
+            var features = serialized.FindProperty("m_RendererFeatures");
+            for (int i = 0; i < features.arraySize; i++)
+            {
+                var feature = features.GetArrayElementAtIndex(i).objectReferenceValue;
+                if (feature == null || feature.GetType().FullName != "StylizedWater3.StylizedWaterRenderFeature")
+                    continue;
+                using var settings = new UnityEditor.SerializedObject(feature);
+                Assert.IsTrue(settings.FindProperty("m_Active").boolValue);
+                return;
+            }
+            Assert.Fail("Stylized Water 3 renderer feature is missing.");
+        }
+
         [Test]
         public void Relief_Disabled_ReturnsNull()
         {
@@ -62,20 +188,21 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             }
         }
 
-        [Test]
-        public void PassagePlanner_Ledge_ProducesFlights()
+        [TestCase(0.25f)]
+        [TestCase(0.3f)]
+        public void PassagePlanner_Ledge_ProducesFlights(float rise)
         {
-            // 8x8 map: left half at 0 m, right half at 0.5 m -> ledge of two modules.
+            // 8x8 map: left half at 0 m, right half at twice the rise -> ledge of two modules.
             var surfaces = new float[8, 8];
             for (int x = 0; x < 8; x++)
             for (int y = 0; y < 8; y++)
-                surfaces[x, y] = x >= 4 ? 0.5f : 0f;
+                surfaces[x, y] = x >= 4 ? 2f * rise : 0f;
 
             var planner = new TerrainPassagePlanner();
             var config = new TerrainPassageConfig
             {
                 Enabled = true,
-                ModuleRiseMeters = 0.25f,
+                ModuleRiseMeters = rise,
                 MinLedgeDropMeters = 0.5f,
                 MaxLedgeDropMeters = 1f,
                 MinEntranceSpacingCells = 2,
@@ -83,16 +210,23 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             };
 
             TerrainPassagePlan plan = planner.Plan(surfaces, config);
-            Assert.Greater(plan.Flights.Count, 0, "Expected stair flights across the 0.5 m ledge.");
+            Assert.Greater(plan.Flights.Count, 0, "Expected stair flights across the ledge.");
+            var store = new TerrainPassageStore();
+            store.Replace(plan);
 
             foreach (StairFlight flight in plan.Flights)
             {
                 Assert.AreEqual(2, flight.Modules.Length);
                 Assert.AreEqual(0f, flight.LowSurfaceY, 0.001f);
-                Assert.AreEqual(0.5f, flight.HighSurfaceY, 0.001f);
+                Assert.AreEqual(2f * rise, flight.HighSurfaceY, 0.001f);
                 // Modules climb toward the exit: consecutive tops differ by one module rise.
-                Assert.AreEqual(0.25f, flight.ModuleTopY[0], 0.001f);
-                Assert.AreEqual(0.5f, flight.ModuleTopY[1], 0.001f);
+                Assert.AreEqual(rise, flight.ModuleTopY[0], 0.001f);
+                Assert.AreEqual(2f * rise, flight.ModuleTopY[1], 0.001f);
+                foreach (var cell in flight.Modules)
+                {
+                    Assert.IsTrue(store.TryGetModule(cell, out var module));
+                    Assert.AreEqual(rise, module.RiseMeters, 0.001f);
+                }
             }
         }
 

@@ -128,6 +128,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                             Cell = flight.Modules[i],
                             DirectionIndex = flight.DirectionIndex,
                             TopY = flight.ModuleTopY[i],
+                            RiseMeters = flight.ModuleTopY[i]
+                                - (i == 0 ? flight.LowSurfaceY : flight.ModuleTopY[i - 1]),
                             LowSurfaceY = flight.LowSurfaceY,
                             HighSurfaceY = flight.HighSurfaceY,
                             ThemeId = flight.ThemeId,
