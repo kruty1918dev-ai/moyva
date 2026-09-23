@@ -423,99 +423,12 @@
           "additionalProperties": false,
           "title": "Rotation Offset"
         },
-        "groundOffsetY": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "title": "Ground Offset Y"
-        },
-        "tint": {
-          "type": [
-            "object",
-            "null"
-          ],
-          "properties": {
-            "r": {
-              "type": "number"
-            },
-            "g": {
-              "type": "number"
-            },
-            "b": {
-              "type": "number"
-            },
-            "a": {
-              "type": "number"
-            }
-          },
-          "required": [
-            "r",
-            "g",
-            "b",
-            "a"
-          ],
-          "additionalProperties": false,
-          "title": "Tint"
-        },
-        "teamColorEnabled": {
-          "type": [
-            "boolean",
-            "null"
-          ],
-          "title": "Team Color Enabled"
-        },
         "outline": {
           "type": [
             "object",
             "null"
           ],
-          "properties": {
-            "enabled": {
-              "type": [
-                "boolean",
-                "null"
-              ],
-              "title": "Enabled"
-            },
-            "width": {
-              "type": [
-                "number",
-                "null"
-              ],
-              "title": "Width",
-              "minimum": 0.0,
-              "x-moyva-editorMinimum": 0.0
-            },
-            "color": {
-              "type": [
-                "object",
-                "null"
-              ],
-              "properties": {
-                "r": {
-                  "type": "number"
-                },
-                "g": {
-                  "type": "number"
-                },
-                "b": {
-                  "type": "number"
-                },
-                "a": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "r",
-                "g",
-                "b",
-                "a"
-              ],
-              "additionalProperties": false,
-              "title": "Color"
-            }
-          },
+          "properties": {},
           "additionalProperties": false,
           "title": "Outline"
         },
@@ -524,22 +437,7 @@
             "object",
             "null"
           ],
-          "properties": {
-            "cast": {
-              "type": [
-                "boolean",
-                "null"
-              ],
-              "title": "Cast"
-            },
-            "receive": {
-              "type": [
-                "boolean",
-                "null"
-              ],
-              "title": "Receive"
-            }
-          },
+          "properties": {},
           "additionalProperties": false,
           "title": "Shadows"
         },

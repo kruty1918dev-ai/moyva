@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://moyva.local/schemas/vfx-catalog.schema.json",
-  "title": "Moyva — VFX Catalog Config",
-  "description": "JSON source of truth для Kruty1918.Moyva.Vfx.API.VfxCatalogConfig. Мапить доменні VFX-події на pooled префаби; runtime читає JSON напряму через frozen snapshot.",
+  "title": "Moyva — Vfx Catalog Config",
+  "description": "JSON source of truth для Kruty1918.Moyva.Vfx.API.VfxCatalogConfig. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -27,7 +27,9 @@
     "id": {
       "type": "string",
       "minLength": 1,
-      "title": "Стабільний ID"
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
     },
     "model": {
       "const": "vfx-catalog"
@@ -46,31 +48,27 @@
           "object",
           "null"
         ],
-        "additionalProperties": false,
-        "required": [
-          "eventName",
-          "prefab"
-        ],
         "properties": {
           "eventName": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Стабільний VFX event id (див. VfxEventIds), наприклад building-placed."
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Event Name"
           },
           "context": {
             "type": [
               "string",
               "null"
             ],
-            "default": "",
-            "description": "Опційний контекст: unit:<typeId>, tile:<typeId>. Контекстне правило має пріоритет над базовим."
+            "title": "Context"
           },
           "prefab": {
             "type": [
               "object",
               "null"
             ],
-            "description": "Opaque Unity asset reference на pooled VFX prefab з VfxEffect на root.",
+            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
             "properties": {
               "$asset": {
                 "type": "string",
@@ -87,76 +85,123 @@
             },
             "required": [
               "$asset"
-            ]
+            ],
+            "title": "Prefab"
           },
           "priority": {
             "type": "integer",
-            "minimum": 0,
-            "maximum": 2,
-            "default": 1,
-            "description": "0 = low (ambient/dust), 1 = normal, 2 = critical (kill/capture — витісняє найстаріший ефект при переповненні)."
+            "title": "Priority",
+            "description": "0 = low (ambient/dust), 1 = normal, 2 = critical (kill/capture).",
+            "minimum": 0.0,
+            "maximum": 2.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 2.0
           },
           "maxConcurrent": {
             "type": "integer",
-            "minimum": 0,
-            "default": 0,
-            "description": "Одночасних інстансів цього ефекту. 0 = лише глобальний бюджет."
+            "title": "Max Concurrent",
+            "description": "Одночасних інстансів цього ефекту. 0 = лише глобальний бюджет.",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
           },
           "prewarm": {
             "type": "integer",
-            "minimum": 0,
-            "default": 0
+            "title": "Prewarm",
+            "description": "Кількість інстансів для прогріву пулу на Initialize.",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
           },
           "duration": {
             "type": "number",
-            "minimum": 0,
-            "default": 0,
-            "description": "<=0 — взяти duration із VfxEffect на префабі."
+            "title": "Duration",
+            "description": "Тривалість до auto-return. <=0 — взяти duration із VfxEffect на префабі."
           },
           "scale": {
             "type": "number",
-            "exclusiveMinimum": 0,
-            "default": 1
+            "title": "Scale",
+            "description": "Множник world-scale ефекту.",
+            "minimum": 0.01,
+            "x-moyva-editorMinimum": 0.01
           },
           "cooldownPerKey": {
             "type": "number",
-            "minimum": 0,
-            "default": 0,
-            "description": "Мінімальний інтервал між спавнами з тим самим ключем (наприклад unitId)."
+            "title": "Cooldown Per Key",
+            "description": "Мінімальний інтервал між спавнами з тим самим dedupeKey (наприклад unitId). 0 = без троттлингу.",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
           },
           "factionTint": {
             "type": "boolean",
-            "default": false,
-            "description": "Підфарбувати tintTargets ефекту кольором фракції власника."
+            "title": "Faction Tint",
+            "description": "Підфарбувати tint-системи ефекту кольором фракції власника."
           },
           "cullDistance": {
             "type": "number",
-            "minimum": 0,
-            "default": 0
+            "title": "Cull Distance",
+            "description": "Не спавнити, якщо подія далі за цю дистанцію від камери. 0 = без обмеження.",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
           },
           "maxOrthoSize": {
             "type": "number",
-            "minimum": 0,
-            "default": 0,
-            "description": "Не спавнити ефект, якщо orthographicSize камери більший (далекий zoom). 0 = вимкнено."
+            "title": "Max Ortho Size",
+            "description": "Не спавнити low-priority ефект, якщо orthographicSize камери більший (далекий zoom). 0 = вимкнено.",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
           }
-        }
-      }
+        },
+        "additionalProperties": false
+      },
+      "title": "Effects"
     },
     "budget": {
       "type": [
         "object",
         "null"
       ],
-      "additionalProperties": false,
       "properties": {
-        "maxActivePerformance": { "type": "integer", "minimum": 1, "default": 24 },
-        "maxActiveBalanced": { "type": "integer", "minimum": 1, "default": 48 },
-        "maxActiveQuality": { "type": "integer", "minimum": 1, "default": 96 },
-        "maxSpawnsPerFrame": { "type": "integer", "minimum": 1, "default": 6 },
-        "defaultCullDistance": { "type": "number", "minimum": 0, "default": 90 },
-        "lowPriorityMaxOrthoSize": { "type": "number", "minimum": 0, "default": 0 }
-      }
+        "maxActivePerformance": {
+          "type": "integer",
+          "title": "Max Active Performance",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "maxActiveBalanced": {
+          "type": "integer",
+          "title": "Max Active Balanced",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "maxActiveQuality": {
+          "type": "integer",
+          "title": "Max Active Quality",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "maxSpawnsPerFrame": {
+          "type": "integer",
+          "title": "Max Spawns Per Frame",
+          "description": "Максимум нових спавнів за один кадр (решта drop).",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "defaultCullDistance": {
+          "type": "number",
+          "title": "Default Cull Distance",
+          "description": "Дистанція від камери, за якою не-критичні ефекти не спавняться. 0 = вимкнено.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "lowPriorityMaxOrthoSize": {
+          "type": "number",
+          "title": "Low Priority Max Ortho Size",
+          "description": "orthographicSize камери, за яким low-priority ефекти повністю вимикаються. 0 = вимкнено.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Budget"
     }
   }
 }

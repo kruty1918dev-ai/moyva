@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://moyva.local/schemas/gameplay-motion.schema.json",
   "title": "Moyva — Gameplay Motion Config",
-  "description": "JSON source of truth для Kruty1918.Moyva.Animations.API.GameplayMotionConfig — єдиний canonical motion vocabulary для unit locomotion, unit transitions та building transitions.",
+  "description": "JSON source of truth для Kruty1918.Moyva.Animations.API.GameplayMotionConfig. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -28,102 +28,477 @@
       "type": "string",
       "minLength": 1,
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-      "title": "Стабільний ID"
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
     },
     "model": {
       "const": "gameplay-motion"
     },
-    "unitLocomotion": {
+    "migration": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true
+    },
+    "unitLocomotion": {
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
-        "acceleration": { "type": "number" },
-        "deceleration": { "type": "number" },
-        "turnSpeedDegPerSec": { "type": "number" },
-        "faceTravelDirection": { "type": "boolean" },
-        "bobAmplitude": { "type": "number" },
-        "bobFrequency": { "type": "number" },
-        "cornerAnticipation": { "type": "number" }
-      }
+        "acceleration": {
+          "type": "number",
+          "title": "Acceleration",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "deceleration": {
+          "type": "number",
+          "title": "Deceleration",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "turnSpeedDegPerSec": {
+          "type": "number",
+          "title": "Turn Speed Deg Per Sec",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "faceTravelDirection": {
+          "type": "boolean",
+          "title": "Face Travel Direction"
+        },
+        "bobAmplitude": {
+          "type": "number",
+          "title": "Bob Amplitude",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "bobFrequency": {
+          "type": "number",
+          "title": "Bob Frequency",
+          "description": "Bob cycles per world unit travelled — speed-scaled footfall rhythm.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "cornerAnticipation": {
+          "type": "number",
+          "title": "Corner Anticipation",
+          "description": "Heading anticipation: fraction of a tile before a corner where facing starts to blend toward the next segment.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Unit Locomotion"
     },
     "unitTransitions": {
-      "type": "object",
-      "additionalProperties": false,
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
-        "deployDuration": { "type": "number" },
-        "deployRiseHeight": { "type": "number" },
-        "deployScaleStart": { "type": "number" },
-        "deployEase": { "$ref": "#/$defs/ease" },
-        "deathDuration": { "type": "number" },
-        "deathSinkDepth": { "type": "number" },
-        "deathTiltDeg": { "type": "number" },
-        "deathEase": { "$ref": "#/$defs/ease" },
-        "hitRecoilDuration": { "type": "number" },
-        "hitRecoilDistance": { "type": "number" },
-        "hitRecoilEase": { "$ref": "#/$defs/ease" },
-        "attackLungeDuration": { "type": "number" },
-        "attackLungeDistance": { "type": "number" },
-        "attackLungeEase": { "$ref": "#/$defs/ease" },
-        "garrisonEnterDuration": { "type": "number" },
-        "garrisonExitDuration": { "type": "number" },
-        "garrisonShrinkScale": { "type": "number" },
-        "garrisonEase": { "$ref": "#/$defs/ease" }
-      }
+        "deployDuration": {
+          "type": "number",
+          "title": "Deploy Duration",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "deployRiseHeight": {
+          "type": "number",
+          "title": "Deploy Rise Height"
+        },
+        "deployScaleStart": {
+          "type": "number",
+          "title": "Deploy Scale Start",
+          "minimum": 0.1,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.1,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "deployEase": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Linear|SmoothStep|InQuad|OutQuad|InOutQuad|InCubic|OutCubic|InOutCubic|OutBackSoft))$",
+          "x-enumNames": [
+            "Linear",
+            "SmoothStep",
+            "InQuad",
+            "OutQuad",
+            "InOutQuad",
+            "InCubic",
+            "OutCubic",
+            "InOutCubic",
+            "OutBackSoft"
+          ],
+          "x-flags": false,
+          "title": "Deploy Ease"
+        },
+        "deathDuration": {
+          "type": "number",
+          "title": "Death Duration",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "deathSinkDepth": {
+          "type": "number",
+          "title": "Death Sink Depth"
+        },
+        "deathTiltDeg": {
+          "type": "number",
+          "title": "Death Tilt Deg"
+        },
+        "deathEase": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Linear|SmoothStep|InQuad|OutQuad|InOutQuad|InCubic|OutCubic|InOutCubic|OutBackSoft))$",
+          "x-enumNames": [
+            "Linear",
+            "SmoothStep",
+            "InQuad",
+            "OutQuad",
+            "InOutQuad",
+            "InCubic",
+            "OutCubic",
+            "InOutCubic",
+            "OutBackSoft"
+          ],
+          "x-flags": false,
+          "title": "Death Ease"
+        },
+        "hitRecoilDuration": {
+          "type": "number",
+          "title": "Hit Recoil Duration",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "hitRecoilDistance": {
+          "type": "number",
+          "title": "Hit Recoil Distance"
+        },
+        "hitRecoilEase": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Linear|SmoothStep|InQuad|OutQuad|InOutQuad|InCubic|OutCubic|InOutCubic|OutBackSoft))$",
+          "x-enumNames": [
+            "Linear",
+            "SmoothStep",
+            "InQuad",
+            "OutQuad",
+            "InOutQuad",
+            "InCubic",
+            "OutCubic",
+            "InOutCubic",
+            "OutBackSoft"
+          ],
+          "x-flags": false,
+          "title": "Hit Recoil Ease"
+        },
+        "attackLungeDuration": {
+          "type": "number",
+          "title": "Attack Lunge Duration",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "attackLungeDistance": {
+          "type": "number",
+          "title": "Attack Lunge Distance"
+        },
+        "attackLungeEase": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Linear|SmoothStep|InQuad|OutQuad|InOutQuad|InCubic|OutCubic|InOutCubic|OutBackSoft))$",
+          "x-enumNames": [
+            "Linear",
+            "SmoothStep",
+            "InQuad",
+            "OutQuad",
+            "InOutQuad",
+            "InCubic",
+            "OutCubic",
+            "InOutCubic",
+            "OutBackSoft"
+          ],
+          "x-flags": false,
+          "title": "Attack Lunge Ease"
+        },
+        "garrisonEnterDuration": {
+          "type": "number",
+          "title": "Garrison Enter Duration",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "garrisonExitDuration": {
+          "type": "number",
+          "title": "Garrison Exit Duration",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "garrisonShrinkScale": {
+          "type": "number",
+          "title": "Garrison Shrink Scale",
+          "minimum": 0.05,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.05,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "garrisonEase": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Linear|SmoothStep|InQuad|OutQuad|InOutQuad|InCubic|OutCubic|InOutCubic|OutBackSoft))$",
+          "x-enumNames": [
+            "Linear",
+            "SmoothStep",
+            "InQuad",
+            "OutQuad",
+            "InOutQuad",
+            "InCubic",
+            "OutCubic",
+            "InOutCubic",
+            "OutBackSoft"
+          ],
+          "x-flags": false,
+          "title": "Garrison Ease"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Unit Transitions"
     },
     "building": {
-      "type": "object",
-      "additionalProperties": false,
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
-        "previewMoveSharpness": { "type": "number" },
-        "previewDragSharpness": { "type": "number" },
-        "previewSnapSharpness": { "type": "number" },
-        "placedSnapSharpness": { "type": "number" },
-        "previewRotateDuration": { "type": "number" },
-        "previewRotateEase": { "$ref": "#/$defs/ease" },
-        "emergeDepth": { "type": "number" },
-        "emergeDuration": { "type": "number" },
-        "emergeEase": { "$ref": "#/$defs/ease" },
-        "emergeScaleYStart": { "type": "number" },
-        "demolishDuration": { "type": "number" },
-        "demolishSinkDepth": { "type": "number" },
-        "demolishShakeAmplitude": { "type": "number" },
-        "demolishEase": { "$ref": "#/$defs/ease" },
-        "operationalDuration": { "type": "number" },
-        "operationalStartScale": { "type": "number" },
-        "operationalRiseHeight": { "type": "number" },
-        "operationalEase": { "$ref": "#/$defs/ease" },
-        "relocationSpeed": { "type": "number" },
-        "relocationLift": { "type": "number" },
-        "relocationEase": { "$ref": "#/$defs/ease" },
-        "blockedShakeAmplitude": { "type": "number" },
-        "blockedShakeDuration": { "type": "number" }
-      }
+        "previewMoveSharpness": {
+          "type": "number",
+          "title": "Preview Move Sharpness",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "previewDragSharpness": {
+          "type": "number",
+          "title": "Preview Drag Sharpness",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "previewSnapSharpness": {
+          "type": "number",
+          "title": "Preview Snap Sharpness",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "placedSnapSharpness": {
+          "type": "number",
+          "title": "Placed Snap Sharpness",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "previewRotateDuration": {
+          "type": "number",
+          "title": "Preview Rotate Duration",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "previewRotateEase": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Linear|SmoothStep|InQuad|OutQuad|InOutQuad|InCubic|OutCubic|InOutCubic|OutBackSoft))$",
+          "x-enumNames": [
+            "Linear",
+            "SmoothStep",
+            "InQuad",
+            "OutQuad",
+            "InOutQuad",
+            "InCubic",
+            "OutCubic",
+            "InOutCubic",
+            "OutBackSoft"
+          ],
+          "x-flags": false,
+          "title": "Preview Rotate Ease"
+        },
+        "emergeDepth": {
+          "type": "number",
+          "title": "Emerge Depth",
+          "description": "Placement emerge: how far below final Y the building starts, in world units.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "emergeDuration": {
+          "type": "number",
+          "title": "Emerge Duration",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "emergeEase": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Linear|SmoothStep|InQuad|OutQuad|InOutQuad|InCubic|OutCubic|InOutCubic|OutBackSoft))$",
+          "x-enumNames": [
+            "Linear",
+            "SmoothStep",
+            "InQuad",
+            "OutQuad",
+            "InOutQuad",
+            "InCubic",
+            "OutCubic",
+            "InOutCubic",
+            "OutBackSoft"
+          ],
+          "x-flags": false,
+          "title": "Emerge Ease"
+        },
+        "emergeScaleYStart": {
+          "type": "number",
+          "title": "Emerge Scale Y Start",
+          "minimum": 0.5,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.5,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "demolishDuration": {
+          "type": "number",
+          "title": "Demolish Duration",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "demolishSinkDepth": {
+          "type": "number",
+          "title": "Demolish Sink Depth"
+        },
+        "demolishShakeAmplitude": {
+          "type": "number",
+          "title": "Demolish Shake Amplitude"
+        },
+        "demolishEase": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Linear|SmoothStep|InQuad|OutQuad|InOutQuad|InCubic|OutCubic|InOutCubic|OutBackSoft))$",
+          "x-enumNames": [
+            "Linear",
+            "SmoothStep",
+            "InQuad",
+            "OutQuad",
+            "InOutQuad",
+            "InCubic",
+            "OutCubic",
+            "InOutCubic",
+            "OutBackSoft"
+          ],
+          "x-flags": false,
+          "title": "Demolish Ease"
+        },
+        "operationalDuration": {
+          "type": "number",
+          "title": "Operational Duration",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "operationalStartScale": {
+          "type": "number",
+          "title": "Operational Start Scale",
+          "minimum": 0.5,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.5,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "operationalRiseHeight": {
+          "type": "number",
+          "title": "Operational Rise Height"
+        },
+        "operationalEase": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Linear|SmoothStep|InQuad|OutQuad|InOutQuad|InCubic|OutCubic|InOutCubic|OutBackSoft))$",
+          "x-enumNames": [
+            "Linear",
+            "SmoothStep",
+            "InQuad",
+            "OutQuad",
+            "InOutQuad",
+            "InCubic",
+            "OutCubic",
+            "InOutCubic",
+            "OutBackSoft"
+          ],
+          "x-flags": false,
+          "title": "Operational Ease"
+        },
+        "relocationSpeed": {
+          "type": "number",
+          "title": "Relocation Speed",
+          "description": "Relocation travel speed in world units/sec; lift is a small arc on top.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "relocationLift": {
+          "type": "number",
+          "title": "Relocation Lift"
+        },
+        "relocationEase": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Linear|SmoothStep|InQuad|OutQuad|InOutQuad|InCubic|OutCubic|InOutCubic|OutBackSoft))$",
+          "x-enumNames": [
+            "Linear",
+            "SmoothStep",
+            "InQuad",
+            "OutQuad",
+            "InOutQuad",
+            "InCubic",
+            "OutCubic",
+            "InOutCubic",
+            "OutBackSoft"
+          ],
+          "x-flags": false,
+          "title": "Relocation Ease"
+        },
+        "blockedShakeAmplitude": {
+          "type": "number",
+          "title": "Blocked Shake Amplitude"
+        },
+        "blockedShakeDuration": {
+          "type": "number",
+          "title": "Blocked Shake Duration",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Building"
     },
     "accessibility": {
-      "type": "object",
-      "additionalProperties": false,
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
-        "reducedMotionDurationScale": { "type": "number" },
-        "secondaryMotionPerformanceScale": { "type": "number" },
-        "secondaryMotionBalancedScale": { "type": "number" },
-        "secondaryMotionQualityScale": { "type": "number" }
-      }
-    }
-  },
-  "$defs": {
-    "ease": {
-      "type": "string",
-      "enum": [
-        "Linear",
-        "SmoothStep",
-        "InQuad",
-        "OutQuad",
-        "InOutQuad",
-        "InCubic",
-        "OutCubic",
-        "InOutCubic",
-        "OutBackSoft"
-      ]
+        "reducedMotionDurationScale": {
+          "type": "number",
+          "title": "Reduced Motion Duration Scale",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "secondaryMotionPerformanceScale": {
+          "type": "number",
+          "title": "Secondary Motion Performance Scale",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "secondaryMotionBalancedScale": {
+          "type": "number",
+          "title": "Secondary Motion Balanced Scale",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "secondaryMotionQualityScale": {
+          "type": "number",
+          "title": "Secondary Motion Quality Scale",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Accessibility"
     }
   }
 }

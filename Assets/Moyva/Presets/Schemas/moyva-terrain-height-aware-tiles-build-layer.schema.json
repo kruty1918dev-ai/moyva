@@ -831,53 +831,6 @@
       "type": "boolean",
       "title": "Use Multi Layers"
     },
-    "worldGrid": {
-      "type": [
-        "object",
-        "null"
-      ],
-      "additionalProperties": {
-        "type": [
-          "object",
-          "null"
-        ],
-        "additionalProperties": {
-          "type": "boolean"
-        }
-      },
-      "title": "World Grid"
-    },
-    "availableClusters": {
-      "type": [
-        "array",
-        "null"
-      ],
-      "items": {
-        "type": [
-          "object",
-          "null"
-        ],
-        "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
-        "properties": {
-          "$asset": {
-            "type": "string",
-            "title": "Asset ID"
-          },
-          "editorPath": {
-            "type": "string",
-            "description": "Editor-only path для діагностики/регенерації catalog."
-          },
-          "required": {
-            "type": "boolean",
-            "default": true
-          }
-        },
-        "required": [
-          "$asset"
-        ]
-      },
-      "title": "Available Clusters"
-    },
     "masks": {
       "type": [
         "array",

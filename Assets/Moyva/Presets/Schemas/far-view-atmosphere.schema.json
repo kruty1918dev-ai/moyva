@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://moyva.local/schemas/far-view-atmosphere.schema.json",
   "title": "Moyva — Far View Atmosphere Config",
-  "description": "JSON source of truth для Kruty1918.Moyva.Visuals.FarViewAtmosphereConfig. Художні параметри high-altitude ефекту; пороги переходу живуть у camera-settings (farView).",
+  "description": "JSON source of truth для Kruty1918.Moyva.Visuals.FarViewAtmosphereConfig. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -28,98 +28,328 @@
       "type": "string",
       "minLength": 1,
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-      "title": "Стабільний ID"
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
     },
     "model": {
       "const": "far-view-atmosphere"
     },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "enabled": {
       "type": "boolean",
-      "default": true
+      "title": "Enabled"
     },
     "haze": {
-      "type": ["object", "null"],
-      "additionalProperties": false,
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
-        "atmosphereColor": { "$ref": "#/$defs/color" },
-        "skyColor": { "$ref": "#/$defs/color" },
-        "strength": { "type": "number", "minimum": 0, "maximum": 1 },
-        "depthStart": { "type": "number", "minimum": 0 },
-        "depthEnd": { "type": "number", "minimum": 0.01 },
-        "gamma": { "type": "number", "minimum": 0.2, "maximum": 4 },
-        "skyFill": { "type": "number", "minimum": 0, "maximum": 1 }
-      }
+        "atmosphereColor": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Atmosphere Color",
+          "description": "Холодне світле повітря на далеких поверхнях."
+        },
+        "skyColor": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Sky Color",
+          "description": "Колір для неба/нескінченності та краю мапи."
+        },
+        "strength": {
+          "type": "number",
+          "title": "Strength",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "depthStart": {
+          "type": "number",
+          "title": "Depth Start",
+          "description": "View-distance (units), звідки haze починає наростати.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "depthEnd": {
+          "type": "number",
+          "title": "Depth End",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "gamma": {
+          "type": "number",
+          "title": "Gamma",
+          "minimum": 0.2,
+          "maximum": 4.0,
+          "x-moyva-editorMinimum": 0.2,
+          "x-moyva-editorMaximum": 4.0
+        },
+        "skyFill": {
+          "type": "number",
+          "title": "Sky Fill",
+          "description": "Наскільки небо (far depth) заповнюється атмосферою при full weight.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Haze"
     },
     "flatten": {
-      "type": ["object", "null"],
-      "additionalProperties": false,
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
-        "strength": { "type": "number", "minimum": 0, "maximum": 1 },
-        "radiusPixels": { "type": "number", "minimum": 0.25, "maximum": 4 }
-      }
+        "strength": {
+          "type": "number",
+          "title": "Strength",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "radiusPixels": {
+          "type": "number",
+          "title": "Radius Pixels",
+          "description": "Радіус локального середнього в пікселях (при renderScale=1).",
+          "minimum": 0.25,
+          "maximum": 4.0,
+          "x-moyva-editorMinimum": 0.25,
+          "x-moyva-editorMaximum": 4.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Flatten"
     },
     "veil": {
-      "type": ["object", "null"],
-      "additionalProperties": false,
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
-        "strength": { "type": "number", "minimum": 0, "maximum": 1 },
-        "scale": { "type": "number", "exclusiveMinimum": 0 },
-        "speed": { "type": "number", "minimum": 0 },
-        "altitude": { "type": "number", "minimum": 0 },
-        "coverage": { "type": "number", "minimum": 0, "maximum": 1 },
-        "windDirection": { "$ref": "#/$defs/vector2" }
-      }
+        "strength": {
+          "type": "number",
+          "title": "Strength",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "scale": {
+          "type": "number",
+          "title": "Scale",
+          "description": "Просторовий масштаб шару у світових одиницях (більше = дрібніше).",
+          "minimum": 0.001,
+          "x-moyva-editorMinimum": 0.001
+        },
+        "speed": {
+          "type": "number",
+          "title": "Speed",
+          "description": "Швидкість дрейфу (world units/сек уздовж wind direction).",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "altitude": {
+          "type": "number",
+          "title": "Altitude",
+          "description": "Висота уявної хмарної площини над землею — дає parallax.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "coverage": {
+          "type": "number",
+          "title": "Coverage",
+          "description": "Щільність покриття: 0 = рідкісні клаптики, 1 = суцільна пелена.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "windDirection": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false,
+          "title": "Wind Direction",
+          "description": "Напрямок дрейфу у world XZ (нормалізується)."
+        }
+      },
+      "additionalProperties": false,
+      "title": "Veil"
     },
     "palette": {
-      "type": ["object", "null"],
-      "additionalProperties": false,
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
-        "saturation": { "type": "number", "minimum": 0, "maximum": 1.5 },
-        "contrast": { "type": "number", "minimum": 0.5, "maximum": 1.5 },
-        "shadowLift": { "type": "number", "minimum": 0, "maximum": 0.6 },
-        "highlightCompress": { "type": "number", "minimum": 0, "maximum": 0.8 }
-      }
+        "saturation": {
+          "type": "number",
+          "title": "Saturation",
+          "description": "Множник насиченості на full far-view.",
+          "minimum": 0.0,
+          "maximum": 1.5,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.5
+        },
+        "contrast": {
+          "type": "number",
+          "title": "Contrast",
+          "description": "Множник контрасту на full far-view.",
+          "minimum": 0.5,
+          "maximum": 1.5,
+          "x-moyva-editorMinimum": 0.5,
+          "x-moyva-editorMaximum": 1.5
+        },
+        "shadowLift": {
+          "type": "number",
+          "title": "Shadow Lift",
+          "description": "Підйом тіней у бік атмосферного кольору.",
+          "minimum": 0.0,
+          "maximum": 0.6,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.6
+        },
+        "highlightCompress": {
+          "type": "number",
+          "title": "Highlight Compress",
+          "description": "Компресія яскравих хайлайтів.",
+          "minimum": 0.0,
+          "maximum": 0.8,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.8
+        }
+      },
+      "additionalProperties": false,
+      "title": "Palette"
     },
     "edge": {
-      "type": ["object", "null"],
-      "additionalProperties": false,
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
-        "vignetteStrength": { "type": "number", "minimum": 0, "maximum": 1 },
-        "vignetteRadius": { "type": "number", "minimum": 0.5, "maximum": 2.5 }
-      }
+        "vignetteStrength": {
+          "type": "number",
+          "title": "Vignette Strength",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "vignetteRadius": {
+          "type": "number",
+          "title": "Vignette Radius",
+          "minimum": 0.5,
+          "maximum": 2.5,
+          "x-moyva-editorMinimum": 0.5,
+          "x-moyva-editorMaximum": 2.5
+        }
+      },
+      "additionalProperties": false,
+      "title": "Edge"
     },
     "quality": {
-      "type": ["object", "null"],
-      "additionalProperties": false,
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
-        "performanceVeilOctaves": { "type": "integer", "minimum": 1, "maximum": 3 },
-        "balancedVeilOctaves": { "type": "integer", "minimum": 1, "maximum": 3 },
-        "qualityVeilOctaves": { "type": "integer", "minimum": 1, "maximum": 3 },
-        "performanceSimplifiedFlatten": { "type": "boolean" },
-        "ditherEnabled": { "type": "boolean" }
-      }
-    }
-  },
-  "$defs": {
-    "color": {
-      "type": "object",
+        "performanceVeilOctaves": {
+          "type": "integer",
+          "title": "Performance Veil Octaves",
+          "minimum": 1.0,
+          "maximum": 3.0,
+          "x-moyva-editorMinimum": 1.0,
+          "x-moyva-editorMaximum": 3.0
+        },
+        "balancedVeilOctaves": {
+          "type": "integer",
+          "title": "Balanced Veil Octaves",
+          "minimum": 1.0,
+          "maximum": 3.0,
+          "x-moyva-editorMinimum": 1.0,
+          "x-moyva-editorMaximum": 3.0
+        },
+        "qualityVeilOctaves": {
+          "type": "integer",
+          "title": "Quality Veil Octaves",
+          "minimum": 1.0,
+          "maximum": 3.0,
+          "x-moyva-editorMinimum": 1.0,
+          "x-moyva-editorMaximum": 3.0
+        },
+        "performanceSimplifiedFlatten": {
+          "type": "boolean",
+          "title": "Performance Simplified Flatten",
+          "description": "Performance tier: простіший flatten (без зонда-семплів)."
+        },
+        "ditherEnabled": {
+          "type": "boolean",
+          "title": "Dither Enabled",
+          "description": "Dither для боротьби з banding на градієнтах."
+        }
+      },
       "additionalProperties": false,
-      "required": ["r", "g", "b"],
-      "properties": {
-        "r": { "type": "number", "minimum": 0, "maximum": 1 },
-        "g": { "type": "number", "minimum": 0, "maximum": 1 },
-        "b": { "type": "number", "minimum": 0, "maximum": 1 },
-        "a": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 }
-      }
-    },
-    "vector2": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["x", "y"],
-      "properties": {
-        "x": { "type": "number" },
-        "y": { "type": "number" }
-      }
+      "title": "Quality"
     }
   }
 }

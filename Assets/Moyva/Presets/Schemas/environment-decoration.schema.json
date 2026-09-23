@@ -1,204 +1,257 @@
 {
- "$schema": "https://json-schema.org/draft/2020-12/schema",
- "$id": "https://moyva.local/schemas/environment-decoration.schema.json",
- "title": "Moyva — Environment Decoration Config",
- "description": "Configuration for procedural environment decoration generation. Controls density, clustering, biome rules, and asset selection for visual-only decorations.",
- "type": "object",
- "additionalProperties": false,
- "required": [
-  "schema",
-  "version",
-  "id",
-  "model"
- ],
- "properties": {
-  "$schema": {
-   "type": "string",
-   "title": "JSON Schema"
-  },
-  "schema": {
-   "const": "moyva.environment-decoration"
-  },
-  "version": {
-   "type": "integer",
-   "minimum": 1,
-   "default": 1
-  },
-  "id": {
-   "type": "string",
-   "minLength": 1,
-   "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-   "title": "Стабільний ID"
-  },
-  "model": {
-   "const": "environment-decoration"
-  },
-  "migration": {
-   "type": "object",
-   "additionalProperties": true
-  },
-  "enabled": {
-   "type": "boolean",
-   "default": true,
-   "title": "Enabled"
-  },
-  "globalDensity": {
-   "type": "number",
-   "minimum": 0,
-   "maximum": 2,
-   "default": 1.0,
-   "title": "Global Density"
-  },
-  "seedOffset": {
-   "type": "integer",
-   "default": 0,
-   "title": "Seed Offset"
-  },
-  "maxObjectsPerTile": {
-   "type": "integer",
-   "minimum": 0,
-   "default": 3,
-   "title": "Max Objects Per Tile"
-  },
-  "clusterStrength": {
-   "type": "number",
-   "minimum": 0,
-   "maximum": 1,
-   "default": 0.7,
-   "title": "Cluster Strength"
-  },
-  "clusterRadius": {
-   "type": "integer",
-   "minimum": 1,
-   "default": 3,
-   "title": "Cluster Radius"
-  },
-  "typeDensities": {
-   "type": "object",
-   "properties": {
-    "treeDensity": {
-     "type": "number",
-     "minimum": 0,
-     "maximum": 1,
-     "default": 0.15
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/environment-decoration.schema.json",
+  "title": "Moyva — Environment Decoration Config",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.API.EnvironmentDecorationConfig. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
     },
-    "bushDensity": {
-     "type": "number",
-     "minimum": 0,
-     "maximum": 1,
-     "default": 0.1
+    "schema": {
+      "const": "moyva.environment-decoration"
     },
-    "grassDensity": {
-     "type": "number",
-     "minimum": 0,
-     "maximum": 1,
-     "default": 0.2
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
     },
-    "rockDensity": {
-     "type": "number",
-     "minimum": 0,
-     "maximum": 1,
-     "default": 0.08
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "environment-decoration"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled"
+    },
+    "globalDensity": {
+      "type": "number",
+      "title": "Global Density",
+      "minimum": 0.0,
+      "maximum": 2.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 2.0
+    },
+    "seedOffset": {
+      "type": "integer",
+      "title": "Seed Offset"
+    },
+    "maxObjectsPerTile": {
+      "type": "integer",
+      "title": "Max Objects Per Tile",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "clusterStrength": {
+      "type": "number",
+      "title": "Cluster Strength",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "clusterRadius": {
+      "type": "integer",
+      "title": "Cluster Radius",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "typeDensities": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "treeDensity": {
+          "type": "number",
+          "title": "Tree Density",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "bushDensity": {
+          "type": "number",
+          "title": "Bush Density",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "grassDensity": {
+          "type": "number",
+          "title": "Grass Density",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "rockDensity": {
+          "type": "number",
+          "title": "Rock Density",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Type Densities"
+    },
+    "biomeRules": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "grassland": {
+          "type": "number",
+          "title": "Grassland",
+          "minimum": 0.0,
+          "maximum": 3.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 3.0
+        },
+        "forest": {
+          "type": "number",
+          "title": "Forest",
+          "minimum": 0.0,
+          "maximum": 3.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 3.0
+        },
+        "rocky": {
+          "type": "number",
+          "title": "Rocky",
+          "minimum": 0.0,
+          "maximum": 3.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 3.0
+        },
+        "coast": {
+          "type": "number",
+          "title": "Coast",
+          "minimum": 0.0,
+          "maximum": 3.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 3.0
+        },
+        "water": {
+          "type": "number",
+          "title": "Water",
+          "minimum": 0.0,
+          "maximum": 3.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 3.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Biome Rules"
+    },
+    "exclusions": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "buildingExclusionRadius": {
+          "type": "integer",
+          "title": "Building Exclusion Radius",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "settlementExclusionRadius": {
+          "type": "integer",
+          "title": "Settlement Exclusion Radius",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "suppressWaterDecorations": {
+          "type": "boolean",
+          "title": "Suppress Water Decorations"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Exclusions"
+    },
+    "visualVariation": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enableRotation": {
+          "type": "boolean",
+          "title": "Enable Rotation"
+        },
+        "enableScaleVariation": {
+          "type": "boolean",
+          "title": "Enable Scale Variation"
+        },
+        "minScale": {
+          "type": "number",
+          "title": "Min Scale",
+          "minimum": 0.5,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.5,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "maxScale": {
+          "type": "number",
+          "title": "Max Scale",
+          "minimum": 1.0,
+          "maximum": 1.5,
+          "x-moyva-editorMinimum": 1.0,
+          "x-moyva-editorMaximum": 1.5
+        },
+        "maxPositionOffset": {
+          "type": "number",
+          "title": "Max Position Offset",
+          "minimum": 0.0,
+          "maximum": 0.5,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.5
+        }
+      },
+      "additionalProperties": false,
+      "title": "Visual Variation"
+    },
+    "assetPools": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "type": [
+          "array",
+          "null"
+        ],
+        "items": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "title": "Asset Pools"
     }
-   },
-   "additionalProperties": false
-  },
-  "biomeRules": {
-   "type": "object",
-   "properties": {
-    "grassland": {
-     "type": "number",
-     "minimum": 0,
-     "maximum": 3,
-     "default": 1.2
-    },
-    "forest": {
-     "type": "number",
-     "minimum": 0,
-     "maximum": 3,
-     "default": 2.0
-    },
-    "rocky": {
-     "type": "number",
-     "minimum": 0,
-     "maximum": 3,
-     "default": 1.5
-    },
-    "coast": {
-     "type": "number",
-     "minimum": 0,
-     "maximum": 3,
-     "default": 0.5
-    },
-    "water": {
-     "type": "number",
-     "minimum": 0,
-     "maximum": 3,
-     "default": 0.0
-    }
-   },
-   "additionalProperties": false
-  },
-  "exclusions": {
-   "type": "object",
-   "properties": {
-    "buildingExclusionRadius": {
-     "type": "integer",
-     "minimum": 0,
-     "default": 1
-    },
-    "settlementExclusionRadius": {
-     "type": "integer",
-     "minimum": 0,
-     "default": 2
-    },
-    "suppressWaterDecorations": {
-     "type": "boolean",
-     "default": true
-    }
-   },
-   "additionalProperties": false
-  },
-  "visualVariation": {
-   "type": "object",
-   "properties": {
-    "enableRotation": {
-     "type": "boolean",
-     "default": true
-    },
-    "enableScaleVariation": {
-     "type": "boolean",
-     "default": true
-    },
-    "minScale": {
-     "type": "number",
-     "minimum": 0.5,
-     "maximum": 1,
-     "default": 0.85
-    },
-    "maxScale": {
-     "type": "number",
-     "minimum": 1,
-     "maximum": 1.5,
-     "default": 1.15
-    },
-    "maxPositionOffset": {
-     "type": "number",
-     "minimum": 0,
-     "maximum": 0.5,
-     "default": 0.2
-    }
-   },
-   "additionalProperties": false
-  },
-  "assetPools": {
-   "type": "object",
-   "additionalProperties": {
-    "type": "array",
-    "items": {
-     "type": "string"
-    }
-   }
   }
- }
 }

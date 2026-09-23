@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://moyva.local/schemas/world-generation.schema.json",
   "title": "Moyva — World Generation Config",
-  "description": "JSON source of truth for Kruty1918.Moyva.Generator.API.WorldGenerationConfig — deterministic geography engine parameters.",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.API.WorldGenerationConfig. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -26,53 +26,422 @@
     },
     "id": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
     },
     "model": {
       "const": "world-generation"
     },
-    "enabled": {
-      "type": "boolean",
-      "default": true
-    },
-    "maxGenerationAttempts": {
-      "type": "integer",
-      "minimum": 1,
-      "default": 6
-    },
-    "terrainLevels": {
-      "type": ["object", "null"],
-      "additionalProperties": true
-    },
-    "archetypes": {
-      "type": ["array", "null"],
-      "items": {
-        "type": ["object", "null"],
-        "properties": {
-          "id": { "type": ["string", "null"] },
-          "landRatio": { "type": "number", "minimum": 0.05, "maximum": 0.95 },
-          "centreCount": { "type": "integer", "minimum": 1 },
-          "centreRadius": { "type": "number" },
-          "coastWarp": { "type": "number" },
-          "mountainDensity": { "type": "number" },
-          "mountainRangeCount": { "type": "integer" },
-          "hillDensity": { "type": "number" },
-          "riverDensity": { "type": "number" },
-          "lakeDensity": { "type": "number" },
-          "aridity": { "type": "number" },
-          "forestDensity": { "type": "number" },
-          "snowDensity": { "type": "number" }
-        }
-      }
-    },
-    "hydrology": { "type": ["object", "null"], "additionalProperties": true },
-    "coast": { "type": ["object", "null"], "additionalProperties": true },
-    "biomes": { "type": ["object", "null"], "additionalProperties": true },
-    "objects": { "type": ["object", "null"], "additionalProperties": true },
-    "fairness": { "type": ["object", "null"], "additionalProperties": true },
     "migration": {
       "type": "object",
       "additionalProperties": true
+    },
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled"
+    },
+    "maxGenerationAttempts": {
+      "type": "integer",
+      "title": "Max Generation Attempts",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "terrainLevels": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "waterLevel": {
+          "type": "integer",
+          "title": "Water Level",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "shoreLevel": {
+          "type": "integer",
+          "title": "Shore Level",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "landLevel": {
+          "type": "integer",
+          "title": "Land Level",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "hillLevel": {
+          "type": "integer",
+          "title": "Hill Level",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "maxLevel": {
+          "type": "integer",
+          "title": "Max Level",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "heightStep": {
+          "type": "number",
+          "title": "Height Step",
+          "minimum": 0.05,
+          "x-moyva-editorMinimum": 0.05
+        },
+        "waterSurfaceOffset": {
+          "type": "number",
+          "title": "Water Surface Offset",
+          "minimum": -0.9,
+          "maximum": -0.05,
+          "x-moyva-editorMinimum": -0.9,
+          "x-moyva-editorMaximum": -0.05
+        }
+      },
+      "additionalProperties": false,
+      "title": "Terrain Levels"
+    },
+    "archetypes": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Id"
+          },
+          "landRatio": {
+            "type": "number",
+            "title": "Land Ratio",
+            "minimum": 0.05,
+            "maximum": 0.95,
+            "x-moyva-editorMinimum": 0.05,
+            "x-moyva-editorMaximum": 0.95
+          },
+          "centreCount": {
+            "type": "integer",
+            "title": "Centre Count",
+            "minimum": 1.0,
+            "x-moyva-editorMinimum": 1.0
+          },
+          "centreRadius": {
+            "type": "number",
+            "title": "Centre Radius",
+            "minimum": 0.1,
+            "maximum": 1.5,
+            "x-moyva-editorMinimum": 0.1,
+            "x-moyva-editorMaximum": 1.5
+          },
+          "coastWarp": {
+            "type": "number",
+            "title": "Coast Warp",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
+          },
+          "mountainDensity": {
+            "type": "number",
+            "title": "Mountain Density",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "mountainRangeCount": {
+            "type": "integer",
+            "title": "Mountain Range Count",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
+          },
+          "hillDensity": {
+            "type": "number",
+            "title": "Hill Density",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "riverDensity": {
+            "type": "number",
+            "title": "River Density",
+            "minimum": 0.0,
+            "maximum": 3.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 3.0
+          },
+          "lakeDensity": {
+            "type": "number",
+            "title": "Lake Density",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "aridity": {
+            "type": "number",
+            "title": "Aridity",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "forestDensity": {
+            "type": "number",
+            "title": "Forest Density",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          },
+          "snowDensity": {
+            "type": "number",
+            "title": "Snow Density",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.0,
+            "x-moyva-editorMaximum": 1.0
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Archetypes"
+    },
+    "hydrology": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "riverAccumulationThreshold": {
+          "type": "integer",
+          "title": "River Accumulation Threshold",
+          "minimum": 2.0,
+          "x-moyva-editorMinimum": 2.0
+        },
+        "riverMinSourceLevel": {
+          "type": "integer",
+          "title": "River Min Source Level",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "riverSourceSpacing": {
+          "type": "integer",
+          "title": "River Source Spacing",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "riversPerThousandCells": {
+          "type": "number",
+          "title": "Rivers Per Thousand Cells",
+          "minimum": 0.01,
+          "maximum": 10.0,
+          "x-moyva-editorMinimum": 0.01,
+          "x-moyva-editorMaximum": 10.0
+        },
+        "fordEveryNCells": {
+          "type": "integer",
+          "title": "Ford Every N Cells",
+          "minimum": 2.0,
+          "x-moyva-editorMinimum": 2.0
+        },
+        "lakeMinDepth": {
+          "type": "number",
+          "title": "Lake Min Depth",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "lakeMaxFraction": {
+          "type": "number",
+          "title": "Lake Max Fraction",
+          "minimum": 0.0,
+          "maximum": 0.2,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.2
+        }
+      },
+      "additionalProperties": false,
+      "title": "Hydrology"
+    },
+    "coast": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "beachWidth": {
+          "type": "integer",
+          "title": "Beach Width",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "elevatedCoastCliffBias": {
+          "type": "number",
+          "title": "Elevated Coast Cliff Bias",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "shallowBandWidth": {
+          "type": "integer",
+          "title": "Shallow Band Width",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Coast"
+    },
+    "biomes": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "moistureScale": {
+          "type": "number",
+          "title": "Moisture Scale",
+          "minimum": 4.0,
+          "x-moyva-editorMinimum": 4.0
+        },
+        "forestScale": {
+          "type": "number",
+          "title": "Forest Scale",
+          "minimum": 4.0,
+          "x-moyva-editorMinimum": 4.0
+        },
+        "forestMoistureThreshold": {
+          "type": "number",
+          "title": "Forest Moisture Threshold",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "desertMoistureThreshold": {
+          "type": "number",
+          "title": "Desert Moisture Threshold",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "snowMinLevel": {
+          "type": "integer",
+          "title": "Snow Min Level",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Biomes"
+    },
+    "objects": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "lumberObjectId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Lumber Object Id"
+        },
+        "stoneObjectId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Stone Object Id"
+        },
+        "poiPerThousandLand": {
+          "type": "number",
+          "title": "Poi Per Thousand Land",
+          "minimum": 0.0,
+          "maximum": 20.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 20.0
+        },
+        "poiMinSpacing": {
+          "type": "integer",
+          "title": "Poi Min Spacing",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Objects"
+    },
+    "fairness": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "opportunityRadius": {
+          "type": "integer",
+          "title": "Opportunity Radius",
+          "minimum": 2.0,
+          "x-moyva-editorMinimum": 2.0
+        },
+        "minUsableLandFraction": {
+          "type": "number",
+          "title": "Min Usable Land Fraction",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "maxOpportunityGap": {
+          "type": "number",
+          "title": "Max Opportunity Gap",
+          "minimum": 0.0,
+          "maximum": 2.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 2.0
+        },
+        "minSeparationFraction": {
+          "type": "number",
+          "title": "Min Separation Fraction",
+          "minimum": 0.0,
+          "maximum": 0.75,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.75
+        },
+        "requireMutualConnectivity": {
+          "type": "boolean",
+          "title": "Require Mutual Connectivity"
+        },
+        "minLandFraction": {
+          "type": "number",
+          "title": "Min Land Fraction",
+          "minimum": 0.05,
+          "maximum": 0.9,
+          "x-moyva-editorMinimum": 0.05,
+          "x-moyva-editorMaximum": 0.9
+        },
+        "maxLandFraction": {
+          "type": "number",
+          "title": "Max Land Fraction",
+          "minimum": 0.1,
+          "maximum": 0.95,
+          "x-moyva-editorMinimum": 0.1,
+          "x-moyva-editorMaximum": 0.95
+        }
+      },
+      "additionalProperties": false,
+      "title": "Fairness"
     }
   }
 }

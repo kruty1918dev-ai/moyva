@@ -95,6 +95,18 @@
           "minimum": 0.01,
           "x-moyva-editorMinimum": 0.01
         },
+        "closeZoomMoveMultiplier": {
+          "type": "number",
+          "title": "Close Zoom Move Multiplier",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "farZoomMoveMultiplier": {
+          "type": "number",
+          "title": "Far Zoom Move Multiplier",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
         "minZoom": {
           "type": "number",
           "title": "Min Zoom",
@@ -131,20 +143,6 @@
           "minimum": 0.0,
           "x-moyva-editorMinimum": 0.0
         },
-        "closeZoomMoveMultiplier": {
-          "type": "number",
-          "title": "Close Zoom Move Multiplier",
-          "description": "Pan speed multiplier at closest zoom.",
-          "minimum": 0.01,
-          "x-moyva-editorMinimum": 0.01
-        },
-        "farZoomMoveMultiplier": {
-          "type": "number",
-          "title": "Far Zoom Move Multiplier",
-          "description": "Pan speed multiplier at farthest zoom.",
-          "minimum": 0.01,
-          "x-moyva-editorMinimum": 0.01
-        },
         "maxTouchDeltaPixels": {
           "type": "number",
           "title": "Max Touch Delta Pixels",
@@ -154,14 +152,14 @@
         "touchPinchDominancePixels": {
           "type": "number",
           "title": "Touch Pinch Dominance Pixels",
-          "description": "Accumulated pinch distance after which twist is suppressed for the gesture.",
+          "description": "Accumulated pinch distance (px) after which twist is suppressed for this gesture.",
           "minimum": 0.5,
           "x-moyva-editorMinimum": 0.5
         },
         "touchTwistDominanceDegrees": {
           "type": "number",
           "title": "Touch Twist Dominance Degrees",
-          "description": "Accumulated twist after which pinch is suppressed for the gesture.",
+          "description": "Accumulated twist (degrees) after which pinch is suppressed for this gesture.",
           "minimum": 0.5,
           "x-moyva-editorMinimum": 0.5
         },
@@ -169,10 +167,10 @@
           "type": "integer",
           "title": "Touch Settle Frames",
           "description": "Frames of one-finger pan ignored after a multi-touch gesture ends.",
-          "minimum": 0,
-          "maximum": 8,
-          "x-moyva-editorMinimum": 0,
-          "x-moyva-editorMaximum": 8
+          "minimum": 0.0,
+          "maximum": 8.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 8.0
         },
         "useImmediateTouchGestures": {
           "type": "boolean",
@@ -238,33 +236,118 @@
       "x-moyva-editorMinimum": 0.1
     },
     "focus": {
-      "type": ["object", "null"],
-      "title": "Focus Transitions",
-      "description": "Interruptible camera-focus transition tuning.",
-      "additionalProperties": false,
+      "type": "object",
       "properties": {
-        "minDuration": { "type": "number", "minimum": 0.05 },
-        "maxDuration": { "type": "number", "minimum": 0.05 },
-        "distanceForMaxDuration": { "type": "number", "minimum": 0.1 },
-        "boundsPadding": { "type": "number", "minimum": 1.0 },
-        "zoomChangeThreshold": { "type": "number", "minimum": 0.0, "maximum": 0.75 },
-        "reducedMotionDurationScale": { "type": "number", "minimum": 0.1, "maximum": 1.0 }
-      }
+        "minDuration": {
+          "type": "number",
+          "title": "Min Duration",
+          "minimum": 0.05,
+          "x-moyva-editorMinimum": 0.05
+        },
+        "maxDuration": {
+          "type": "number",
+          "title": "Max Duration",
+          "minimum": 0.05,
+          "x-moyva-editorMinimum": 0.05
+        },
+        "distanceForMaxDuration": {
+          "type": "number",
+          "title": "Distance For Max Duration",
+          "description": "Navigation-plane distance at which the transition reaches maxDuration.",
+          "minimum": 0.1,
+          "x-moyva-editorMinimum": 0.1
+        },
+        "boundsPadding": {
+          "type": "number",
+          "title": "Bounds Padding",
+          "description": "Screen margin multiplier applied when fitting object bounds.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "zoomChangeThreshold": {
+          "type": "number",
+          "title": "Zoom Change Threshold",
+          "description": "Relative zoom change below which the focus transition keeps the current zoom.",
+          "minimum": 0.0,
+          "maximum": 0.75,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.75
+        },
+        "reducedMotionDurationScale": {
+          "type": "number",
+          "title": "Reduced Motion Duration Scale",
+          "description": "Duration multiplier applied when Reduce Camera Motion is enabled.",
+          "minimum": 0.1,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.1,
+          "x-moyva-editorMaximum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Focus"
     },
     "impulse": {
-      "type": ["object", "null"],
-      "title": "Impulse / Shake",
-      "description": "Camera impulse budget, falloff and clamps.",
-      "additionalProperties": false,
+      "type": "object",
       "properties": {
-        "maxPositionOffset": { "type": "number", "minimum": 0.01 },
-        "maxRotationDegrees": { "type": "number", "minimum": 0.01 },
-        "farZoomScale": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
-        "mobileScale": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
-        "reduceMotionScale": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
-        "maxConcurrent": { "type": "integer", "minimum": 1, "maximum": 16 },
-        "defaultFalloffRadius": { "type": "number", "minimum": 1.0 }
-      }
+        "maxPositionOffset": {
+          "type": "number",
+          "title": "Max Position Offset",
+          "description": "Absolute clamp for combined positional offset in world units.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "maxRotationDegrees": {
+          "type": "number",
+          "title": "Max Rotation Degrees",
+          "description": "Absolute clamp for combined rotational offset in degrees.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "farZoomScale": {
+          "type": "number",
+          "title": "Far Zoom Scale",
+          "description": "Impulse scale at far zoom (NormalizedZoom = 1).",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "mobileScale": {
+          "type": "number",
+          "title": "Mobile Scale",
+          "description": "Extra impulse scale on mobile platforms.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "reduceMotionScale": {
+          "type": "number",
+          "title": "Reduce Motion Scale",
+          "description": "Impulse scale when Reduce Camera Motion is enabled.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "maxConcurrent": {
+          "type": "integer",
+          "title": "Max Concurrent",
+          "minimum": 1.0,
+          "maximum": 16.0,
+          "x-moyva-editorMinimum": 1.0,
+          "x-moyva-editorMaximum": 16.0
+        },
+        "defaultFalloffRadius": {
+          "type": "number",
+          "title": "Default Falloff Radius",
+          "description": "Default distance falloff radius in world units for positional impulses.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Impulse"
     },
     "defaultCameraZ": {
       "type": "number",
@@ -369,11 +452,21 @@
       "minimum": 0.01,
       "x-moyva-editorMinimum": 0.01
     },
+    "enableAutomaticMipBias": {
+      "type": "boolean",
+      "title": "Enable Automatic Mip Bias",
+      "description": "Applies global automatic mip bias for zoom. Disable to avoid tile atlas artifacts/bleeding on zoom-out."
+    },
+    "automaticMipBiasMax": {
+      "type": "number",
+      "title": "Automatic Mip Bias Max",
+      "minimum": 0.0,
+      "maximum": 3.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 3.0
+    },
     "farView": {
-      "type": ["object", "null"],
-      "title": "Far View Window",
-      "description": "Shared normalized-zoom window where the world reads as distant/high-altitude. Consumed by far-view visuals and zoom-driven audio.",
-      "additionalProperties": false,
+      "type": "object",
       "properties": {
         "start": {
           "type": "number",
@@ -405,20 +498,10 @@
           "x-moyva-editorMinimum": 0.2,
           "x-moyva-editorMaximum": 3.0
         }
-      }
-    },
-    "enableAutomaticMipBias": {
-      "type": "boolean",
-      "title": "Enable Automatic Mip Bias",
-      "description": "Applies global automatic mip bias for zoom. Disable to avoid tile atlas artifacts/bleeding on zoom-out."
-    },
-    "automaticMipBiasMax": {
-      "type": "number",
-      "title": "Automatic Mip Bias Max",
-      "minimum": 0.0,
-      "maximum": 3.0,
-      "x-moyva-editorMinimum": 0.0,
-      "x-moyva-editorMaximum": 3.0
+      },
+      "additionalProperties": false,
+      "title": "Far View",
+      "description": "Shared normalized-zoom window where the world reads as distant/high-altitude. Consumed by far-view visuals and zoom-driven audio."
     },
     "mapRenderMaskEnabled": {
       "type": "boolean",

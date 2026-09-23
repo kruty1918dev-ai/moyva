@@ -38,220 +38,6 @@
       "type": "object",
       "additionalProperties": true
     },
-    "unexploredColor": {
-      "type": "object",
-      "properties": {
-        "r": {
-          "type": "number"
-        },
-        "g": {
-          "type": "number"
-        },
-        "b": {
-          "type": "number"
-        },
-        "a": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "r",
-        "g",
-        "b",
-        "a"
-      ],
-      "additionalProperties": false,
-      "title": "Unexplored Color"
-    },
-    "exploredColor": {
-      "type": "object",
-      "properties": {
-        "r": {
-          "type": "number"
-        },
-        "g": {
-          "type": "number"
-        },
-        "b": {
-          "type": "number"
-        },
-        "a": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "r",
-        "g",
-        "b",
-        "a"
-      ],
-      "additionalProperties": false,
-      "title": "Explored Color"
-    },
-    "fogTileSprite": {
-      "type": [
-        "object",
-        "null"
-      ],
-      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
-      "properties": {
-        "$asset": {
-          "type": "string",
-          "title": "Asset ID"
-        },
-        "editorPath": {
-          "type": "string",
-          "description": "Editor-only path для діагностики/регенерації catalog."
-        },
-        "required": {
-          "type": "boolean",
-          "default": true
-        }
-      },
-      "required": [
-        "$asset"
-      ],
-      "title": "Fog Tile Sprite"
-    },
-    "fogTileSpritePixelSize": {
-      "type": "object",
-      "properties": {
-        "x": {
-          "type": "number"
-        },
-        "y": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "x",
-        "y"
-      ],
-      "additionalProperties": false,
-      "title": "Fog Tile Sprite Pixel Size"
-    },
-    "fogTileSizeInCells": {
-      "type": "object",
-      "properties": {
-        "x": {
-          "type": "number"
-        },
-        "y": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "x",
-        "y"
-      ],
-      "additionalProperties": false,
-      "title": "Fog Tile Size In Cells"
-    },
-    "fogTileSeamOverlapPixels": {
-      "type": "number",
-      "title": "Fog Tile Seam Overlap Pixels"
-    },
-    "fogMapEdgePaddingPixels": {
-      "type": "number",
-      "title": "Fog Map Edge Padding Pixels"
-    },
-    "fogMapEdgeOverhangCells": {
-      "type": "number",
-      "title": "Fog Map Edge Overhang Cells"
-    },
-    "fogTileTiling": {
-      "type": "number",
-      "title": "Fog Tile Tiling"
-    },
-    "fogIconSprites": {
-      "type": [
-        "array",
-        "null"
-      ],
-      "items": {
-        "type": [
-          "object",
-          "null"
-        ],
-        "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
-        "properties": {
-          "$asset": {
-            "type": "string",
-            "title": "Asset ID"
-          },
-          "editorPath": {
-            "type": "string",
-            "description": "Editor-only path для діагностики/регенерації catalog."
-          },
-          "required": {
-            "type": "boolean",
-            "default": true
-          }
-        },
-        "required": [
-          "$asset"
-        ]
-      },
-      "title": "Fog Icon Sprites"
-    },
-    "fogIconSpritePixelSize": {
-      "type": "object",
-      "properties": {
-        "x": {
-          "type": "number"
-        },
-        "y": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "x",
-        "y"
-      ],
-      "additionalProperties": false,
-      "title": "Fog Icon Sprite Pixel Size"
-    },
-    "fogIconGridSize": {
-      "type": "object",
-      "properties": {
-        "x": {
-          "type": "number"
-        },
-        "y": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "x",
-        "y"
-      ],
-      "additionalProperties": false,
-      "title": "Fog Icon Grid Size"
-    },
-    "fogIconScale": {
-      "type": "number",
-      "title": "Fog Icon Scale"
-    },
-    "centerIcon": {
-      "type": "boolean",
-      "title": "Center Icon"
-    },
-    "fullyTransparentWhenVisible": {
-      "type": "boolean",
-      "title": "Fully Transparent When Visible"
-    },
-    "fog3DTopClearance": {
-      "type": "number",
-      "title": "Fog 3D Top Clearance"
-    },
-    "enableShaderFogCulling": {
-      "type": "boolean",
-      "title": "Enable Shader Fog Culling"
-    },
-    "shaderFogCullThreshold": {
-      "type": "number",
-      "title": "Shader Fog Cull Threshold"
-    },
     "enableRendererCulling": {
       "type": "boolean",
       "title": "Enable Renderer Culling",
@@ -302,10 +88,9 @@
     },
     "presentationMode": {
       "type": "string",
-      "pattern": "^(?:-?\\d+|(?:ScreenSpace|LegacyTwcVolume))$",
+      "pattern": "^(?:-?\\d+|(?:ScreenSpace))$",
       "x-enumNames": [
-        "ScreenSpace",
-        "LegacyTwcVolume"
+        "ScreenSpace"
       ],
       "x-flags": false,
       "title": "Presentation Mode"
@@ -905,66 +690,14 @@
         "null"
       ],
       "properties": {
-        "updateMode": {
-          "type": "string",
-          "pattern": "^(?:-?\\d+|(?:DebouncePerFrame|Interval|Immediate))$",
-          "x-enumNames": [
-            "DebouncePerFrame",
-            "Interval",
-            "Immediate"
-          ],
-          "x-flags": false,
-          "title": "Update Mode"
-        },
-        "rebuildIntervalSeconds": {
-          "type": "number",
-          "title": "Rebuild Interval Seconds"
-        },
-        "useClusteredRuntimeFogRenderer": {
-          "type": "boolean",
-          "title": "Use Clustered Runtime Fog Renderer"
-        },
-        "clusterSize": {
-          "type": "integer",
-          "title": "Cluster Size"
-        },
-        "clusterPaddingCells": {
-          "type": "integer",
-          "title": "Cluster Padding Cells"
-        },
-        "horizontalTileOverlap": {
-          "type": "number",
-          "title": "Horizontal Tile Overlap",
-          "description": "Extra X/Z scale overlap for runtime fog volume tiles. Helps close visible gaps between neighboring fog cells."
-        },
         "verticalLayerSpacing": {
           "type": "number",
           "title": "Vertical Layer Spacing",
           "description": "Extra vertical gap between fog layers on different heights. Leave at 0 to keep layers tight."
         },
-        "allowFullRebuildFallback": {
-          "type": "boolean",
-          "title": "Allow Full Rebuild Fallback"
-        },
-        "fullRebuildDirtyClusterRatioThreshold": {
-          "type": "number",
-          "title": "Full Rebuild Dirty Cluster Ratio Threshold",
-          "minimum": 0.01,
-          "maximum": 1.0,
-          "x-moyva-editorMinimum": 0.01,
-          "x-moyva-editorMaximum": 1.0
-        },
         "topClearance": {
           "type": "number",
           "title": "Top Clearance"
-        },
-        "useWorldCellSize": {
-          "type": "boolean",
-          "title": "Use World Cell Size"
-        },
-        "cellSizeOverride": {
-          "type": "number",
-          "title": "Cell Size Override"
         },
         "heightSource": {
           "type": "string",
@@ -985,334 +718,67 @@
         "heightLayerSnap": {
           "type": "number",
           "title": "Height Layer Snap",
-          "description": "Height values closer than this are built on the same TWC layer. Keeps runtime layer count stable for noisy HeightMap data."
-        },
-        "clearPreviewOnRuntimeStart": {
-          "type": "boolean",
-          "title": "Clear Preview On Runtime Start",
-          "description": "Editor preview uses the current scene TWC grid when available. It is cleared automatically at runtime and rebuilt from generated world data."
-        },
-        "previewFallbackWidth": {
-          "type": "integer",
-          "title": "Preview Fallback Width"
-        },
-        "previewFallbackHeight": {
-          "type": "integer",
-          "title": "Preview Fallback Height"
-        },
-        "unexplored": {
-          "type": [
-            "object",
-            "null"
-          ],
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "title": "Enabled"
-            },
-            "layerName": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "title": "Layer Name"
-            },
-            "tileVariants": {
-              "type": [
-                "array",
-                "null"
-              ],
-              "items": {
-                "type": [
-                  "object",
-                  "null"
-                ],
-                "properties": {
-                  "preset": {
-                    "type": [
-                      "object",
-                      "null"
-                    ],
-                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
-                    "properties": {
-                      "$asset": {
-                        "type": "string",
-                        "title": "Asset ID"
-                      },
-                      "editorPath": {
-                        "type": "string",
-                        "description": "Editor-only path для діагностики/регенерації catalog."
-                      },
-                      "required": {
-                        "type": "boolean",
-                        "default": true
-                      }
-                    },
-                    "required": [
-                      "$asset"
-                    ],
-                    "title": "Preset"
-                  },
-                  "slot": {
-                    "type": "string",
-                    "pattern": "^(?:-?\\d+|(?:Top|Middle|Bottom))$",
-                    "x-enumNames": [
-                      "Top",
-                      "Middle",
-                      "Bottom"
-                    ],
-                    "x-flags": false,
-                    "title": "Slot"
-                  },
-                  "weight": {
-                    "type": "number",
-                    "title": "Weight",
-                    "minimum": 0.0,
-                    "maximum": 1.0,
-                    "x-moyva-editorMinimum": 0.0,
-                    "x-moyva-editorMaximum": 1.0
-                  },
-                  "tileHeight": {
-                    "type": "number",
-                    "title": "Tile Height"
-                  }
-                },
-                "additionalProperties": false
-              },
-              "title": "Tile Variants"
-            },
-            "layerYOffset": {
-              "type": "number",
-              "title": "Layer Y Offset"
-            },
-            "scaleOffset": {
-              "type": "object",
-              "properties": {
-                "x": {
-                  "type": "number"
-                },
-                "y": {
-                  "type": "number"
-                },
-                "z": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "x",
-                "y",
-                "z"
-              ],
-              "additionalProperties": false,
-              "title": "Scale Offset"
-            },
-            "shadowCastingMode": {
-              "type": "string",
-              "pattern": "^(?:-?\\d+|(?:Off|On|TwoSided|ShadowsOnly))$",
-              "x-enumNames": [
-                "Off",
-                "On",
-                "TwoSided",
-                "ShadowsOnly"
-              ],
-              "x-flags": false,
-              "title": "Shadow Casting Mode"
-            },
-            "objectLayer": {
-              "type": "integer",
-              "title": "Object Layer"
-            },
-            "renderingLayer": {
-              "type": "object",
-              "properties": {},
-              "additionalProperties": false,
-              "title": "Rendering Layer"
-            },
-            "colliderType": {
-              "type": "string",
-              "pattern": "^(?:-?\\d+|(?:none|meshCollider|tileCollider))$",
-              "x-enumNames": [
-                "none",
-                "meshCollider",
-                "tileCollider"
-              ],
-              "x-flags": false,
-              "title": "Collider Type"
-            },
-            "tileColliderHeight": {
-              "type": "number",
-              "title": "Tile Collider Height"
-            },
-            "tileColliderExtrusionHeight": {
-              "type": "number",
-              "title": "Tile Collider Extrusion Height"
-            },
-            "invertCollisionWalls": {
-              "type": "boolean",
-              "title": "Invert Collision Walls"
-            }
-          },
-          "additionalProperties": false,
-          "title": "Unexplored"
-        },
-        "explored": {
-          "type": [
-            "object",
-            "null"
-          ],
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "title": "Enabled"
-            },
-            "layerName": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "title": "Layer Name"
-            },
-            "tileVariants": {
-              "type": [
-                "array",
-                "null"
-              ],
-              "items": {
-                "type": [
-                  "object",
-                  "null"
-                ],
-                "properties": {
-                  "preset": {
-                    "type": [
-                      "object",
-                      "null"
-                    ],
-                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
-                    "properties": {
-                      "$asset": {
-                        "type": "string",
-                        "title": "Asset ID"
-                      },
-                      "editorPath": {
-                        "type": "string",
-                        "description": "Editor-only path для діагностики/регенерації catalog."
-                      },
-                      "required": {
-                        "type": "boolean",
-                        "default": true
-                      }
-                    },
-                    "required": [
-                      "$asset"
-                    ],
-                    "title": "Preset"
-                  },
-                  "slot": {
-                    "type": "string",
-                    "pattern": "^(?:-?\\d+|(?:Top|Middle|Bottom))$",
-                    "x-enumNames": [
-                      "Top",
-                      "Middle",
-                      "Bottom"
-                    ],
-                    "x-flags": false,
-                    "title": "Slot"
-                  },
-                  "weight": {
-                    "type": "number",
-                    "title": "Weight",
-                    "minimum": 0.0,
-                    "maximum": 1.0,
-                    "x-moyva-editorMinimum": 0.0,
-                    "x-moyva-editorMaximum": 1.0
-                  },
-                  "tileHeight": {
-                    "type": "number",
-                    "title": "Tile Height"
-                  }
-                },
-                "additionalProperties": false
-              },
-              "title": "Tile Variants"
-            },
-            "layerYOffset": {
-              "type": "number",
-              "title": "Layer Y Offset"
-            },
-            "scaleOffset": {
-              "type": "object",
-              "properties": {
-                "x": {
-                  "type": "number"
-                },
-                "y": {
-                  "type": "number"
-                },
-                "z": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "x",
-                "y",
-                "z"
-              ],
-              "additionalProperties": false,
-              "title": "Scale Offset"
-            },
-            "shadowCastingMode": {
-              "type": "string",
-              "pattern": "^(?:-?\\d+|(?:Off|On|TwoSided|ShadowsOnly))$",
-              "x-enumNames": [
-                "Off",
-                "On",
-                "TwoSided",
-                "ShadowsOnly"
-              ],
-              "x-flags": false,
-              "title": "Shadow Casting Mode"
-            },
-            "objectLayer": {
-              "type": "integer",
-              "title": "Object Layer"
-            },
-            "renderingLayer": {
-              "type": "object",
-              "properties": {},
-              "additionalProperties": false,
-              "title": "Rendering Layer"
-            },
-            "colliderType": {
-              "type": "string",
-              "pattern": "^(?:-?\\d+|(?:none|meshCollider|tileCollider))$",
-              "x-enumNames": [
-                "none",
-                "meshCollider",
-                "tileCollider"
-              ],
-              "x-flags": false,
-              "title": "Collider Type"
-            },
-            "tileColliderHeight": {
-              "type": "number",
-              "title": "Tile Collider Height"
-            },
-            "tileColliderExtrusionHeight": {
-              "type": "number",
-              "title": "Tile Collider Extrusion Height"
-            },
-            "invertCollisionWalls": {
-              "type": "boolean",
-              "title": "Invert Collision Walls"
-            }
-          },
-          "additionalProperties": false,
-          "title": "Explored"
+          "description": "Height values closer than this share the same visual layer. Keeps layer count stable for noisy HeightMap data."
         }
       },
       "additionalProperties": false,
       "title": "Volume"
+    },
+    "exploredColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Explored Color"
+    },
+    "fogIconSprites": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+        "properties": {
+          "$asset": {
+            "type": "string",
+            "title": "Asset ID"
+          },
+          "editorPath": {
+            "type": "string",
+            "description": "Editor-only path для діагностики/регенерації catalog."
+          },
+          "required": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "$asset"
+        ]
+      },
+      "title": "Fog Icon Sprites"
     }
   }
 }

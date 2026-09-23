@@ -60,7 +60,7 @@
     "initialCloudsStartInView": {
       "type": "boolean",
       "title": "Initial Clouds Start In View",
-      "description": "Якщо увімкнено, стартові хмаринки одразу розкладаються у видимій зоні камери. Якщо вимкнено, вони також стартують за екраном."
+      "description": "Якщо увімкнено, стартові хмаринки одразу розкладаються у видимій зоні. Якщо вимкнено, вони також стартують за краєм мапи."
     },
     "spawnIntervalRange": {
       "type": "object",
@@ -94,7 +94,7 @@
     "minimumSpawnDistance": {
       "type": "number",
       "title": "Minimum Spawn Distance",
-      "description": "Мінімальна бажана відстань між новою та вже активними хмаринками у world units.",
+      "description": "Мінімальна бажана відстань між новою та вже активними хмаринками у world units (площина XZ).",
       "minimum": 0.0,
       "x-moyva-editorMinimum": 0.0
     },
@@ -104,6 +104,62 @@
       "description": "Скільки випадкових позицій спробувати перед тим, як погодитись на останню знайдену.",
       "minimum": 1.0,
       "x-moyva-editorMinimum": 1.0
+    },
+    "cloudPrefabs": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "prefab": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Prefab із MeshFilter/MeshRenderer, який представляє одну форму 3D-хмари.",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Prefab"
+          },
+          "chance": {
+            "type": "number",
+            "title": "Chance",
+            "description": "Вага вибору цього варіанта відносно інших.",
+            "minimum": 0.0,
+            "x-moyva-editorMinimum": 0.0
+          },
+          "scaleMultiplier": {
+            "type": "number",
+            "title": "Scale Multiplier",
+            "description": "Додатковий множник масштабу саме для цього варіанта.",
+            "minimum": 0.01,
+            "x-moyva-editorMinimum": 0.01
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Cloud Prefabs",
+      "description": "Список 3D prefab-варіантів хмаринок із вагами вибору."
     },
     "cloudSprites": {
       "type": [
@@ -152,7 +208,57 @@
         "additionalProperties": false
       },
       "title": "Cloud Sprites",
-      "description": "Список спрайтів хмаринок із вагами вибору."
+      "description": "Список спрайтів хмаринок із вагами вибору. Використовується спрайтовим рендером превʼю головного меню."
+    },
+    "altitudeRange": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Altitude Range",
+      "description": "Діапазон висоти хмаринок над базовою площиною мапи у world units."
+    },
+    "lowAltitudeMipBias": {
+      "type": "number",
+      "title": "Low Altitude Mip Bias",
+      "description": "Додатковий базовий mip bias для найнижчих спрайтових хмаринок. Нижчі/менші хмари виглядають сильніше деформованими.",
+      "minimum": 0.0,
+      "maximum": 4.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 4.0
+    },
+    "highAltitudeMipBias": {
+      "type": "number",
+      "title": "High Altitude Mip Bias",
+      "description": "Додатковий базовий mip bias для найвищих спрайтових хмаринок.",
+      "minimum": 0.0,
+      "maximum": 4.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 4.0
+    },
+    "lowAltitudeHeightMultiplier": {
+      "type": "number",
+      "title": "Low Altitude Height Multiplier",
+      "description": "Множник CloudHeight для нижніх хмаринок.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "highAltitudeHeightMultiplier": {
+      "type": "number",
+      "title": "High Altitude Height Multiplier",
+      "description": "Множник CloudHeight для верхніх хмаринок.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
     },
     "speedRange": {
       "type": "object",
@@ -190,46 +296,23 @@
       "title": "Scale Range",
       "description": "Діапазон масштабу хмаринок."
     },
-    "altitudeScaleJitter": {
+    "scaleJitter": {
       "type": "number",
-      "title": "Altitude Scale Jitter",
-      "description": "Наскільки випадково можна відхилити масштаб після прив'язки до вертикальної висоти. 0 = масштаб повністю визначається висотою.",
+      "title": "Scale Jitter",
+      "description": "Наскільки масштаб може випадково відхилятися від базового. 0 = без відхилення.",
       "minimum": 0.0,
       "maximum": 0.5,
       "x-moyva-editorMinimum": 0.0,
       "x-moyva-editorMaximum": 0.5
     },
-    "lowAltitudeMipBias": {
+    "nonUniformScaleJitter": {
       "type": "number",
-      "title": "Low Altitude Mip Bias",
-      "description": "Додатковий базовий mip bias для найнижчих хмаринок. Нижчі/менші хмари виглядають сильніше деформованими.",
+      "title": "Non Uniform Scale Jitter",
+      "description": "Наскільки непропорційно по X/Z може стискатися хмаринка. 0 = рівномірний масштаб.",
       "minimum": 0.0,
-      "maximum": 4.0,
+      "maximum": 0.4,
       "x-moyva-editorMinimum": 0.0,
-      "x-moyva-editorMaximum": 4.0
-    },
-    "highAltitudeMipBias": {
-      "type": "number",
-      "title": "High Altitude Mip Bias",
-      "description": "Додатковий базовий mip bias для найвищих хмаринок.",
-      "minimum": 0.0,
-      "maximum": 4.0,
-      "x-moyva-editorMinimum": 0.0,
-      "x-moyva-editorMaximum": 4.0
-    },
-    "lowAltitudeHeightMultiplier": {
-      "type": "number",
-      "title": "Low Altitude Height Multiplier",
-      "description": "Множник CloudHeight для нижніх хмаринок.",
-      "minimum": 0.0,
-      "x-moyva-editorMinimum": 0.0
-    },
-    "highAltitudeHeightMultiplier": {
-      "type": "number",
-      "title": "High Altitude Height Multiplier",
-      "description": "Множник CloudHeight для верхніх хмаринок.",
-      "minimum": 0.0,
-      "x-moyva-editorMinimum": 0.0
+      "x-moyva-editorMaximum": 0.4
     },
     "leftToRightChance": {
       "type": "number",
@@ -240,24 +323,56 @@
       "x-moyva-editorMinimum": 0.0,
       "x-moyva-editorMaximum": 1.0
     },
-    "spawnHorizontalPadding": {
+    "directionAngleJitterDegrees": {
       "type": "number",
-      "title": "Spawn Horizontal Padding",
-      "description": "Відстань за межами екрана, де хмаринка створюється по X.",
+      "title": "Direction Angle Jitter Degrees",
+      "description": "Максимальне відхилення напрямку руху від осі X у градусах. Додає легкий дрейф по Z.",
+      "minimum": 0.0,
+      "maximum": 45.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 45.0
+    },
+    "maxYawDegreesPerSecond": {
+      "type": "number",
+      "title": "Max Yaw Degrees Per Second",
+      "description": "Максимальна швидкість повільного обертання навколо вертикальної осі у градусах за секунду.",
+      "minimum": 0.0,
+      "maximum": 10.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 10.0
+    },
+    "verticalBobAmplitude": {
+      "type": "number",
+      "title": "Vertical Bob Amplitude",
+      "description": "Амплітуда легкого вертикального гойдання у world units. 0 = вимкнено.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "verticalBobSpeed": {
+      "type": "number",
+      "title": "Vertical Bob Speed",
+      "description": "Швидкість вертикального гойдання (циклів за секунду).",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "spawnPadding": {
+      "type": "number",
+      "title": "Spawn Padding",
+      "description": "Відстань за краєм зони спавну, де хмаринка створюється.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    },
+    "despawnPadding": {
+      "type": "number",
+      "title": "Despawn Padding",
+      "description": "Відстань за протилежним краєм, після якої хмаринка знищується.",
       "minimum": 0.0,
       "x-moyva-editorMinimum": 0.0
     },
     "spawnVerticalPadding": {
       "type": "number",
       "title": "Spawn Vertical Padding",
-      "description": "Додатковий вертикальний запас навколо екрана, де може пройти хмаринка.",
-      "minimum": 0.0,
-      "x-moyva-editorMinimum": 0.0
-    },
-    "despawnHorizontalPadding": {
-      "type": "number",
-      "title": "Despawn Horizontal Padding",
-      "description": "Відстань за протилежним краєм екрана, після якої хмаринка знищується.",
+      "description": "Додатковий вертикальний запас навколо зони, у якій може пройти спрайтова хмаринка (UI-превʼю меню).",
       "minimum": 0.0,
       "x-moyva-editorMinimum": 0.0
     },
@@ -268,10 +383,17 @@
       "minimum": 0.0,
       "x-moyva-editorMinimum": 0.0
     },
-    "mapMaskEnabled": {
+    "mapEdgeFadeEnabled": {
       "type": "boolean",
-      "title": "Map Mask Enabled",
-      "description": "Показувати хмаринки тільки всередині меж мапи. Якщо IGridService доступний, межі беруться автоматично з розміру мапи."
+      "title": "Map Edge Fade Enabled",
+      "description": "Плавно гасити хмаринки біля меж мапи замість різкого обрізання."
+    },
+    "mapEdgeFadeWidth": {
+      "type": "number",
+      "title": "Map Edge Fade Width",
+      "description": "Ширина смуги затухання біля краю мапи у world units.",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
     },
     "manualMapSize": {
       "type": "object",
@@ -309,24 +431,10 @@
       "title": "Manual Map Center",
       "description": "Центр ручних меж мапи для сцен без IGridService."
     },
-    "maskEdgeFadeWidth": {
-      "type": "number",
-      "title": "Mask Edge Fade Width",
-      "description": "Ширина піксельного входу/виходу хмаринки біля краю маски у world units.",
-      "minimum": 0.0,
-      "x-moyva-editorMinimum": 0.0
-    },
-    "maskEdgeFadeSteps": {
-      "type": "integer",
-      "title": "Mask Edge Fade Steps",
-      "description": "Кількість ступенів прозорості для піксельного стилю біля краю маски.",
-      "minimum": 1.0,
-      "x-moyva-editorMinimum": 1.0
-    },
     "lifetimeDissolveEnabled": {
       "type": "boolean",
       "title": "Lifetime Dissolve Enabled",
-      "description": "Якщо увімкнено, хмаринка після випадкового часу життя починає плавно розчинятися, навіть якщо ще не дійшла до краю екрана."
+      "description": "Якщо увімкнено, хмаринка після випадкового часу життя починає плавно розчинятися, навіть якщо ще не дійшла до краю."
     },
     "lifetimeRange": {
       "type": "object",
@@ -377,12 +485,53 @@
       ],
       "additionalProperties": false,
       "title": "Cloud Color",
-      "description": "Колір хмаринки. Білий колір зберігає оригінальні кольори спрайта."
+      "description": "Базовий колірний тон хмаринок. Множиться на колір матеріалу."
     },
     "cloudAlpha": {
       "type": "number",
       "title": "Cloud Alpha",
-      "description": "Загальна прозорість хмаринок.",
+      "description": "Загальна прозорість хмаринок (реалізована dither-fade, без sorting-артефактів).",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "cloudTintJitter": {
+      "type": "number",
+      "title": "Cloud Tint Jitter",
+      "description": "Наскільки сильно може варіюватися яскравість тону окремих хмаринок. 0 = однакові.",
+      "minimum": 0.0,
+      "maximum": 0.3,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 0.3
+    },
+    "cameraProximityFadeEnabled": {
+      "type": "boolean",
+      "title": "Camera Proximity Fade Enabled",
+      "description": "Коли камера сильно наближена, хмаринки стають прозорішими, щоб не перекривати геймплей під ними."
+    },
+    "cameraFadeZoomRange": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Camera Fade Zoom Range",
+      "description": "Zoom камери (FOV для perspective або orthographic size): X = дуже близько і мінімальна прозорість, Y = достатньо далеко і повна прозорість."
+    },
+    "closeCameraAlphaMultiplier": {
+      "type": "number",
+      "title": "Close Camera Alpha Multiplier",
+      "description": "Множник прозорості хмаринок при максимально близькому zoom.",
       "minimum": 0.0,
       "maximum": 1.0,
       "x-moyva-editorMinimum": 0.0,
@@ -393,7 +542,7 @@
         "object",
         "null"
       ],
-      "description": "Матеріал для SpriteRenderer хмаринок. Якщо порожньо, система створить runtime-матеріал на Sprites/Default, щоб спрайт не підмінявся текстурою матеріалу.",
+      "description": "Матеріал для SpriteRenderer спрайтових хмаринок. Якщо порожньо, використовується runtime-матеріал на Sprites/Default.",
       "properties": {
         "$asset": {
           "type": "string",
@@ -413,67 +562,15 @@
       ],
       "title": "Sprite Material"
     },
-    "cameraProximityFadeEnabled": {
-      "type": "boolean",
-      "title": "Camera Proximity Fade Enabled",
-      "description": "Коли камера сильно наближена, хмаринки стають прозорішими, щоб не перекривати геймплей під ними."
-    },
-    "cameraFadeOrthographicRange": {
-      "type": "object",
-      "properties": {
-        "x": {
-          "type": "number"
-        },
-        "y": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "x",
-        "y"
-      ],
-      "additionalProperties": false,
-      "title": "Camera Fade Orthographic Range",
-      "description": "Orthographic size: X = дуже близько і мінімальна прозорість, Y = достатньо далеко і повна прозорість."
-    },
-    "closeCameraAlphaMultiplier": {
-      "type": "number",
-      "title": "Close Camera Alpha Multiplier",
-      "description": "Множник прозорості хмаринок при максимально близькому zoom.",
-      "minimum": 0.0,
-      "maximum": 1.0,
-      "x-moyva-editorMinimum": 0.0,
-      "x-moyva-editorMaximum": 1.0
-    },
-    "cameraFadeSteps": {
-      "type": "integer",
-      "title": "Camera Fade Steps",
-      "description": "Кількість ступенів прозорості для close-zoom fade. 1 = плавно без піксельних сходинок.",
-      "minimum": 1.0,
-      "x-moyva-editorMinimum": 1.0
-    },
-    "sortingLayerName": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "title": "Sorting Layer Name",
-      "description": "Назва sorting layer для хмаринок. Якщо порожньо, використовується Default."
-    },
-    "sortingOrder": {
-      "type": "integer",
-      "title": "Sorting Order",
-      "description": "Sorting order хмаринок."
-    },
     "shadowsEnabled": {
       "type": "boolean",
       "title": "Shadows Enabled",
-      "description": "Створювати темнішу копію хмаринки як тінь."
+      "description": "Чи відкидають хмаринки реальні 3D тіні на мапу."
     },
     "cloudHeight": {
       "type": "number",
       "title": "Cloud Height",
-      "description": "Висота хмаринки над землею. Впливає на автоматичне зміщення, масштаб і прозорість тіні.",
+      "description": "Висота хмаринки над землею. Впливає на автоматичне зміщення, масштаб і прозорість тіні спрайтових хмаринок.",
       "minimum": 0.0,
       "x-moyva-editorMinimum": 0.0
     },
@@ -493,7 +590,7 @@
       ],
       "additionalProperties": false,
       "title": "Shadow Offset",
-      "description": "Базове зміщення тіні відносно хмаринки у world units."
+      "description": "Базове зміщення тіні відносно спрайтової хмаринки у world units."
     },
     "shadowOffsetPerHeight": {
       "type": "object",
@@ -537,7 +634,7 @@
       ],
       "additionalProperties": false,
       "title": "Shadow Color",
-      "description": "Колір тіні хмаринки."
+      "description": "Колір тіні спрайтової хмаринки."
     },
     "shadowAlphaMultiplier": {
       "type": "number",
@@ -568,11 +665,6 @@
       "description": "Наскільки висота послаблює прозорість тіні. 0 = висота не впливає на прозорість.",
       "minimum": 0.0,
       "x-moyva-editorMinimum": 0.0
-    },
-    "shadowSortingOrderOffset": {
-      "type": "integer",
-      "title": "Shadow Sorting Order Offset",
-      "description": "Зсув sorting order тіні відносно хмаринки."
     }
   }
 }

@@ -262,6 +262,7 @@
           "type": "string",
           "enum": [
             "adaptive-performance-settings",
+            "atlas-tile-set",
             "audio-ambience",
             "audio-feedback",
             "audio-mixer-bindings",
@@ -289,8 +290,10 @@
             "economy-settlement",
             "economy-warehouse-policy",
             "environment-decoration",
+            "far-view-atmosphere",
             "fog-of-war",
             "game-session-config",
+            "gameplay-motion",
             "generation-rules",
             "generator-map-recipe",
             "graphics-startup-settings",
@@ -315,10 +318,12 @@
             "tile-world-creator-id-mapping",
             "unit-class",
             "unit-registry",
+            "vfx-catalog",
             "wfc-data",
             "win-condition",
             "world-creation-defaults",
-            "world-economy-override"
+            "world-economy-override",
+            "world-generation"
           ]
         }
       },

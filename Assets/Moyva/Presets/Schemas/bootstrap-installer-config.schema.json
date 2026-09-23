@@ -307,6 +307,13 @@
           "x-moyva-editorMinimum": 0.25,
           "x-moyva-editorMaximum": 1.0
         },
+        "minimumConnectedLandTiles": {
+          "type": "integer",
+          "title": "Minimum Connected Land Tiles",
+          "description": "Мінімальна кількість зв'язних сухих тайлів, доступних від центру старту всередині радіуса оцінки. Захищає від спеклої суші, де landRatio проходить, але немає суцільного майданчика для замку й перших споруд. 0 — вимкнути перевірку.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
         "preferWaterNearStart": {
           "type": "boolean",
           "title": "Prefer Water Near Start",

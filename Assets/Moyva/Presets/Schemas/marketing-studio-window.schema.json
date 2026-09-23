@@ -496,6 +496,10 @@
           "type": "boolean",
           "title": "Overlays Visible"
         },
+        "m_PresetDirty": {
+          "type": "boolean",
+          "title": "Preset Dirty"
+        },
         "m_DynamicPanelBehavior": {
           "type": "string",
           "pattern": "^(?:-?\\d+|(?:None|DisplaceWindow))$",
@@ -505,6 +509,10 @@
           ],
           "x-flags": false,
           "title": "Dynamic Panel Behavior"
+        },
+        "m_DynamicPanelBehaviorModified": {
+          "type": "boolean",
+          "title": "Dynamic Panel Behavior Modified"
         }
       },
       "additionalProperties": false,

@@ -83,9 +83,8 @@
     },
     "canTransportCargo": {
       "type": "boolean",
-      "default": false,
       "title": "Can Transport Cargo",
-      "description": "Transport-only unit (wagon/caravan): carries resources but cannot attack or capture."
+      "description": "Чи є цей тип транспортним юнітом (візок/караван). Транспорт може перевозити ресурси, але не є бойовим юнітом."
     },
     "cargoCapacity": {
       "type": "number",
@@ -191,6 +190,37 @@
             "additionalProperties": false
           },
           "title": "Tile Overrides"
+        },
+        "heightLimits": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "autoStepMaxMeters": {
+              "type": "number",
+              "title": "Auto Step Max Meters",
+              "description": "Largest surface delta a unit crosses by plain walking. 0.25 matches one terrace step.",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
+            },
+            "stairModuleRiseMeters": {
+              "type": "number",
+              "title": "Stair Module Rise Meters",
+              "description": "Rise covered by one authored stair module.",
+              "minimum": 0.01,
+              "x-moyva-editorMinimum": 0.01
+            },
+            "maxStairRiseMeters": {
+              "type": "number",
+              "title": "Max Stair Rise Meters",
+              "description": "Largest total rise a stair flight may cover for this profile.",
+              "minimum": 0.0,
+              "x-moyva-editorMinimum": 0.0
+            }
+          },
+          "additionalProperties": false,
+          "title": "Height Limits"
         }
       },
       "additionalProperties": false,
@@ -430,99 +460,12 @@
           "additionalProperties": false,
           "title": "Rotation Offset"
         },
-        "groundOffsetY": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "title": "Ground Offset Y"
-        },
-        "tint": {
-          "type": [
-            "object",
-            "null"
-          ],
-          "properties": {
-            "r": {
-              "type": "number"
-            },
-            "g": {
-              "type": "number"
-            },
-            "b": {
-              "type": "number"
-            },
-            "a": {
-              "type": "number"
-            }
-          },
-          "required": [
-            "r",
-            "g",
-            "b",
-            "a"
-          ],
-          "additionalProperties": false,
-          "title": "Tint"
-        },
-        "teamColorEnabled": {
-          "type": [
-            "boolean",
-            "null"
-          ],
-          "title": "Team Color Enabled"
-        },
         "outline": {
           "type": [
             "object",
             "null"
           ],
-          "properties": {
-            "enabled": {
-              "type": [
-                "boolean",
-                "null"
-              ],
-              "title": "Enabled"
-            },
-            "width": {
-              "type": [
-                "number",
-                "null"
-              ],
-              "title": "Width",
-              "minimum": 0.0,
-              "x-moyva-editorMinimum": 0.0
-            },
-            "color": {
-              "type": [
-                "object",
-                "null"
-              ],
-              "properties": {
-                "r": {
-                  "type": "number"
-                },
-                "g": {
-                  "type": "number"
-                },
-                "b": {
-                  "type": "number"
-                },
-                "a": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "r",
-                "g",
-                "b",
-                "a"
-              ],
-              "additionalProperties": false,
-              "title": "Color"
-            }
-          },
+          "properties": {},
           "additionalProperties": false,
           "title": "Outline"
         },
@@ -531,22 +474,7 @@
             "object",
             "null"
           ],
-          "properties": {
-            "cast": {
-              "type": [
-                "boolean",
-                "null"
-              ],
-              "title": "Cast"
-            },
-            "receive": {
-              "type": [
-                "boolean",
-                "null"
-              ],
-              "title": "Receive"
-            }
-          },
+          "properties": {},
           "additionalProperties": false,
           "title": "Shadows"
         },
@@ -623,6 +551,30 @@
           "type": "number",
           "title": "Delay On Tile"
         },
+        "acceleration": {
+          "type": "number",
+          "title": "Acceleration"
+        },
+        "deceleration": {
+          "type": "number",
+          "title": "Deceleration"
+        },
+        "turnSpeedDegPerSec": {
+          "type": "number",
+          "title": "Turn Speed Deg Per Sec"
+        },
+        "faceTravelDirection": {
+          "type": "boolean",
+          "title": "Face Travel Direction"
+        },
+        "bobAmplitude": {
+          "type": "number",
+          "title": "Bob Amplitude"
+        },
+        "bobFrequency": {
+          "type": "number",
+          "title": "Bob Frequency"
+        },
         "onStepCompleted": {
           "type": [
             "object",
@@ -649,6 +601,15 @@
           "properties": {},
           "additionalProperties": false,
           "title": "Resolve World Position"
+        },
+        "allowCancelSnap": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {},
+          "additionalProperties": false,
+          "title": "Allow Cancel Snap"
         }
       },
       "additionalProperties": false,

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://moyva.local/schemas/training-monitor-window.schema.json",
-  "title": "Moyva — Training Monitor Window",
-  "description": "JSON source of truth для Kruty1918.Moyva.AI.Training.Editor.TrainingMonitorWindow. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "$id": "https://moyva.local/schemas/moyva-json-config-editor-window.schema.json",
+  "title": "Moyva — Moyva Json Config Editor Window",
+  "description": "JSON source of truth для Kruty1918.Moyva.Jsonization.Editor.MoyvaJsonConfigEditorWindow. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -17,7 +17,7 @@
       "title": "JSON Schema"
     },
     "schema": {
-      "const": "moyva.training-monitor-window"
+      "const": "moyva.moyva-json-config-editor-window"
     },
     "version": {
       "type": "integer",
@@ -32,7 +32,7 @@
       "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
     },
     "model": {
-      "const": "training-monitor-window"
+      "const": "moyva-json-config-editor-window"
     },
     "migration": {
       "type": "object",
