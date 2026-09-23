@@ -5,16 +5,23 @@
   "id": "sand",
   "model": "tile-type",
   "displayName": "Sand",
-  "aliases": ["beach", "sand-shore-band", "sand-tile-003"],
-  "tags": ["land", "coast"],
+  "aliases": [
+    "beach",
+    "sand-shore-band",
+    "sand-tile-003"
+  ],
+  "tags": [
+    "land",
+    "coast"
+  ],
   "traversalClassId": "sand",
   "visual": {
     "gridMode": "Dual",
     "variants": [
       {
         "preset": {
-          "$asset": "asset.tile-preset.01-dual-grid-sand-kaykit-style.70f407af",
-          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/01_dual_grid_sand_kaykit_style.asset",
+          "$asset": "asset.tile-preset.atlas-sand.071ebce4",
+          "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-sand.asset",
           "required": true
         },
         "slot": "Top",

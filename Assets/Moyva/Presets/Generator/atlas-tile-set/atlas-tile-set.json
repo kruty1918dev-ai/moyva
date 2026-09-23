@@ -1,0 +1,365 @@
+{
+  "$schema": "../../Schemas/atlas-tile-set.schema.json",
+  "schema": "moyva.atlas-tile-set",
+  "version": 1,
+  "id": "atlas-tile-set",
+  "model": "atlas-tile-set",
+  "heightQuantumMeters": 0.25,
+  "lowBorderDropMaxMeters": 0.25,
+  "stairModuleRiseMeters": 0.25,
+  "stairMidSurfaceDropMeters": 0.125,
+  "overlaySurfaceOffsetMeters": 0.003,
+  "themes": [
+    {
+      "themeId": "grass",
+      "tileTypeId": "grass",
+      "preset": {
+        "$asset": "asset.tile-preset.atlas-grass.d71ffbf3",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-grass.asset",
+        "required": true
+      },
+      "cornerLow": {
+        "$asset": "asset.game-object.grass-corner-low.b522c4d8",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/grass_corner_low.prefab",
+        "required": true
+      },
+      "edgeLow": {
+        "$asset": "asset.game-object.grass-edge-low.b0d7f473",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/grass_edge_low.prefab",
+        "required": true
+      },
+      "interiorLow": {
+        "$asset": "asset.game-object.grass-interior-low.d18e16d3",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/grass_interior_low.prefab",
+        "required": true
+      },
+      "mergedLow": {
+        "$asset": "asset.game-object.grass-merged-low.eb076162",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/grass_merged_low.prefab",
+        "required": true
+      },
+      "fillLow": {
+        "$asset": "asset.game-object.grass-fill-low.e8695f58",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/grass_fill_low.prefab",
+        "required": true
+      },
+      "stair": {
+        "$asset": "asset.game-object.grass-stair-025.fad771ad",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/grass_stair_025.prefab",
+        "required": true
+      }
+    },
+    {
+      "themeId": "sand",
+      "tileTypeId": "sand",
+      "preset": {
+        "$asset": "asset.tile-preset.atlas-sand.071ebce4",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-sand.asset",
+        "required": true
+      },
+      "cornerLow": {
+        "$asset": "asset.game-object.sand-corner-low.81104580",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/sand_corner_low.prefab",
+        "required": true
+      },
+      "edgeLow": {
+        "$asset": "asset.game-object.sand-edge-low.3ff0cb31",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/sand_edge_low.prefab",
+        "required": true
+      },
+      "interiorLow": {
+        "$asset": "asset.game-object.sand-interior-low.f01c3105",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/sand_interior_low.prefab",
+        "required": true
+      },
+      "mergedLow": {
+        "$asset": "asset.game-object.sand-merged-low.d99c1911",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/sand_merged_low.prefab",
+        "required": true
+      },
+      "fillLow": {
+        "$asset": "asset.game-object.sand-fill-low.0fbb6375",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/sand_fill_low.prefab",
+        "required": true
+      },
+      "stair": {
+        "$asset": "asset.game-object.sand-stair-025.09e30c9a",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/sand_stair_025.prefab",
+        "required": true
+      }
+    },
+    {
+      "themeId": "dirt",
+      "tileTypeId": "dirt",
+      "preset": {
+        "$asset": "asset.tile-preset.atlas-dirt.a6ced639",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-dirt.asset",
+        "required": true
+      },
+      "cornerLow": {
+        "$asset": "asset.game-object.dirt-corner-low.c707dc7a",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/dirt_corner_low.prefab",
+        "required": true
+      },
+      "edgeLow": {
+        "$asset": "asset.game-object.dirt-edge-low.0686c8f8",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/dirt_edge_low.prefab",
+        "required": true
+      },
+      "interiorLow": {
+        "$asset": "asset.game-object.dirt-interior-low.e88d1592",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/dirt_interior_low.prefab",
+        "required": true
+      },
+      "mergedLow": {
+        "$asset": "asset.game-object.dirt-merged-low.4841dfe8",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/dirt_merged_low.prefab",
+        "required": true
+      },
+      "fillLow": {
+        "$asset": "asset.game-object.dirt-fill-low.630a5142",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/dirt_fill_low.prefab",
+        "required": true
+      },
+      "stair": {
+        "$asset": "asset.game-object.dirt-stair-025.b2b154fd",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/dirt_stair_025.prefab",
+        "required": true
+      }
+    },
+    {
+      "themeId": "stone",
+      "tileTypeId": "stone",
+      "preset": {
+        "$asset": "asset.tile-preset.atlas-stone.211f9b2e",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-stone.asset",
+        "required": true
+      },
+      "cornerLow": {
+        "$asset": "asset.game-object.stone-corner-low.ead4bb1f",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/stone_corner_low.prefab",
+        "required": true
+      },
+      "edgeLow": {
+        "$asset": "asset.game-object.stone-edge-low.742bcf07",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/stone_edge_low.prefab",
+        "required": true
+      },
+      "interiorLow": {
+        "$asset": "asset.game-object.stone-interior-low.eee1204c",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/stone_interior_low.prefab",
+        "required": true
+      },
+      "mergedLow": {
+        "$asset": "asset.game-object.stone-merged-low.35212fba",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/stone_merged_low.prefab",
+        "required": true
+      },
+      "fillLow": {
+        "$asset": "asset.game-object.stone-fill-low.9cf984b6",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/stone_fill_low.prefab",
+        "required": true
+      },
+      "stair": {
+        "$asset": "asset.game-object.stone-stair-025.b0878e09",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/stone_stair_025.prefab",
+        "required": true
+      }
+    },
+    {
+      "themeId": "snow",
+      "tileTypeId": "snow",
+      "preset": {
+        "$asset": "asset.tile-preset.atlas-snow.4303992a",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-snow.asset",
+        "required": true
+      },
+      "cornerLow": {
+        "$asset": "asset.game-object.snow-corner-low.ad0e262f",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/snow_corner_low.prefab",
+        "required": true
+      },
+      "edgeLow": {
+        "$asset": "asset.game-object.snow-edge-low.1a33fead",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/snow_edge_low.prefab",
+        "required": true
+      },
+      "interiorLow": {
+        "$asset": "asset.game-object.snow-interior-low.fee9ad55",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/snow_interior_low.prefab",
+        "required": true
+      },
+      "mergedLow": {
+        "$asset": "asset.game-object.snow-merged-low.d1070468",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/snow_merged_low.prefab",
+        "required": true
+      },
+      "fillLow": {
+        "$asset": "asset.game-object.snow-fill-low.6ee77902",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/snow_fill_low.prefab",
+        "required": true
+      },
+      "stair": {
+        "$asset": "asset.game-object.snow-stair-025.12939800",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/snow_stair_025.prefab",
+        "required": true
+      }
+    },
+    {
+      "themeId": "swamp",
+      "tileTypeId": "swamp",
+      "preset": {
+        "$asset": "asset.tile-preset.atlas-swamp.ca180e09",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-swamp.asset",
+        "required": true
+      },
+      "cornerLow": {
+        "$asset": "asset.game-object.swamp-corner-low.80fbced8",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/swamp_corner_low.prefab",
+        "required": true
+      },
+      "edgeLow": {
+        "$asset": "asset.game-object.swamp-edge-low.9c1fbec7",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/swamp_edge_low.prefab",
+        "required": true
+      },
+      "interiorLow": {
+        "$asset": "asset.game-object.swamp-interior-low.78e55f15",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/swamp_interior_low.prefab",
+        "required": true
+      },
+      "mergedLow": {
+        "$asset": "asset.game-object.swamp-merged-low.ad9ed02f",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/swamp_merged_low.prefab",
+        "required": true
+      },
+      "fillLow": {
+        "$asset": "asset.game-object.swamp-fill-low.f14c6a14",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/swamp_fill_low.prefab",
+        "required": true
+      },
+      "stair": {
+        "$asset": "asset.game-object.swamp-stair-025.2bc51cbc",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/swamp_stair_025.prefab",
+        "required": true
+      }
+    },
+    {
+      "themeId": "rock_cliff",
+      "tileTypeId": "rock-cliff",
+      "preset": {
+        "$asset": "asset.tile-preset.atlas-rock-cliff.93a9c57c",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-rock_cliff.asset",
+        "required": true
+      },
+      "cornerLow": {
+        "$asset": "asset.game-object.rock-cliff-corner-low.40e1e83d",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/rock_cliff_corner_low.prefab",
+        "required": true
+      },
+      "edgeLow": {
+        "$asset": "asset.game-object.rock-cliff-edge-low.a82c7c63",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/rock_cliff_edge_low.prefab",
+        "required": true
+      },
+      "interiorLow": {
+        "$asset": "asset.game-object.rock-cliff-interior-low.8e45620d",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/rock_cliff_interior_low.prefab",
+        "required": true
+      },
+      "mergedLow": {
+        "$asset": "asset.game-object.rock-cliff-merged-low.24178ea8",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/rock_cliff_merged_low.prefab",
+        "required": true
+      },
+      "fillLow": {
+        "$asset": "asset.game-object.rock-cliff-fill-low.fe7b79eb",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/rock_cliff_fill_low.prefab",
+        "required": true
+      },
+      "stair": {
+        "$asset": "asset.game-object.rock-cliff-stair-025.05255e99",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/rock_cliff_stair_025.prefab",
+        "required": true
+      }
+    },
+    {
+      "themeId": "road",
+      "tileTypeId": "road",
+      "preset": {
+        "$asset": "asset.tile-preset.atlas-road.acd64da4",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-road.asset",
+        "required": true
+      },
+      "cornerLow": {
+        "$asset": "asset.game-object.road-corner-low.9b58aa1e",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/road_corner_low.prefab",
+        "required": true
+      },
+      "edgeLow": {
+        "$asset": "asset.game-object.road-edge-low.9c86a396",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/road_edge_low.prefab",
+        "required": true
+      },
+      "interiorLow": {
+        "$asset": "asset.game-object.road-interior-low.0948c234",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/road_interior_low.prefab",
+        "required": true
+      },
+      "mergedLow": {
+        "$asset": "asset.game-object.road-merged-low.8aeaa20f",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/road_merged_low.prefab",
+        "required": true
+      },
+      "fillLow": {
+        "$asset": "asset.game-object.road-fill-low.d880851a",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/road_fill_low.prefab",
+        "required": true
+      },
+      "stair": {
+        "$asset": "asset.game-object.road-stair-025.d18b0f59",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/road_stair_025.prefab",
+        "required": true
+      }
+    },
+    {
+      "themeId": "footpath",
+      "tileTypeId": "footpath",
+      "preset": {
+        "$asset": "asset.tile-preset.atlas-footpath.2dac31de",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-footpath.asset",
+        "required": true
+      },
+      "cornerLow": {
+        "$asset": "asset.game-object.footpath-corner-low.e8965c19",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/footpath_corner_low.prefab",
+        "required": true
+      },
+      "edgeLow": {
+        "$asset": "asset.game-object.footpath-edge-low.fc786079",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/footpath_edge_low.prefab",
+        "required": true
+      },
+      "interiorLow": {
+        "$asset": "asset.game-object.footpath-interior-low.be2fb0a2",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/footpath_interior_low.prefab",
+        "required": true
+      },
+      "mergedLow": {
+        "$asset": "asset.game-object.footpath-merged-low.1f826c75",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/footpath_merged_low.prefab",
+        "required": true
+      },
+      "fillLow": {
+        "$asset": "asset.game-object.footpath-fill-low.6803d271",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/footpath_fill_low.prefab",
+        "required": true
+      },
+      "stair": {
+        "$asset": "asset.game-object.footpath-stair-025.f0c7b440",
+        "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Prefabs/footpath_stair_025.prefab",
+        "required": true
+      }
+    }
+  ]
+}

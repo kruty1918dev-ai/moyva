@@ -2,24 +2,21 @@
   "$schema": "../Schemas/tile-type.schema.json",
   "schema": "moyva.tile-type",
   "version": 1,
-  "id": "snow",
+  "id": "footpath",
   "model": "tile-type",
-  "displayName": "Snow",
-  "aliases": [
-    "snow-tile-001"
-  ],
+  "displayName": "Footpath",
+  "aliases": [],
   "tags": [
-    "land",
-    "cold"
+    "route"
   ],
-  "traversalClassId": "snow",
+  "traversalClassId": "footpath",
   "visual": {
     "gridMode": "Dual",
     "variants": [
       {
         "preset": {
-          "$asset": "asset.tile-preset.atlas-snow.4303992a",
-          "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-snow.asset",
+          "$asset": "asset.tile-preset.atlas-footpath.2dac31de",
+          "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-footpath.asset",
           "required": true
         },
         "slot": "Top",

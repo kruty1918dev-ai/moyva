@@ -5,16 +5,21 @@
   "id": "grass",
   "model": "tile-type",
   "displayName": "Grass",
-  "aliases": ["TileGrass", "grass-tile-001"],
-  "tags": ["land"],
+  "aliases": [
+    "TileGrass",
+    "grass-tile-001"
+  ],
+  "tags": [
+    "land"
+  ],
   "traversalClassId": "grass",
   "visual": {
     "gridMode": "Dual",
     "variants": [
       {
         "preset": {
-          "$asset": "asset.tile-preset.02-dual-grid-grass-kaykit-style.05593a2d",
-          "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Models/tiles/02_dual_grid_grass_kaykit_style.asset",
+          "$asset": "asset.tile-preset.atlas-grass.d71ffbf3",
+          "editorPath": "Assets/Moyva/Art/World/Tiles/AtlasV3/Generated/Presets/atlas-grass.asset",
           "required": true
         },
         "slot": "Top",
