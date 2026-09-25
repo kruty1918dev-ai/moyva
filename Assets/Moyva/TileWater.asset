@@ -34,7 +34,7 @@ MonoBehaviour:
   NRMGRD_edgeCornerFillTile: {fileID: 0}
   NRMGRD_threeCornerTile: {fileID: 0}
   NRMGRD_fourWayTile: {fileID: 0}
-  materialOverride: {fileID: 2100000, guid: fcf1aac0ecc2b9c4caec5df34421a231, type: 2}
+  materialOverride: {fileID: 2100000, guid: e641fc50a6991f94488a292b9be307c9, type: 2}
   cornerTileYRotationOffset: 180
   invertedCornerTileYRotationOffset: 180
   edgeTileYRotationOffset: -90

@@ -60,8 +60,151 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 added += CollectShoreWaterSource(composition, results);
             }
             if (sample.TileGeometryMode == TileGeometryMode.SurfaceOnly)
+            {
                 added += CollectWaterfallSource(composition, buildLayer, preset, results);
+                added += CollectWaterBedSource(composition, sample, buildLayer, results);
+            }
             return added;
+        }
+
+        /*
+         * Emits the sand theme's fill tile as a solid bed column under a
+         * surface-only water sheet: top lands on the hydrology bed height,
+         * GeneratedClosure stretches the authored bottom ring to a floor
+         * below the lowest neighbouring bed, and per-edge bottoms let open
+         * skirts stop exactly at each lower neighbour's bed. Without a
+         * rendered bed the transparent water would show void/backfaces
+         * instead of the sandy bottom the shore fade is meant to reveal.
+         * Water neighbours compare bed-to-bed (higher cell owns the skirt);
+         * land neighbours occlude via their own surface height.
+         */
+        private int CollectWaterBedSource(
+            ResolvedTileComposition composition,
+            TileLayerSample waterSample,
+            TilesBuildLayer buildLayer,
+            List<TileMeshSource> results)
+        {
+            float cellSize = ResolveCellSize();
+            if (cellSize <= 0.0001f
+                || !IsFinite(waterSample.Height)
+                || !IsFinite(waterSample.SurfaceHeight)
+                || waterSample.Height >= waterSample.SurfaceHeight - 0.0001f
+                || _atlas == null
+                || !_atlas.IsLoaded
+                || !_atlas.TryGetByTileId("sand", out AtlasTileTheme theme)
+                || theme?.Preset == null)
+            {
+                return 0;
+            }
+
+            float bedY = waterSample.Height;
+            float northH = ResolveBedEdgeHeight(
+                composition.Cell, 0, 1, composition.NorthSurfaceHeight);
+            float eastH = ResolveBedEdgeHeight(
+                composition.Cell, 1, 0, composition.EastSurfaceHeight);
+            float southH = ResolveBedEdgeHeight(
+                composition.Cell, 0, -1, composition.SouthSurfaceHeight);
+            float westH = ResolveBedEdgeHeight(
+                composition.Cell, -1, 0, composition.WestSurfaceHeight);
+
+            TileMeshOccludedSides occluded = TileMeshOccludedSides.None;
+            if (!IsFinite(northH) || northH >= bedY - 0.0001f)
+                occluded |= TileMeshOccludedSides.North;
+            if (!IsFinite(eastH) || eastH >= bedY - 0.0001f)
+                occluded |= TileMeshOccludedSides.East;
+            if (!IsFinite(southH) || southH >= bedY - 0.0001f)
+                occluded |= TileMeshOccludedSides.South;
+            if (!IsFinite(westH) || westH >= bedY - 0.0001f)
+                occluded |= TileMeshOccludedSides.West;
+
+            // The column floor only needs to reach just below the deepest
+            // neighbouring bed; deeper skirts would dangle past the rim.
+            float floorY = bedY - 0.5f;
+            if (IsFinite(northH)) floorY = Mathf.Min(floorY, northH - 0.5f);
+            if (IsFinite(eastH)) floorY = Mathf.Min(floorY, eastH - 0.5f);
+            if (IsFinite(southH)) floorY = Mathf.Min(floorY, southH - 0.5f);
+            if (IsFinite(westH)) floorY = Mathf.Min(floorY, westH - 0.5f);
+
+            var bedSample = new TileLayerSample(
+                waterSample.LayerId,
+                waterSample.LayerName,
+                waterSample.BlueprintLayerGuid,
+                waterSample.BuildLayerGuid,
+                theme.TileTypeId,
+                theme.Preset.tileId,
+                LayerKind.BaseTerrain,
+                waterSample.SortingOrder,
+                waterSample.LayerOrder,
+                waterSample.TerrainPriority,
+                bedY,
+                bedY,
+                waterSample.SourceLayerId,
+                TileGeometryMode.SolidTerrain,
+                AuthoredClosurePolicy.GeneratedClosure);
+
+            var bedComposition = new ResolvedTileComposition(
+                composition.Cell,
+                bedSample,
+                default,
+                hasMainTerrain: true,
+                hasOverlay: false,
+                "water bed",
+                northMatches: true,
+                eastMatches: true,
+                southMatches: true,
+                westMatches: true,
+                northEastMatches: true,
+                southEastMatches: true,
+                southWestMatches: true,
+                northWestMatches: true,
+                supportHeight: floorY,
+                northSurfaceHeight: northH,
+                eastSurfaceHeight: eastH,
+                southSurfaceHeight: southH,
+                westSurfaceHeight: westH);
+
+            var edgeBottoms = new TileMeshEdgeBottoms(
+                IsFinite(northH) && northH < bedY ? northH : float.NaN,
+                IsFinite(eastH) && eastH < bedY ? eastH : float.NaN,
+                IsFinite(southH) && southH < bedY ? southH : float.NaN,
+                IsFinite(westH) && westH < bedY ? westH : float.NaN);
+
+            TilePreset preset = theme.Preset;
+            var tileType = preset.gridtype == TilePreset.GridType.dual
+                ? TilePreset.TileType.DUALGRD_fill
+                : TilePreset.TileType.NRMGRD_fill;
+
+            return TryAddMeshSources(
+                bedComposition,
+                buildLayer,
+                preset,
+                tileType,
+                new Vector2(composition.Cell.x, composition.Cell.y),
+                yRotation: 0,
+                Vector3.one,
+                occluded,
+                edgeBottoms,
+                results);
+        }
+
+        /*
+         * Height the bed column compares against on one shared edge: a water
+         * neighbour contributes its bed (its own column covers above that),
+         * a land neighbour contributes its surface (its terrain covers the
+         * side), and a missing neighbour sinks to the floor so the bed rim
+         * stays sealed underwater.
+         */
+        private float ResolveBedEdgeHeight(
+            Vector2Int cell, int dx, int dy, float landSurface)
+        {
+            var neighbor = new Vector2Int(cell.x + dx, cell.y + dy);
+            if (_hydrology != null
+                && _hydrology.TryGetBedHeight(neighbor, out float bed)
+                && IsFinite(bed))
+            {
+                return bed;
+            }
+            return landSurface;
         }
 
         /*
@@ -136,7 +279,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     tileCenterXZ: new Vector2(
                         composition.Cell.x * cellSize, composition.Cell.y * cellSize),
                     tileHalfExtent: cellSize * 0.5f,
-                    tileGeometryMode: TileGeometryMode.SurfaceOnly);
+                    tileGeometryMode: TileGeometryMode.SolidTerrain);
                 if (!meshSource.IsValid)
                     continue;
                 results.Add(meshSource);
