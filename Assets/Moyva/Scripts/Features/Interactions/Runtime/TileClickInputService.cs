@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private bool _secondaryHeld;
         private bool _bindingsDirty = true;
         private ControlProfile _bindingProfile;
+        private PlayerControlModifiers _ignoredSelectModifiers;
         private System.Collections.Generic.Dictionary<PlayerControlAction, string> _bindings;
         private void OnSettingsChanged(PlayerControlSettingsData _) => _bindingsDirty = true;
         public void Dispose() { if (_controls != null) _controls.OnSettingsChanged -= OnSettingsChanged; }
@@ -65,12 +66,17 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             if (_bindingsDirty || profile != _bindingProfile)
             {
                 _bindings = _controls?.Settings.Profile(profile)?.ToBindings();
+                _ignoredSelectModifiers = _bindings != null
+                    && _bindings.TryGetValue(PlayerControlAction.Sprint, out var sprintPath)
+                    && PlayerControlBinding.TryParse(sprintPath, out var sprintBinding)
+                        ? sprintBinding.ModifierMask
+                        : PlayerControlModifiers.None;
                 _bindingsDirty = false; _bindingProfile = profile;
             }
             var bindings = _bindings;
             bool Pressed(PlayerControlAction action, bool fallback)
                 => bindings != null && bindings.TryGetValue(action, out var path) && PlayerControlBinding.TryParse(path, out var binding)
-                    ? binding.ReadValue() > 0.5f : fallback;
+                    ? binding.ReadValue(0.2f, _ignoredSelectModifiers) > 0.5f : fallback;
             bool primary = Pressed(PlayerControlAction.PrimarySelect, mouse?.leftButton.isPressed == true);
             bool secondary = Pressed(PlayerControlAction.SecondarySelect, mouse?.rightButton.isPressed == true);
             if (Application.isFocused && (_inputPolicy?.CanProcess(GameplayInputKind.KeyboardNavigation, screenPos) ?? true))

@@ -57,6 +57,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 BuildingMap = buildingMap,
                 LogicalTileMap = _diagnostics?.LastLogicalMap,
                 TerrainPassages = _diagnostics?.LastPassages,
+                Hydrology = _diagnostics?.LastHydrology,
                 CompiledLayers = _diagnostics?.LastCompiledLayers,
                 CellSize = _diagnostics?.LastCellSize ?? 1f
             };

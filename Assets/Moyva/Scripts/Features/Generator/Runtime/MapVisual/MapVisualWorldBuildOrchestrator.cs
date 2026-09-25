@@ -596,9 +596,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 inferredId = "forest-dense";
             else if (ContainsAny(value, "forest"))
                 inferredId = "forest-sparse";
-            else if (ContainsAny(value, "hill", "mountain", "stone"))
+            else if (ContainsAny(value, "hill", "mountain", "stone", "rock", "cliff"))
                 inferredId = "hill";
-            else if (ContainsAny(value, "grass", "lowland"))
+            else if (ContainsAny(value, "grass", "lowland", "dirt", "road", "footpath", "path"))
                 inferredId = "grass";
 
             return inferredId != null;

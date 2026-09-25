@@ -350,6 +350,8 @@ namespace Kruty1918.Moyva.Signals
         public float[,] HeightMap;
         /// <summary>терейну рівня карти — int[,].</summary>
         public int[,] TerrainLevelMap;
+        /// <summary>Авторитетна rendered surface height map (meters) — float[,].</summary>
+        public float[,] SurfaceHeightMap;
         /// <summary>спавну Hints — Vector2Int[].</summary>
         public Vector2Int[] SpawnHints;
     }

@@ -120,6 +120,10 @@ namespace Kruty1918.Moyva.Signals
                 ObjectMap = Clone2DArray(signal.ObjectMap),
                 HeightMap = Clone2DArray(signal.HeightMap),
                 TerrainLevelMap = Clone2DArray(signal.TerrainLevelMap),
+                SurfaceHeightMap = Clone2DArray(signal.SurfaceHeightMap),
+                SpawnHints = signal.SpawnHints != null
+                    ? (Vector2Int[])signal.SpawnHints.Clone()
+                    : null,
             };
         }
 

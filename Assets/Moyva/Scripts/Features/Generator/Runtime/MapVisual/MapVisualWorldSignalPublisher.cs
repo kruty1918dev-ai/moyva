@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.SaveSystem;
 using Kruty1918.Moyva.Signals;
@@ -12,17 +13,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IGridProjection _projection;
         private readonly IMapGenerationDiagnostics _diagnostics;
         private readonly IWorldGenerationSignalState _signalState;
+        private readonly IGeneratorTerrainLevelService _terrainLevels;
 
         public MapVisualWorldSignalPublisher(
             SignalBus signalBus,
             IGridProjection projection,
             [InjectOptional] IMapGenerationDiagnostics diagnostics = null,
-            [InjectOptional] IWorldGenerationSignalState signalState = null)
+            [InjectOptional] IWorldGenerationSignalState signalState = null,
+            [InjectOptional] IGeneratorTerrainLevelService terrainLevels = null)
         {
             _signalBus = signalBus;
             _projection = projection;
             _diagnostics = diagnostics;
             _signalState = signalState;
+            _terrainLevels = terrainLevels;
         }
 
         public void Publish(GeneratedWorldData worldData, string source)
@@ -76,6 +80,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ObjectMap = MapArrayUtils.CloneStringMap(worldData.ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(worldData.HeightMap),
                 TerrainLevelMap = MapArrayUtils.CloneIntMap(worldData.TerrainLevelMap),
+                SurfaceHeightMap = _terrainLevels?.CopySurfaceHeightMap(),
                 SpawnHints = worldData.SpawnHints != null
                     ? (Vector2Int[])worldData.SpawnHints.Clone()
                     : null,
