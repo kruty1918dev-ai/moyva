@@ -313,7 +313,7 @@ Material:
     - _WaveDistance: 0.97
     - _WaveDistortion: 0.5
     - _WaveFrequency: 1
-    - _WaveHeight: 1
+    - _WaveHeight: 0.09
     - _WaveMaxLayers: 64
     - _WaveNormalStr: 6.5
     - _WaveSpeed: 1

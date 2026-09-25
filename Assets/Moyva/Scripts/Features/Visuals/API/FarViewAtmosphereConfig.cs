@@ -53,8 +53,8 @@ namespace Kruty1918.Moyva.Visuals
         public Color skyColor = new Color(0.70f, 0.79f, 0.90f, 1f);
         [Range(0f, 1f)] public float strength = 0.85f;
         [Tooltip("View-distance (units), звідки haze починає наростати.")]
-        [Min(0f)] public float depthStart = 18f;
-        [Min(0.01f)] public float depthEnd = 130f;
+        [Min(0f)] public float depthStart = 30f;
+        [Min(0.01f)] public float depthEnd = 160f;
         [Range(0.2f, 4f)] public float gamma = 1.35f;
         [Tooltip("Наскільки небо (far depth) заповнюється атмосферою при full weight.")]
         [Range(0f, 1f)] public float skyFill = 0.75f;

@@ -19,8 +19,8 @@
       "a": 1.0
     },
     "strength": 0.85,
-    "depthStart": 18.0,
-    "depthEnd": 130.0,
+    "depthStart": 30.0,
+    "depthEnd": 160.0,
     "gamma": 1.35,
     "skyFill": 0.75
   },

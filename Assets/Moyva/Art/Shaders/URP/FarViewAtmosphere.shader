@@ -40,6 +40,18 @@ Shader "Hidden/Moyva/FarViewAtmosphere"
             TEXTURE2D_X(_BlitTexture);
             SAMPLER(sampler_BlitTexture);
 
+            // Fog of War globals (published by FogScreenSpaceTextureUpdater).
+            // R = hidden (unexplored + explored-but-covered); G = unexplored.
+            // Atmosphere must never restyle hidden pixels or pull them into
+            // neighbouring ones through the flatten blur taps.
+            TEXTURE2D(_MoyvaFogStateTexture);
+            SAMPLER(sampler_MoyvaFogStateTexture);
+            float4 _MoyvaFogMapSize;
+            float4 _MoyvaFogGridOrigin;
+            float4 _MoyvaFogWorldToGrid;
+            float _MoyvaFogEnabled;
+            float _MoyvaFogFlipY;
+
             // Globals pushed by FarViewAtmosphereDriver (no per-material data).
             float _MoyvaFarViewWeight;
             float _MoyvaFarViewDepthAvailable;
@@ -105,6 +117,60 @@ Shader "Hidden/Moyva/FarViewAtmosphere"
                 return lerp(luma.xxx, color, saturation);
             }
 
+            // ---- fog-of-war visibility gate ----
+            // Same world->grid transform as the fog composite so the mask is
+            // evaluated at the real surface position, not a screen guess.
+
+            float2 MoyvaWorldToFogGrid(float3 worldPosition)
+            {
+                float2 deltaXZ = worldPosition.xz - _MoyvaFogGridOrigin.xy;
+                float2 gridPosition;
+                gridPosition.x = dot(deltaXZ, _MoyvaFogWorldToGrid.xy);
+                gridPosition.y = dot(deltaXZ, _MoyvaFogWorldToGrid.zw);
+                if (_MoyvaFogFlipY > 0.5)
+                    gridPosition.y = (_MoyvaFogMapSize.y - 1.0) - gridPosition.y;
+                return gridPosition;
+            }
+
+            float2 MoyvaSampleFogMasks(float2 cell)
+            {
+                float2 mapSize = max(_MoyvaFogMapSize.xy, 1.0.xx);
+                float2 inside =
+                    step(0.0.xx, cell) * step(cell, mapSize - 1.0.xx);
+                float insideMap = inside.x * inside.y;
+                float2 uv = (clamp(cell, 0.0.xx, mapSize - 1.0.xx) + 0.5.xx) / mapSize;
+                float2 sampled = SAMPLE_TEXTURE2D_LOD(
+                    _MoyvaFogStateTexture,
+                    sampler_MoyvaFogStateTexture,
+                    uv,
+                    0).rg;
+                // Outside the logical map counts as hidden, matching the
+                // fog composite's own convention.
+                return lerp(1.0.xx, sampled, insideMap);
+            }
+
+            // Bilinear hidden weight (fog R channel) at the pixel's real
+            // surface position. Sky and missing depth stay fully visible.
+            float MoyvaHiddenWeight(float2 uv)
+            {
+                if (_MoyvaFogEnabled < 0.5 || _MoyvaFarViewDepthAvailable < 0.5)
+                    return 0.0;
+
+                float rawDepth = SampleSceneDepth(UnityStereoTransformScreenSpaceTex(uv));
+                if (rawDepth <= 0.00001)
+                    return 0.0;
+
+                float3 worldPos = ComputeWorldSpacePosition(uv, rawDepth, UNITY_MATRIX_I_VP);
+                float2 gridPos = MoyvaWorldToFogGrid(worldPos);
+                float2 baseCell = floor(gridPos);
+                float2 f = frac(gridPos);
+                float u00 = MoyvaSampleFogMasks(baseCell).r;
+                float u10 = MoyvaSampleFogMasks(baseCell + float2(1, 0)).r;
+                float u01 = MoyvaSampleFogMasks(baseCell + float2(0, 1)).r;
+                float u11 = MoyvaSampleFogMasks(baseCell + float2(1, 1)).r;
+                return lerp(lerp(u00, u10, f.x), lerp(u01, u11, f.x), f.y);
+            }
+
             float4 FragComposite(Varyings input) : SV_Target
             {
                 float2 uv = input.uv;
@@ -114,6 +180,13 @@ Shader "Hidden/Moyva/FarViewAtmosphere"
 
                 if (debugMode == 1) // weight visualization
                     return float4(w.xxx, 1);
+
+                // Fog of War gate: hidden pixels (unexplored or explored-but-
+                // covered) keep the fog composite's authored color — the
+                // atmosphere must not lift them or leak terrain silhouettes
+                // through. Partial edges fade smoothly.
+                float fogVisibility = 1.0 - MoyvaHiddenWeight(uv);
+                w *= fogVisibility;
 
                 if (w <= 0.001 && debugMode == 0)
                     return scene;
@@ -139,16 +212,40 @@ Shader "Hidden/Moyva/FarViewAtmosphere"
                 {
                     float2 texel = 1.0 / _ScreenParams.xy;
                     float2 off = _MoyvaFarViewFlatten.y * texel;
+                    // Each tap is weighted by its own fog visibility so the
+                    // local mean never drags hidden darkness into visible
+                    // pixels or vice versa across the fog boundary.
+                    bool fogActive = _MoyvaFogEnabled > 0.5
+                        && _MoyvaFarViewDepthAvailable > 0.5;
 #if defined(MOYVA_FARVIEW_QUALITY_LOW)
                     // Performance tier: 2 taps + center instead of 4 taps.
-                    float3 mean = (SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, uv + float2(off.x, 0)).rgb
-                                 + SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, uv - float2(off.x, 0)).rgb
-                                 + scene.rgb) / 3.0;
+                    float2 tapA = uv + float2(off.x, 0);
+                    float2 tapB = uv - float2(off.x, 0);
+                    float wA = fogActive ? 1.0 - MoyvaHiddenWeight(tapA) : 1.0;
+                    float wB = fogActive ? 1.0 - MoyvaHiddenWeight(tapB) : 1.0;
+                    float wC = fogActive ? fogVisibility : 1.0;
+                    float wSum = wA + wB + wC;
+                    float3 mean = wSum > 0.0001
+                        ? (SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, tapA).rgb * wA
+                         + SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, tapB).rgb * wB
+                         + scene.rgb * wC) / wSum
+                        : scene.rgb;
 #else
-                    float3 mean = (SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, uv + float2(off.x, 0)).rgb
-                                 + SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, uv - float2(off.x, 0)).rgb
-                                 + SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, uv + float2(0, off.y)).rgb
-                                 + SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, uv - float2(0, off.y)).rgb) * 0.25;
+                    float2 tapA = uv + float2(off.x, 0);
+                    float2 tapB = uv - float2(off.x, 0);
+                    float2 tapC = uv + float2(0, off.y);
+                    float2 tapD = uv - float2(0, off.y);
+                    float wA = fogActive ? 1.0 - MoyvaHiddenWeight(tapA) : 1.0;
+                    float wB = fogActive ? 1.0 - MoyvaHiddenWeight(tapB) : 1.0;
+                    float wC = fogActive ? 1.0 - MoyvaHiddenWeight(tapC) : 1.0;
+                    float wD = fogActive ? 1.0 - MoyvaHiddenWeight(tapD) : 1.0;
+                    float wSum = wA + wB + wC + wD;
+                    float3 mean = wSum > 0.0001
+                        ? (SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, tapA).rgb * wA
+                         + SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, tapB).rgb * wB
+                         + SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, tapC).rgb * wC
+                         + SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, tapD).rgb * wD) / wSum
+                        : scene.rgb;
 #endif
                     float3 detail = color - mean;
                     float k = debugMode == 4 ? _MoyvaFarViewFlatten.x : flattenK;
