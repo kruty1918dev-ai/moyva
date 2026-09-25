@@ -11,9 +11,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     {
         private const float FlatSurfaceBoundsHeightTolerance = 0.0001f;
 
+        private static Mesh _waterfallStripMesh;
+
         private readonly ITileWorldCreatorBuildEnvironment _environment;
         private readonly IAtlasTileSetCatalog _atlas;
         private readonly ITerrainPassageMap _passages;
+        private readonly IRecipeHydrologyMap _hydrology;
         private readonly Dictionary<string, TilesBuildLayer> _buildLayerByGuid = new Dictionary<string, TilesBuildLayer>(System.StringComparer.Ordinal);
         private readonly Dictionary<GameObject, PrefabMeshTemplate[]> _meshTemplatesByPrefab =
             new Dictionary<GameObject, PrefabMeshTemplate[]>();
@@ -21,11 +24,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         public TwcTileMeshSourceProvider(
             ITileWorldCreatorBuildEnvironment environment,
             [InjectOptional] IAtlasTileSetCatalog atlas = null,
-            [InjectOptional] ITerrainPassageMap passages = null)
+            [InjectOptional] ITerrainPassageMap passages = null,
+            [InjectOptional] IRecipeHydrologyMap hydrology = null)
         {
             _environment = environment;
             _atlas = atlas;
             _passages = passages;
+            _hydrology = hydrology;
         }
 
         public int CollectMeshSources(ResolvedTileComposition composition, List<TileMeshSource> results)
@@ -49,7 +54,233 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             added += preset.gridtype == TilePreset.GridType.dual
                 ? CollectDualGridSources(composition, buildLayer, preset, results)
                 : CollectNormalGridSource(composition, buildLayer, preset, results);
+            if (composition.HasWaterSurface
+                && sample.TileGeometryMode != TileGeometryMode.SurfaceOnly)
+            {
+                added += CollectShoreWaterSource(composition, results);
+            }
+            if (sample.TileGeometryMode == TileGeometryMode.SurfaceOnly)
+                added += CollectWaterfallSource(composition, buildLayer, preset, results);
             return added;
+        }
+
+        /*
+         * Emits a vertical water strip on every shared edge between this water
+         * cell and a lower neighbouring water/sink cell, so each level drop
+         * reads as a waterfall wall — not only the single flow-parent edge.
+         * Only the upper cell emits (the lower sees the neighbour as higher),
+         * so each edge is covered exactly once. Diagonal neighbours get a
+         * corner quad on the shared vertex. The strip reuses the water
+         * preset's material and shares the chunk of the owning cell.
+         */
+        private static readonly Vector2Int[] WaterfallDirs =
+        {
+            new Vector2Int(-1, 0), new Vector2Int(1, 0),
+            new Vector2Int(0, -1), new Vector2Int(0, 1),
+            new Vector2Int(-1, -1), new Vector2Int(1, -1),
+            new Vector2Int(-1, 1), new Vector2Int(1, 1),
+        };
+
+        private int CollectWaterfallSource(
+            ResolvedTileComposition composition,
+            TilesBuildLayer buildLayer,
+            TilePreset preset,
+            List<TileMeshSource> results)
+        {
+            TileLayerSample sample = composition.MainTerrain;
+            float cellSize = ResolveCellSize();
+            if (_hydrology == null
+                || cellSize <= 0.0001f
+                || !_hydrology.TryGetWaterSurface(composition.Cell, out float upperY))
+            {
+                return 0;
+            }
+
+            float minDrop = _hydrology.WaterfallMinDropMeters;
+            if (minDrop <= 0.0001f)
+                minDrop = 0.5f;
+
+            Material[] materials = null;
+            int added = 0;
+            for (int i = 0; i < WaterfallDirs.Length; i++)
+            {
+                Vector2Int d = WaterfallDirs[i];
+                var neighbor = new Vector2Int(composition.Cell.x + d.x, composition.Cell.y + d.y);
+                if (!_hydrology.TryGetWaterSurface(neighbor, out float lowerY))
+                    continue;
+                float drop = upperY - lowerY;
+                if (drop < minDrop)
+                    continue;
+
+                materials ??= ResolveWaterfallMaterials(buildLayer, preset);
+                if (materials == null || materials.Length == 0)
+                    return 0;
+
+                var dir = new Vector3(d.x, 0f, d.y);
+                Vector3 edgeCenter = new Vector3(
+                    (composition.Cell.x + d.x * 0.5f) * cellSize,
+                    lowerY,
+                    (composition.Cell.y + d.y * 0.5f) * cellSize);
+                Quaternion rotation = Quaternion.LookRotation(dir.normalized, Vector3.up);
+                var localMatrix = Matrix4x4.TRS(
+                    edgeCenter,
+                    rotation,
+                    new Vector3(cellSize, drop, 1f));
+
+                var meshSource = new TileMeshSource(
+                    GetWaterfallStripMesh(),
+                    materials,
+                    localMatrix,
+                    sample.LayerId,
+                    sample.LayerName,
+                    tileCenterXZ: new Vector2(
+                        composition.Cell.x * cellSize, composition.Cell.y * cellSize),
+                    tileHalfExtent: cellSize * 0.5f,
+                    tileGeometryMode: TileGeometryMode.SurfaceOnly);
+                if (!meshSource.IsValid)
+                    continue;
+                results.Add(meshSource);
+                added++;
+            }
+            return added;
+        }
+
+        private Material[] ResolveWaterfallMaterials(TilesBuildLayer buildLayer, TilePreset preset)
+        {
+            Material materialOverride = preset != null ? preset.GetMaterialOverride() : null;
+            if (materialOverride != null)
+                return new[] { materialOverride };
+            GameObject prefab = preset?.GetTile(TilePreset.TileType.NRMGRD_fill,
+                out _, out _);
+            if (prefab != null && TryGetMeshTemplates(prefab, out var templates)
+                && templates.Length > 0)
+            {
+                return templates[0].ResolveMaterials(null);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Unit vertical strip: 1 wide (local X), 1 tall (local Y from 0 at the
+        /// bottom edge to 1 at the top), facing +Z. Double-sided triangles so
+        /// the fall reads from both banks.
+        /// </summary>
+        private static Mesh GetWaterfallStripMesh()
+        {
+            if (_waterfallStripMesh != null)
+                return _waterfallStripMesh;
+            var mesh = new Mesh
+            {
+                name = "WaterfallStrip",
+                vertices = new[]
+                {
+                    new Vector3(-0.5f, 0f, 0f),
+                    new Vector3(0.5f, 0f, 0f),
+                    new Vector3(0.5f, 1f, 0f),
+                    new Vector3(-0.5f, 1f, 0f),
+                },
+                uv = new[]
+                {
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 0f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0f, 1f),
+                },
+                triangles = new[]
+                {
+                    0, 1, 2, 0, 2, 3,
+                    2, 1, 0, 3, 2, 0,
+                },
+                normals = new[]
+                {
+                    Vector3.back, Vector3.back, Vector3.back, Vector3.back,
+                },
+            };
+            _waterfallStripMesh = mesh;
+            return mesh;
+        }
+
+        /*
+         * Extends the water sheet one cell onto water-adjacent land so the
+         * Stylized Water shader's tile/intersection function can wash the
+         * shoreline. The fill fragment lands on the cell footprint at the
+         * neighboring water surface height, using the water preset itself.
+         */
+        private int CollectShoreWaterSource(
+            ResolvedTileComposition composition,
+            List<TileMeshSource> results)
+        {
+            TileLayerSample waterSample = composition.WaterSurface;
+            TilesBuildLayer buildLayer = ResolveBuildLayer(waterSample);
+            TilePreset preset =
+                ResolvePreset(buildLayer, waterSample, composition.Cell, GlobalSeed.Current)
+                ?? ResolveAtlasPreset(waterSample);
+            if (preset == null)
+                return 0;
+
+            float waterHeight = waterSample.SurfaceHeight;
+            var waterComposition = new ResolvedTileComposition(
+                composition.Cell,
+                waterSample,
+                default,
+                hasMainTerrain: true,
+                hasOverlay: false,
+                composition.Reason,
+                northMatches: true,
+                eastMatches: true,
+                southMatches: true,
+                westMatches: true,
+                northEastMatches: true,
+                southEastMatches: true,
+                southWestMatches: true,
+                northWestMatches: true,
+                supportHeight: waterHeight,
+                northSurfaceHeight: waterHeight,
+                eastSurfaceHeight: waterHeight,
+                southSurfaceHeight: waterHeight,
+                westSurfaceHeight: waterHeight,
+                northEastSurfaceHeight: waterHeight,
+                southEastSurfaceHeight: waterHeight,
+                southWestSurfaceHeight: waterHeight,
+                northWestSurfaceHeight: waterHeight);
+
+            if (preset.gridtype == TilePreset.GridType.dual)
+            {
+                int before = results.Count;
+                /*
+                 * The wash sheet covers the owning cell's full footprint,
+                 * so it is emitted at the cell centre (offset zero), not on
+                 * a shared vertex like ordinary dual fragments.
+                 */
+                TryAddDualGridSource(
+                    waterComposition,
+                    buildLayer,
+                    preset,
+                    Vector2.zero,
+                    topLeft: true,
+                    topRight: true,
+                    bottomLeft: true,
+                    bottomRight: true,
+                    waterHeight,
+                    waterHeight,
+                    waterHeight,
+                    waterHeight,
+                    ownedByCurrentCell: true,
+                    results);
+                return results.Count - before;
+            }
+
+            return TryAddMeshSources(
+                waterComposition,
+                buildLayer,
+                preset,
+                TilePreset.TileType.NRMGRD_fill,
+                new Vector2(composition.Cell.x, composition.Cell.y),
+                yRotation: 0,
+                Vector3.one,
+                TileMeshOccludedSides.None,
+                ResolveEdgeBottoms(waterComposition),
+                results);
         }
 
         private int CollectNormalGridSource(
@@ -179,26 +410,25 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             int configuration = BuildDualConfiguration(topLeft, topRight, bottomLeft, bottomRight);
             /*
-             * TWC dual-grid topology is evaluated around half-offset corners,
-             * but chunk-first rendering uses the same canonical physical
-             * lattice as the gameplay grid.
-             *
-             * +0.5 converts dual centers:
-             *   -0.5, 0.5, 1.5 ... -> 0, 1, 2 ...
-             *
-             * An 8-tile physical chunk can therefore occupy exactly the same
-             * nominal CoreRect as 8 gameplay cells without clipping or scale.
+             * TWC dual-grid fragments are centered on the half-offset
+             * vertices between logical cells (cell + offset, matching
+             * TilesBuildLayer's own tilePosition convention). The terrain
+             * builder resolves the physical cell index from the fragment's
+             * TileCenterXZ and keeps the border vertices at x == width /
+             * y == height, so the painted pattern stays aligned with the
+             * gameplay grid instead of being shifted by half a cell.
              */
             var tileData = new BuildLayer.TileData
             {
                 configuration = configuration,
                 tilePosition = new Vector2(
-                    composition.Cell.x + offset.x + 0.5f,
-                    composition.Cell.y + offset.y + 0.5f)
+                    composition.Cell.x + offset.x,
+                    composition.Cell.y + offset.y)
             };
 
+            float mainSurface = composition.MainTerrain.SurfaceHeight;
             TileMeshOccludedSides occludedSides = ResolveDualOccludedSides(
-                composition.MainTerrain.SurfaceHeight,
+                mainSurface,
                 topLeftSurface,
                 topRightSurface,
                 bottomLeftSurface,
@@ -209,6 +439,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 topRightSurface,
                 bottomLeftSurface,
                 bottomRightSurface);
+            /*
+             * The fragment spans the quad between the four surrounding cell
+             * centers; those cells' surface heights are the fragment's corner
+             * heights. Missing neighbours fall back to the cell surface so map
+             * edges stay flat.
+             */
+            TileMeshCornerHeights cornerHeights = IsFinite(mainSurface)
+                ? new TileMeshCornerHeights(
+                    ResolveFiniteOrFallback(topLeftSurface, mainSurface),
+                    ResolveFiniteOrFallback(topRightSurface, mainSurface),
+                    ResolveFiniteOrFallback(bottomLeftSurface, mainSurface),
+                    ResolveFiniteOrFallback(bottomRightSurface, mainSurface),
+                    mainSurface)
+                : default;
 
             int packMask = AtlasDualGridShapes.BuildMask(
                 northWest: topLeft,
@@ -223,6 +467,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     tileData.tilePosition,
                     occludedSides,
                     edgeBottoms,
+                    cornerHeights,
                     results))
             {
                 return;
@@ -242,7 +487,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 Vector3.one,
                 occludedSides,
                 edgeBottoms,
-                results);
+                results,
+                cornerHeights);
         }
 
         /// <summary>
@@ -258,6 +504,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Vector2 tilePosition,
             TileMeshOccludedSides occludedSides,
             TileMeshEdgeBottoms edgeBottoms,
+            TileMeshCornerHeights cornerHeights,
             List<TileMeshSource> results)
         {
             if (_atlas == null
@@ -302,7 +549,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                        Vector3.one,
                        occludedSides,
                        edgeBottoms,
-                       results) > 0;
+                       results,
+                       cornerHeights) > 0;
         }
 
         /// <summary>
@@ -401,7 +649,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Vector3 scaleSign,
             TileMeshOccludedSides occludedSides,
             TileMeshEdgeBottoms edgeBottoms,
-            List<TileMeshSource> results)
+            List<TileMeshSource> results,
+            TileMeshCornerHeights cornerHeights = default)
         {
             GameObject prefab = preset.GetTile(tileType, out float xRotationOffset, out float yRotationOffset);
             if (prefab == null)
@@ -419,7 +668,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 scaleSign,
                 occludedSides,
                 edgeBottoms,
-                results);
+                results,
+                cornerHeights);
         }
 
         private int TryAddPrefabMeshSources(
@@ -434,7 +684,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Vector3 scaleSign,
             TileMeshOccludedSides occludedSides,
             TileMeshEdgeBottoms edgeBottoms,
-            List<TileMeshSource> results)
+            List<TileMeshSource> results,
+            TileMeshCornerHeights cornerHeights = default)
         {
             var sample = composition.MainTerrain;
             if (!TryGetMeshTemplates(prefab, out PrefabMeshTemplate[] templates))
@@ -511,7 +762,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     sample.AuthoredClosurePolicy,
                     edgeBottoms,
                     sample.TileGeometryMode,
-                    generateMissingClosure: i == missingClosureOwner);
+                    generateMissingClosure: i == missingClosureOwner,
+                    cornerHeights: cornerHeights);
                     
                 if (!meshSource.IsValid)
                     continue;

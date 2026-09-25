@@ -29,15 +29,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             float southWestSurfaceHeight = float.NaN,
             float northWestSurfaceHeight = float.NaN,
             TileLayerSample passage = default,
-            bool hasPassage = false)
+            bool hasPassage = false,
+            TileLayerSample waterSurface = default,
+            bool hasWaterSurface = false)
         {
             Cell = cell;
             MainTerrain = mainTerrain;
             Overlay = overlay;
             Passage = passage;
+            WaterSurface = waterSurface;
             HasMainTerrain = hasMainTerrain;
             HasOverlay = hasOverlay;
             HasPassage = hasPassage;
+            HasWaterSurface = hasWaterSurface;
             Reason = reason;
             NorthMatches = northMatches;
             EastMatches = eastMatches;
@@ -63,9 +67,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         public TileLayerSample Overlay { get; }
         /// <summary>Generated stair-passage sample occupying the cell, if any.</summary>
         public TileLayerSample Passage { get; }
+        /// <summary>Winning SurfaceOnly (water) sample from a neighboring cell, if any.</summary>
+        public TileLayerSample WaterSurface { get; }
         public bool HasMainTerrain { get; }
         public bool HasOverlay { get; }
         public bool HasPassage { get; }
+        /// <summary>True when an adjacent cell renders a SurfaceOnly water sheet.</summary>
+        public bool HasWaterSurface { get; }
         public string Reason { get; }
         public bool NorthMatches { get; }
         public bool EastMatches { get; }

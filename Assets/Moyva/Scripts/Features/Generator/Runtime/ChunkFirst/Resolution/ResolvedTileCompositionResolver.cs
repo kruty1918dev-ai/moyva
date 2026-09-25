@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.Generator.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
@@ -34,6 +35,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     neighborhood.Center,
                     lowestLayerHeight)
                 : float.NaN;
+            var waterSurface = default(TileLayerSample);
+            bool hasWaterSurface = hasMain
+                && main.TileGeometryMode != TileGeometryMode.SurfaceOnly
+                && TryResolveWaterSurface(neighborhood, out waterSurface);
 
             return new ResolvedTileComposition(
                 cell,
@@ -60,7 +65,52 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 southWestSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.SouthWest),
                 northWestSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.NorthWest),
                 passage: passage,
-                hasPassage: hasPassage);
+                hasPassage: hasPassage,
+                waterSurface: waterSurface,
+                hasWaterSurface: hasWaterSurface);
+        }
+
+        /*
+         * Land cells bordering water need the water sheet to reach them so the
+         * water shader's intersection logic can wash the shoreline. The highest
+         * adjacent water surface wins because shallow bands raise the sheet
+         * toward the beach.
+         */
+        private bool TryResolveWaterSurface(TileNeighborhood neighborhood, out TileLayerSample sample)
+        {
+            sample = default;
+            bool found = false;
+            float bestHeight = float.MinValue;
+            TileStackCell[] neighbors =
+            {
+                neighborhood.North,
+                neighborhood.East,
+                neighborhood.South,
+                neighborhood.West,
+                neighborhood.NorthEast,
+                neighborhood.SouthEast,
+                neighborhood.SouthWest,
+                neighborhood.NorthWest
+            };
+            foreach (var neighbor in neighbors)
+            {
+                var self = new TileNeighborhood(neighbor, null, null, null, null, null, null, null, null);
+                if (neighbor == null
+                    || !TryResolveMainTerrain(neighbor, self, out var main)
+                    || main.TileGeometryMode != TileGeometryMode.SurfaceOnly)
+                {
+                    continue;
+                }
+
+                float height = ResolveAuthoritativeSurfaceHeight(main);
+                if (!found || height > bestHeight)
+                {
+                    sample = main;
+                    bestHeight = height;
+                    found = true;
+                }
+            }
+            return found;
         }
 
         private static bool TryResolvePassage(TileStackCell cell, out TileLayerSample sample)

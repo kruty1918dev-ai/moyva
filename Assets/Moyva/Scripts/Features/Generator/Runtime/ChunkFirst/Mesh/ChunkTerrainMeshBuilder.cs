@@ -43,6 +43,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private int _canonicalChunkSize;
         private int _canonicalMapWidth;
         private int _canonicalMapHeight;
+        private float _canonicalCellSize = 1f;
+        private readonly Dictionary<(Mesh mesh, Vector2 center), Mesh>
+            _borderClampedMeshCache =
+                new Dictionary<(Mesh mesh, Vector2 center), Mesh>();
         private readonly Dictionary<TileVerticalFillMeshKey, Mesh> _verticalMeshCache =
             new Dictionary<TileVerticalFillMeshKey, Mesh>();
         private readonly HashSet<TileVerticalFillMeshKey> _verticalMeshPassthroughCache =
@@ -56,6 +60,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly HashSet<TileSurfaceOnlyMeshKey>
             _surfaceOnlyFailureCache =
                 new HashSet<TileSurfaceOnlyMeshKey>();
+        private readonly Dictionary<TileHeightWarpMeshKey, Mesh>
+            _warpedMeshCache =
+                new Dictionary<TileHeightWarpMeshKey, Mesh>();
+        private readonly HashSet<TileHeightWarpMeshKey>
+            _warpedPassthroughCache =
+                new HashSet<TileHeightWarpMeshKey>();
         public ChunkTerrainMeshBuilder(ChunkFirstRuntimeMeshRegistry meshRegistry)
         {
             _meshRegistry = meshRegistry;
@@ -262,6 +272,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 resolvedCells,
                 out _canonicalMapWidth,
                 out _canonicalMapHeight);
+
+            _canonicalCellSize =
+                cellSize > 0.0001f ? cellSize : 1f;
 
             if (_canonicalMapWidth <= 0
                 || _canonicalMapHeight <= 0)
@@ -534,20 +547,30 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     )
                     / safeCellSize);
 
+            /*
+             * Dual-grid fragments center on the vertices between logical
+             * cells, so their physical index lattice spans
+             * 0..mapWidth / 0..mapHeight — one slot more than the cell
+             * count. Border vertices still cover the map's outer half
+             * cells: clamp them onto the edge cell so they join the owning
+             * chunk instead of being discarded.
+             */
+            if (x < 0
+                || y < 0
+                || x > mapWidth
+                || y > mapHeight)
+            {
+                physicalCell = logicalCell;
+
+                return false;
+            }
+
             physicalCell =
                 new Vector2Int(
-                    x,
-                    y);
+                    Mathf.Min(x, mapWidth - 1),
+                    Mathf.Min(y, mapHeight - 1));
 
-            /*
-             * Never clamp a border source back into the last chunk.
-             * A dual source centered exactly at width/height is outside the
-             * requested map after phase alignment and must be discarded.
-             */
-            return x >= 0
-                && y >= 0
-                && x < mapWidth
-                && y < mapHeight;
+            return true;
         }
 
         private static MapChunkCoord ResolveChunkCoord(
@@ -640,9 +663,94 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         private Mesh ResolveVisibleMesh(TileMeshSource source)
         {
-            if (source.TileGeometryMode == TileGeometryMode.SurfaceOnly)
-                return ResolveSurfaceOnlyMesh(source);
+            Mesh mesh =
+                source.TileGeometryMode == TileGeometryMode.SurfaceOnly
+                    ? ResolveSurfaceOnlyMesh(source)
+                    : ResolveSolidTerrainMesh(source);
 
+            mesh = ResolveWarpedMesh(source, mesh);
+            return ResolveBorderClampedMesh(source, mesh);
+        }
+
+        /// <summary>
+        /// Dual-grid border fragments span a quad centred on a vertex half a
+        /// cell outside the map rect; their authored drop aprons then protrude
+        /// past the world edge and read as detached plates. Vertices of
+        /// footprint-bearing sources that cross the map boundary are clamped
+        /// onto the rect so the outer apron folds into a flush rim wall.
+        /// </summary>
+        private Mesh ResolveBorderClampedMesh(TileMeshSource source, Mesh mesh)
+        {
+            if (mesh == null
+                || !source.HasTileFootprint
+                || _canonicalMapWidth <= 0)
+            {
+                return mesh;
+            }
+
+            float cs = _canonicalCellSize;
+            float minX = -0.5f * cs;
+            float minZ = -0.5f * cs;
+            float maxX = (_canonicalMapWidth - 0.5f) * cs;
+            float maxZ = (_canonicalMapHeight - 0.5f) * cs;
+
+            float extent = source.TileHalfExtent;
+            float cx = source.TileCenterXZ.x;
+            float cz = source.TileCenterXZ.y;
+            if (cx - extent >= minX && cx + extent <= maxX
+                && cz - extent >= minZ && cz + extent <= maxZ)
+            {
+                return mesh;
+            }
+
+            var key = (mesh, source.TileCenterXZ);
+            if (_borderClampedMeshCache.TryGetValue(key, out Mesh cached)
+                && cached != null)
+            {
+                return cached;
+            }
+
+            Vector3[] verts = mesh.vertices;
+            Matrix4x4 toWorld = source.LocalMatrix;
+            Matrix4x4 toLocal = toWorld.inverse;
+            var clamped = new Vector3[verts.Length];
+            bool changed = false;
+            for (int i = 0; i < verts.Length; i++)
+            {
+                Vector3 world = toWorld.MultiplyPoint3x4(verts[i]);
+                float nx = Mathf.Clamp(world.x, minX, maxX);
+                float nz = Mathf.Clamp(world.z, minZ, maxZ);
+                if (nx != world.x || nz != world.z)
+                {
+                    changed = true;
+                    world.x = nx;
+                    world.z = nz;
+                    clamped[i] = toLocal.MultiplyPoint3x4(world);
+                }
+                else
+                {
+                    clamped[i] = verts[i];
+                }
+            }
+
+            if (!changed)
+            {
+                _borderClampedMeshCache[key] = mesh;
+                return mesh;
+            }
+
+            Mesh copy = UnityEngine.Object.Instantiate(mesh);
+            copy.name = mesh.name + "_borderClamp";
+            copy.vertices = clamped;
+            copy.RecalculateNormals();
+            copy.RecalculateBounds();
+            _meshRegistry.Register(copy);
+            _borderClampedMeshCache[key] = copy;
+            return copy;
+        }
+
+        private Mesh ResolveSolidTerrainMesh(TileMeshSource source)
+        {
             if (!source.HasVisibleBottomY)
                 return source.Mesh;
 
@@ -663,6 +771,50 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _verticalMeshCache[key] = processed;
             _meshRegistry.Register(processed);
             return processed;
+        }
+
+        /// <summary>
+        /// Applies the corner-height slope warp to the resolved mesh. Runs
+        /// after surface-only filtering and vertical fill so overlays and
+        /// generated closure skirts tilt together with the surface. Sources
+        /// without corner heights (normal-grid tiles, stair passages) pass
+        /// through untouched.
+        /// </summary>
+        private Mesh ResolveWarpedMesh(TileMeshSource source, Mesh mesh)
+        {
+            // SurfaceOnly sheets (water) must keep a flat plane; only solid
+            // terrain fragments are sheared onto the corner-height field.
+            if (mesh == null
+                || !source.HasCornerHeights
+                || source.TileGeometryMode != TileGeometryMode.SolidTerrain)
+            {
+                return mesh;
+            }
+
+            TileHeightWarpMeshKey key =
+                TileHeightWarpMeshKey.Create(source, mesh);
+            if (_warpedPassthroughCache.Contains(key))
+                return mesh;
+
+            if (_warpedMeshCache.TryGetValue(key, out Mesh cached)
+                && cached != null)
+            {
+                return cached;
+            }
+
+            if (!TileSurfaceHeightWarpUtility.TryCreate(
+                    source,
+                    mesh,
+                    out Mesh warped)
+                || warped == null)
+            {
+                _warpedPassthroughCache.Add(key);
+                return mesh;
+            }
+
+            _warpedMeshCache[key] = warped;
+            _meshRegistry.Register(warped);
+            return warped;
         }
 
         private Mesh ResolveSurfaceOnlyMesh(TileMeshSource source)
@@ -742,41 +894,24 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             };
             mesh.CombineMeshes(_finalCombine.ToArray(), false, false);
             /*
-             * ExactVertexWeldMeshUtility preserves the final appearance,
-             * but it must read every vertex stream and every submesh index,
-             * allocate remap tables, and create a second complete mesh.
-             *
-             * Imported tile meshes already contain their authored normals,
-             * UV seams and topology. During Editor Play Mode, keep the
-             * combined mesh directly and avoid this expensive duplicate
-             * optimization for every generated chunk.
-             *
-             * Standalone/player builds, Edit Mode generation and tests keep
-             * the original exact-weld path. Define
-             * MOYVA_EDITOR_RUNTIME_VERTEX_WELD to restore it in Play Mode.
+             * ExactVertexWeldMeshUtility preserves the final appearance while
+             * removing unreferenced vertices and exact duplicates introduced
+             * by mesh combining. It runs in every mode: with slope-warped
+             * fragments the shared border vertices carry identical payloads
+             * and welding eliminates the coincident-edge seams that skipping
+             * it left visible during Editor Play Mode.
              */
-#if UNITY_EDITOR && !MOYVA_EDITOR_RUNTIME_VERTEX_WELD
-            bool shouldRunExactVertexWeld =
-                !Application.isPlaying;
-#else
-            const bool shouldRunExactVertexWeld =
-                true;
-#endif
-
-            if (shouldRunExactVertexWeld)
+            if (ExactVertexWeldMeshUtility.TryCreate(
+                    mesh,
+                    out Mesh welded))
             {
-                if (ExactVertexWeldMeshUtility.TryCreate(
-                        mesh,
-                        out Mesh welded))
-                {
-                    if (Application.isPlaying)
-                        UnityEngine.Object.Destroy(mesh);
-                    else
-                        UnityEngine.Object.DestroyImmediate(mesh);
+                if (Application.isPlaying)
+                    UnityEngine.Object.Destroy(mesh);
+                else
+                    UnityEngine.Object.DestroyImmediate(mesh);
 
-                    mesh =
-                        welded;
-                }
+                mesh =
+                    welded;
             }
 
             mesh.RecalculateBounds();
