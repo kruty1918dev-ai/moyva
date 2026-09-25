@@ -39,6 +39,12 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Generated road/footpath routes between seeded anchors.")]
         public TerrainRouteConfig Routes = new();
 
+        [Tooltip("Deterministic rivers/lakes traced on the relief field; feeds hydrology mask steps.")]
+        public RecipeHydrologyConfig Hydrology = new();
+
+        [Tooltip("Shoreline band: re-type water-adjacent land to the shore tile and grade heights toward the waterline.")]
+        public TerrainShoreConfig Shore = new();
+
         public IEnumerable<GeneratorMapLayer> OrderedEnabledLayers()
         {
             if (Layers == null)

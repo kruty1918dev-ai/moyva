@@ -14,7 +14,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int seed,
             ISet<string> skippedLayerIds = null,
             Vector2Int? mapSizeOverride = null,
-            float[,] terrainHeightField = null);
+            float[,] terrainHeightField = null,
+            GeneratorMaskSession maskSession = null);
     }
 
     /// <summary>
@@ -58,7 +59,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int seed,
             ISet<string> skippedLayerIds = null,
             Vector2Int? mapSizeOverride = null,
-            float[,] terrainHeightField = null)
+            float[,] terrainHeightField = null,
+            GeneratorMaskSession maskSession = null)
         {
             int effectiveSeed = GlobalSeed.Normalize(seed);
             using var randomScope = new DeterministicRandomScope(effectiveSeed);
@@ -70,16 +72,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _configuration.Apply(recipe, config, effectiveSeed, mapSizeOverride);
             var mapSize = new Vector2Int(config.width, config.height);
 
+            maskSession ??= new GeneratorMaskSession(recipe);
             var masks = GeneratorMaskEvaluator.EvaluateMasks(
                 recipe,
                 effectiveSeed,
                 mapSize,
                 skippedLayerIds,
-                terrainHeightField);
+                terrainHeightField,
+                maskSession);
 
             RecipeBlueprintSyncResult sync = _blueprints.Sync(recipe, config, skippedLayerIds);
             _buildLayers.Sync(recipe, config, manager, sync, skippedLayerIds);
             _masks.Apply(sync, config, masks);
+            ApplySurfaceOverrides(sync.CompiledLayers, maskSession);
             _blueprints.DisableUnused(sync.ExistingLayers, sync.UsedLayerGuids);
 
             var objectLayers = GeneratorMaskEvaluator.CollectObjectPlacements(
@@ -88,6 +93,23 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 effectiveSeed);
             TWCObjectPlacementAdapter.Apply(config, manager, objectLayers, sync.CompiledLayers);
             return sync.CompiledLayers;
+        }
+
+        private static void ApplySurfaceOverrides(
+            List<CompiledLayerMap> compiledLayers,
+            GeneratorMaskSession session)
+        {
+            if (compiledLayers == null || session == null)
+                return;
+            foreach (var compiled in compiledLayers)
+            {
+                if (compiled == null || string.IsNullOrEmpty(compiled.LayerId))
+                    continue;
+                if (session.SurfaceOverrides.TryGetValue(compiled.LayerId, out var heights))
+                    compiled.SurfaceHeightOverride = heights;
+                if (session.BedOverrides.TryGetValue(compiled.LayerId, out var beds))
+                    compiled.BedHeightOverride = beds;
+            }
         }
     }
 }

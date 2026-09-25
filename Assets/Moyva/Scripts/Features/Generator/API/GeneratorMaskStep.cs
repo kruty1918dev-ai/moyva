@@ -75,6 +75,12 @@ namespace Kruty1918.Moyva.Generator.API
         /// <see cref="TerrainLevelMaskStep"/>; null when relief is disabled.
         /// </summary>
         public float[,] TerrainHeightField { get; }
+
+        /// <summary>Shared per-evaluation cache; null when steps run standalone.</summary>
+        internal Runtime.GeneratorMaskSession Session { get; set; }
+
+        /// <summary>Id of the layer currently being evaluated; set by the evaluator.</summary>
+        internal string CurrentLayerId { get; set; }
     }
 
     /// <summary>Deterministic tiled Perlin noise threshold mask.</summary>
@@ -211,6 +217,50 @@ namespace Kruty1918.Moyva.Generator.API
                               && value <= MaxMeters + epsilon;
                 mask[x, y] = inside != Invert;
             }
+            return mask;
+        }
+    }
+
+    /// <summary>
+    /// Marks river or lake cells traced on the relief height field by the
+    /// recipe's <see cref="RecipeHydrologyConfig"/>. Rivers drain downhill into
+    /// the configured sink (open-water mask or low terrain) or the map border;
+    /// lakes fill flooded depressions. Registers the plan's per-cell water
+    /// surface as the owning layer's surface-height override.
+    /// </summary>
+    [System.Serializable]
+    public sealed class HydrologyMaskStep : GeneratorMaskSourceStep
+    {
+        public enum HydrologyChannel { River = 0, Lake = 1 }
+
+        public HydrologyChannel Channel = HydrologyChannel.River;
+
+        [Tooltip("Overrides RecipeHydrologyConfig.SinkLayerId when set.")]
+        public string SinkLayerIdOverride;
+
+        public override bool[,] GenerateMask(GeneratorMaskContext context)
+        {
+            int width = Mathf.Max(1, context?.MapSize.x ?? 1);
+            int height = Mathf.Max(1, context?.MapSize.y ?? 1);
+            var mask = new bool[width, height];
+
+            var plan = context?.Session != null
+                ? context.Session.GetHydrologyPlan(context, SinkLayerIdOverride)
+                : null;
+            if (plan == null)
+                return mask;
+
+            var channelMask = Channel == HydrologyChannel.Lake
+                ? plan.LakeMask
+                : plan.RiverMask;
+            int w = Mathf.Min(width, channelMask.GetLength(0));
+            int h = Mathf.Min(height, channelMask.GetLength(1));
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+                mask[x, y] = channelMask[x, y];
+
+            context.Session.SetSurfaceOverride(context.CurrentLayerId, plan.WaterSurface);
+            context.Session.SetBedOverride(context.CurrentLayerId, plan.BedHeight);
             return mask;
         }
     }

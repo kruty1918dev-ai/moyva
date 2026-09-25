@@ -70,6 +70,29 @@ namespace Kruty1918.Moyva.Generator.Runtime
                                 $"Layer '{layer.Name}' references mask of layer '{reference.SourceLayerId}' " +
                                 "which does not exist or is evaluated later; the reference resolves to an empty mask.");
                         }
+
+                        if (step is HydrologyMaskStep hydrologyStep)
+                        {
+                            if (recipe.Hydrology == null || !recipe.Hydrology.Enabled)
+                            {
+                                result.Warnings.Add(
+                                    $"Layer '{layer.Name}' uses a hydrology mask step but recipe.Hydrology is disabled; it produces an empty mask.");
+                            }
+                            else if (recipe.TerrainRelief == null || !recipe.TerrainRelief.Enabled)
+                            {
+                                result.Warnings.Add(
+                                    $"Layer '{layer.Name}' uses a hydrology mask step but recipe.TerrainRelief is disabled; it produces an empty mask.");
+                            }
+
+                            string sinkId = !string.IsNullOrWhiteSpace(hydrologyStep.SinkLayerIdOverride)
+                                ? hydrologyStep.SinkLayerIdOverride.Trim()
+                                : recipe.Hydrology?.SinkLayerId?.Trim();
+                            if (!string.IsNullOrEmpty(sinkId) && !evaluatedIds.Contains(sinkId))
+                            {
+                                result.Warnings.Add(
+                                    $"Layer '{layer.Name}' hydrology sink '{sinkId}' does not exist or is evaluated later; rivers drain to the map border only.");
+                            }
+                        }
                     }
                 }
 

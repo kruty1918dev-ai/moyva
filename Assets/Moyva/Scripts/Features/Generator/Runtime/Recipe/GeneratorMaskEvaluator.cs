@@ -22,17 +22,23 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int seed,
             Vector2Int mapSize,
             ISet<string> skippedLayerIds = null,
-            float[,] terrainHeightField = null)
+            float[,] terrainHeightField = null,
+            GeneratorMaskSession session = null)
         {
             var masks = new Dictionary<string, bool[,]>(System.StringComparer.Ordinal);
             var layers = OrderedLayers(recipe, skippedLayerIds);
             if (layers.Count == 0)
                 return masks;
 
+            session ??= new GeneratorMaskSession(recipe);
             var safeSize = new Vector2Int(Mathf.Max(1, mapSize.x), Mathf.Max(1, mapSize.y));
             foreach (var layer in layers)
             {
-                var context = new GeneratorMaskContext(seed, safeSize, masks, terrainHeightField);
+                var context = new GeneratorMaskContext(seed, safeSize, masks, terrainHeightField)
+                {
+                    Session = session,
+                    CurrentLayerId = layer.Id
+                };
                 masks[layer.Id] = EvaluateLayerMask(layer, context);
             }
             return masks;
