@@ -91,6 +91,11 @@ namespace Kruty1918.Moyva.Tests.Camera
                 var settings = new CameraSettingsSO();
                 settings.controlProfile.minZoom = 4f;
                 settings.controlProfile.maxZoom = 50f;
+                settings.farView = new CameraFarViewSettings
+                {
+                    start = 0.30f,
+                    full = 0.85f,
+                };
 
                 var service = new CameraZoomStateService(cam, settings);
                 service.Initialize();
@@ -100,7 +105,7 @@ namespace Kruty1918.Moyva.Tests.Camera
                 Assert.AreEqual(27f, service.CurrentZoom, 1e-3f);
                 Assert.IsFalse(service.IsPerspective);
 
-                // 0.5 normalized sits inside the default far-view window
+                // 0.5 normalized sits inside the configured far-view window
                 // (start 0.30 / full 0.85) → partial weight.
                 Assert.Greater(service.FarViewWeight, 0.05f);
                 Assert.Less(service.FarViewWeight, 0.95f);

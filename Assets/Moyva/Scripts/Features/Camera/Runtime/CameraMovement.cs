@@ -72,7 +72,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         }
 
         /// <summary>Переміщує камери клавіатури.</summary>
-        public void MoveCameraKeyboard(Vector2 direction, float unscaledDeltaTime)
+        public void MoveCameraKeyboard(Vector2 direction, float unscaledDeltaTime, float speedMultiplier = 1f)
         {
             if (direction.sqrMagnitude <= RotationEpsilon)
                 return;
@@ -90,6 +90,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             Vector3 worldDelta = (-right * normalized.x - forward * normalized.y)
                 * _settings.ResolveMoveSpeed()
                 * ResolveMoveZoomMultiplier()
+                * Mathf.Max(0f, speedMultiplier)
                 * Mathf.Max(0f, unscaledDeltaTime);
             ApplyNavigationDelta(worldDelta);
         }

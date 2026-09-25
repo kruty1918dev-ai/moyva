@@ -11,6 +11,8 @@ namespace Kruty1918.Moyva.Camera.API
         private const float DefaultRotationSpeed = 90f;
 
         [Min(0.01f)] public float moveSpeed;
+        [Tooltip("Camera speed multiplier while the sprint binding is held.")]
+        [Min(0.01f)] public float sprintMultiplier;
         [Min(0.01f)] public float smoothTime;
         [Min(0.01f)] public float zoomSpeed;
         [Min(0.01f)] public float rotationSpeed;
@@ -47,6 +49,7 @@ namespace Kruty1918.Moyva.Camera.API
             return new CameraControlProfile
             {
                 moveSpeed = Mathf.Max(0.01f, moveSpeed),
+                sprintMultiplier = sprintMultiplier > 0f ? Mathf.Max(0.01f, sprintMultiplier) : 2.5f,
                 smoothTime = Mathf.Max(0.01f, smoothTime),
                 zoomSpeed = Mathf.Max(0.01f, zoomSpeed),
                 rotationSpeed = rotationSpeed > 0f
@@ -80,6 +83,7 @@ namespace Kruty1918.Moyva.Camera.API
             return new CameraControlProfile
             {
                 moveSpeed = 3.2f,
+                sprintMultiplier = 2.5f,
                 smoothTime = 0.42f,
                 zoomSpeed = 2.4f,
                 rotationSpeed = DefaultRotationSpeed,
@@ -120,8 +124,8 @@ namespace Kruty1918.Moyva.Camera.API
         {
             return new CameraFarViewSettings
             {
-                start = 0.30f,
-                full = 0.85f,
+                start = 0.70f,
+                full = 0.95f,
                 smoothing = 4f,
                 shape = 1f,
             };
@@ -343,6 +347,8 @@ namespace Kruty1918.Moyva.Camera.API
 
         /// <summary>Повертає переміщення швидкість.</summary>
         public float ResolveMoveSpeed() => ResolveActiveProfile().moveSpeed;
+        /// <summary>Повертає спринт множника.</summary>
+        public float ResolveSprintMultiplier() => ResolveActiveProfile().sprintMultiplier;
         /// <summary>Повертає плавного часу.</summary>
         public float ResolveSmoothTime() => ResolveActiveProfile().smoothTime;
         /// <summary>Повертає зум швидкість.</summary>

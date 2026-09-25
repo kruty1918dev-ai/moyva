@@ -47,6 +47,13 @@
           "minimum": 0.01,
           "x-moyva-editorMinimum": 0.01
         },
+        "sprintMultiplier": {
+          "type": "number",
+          "title": "Sprint Multiplier",
+          "description": "Camera speed multiplier while the sprint binding is held.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
         "smoothTime": {
           "type": "number",
           "title": "Smooth Time",

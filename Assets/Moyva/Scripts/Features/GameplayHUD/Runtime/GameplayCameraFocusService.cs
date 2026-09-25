@@ -1,8 +1,10 @@
 using System;
 
 using Kruty1918.Moyva.Camera.API;
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.Turns.API;
 using UnityEngine;
 using Zenject;
 
@@ -25,6 +27,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IGridProjection _grid;
         private readonly SignalBus _signals;
         private readonly ICameraFocusService _focusService;
+        private readonly ITurnService _turns;
+        private readonly IConstructionPlacedBuildingQuery _constructionQuery;
+        private readonly IBuildingRegistry _buildingRegistry;
 
         private bool _hasSelection;
         private WorldInfoSelectionKind _selectionKind;
@@ -35,12 +40,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             ICameraMovement camera,
             IGridProjection grid,
             SignalBus signals,
-            [InjectOptional] ICameraFocusService focusService = null)
+            [InjectOptional] ICameraFocusService focusService = null,
+            [InjectOptional] ITurnService turns = null,
+            [InjectOptional] IConstructionPlacedBuildingQuery constructionQuery = null,
+            [InjectOptional] IBuildingRegistry buildingRegistry = null)
         {
             _camera = camera;
             _grid = grid;
             _signals = signals;
             _focusService = focusService;
+            _turns = turns;
+            _constructionQuery = constructionQuery;
+            _buildingRegistry = buildingRegistry;
         }
 
         /// <summary>Ініціалізує компонент і підписує на події.</summary>
@@ -95,6 +106,58 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             };
 
             _focusService.FocusBounds(new Bounds(worldPoint, Vector3.one * extent * 2f));
+        }
+
+        /// <summary>Фокусує камеру на столиці локального гравця (замок → ратуша → будь-яка будівля).</summary>
+        public void FocusCapital()
+        {
+            string ownerId = _turns?.LocalOwnerId;
+            if (string.IsNullOrEmpty(ownerId) || _constructionQuery == null)
+                return;
+
+            var placed = _constructionQuery.GetPlacedBuildings(ownerId);
+            if (placed == null || placed.Count == 0)
+                return;
+
+            if (TryFindCapital(placed, BuildingDefinitionCapabilities.IsCastle, out Vector2Int position)
+                || TryFindCapital(placed, BuildingDefinitionCapabilities.IsTownHall, out position)
+                || TryFirstPlaced(placed, out position))
+            {
+                FocusGridPosition(position, "capital");
+            }
+        }
+
+        private bool TryFindCapital(
+            System.Collections.Generic.IReadOnlyDictionary<Vector2Int, string> placed,
+            Func<BuildingDefinition, bool> predicate,
+            out Vector2Int position)
+        {
+            foreach (var pair in placed)
+            {
+                var definition = _buildingRegistry?.GetById(pair.Value);
+                if (definition != null && predicate(definition))
+                {
+                    position = pair.Key;
+                    return true;
+                }
+            }
+
+            position = default;
+            return false;
+        }
+
+        private static bool TryFirstPlaced(
+            System.Collections.Generic.IReadOnlyDictionary<Vector2Int, string> placed,
+            out Vector2Int position)
+        {
+            foreach (var pair in placed)
+            {
+                position = pair.Key;
+                return true;
+            }
+
+            position = default;
+            return false;
         }
 
         private void OnWorldSelectionChanged(WorldInfoSelectionChangedSignal signal)

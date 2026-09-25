@@ -6,6 +6,7 @@
   "model": "camera-settings",
   "controlProfile": {
     "moveSpeed": 4.0,
+    "sprintMultiplier": 2.5,
     "smoothTime": 0.4,
     "zoomSpeed": 5.0,
     "rotationSpeed": 90.0,
@@ -55,8 +56,8 @@
   "edgeScrollMarginPixels": 12.0,
   "edgeScrollSpeedMultiplier": 1.0,
   "farView": {
-    "start": 0.3,
-    "full": 0.85,
+    "start": 0.7,
+    "full": 0.95,
     "smoothing": 4.0,
     "shape": 1.0
   },

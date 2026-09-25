@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.Camera.API
         /// <summary>Переміщує камери.</summary>
         void MoveCamera(Vector3 direction);
         /// <summary>Переміщує камери клавіатури.</summary>
-        void MoveCameraKeyboard(Vector2 direction, float unscaledDeltaTime);
+        void MoveCameraKeyboard(Vector2 direction, float unscaledDeltaTime, float speedMultiplier = 1f);
         /// <summary>Переміщує камери негайного.</summary>
         void MoveCameraImmediate(Vector3 direction, float speedMultiplier);
         /// <summary>Обертає камери Around фокус точки.</summary>
@@ -54,5 +54,8 @@ namespace Kruty1918.Moyva.Camera.API
 
         /// <summary>Фокусує вибраного.</summary>
         void FocusSelected();
+
+        /// <summary>Фокусує камеру на головній будівлі (замку/ратуші) локального гравця.</summary>
+        void FocusCapital();
     }
 }

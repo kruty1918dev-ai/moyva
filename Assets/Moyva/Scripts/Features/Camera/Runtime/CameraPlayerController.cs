@@ -25,6 +25,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private bool _panHeld;
         private bool _orbitHeld;
         private float _focusSelectedValue;
+        private float _focusCapitalValue;
+        private PlayerControlModifiers _navigationIgnoredModifiers;
         private readonly Dictionary<int, bool> _touchCaptures = new();
         private readonly List<int> _releasedTouches = new();
         private readonly Dictionary<PlayerControlAction, PlayerControlBinding> _bindings = new();
@@ -97,7 +99,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             {
                 var movement = ResolveConfiguredMove();
                 if (movement.sqrMagnitude > 0.001f)
-                    _cameraMovement.MoveCameraKeyboard(movement * ResolveMovementSpeed(), Time.unscaledDeltaTime);
+                    _cameraMovement.MoveCameraKeyboard(movement, Time.unscaledDeltaTime, ResolveMoveSpeedMultiplier());
                 else if (mouse != null) TryApplyEdgeScroll(pointerPosition);
             }
             float zoom = ResolveConfiguredZoom();
@@ -120,6 +122,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (focusSelected > 0.5f && _focusSelectedValue <= 0.5f && canNavigate)
                 _gameplayFocus?.FocusSelected();
             _focusSelectedValue = focusSelected;
+
+            float focusCapital = ReadBinding(PlayerControlAction.FocusCapital);
+            if (focusCapital > 0.5f && _focusCapitalValue <= 0.5f && canNavigate)
+                _gameplayFocus?.FocusCapital();
+            _focusCapitalValue = focusCapital;
         }
 
         private bool ReadGesture(string path, bool orbit)
@@ -148,8 +155,9 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 return;
 
             _cameraMovement.MoveCameraKeyboard(
-                direction * _settings.ResolveEdgeScrollSpeedMultiplier() * ResolveMovementSpeed(),
-                Time.unscaledDeltaTime);
+                direction,
+                Time.unscaledDeltaTime,
+                _settings.ResolveEdgeScrollSpeedMultiplier() * ResolveMoveSpeedMultiplier());
         }
 
         private void HandlePointerGestureCapture(Vector2 pointerPosition, bool pan, bool orbit)
@@ -303,7 +311,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         {
             Vector2 move = new Vector2(GestureAction(gesture, PlayerControlAction.MoveLeft) - GestureAction(gesture, PlayerControlAction.MoveRight),
                 GestureAction(gesture, PlayerControlAction.MoveBackward) - GestureAction(gesture, PlayerControlAction.MoveForward));
-            if (move.sqrMagnitude > 0f) _cameraMovement.MoveCameraKeyboard(move * amount * ResolveMovementSpeed(), Time.unscaledDeltaTime);
+            if (move.sqrMagnitude > 0f) _cameraMovement.MoveCameraKeyboard(move * amount, Time.unscaledDeltaTime, ResolveMoveSpeedMultiplier());
             float rotation = GestureAction(gesture, PlayerControlAction.RotateRight) - GestureAction(gesture, PlayerControlAction.RotateLeft);
             if (rotation != 0f) _cameraMovement.RotateCameraAroundFocusPoint(rotation * amount * ResolveOrbitSpeed());
             float zoom = GestureAction(gesture, PlayerControlAction.ZoomIn) - GestureAction(gesture, PlayerControlAction.ZoomOut);
@@ -407,7 +415,16 @@ namespace Kruty1918.Moyva.Camera.Runtime
             => action == null || action.activeControl?.device is Keyboard ? 0f : action.ReadValue<float>();
 
         private float ReadBinding(PlayerControlAction action)
-            => _bindings.TryGetValue(action, out var binding) ? binding.ReadValue(_profile?.Deadzone ?? 0.2f) : 0f;
+            => _bindings.TryGetValue(action, out var binding)
+                ? binding.ReadValue(_profile?.Deadzone ?? 0.2f, _navigationIgnoredModifiers)
+                : 0f;
+
+        /// <summary>User speed setting times the sprint multiplier while the sprint binding is held.</summary>
+        private float ResolveMoveSpeedMultiplier()
+            => ResolveMovementSpeed()
+                * (ReadBinding(PlayerControlAction.Sprint) > 0f && _settings != null
+                    ? _settings.ResolveSprintMultiplier()
+                    : 1f);
 
         private void OnProfileChanged(ControlProfile profile)
         {
@@ -428,6 +445,10 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 if (PlayerControlBinding.TryParse(pair.Value, out var binding))
                     _bindings[pair.Key] = binding;
             }
+            // While the sprint chord is held its modifiers must not gate other navigation keys.
+            _navigationIgnoredModifiers = _bindings.TryGetValue(PlayerControlAction.Sprint, out var sprint)
+                ? sprint.ModifierMask
+                : PlayerControlModifiers.None;
         }
 
         private float ResolveMouseSensitivity()
