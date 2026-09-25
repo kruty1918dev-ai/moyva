@@ -35,7 +35,7 @@ Material:
     - _AlphaClipThreshold: 0.35
     - _AlphaOutlineScreenWidthPx: 0
     - _AlphaOutlineWidth: 0
-    - _AmbientStrength: 0.58
+    - _AmbientStrength: 0.75
     - _BillboardEnabled: 0
     - _ColorPosterizeSteps: 5
     - _ContactBlobMode: 1
@@ -45,7 +45,7 @@ Material:
     - _ContactLocalY: 0
     - _ContactProjectionScale: 1.2
     - _ContactRadius: 0.46
-    - _ContactShadowEnabled: 1
+    - _ContactShadowEnabled: 0
     - _ContactSoftness: 0.7
     - _CullMode: 0
     - _DstBlend: 10
@@ -58,9 +58,9 @@ Material:
     - _LightStepCount: 3
     - _LightStepStrength: 0.75
     - _LightStrength: 0.85
-    - _MinimumBrightness: 0.68
+    - _MinimumBrightness: 0.85
     - _OutlineEnabled: 1
-    - _OutlineScreenWidthPx: 1.5
+    - _OutlineScreenWidthPx: 1.0
     - _OutlineWidth: 0
     - _OutlineZTest: 4
     - _PosterizeStrength: 0.18
@@ -72,7 +72,7 @@ Material:
     - _TextureFitClamp: 1
     - _TextureSaturation: 0.9
     - _TextureVolumeRoundness: 0.62
-    - _TextureVolumeStrength: 0.35
+    - _TextureVolumeStrength: 0.2
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}

@@ -1093,7 +1093,7 @@ MonoBehaviour:
     m_Scale: 1
   m_AtlasTextures:
   - {fileID: 28268798066460806}
-  - {fileID: 304257657342771121}
+  - {fileID: 4857645093814556594}
   m_AtlasTextureIndex: 1
   m_IsMultiAtlasTexturesEnabled: 1
   m_GetFontFeatures: 1
@@ -8505,7 +8505,7 @@ Texture2D:
     offset: 0
     size: 0
     path: 
---- !u!28 &304257657342771121
+--- !u!28 &4857645093814556594
 Texture2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

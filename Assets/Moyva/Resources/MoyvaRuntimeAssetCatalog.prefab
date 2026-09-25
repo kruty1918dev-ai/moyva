@@ -1225,6 +1225,16 @@ MonoBehaviour:
     Asset: {fileID: 1029532166024854157, guid: c5f700218c39da048b98e8769cfed620, type: 3}
   - Key: asset.game-object.water.1d32aeff
     Asset: {fileID: 1384669653051272897, guid: 1d32aeffc2c9ab6c8a53853a9910a1f3, type: 3}
+  - Key: asset.game-object.waterlily-a.7128f2a8
+    Asset: {fileID: 919132149155446097, guid: 7128f2a8549555047b9d5f0ac528c27b, type: 3}
+  - Key: asset.game-object.waterlily-b.dde878ba
+    Asset: {fileID: 919132149155446097, guid: dde878ba894514d4babf571dab4e9af8, type: 3}
+  - Key: asset.game-object.waterplant-a.1c6ae2e2
+    Asset: {fileID: 919132149155446097, guid: 1c6ae2e290d75a640a9ca27032bfead4, type: 3}
+  - Key: asset.game-object.waterplant-b.09b412ca
+    Asset: {fileID: 919132149155446097, guid: 09b412ca8b07685468ecb5922f78897d, type: 3}
+  - Key: asset.game-object.waterplant-c.0e9a8240
+    Asset: {fileID: 919132149155446097, guid: 0e9a82408acdcf54c9d39f23bc1f30dc, type: 3}
   - Key: asset.sprite.16x16-items-sheet-10.62d7684d
     Asset: {fileID: 2043002081, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-104.62d7684d
