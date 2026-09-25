@@ -56,7 +56,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _sourceOwners.Remove(areaId);
             }
 
-            var tiles = FogRevealShapeTileCalculator.ComputeShapeTiles(center, radius, shape, _width, _height);
+            var tiles = FilterToRevealableTiles(
+                FogRevealShapeTileCalculator.ComputeShapeTiles(center, radius, shape, _width, _height));
             bool centerIncluded = false;
             for (int index = 0; index < tiles.Count; index++)
             {

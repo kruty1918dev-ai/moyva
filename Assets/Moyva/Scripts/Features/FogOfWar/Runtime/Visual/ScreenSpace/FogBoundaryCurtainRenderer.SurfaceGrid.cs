@@ -137,6 +137,14 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (!context.IsValid)
                 return fallback;
 
+            if (TryResolveSurfaceHeightMapValue(
+                    context,
+                    cell,
+                    out float surfaceHeightValue))
+            {
+                return surfaceHeightValue;
+            }
+
             FogVolumeHeightSource source =
                 _settings != null
                     && _settings.Volume != null
@@ -228,6 +236,33 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         cell.x,
                         cell.y])
                 * heightStep;
+
+            return IsFinite(height);
+        }
+
+        private static bool TryResolveSurfaceHeightMapValue(
+            FogWorldVisualContext context,
+            Vector2Int cell,
+            out float height)
+        {
+            height = 0f;
+
+            float[,] surfaceMap =
+                context.SurfaceHeightMap;
+
+            if (surfaceMap == null
+                || cell.x < 0
+                || cell.y < 0
+                || cell.x >= surfaceMap.GetLength(0)
+                || cell.y >= surfaceMap.GetLength(1))
+            {
+                return false;
+            }
+
+            height =
+                surfaceMap[
+                    cell.x,
+                    cell.y];
 
             return IsFinite(height);
         }

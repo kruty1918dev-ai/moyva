@@ -585,6 +585,148 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
                 "pre-unification: owner snapshot load never marks local explored");
         }
 
+        // ── Boundary fog margin ───────────────────────────────────────────
+
+        [Test]
+        public void BoundaryMargin_RevealArea_KeepsEdgeCellsUnexplored()
+        {
+            var service = CreateService(
+                _signals,
+                new FogOfWarSettings { BoundaryFogMarginCells = 2 });
+            try
+            {
+                service.Initialize();
+                service.Initialize(Width, Height);
+
+                service.RevealArea(
+                    new Vector2Int(3, 3),
+                    8,
+                    FogRevealShape.PixelCircle,
+                    keepVisible: true);
+
+                Assert.AreEqual(
+                    FogStateType.Unexplored,
+                    service.GetFogState(new Vector2Int(0, 3)),
+                    "outermost ring stays unexplored");
+                Assert.AreEqual(
+                    FogStateType.Unexplored,
+                    service.GetFogState(new Vector2Int(1, 5)),
+                    "margin ring stays unexplored");
+                Assert.IsTrue(
+                    service.IsVisible(new Vector2Int(2, 3)),
+                    "first revealable cell is visible");
+                Assert.IsTrue(
+                    service.IsVisible(new Vector2Int(4, 4)),
+                    "inner cells reveal normally");
+                Assert.AreEqual(
+                    FogStateType.Unexplored,
+                    service.GetFogState(new Vector2Int(Width - 1, 6)),
+                    "far edge stays unexplored");
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [Test]
+        public void BoundaryMargin_UnitVision_KeepsEdgeCellsUnexplored()
+        {
+            var service = CreateService(
+                _signals,
+                new FogOfWarSettings { BoundaryFogMarginCells = 2 });
+            try
+            {
+                service.Initialize();
+                service.Initialize(Width, Height);
+
+                service.RegisterUnit("u", new Vector2Int(3, 3), 6);
+
+                Assert.IsFalse(service.IsVisible(new Vector2Int(0, 3)));
+                Assert.IsFalse(service.IsVisible(new Vector2Int(1, 3)));
+                Assert.IsFalse(
+                    service.IsExplored(new Vector2Int(0, 3)),
+                    "edge cells never become explored");
+                Assert.IsTrue(service.IsVisible(new Vector2Int(2, 3)));
+                Assert.IsTrue(service.IsVisible(new Vector2Int(3, 3)));
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [Test]
+        public void BoundaryMargin_SnapshotLoad_ClearsEdgeCells()
+        {
+            var service = CreateService(
+                _signals,
+                new FogOfWarSettings { BoundaryFogMarginCells = 1 });
+            try
+            {
+                service.Initialize();
+                service.Initialize(Width, Height);
+
+                var snapshot = new bool[Width, Height];
+                for (int x = 0; x < Width; x++)
+                for (int y = 0; y < Height; y++)
+                    snapshot[x, y] = true;
+
+                service.LoadFromSnapshot(snapshot);
+
+                Assert.IsFalse(
+                    service.IsExplored(new Vector2Int(0, 5)),
+                    "loaded edge cell is cleared back to unexplored");
+                Assert.IsFalse(
+                    service.IsExplored(new Vector2Int(Width - 1, Height - 1)));
+                Assert.IsTrue(
+                    service.IsExplored(new Vector2Int(5, 5)),
+                    "inner cells keep loaded explored state");
+            }
+            finally
+            {
+                service.Dispose();
+            }
+        }
+
+        [Test]
+        public void BoundaryMargin_PreviewReveal_KeepsEdgeCellsUnexplored()
+        {
+            var updater = new FogScreenSpaceTextureUpdater(
+                new FogOfWarSettings { BoundaryFogMarginCells = 2 },
+                null);
+            try
+            {
+                updater.Initialize(8, 8, default);
+                updater.PreviewRevealArea(
+                    new Vector2Int(0, 0),
+                    6,
+                    FogRevealShape.Square,
+                    keepVisible: true);
+
+                var texture =
+                    Shader.GetGlobalTexture("_MoyvaFogStateTexture")
+                        as Texture2D;
+                Assert.NotNull(texture);
+
+                Color edge = texture.GetPixel(0, 0);
+                Assert.Greater(
+                    edge.g,
+                    0.5f,
+                    "preview leaves margin cell unexplored");
+
+                Color inner = texture.GetPixel(4, 4);
+                Assert.Less(
+                    inner.g,
+                    0.5f,
+                    "preview reveals inner cells normally");
+            }
+            finally
+            {
+                updater.Dispose();
+            }
+        }
+
         // ── Helpers & fakes ────────────────────────────────────────────────
 
         private static void DeclareGameplaySignals(DiContainer container)
@@ -599,13 +741,18 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
 
         private static FogOfWarService CreateService(SignalBus signals)
+            => CreateService(signals, null);
+
+        private static FogOfWarService CreateService(
+            SignalBus signals,
+            FogOfWarSettings settings)
             => new FogOfWarService(
                 new FakeVisibilityResolver(),
                 null,
                 null,
                 null,
                 signals,
-                null,
+                settings,
                 null);
 
         private void FireUnitCreated(string unitId, string ownerId, Vector2Int position, int visionRange)

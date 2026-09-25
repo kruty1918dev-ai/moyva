@@ -59,7 +59,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 return;
             }
 
-            _stateGrid.LoadExploredSnapshot(explored);
+            _stateGrid.LoadExploredSnapshot(ClearBoundaryMarginCells(explored));
             _visualDirtyBuffer.Clear();
             _visualUpdater?.RebuildFullVisual(this);
             BumpVersion();
@@ -67,6 +67,28 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private bool IsInBounds(Vector2Int pos)
             => _stateGrid.IsInBounds(pos);
+
+        private bool[,] ClearBoundaryMarginCells(bool[,] explored)
+        {
+            int margin = ResolveBoundaryMarginCells();
+            if (margin <= 0)
+                return explored;
+
+            int width = explored.GetLength(0);
+            int height = explored.GetLength(1);
+            var filtered = new bool[width, height];
+
+            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+            {
+                if (x < margin || y < margin || x >= width - margin || y >= height - margin)
+                    continue;
+
+                filtered[x, y] = explored[x, y];
+            }
+
+            return filtered;
+        }
 
         private void AddVisibleTile(Vector2Int tile)
         {

@@ -17,19 +17,56 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private IReadOnlyList<Vector2Int> ComputeInitialVisibleTiles(string unitId, Vector2Int position, int range)
         {
             if (_fixedVisionShapes.TryGetValue(unitId, out var shape))
-                return FogRevealShapeTileCalculator.ComputeShapeTiles(position, range, shape, _width, _height);
+                return FilterToRevealableTiles(
+                    FogRevealShapeTileCalculator.ComputeShapeTiles(position, range, shape, _width, _height));
 
-            return FogRevealShapeTileCalculator.ComputePixelCircleTiles(position, range, _width, _height);
+            return FilterToRevealableTiles(
+                FogRevealShapeTileCalculator.ComputePixelCircleTiles(position, range, _width, _height));
         }
 
         private IReadOnlyList<Vector2Int> ComputeVisibleTiles(string unitId, Vector2Int position, int range)
         {
             if (_fixedVisionShapes.TryGetValue(unitId, out var shape))
-                return FogRevealShapeTileCalculator.ComputeShapeTiles(position, range, shape, _width, _height);
+                return FilterToRevealableTiles(
+                    FogRevealShapeTileCalculator.ComputeShapeTiles(position, range, shape, _width, _height));
 
             var modifiers = ResolveUnitVisionModifiers(unitId);
             var tiles = _resolver.ComputeVisibleTiles(position, range, _width, _height, modifiers);
-            return AddSilhouetteTargetTiles(unitId, position, range, modifiers, tiles);
+            return FilterToRevealableTiles(
+                AddSilhouetteTargetTiles(unitId, position, range, modifiers, tiles));
+        }
+
+        /*
+         * Клітини біля межі карти ніколи не розкриваються, щоб туман
+         * завжди приховував край світу. Фільтр застосовується до списків
+         * тайлів перед збереженням у _unitVisibleTiles, тому add/remove
+         * лишаються симетричними.
+         */
+        private int ResolveBoundaryMarginCells()
+            => Mathf.Max(0, _settings != null ? _settings.BoundaryFogMarginCells : 0);
+
+        private bool IsRevealableTile(Vector2Int tile)
+        {
+            int margin = ResolveBoundaryMarginCells();
+            return tile.x >= margin
+                && tile.y >= margin
+                && tile.x < _width - margin
+                && tile.y < _height - margin;
+        }
+
+        private IReadOnlyList<Vector2Int> FilterToRevealableTiles(IReadOnlyList<Vector2Int> tiles)
+        {
+            if (tiles == null || tiles.Count == 0 || ResolveBoundaryMarginCells() <= 0)
+                return tiles;
+
+            var filtered = new List<Vector2Int>(tiles.Count);
+            for (int i = 0; i < tiles.Count; i++)
+            {
+                if (IsRevealableTile(tiles[i]))
+                    filtered.Add(tiles[i]);
+            }
+
+            return filtered;
         }
 
         private IReadOnlyList<Vector2Int> AddSilhouetteTargetTiles(string observerUnitId, Vector2Int observerPosition, int range, FogVisionModifiers observerModifiers, IReadOnlyList<Vector2Int> sourceTiles)

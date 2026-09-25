@@ -684,6 +684,10 @@
       "type": "integer",
       "title": "Max Vision Range"
     },
+    "boundaryFogMarginCells": {
+      "type": "integer",
+      "title": "Boundary Fog Margin Cells"
+    },
     "volume": {
       "type": [
         "object",

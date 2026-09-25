@@ -121,6 +121,7 @@
   "defaultVisionRange": 3,
   "minVisionRange": 1,
   "maxVisionRange": 12,
+  "boundaryFogMarginCells": 2,
   "volume": {
     "verticalLayerSpacing": 0.0,
     "topClearance": 0.08,

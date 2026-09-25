@@ -41,7 +41,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 hasBounds,
                 bounds,
                 signal.HeightMap,
-                signal.TerrainLevelMap);
+                signal.TerrainLevelMap,
+                signal.SurfaceHeightMap);
         }
 
         public static FogWorldVisualContext CreateFallback(int width, int height)

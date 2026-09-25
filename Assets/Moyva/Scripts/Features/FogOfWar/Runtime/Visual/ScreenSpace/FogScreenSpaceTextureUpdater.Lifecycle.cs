@@ -76,6 +76,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     0,
                     radius);
 
+            /*
+             * Preview обходить сервісну фільтрацію, тому margin
+             * відфільтровується тут — інакше тимчасове розкриття
+             * оголило б край карти до наступного dirty-update.
+             */
+            int boundaryMargin =
+                Mathf.Max(
+                    0,
+                    _settings != null
+                        ? _settings.BoundaryFogMarginCells
+                        : 0);
+
             for (int y =
                      center.y - safeRadius;
                  y <=
@@ -101,6 +113,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                             center,
                             safeRadius,
                             shape))
+                    {
+                        continue;
+                    }
+
+                    if (boundaryMargin > 0
+                        && (x < boundaryMargin
+                            || y < boundaryMargin
+                            || x >= _width - boundaryMargin
+                            || y >= _height - boundaryMargin))
                     {
                         continue;
                     }

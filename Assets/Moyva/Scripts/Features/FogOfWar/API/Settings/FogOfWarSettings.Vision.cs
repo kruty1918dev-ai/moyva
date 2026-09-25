@@ -24,5 +24,14 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [TitleGroup("Vision")]
         [MinValue(1)]
         public int MaxVisionRange = 12;
+
+        /// <summary>
+        /// Клітини в межах цієї відстані від краю карти ніколи не розкриваються:
+        /// ні visible, ні explored. Туман завжди накриває межу світу, тому
+        /// гравець не бачить, де закінчується карта.
+        /// </summary>
+        [TitleGroup("Vision")]
+        [MinValue(0)]
+        public int BoundaryFogMarginCells = 2;
     }
 }

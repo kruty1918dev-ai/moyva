@@ -363,13 +363,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             int range)
         {
             if (state.FixedShapes.TryGetValue(sourceId, out var shape))
-                return FogRevealShapeTileCalculator.ComputeShapeTiles(position, range, shape, _width, _height);
+                return FilterToRevealableTiles(
+                    FogRevealShapeTileCalculator.ComputeShapeTiles(position, range, shape, _width, _height));
 
             var modifiers = state.Modifiers.TryGetValue(sourceId, out var storedModifiers)
                 ? storedModifiers
                 : default;
             var tiles = _resolver.ComputeVisibleTiles(position, range, _width, _height, modifiers);
-            return AddOwnerSilhouetteTargetTiles(ownerId, sourceId, position, range, modifiers, tiles);
+            return FilterToRevealableTiles(
+                AddOwnerSilhouetteTargetTiles(ownerId, sourceId, position, range, modifiers, tiles));
         }
 
         private IReadOnlyList<Vector2Int> AddOwnerSilhouetteTargetTiles(
@@ -443,7 +445,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 return;
             }
 
-            var tiles = FogRevealShapeTileCalculator.ComputeShapeTiles(center, radius, shape, _width, _height);
+            var tiles = FilterToRevealableTiles(
+                FogRevealShapeTileCalculator.ComputeShapeTiles(center, radius, shape, _width, _height));
             foreach (var tile in tiles)
                 state.Grid.MarkExplored(tile);
         }

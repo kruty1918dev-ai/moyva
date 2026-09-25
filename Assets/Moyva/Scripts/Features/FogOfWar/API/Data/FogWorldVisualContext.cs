@@ -34,7 +34,8 @@ namespace Kruty1918.Moyva.FogOfWar.API
             bool hasMapWorldBounds,
             Bounds mapWorldBounds,
             float[,] heightMap,
-            int[,] terrainLevelMap)
+            int[,] terrainLevelMap,
+            float[,] surfaceHeightMap = null)
         {
             Width = Mathf.Max(1, width);
             Height = Mathf.Max(1, height);
@@ -47,6 +48,7 @@ namespace Kruty1918.Moyva.FogOfWar.API
             MapWorldBounds = mapWorldBounds;
             HeightMap = heightMap;
             TerrainLevelMap = terrainLevelMap;
+            SurfaceHeightMap = surfaceHeightMap;
         }
 
         /// <summary>
@@ -105,6 +107,11 @@ namespace Kruty1918.Moyva.FogOfWar.API
         public int[,] TerrainLevelMap { get; }
 
         /// <summary>
+        /// Авторитетна rendered surface height map (world meters), якщо світ її публікує.
+        /// </summary>
+        public float[,] SurfaceHeightMap { get; }
+
+        /// <summary>
         /// Показує, чи контекст має мінімально валідні розміри.
         /// </summary>
         public bool IsValid => Width > 0 && Height > 0;
@@ -129,7 +136,8 @@ namespace Kruty1918.Moyva.FogOfWar.API
                 HasMapWorldBounds,
                 MapWorldBounds,
                 HeightMap,
-                TerrainLevelMap);
+                TerrainLevelMap,
+                SurfaceHeightMap);
         }
     }
 }
