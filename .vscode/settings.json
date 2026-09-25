@@ -2,5 +2,5 @@
   "json.schemas": [],
   "devin.defaultModel": "swe-2-max",
   "devin.implicitContext.enabled": false,
-  "devin.defaultMode": "bypass"
+  "devin.defaultMode": "plan"
 }
