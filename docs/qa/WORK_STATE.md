@@ -1,6 +1,40 @@
-# Work State — 2026-09-25 (VA-08 water-seam fix verified)
+# Work State — 2026-09-25 (Nintendo water + sandy bed verified)
 
 ## Current task
+
+**NintendoStyle water + visible sandy bed — DONE + verified (2026-09-25):**
+- Request: use `StylizedWater3_NintendoStyle` for water; sand must be
+  visible under water so the surface reads as stretching from the shore and
+  disappearing into depth.
+- Material: `materialOverride` now points at the NintendoStyle material
+  (`e641fc50a6991f94488a292b9be307c9`) on `Assets/Moyva/TileWater.asset`
+  and `BaseBlockPresetWater.asset` (recipe water tiles resolve the latter;
+  override wins over prefab materials `WaterMaterial`/`SW3_Mobile`).
+- Bed: water cells were `SurfaceOnly` sheets over void — nothing to see
+  through. `CollectWaterBedSource` emits the atlas `sand` theme's fill tile
+  as a `SolidTerrain` column under each water sheet: top lands on the
+  hydrology `BedHeight`, `GeneratedClosure` deforms the authored bottom
+  ring to a floor just below the deepest neighbouring bed, and per-edge
+  bottoms stop open skirts exactly at each lower water neighbour's bed
+  (higher cell owns the edge → exactly once; land/border sides occluded).
+- Found while verifying: generated waterfall strips and the first bed
+  attempt were `SurfaceOnly` → the upward-triangle filter silently dropped
+  every vertical triangle, so VA-08 strips had never rendered. Both are
+  `SolidTerrain` now; strips actually close the seams in v2 shots.
+- Border fix: skirts at map edges with no neighbour are occluded; the
+  column floor is `bedY − 0.5` (or just below the lowest real neighbour
+  bed) — v1's dangling rim columns are gone; only a 0.5 m floor lip
+  remains under rim water (reads as the sea floor edge).
+- Proof: seed-42 + seed-12345 smoke PASS, world hashes unchanged
+  (`85B4F2FADD94AC0D` / `239B47D25C36C327` — render-only), `nanVerts=0`,
+  `empty=0`; `oob.txt` identical to VA-08 baseline (11 prop-edge entries,
+  no TerrainMesh/water). Evidence: `docs/qa/evidence/water-nintendo-seed
+  {42,12345}-v2/` — Nintendo caustic surface, sandy bed visible through
+  shallows, cyan→navy depth fade, waterfall strips visible at drops.
+- Compile: `smoke_compile` errors=0 (1744 sources).
+- Cosmetic caveat: strips render as translucent panes (Nintendo material
+  on vertical geometry); a dedicated `StylizedWater3_Waterfall` pass is a
+  possible polish, not a defect.
 
 Fifth pass complete: rivers/lakes visual audit + VA-08 fix.
 Evidence: `docs/qa/evidence/audit-rl-seed{42,777,12345}/` (pre-fix) and
@@ -201,9 +235,8 @@ restart determinism + registry clearing verified instead).
 
 ## Next action
 
-All audit findings resolved: VA-08 fixed+verified, VA-09 accepted,
-VA-06 cosmetic no-action. Remaining: finish the full EditMode suite run
-(started after the VA-08 fix; blocked/slowed by a concurrently open
-interactive Unity editor — re-run `tools/ai/unity-editmode-tests-quiet.sh`
-when the editor is free), then the working tree is being split into
-per-feature commits.
+Nintendo water + bed verified; working tree committed as per-feature
+commits. Remaining: full EditMode suite re-run (batch run was starved by a
+concurrently open interactive editor — re-run
+`tools/ai/unity-editmode-tests-quiet.sh` when the editor is free), then
+optional waterfall-material polish pass.
