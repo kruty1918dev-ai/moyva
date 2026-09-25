@@ -62,8 +62,8 @@
   ],
   "tileOverrides": [],
   "heightLimits": {
-    "autoStepMaxMeters": 0.25,
-    "stairModuleRiseMeters": 0.25,
-    "maxStairRiseMeters": 1.0
+    "autoStepMaxMeters": 0.5,
+    "stairModuleRiseMeters": 0.5,
+    "maxStairRiseMeters": 1.5
   }
 }

@@ -200,7 +200,7 @@
             "autoStepMaxMeters": {
               "type": "number",
               "title": "Auto Step Max Meters",
-              "description": "Largest surface delta a unit crosses by plain walking. 0.25 matches one terrace step.",
+              "description": "Largest surface delta a unit crosses by plain walking. 0.5 matches one relief quantum.",
               "minimum": 0.0,
               "x-moyva-editorMinimum": 0.0
             },
