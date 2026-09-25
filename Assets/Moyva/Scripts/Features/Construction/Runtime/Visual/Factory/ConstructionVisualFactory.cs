@@ -165,6 +165,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             transform.rotation = EntityPresentationApplier.ResolveRotation(
                 rotation,
                 presentation);
+            _terrainAlignmentService.NormalizeInstanceFootprintToTile(instance);
 
             instance.name = objectName;
             instance.SetActive(true);

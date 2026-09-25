@@ -95,6 +95,33 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return new ReadOnlyDictionary<Vector2Int, string>(snapshot);
         }
 
+        public IReadOnlyDictionary<Vector2Int, string> GetPlacedBuildings(string ownerId)
+        {
+            string requestedOwner = NormalizeOwnerId(ownerId);
+            var snapshot = new Dictionary<Vector2Int, string>();
+            foreach (var pair in _factionPlacedBuildings)
+            {
+                if (string.Equals(
+                        NormalizeOwnerId(pair.Value.FactionId),
+                        requestedOwner,
+                        System.StringComparison.Ordinal))
+                {
+                    snapshot[pair.Key] = pair.Value.BuildingId;
+                }
+            }
+
+            if (string.Equals(requestedOwner, NormalizeOwnerId(_activeOwnerId), System.StringComparison.Ordinal))
+            {
+                foreach (var pair in _playerPlacedBuildings)
+                {
+                    if (!snapshot.ContainsKey(pair.Key))
+                        snapshot[pair.Key] = pair.Value;
+                }
+            }
+
+            return new ReadOnlyDictionary<Vector2Int, string>(snapshot);
+        }
+
         private void ConfirmPendingDemolitions()
         {
 

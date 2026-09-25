@@ -10,6 +10,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
     internal sealed class ConstructionTerrainAlignmentService {
         private const float BuildingSurfaceOffsetY = 0.5f;
         private const float PreviewSurfaceOffsetY = 0.7f;
+        /// <summary>
+        /// Share of the cell footprint a building visual may occupy. Oversized
+        /// prefabs are shrunk uniformly so every building stays inside its one
+        /// logical tile; smaller prefabs keep their authored size.
+        /// </summary>
+        private const float BuildingFootprintCellFraction = 0.92f;
 
         private readonly IGridService _gridService;
         private readonly IGridProjection _gridProjection;
@@ -142,6 +148,32 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return fallback;
 
             return ResolveCachedAlignedPosition(instance, tile, isPreviewVisual, visualOffsetY);
+        }
+
+        /// <summary>
+        /// Shrinks an instance whose renderer bounds exceed one tile's
+        /// footprint so placed and preview visuals never spill onto
+        /// neighbouring cells. Must run before the first
+        /// <see cref="AlignInstanceToTerrainSurface"/> call: the metrics cache
+        /// captures the final scale.
+        /// </summary>
+        public void NormalizeInstanceFootprintToTile(GameObject instance)
+        {
+            if (instance == null
+                || _gridGeometry == null
+                || !_gridGeometry.TryGetCellSize(out Vector2 cellSize))
+            {
+                return;
+            }
+            if (!GridSurfacePlacementUtility.TryResolveRendererBounds(instance, out Bounds bounds))
+                return;
+
+            float footprint = Mathf.Max(bounds.size.x, bounds.size.z);
+            float limit = Mathf.Min(cellSize.x, cellSize.y) * BuildingFootprintCellFraction;
+            if (footprint <= limit || footprint <= 0.0001f)
+                return;
+
+            instance.transform.localScale *= limit / footprint;
         }
 
         public void AlignInstanceToTerrainSurface(GameObject instance, Vector2Int tile, bool isPreviewVisual, float visualOffsetY = 0f)

@@ -6,6 +6,8 @@ namespace Kruty1918.Moyva.Construction.API
     public interface IConstructionPlacedBuildingQuery
     {
         IReadOnlyDictionary<Vector2Int, string> GetPlayerPlacedBuildings();
+        /// <summary>Повертає позиції та id усіх будівель, що належать зазначеному власнику.</summary>
+        IReadOnlyDictionary<Vector2Int, string> GetPlacedBuildings(string ownerId);
         bool HasPlacedBuilding(string buildingId, string ownerId = null);
     }
 

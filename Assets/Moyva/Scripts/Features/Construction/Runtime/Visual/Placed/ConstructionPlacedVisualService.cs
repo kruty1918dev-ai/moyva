@@ -491,6 +491,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             sourceVisual.transform.rotation = EntityPresentationApplier.ResolveRotation(
                 rotation,
                 presentation);
+            _terrainAlignment?.NormalizeInstanceFootprintToTile(sourceVisual);
             _styleService.EnsureRenderersEnabled(sourceVisual);
             _styleService.EnsureBuildingSortingOrder(sourceVisual, ResolveSortingOrder());
             _styleService.DisableColliders(sourceVisual);
