@@ -12,7 +12,8 @@
     "Kruty1918.JsonConfig",
     "Kruty1918.Moyva.SaveSystem",
     "Kruty1918.Moyva.Turns",
-    "Kruty1918.Moyva.InputRouting"
+    "Kruty1918.Moyva.InputRouting",
+    "Kruty1918.Moyva.Grid"
   ],
   "includePlatforms": ["Editor"],
   "autoReferenced": false,

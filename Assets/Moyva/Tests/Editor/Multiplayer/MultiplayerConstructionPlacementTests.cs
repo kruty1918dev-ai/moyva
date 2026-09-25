@@ -371,6 +371,8 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             public string GetLastActionMessage() => null;
             public IReadOnlyDictionary<Vector2Int, string> GetPlayerPlacedBuildings()
                 => null;
+            public IReadOnlyDictionary<Vector2Int, string> GetPlacedBuildings(string ownerId)
+                => null;
             public bool HasPlacedBuilding(string buildingId, string ownerId = null)
                 => false;
             public void RestoreFromSave(Vector2Int position, string buildingId) { }

@@ -149,6 +149,7 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
             public int Calls;
             public void FocusGridPosition(Vector2Int gridPosition, string targetId = null) => Calls++;
             public void FocusSelected() => Calls++;
+            public void FocusCapital() => Calls++;
         }
 
         private sealed class RecordingExit : IExitMatchCoordinator

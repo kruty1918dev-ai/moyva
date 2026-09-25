@@ -57,6 +57,7 @@ namespace Kruty1918.Moyva.AI.Training
         private readonly HashSet<string> _legitimatelyRecruitedUnitIds = new HashSet<string>(StringComparer.Ordinal);
         private readonly Dictionary<string, Vector2Int> _openingAnchors = new Dictionary<string, Vector2Int>(StringComparer.Ordinal);
         private readonly string _castleBuildingTypeId;
+        private Func<Vector2Int, Vector2Int, bool> _spawnStepPredicate;
         private bool _disposed;
         private bool _setupPhase = true;
         public bool EconomyInstalled { get; private set; }
@@ -156,8 +157,9 @@ namespace Kruty1918.Moyva.AI.Training
                         else if (spawnRejections.Count < 4) spawnRejections.Add(grid.GetTileData(cell) + ": " + rejection);
                     }
                 if (spawnCells.Count < 2) throw new InvalidOperationException("Generated world has fewer than two legal unit spawns. " + string.Join("; ", spawnRejections));
+                _spawnStepPredicate = CreateSpawnStepPredicate(world, config);
                 var first = SelectLearnerSpawn(world, spawnCells);
-                var reachable = ReachableLandSpawnCells(world, first, spawnCells);
+                var reachable = ReachableLandSpawnCells(world, first, spawnCells, _spawnStepPredicate);
                 if (reachable.Count < 2) throw new InvalidOperationException("Generated world has no connected legal opponent spawn.");
                 var second = reachable.Where(c => c != first)
                     .OrderByDescending(c => (c - first).sqrMagnitude + ResourcePotentialScore(world, c) * 8)
@@ -355,7 +357,7 @@ namespace Kruty1918.Moyva.AI.Training
         private Vector2Int SelectLearnerSpawn(MenuWorldPreviewData world, IReadOnlyCollection<Vector2Int> spawnCells)
         {
             return spawnCells
-                .OrderByDescending(c => FloodLand(world, c) + ResourcePotentialScore(world, c) * 12 + CoastalScore(world, c) * 4)
+                .OrderByDescending(c => FloodLand(world, c, _spawnStepPredicate) + ResourcePotentialScore(world, c) * 12 + CoastalScore(world, c) * 4)
                 .ThenBy(c => c.y)
                 .ThenBy(c => c.x)
                 .First();
@@ -428,10 +430,26 @@ namespace Kruty1918.Moyva.AI.Training
             }
         }
 
+        private Func<Vector2Int, Vector2Int, bool> CreateSpawnStepPredicate(MenuWorldPreviewData world, TrainingConfig config)
+        {
+            var costs = _container.TryResolve<ITraversalCostResolver>();
+            var traversal = _traversal;
+            if (costs == null || traversal == null || world?.BiomeMap == null)
+                return (from, next) => !IsWater(world.BiomeMap[next.x, next.y]);
+            string profileId = _container.TryResolve<IUnitClassConfig>()
+                ?.GetConfig(config.spawnValidationUnitTypeId)
+                ?.MovementProfile?.JsonId;
+            if (string.IsNullOrWhiteSpace(profileId)) profileId = MovementProfileIds.GroundDefault;
+            return (from, next) =>
+                costs.TryResolve(profileId, world.BiomeMap[next.x, next.y] ?? string.Empty, out _, out _)
+                && traversal.TryEvaluateTransition(from, next, profileId, out _);
+        }
+
         private static List<Vector2Int> ReachableLandSpawnCells(
             MenuWorldPreviewData world,
             Vector2Int start,
-            IReadOnlyCollection<Vector2Int> candidates)
+            IReadOnlyCollection<Vector2Int> candidates,
+            Func<Vector2Int, Vector2Int, bool> canStep)
         {
             var candidateSet = new HashSet<Vector2Int>(candidates);
             var result = new List<Vector2Int>();
@@ -445,7 +463,8 @@ namespace Kruty1918.Moyva.AI.Training
                 for (int i = 0; i < 4; i++)
                 {
                     var next = from + (i == 0 ? Vector2Int.right : i == 1 ? Vector2Int.left : i == 2 ? Vector2Int.up : Vector2Int.down);
-                    if (!InBounds(world, next) || !seen.Add(next) || IsWater(world.BiomeMap[next.x, next.y]))
+                    if (!InBounds(world, next) || !seen.Add(next)
+                        || !(canStep?.Invoke(from, next) ?? !IsWater(world.BiomeMap[next.x, next.y])))
                         continue;
                     queue.Enqueue(next);
                 }
@@ -514,7 +533,7 @@ namespace Kruty1918.Moyva.AI.Training
                     }
                 }
             }
-            return start.HasValue ? FloodLand(world, start.Value) : 0;
+            return start.HasValue ? FloodLand(world, start.Value, _spawnStepPredicate) : 0;
         }
 
         private static int CountLandCells(MenuWorldPreviewData world)
@@ -527,9 +546,10 @@ namespace Kruty1918.Moyva.AI.Training
             return count;
         }
 
-        private static int FloodLand(MenuWorldPreviewData world, Vector2Int start)
+        private static int FloodLand(MenuWorldPreviewData world, Vector2Int start, Func<Vector2Int, Vector2Int, bool> canStep)
         {
-            if (world?.BiomeMap == null || !InBounds(world, start) || IsWater(world.BiomeMap[start.x, start.y]))
+            if (world?.BiomeMap == null || !InBounds(world, start)
+                || !(canStep?.Invoke(start, start) ?? !IsWater(world.BiomeMap[start.x, start.y])))
                 return 0;
             var seen = new HashSet<Vector2Int> { start };
             var queue = new Queue<Vector2Int>();
@@ -540,7 +560,8 @@ namespace Kruty1918.Moyva.AI.Training
                 for (int i = 0; i < 4; i++)
                 {
                     var next = from + (i == 0 ? Vector2Int.right : i == 1 ? Vector2Int.left : i == 2 ? Vector2Int.up : Vector2Int.down);
-                    if (!InBounds(world, next) || !seen.Add(next) || IsWater(world.BiomeMap[next.x, next.y]))
+                    if (!InBounds(world, next) || !seen.Add(next)
+                        || !(canStep?.Invoke(from, next) ?? !IsWater(world.BiomeMap[next.x, next.y])))
                         continue;
                     queue.Enqueue(next);
                 }

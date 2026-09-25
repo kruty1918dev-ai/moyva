@@ -272,7 +272,8 @@ namespace Kruty1918.Moyva.AI.Training.Tests
                         queue.Enqueue(next);
                     }
             }
-            Assert.IsTrue(goal.HasValue, "Generated world has no legal unit route to the settlement.");
+            Assert.IsTrue(goal.HasValue,
+                $"Generated world has no legal unit route to the settlement. start={start} target={target} visited={previous.Count}");
             var path = new Stack<Vector2Int>();
             for (var cell = goal.Value; cell != start; cell = previous[cell]) path.Push(cell);
             while (path.Count > 0)

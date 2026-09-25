@@ -20,7 +20,11 @@ namespace Kruty1918.Moyva.Shared.Controls
         PrimarySelect,
         SecondarySelect,
         /// <summary>Варіант FocusSelected.</summary>
-        FocusSelected
+        FocusSelected,
+        /// <summary>Held while navigating — boosts camera movement speed.</summary>
+        Sprint,
+        /// <summary>Focuses the camera on the local player's capital/castle.</summary>
+        FocusCapital
     }
 
     public struct PlayerControlSettingsData
@@ -43,6 +47,8 @@ namespace Kruty1918.Moyva.Shared.Controls
         public bool ReduceMotion;
         /// <summary>зум Toward пальців — bool.</summary>
         public bool ZoomTowardFingers;
+        /// <summary>показувати журнал клавіатури у кутку екрана — bool.</summary>
+        public bool InputLogEnabled;
         public Dictionary<PlayerControlAction, string> Bindings;
         public ProfileDocument Devices;
 
@@ -64,6 +70,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 ReduceCameraMotion = false,
                 ReduceMotion = false,
                 ZoomTowardFingers = true,
+                InputLogEnabled = true,
                 Bindings = new Dictionary<PlayerControlAction, string>
                 {
                     { PlayerControlAction.MoveForward, "<Keyboard>/w" },
@@ -77,6 +84,8 @@ namespace Kruty1918.Moyva.Shared.Controls
                     { PlayerControlAction.PrimarySelect, "<Mouse>/leftButton" },
                     { PlayerControlAction.SecondarySelect, "<Mouse>/rightButton" },
                     { PlayerControlAction.FocusSelected, "<Keyboard>/f" },
+                    { PlayerControlAction.Sprint, "<Keyboard>/shift" },
+                    { PlayerControlAction.FocusCapital, "<Keyboard>/h" },
                 }
             };
         }
@@ -99,6 +108,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 ReduceCameraMotion = ReduceCameraMotion,
                 ReduceMotion = ReduceMotion,
                 ZoomTowardFingers = ZoomTowardFingers,
+                InputLogEnabled = InputLogEnabled,
                 Bindings = NormalizeBindings(Bindings, defaults.Bindings),
                 Devices = NormalizeDevices(Devices, Bindings)
             };
@@ -176,6 +186,11 @@ namespace Kruty1918.Moyva.Shared.Controls
     public interface IPlayerControlSettingsService
     {
         PlayerControlSettingsData Settings { get; }
+        /// <summary>
+        /// Modifier bits held by the active profile's Sprint binding. Consumers reading
+        /// other bindings may ignore these bits so sprinting does not block them.
+        /// </summary>
+        PlayerControlModifiers SprintModifierMask { get; }
         event Action<PlayerControlSettingsData> OnSettingsChanged;
 
         bool TrySetBinding(PlayerControlAction action, string controlPath, out PlayerControlAction conflictingAction);
@@ -197,6 +212,8 @@ namespace Kruty1918.Moyva.Shared.Controls
         void SetReduceMotion(bool value);
         /// <summary>Встановлює зум Toward пальців.</summary>
         void SetZoomTowardFingers(bool value);
+        /// <summary>Вмикає/вимикає журнал клавіатури у кутку екрана.</summary>
+        void SetInputLogEnabled(bool value);
         void ResetToDefaults();
         void ConfigureDevices(ControlProfile selection, PointerInterpretation pointerMode);
         bool TrySetProfileBinding(ControlProfile profile, PlayerControlAction action, string path, out PlayerControlAction conflict);
@@ -209,8 +226,36 @@ namespace Kruty1918.Moyva.Shared.Controls
         private const int Version = 3;
         private readonly IInputDeviceContext _devices;
         private readonly string _filePath;
+        private bool _sprintMaskDirty = true;
+        private ControlProfile _sprintMaskProfile;
+        private PlayerControlModifiers _sprintModifierMask;
 
         public PlayerControlSettingsData Settings { get; private set; }
+
+        public PlayerControlModifiers SprintModifierMask
+        {
+            get
+            {
+                var profile = _devices?.ActiveProfile ?? ControlProfile.KeyboardMouse;
+                if (_sprintMaskDirty || profile != _sprintMaskProfile)
+                {
+                    _sprintMaskDirty = false;
+                    _sprintMaskProfile = profile;
+                    _sprintModifierMask = ResolveSprintModifierMask(profile);
+                }
+                return _sprintModifierMask;
+            }
+        }
+
+        private PlayerControlModifiers ResolveSprintModifierMask(ControlProfile profile)
+        {
+            var bindings = Settings.Profile(profile)?.ToBindings() ?? Settings.Bindings;
+            return bindings != null
+                && bindings.TryGetValue(PlayerControlAction.Sprint, out var path)
+                && PlayerControlBinding.TryParse(path, out var binding)
+                ? binding.ModifierMask
+                : PlayerControlModifiers.None;
+        }
         public event Action<PlayerControlSettingsData> OnSettingsChanged;
 
         public PlayerControlSettingsService([InjectOptional] IClientInstanceScope clientScope = null,
@@ -319,6 +364,14 @@ namespace Kruty1918.Moyva.Shared.Controls
             Update(next);
         }
 
+        /// <summary>Вмикає/вимикає журнал клавіатури у кутку екрана.</summary>
+        public void SetInputLogEnabled(bool value)
+        {
+            var next = Clone(Settings);
+            next.InputLogEnabled = value;
+            Update(next);
+        }
+
         public void ResetToDefaults() => Update(PlayerControlSettingsData.CreateDefault());
 
         private void ApplyDeviceSelection()
@@ -380,6 +433,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 return;
 
             Settings = next;
+            _sprintMaskDirty = true;
             ApplyDeviceSelection();
             Save(Settings);
             OnSettingsChanged?.Invoke(Settings);
@@ -411,6 +465,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                     AutomaticCameraFocus = defaults.AutomaticCameraFocus,
                     ReduceCameraMotion = defaults.ReduceCameraMotion,
                     ZoomTowardFingers = defaults.ZoomTowardFingers,
+                    InputLogEnabled = defaults.InputLogEnabled,
                     Bindings = new Dictionary<PlayerControlAction, string>()
                 };
 
@@ -435,6 +490,8 @@ namespace Kruty1918.Moyva.Shared.Controls
                     // Bit 32 (ReduceMotion) extends the v3 flags byte in place —
                     // files written by older builds simply read it as unset.
                     settings.ReduceMotion = (flags & 32) != 0;
+                    // Bit 64 stores InputLog *disabled* so older files read enabled.
+                    settings.InputLogEnabled = (flags & 64) == 0;
                     settings.CameraShakeIntensity = reader.ReadSingle();
                 }
                 return settings.Normalized();
@@ -476,6 +533,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 if (data.ReduceCameraMotion) flags |= 8;
                 if (data.ZoomTowardFingers) flags |= 16;
                 if (data.ReduceMotion) flags |= 32;
+                if (!data.InputLogEnabled) flags |= 64;
                 writer.Write(flags);
                 writer.Write(data.CameraShakeIntensity);
                 }
@@ -504,6 +562,7 @@ namespace Kruty1918.Moyva.Shared.Controls
                 ReduceCameraMotion = source.ReduceCameraMotion,
                 ReduceMotion = source.ReduceMotion,
                 ZoomTowardFingers = source.ZoomTowardFingers,
+                InputLogEnabled = source.InputLogEnabled,
                 Bindings = new Dictionary<PlayerControlAction, string>(
                     source.Bindings ?? PlayerControlSettingsData.CreateDefault().Bindings)
             };
@@ -522,7 +581,8 @@ namespace Kruty1918.Moyva.Shared.Controls
                 first.AutomaticCameraFocus != second.AutomaticCameraFocus ||
                 first.ReduceCameraMotion != second.ReduceCameraMotion ||
                 first.ReduceMotion != second.ReduceMotion ||
-                first.ZoomTowardFingers != second.ZoomTowardFingers)
+                first.ZoomTowardFingers != second.ZoomTowardFingers ||
+                first.InputLogEnabled != second.InputLogEnabled)
                 return false;
 
             foreach (PlayerControlAction action in Enum.GetValues(typeof(PlayerControlAction)))

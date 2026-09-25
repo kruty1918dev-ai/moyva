@@ -80,7 +80,7 @@ namespace Kruty1918.Moyva.Shared.Graphics
                 case GraphicsQualityProfile.Quality:
                     return new GraphicsSettingsData(profile, 60, isMobile ? 0.90f : 1f, false, false, 0, isMobile ? 0 : 2, false, !isMobile, true, 1.15f);
                 case GraphicsQualityProfile.Balanced:
-                    return new GraphicsSettingsData(profile, 60, isMobile ? 0.75f : 1f, false, false, 0, 0, false, false, true, 0.90f);
+                    return new GraphicsSettingsData(profile, 60, isMobile ? 0.75f : 1f, false, false, 0, 0, false, !isMobile, true, 0.90f);
                 default:
                     return isMobile
                         ? new GraphicsSettingsData(GraphicsQualityProfile.Auto, 60, 0.75f, false, false, 0, 0, false, false, true, 0.85f)
@@ -321,8 +321,8 @@ namespace Kruty1918.Moyva.Shared.Graphics
             Application.targetFrameRate = effective.VSync ? -1 : effective.TargetFrameRate;
             OnDemandRendering.renderFrameInterval = 1;
             QualitySettings.antiAliasing = effective.AntiAliasing;
-            QualitySettings.shadows = effective.Shadows ? ShadowQuality.HardOnly : ShadowQuality.Disable;
-            QualitySettings.shadowDistance = effective.Shadows ? 20f : 0f;
+            QualitySettings.shadows = effective.Shadows ? ShadowQuality.All : ShadowQuality.Disable;
+            QualitySettings.shadowDistance = effective.Shadows ? 50f : 0f;
             QualitySettings.realtimeReflectionProbes = false;
             QualitySettings.softParticles = false;
             QualitySettings.softVegetation = false;

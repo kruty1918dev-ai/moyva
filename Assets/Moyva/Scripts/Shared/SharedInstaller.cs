@@ -61,6 +61,10 @@ namespace Kruty1918.Moyva.Shared
                 .AsSingle()
                 .NonLazy();
 
+            container.BindInterfacesAndSelfTo<GameplayInputLogService>()
+                .AsSingle()
+                .NonLazy();
+
             container.Bind<FrameBudgetSettings>()
                 .FromMethod(_ => AdaptivePerformanceDefaultsProvider.LoadFrameBudget())
                 .AsSingle();

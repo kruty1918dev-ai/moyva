@@ -380,6 +380,104 @@ namespace Kruty1918.Moyva.Tests.Controls
         }
 
         [Test]
+        public void ModifierOnlyBindingsParseAndRoundTrip()
+        {
+            Assert.That(
+                PlayerControlBinding.TryParse("<Keyboard>/shift", out var shift),
+                Is.True);
+
+            Assert.That(shift.CanonicalPath, Is.EqualTo("<Keyboard>/shift"));
+            Assert.That(shift.ModifierMask, Is.EqualTo(PlayerControlModifiers.Shift));
+
+            Assert.That(
+                PlayerControlBinding.TryParse("<Keyboard>/ctrl", out var ctrl),
+                Is.True);
+            Assert.That(ctrl.ModifierMask, Is.EqualTo(PlayerControlModifiers.Ctrl));
+
+            // A modifier control cannot be chorded onto itself.
+            Assert.That(
+                PlayerControlBinding.TryParse("Shift+<Keyboard>/shift", out _),
+                Is.False);
+
+            // Single physical modifier keys stay rejected as base keys.
+            Assert.That(
+                PlayerControlBinding.TryParse("<Keyboard>/leftShift", out _),
+                Is.False);
+        }
+
+        [Test]
+        public void SprintModifierDoesNotGateOtherKeys()
+        {
+            var keyboard = Keyboard.current;
+            bool owns = keyboard == null;
+            if (owns) keyboard = InputSystem.AddDevice<Keyboard>();
+
+            try
+            {
+                PlayerControlBinding.TryParse("<Keyboard>/w", out var move);
+                PlayerControlBinding.TryParse("<Keyboard>/shift", out var sprint);
+
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.LeftShift));
+                InputSystem.Update();
+
+                Assert.That(sprint.ReadValue(), Is.EqualTo(1f), "shift-only binding must read as held");
+                Assert.That(move.ReadValue(), Is.Zero, "exact match: Shift+W does not fire plain W");
+                Assert.That(
+                    move.ReadValue(0.2f, sprint.ModifierMask),
+                    Is.EqualTo(1f),
+                    "ignoring the sprint modifier lets navigation through");
+
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.RightShift));
+                InputSystem.Update();
+                Assert.That(sprint.ReadValue(), Is.EqualTo(1f), "one binding must cover both shift keys");
+            }
+            finally
+            {
+                if (owns) InputSystem.RemoveDevice(keyboard);
+                else
+                {
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                    InputSystem.Update();
+                }
+            }
+        }
+
+        [Test]
+        public void DefaultProfilesExposeSprintAndFocusBindings()
+        {
+            var scope = new TestScope();
+            string file = Path.Combine(
+                Application.persistentDataPath,
+                scope.BuildScopedFileName("player_controls.dat"));
+
+            try
+            {
+                var service = CreateService(scope);
+                var bindings = service.Settings
+                    .Profile(ControlProfile.KeyboardMouse)
+                    .ToBindings();
+
+                Assert.That(
+                    bindings[PlayerControlAction.Sprint],
+                    Is.EqualTo("<Keyboard>/shift"));
+                Assert.That(
+                    bindings[PlayerControlAction.FocusSelected],
+                    Is.EqualTo("<Keyboard>/f"));
+                Assert.That(
+                    service.SprintModifierMask,
+                    Is.EqualTo(PlayerControlModifiers.Shift));
+            }
+            finally
+            {
+                foreach (var suffix in new[] { "", ".tmp", ".bak", ".v1.bak" })
+                {
+                    string path = file + suffix;
+                    if (File.Exists(path)) File.Delete(path);
+                }
+            }
+        }
+
+        [Test]
         public void ReduceMotionPersistsAcrossServiceInstances()
         {
             var scope = new TestScope();

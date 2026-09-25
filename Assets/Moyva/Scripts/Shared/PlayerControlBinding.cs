@@ -60,10 +60,34 @@ namespace Kruty1918.Moyva.Shared.Controls
             "<Touch>/tap", "<Touch>/longPress", "<Touch>/drag", "<Touch>/pinchIn", "<Touch>/pinchOut", "<Touch>/twist"
         };
 
-        public float ReadValue(float deadzone = 0.2f)
+        /// <summary>Modifier bits this chord holds while active — used as the sprint/navigation ignore mask.</summary>
+        public PlayerControlModifiers ModifierMask
+            => TryResolveModifierOnlyMask(ControlPath, out var synthetic) ? synthetic | Modifiers : Modifiers;
+
+        /// <summary>
+        /// Device-wide modifier controls ("<Keyboard>/shift", "/ctrl", "/alt") read straight from
+        /// <see cref="ReadModifiers"/> so one binding covers both physical keys.
+        /// </summary>
+        public static bool TryResolveModifierOnlyMask(string path, out PlayerControlModifiers mask)
         {
-            if (Key != Key.None) return IsPressed(Keyboard.current) ? 1f : 0f;
-            if (ReadModifiers(Keyboard.current) != Modifiers) return 0f;
+            mask = PlayerControlModifiers.None;
+            if (string.Equals(path, "<Keyboard>/shift", StringComparison.OrdinalIgnoreCase)) mask = PlayerControlModifiers.Shift;
+            else if (string.Equals(path, "<Keyboard>/ctrl", StringComparison.OrdinalIgnoreCase)) mask = PlayerControlModifiers.Ctrl;
+            else if (string.Equals(path, "<Keyboard>/alt", StringComparison.OrdinalIgnoreCase)) mask = PlayerControlModifiers.Alt;
+            else return false;
+            return true;
+        }
+
+        public float ReadValue(float deadzone = 0.2f)
+            => ReadValue(deadzone, PlayerControlModifiers.None);
+
+        /// <param name="ignoredModifiers">Modifier bits excluded from the exact-match gate — e.g. the sprint key while navigating.</param>
+        public float ReadValue(float deadzone, PlayerControlModifiers ignoredModifiers)
+        {
+            if (Key != Key.None) return IsPressed(Keyboard.current, ignoredModifiers) ? 1f : 0f;
+            if (TryResolveModifierOnlyMask(ControlPath, out var selfMask))
+                return (ReadModifiers(Keyboard.current) & selfMask) != 0 ? 1f : 0f;
+            if (((ReadModifiers(Keyboard.current) ^ Modifiers) & ~ignoredModifiers & AllModifiers) != 0) return 0f;
             string path = ControlPath;
             if (path == "<Touchpad>/spaceDrag") return Keyboard.current?.spaceKey.isPressed == true ? 1f : 0f;
             if (path?.StartsWith("<Touchpad>/scroll/", StringComparison.Ordinal) == true)
@@ -106,6 +130,16 @@ namespace Kruty1918.Moyva.Shared.Controls
             foreach (var devicePath in DevicePaths)
                 if (string.Equals(path, devicePath, StringComparison.OrdinalIgnoreCase))
                 { binding = new PlayerControlBinding(devicePath, modifiers); return true; }
+            if (TryResolveModifierOnlyMask(path, out var modifierOnly))
+            {
+                if (modifiers != PlayerControlModifiers.None)
+                    return false;
+                string canonical =
+                    modifierOnly == PlayerControlModifiers.Shift ? "<Keyboard>/shift" :
+                    modifierOnly == PlayerControlModifiers.Ctrl ? "<Keyboard>/ctrl" : "<Keyboard>/alt";
+                binding = new PlayerControlBinding(canonical, PlayerControlModifiers.None);
+                return true;
+            }
             if (!path.StartsWith(KeyboardPrefix, StringComparison.OrdinalIgnoreCase))
                 return false;
 
@@ -174,9 +208,14 @@ namespace Kruty1918.Moyva.Shared.Controls
         }
 
         public bool IsPressed(Keyboard keyboard)
+            => IsPressed(keyboard, PlayerControlModifiers.None);
+
+        /// <param name="ignoredModifiers">Modifier bits excluded from the exact-match requirement.</param>
+        public bool IsPressed(Keyboard keyboard, PlayerControlModifiers ignoredModifiers)
             => Key != Key.None && keyboard != null
                && !keyboard.leftMetaKey.isPressed && !keyboard.rightMetaKey.isPressed
-               && ReadModifiers(keyboard) == Modifiers && keyboard[Key].isPressed;
+               && (ReadModifiers(keyboard) & ~ignoredModifiers) == (Modifiers & ~ignoredModifiers)
+               && keyboard[Key].isPressed;
 
         private static string ModifierPrefix(PlayerControlModifiers modifiers, string separator)
             => ((modifiers & PlayerControlModifiers.Ctrl) != 0 ? "Ctrl" + separator : string.Empty)
