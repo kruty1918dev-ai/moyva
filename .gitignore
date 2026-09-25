@@ -200,3 +200,6 @@ __pycache__/
 tools/**/obj/
 tools/**/bin/
 tools/Temp/
+
+# QA evidence artifacts (screenshots/dumps — large binaries, kept locally)
+docs/qa/evidence/
