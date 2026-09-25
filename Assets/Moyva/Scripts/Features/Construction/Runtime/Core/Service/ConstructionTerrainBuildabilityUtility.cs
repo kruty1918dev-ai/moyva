@@ -10,6 +10,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     internal static class ConstructionTerrainBuildabilityUtility
     {
         private const string WaterTerrainTag = "water";
+        private const string NoBuildTerrainTag = "no-build";
 
         private static readonly Vector2Int[] CardinalDirections =
         {
@@ -74,7 +75,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return true;
             }
 
-            bool isWater = tileSettings is ITerrainTagQuery terrainTagQuery
+            var terrainTagQuery = tileSettings as ITerrainTagQuery;
+            bool isWater = terrainTagQuery != null
                 && terrainTagQuery.HasTerrainTag(
                     tileTypeId,
                     WaterTerrainTag);
@@ -83,6 +85,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (isWater && !allowBuildingOnWater)
             {
                 reason = $"water terrain '{tileTypeId}' is not buildable";
+                return true;
+            }
+
+            // The canonical "no-build" tile tag (e.g. shoreline sand) is a
+            // hard rule: no profile flag can opt back into placement.
+            if (terrainTagQuery != null
+                && terrainTagQuery.HasTerrainTag(
+                    tileTypeId,
+                    NoBuildTerrainTag))
+            {
+                reason = $"tile '{tileTypeId}' forbids construction";
                 return true;
             }
 

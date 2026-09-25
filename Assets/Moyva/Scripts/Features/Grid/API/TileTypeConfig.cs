@@ -100,14 +100,14 @@ namespace Kruty1918.Moyva.Grid.API
     [Serializable]
     public sealed class MovementHeightRuleConfig
     {
-        [Tooltip("Largest surface delta a unit crosses by plain walking. 0.25 matches one terrace step.")]
-        [Min(0f)] public float AutoStepMaxMeters = 0.25f;
+        [Tooltip("Largest surface delta a unit crosses by plain walking. 0.5 matches one relief quantum.")]
+        [Min(0f)] public float AutoStepMaxMeters = 0.5f;
 
         [Tooltip("Rise covered by one authored stair module.")]
-        [Min(0.01f)] public float StairModuleRiseMeters = 0.25f;
+        [Min(0.01f)] public float StairModuleRiseMeters = 0.5f;
 
         [Tooltip("Largest total rise a stair flight may cover for this profile.")]
-        [Min(0f)] public float MaxStairRiseMeters = 1f;
+        [Min(0f)] public float MaxStairRiseMeters = 1.5f;
     }
 
     /// <summary>

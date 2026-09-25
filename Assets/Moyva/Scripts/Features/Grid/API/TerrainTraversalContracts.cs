@@ -78,14 +78,14 @@ namespace Kruty1918.Moyva.Grid.API
         /// <summary>Largest surface delta a unit can cross by plain walking.</summary>
         public float AutoStepMaxMeters { get; }
 
-        /// <summary>Height one stair module covers (0.25 for the atlas pack).</summary>
+        /// <summary>Height one stair module covers (matches the terrain relief quantum).</summary>
         public float StairModuleRiseMeters { get; }
 
         /// <summary>Largest total rise a generated stair flight may cover.</summary>
         public float MaxStairRiseMeters { get; }
 
         public static MovementHeightLimits Default { get; } =
-            new MovementHeightLimits(0.25f, 0.25f, 1f);
+            new MovementHeightLimits(0.5f, 0.5f, 1.5f);
     }
 
     /// <summary>

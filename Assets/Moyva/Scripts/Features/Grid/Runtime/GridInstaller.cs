@@ -54,6 +54,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
 			container.BindInterfacesAndSelfTo<TileTypeRepository>().AsSingle();
 			container.Bind<MovementProfileRepository>().AsSingle();
 			container.BindInterfacesTo<TraversalCostResolver>().AsSingle();
+			container.BindInterfacesTo<TerrainPlacementPolicy>().AsSingle();
 			container.BindInterfacesTo<ChunkedGridService>().AsSingle().WithArguments(width, height);
 			container.Bind<ITileSettingsService>().To<TileSettingsService>().AsSingle();
 		}
@@ -94,6 +95,8 @@ namespace Kruty1918.Moyva.Grid.Runtime
 				.AsSingle()
 				.NonLazy();
 			Container.BindInterfacesTo<TraversalCostResolver>()
+				.AsSingle();
+			Container.BindInterfacesTo<TerrainPlacementPolicy>()
 				.AsSingle();
 
 			Container.BindInterfacesTo<ChunkedGridService>().AsSingle()

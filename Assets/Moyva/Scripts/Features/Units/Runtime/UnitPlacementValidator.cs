@@ -23,6 +23,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly WorldCreationDefaultsSO _worldDefaults;
         private readonly ITraversalCostResolver _traversalCosts;
         private readonly IUnitClassConfig _unitConfigs;
+        private readonly ITerrainPlacementPolicy _placementPolicy;
 
         public UnitPlacementValidator(
             IGridService grid,
@@ -30,7 +31,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             ITraversalCostResolver traversalCosts,
             IUnitClassConfig unitConfigs,
             [InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null,
-            [InjectOptional] WorldCreationDefaultsSO worldDefaults = null)
+            [InjectOptional] WorldCreationDefaultsSO worldDefaults = null,
+            [InjectOptional] ITerrainPlacementPolicy placementPolicy = null)
         {
             _grid = grid;
             _objectsMap = objectsMap;
@@ -38,6 +40,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _unitConfigs = unitConfigs;
             _terrainLevelQuery = terrainLevelQuery;
             _worldDefaults = worldDefaults;
+            _placementPolicy = placementPolicy;
         }
 
         public bool IsTerrainAllowed(Vector2Int position, out string reason)
@@ -62,6 +65,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                 reason = $"Тип тайла '{tileTypeId}' заборонений для юнітів.";
                 return false;
             }
+
+            // The no-spawn placement policy lives in CanDeployUnit only —
+            // this method also backs movement traversal, and units must be
+            // free to walk across shore sand.
 
             if (_terrainLevelQuery != null
                 && _terrainLevelQuery.TryGetTerrainLevel(position, out int terrainLevel)
@@ -97,6 +104,12 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (!_grid.TryGetTileTypeId(position, out string tileTypeId))
             {
                 reason = "На клітинці немає валідного типу тайла.";
+                return false;
+            }
+
+            if (IsPlacementBlocked(tileTypeId))
+            {
+                reason = $"На тайлі '{tileTypeId}' не можна розміщувати юнітів.";
                 return false;
             }
 
@@ -142,6 +155,12 @@ namespace Kruty1918.Moyva.Units.Runtime
             reason = null;
             return true;
         }
+
+        private bool IsPlacementBlocked(string tileTypeId)
+            => _placementPolicy != null
+               && !_placementPolicy.AllowsPlacement(
+                   tileTypeId,
+                   TerrainPlacementOperation.UnitDeployment);
 
         private bool IsBlockedUnitTile(string tileTypeId)
         {
