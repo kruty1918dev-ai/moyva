@@ -628,6 +628,46 @@
     "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/tree_single_B_cut.prefab",
     "required": true
    }
+  },
+  {
+   "id": "kaykit-waterlily-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.waterlily-a.7128f2a8",
+    "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/waterlily_A.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "kaykit-waterlily-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.waterlily-b.dde878ba",
+    "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/waterlily_B.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "kaykit-waterplant-a",
+   "visualPrefab": {
+    "$asset": "asset.game-object.waterplant-a.1c6ae2e2",
+    "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/waterplant_A.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "kaykit-waterplant-b",
+   "visualPrefab": {
+    "$asset": "asset.game-object.waterplant-b.09b412ca",
+    "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/waterplant_B.prefab",
+    "required": true
+   }
+  },
+  {
+   "id": "kaykit-waterplant-c",
+   "visualPrefab": {
+    "$asset": "asset.game-object.waterplant-c.0e9a8240",
+    "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/decoration/nature/waterplant_C.prefab",
+    "required": true
+   }
   }
  ],
  "migration": {

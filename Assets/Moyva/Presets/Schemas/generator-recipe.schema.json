@@ -889,6 +889,7 @@
                   "enum": [
                     "bool-invert-step",
                     "bool-value-mask-step",
+                    "hydrology-mask-step",
                     "layer-mask-reference-step",
                     "mask-morphology-step",
                     "perlin-noise-mask-step",
@@ -1526,19 +1527,19 @@
           "minimum": 0.01,
           "x-moyva-editorMinimum": 0.01
         },
-        "heightExponent": {
-          "type": "number",
-          "title": "Height Exponent",
-          "description": "Exponent applied before terrace quantization. Values above 1 reserve high ground for peaks.",
-          "minimum": 1.0,
-          "x-moyva-editorMinimum": 1.0
-        },
         "maxSteps": {
           "type": "integer",
           "title": "Max Steps",
           "description": "Number of terrace steps above the minimum field height.",
           "minimum": 0.0,
           "x-moyva-editorMinimum": 0.0
+        },
+        "heightExponent": {
+          "type": "number",
+          "title": "Height Exponent",
+          "description": "Exponent applied before terrace quantization. Values above 1 reserve high ground for peaks.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
         },
         "noiseScale": {
           "type": "number",
@@ -1590,6 +1591,36 @@
           "type": "integer",
           "title": "Smoothing Iterations",
           "description": "Majority-smoothing passes over quantized levels; removes single-cell noise spikes.",
+          "minimum": 0.0,
+          "maximum": 8.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 8.0
+        },
+        "minPlateauCells": {
+          "type": "integer",
+          "title": "Min Plateau Cells",
+          "description": "Terraces covering fewer cells than this collapse into the surrounding level. 0 = off.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "bumpMinSpacingCells": {
+          "type": "integer",
+          "title": "Bump Min Spacing Cells",
+          "description": "Minimum distance between elevated bumps; closer bumps are suppressed. 0 = off.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "maxBumpCount": {
+          "type": "integer",
+          "title": "Max Bump Count",
+          "description": "Maximum elevated bumps kept per map; excess bumps collapse. 0 = unlimited.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "ridgeErosionIterations": {
+          "type": "integer",
+          "title": "Ridge Erosion Iterations",
+          "description": "Passes that lower cells standing above all four neighbours; erodes spikes and knife ridges.",
           "minimum": 0.0,
           "maximum": 8.0,
           "x-moyva-editorMinimum": 0.0,
@@ -1736,6 +1767,160 @@
       "additionalProperties": false,
       "title": "Routes",
       "description": "Generated road/footpath routes between seeded anchors."
+    },
+    "hydrology": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "sinkLayerId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Sink Layer Id",
+          "description": "Layer id whose final mask marks open water that rivers drain into. Evaluated before hydrology layers."
+        },
+        "sinkMaxMeters": {
+          "type": "number",
+          "title": "Sink Max Meters",
+          "description": "Terrain at or below this height (meters) also counts as a sink. Covers the open-water sheet when no sink layer is set."
+        },
+        "riverAccumulationThreshold": {
+          "type": "integer",
+          "title": "River Accumulation Threshold",
+          "description": "Upstream drainage (in cells) a land cell needs to become a river.",
+          "minimum": 2.0,
+          "x-moyva-editorMinimum": 2.0
+        },
+        "riverMinSourceMeters": {
+          "type": "number",
+          "title": "River Min Source Meters",
+          "description": "Minimum terrain height in meters for a river source cell."
+        },
+        "riverMaxFraction": {
+          "type": "number",
+          "title": "River Max Fraction",
+          "description": "Maximum river cells as a fraction of the map area.",
+          "minimum": 0.0,
+          "maximum": 0.2,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.2
+        },
+        "lakeMinDepthMeters": {
+          "type": "number",
+          "title": "Lake Min Depth Meters",
+          "description": "Minimum flooded depth in meters for a depression to become a lake.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "lakeMaxFraction": {
+          "type": "number",
+          "title": "Lake Max Fraction",
+          "description": "Maximum lake cells as a fraction of the map area.",
+          "minimum": 0.0,
+          "maximum": 0.2,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.2
+        },
+        "waterSurfaceOffsetMeters": {
+          "type": "number",
+          "title": "Water Surface Offset Meters",
+          "description": "Water surface offset in meters relative to the flooded level. Negative recesses water below banks.",
+          "minimum": -0.5,
+          "maximum": 0.5,
+          "x-moyva-editorMinimum": -0.5,
+          "x-moyva-editorMaximum": 0.5
+        },
+        "waterfallMinDropMeters": {
+          "type": "number",
+          "title": "Waterfall Min Drop Meters",
+          "description": "Drop between a river cell and its downstream cell that marks a waterfall.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "seedSalt": {
+          "type": "integer",
+          "title": "Seed Salt",
+          "description": "Seed salt so hydrology does not correlate with relief or layer masks."
+        }
+      },
+      "additionalProperties": false,
+      "title": "Hydrology",
+      "description": "Deterministic rivers/lakes traced on the relief field; feeds hydrology mask steps."
+    },
+    "shore": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "shoreTileId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Shore Tile Id",
+          "description": "Semantic tile/preset id written to water-adjacent land cells."
+        },
+        "shorePresetId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Shore Preset Id",
+          "description": "Preset id used for converted shore cells when no native shore layer exists. Defaults to ShoreTileId."
+        },
+        "bandCells": {
+          "type": "integer",
+          "title": "Band Cells",
+          "description": "Land cells within this Chebyshev distance of water convert to the shore tile.",
+          "minimum": 1.0,
+          "x-moyva-editorMinimum": 1.0
+        },
+        "blendCells": {
+          "type": "integer",
+          "title": "Blend Cells",
+          "description": "Extra ring beyond the band that is only graded down toward the water without changing tile type.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "shoreLiftMeters": {
+          "type": "number",
+          "title": "Shore Lift Meters",
+          "description": "Beach surface lift above the adjacent water surface in meters.",
+          "minimum": 0.005,
+          "maximum": 0.5,
+          "x-moyva-editorMinimum": 0.005,
+          "x-moyva-editorMaximum": 0.5
+        },
+        "risePerCellMeters": {
+          "type": "number",
+          "title": "Rise Per Cell Meters",
+          "description": "Maximum surface rise per cell of distance from water; caps the grading ramp.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "maxDropToWaterMeters": {
+          "type": "number",
+          "title": "Max Drop To Water Meters",
+          "description": "Land cells whose surface exceeds water + lift by more than this stay untouched (cliff shoreline).",
+          "minimum": 0.05,
+          "x-moyva-editorMinimum": 0.05
+        }
+      },
+      "additionalProperties": false,
+      "title": "Shore",
+      "description": "Recipe-authored shoreline planning. After relief is applied, land cells close to actual water are re-typed to the shore tile and graded down toward the neighbouring water surface so the waterline reads as a smooth continuous beach."
     }
   }
 }

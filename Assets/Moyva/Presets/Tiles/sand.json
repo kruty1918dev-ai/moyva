@@ -12,7 +12,9 @@
   ],
   "tags": [
     "land",
-    "coast"
+    "coast",
+    "no-spawn",
+    "no-build"
   ],
   "traversalClassId": "sand",
   "visual": {

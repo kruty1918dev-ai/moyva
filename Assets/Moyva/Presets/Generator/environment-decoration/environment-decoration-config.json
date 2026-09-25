@@ -14,26 +14,36 @@
   "treeDensity": 0.15,
   "bushDensity": 0.1,
   "grassDensity": 0.2,
-  "rockDensity": 0.08
+  "flowerDensity": 0.0,
+  "rockDensity": 0.08,
+  "waterPlantDensity": 0.12
  },
  "biomeRules": {
   "grassland": 1.2,
   "forest": 2.0,
   "rocky": 1.5,
-  "coast": 0.5,
+  "coast": 0.0,
   "water": 0.0
  },
  "exclusions": {
   "buildingExclusionRadius": 1,
   "settlementExclusionRadius": 2,
-  "suppressWaterDecorations": true
+  "suppressWaterDecorations": true,
+  "shorelineExclusionCells": 1
  },
  "visualVariation": {
   "enableRotation": true,
   "enableScaleVariation": true,
   "minScale": 0.85,
   "maxScale": 1.15,
-  "maxPositionOffset": 0.2
+  "maxPositionOffset": 0.2,
+  "alignToSurface": true
+ },
+ "footprint": {
+  "validateHeavyFootprints": true,
+  "maxShiftCells": 0.75,
+  "maxGroundDeltaMeters": 0.6,
+  "footprintShrink": 0.9
  },
  "assetPools": {
   "tree": [
@@ -66,6 +76,13 @@
    "kaykit-trees-b-cut",
    "kaykit-tree-single-a-cut",
    "kaykit-tree-single-b-cut"
+  ],
+  "waterplant": [
+   "kaykit-waterlily-a",
+   "kaykit-waterlily-b",
+   "kaykit-waterplant-a",
+   "kaykit-waterplant-b",
+   "kaykit-waterplant-c"
   ]
  }
 }

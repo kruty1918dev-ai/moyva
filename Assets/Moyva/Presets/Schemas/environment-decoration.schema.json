@@ -104,6 +104,22 @@
           "x-moyva-editorMinimum": 0.0,
           "x-moyva-editorMaximum": 1.0
         },
+        "flowerDensity": {
+          "type": "number",
+          "title": "Flower Density",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "waterPlantDensity": {
+          "type": "number",
+          "title": "Water Plant Density",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
         "rockDensity": {
           "type": "number",
           "title": "Rock Density",
@@ -187,6 +203,12 @@
         "suppressWaterDecorations": {
           "type": "boolean",
           "title": "Suppress Water Decorations"
+        },
+        "shorelineExclusionCells": {
+          "type": "integer",
+          "title": "Shoreline Exclusion Cells",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
         }
       },
       "additionalProperties": false,
@@ -229,10 +251,52 @@
           "maximum": 0.5,
           "x-moyva-editorMinimum": 0.0,
           "x-moyva-editorMaximum": 0.5
+        },
+        "alignToSurface": {
+          "type": "boolean",
+          "title": "Align To Surface"
         }
       },
       "additionalProperties": false,
       "title": "Visual Variation"
+    },
+    "footprint": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "validateHeavyFootprints": {
+          "type": "boolean",
+          "title": "Validate Heavy Footprints",
+          "description": "Validate the full top-down renderer bounds of heavy props; every cell under the footprint must stay placeable."
+        },
+        "maxShiftCells": {
+          "type": "number",
+          "title": "Max Shift Cells",
+          "description": "Bounded shift radius in cells when a footprint does not fit; beyond it the prop is skipped.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "maxGroundDeltaMeters": {
+          "type": "number",
+          "title": "Max Ground Delta Meters",
+          "description": "Maximum surface-height delta tolerated under a footprint before the prop is shifted or skipped.",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "footprintShrink": {
+          "type": "number",
+          "title": "Footprint Shrink",
+          "description": "Fraction of the XZ renderer bounds used as the footprint. 1 = full bounds.",
+          "minimum": 0.3,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.3,
+          "x-moyva-editorMaximum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Footprint"
     },
     "assetPools": {
       "type": [
