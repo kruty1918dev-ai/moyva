@@ -28,13 +28,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         private readonly ITerrainPassagePlanner _passagePlanner;
         private readonly ITerrainRoutePlanner _routePlanner;
+        private readonly ITerrainShorePlanner _shorePlanner;
 
         public TerrainPlanApplicationService(
             ITerrainPassagePlanner passagePlanner,
-            ITerrainRoutePlanner routePlanner)
+            ITerrainRoutePlanner routePlanner,
+            [Zenject.InjectOptional] ITerrainShorePlanner shorePlanner = null)
         {
             _passagePlanner = passagePlanner;
             _routePlanner = routePlanner;
+            _shorePlanner = shorePlanner;
         }
 
         public TerrainPassagePlan Apply(
@@ -48,6 +51,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (reliefField != null)
                 ApplyRelief(map, recipe, reliefField);
+
+            // Shore runs on the post-relief surfaces so the band follows the
+            // real waterline; passages and routes read the graded map.
+            _shorePlanner?.Apply(
+                map,
+                recipe.Shore,
+                recipe.SharedGeneratorSettings?.WaterLikeTileIds);
 
             TerrainPassagePlan passages = _passagePlanner.Plan(
                 map.SurfaceHeights,

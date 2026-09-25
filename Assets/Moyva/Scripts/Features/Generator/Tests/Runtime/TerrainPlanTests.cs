@@ -365,20 +365,299 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         }
 
         [Test]
+        public void CornerHeights_Evaluate_Bilinear()
+        {
+            var corners = new TileMeshCornerHeights(
+                northWest: 1f, northEast: 1.5f,
+                southWest: 0f, southEast: 0.5f,
+                reference: 0f);
+
+            Assert.AreEqual(0f, corners.Evaluate(0f, 0f), 0.0001f);
+            Assert.AreEqual(0.5f, corners.Evaluate(1f, 0f), 0.0001f);
+            Assert.AreEqual(1f, corners.Evaluate(0f, 1f), 0.0001f);
+            Assert.AreEqual(1.5f, corners.Evaluate(1f, 1f), 0.0001f);
+            Assert.AreEqual(0.75f, corners.Evaluate(0.5f, 0.5f), 0.0001f);
+        }
+
+        [Test]
+        public void Warp_FlatCorners_PassesThrough()
+        {
+            Mesh quad = CreateUnitQuad();
+            try
+            {
+                var source = new TileMeshSource(
+                    quad, null, Matrix4x4.identity,
+                    tileHalfExtent: 0.5f,
+                    cornerHeights: new TileMeshCornerHeights(0f, 0f, 0f, 0f, 0f));
+
+                Assert.IsFalse(TileSurfaceHeightWarpUtility.TryCreate(
+                    source, quad, out Mesh warped));
+                Assert.IsNull(warped);
+            }
+            finally
+            {
+                Object.DestroyImmediate(quad);
+            }
+        }
+
+        [Test]
+        public void Warp_Slope_DisplacesVertsToCornerHeights()
+        {
+            Mesh quad = CreateUnitQuad();
+            Mesh warped = null;
+            try
+            {
+                var source = new TileMeshSource(
+                    quad, null, Matrix4x4.identity,
+                    tileHalfExtent: 0.5f,
+                    cornerHeights: new TileMeshCornerHeights(
+                        northWest: 1f, northEast: 1f,
+                        southWest: 0f, southEast: 0f,
+                        reference: 0f));
+
+                Assert.IsTrue(TileSurfaceHeightWarpUtility.TryCreate(
+                    source, quad, out warped));
+
+                // Quad verts: SW(-0.5,-0.5) NW(-0.5,0.5) NE(0.5,0.5) SE(0.5,-0.5)
+                Assert.AreEqual(0f, warped.vertices[0].y, 0.0001f);
+                Assert.AreEqual(1f, warped.vertices[1].y, 0.0001f);
+                Assert.AreEqual(1f, warped.vertices[2].y, 0.0001f);
+                Assert.AreEqual(0f, warped.vertices[3].y, 0.0001f);
+            }
+            finally
+            {
+                if (warped != null) Object.DestroyImmediate(warped);
+                Object.DestroyImmediate(quad);
+            }
+        }
+
+        [Test]
+        public void Warp_SharedEdge_ProducesIdenticalBorderHeights()
+        {
+            Mesh quadWest = CreateUnitQuad();
+            Mesh quadEast = CreateUnitQuad();
+            Mesh warpedWest = null;
+            Mesh warpedEast = null;
+            try
+            {
+                // Two fragments side by side along X. West covers x in
+                // [-1,0], east covers [0,1]. Their shared edge (x=0) uses the
+                // same two corner heights, so warped world Y must coincide.
+                var westSource = new TileMeshSource(
+                    quadWest, null, Matrix4x4.Translate(new Vector3(-0.5f, 0f, 0f)),
+                    tileHalfExtent: 0.5f,
+                    cornerHeights: new TileMeshCornerHeights(
+                        northWest: 0f, northEast: 1f,
+                        southWest: 0f, southEast: 0.5f,
+                        reference: 0f));
+                // The east fragment's flat top is placed at its reference
+                // height (1), matching production placement alignment.
+                var eastSource = new TileMeshSource(
+                    quadEast, null, Matrix4x4.Translate(new Vector3(0.5f, 1f, 0f)),
+                    tileHalfExtent: 0.5f,
+                    cornerHeights: new TileMeshCornerHeights(
+                        northWest: 1f, northEast: 2f,
+                        southWest: 0.5f, southEast: 1.5f,
+                        reference: 1f));
+
+                Assert.IsTrue(TileSurfaceHeightWarpUtility.TryCreate(
+                    westSource, quadWest, out warpedWest));
+                Assert.IsTrue(TileSurfaceHeightWarpUtility.TryCreate(
+                    eastSource, quadEast, out warpedEast));
+
+                // West fragment east edge verts (local x=+0.5): SE, NE.
+                float westSe = westSource.LocalMatrix.MultiplyPoint3x4(warpedWest.vertices[3]).y;
+                float westNe = westSource.LocalMatrix.MultiplyPoint3x4(warpedWest.vertices[2]).y;
+                // East fragment west edge verts (local x=-0.5): SW, NW.
+                float eastSw = eastSource.LocalMatrix.MultiplyPoint3x4(warpedEast.vertices[0]).y;
+                float eastNw = eastSource.LocalMatrix.MultiplyPoint3x4(warpedEast.vertices[1]).y;
+
+                Assert.AreEqual(0.5f, westSe, 0.0001f);
+                Assert.AreEqual(1f, westNe, 0.0001f);
+                Assert.AreEqual(westSe, eastSw, 0.0001f);
+                Assert.AreEqual(westNe, eastNw, 0.0001f);
+            }
+            finally
+            {
+                if (warpedWest != null) Object.DestroyImmediate(warpedWest);
+                if (warpedEast != null) Object.DestroyImmediate(warpedEast);
+                Object.DestroyImmediate(quadWest);
+                Object.DestroyImmediate(quadEast);
+            }
+        }
+
+        [Test]
+        public void Warp_RotatedFragment_KeepsWorldOrientedCorners()
+        {
+            Mesh quad = CreateUnitQuad();
+            Mesh warped = null;
+            try
+            {
+                // 90 degree yaw: the local north-east corner faces world south-east.
+                var source = new TileMeshSource(
+                    quad, null,
+                    Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(0f, 90f, 0f), Vector3.one),
+                    tileHalfExtent: 0.5f,
+                    cornerHeights: new TileMeshCornerHeights(
+                        northWest: 1f, northEast: 1f,
+                        southWest: 0f, southEast: 0f,
+                        reference: 0f));
+
+                Assert.IsTrue(TileSurfaceHeightWarpUtility.TryCreate(
+                    source, quad, out warped));
+
+                // Under +90 yaw, local verts map: idx0 -> world NW,
+                // idx1 -> world NE, idx2 -> world SE, idx3 -> world SW.
+                // The north half of the field sits at height 1.
+                Assert.AreEqual(1f, warped.vertices[0].y, 0.0001f);
+                Assert.AreEqual(1f, warped.vertices[1].y, 0.0001f);
+                Assert.AreEqual(0f, warped.vertices[2].y, 0.0001f);
+                Assert.AreEqual(0f, warped.vertices[3].y, 0.0001f);
+            }
+            finally
+            {
+                if (warped != null) Object.DestroyImmediate(warped);
+                Object.DestroyImmediate(quad);
+            }
+        }
+
+        [Test]
+        public void WarpKey_DistinguishesCornerHeights()
+        {
+            Mesh quad = CreateUnitQuad();
+            try
+            {
+                var flat = new TileMeshSource(
+                    quad, null, Matrix4x4.identity, tileHalfExtent: 0.5f,
+                    cornerHeights: new TileMeshCornerHeights(0f, 0f, 0f, 0f, 0f));
+                var sloped = new TileMeshSource(
+                    quad, null, Matrix4x4.identity, tileHalfExtent: 0.5f,
+                    cornerHeights: new TileMeshCornerHeights(1f, 0f, 0f, 0f, 0f));
+                var same = new TileMeshSource(
+                    quad, null, Matrix4x4.identity, tileHalfExtent: 0.5f,
+                    cornerHeights: new TileMeshCornerHeights(1f, 0f, 0f, 0f, 0f));
+
+                Assert.AreEqual(
+                    TileHeightWarpMeshKey.Create(sloped, quad),
+                    TileHeightWarpMeshKey.Create(same, quad));
+                Assert.AreNotEqual(
+                    TileHeightWarpMeshKey.Create(flat, quad),
+                    TileHeightWarpMeshKey.Create(sloped, quad));
+            }
+            finally
+            {
+                Object.DestroyImmediate(quad);
+            }
+        }
+
+        [Test]
+        public void WaterNeighbor_SetsWaterSurfaceOnShoreCell()
+        {
+            var land = new TileStackCell();
+            land.Add(new TileLayerSample("sand", "Sand", null, null,
+                "sand", null, LayerKind.BaseTerrain, 0, 0, 0, 0.5f, 0.5f, null));
+            var water = new TileStackCell();
+            water.Add(new TileLayerSample("water", "Water", null, null,
+                "water", null, LayerKind.BaseTerrain, -10, 0, 0, 0.25f, 0.25f, null,
+                TileGeometryMode.SurfaceOnly));
+            var empty = new TileStackCell();
+            var neighborhood = new TileNeighborhood(land, water, empty, empty,
+                empty, empty, empty, empty, empty);
+
+            var result = new ResolvedTileCompositionResolver()
+                .Resolve(Vector2Int.zero, neighborhood);
+
+            Assert.IsTrue(result.HasWaterSurface);
+            Assert.AreEqual("water", result.WaterSurface.TileId);
+            Assert.AreEqual(0.25f, result.WaterSurface.SurfaceHeight, 0.0001f);
+        }
+
+        [Test]
+        public void WaterNeighbor_PicksHighestAdjacentSurface()
+        {
+            var land = new TileStackCell();
+            land.Add(new TileLayerSample("sand", "Sand", null, null,
+                "sand", null, LayerKind.BaseTerrain, 0, 0, 0, 0.5f, 0.5f, null));
+            var shallow = new TileStackCell();
+            shallow.Add(new TileLayerSample("water", "Water", null, null,
+                "water", null, LayerKind.BaseTerrain, -10, 0, 0, 0.13f, 0.13f, null,
+                TileGeometryMode.SurfaceOnly));
+            var deep = new TileStackCell();
+            deep.Add(new TileLayerSample("water", "Water", null, null,
+                "water", null, LayerKind.BaseTerrain, -10, 0, 0, 0.25f, 0.25f, null,
+                TileGeometryMode.SurfaceOnly));
+            var empty = new TileStackCell();
+            var neighborhood = new TileNeighborhood(land, shallow, deep, empty,
+                empty, empty, empty, empty, empty);
+
+            var result = new ResolvedTileCompositionResolver()
+                .Resolve(Vector2Int.zero, neighborhood);
+
+            Assert.IsTrue(result.HasWaterSurface);
+            Assert.AreEqual(0.25f, result.WaterSurface.SurfaceHeight, 0.0001f);
+        }
+
+        [Test]
+        public void WaterCell_DoesNotExtendOntoItself()
+        {
+            var water = new TileStackCell();
+            water.Add(new TileLayerSample("water", "Water", null, null,
+                "water", null, LayerKind.BaseTerrain, -10, 0, 0, 0.25f, 0.25f, null,
+                TileGeometryMode.SurfaceOnly));
+            var neighborhood = new TileNeighborhood(water, water, water, water,
+                water, water, water, water, water);
+
+            var result = new ResolvedTileCompositionResolver()
+                .Resolve(Vector2Int.zero, neighborhood);
+
+            Assert.IsFalse(result.HasWaterSurface);
+        }
+
+        [Test]
+        public void LandlockedCell_HasNoWaterSurface()
+        {
+            var land = new TileStackCell();
+            land.Add(new TileLayerSample("grass", "Grass", null, null,
+                "grass", null, LayerKind.BaseTerrain, 0, 0, 0, 0.5f, 0.5f, null));
+            var neighborhood = new TileNeighborhood(land, land, land, land,
+                land, land, land, land, land);
+
+            var result = new ResolvedTileCompositionResolver()
+                .Resolve(Vector2Int.zero, neighborhood);
+
+            Assert.IsFalse(result.HasWaterSurface);
+        }
+
+        private static Mesh CreateUnitQuad()
+        {
+            return new Mesh
+            {
+                vertices = new[]
+                {
+                    new Vector3(-0.5f, 0f, -0.5f), new Vector3(-0.5f, 0f, 0.5f),
+                    new Vector3(0.5f, 0f, 0.5f), new Vector3(0.5f, 0f, -0.5f)
+                },
+                normals = new[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up },
+                triangles = new[] { 0, 1, 2, 0, 2, 3 },
+                uv = new[] { Vector2.zero, Vector2.up, Vector2.one, Vector2.right }
+            };
+        }
+
+        [Test]
         public void Classifier_DirectWalk_Stair_Blocked()
         {
             // Within auto-step: direct walk.
             Assert.AreEqual(TerrainTransitionKind.DirectWalk,
-                TerrainTransitionClassifier.Classify(0.25f, 0f, false, null, "any"));
+                TerrainTransitionClassifier.Classify(0.5f, 0f, false, null, "any"));
             // Stair step within module rise: stair.
             Assert.AreEqual(TerrainTransitionKind.Stair,
-                TerrainTransitionClassifier.Classify(0.25f, 0f, true, null, "any"));
+                TerrainTransitionClassifier.Classify(0.5f, 0f, true, null, "any"));
             // Beyond module rise even on a marked step: blocked.
             Assert.AreEqual(TerrainTransitionKind.Blocked,
-                TerrainTransitionClassifier.Classify(0.5f, 0f, true, null, "any"));
+                TerrainTransitionClassifier.Classify(1f, 0f, true, null, "any"));
             // Beyond auto-step, no stair: blocked.
             Assert.AreEqual(TerrainTransitionKind.Blocked,
-                TerrainTransitionClassifier.Classify(0.5f, 0f, false, null, "any"));
+                TerrainTransitionClassifier.Classify(1f, 0f, false, null, "any"));
         }
     }
 }

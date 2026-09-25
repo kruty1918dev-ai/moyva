@@ -33,6 +33,18 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Majority-smoothing passes over quantized levels; removes single-cell noise spikes.")]
         [Range(0, 8)] public int SmoothingIterations = 2;
 
+        [Tooltip("Terraces covering fewer cells than this collapse into the surrounding level. 0 = off.")]
+        [Min(0)] public int MinPlateauCells = 0;
+
+        [Tooltip("Minimum distance between elevated bumps; closer bumps are suppressed. 0 = off.")]
+        [Min(0)] public int BumpMinSpacingCells = 0;
+
+        [Tooltip("Maximum elevated bumps kept per map; excess bumps collapse. 0 = unlimited.")]
+        [Min(0)] public int MaxBumpCount = 0;
+
+        [Tooltip("Passes that lower cells standing above all four neighbours; erodes spikes and knife ridges.")]
+        [Range(0, 8)] public int RidgeErosionIterations = 0;
+
         [Tooltip("Seed salt so relief does not correlate with layer masks sharing the map seed.")]
         public int SeedSalt = 9137;
     }
@@ -89,7 +101,7 @@ namespace Kruty1918.Moyva.Generator.API
         public string FootpathTileId = "footpath";
 
         [Tooltip("Surface offset applied to route overlay tiles so they render above terrain.")]
-        [Min(0f)] public float OverlaySurfaceOffsetMeters = 0.003f;
+        [Min(0f)] public float OverlaySurfaceOffsetMeters = 0.012f;
 
         [Tooltip("Extra path cost per meter of height change; higher values keep roads on flat ground.")]
         [Min(0f)] public float HeightPenaltyPerMeter = 4f;
@@ -99,5 +111,83 @@ namespace Kruty1918.Moyva.Generator.API
 
         [Tooltip("Seed salt so routes do not correlate with relief or layer masks.")]
         public int SeedSalt = 4177;
+    }
+
+    /// <summary>
+    /// Recipe-authored shoreline planning. After relief is applied, land cells
+    /// close to actual water (sea, rivers, lakes) are re-typed to the shore
+    /// tile and graded down toward the neighbouring water surface so the
+    /// waterline reads as a smooth continuous beach instead of a height step.
+    /// </summary>
+    [System.Serializable]
+    public sealed class TerrainShoreConfig
+    {
+        public bool Enabled;
+
+        [Tooltip("Semantic tile/preset id written to water-adjacent land cells.")]
+        public string ShoreTileId = "sand";
+
+        [Tooltip("Preset id used for converted shore cells when no native shore layer exists. Defaults to ShoreTileId.")]
+        public string ShorePresetId;
+
+        [Tooltip("Land cells within this Chebyshev distance of water convert to the shore tile.")]
+        [Min(1)] public int BandCells = 2;
+
+        [Tooltip("Extra ring beyond the band that is only graded down toward the water without changing tile type.")]
+        [Min(0)] public int BlendCells = 3;
+
+        [Tooltip("Beach surface lift above the adjacent water surface in meters.")]
+        [Range(0.005f, 0.5f)] public float ShoreLiftMeters = 0.04f;
+
+        [Tooltip("Maximum surface rise per cell of distance from water; caps the grading ramp.")]
+        [Min(0.01f)] public float RisePerCellMeters = 0.2f;
+
+        [Tooltip("Land cells whose surface exceeds water + lift by more than this stay untouched (cliff shoreline).")]
+        [Min(0.05f)] public float MaxDropToWaterMeters = 0.9f;
+    }
+
+    /// <summary>
+    /// Recipe-authored deterministic hydrology: priority-flood the relief field,
+    /// accumulate D8 drainage, then mark lake depressions and river cells.
+    /// Rivers drain to the configured sink layer mask (open water) or the map
+    /// border. Requires <see cref="TerrainReliefConfig"/> to be enabled.
+    /// </summary>
+    [System.Serializable]
+    public sealed class RecipeHydrologyConfig
+    {
+        public bool Enabled;
+
+        [Tooltip("Layer id whose final mask marks open water that rivers drain into. Evaluated before hydrology layers.")]
+        public string SinkLayerId;
+
+        [Tooltip("Terrain at or below this height (meters) also counts as a sink. Covers the open-water sheet when no sink layer is set.")]
+        public float SinkMaxMeters = 0.1f;
+
+        [Tooltip("Upstream drainage (in cells) a land cell needs to become a river.")]
+        [Min(2)] public int RiverAccumulationThreshold = 12;
+
+        [Tooltip("Minimum terrain height in meters for a river source cell.")]
+        public float RiverMinSourceMeters = 0.25f;
+
+        [Tooltip("Maximum river cells as a fraction of the map area.")]
+        [Range(0f, 0.2f)] public float RiverMaxFraction = 0.035f;
+
+        [Tooltip("Minimum flooded depth in meters for a depression to become a lake.")]
+        [Min(0.01f)] public float LakeMinDepthMeters = 0.25f;
+
+        [Tooltip("Maximum lake cells as a fraction of the map area.")]
+        [Range(0f, 0.2f)] public float LakeMaxFraction = 0.03f;
+
+        [Tooltip("Water surface offset in meters relative to the flooded level. Negative recesses water below banks.")]
+        [Range(-0.5f, 0.5f)] public float WaterSurfaceOffsetMeters = -0.03f;
+
+        [Tooltip("Drop between a water cell and its downstream cell that marks a waterfall.")]
+        [Min(0.01f)] public float WaterfallMinDropMeters = 0.5f;
+
+        [Tooltip("Rendered channel depth in meters: river bed sits this far below the water surface.")]
+        [Min(0.05f)] public float ChannelDepthMeters = 0.35f;
+
+        [Tooltip("Seed salt so hydrology does not correlate with relief or layer masks.")]
+        public int SeedSalt = 7331;
     }
 }
