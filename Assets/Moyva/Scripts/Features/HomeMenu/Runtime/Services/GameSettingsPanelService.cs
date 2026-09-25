@@ -106,6 +106,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _moyvaUiViewController.OnReduceCameraMotionChanged += OnReduceCameraMotionChanged;
                 _moyvaUiViewController.OnZoomTowardFingersChanged -= OnZoomTowardFingersChanged;
                 _moyvaUiViewController.OnZoomTowardFingersChanged += OnZoomTowardFingersChanged;
+                _moyvaUiViewController.OnInputLogEnabledChanged -= OnInputLogEnabledChanged;
+                _moyvaUiViewController.OnInputLogEnabledChanged += OnInputLogEnabledChanged;
                 _moyvaUiViewController.OnControlBindingChanged -= OnControlBindingChanged;
                 _moyvaUiViewController.OnControlBindingChanged += OnControlBindingChanged;
                 _moyvaUiViewController.OnResetControlsClicked -= OnResetControlsClicked;
@@ -162,6 +164,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _moyvaUiViewController.OnAutomaticCameraFocusChanged -= OnAutomaticCameraFocusChanged;
                 _moyvaUiViewController.OnReduceCameraMotionChanged -= OnReduceCameraMotionChanged;
                 _moyvaUiViewController.OnZoomTowardFingersChanged -= OnZoomTowardFingersChanged;
+                _moyvaUiViewController.OnInputLogEnabledChanged -= OnInputLogEnabledChanged;
                 _moyvaUiViewController.OnControlBindingChanged -= OnControlBindingChanged;
                 _moyvaUiViewController.OnResetControlsClicked -= OnResetControlsClicked;
             }
@@ -296,6 +299,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private void OnAutomaticCameraFocusChanged(bool value) => _controlSettingsService?.SetAutomaticCameraFocus(value);
         private void OnReduceCameraMotionChanged(bool value) => _controlSettingsService?.SetReduceCameraMotion(value);
         private void OnZoomTowardFingersChanged(bool value) => _controlSettingsService?.SetZoomTowardFingers(value);
+        private void OnInputLogEnabledChanged(bool value) => _controlSettingsService?.SetInputLogEnabled(value);
 
         private void OnControlBindingChanged(PlayerControlAction action, string controlPath)
         {

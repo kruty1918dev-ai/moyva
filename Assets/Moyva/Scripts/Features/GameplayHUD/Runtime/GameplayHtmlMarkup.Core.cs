@@ -134,8 +134,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 {
                     GameplayBuildingOptionSnapshot option = filteredOptions[index];
                     string cost = string.IsNullOrWhiteSpace(option.Cost) ? state.T("Free") : state.T(option.Cost);
+                    string produced = ProducesLabel(option, state);
                     string rowTooltip = option.CanSelect
-                        ? state.T(option.Name)
+                        ? state.TF("{0} — {1}. {2}: {3}. {4}: {5}",
+                            state.T(option.Name),
+                            state.T(option.Description),
+                            state.T("Cost"),
+                            cost,
+                            state.T("Produces"),
+                            produced)
                         : string.IsNullOrWhiteSpace(option.UnavailableReason)
                             ? state.T("Unavailable under current construction rules.")
                             : state.T(option.UnavailableReason);
@@ -150,7 +157,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         .Append(E(option.CanSelect ? state.T(option.Description) : state.T(option.UnavailableReason))).Append("</text><text className=\"item-cost\">")
                         .Append(E(cost)).Append("</text><text className=\"item-meta\">").Append(state.T("Build: "))
                         .Append(E(GameplayProgressTimeText.BuildDuration(option.BuildTurns, snapshot.SandboxRealtime, snapshot.SandboxRoundSeconds, state.Localization)))
-                        .Append("</text></view><text className=\"row-chevron\">")
+                        .Append("</text>");
+                    if (option.ProducedResourceIds != null && option.ProducedResourceIds.Length > 0)
+                        html.Append("<text className=\"item-meta\">").Append(state.T("Produces: ")).Append(E(produced)).Append("</text>");
+                    html.Append("</view><text className=\"row-chevron\">")
                         .Append(option.CanSelect ? ">" : "!").Append("</text></button>");
                 }
                 if (visibleCount == 0)
@@ -367,7 +377,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     html.Append("</view>");
                 }
                 html.Append("</view>")
-                    .Append(Button(state.T("RECRUIT"), $"Globals.gameplay.Recruit('{J(recipe.UnitTypeId)}')", "button primary", state.TF("Recruit {0}", state.T(recipe.Name)), !recipe.CanRecruit))
+                    .Append(Button(state.T("RECRUIT"), $"Globals.gameplay.Recruit('{J(recipe.UnitTypeId)}')", "button primary",
+                        recipe.CanRecruit
+                            ? state.TF("Recruit {0}", state.T(recipe.Name))
+                            : state.TF("Cannot recruit {0} now — click to see what is missing", state.T(recipe.Name)),
+                        !snapshot.CanIssueLocalCommands))
                     .Append("</view>");
             }
             if (snapshot.RecruitmentRecipes.Length == 0)
@@ -425,6 +439,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
             else
             {
+                html.Append(Button(state.T("CAPITAL"), "Globals.gameplay.FocusCapital()", "button", state.T("Return camera to your capital")));
                 html.Append(Button(state.T("BUILD"), "Globals.gameplay.Construction()", "button primary", state.T("Open construction")));
                 if (!string.IsNullOrWhiteSpace(snapshot.SelectionId))
                     html.Append(Button(state.T("CLEAR"), "Globals.gameplay.ClearSelection()", "button", state.T("Clear selection")));
@@ -799,6 +814,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         }
 
         private static string Amount(float value) => value.ToString("0.#", CultureInfo.InvariantCulture);
+
+        private static string ProducesLabel(GameplayBuildingOptionSnapshot option, GameplayHtmlState state)
+        {
+            if (option.ProducedResourceIds == null || option.ProducedResourceIds.Length == 0)
+                return state.T("—");
+            var labels = new string[option.ProducedResourceIds.Length];
+            for (int i = 0; i < option.ProducedResourceIds.Length; i++)
+                labels[i] = state.T(DisplayResource(option.ProducedResourceIds[i]));
+            return string.Join(", ", labels);
+        }
 
         private static string ResourceSummary(GameplayResourceSnapshot[] resources, GameplayHtmlState state)
         {

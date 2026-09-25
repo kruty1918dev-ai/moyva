@@ -312,6 +312,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     Toggle(sb, "auto-camera-focus", view.T("Automatic camera focus"), view.T("Focus the camera on important events."), view.AutomaticCameraFocus, "Globals.moyvaMenu.SetAutomaticCameraFocus(event)", null, view.SettingsInteractable);
                     Toggle(sb, "reduce-camera-motion", view.T("Reduce camera motion"), view.T("Minimize camera shake and focus glides."), view.ReduceCameraMotion, "Globals.moyvaMenu.SetReduceCameraMotion(event)", null, view.SettingsInteractable);
                     Toggle(sb, "zoom-fingers", view.T("Zoom toward fingers"), view.T("Pinch zoom keeps the map under your fingers."), view.ZoomTowardFingers, "Globals.moyvaMenu.SetZoomTowardFingers(event)", null, view.SettingsInteractable);
+                    Toggle(sb, "input-log", view.T("Input log"), view.T("Show recently pressed keys in the screen corner."), view.InputLogEnabled, "Globals.moyvaMenu.SetInputLogEnabled(event)", null, view.SettingsInteractable);
                     sb.Append("</view>");
                     CompactButton(sb, view.T("RESET CONTROLS"), "Globals.moyvaMenu.ResetControls()");
                     break;

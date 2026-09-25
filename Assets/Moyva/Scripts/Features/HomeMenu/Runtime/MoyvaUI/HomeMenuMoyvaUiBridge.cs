@@ -260,6 +260,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetReduceCameraMotion(object value) => _view?.SetReduceCameraMotion(ToBool(value));
         /// <summary>Встановлює зум Toward пальців.</summary>
         public void SetZoomTowardFingers(object value) => _view?.SetZoomTowardFingers(ToBool(value));
+        public void SetInputLogEnabled(object value) => _view?.SetInputLogEnabled(ToBool(value));
         public void ResetControls()
         {
             _view?.Controls.CancelCapture();

@@ -7,7 +7,8 @@
     "Zenject",
     "Unity.InputSystem",
     "Unity.TextMeshPro",
-    "Kruty1918.Moyva.InputRouting"
+    "Kruty1918.Moyva.InputRouting",
+    "Kruty1918.Moyva.Shared"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

@@ -202,6 +202,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _progressClock.SetSpeed(speed);
             _state.MarkDirty();
         }
+        public void FocusCapital() => _cameraFocus?.FocusCapital();
         public void Pause() => Execute(UiActionIds.Pause.Open, "GameplayHTML");
         public void Resume() => Execute(UiActionIds.Pause.Close, "GameplayHTML");
         public void ClearNotifications() => _state.ClearNotifications();
@@ -403,7 +404,29 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 UiActionSource.Button,
                 "GameplayHTML/Recruitment",
                 unitTypeId);
-            SetResult(result, _state.TF("{0} added to the recruitment queue.", _state.T(unitTypeId)));
+            if (result.Status == UiActionStatus.Performed)
+            {
+                SetResult(result, _state.TF("{0} added to the recruitment queue.", _state.T(unitTypeId)));
+                return;
+            }
+
+            // Recruitment stays actionable while resources are short: the
+            // rejection details already list every missing resource, so pin it
+            // as a notification (which also refreshes the feedback line) and
+            // keep the in-row producer shortcuts available for navigation.
+            // Other rejection kinds (panel closing, wrong context) only get
+            // transient feedback.
+            if (result.Reason != UiActionReason.InsufficientResources)
+            {
+                SetResult(result, string.Empty);
+                return;
+            }
+            string details = string.IsNullOrWhiteSpace(result.Details)
+                ? _state.T(result.Reason.ToString())
+                : _state.T(result.Details);
+            _state.AddNotification(
+                _state.TF("Cannot recruit {0}: {1}", _state.T(unitTypeId), details),
+                "Warning");
         }
 
         public void CancelRecruitment(object value)

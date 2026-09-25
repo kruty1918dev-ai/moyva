@@ -15,19 +15,26 @@ namespace Kruty1918.UIActions.Runtime
         private readonly IUiActionRouter _actions;
         private readonly IUiContextStack _contexts;
         private readonly IGameplayInputPolicy _inputPolicy;
+        private readonly Func<int> _ignoredModifierMask;
         private readonly IReadOnlyList<UiHotkeyBinding> _defaultBindings;
         private readonly List<UiHotkeyBinding> _bindings = new();
         private readonly HashSet<UiActionId> _heldActionsTriggered = new();
 
+        /// <param name="ignoredModifierMask">
+        /// Optional provider returning modifier bits (1=Ctrl, 2=Shift, 4=Alt) that must not gate
+        /// hotkey matching — e.g. the camera-sprint modifier held during navigation.
+        /// </param>
         public UiHotkeyService(
             IUiActionRouter actions,
             IUiContextStack contexts,
             IGameplayInputPolicy inputPolicy = null,
-            IReadOnlyList<UiHotkeyBinding> defaultBindings = null)
+            IReadOnlyList<UiHotkeyBinding> defaultBindings = null,
+            Func<int> ignoredModifierMask = null)
         {
             _actions = actions;
             _contexts = contexts;
             _inputPolicy = inputPolicy;
+            _ignoredModifierMask = ignoredModifierMask;
             _defaultBindings = defaultBindings ?? Array.Empty<UiHotkeyBinding>();
             ResetDefaults();
         }
@@ -45,6 +52,7 @@ namespace Kruty1918.UIActions.Runtime
                 return;
 
             bool typing = IsTextInputFocused();
+            int ignoredModifiers = _ignoredModifierMask?.Invoke() ?? 0;
 
             for (int i = 0; i < _bindings.Count; i++)
             {
@@ -58,7 +66,7 @@ namespace Kruty1918.UIActions.Runtime
                 if (!IsContextAllowed(binding))
                     continue;
 
-                if (!WasTriggered(keyboard, binding))
+                if (!WasTriggered(keyboard, binding, ignoredModifiers))
                     continue;
 
                 _actions.Execute(binding.ActionId, UiActionSource.Hotkey, _contexts.ActiveContextId);
@@ -121,9 +129,10 @@ namespace Kruty1918.UIActions.Runtime
 
         private bool WasTriggered(
             Keyboard keyboard,
-            UiHotkeyBinding binding)
+            UiHotkeyBinding binding,
+            int ignoredModifiers = 0)
         {
-            if (!ModifiersMatch(keyboard, binding))
+            if (!ModifiersMatch(keyboard, binding, ignoredModifiers))
             {
                 _heldActionsTriggered.Remove(binding.ActionId);
                 return false;
@@ -174,12 +183,14 @@ namespace Kruty1918.UIActions.Runtime
             return input != null && input.isFocused;
         }
 
-        private static bool ModifiersMatch(Keyboard keyboard, UiHotkeyBinding binding)
+        private static bool ModifiersMatch(Keyboard keyboard, UiHotkeyBinding binding, int ignoredModifiers = 0)
         {
             bool ctrl = keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed;
             bool shift = keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed;
             bool alt = keyboard.leftAltKey.isPressed || keyboard.rightAltKey.isPressed;
-            return ctrl == binding.Ctrl && shift == binding.Shift && alt == binding.Alt;
+            return ((ignoredModifiers & 1) != 0 || ctrl == binding.Ctrl)
+                && ((ignoredModifiers & 2) != 0 || shift == binding.Shift)
+                && ((ignoredModifiers & 4) != 0 || alt == binding.Alt);
         }
 
         private static bool KeyPressedThisFrame(Keyboard keyboard, Key key)

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Kruty1918.InputRouting.API;
+using Kruty1918.Moyva.Shared.Controls;
 using Kruty1918.UIActions.API;
 using Kruty1918.UIActions.Runtime;
 using Zenject;
@@ -49,11 +50,16 @@ namespace Kruty1918.Moyva.UIActions.Runtime
             if (!container.HasBinding<IUiHotkeyService>())
             {
                 container.BindInterfacesAndSelfTo<UiHotkeyService>()
-                    .FromMethod(ctx => new UiHotkeyService(
-                        ctx.Container.Resolve<IUiActionRouter>(),
-                        ctx.Container.Resolve<IUiContextStack>(),
-                        ctx.Container.TryResolve<IGameplayInputPolicy>(),
-                        MoyvaUiActionCatalog.CreateDefaultHotkeys()))
+                    .FromMethod(ctx =>
+                    {
+                        var controls = ctx.Container.TryResolve<IPlayerControlSettingsService>();
+                        return new UiHotkeyService(
+                            ctx.Container.Resolve<IUiActionRouter>(),
+                            ctx.Container.Resolve<IUiContextStack>(),
+                            ctx.Container.TryResolve<IGameplayInputPolicy>(),
+                            MoyvaUiActionCatalog.CreateDefaultHotkeys(),
+                            controls == null ? (System.Func<int>)null : () => (int)controls.SprintModifierMask);
+                    })
                     .AsSingle().NonLazy();
 
                 container.Bind<ITickable>().To<UiHotkeyServiceTickAdapter>().AsSingle().NonLazy();

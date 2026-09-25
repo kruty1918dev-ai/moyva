@@ -334,9 +334,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             PlayerControlAction.MoveLeft => "Move left", PlayerControlAction.MoveRight => "Move right",
             PlayerControlAction.RotateLeft => "Rotate left", PlayerControlAction.RotateRight => "Rotate right",
             PlayerControlAction.ZoomIn => "Zoom in", PlayerControlAction.PrimarySelect => "Select", PlayerControlAction.SecondarySelect => "Secondary action",
-            PlayerControlAction.ZoomOut => "Zoom out", PlayerControlAction.FocusSelected => "Focus selected", _ => action.ToString()
+            PlayerControlAction.ZoomOut => "Zoom out", PlayerControlAction.FocusSelected => "Focus selected",
+            PlayerControlAction.Sprint => "Sprint (hold)", PlayerControlAction.FocusCapital => "Focus capital",
+            _ => action.ToString()
         };
 
-        public static string ActionGroup(PlayerControlAction action) => (int)action < 4 ? "movement" : (int)action < 6 ? "orbit" : (int)action < 8 ? "zoom" : "selection";
+        public static string ActionGroup(PlayerControlAction action) => action == PlayerControlAction.Sprint || (int)action < 4 ? "movement" : (int)action < 6 ? "orbit" : (int)action < 8 ? "zoom" : "selection";
     }
 }

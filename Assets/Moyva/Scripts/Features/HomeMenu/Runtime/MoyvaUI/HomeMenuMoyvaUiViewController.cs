@@ -256,6 +256,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public bool ReduceCameraMotion { get; private set; }
         /// <summary>зум Toward пальців — bool.</summary>
         public bool ZoomTowardFingers { get; private set; } = true;
+        /// <summary>показ журналу введення у кутку екрана — bool.</summary>
+        public bool InputLogEnabled { get; private set; } = true;
         /// <summary>Гетер властивості.</summary>
         public HomeMenuControlsEditor Controls { get; }
         /// <summary>гравця керування Action.</summary>
@@ -359,6 +361,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public event Action<bool> OnReduceCameraMotionChanged;
         /// <summary>On зум Toward пальців Changed.</summary>
         public event Action<bool> OnZoomTowardFingersChanged;
+        /// <summary>On журналу введення Changed.</summary>
+        public event Action<bool> OnInputLogEnabledChanged;
         /// <summary>гравця керування Action.</summary>
         public event Action<PlayerControlAction, string> OnControlBindingChanged;
         /// <summary>On скидання Controls натискання.</summary>
@@ -617,6 +621,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             AutomaticCameraFocus = normalized.AutomaticCameraFocus;
             ReduceCameraMotion = normalized.ReduceCameraMotion;
             ZoomTowardFingers = normalized.ZoomTowardFingers;
+            InputLogEnabled = normalized.InputLogEnabled;
             _controlBindings.Clear();
             foreach (var pair in normalized.Bindings)
                 _controlBindings[pair.Key] = pair.Value;
@@ -1290,6 +1295,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void SetReduceCameraMotion(bool value) { ReduceCameraMotion = value; OnReduceCameraMotionChanged?.Invoke(value); _state.MarkDirty(); }
         /// <summary>Встановлює зум Toward пальців.</summary>
         public void SetZoomTowardFingers(bool value) { ZoomTowardFingers = value; OnZoomTowardFingersChanged?.Invoke(value); _state.MarkDirty(); }
+        /// <summary>Вмикає/вимикає журнал введення.</summary>
+        public void SetInputLogEnabled(bool value) { InputLogEnabled = value; OnInputLogEnabledChanged?.Invoke(value); _state.MarkDirty(); }
         /// <summary>Встановлює керування привʼязки.</summary>
         public void SetControlBinding(PlayerControlAction action, string controlPath) { OnControlBindingChanged?.Invoke(action, controlPath); _state.MarkDirty(); }
         /// <summary>Скидає Controls.</summary>
