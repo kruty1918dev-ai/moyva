@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Pathfinding.API;
 using Kruty1918.SaveSystem;
 using Kruty1918.Moyva.Signals;
@@ -33,6 +34,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public StartingPositionSelector(
             StartingPositionInitializerSettings settings,
             IPathfinder pathfinder)
+            : this(settings, pathfinder, null)
+        {
+        }
+
+        [Zenject.Inject]
+        public StartingPositionSelector(
+            StartingPositionInitializerSettings settings,
+            IPathfinder pathfinder,
+            [Zenject.InjectOptional] ITerrainPlacementPolicy placementPolicy)
         {
             _settings =
                 settings ??
@@ -40,7 +50,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             _pathfinder = pathfinder;
             _terrain =
-                new StartingPositionTerrainQualityEvaluator(_settings);
+                new StartingPositionTerrainQualityEvaluator(_settings, placementPolicy);
         }
 
         public List<Vector2Int> PickStartingPositions(

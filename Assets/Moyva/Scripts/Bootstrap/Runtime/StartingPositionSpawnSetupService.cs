@@ -63,7 +63,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 if (_preparingWorld.StartupSequence == signal.StartupSequence &&
                     _preparingWorld.StartupSessionId == signal.StartupSessionId)
-                    return false;
+                    return true;
 
                 _preparation.Cancel();
             }
@@ -72,7 +72,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             var preparation = new CancellationTokenSource();
             _preparation = preparation;
             _ = PrepareAsync(signal, requestedPlayerCount, baseMapSize, preparation);
-            return false;
+            return true;
         }
 
         private async Task PrepareAsync(WorldGeneratedDataSignal signal, int requestedPlayerCount,

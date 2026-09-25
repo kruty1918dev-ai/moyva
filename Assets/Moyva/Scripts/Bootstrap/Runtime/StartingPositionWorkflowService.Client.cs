@@ -40,10 +40,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
             }
 
-            if (_spawnSetupService.TryPrepareStartingPositions(signal)
-                && _workflowState.StartLogicApplied)
+            if (_spawnSetupService.TryPrepareStartingPositions(signal))
             {
-                Debug.Log($"{StartingPositionInitializer.DebugTag} Start logic completed while preparing host start positions.");
+                if (_workflowState.StartLogicApplied)
+                {
+                    Debug.Log($"{StartingPositionInitializer.DebugTag} Start logic completed while preparing host start positions.");
+                }
                 return;
             }
 
@@ -59,9 +61,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (!_startingPositionState.IsSet)
             {
-                Debug.LogWarning($"{StartingPositionInitializer.DebugTag} Start logic waiting for start positions. " +
-                                 $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, " +
-                                 $"launchHost={GameLaunchContext.IsLocalPlayerHost}, launchLocal='{GameLaunchContext.LocalPlayerId}'.");
+                Debug.Log($"{StartingPositionInitializer.DebugTag} Start logic waiting for start positions. " +
+                          $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, " +
+                          $"launchHost={GameLaunchContext.IsLocalPlayerHost}, launchLocal='{GameLaunchContext.LocalPlayerId}'.");
                 return;
             }
 

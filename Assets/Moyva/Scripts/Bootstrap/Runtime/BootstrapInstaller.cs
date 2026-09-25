@@ -126,7 +126,9 @@ namespace Kruty1918.Moyva.Bootstrap
             Container.BindInterfacesAndSelfTo<StartingPositionSelector>()
                 .FromMethod(ctx => new StartingPositionSelector(
                     ctx.Container.Resolve<StartingPositionInitializerSettings>(),
-                    TryResolveOptional<IPathfinder>(ctx.Container)))
+                    TryResolveOptional<IPathfinder>(ctx.Container),
+                    TryResolveOptional<Kruty1918.Moyva.Grid.API.ITerrainPlacementPolicy>(
+                        ctx.Container)))
                 .AsSingle();
 
             Container.BindInterfacesAndSelfTo<StartingPositionAssignmentFactory>()

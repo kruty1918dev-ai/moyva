@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
@@ -66,13 +67,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             { "water", "river", "lake", "sea", "ocean", "swamp" };
 
         private readonly StartingPositionInitializerSettings _settings;
+        private readonly ITerrainPlacementPolicy _placementPolicy;
         private readonly Dictionary<string, bool> _waterTileIds =
             new(StringComparer.Ordinal);
 
         public StartingPositionTerrainQualityEvaluator(
-            StartingPositionInitializerSettings settings)
+            StartingPositionInitializerSettings settings,
+            ITerrainPlacementPolicy placementPolicy = null)
         {
             _settings = settings ?? new StartingPositionInitializerSettings();
+            _placementPolicy = placementPolicy;
         }
 
         public StartingPositionTerrainQuality Evaluate(
@@ -101,8 +105,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     sampled++;
 
                     bool hasHeight = TryReadHeight(signal, cell, out float height);
-                    bool water = IsWaterTileId(ReadTileId(signal, cell)) ||
-                        hasHeight && height < minimumLandHeight;
+                    string tileId = ReadTileId(signal, cell);
+                    // Tiles the placement policy forbids (e.g. no-spawn shore
+                    // sand) count as unusable land: a sand center yields zero
+                    // connected land and sand neighbours shrink the pad ratio.
+                    bool water = IsWaterTileId(tileId)
+                        || IsPlacementBlocked(tileId)
+                        || hasHeight && height < minimumLandHeight;
                     if (water)
                     {
                         int distance = Mathf.Abs(dx) + Mathf.Abs(dy);
@@ -217,6 +226,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             return connected;
         }
+
+        private bool IsPlacementBlocked(string tileId)
+            => _placementPolicy != null
+               && !_placementPolicy.AllowsPlacement(
+                   tileId,
+                   TerrainPlacementOperation.StartingPosition);
 
         private bool IsWaterTileId(string tileId)
         {
