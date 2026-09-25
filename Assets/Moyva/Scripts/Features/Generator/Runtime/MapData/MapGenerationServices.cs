@@ -32,6 +32,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         IReadOnlyList<CompiledLayerMap> LastCompiledLayers { get; }
         LogicalTileMap LastLogicalMap { get; }
         TerrainPassagePlan LastPassages { get; }
+        RecipeHydrologyPlan LastHydrology { get; }
         float LastCellSize { get; }
         bool TryGetLastBaseMapWorldBounds(out Bounds bounds);
     }
@@ -49,6 +50,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public IReadOnlyList<CompiledLayerMap> LastCompiledLayers { get; private set; }
         public LogicalTileMap LastLogicalMap { get; private set; }
         public TerrainPassagePlan LastPassages { get; private set; }
+        public RecipeHydrologyPlan LastHydrology { get; private set; }
         public float LastCellSize { get; private set; } = 1f;
 
         public bool TryGetLastBaseMapWorldBounds(out Bounds bounds)
@@ -65,6 +67,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 LastCompiledLayers = result.CompiledLayers;
             LastLogicalMap = result.LogicalMap;
             LastPassages = result.TerrainPassages;
+            LastHydrology = result.Hydrology;
             LastCellSize = result.CellSize > 0.0001f ? result.CellSize : 1f;
             _hasLastBaseMapWorldBounds = result.HasBaseMapWorldBounds;
             _lastBaseMapWorldBounds = result.BaseMapWorldBounds;
@@ -105,6 +108,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public string[,] BuildingMap;
         public LogicalTileMap LogicalMap;
         public TerrainPassagePlan TerrainPassages;
+        public RecipeHydrologyPlan Hydrology;
         public IReadOnlyList<CompiledLayerMap> CompiledLayers;
         public float CellSize = 1f;
         public bool HasBaseMapWorldBounds;
@@ -282,6 +286,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IEmptyMapFactory _emptyMapFactory;
         private readonly ITerrainReliefFieldPlanner _reliefPlanner;
         private readonly ITerrainPlanApplier _terrainPlanApplier;
+        private readonly RecipeHydrologyStore _hydrologyStore;
 
         public MapGenerationPipeline(
             IMapSeedService seedService,
@@ -292,7 +297,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ITerrainHeightPublisher terrainHeightPublisher,
             IEmptyMapFactory emptyMapFactory,
             [InjectOptional] ITerrainReliefFieldPlanner reliefPlanner = null,
-            [InjectOptional] ITerrainPlanApplier terrainPlanApplier = null)
+            [InjectOptional] ITerrainPlanApplier terrainPlanApplier = null,
+            [InjectOptional] RecipeHydrologyStore hydrologyStore = null)
         {
             _seedService = seedService;
             _sizeResolver = sizeResolver;
@@ -303,12 +309,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _emptyMapFactory = emptyMapFactory;
             _reliefPlanner = reliefPlanner;
             _terrainPlanApplier = terrainPlanApplier;
+            _hydrologyStore = hydrologyStore;
         }
 
         public MapGenerationResult Generate(MapGenerationRequest request)
         {
             int seed = GlobalSeed.InitializeDeterministic(request.SeedOverride ?? _seedService.Resolve(request.Recipe));
             _terrainHeightPublisher.Clear();
+            _hydrologyStore?.Clear();
             Vector2Int mapSize = request.SeedOverride.HasValue
                 ? new Vector2Int(request.Width, request.Height)
                 : _sizeResolver.Resolve(request.Recipe, request.Width, request.Height);
@@ -339,6 +347,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             float[,] reliefField =
                 _reliefPlanner?.Build(seed, mapSize, request.Recipe?.TerrainRelief);
+            var maskSession = new GeneratorMaskSession(request.Recipe);
             IReadOnlyList<CompiledLayerMap> compiled =
                 _compiler.Compile(
                     request.Recipe,
@@ -346,7 +355,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     seed,
                     validation.SkippedLayerIds,
                     mapSize,
-                    reliefField);
+                    reliefField,
+                    maskSession);
             float cellSize = ResolveCellSize(request);
             bool hasBounds =
                 GeneratedWorldBoundsUtility.TryCreateTileWorldBounds(
@@ -369,8 +379,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 reliefField,
                 seed);
             _terrainHeightPublisher.Publish(logicalMap.SurfaceHeights);
+            RecipeHydrologyPlan hydrology = maskSession.MergedHydrologyPlan;
+            _hydrologyStore?.Replace(hydrology);
             var result = CreateResult(logicalMap, compiled, cellSize, hasBounds, bounds);
             result.TerrainPassages = passages;
+            result.Hydrology = hydrology;
             return result;
         }
 

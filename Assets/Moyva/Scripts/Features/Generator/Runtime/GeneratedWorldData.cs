@@ -26,6 +26,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public LogicalTileMap LogicalTileMap;
         /// <summary>Generated stair passages (atlas pack terrain plan). Null when disabled.</summary>
         public TerrainPassagePlan TerrainPassages;
+        /// <summary>
+        /// Recipe hydrology plan: river/lake masks, per-cell water surfaces,
+        /// flow parents and waterfall edges. Null when hydrology is disabled.
+        /// </summary>
+        public RecipeHydrologyPlan Hydrology;
         public System.Collections.Generic.IReadOnlyList<CompiledLayerMap> CompiledLayers;
         public bool ForceChunkFirstCompositeBuild;
         /// <summary>
@@ -70,6 +75,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 BuildingMap = MapArrayUtils.CloneStringMap(BuildingMap),
                 LogicalTileMap = LogicalTileMap,
                 TerrainPassages = TerrainPassages,
+                Hydrology = Hydrology,
                 CompiledLayers = CompiledLayers,
                 ForceChunkFirstCompositeBuild = ForceChunkFirstCompositeBuild,
                 HasAuthoredGeography = HasAuthoredGeography,

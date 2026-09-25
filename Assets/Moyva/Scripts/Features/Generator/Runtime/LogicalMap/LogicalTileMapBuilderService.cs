@@ -141,8 +141,38 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 int x = Mathf.RoundToInt(position.x);
                 int y = Mathf.RoundToInt(position.y);
                 if (x >= 0 && x < map.Width && y >= 0 && y < map.Height)
-                    _cellWriter.Set(map, x, y, data);
+                    _cellWriter.Set(map, x, y, ResolveCellData(layerMap, data, x, y));
             }
+        }
+
+        private static LogicalTileLayerData ResolveCellData(
+            CompiledLayerMap layerMap,
+            LogicalTileLayerData data,
+            int x,
+            int y)
+        {
+            var overrides = layerMap.SurfaceHeightOverride;
+            if (overrides == null
+                || x >= overrides.GetLength(0)
+                || y >= overrides.GetLength(1))
+            {
+                return data;
+            }
+            float cellSurface = overrides[x, y];
+            if (float.IsNaN(cellSurface) || float.IsInfinity(cellSurface))
+                return data;
+
+            float bed = data.LayerHeight;
+            var beds = layerMap.BedHeightOverride;
+            if (beds != null
+                && x < beds.GetLength(0)
+                && y < beds.GetLength(1))
+            {
+                float cellBed = beds[x, y];
+                if (!float.IsNaN(cellBed) && !float.IsInfinity(cellBed))
+                    bed = Mathf.Min(cellBed, cellSurface);
+            }
+            return data.WithHeights(bed, cellSurface);
         }
 
         private static bool CanApplyLayer(GeneratorMapRecipe recipe, CompiledLayerMap layerMap,

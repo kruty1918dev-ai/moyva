@@ -16,5 +16,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public string PresetId;
         public string SourceLayerId;
         public bool HasRenderableTileOutput;
+
+        /// <summary>
+        /// Optional per-cell surface height override (meters, NaN where absent)
+        /// registered by mask steps such as <see cref="API.HydrologyMaskStep"/>.
+        /// </summary>
+        public float[,] SurfaceHeightOverride;
+
+        /// <summary>
+        /// Optional per-cell bed height override (meters, NaN where absent)
+        /// paired with <see cref="SurfaceHeightOverride"/> for water layers:
+        /// channel/lake floor below the sheet, used for depth queries and
+        /// downstream terrain shaping.
+        /// </summary>
+        public float[,] BedHeightOverride;
     }
 }

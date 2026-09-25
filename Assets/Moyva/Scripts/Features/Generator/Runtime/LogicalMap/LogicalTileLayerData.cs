@@ -55,6 +55,31 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public TileGeometryMode TileGeometryMode { get; }
         public AuthoredClosurePolicy AuthoredClosurePolicy { get; }
 
+        /// <summary>Copies the data with a different surface height (per-cell override).</summary>
+        public LogicalTileLayerData WithSurfaceHeight(float surfaceHeight)
+            => WithHeights(LayerHeight, surfaceHeight);
+
+        /// <summary>Copies the data with different layer (bed) and surface heights.</summary>
+        public LogicalTileLayerData WithHeights(float layerHeight, float surfaceHeight)
+        {
+            return new LogicalTileLayerData(
+                LayerId,
+                LayerName,
+                TileId,
+                layerHeight,
+                surfaceHeight,
+                BlueprintLayerGuid,
+                BuildLayerGuid,
+                PresetId,
+                LayerKind,
+                SortingOrder,
+                LayerOrder,
+                TerrainPriority,
+                SourceLayerId,
+                TileGeometryMode,
+                AuthoredClosurePolicy);
+        }
+
         public TileLayerSample ToSample()
         {
             return new TileLayerSample(

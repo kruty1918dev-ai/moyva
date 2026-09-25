@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly ITileWorldCreatorTerrainHeightPublisher _heightPublisher;
         private readonly IChunkFirstWorldBuildService _chunkFirstBuild;
         private readonly TerrainPassageStore _passageStore;
+        private readonly RecipeHydrologyStore _hydrologyStore;
 
         public TileWorldCreatorWorldBuildBridge(
             ITileWorldCreatorBuildEnvironment environment,
@@ -40,7 +41,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             [InjectOptional] IGeneratorTerrainLevelService terrainLevelService = null,
             [InjectOptional] IMapChunkSettingsProvider chunkSettings = null,
             [InjectOptional] IChunkFirstWorldBuildService chunkFirstBuild = null,
-            [InjectOptional] TerrainPassageStore passageStore = null)
+            [InjectOptional] TerrainPassageStore passageStore = null,
+            [InjectOptional] RecipeHydrologyStore hydrologyStore = null)
         {
             _environment = environment;
             _terrainPolicyService = terrainPolicyService;
@@ -56,6 +58,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _chunkSettings = chunkSettings;
             _chunkFirstBuild = chunkFirstBuild;
             _passageStore = passageStore;
+            _hydrologyStore = hydrologyStore;
         }
 
         public TileWorldCreatorWorldBuildResult Build(GeneratedWorldData worldData)
@@ -80,6 +83,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     options.ApplyIntegerTerrainHeights)
                 : _terrainPolicyService.Resolve(options, _chunkSettings?.ChunkSize ?? 0);
             _passageStore?.Replace(worldData.TerrainPassages);
+            _hydrologyStore?.Replace(worldData.Hydrology);
             PrepareTerrainData(worldData, options);
 
             if (terrainPolicy.UsesChunkFirstComposite)
@@ -167,7 +171,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 _terrainLevels.NormalizeForTileWorldCreator(worldData);
             }
 
-            if (options.ExpandSandShoreBand)
+            // Recipe-driven worlds have a LogicalTileMap and get their shore
+            // band from TerrainShorePlanner (graded, height-aware). The legacy
+            // expander retypes every water-adjacent cell unconditionally —
+            // painting sand onto elevated riverbanks and creating direct
+            // sand-to-snow borders — so it must not run on them.
+            if (options.ExpandSandShoreBand && worldData.LogicalTileMap == null)
                 _shoreBand.Expand(worldData);
 
             if (options.ApplyIntegerTerrainHeights && options.NormalizeTerrainLevelsForTileWorldCreator)

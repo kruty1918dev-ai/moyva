@@ -156,6 +156,8 @@ namespace Kruty1918.Moyva.Generator
                 container.BindInterfacesAndSelfTo<EnvironmentDecorationGenerator>().AsSingle();
                 container.BindInterfacesAndSelfTo<EnvironmentDecorationSpawner>().AsSingle();
             }
+
+            container.Bind<EnvironmentObjectPlacementResolver>().AsSingle();
         }
 
         public static void InstallStartup(DiContainer container)

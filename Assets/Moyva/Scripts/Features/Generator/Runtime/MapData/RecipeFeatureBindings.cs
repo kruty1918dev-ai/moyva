@@ -28,9 +28,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             container.BindInterfacesAndSelfTo<TerrainPassageStore>()
                 .AsSingle();
+            container.BindInterfacesAndSelfTo<RecipeHydrologyStore>()
+                .AsSingle();
             container.Bind<ITerrainReliefFieldPlanner>().To<TerrainReliefPlanner>().AsSingle();
             container.Bind<ITerrainPassagePlanner>().To<TerrainPassagePlanner>().AsSingle();
             container.Bind<ITerrainRoutePlanner>().To<TerrainRoutePlanner>().AsSingle();
+            container.Bind<ITerrainShorePlanner>().To<TerrainShorePlanner>().AsSingle();
             container.Bind<ITerrainPlanApplier>().To<TerrainPlanApplicationService>().AsSingle();
         }
     }
