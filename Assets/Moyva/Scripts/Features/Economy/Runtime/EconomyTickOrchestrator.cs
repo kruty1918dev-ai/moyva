@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             var result = new EconomyTickResult { Turn = state.CurrentTurn };
 
             // 1. Population tick: arrivals, aging, consumption, death
-            var (arrivals, deaths, foodConsumed, waterConsumed) = _populationService.Tick(state, rules);
+            var (arrivals, deaths, foodConsumed, waterConsumed) = _populationService.Tick(state, rules, database);
             result.Arrivals = arrivals;
             result.Deaths = deaths;
             result.TotalFoodConsumed = foodConsumed;
@@ -47,8 +47,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             result.AssignedWorkers = assigned;
 
             // 3. Production tick
-            var profiles = database != null ? database.ProductionProfiles : null;
-            int cycles = _productionService.Tick(state, rules, profiles, turnDurationSeconds);
+            int cycles = _productionService.Tick(state, rules, database, turnDurationSeconds);
             result.ProductionCyclesCompleted = cycles;
 
             // 4. Settlement deactivation check

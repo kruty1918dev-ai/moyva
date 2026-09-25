@@ -2,6 +2,7 @@
     "name": "Kruty1918.Moyva.Tests.Economy",
     "rootNamespace": "Kruty1918.Moyva.Tests.Economy",
     "references": [
+        "Kruty1918.JsonConfig",
         "Kruty1918.Moyva.Economy",
         "Kruty1918.Moyva.Units",
         "Kruty1918.Moyva.Combat",

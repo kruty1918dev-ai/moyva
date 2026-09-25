@@ -8,6 +8,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
     internal sealed class EconomyTurnProcessorService
     {
         private readonly EconomyTickOrchestrator _orchestrator = new EconomyTickOrchestrator();
+        private readonly EconomyConsumptionService _consumptionService = new EconomyConsumptionService();
 
         /// <summary>Виконує ProcessTurn.</summary>
         public void ProcessTurn(EconomySettlementRegistryService registry, SignalBus signalBus, EconomyDatabaseSO database, float turnDurationSeconds)
@@ -50,26 +51,29 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 }
 
                 // Check resource deficits
-                CheckDeficits(state, signalBus);
+                CheckDeficits(state, database, signalBus);
             }
         }
 
-        private static void CheckDeficits(EconomySettlementState state, SignalBus signalBus)
+        private void CheckDeficits(EconomySettlementState state, EconomyDatabaseSO database, SignalBus signalBus)
         {
-            CheckSingleDeficit(state, "Food", signalBus);
-            CheckSingleDeficit(state, "Water", signalBus);
-            CheckSingleDeficit(state, "Firewood", signalBus);
+            CheckSingleDeficit(state, database, "Food", signalBus);
+            CheckSingleDeficit(state, database, "Water", signalBus);
+            CheckSingleDeficit(state, database, "Firewood", signalBus);
         }
 
-        private static void CheckSingleDeficit(EconomySettlementState state, string resourceId, SignalBus signalBus)
+        private void CheckSingleDeficit(EconomySettlementState state, EconomyDatabaseSO database, string needId, SignalBus signalBus)
         {
-            if (state.GetResource(resourceId) <= 0f && state.Residents.Count > 0)
+            // Deficits fire only for needs the resource set actually models;
+            // the pool stores concrete ids (e.g. 'steak-food-resources').
+            if (state.Residents.Count > 0
+                && _consumptionService.HasNeedDeficit(state, database, needId))
             {
                 signalBus.Fire(new ResourceDeficitSignal
                 {
                     SettlementId = state.SettlementId,
                     OwnerId = NormalizeOwnerId(state.OwnerId),
-                    ResourceId = resourceId,
+                    ResourceId = needId,
                 });
             }
         }

@@ -11,6 +11,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
     /// </summary>
     public sealed class EconomyProductionTickService
     {
+        private readonly EconomyConsumptionService _consumptionService = new EconomyConsumptionService();
+
         /// <summary>
         /// Tick all active buildings. Mutates <paramref name="state"/> in place.
         /// Returns total completed production cycles this turn.
@@ -18,13 +20,15 @@ namespace Kruty1918.Moyva.Economy.Runtime
         public int Tick(
             EconomySettlementState state,
             EconomyRulesConfigSO rules,
-            IReadOnlyList<EconomyProductionProfile> profiles,
+            EconomyDatabaseSO database,
             float turnDurationSeconds)
         {
             if (state == null)
                 return 0;
 
             var production = rules?.Production;
+            IReadOnlyList<EconomyProductionProfile> profiles =
+                database?.ProductionProfiles;
             int completedCycles = 0;
 
             for (int i = 0; i < state.Buildings.Count; i++)
@@ -86,13 +90,13 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 }
             }
 
-            // Food decay
+            // Food decay applies to every resource satisfying the "Food" need
+            // (concrete ids like 'steak-food-resources'), not literal need ids.
             if (production != null && production.EnableFoodDecay && production.FoodDecayPerTurn > 0f)
             {
-                ApplyDecay(state, "Food", production.FoodDecayPerTurn);
-                ApplyDecay(state, "Grain", production.FoodDecayPerTurn);
-                ApplyDecay(state, "Meat", production.FoodDecayPerTurn);
-                ApplyDecay(state, "Berries", production.FoodDecayPerTurn);
+                var foodIds = _consumptionService.ResolveNeedResourceIds(database, "Food");
+                for (int index = 0; index < foodIds.Count; index++)
+                    ApplyDecay(state, foodIds[index], production.FoodDecayPerTurn);
             }
 
             return completedCycles;

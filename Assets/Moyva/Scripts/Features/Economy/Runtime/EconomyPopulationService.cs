@@ -19,7 +19,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
         /// Returns (arrivals, deaths, foodConsumed, waterConsumed).
         /// </summary>
         public (int arrivals, int deaths, float foodConsumed, float waterConsumed) Tick(
-            EconomySettlementState state, EconomyRulesConfigSO rules)
+            EconomySettlementState state, EconomyRulesConfigSO rules,
+            EconomyDatabaseSO database = null)
         {
             if (state == null || rules == null)
                 return (0, 0, 0f, 0f);
@@ -64,8 +65,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 float foodNeeded = consumption.FoodPerTurn;
                 float waterNeeded = consumption.WaterPerTurn;
 
-                bool fedFood = state.ConsumeResource("Food", foodNeeded);
-                bool fedWater = state.ConsumeResource("Water", waterNeeded);
+                // Needs consume concrete resources by category/id — the pool
+                // holds ids like 'steak-food-resources', never the bare need id.
+                bool fedFood = _consumptionService.ConsumeNeed(state, database, "Food", foodNeeded);
+                bool fedWater = _consumptionService.ConsumeNeed(state, database, "Water", waterNeeded);
 
                 if (fedFood) foodConsumed += foodNeeded;
                 if (fedWater) waterConsumed += waterNeeded;
@@ -73,8 +76,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 // Firewood + Clothing consumption
                 float firewoodNeeded = consumption.FirewoodPerTurn;
                 float clothingNeeded = consumption.ClothingPerTurn;
-                bool hasFirewood = state.ConsumeResource("Firewood", firewoodNeeded);
-                bool hasClothing = state.ConsumeResource("Clothing", clothingNeeded);
+                bool hasFirewood = _consumptionService.ConsumeNeed(state, database, "Firewood", firewoodNeeded);
+                bool hasClothing = _consumptionService.ConsumeNeed(state, database, "Clothing", clothingNeeded);
 
                 // Build need snapshot from deficits
                 float foodSeverity = fedFood ? 0f : 1f;
