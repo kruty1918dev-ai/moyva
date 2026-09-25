@@ -102,8 +102,8 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             var renderers = spawnedRoot.GetComponentsInChildren<Renderer>(true);
             Assert.Greater(renderers.Length, 0);
             foreach (var r in renderers)
-                Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.Off, r.shadowCastingMode,
-                    "Every child renderer must have shadows disabled");
+                Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.On, r.shadowCastingMode,
+                    "Child renderers keep the prefab's authored shadow mode");
             var colliders = spawnedRoot.GetComponentsInChildren<Collider>(true);
             Assert.AreEqual(0, colliders.Length,
                 "Colliders on child objects must be removed for visual-only decorations");
@@ -132,6 +132,101 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
                 "Decoration Y must come from the terrain surface height map");
             Assert.AreEqual(2f, child.localPosition.x, 0.001f);
             Assert.AreEqual(3f, child.localPosition.z, 0.001f);
+        }
+
+        [Test]
+        public void Spawn_MultipliesCellCoordinatesByCellSize()
+        {
+            // Arrange: a 2-unit cell grid; placement coords are in cell units.
+            var prefab = CreatePrefabWithChildVisuals();
+            _registry.SetDefinition("deco-scale", prefab);
+            _layout.CellSizeValue = 2f;
+            var spawner = new EnvironmentDecorationSpawner(_registry, _layout, _roots);
+            var placement = new DecorationPlacement("deco-scale",
+                new Vector3(2f, 0.5f, 3f), Quaternion.identity, Vector3.one, 2, 3);
+
+            // Act
+            spawner.Spawn(new DecorationPlacementResult(new[] { placement }));
+
+            // Assert
+            var root = FindSpawnedDecorationRoot();
+            Assert.IsNotNull(root);
+            var child = root.GetChild(0);
+            Assert.AreEqual(4f, child.localPosition.x, 0.001f,
+                "X must be scaled by the map cell size");
+            Assert.AreEqual(6f, child.localPosition.z, 0.001f,
+                "Z must be scaled by the map cell size");
+        }
+
+        [Test]
+        public void Spawn_AlignsRotationToSurfaceNormal()
+        {
+            // Arrange: a constant 45-degree slope normal.
+            var prefab = CreatePrefabWithChildVisuals();
+            _registry.SetDefinition("deco-slope", prefab);
+            var terrain = new FakeTerrainLevelService(1f)
+            {
+                HasNormal = true,
+                Normal = new Vector3(1f, 1f, 0f).normalized
+            };
+            var spawner = new EnvironmentDecorationSpawner(_registry, _layout, _roots, terrain);
+            var placement = new DecorationPlacement("deco-slope",
+                new Vector3(2f, 0f, 3f), Quaternion.identity, Vector3.one, 2, 3);
+
+            // Act
+            spawner.Spawn(new DecorationPlacementResult(new[] { placement }));
+
+            // Assert
+            var child = FindSpawnedDecorationRoot().GetChild(0);
+            var expected = Quaternion.FromToRotation(Vector3.up, terrain.Normal);
+            Assert.Less(Quaternion.Angle(expected, child.localRotation), 0.01f,
+                "Decorations must tilt onto the terrain surface normal");
+        }
+
+        [Test]
+        public void Spawn_KeepsAuthoredRotation_WhenAlignToSurfaceDisabled()
+        {
+            // Arrange
+            var prefab = CreatePrefabWithChildVisuals();
+            _registry.SetDefinition("deco-flat", prefab);
+            var terrain = new FakeTerrainLevelService(1f)
+            {
+                HasNormal = true,
+                Normal = new Vector3(1f, 1f, 0f).normalized
+            };
+            var config = new EnvironmentDecorationConfig();
+            config.VisualVariation.AlignToSurface = false;
+            var spawner = new EnvironmentDecorationSpawner(_registry, _layout, _roots, terrain, config);
+            var placement = new DecorationPlacement("deco-flat",
+                new Vector3(2f, 0f, 3f), Quaternion.Euler(0f, 45f, 0f), Vector3.one, 2, 3);
+
+            // Act
+            spawner.Spawn(new DecorationPlacementResult(new[] { placement }));
+
+            // Assert
+            var child = FindSpawnedDecorationRoot().GetChild(0);
+            Assert.Less(Quaternion.Angle(Quaternion.Euler(0f, 45f, 0f), child.localRotation), 0.01f,
+                "With AlignToSurface off, the authored yaw must be preserved");
+        }
+
+        [Test]
+        public void Spawn_AppliesYOffsetAboveSurface()
+        {
+            // Arrange: water flora rides a fixed offset above the water sheet.
+            var prefab = CreatePrefabWithChildVisuals();
+            _registry.SetDefinition("deco-lily", prefab);
+            var terrain = new FakeTerrainLevelService(0.4f);
+            var spawner = new EnvironmentDecorationSpawner(_registry, _layout, _roots, terrain);
+            var placement = new DecorationPlacement("deco-lily",
+                new Vector3(1f, 0f, 1f), Quaternion.identity, Vector3.one, 1, 1, 0.03f);
+
+            // Act
+            spawner.Spawn(new DecorationPlacementResult(new[] { placement }));
+
+            // Assert
+            var child = FindSpawnedDecorationRoot().GetChild(0);
+            Assert.AreEqual(0.43f, child.localPosition.y, 0.001f,
+                "YOffset must ride on top of the resolved surface height");
         }
 
         [Test]
@@ -198,7 +293,8 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             public int Width => 64;
             public int Height => 64;
             public int ChunkSize => 8;
-            public float CellSize => 1f;
+            public float CellSizeValue = 1f;
+            public float CellSize => CellSizeValue;
             public IReadOnlyList<MapChunkDescriptor> Chunks => System.Array.Empty<MapChunkDescriptor>();
 
             public void Configure(int width, int height, float cellSize, bool hasWorldBounds, Bounds worldBounds) { }
@@ -250,6 +346,8 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             }
 
             public bool HasSurface = true;
+            public bool HasNormal;
+            public Vector3 Normal = Vector3.up;
             public bool HasLevelMap => true;
             public bool HasSurfaceHeightMap => HasSurface;
             public bool HasExplicitSurfaceHeightMap => HasSurface;
@@ -267,6 +365,12 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             {
                 surfaceY = _surfaceY;
                 return HasSurface;
+            }
+
+            public bool TryGetSurfaceNormal(Vector2Int position, float cellSize, out Vector3 normal)
+            {
+                normal = Normal;
+                return HasNormal;
             }
 
             public int GetLevelOrDefault(Vector2Int position, int fallback = 0) => fallback;

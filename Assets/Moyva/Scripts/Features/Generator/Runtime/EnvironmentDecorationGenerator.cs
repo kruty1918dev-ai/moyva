@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -14,14 +15,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         private readonly EnvironmentDecorationConfig _config;
         private readonly IMapObjectRegistryService _objectRegistry;
+        private readonly ITerrainPlacementPolicy _placementPolicy;
+        private readonly EnvironmentObjectPlacementResolver _placementResolver;
         private readonly DeterministicNoise _noise;
 
         public EnvironmentDecorationGenerator(
             EnvironmentDecorationConfig config,
-            IMapObjectRegistryService objectRegistry)
+            IMapObjectRegistryService objectRegistry,
+            [Zenject.InjectOptional] ITerrainPlacementPolicy placementPolicy = null,
+            [Zenject.InjectOptional] EnvironmentObjectPlacementResolver placementResolver = null)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _objectRegistry = objectRegistry ?? throw new ArgumentNullException(nameof(objectRegistry));
+            _placementPolicy = placementPolicy;
+            _placementResolver = placementResolver;
             _noise = new DeterministicNoise();
         }
 
@@ -43,6 +50,22 @@ namespace Kruty1918.Moyva.Generator.Runtime
             for (int x = 0; x < width; x++)
             for (int y = 0; y < height; y++)
             {
+                string tileId = ResolveTileId(x, y, worldData);
+                bool waterCell = IsWaterTile(tileId) || HasWaterSheet(x, y, worldData);
+
+                // Water flora is the only decoration allowed on water cells;
+                // land props never spawn on water regardless of flags.
+                if (waterCell)
+                {
+                    TryGenerateWaterFlora(x, y, seed, tileId, worldData, placements);
+                    continue;
+                }
+
+                // Tile-tagged spawn blocks (shore sand) reject every land
+                // decoration regardless of configured densities.
+                if (!AllowsDecorationTile(tileId))
+                    continue;
+
                 if (IsExcludedCell(x, y, worldData))
                     continue;
 
@@ -50,7 +73,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 if (cellDensity <= 0f)
                     continue;
 
-                string tileId = worldData.BiomeMap?[x, y] ?? worldData.GameplayTileMap?[x, y];
                 float biomeMultiplier = GetBiomeMultiplier(tileId);
                 float adjustedDensity = cellDensity * _config.GlobalDensity * biomeMultiplier;
 
@@ -118,13 +140,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private bool IsExcludedCell(int x, int y, GeneratedWorldData worldData)
         {
-            // Check water exclusion
-            if (_config.Exclusions.SuppressWaterDecorations)
-            {
-                string tileId = worldData.BiomeMap?[x, y] ?? worldData.GameplayTileMap?[x, y];
-                if (IsWaterTile(tileId))
-                    return true;
-            }
+            string excludedTileId = ResolveTileId(x, y, worldData);
+            if (IsRoadTile(excludedTileId))
+                return true;
 
             // Check building exclusion
             if (_config.Exclusions.BuildingExclusionRadius > 0 && worldData.BuildingMap != null)
@@ -165,7 +183,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (tileId.Contains("forest"))
                 return _config.BiomeRules.Forest;
-            if (tileId.Contains("hill") || tileId.Contains("mountain") || tileId.Contains("stone"))
+            if (IsRockyTile(tileId))
                 return _config.BiomeRules.Rocky;
             if (tileId.Contains("sand") || tileId.Contains("coast") || tileId.Contains("beach"))
                 return _config.BiomeRules.Coast;
@@ -210,6 +228,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (string.IsNullOrEmpty(decorationType))
                 return false;
 
+            // Shoreline buffer: heavy props stay off the water edge while
+            // grass and flowers may grow right up to it.
+            if (_config.Exclusions.ShorelineExclusionCells > 0
+                && IsHeavyDecoration(decorationType)
+                && IsNearWater(x, y, worldData, _config.Exclusions.ShorelineExclusionCells))
+            {
+                return false;
+            }
+
             // Select specific asset variant
             if (!_config.AssetPools.TryGetValue(decorationType, out var assetPool) || assetPool.Length == 0)
                 return false;
@@ -225,6 +252,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Vector3 position = CalculatePosition(x, y, worldData, seed, index);
             Quaternion rotation = CalculateRotation(seed, x, y, index);
             Vector3 scale = CalculateScale(seed, x, y, index);
+
+            // Oversized props must fit every cell under their footprint; the
+            // resolver shifts them within a bounded radius or rejects the
+            // spawn when no nearby position keeps the model on valid land.
+            if (RequiresFootprintValidation(decorationType)
+                && !TryResolveFootprint(
+                    definition.VisualPrefab, ref position, ref x, ref y,
+                    rotation, scale, worldData))
+            {
+                return false;
+            }
 
             placement = new DecorationPlacement(
                 assetId,
@@ -245,6 +283,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             float treeWeight = _config.TypeDensities.TreeDensity;
             float bushWeight = _config.TypeDensities.BushDensity;
             float grassWeight = _config.TypeDensities.GrassDensity;
+            float flowerWeight = _config.TypeDensities.FlowerDensity;
             float rockWeight = _config.TypeDensities.RockDensity;
 
             string lowerTileId = tileId?.ToLowerInvariant();
@@ -257,11 +296,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 treeWeight *= 1.5f;
                 grassWeight *= 0.8f;
             }
-            else if (lowerTileId != null && (lowerTileId.Contains("hill") ||
-                     lowerTileId.Contains("mountain")))
+            else if (lowerTileId != null && IsRockyTile(lowerTileId))
             {
-                rockWeight *= 2.0f;
-                treeWeight *= 0.3f;
+                // Rocky terrain grows no trees; the bush pool uses tree models.
+                treeWeight = 0f;
+                bushWeight = 0f;
+                grassWeight *= 0.4f;
+                rockWeight *= 3.0f;
             }
             else if (lowerTileId != null && lowerTileId.Contains("sand"))
             {
@@ -284,13 +325,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 bushWeight = 0f;
             if (!HasPool("grass"))
                 grassWeight = 0f;
+            if (!HasPool("flower"))
+                flowerWeight = 0f;
             if (!HasPool("rock"))
                 rockWeight = 0f;
 
             float stumpThreshold = treeWeight + stumpWeight;
             float bushThreshold = stumpThreshold + bushWeight;
             float grassThreshold = bushThreshold + grassWeight;
-            float rockThreshold = grassThreshold + rockWeight;
+            float flowerThreshold = grassThreshold + flowerWeight;
+            float rockThreshold = flowerThreshold + rockWeight;
 
             if (randomValue < treeWeight)
                 return "tree";
@@ -300,11 +344,150 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return "bush";
             if (randomValue < grassThreshold)
                 return "grass";
+            if (randomValue < flowerThreshold)
+                return "flower";
             if (randomValue < rockThreshold)
                 return "rock";
 
             return null;
         }
+
+        /// <summary>
+        /// Water flora (lilies, water plants) spawn sparsely on water cells
+        /// and float just above the sheet surface via <c>YOffset</c>.
+        /// </summary>
+        private void TryGenerateWaterFlora(
+            int x, int y, int seed, string tileId,
+            GeneratedWorldData worldData, List<DecorationPlacement> placements)
+        {
+            const string type = "waterplant";
+            float density = _config.TypeDensities.WaterPlantDensity * _config.GlobalDensity;
+            if (density <= 0f || !HasPool(type))
+                return;
+
+            if (_config.Exclusions.BuildingExclusionRadius > 0
+                && worldData.BuildingMap != null
+                && IsNearBuilding(x, y, worldData.BuildingMap, _config.Exclusions.BuildingExclusionRadius))
+            {
+                return;
+            }
+
+            uint hash = DeterministicHash.CellHash(seed, x, y, 0);
+            if ((hash % 10000) / 10000f >= density)
+                return;
+
+            var pool = _config.AssetPools[type];
+            string assetId = pool[DeterministicHash.VariantHash(seed, x, y, 0, type) % pool.Length];
+            if (!_objectRegistry.TryGetDefinition(assetId, out _))
+                return;
+
+            placements.Add(new DecorationPlacement(
+                assetId,
+                CalculatePosition(x, y, worldData, seed, 0),
+                CalculateRotation(seed, x, y, 0),
+                CalculateScale(seed, x, y, 0),
+                x,
+                y,
+                WaterFloraSurfaceOffset));
+        }
+
+        private const float WaterFloraSurfaceOffset = 0.03f;
+
+        private static bool IsHeavyDecoration(string decorationType)
+            => decorationType == "tree"
+               || decorationType == "stump"
+               || decorationType == "rock";
+
+        private static bool RequiresFootprintValidation(string decorationType)
+            => IsHeavyDecoration(decorationType) || decorationType == "bush";
+
+        private bool TryResolveFootprint(
+            GameObject prefab, ref Vector3 position, ref int x, ref int y,
+            Quaternion rotation, Vector3 scale, GeneratedWorldData worldData)
+        {
+            if (_placementResolver == null
+                || _config.Footprint == null
+                || !_config.Footprint.ValidateHeavyFootprints
+                || worldData == null)
+            {
+                return true;
+            }
+
+            float cellSize = worldData.CellSize > 0.0001f ? worldData.CellSize : 1f;
+            var request = new EnvironmentObjectPlacementResolver.Request(
+                prefab,
+                new Vector3(position.x * cellSize, 0f, position.z * cellSize),
+                rotation,
+                scale,
+                worldData.Width,
+                worldData.Height,
+                cellSize,
+                cell => IsFootprintCellAcceptable(cell, worldData),
+                cell => ResolveSurfaceHeight(worldData, cell),
+                _config.Footprint.MaxShiftCells,
+                _config.Footprint.MaxGroundDeltaMeters,
+                _config.Footprint.FootprintShrink);
+
+            if (!_placementResolver.TryResolve(request, out Vector3 resolved))
+                return false;
+
+            position = new Vector3(
+                resolved.x / cellSize,
+                position.y,
+                resolved.z / cellSize);
+            x = Mathf.Clamp(Mathf.FloorToInt(position.x), 0, worldData.Width - 1);
+            y = Mathf.Clamp(Mathf.FloorToInt(position.z), 0, worldData.Height - 1);
+            return true;
+        }
+
+        // A footprint cell is acceptable only on valid non-water land; road
+        // and building checks stay on the anchor cell so crowns may pass
+        // above paths while trunks keep their authored clearances.
+        private bool IsFootprintCellAcceptable(Vector2Int cell, GeneratedWorldData worldData)
+        {
+            string tileId = ResolveTileId(cell.x, cell.y, worldData);
+            return !IsWaterTile(tileId)
+                   && !HasWaterSheet(cell.x, cell.y, worldData)
+                   && AllowsDecorationTile(tileId);
+        }
+
+        private static float ResolveSurfaceHeight(GeneratedWorldData worldData, Vector2Int cell)
+        {
+            float[,] heights = worldData?.LogicalTileMap?.SurfaceHeights;
+            if (heights == null
+                || cell.x < 0 || cell.y < 0
+                || cell.x >= heights.GetLength(0) || cell.y >= heights.GetLength(1))
+            {
+                return float.NaN;
+            }
+
+            return heights[cell.x, cell.y];
+        }
+
+        private bool IsNearWater(int x, int y, GeneratedWorldData worldData, int radius)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                int nx = x + dx;
+                int ny = y + dy;
+                if (nx < 0 || ny < 0 || nx >= worldData.Width || ny >= worldData.Height)
+                    continue;
+                if (IsWaterTile(ResolveTileId(nx, ny, worldData))
+                    || HasWaterSheet(nx, ny, worldData))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool AllowsDecorationTile(string tileId)
+            => _placementPolicy == null
+               || _placementPolicy.AllowsPlacement(
+                   tileId,
+                   TerrainPlacementOperation.Decoration);
 
         private bool HasPool(string decorationType)
         {
@@ -354,14 +537,69 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return Vector3.one * scale;
         }
 
+        // GameplayTileMap carries the resolved terrain id; BiomeMap can still
+        // hold pre-resolution markers such as "sand-shore-band".
+        private static string ResolveTileId(int x, int y, GeneratedWorldData worldData)
+        {
+            string gameplay = worldData.GameplayTileMap?[x, y];
+            return !string.IsNullOrWhiteSpace(gameplay)
+                ? gameplay
+                : worldData.BiomeMap?[x, y];
+        }
+
+        private static bool IsRockyTile(string tileId)
+        {
+            return tileId.Contains("hill")
+                || tileId.Contains("mountain")
+                || tileId.Contains("stone")
+                || tileId.Contains("rock")
+                || tileId.Contains("cliff");
+        }
+
+        private static bool IsRoadTile(string tileId)
+        {
+            if (string.IsNullOrWhiteSpace(tileId))
+                return false;
+
+            tileId = tileId.ToLowerInvariant();
+            return tileId.Contains("road")
+                || tileId.Contains("footpath")
+                || tileId.Contains("path")
+                || tileId.Contains("street");
+        }
+
         private static bool IsWaterTile(string tileId)
         {
             if (string.IsNullOrWhiteSpace(tileId))
                 return false;
 
             tileId = tileId.ToLowerInvariant();
-            return tileId.Contains("water") || tileId.Contains("river") || 
+            return tileId.Contains("water") || tileId.Contains("river") ||
                    tileId.Contains("lake") || tileId.Contains("ocean");
+        }
+
+        /// <summary>
+        /// River and lake cells keep their land gameplay id while carrying a
+        /// surface-only water sheet in the stack; the sheet counts as water
+        /// for placement, matching the object spawner's water-cell rule.
+        /// </summary>
+        private static bool HasWaterSheet(int x, int y, GeneratedWorldData worldData)
+        {
+            var stack = worldData?.LogicalTileMap?.GetCellStack(x, y);
+            if (stack == null)
+                return false;
+
+            for (int i = 0; i < stack.Samples.Count; i++)
+            {
+                var sample = stack.Samples[i];
+                if (sample.IsTerrainLike
+                    && sample.TileGeometryMode == TileGeometryMode.SurfaceOnly)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 
@@ -373,8 +611,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public readonly Vector3 Scale;
         public readonly int TileX;
         public readonly int TileY;
+        /// <summary>Extra height above the resolved surface (e.g. water flora).</summary>
+        public readonly float YOffset;
 
-        public DecorationPlacement(string assetId, Vector3 position, Quaternion rotation, Vector3 scale, int tileX, int tileY)
+        public DecorationPlacement(string assetId, Vector3 position, Quaternion rotation, Vector3 scale, int tileX, int tileY, float yOffset = 0f)
         {
             AssetId = assetId;
             Position = position;
@@ -382,6 +622,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Scale = scale;
             TileX = tileX;
             TileY = tileY;
+            YOffset = yOffset;
         }
     }
 

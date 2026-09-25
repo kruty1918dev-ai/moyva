@@ -68,10 +68,47 @@ namespace Kruty1918.Moyva.Generator.API
         public VisualVariation VisualVariation = new();
 
         /// <summary>
+        /// Full-model footprint validation and grounding for heavy props.
+        /// </summary>
+        public FootprintRules Footprint = new();
+
+        /// <summary>
         /// Asset variant pools for each environment type.
         /// Maps environment type IDs to lists of map object registry IDs.
         /// </summary>
         [SerializeField] public Dictionary<string, string[]> AssetPools = new();
+    }
+
+    [Serializable]
+    public sealed class FootprintRules
+    {
+        /// <summary>
+        /// Validate the full top-down renderer bounds (children + LODs) of
+        /// heavy props (trees, stumps, rocks); every cell under the footprint
+        /// must stay placeable so crowns never hang over water.
+        /// </summary>
+        public bool ValidateHeavyFootprints = true;
+
+        /// <summary>
+        /// Bounded shift radius in cells applied when a footprint does not
+        /// fit at its authored offset; beyond it the prop is skipped.
+        /// </summary>
+        [Min(0f)]
+        public float MaxShiftCells = 0.75f;
+
+        /// <summary>
+        /// Maximum surface-height delta tolerated under a footprint before
+        /// the prop is shifted or skipped.
+        /// </summary>
+        [Min(0.01f)]
+        public float MaxGroundDeltaMeters = 0.6f;
+
+        /// <summary>
+        /// Fraction of the XZ renderer bounds used as the footprint.
+        /// 1 = full bounds; smaller values forgive thin crown tips.
+        /// </summary>
+        [Range(0.3f, 1f)]
+        public float FootprintShrink = 0.9f;
     }
 
     [Serializable]
@@ -96,10 +133,22 @@ namespace Kruty1918.Moyva.Generator.API
         public float GrassDensity = 0.2f;
 
         /// <summary>
+        /// Base probability per tile for flower decorations.
+        /// </summary>
+        [Range(0f, 1f)]
+        public float FlowerDensity = 0.05f;
+
+        /// <summary>
         /// Base probability per tile for rock/stone decorations.
         /// </summary>
         [Range(0f, 1f)]
         public float RockDensity = 0.08f;
+
+        /// <summary>
+        /// Base probability per water tile for water flora (lilies, water plants).
+        /// </summary>
+        [Range(0f, 1f)]
+        public float WaterPlantDensity = 0.1f;
     }
 
     [Serializable]
@@ -155,6 +204,13 @@ namespace Kruty1918.Moyva.Generator.API
         /// Whether to completely suppress decorations on water tiles.
         /// </summary>
         public bool SuppressWaterDecorations = true;
+
+        /// <summary>
+        /// Radius in cells around water where heavy decorations (trees, rocks,
+        /// stumps) are suppressed. Grass and flowers may still spawn.
+        /// </summary>
+        [Min(0)]
+        public int ShorelineExclusionCells = 0;
     }
 
     [Serializable]
@@ -187,5 +243,11 @@ namespace Kruty1918.Moyva.Generator.API
         /// </summary>
         [Range(0f, 0.5f)]
         public float MaxPositionOffset = 0.2f;
+
+        /// <summary>
+        /// Align decorations to the terrain surface normal so props sit
+        /// flush on slopes instead of staying world-upright.
+        /// </summary>
+        public bool AlignToSurface = true;
     }
 }

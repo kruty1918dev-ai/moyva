@@ -163,6 +163,118 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         }
 
         [Test]
+        public void WaterFlora_SpawnsOnSuppressedWater_WhenPoolConfigured()
+        {
+            // Arrange: all water with a guaranteed waterplant roll.
+            _mockRegistry.AddDefinition("test-lily-001");
+            _config.AssetPools["waterplant"] = new[] { "test-lily-001" };
+            _config.TypeDensities.WaterPlantDensity = 1f;
+            var worldData = CreateTestWorldData(6, 6, seed: 12345);
+            for (int x = 0; x < worldData.Width; x++)
+            for (int y = 0; y < worldData.Height; y++)
+            {
+                worldData.BiomeMap[x, y] = "water";
+                worldData.GameplayTileMap[x, y] = "water";
+            }
+
+            // Act
+            var result = _generator.Generate(worldData);
+
+            // Assert
+            Assert.Greater(result.Count, 0, "Water flora should spawn on water cells");
+            foreach (var placement in result.Placements)
+            {
+                Assert.AreEqual("test-lily-001", placement.AssetId);
+                Assert.Greater(placement.YOffset, 0f,
+                    "Water flora must float above the water sheet surface");
+            }
+        }
+
+        [Test]
+        public void WaterFlora_ZeroDensity_KeepsWaterEmpty()
+        {
+            // Arrange: pool configured but density zeroed out.
+            _mockRegistry.AddDefinition("test-lily-001");
+            _config.AssetPools["waterplant"] = new[] { "test-lily-001" };
+            _config.TypeDensities.WaterPlantDensity = 0f;
+            var worldData = CreateTestWorldData(6, 6, seed: 12345);
+            for (int x = 0; x < worldData.Width; x++)
+            for (int y = 0; y < worldData.Height; y++)
+            {
+                worldData.BiomeMap[x, y] = "water";
+                worldData.GameplayTileMap[x, y] = "water";
+            }
+
+            // Act
+            var result = _generator.Generate(worldData);
+
+            // Assert
+            Assert.AreEqual(0, result.Count);
+        }
+
+        [Test]
+        public void ShorelineExclusion_SuppressesHeavyPropsNearWater()
+        {
+            // Arrange: only trees can spawn; a single water cell at (5,5)
+            // suppresses them within one cell of the shore.
+            _config.Exclusions.ShorelineExclusionCells = 1;
+            _config.MaxObjectsPerTile = 1;
+            _config.TypeDensities = new EnvironmentTypeDensities
+            {
+                TreeDensity = 1f,
+                BushDensity = 0f,
+                GrassDensity = 0f,
+                FlowerDensity = 0f,
+                RockDensity = 0f
+            };
+            var worldData = CreateTestWorldData(11, 11, seed: 12345);
+            worldData.BiomeMap[5, 5] = "water";
+            worldData.GameplayTileMap[5, 5] = "water";
+
+            // Act
+            var result = _generator.Generate(worldData);
+
+            // Assert
+            Assert.Greater(result.Count, 0, "Land away from the shore should still spawn trees");
+            foreach (var placement in result.Placements)
+            {
+                int dx = Mathf.Abs(placement.TileX - 5);
+                int dy = Mathf.Abs(placement.TileY - 5);
+                Assert.Greater(Mathf.Max(dx, dy), 1,
+                    $"Heavy prop at {placement.TileX},{placement.TileY} sits inside the shoreline buffer");
+            }
+        }
+
+        [Test]
+        public void ShorelineExclusion_AllowsGrassNearWater()
+        {
+            // Arrange: only grass can spawn; it is allowed right up to water.
+            _config.Exclusions.ShorelineExclusionCells = 1;
+            _config.MaxObjectsPerTile = 1;
+            _mockRegistry.AddDefinition("test-grass-001");
+            _config.AssetPools["grass"] = new[] { "test-grass-001" };
+            _config.TypeDensities = new EnvironmentTypeDensities
+            {
+                TreeDensity = 0f,
+                BushDensity = 0f,
+                GrassDensity = 1f,
+                FlowerDensity = 0f,
+                RockDensity = 0f
+            };
+            var worldData = CreateTestWorldData(11, 11, seed: 12345);
+            worldData.BiomeMap[5, 5] = "water";
+            worldData.GameplayTileMap[5, 5] = "water";
+
+            // Act
+            var result = _generator.Generate(worldData);
+
+            // Assert: grass may occupy cells adjacent to water.
+            bool nearShore = result.Placements.Any(p =>
+                Mathf.Max(Mathf.Abs(p.TileX - 5), Mathf.Abs(p.TileY - 5)) == 1);
+            Assert.IsTrue(nearShore, "Grass should be allowed inside the shoreline buffer");
+        }
+
+        [Test]
         public void BuildingExclusion_PreventsDecorationsNearBuildings()
         {
             // Arrange
@@ -311,6 +423,105 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
                 "Grass band must produce placements when a grass pool exists");
         }
 
+        [TestCase("stone")]
+        [TestCase("rock-cliff")]
+        public void RockyTiles_NeverSpawnTreesOrBushes(string rockyTileId)
+        {
+            // Arrange: register pools for every type so suppression is observable.
+            _mockRegistry.AddDefinition("test-bush-001");
+            _mockRegistry.AddDefinition("test-grass-001");
+            _config.AssetPools["bush"] = new[] { "test-bush-001" };
+            _config.AssetPools["grass"] = new[] { "test-grass-001" };
+
+            var worldData = CreateTestWorldData(20, 20, seed: 12345);
+            for (int x = 0; x < worldData.Width; x++)
+            for (int y = 0; y < worldData.Height; y++)
+            {
+                worldData.BiomeMap[x, y] = rockyTileId;
+                worldData.GameplayTileMap[x, y] = rockyTileId;
+                worldData.HeightMap[x, y] = 2.0f;
+            }
+
+            // Act
+            var result = _generator.Generate(worldData);
+
+            // Assert
+            Assert.Greater(result.Count, 0, "Rocky tiles should still produce decorations");
+            var treePool = new HashSet<string>(_config.AssetPools["tree"]);
+            var bushPool = new HashSet<string>(_config.AssetPools["bush"]);
+            foreach (var placement in result.Placements)
+            {
+                Assert.IsFalse(treePool.Contains(placement.AssetId),
+                    $"Tree asset {placement.AssetId} spawned on rocky tile {rockyTileId}");
+                Assert.IsFalse(bushPool.Contains(placement.AssetId),
+                    $"Bush (tree model) asset {placement.AssetId} spawned on rocky tile {rockyTileId}");
+            }
+        }
+
+        [Test]
+        public void RockyTiles_SpawnRocks()
+        {
+            // Arrange
+            var worldData = CreateTestWorldData(20, 20, seed: 12345);
+            for (int x = 0; x < worldData.Width; x++)
+            for (int y = 0; y < worldData.Height; y++)
+            {
+                worldData.BiomeMap[x, y] = "stone";
+                worldData.GameplayTileMap[x, y] = "stone";
+            }
+
+            // Act
+            var result = _generator.Generate(worldData);
+
+            // Assert: every placement on rocky terrain must come from the rock pool.
+            var rockPool = new HashSet<string>(_config.AssetPools["rock"]);
+            Assert.Greater(result.Count, 0, "Rocky tiles should produce rock decorations");
+            foreach (var placement in result.Placements)
+                Assert.IsTrue(rockPool.Contains(placement.AssetId),
+                    $"Non-rock asset {placement.AssetId} spawned on stone tile");
+        }
+
+        [Test]
+        public void GameplayTileMap_TakesPrecedenceOverStaleBiomeMarkers()
+        {
+            // Arrange: BiomeMap retains a pre-resolution marker while the
+            // gameplay map already carries the resolved terrain id.
+            var worldData = CreateTestWorldData(15, 15, seed: 12345);
+            for (int x = 0; x < worldData.Width; x++)
+            for (int y = 0; y < worldData.Height; y++)
+            {
+                worldData.BiomeMap[x, y] = "sand-shore-band";
+                worldData.GameplayTileMap[x, y] = "stone";
+                worldData.HeightMap[x, y] = 2.0f;
+            }
+
+            // Act
+            var result = _generator.Generate(worldData);
+
+            // Assert: rocky rules apply — no trees, only rocks.
+            Assert.Greater(result.Count, 0, "Stone tiles should produce rock decorations");
+            var treePool = new HashSet<string>(_config.AssetPools["tree"]);
+            foreach (var placement in result.Placements)
+                Assert.IsFalse(treePool.Contains(placement.AssetId),
+                    $"Tree asset {placement.AssetId} spawned on resolved stone tile");
+        }
+
+        [TestCase("road")]
+        [TestCase("footpath")]
+        public void RoadTiles_ProduceNoDecorations(string roadTileId)
+        {
+            var worldData = CreateTestWorldData(15, 15, seed: 12345);
+            for (int x = 0; x < worldData.Width; x++)
+            for (int y = 0; y < worldData.Height; y++)
+            {
+                worldData.BiomeMap[x, y] = roadTileId;
+                worldData.GameplayTileMap[x, y] = roadTileId;
+            }
+
+            var result = _generator.Generate(worldData);
+            Assert.AreEqual(0, result.Count, $"No decorations should spawn on {roadTileId}");
+        }
+
         [Test]
         public void BiomeMultipliers_AffectDecorationDensity()
         {
@@ -323,7 +534,9 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             for (int y = 0; y < grassWorld.Height; y++)
             {
                 grassWorld.BiomeMap[x, y] = "grass";
+                grassWorld.GameplayTileMap[x, y] = "grass";
                 forestWorld.BiomeMap[x, y] = "forest-sparse";
+                forestWorld.GameplayTileMap[x, y] = "forest-sparse";
             }
 
             // Act

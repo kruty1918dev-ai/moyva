@@ -16,18 +16,26 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IMapChunkLayoutService _layout;
         private readonly IMapVisualChunkRootService _roots;
         private readonly IGeneratorTerrainLevelService _terrainLevels;
+        private readonly EnvironmentObjectPlacementResolver _placementResolver;
+        private readonly bool _alignToSurface;
+        private readonly float _footprintShrink;
         private readonly Dictionary<MapChunkCoord, Transform> _decorationRoots = new Dictionary<MapChunkCoord, Transform>();
 
         public EnvironmentDecorationSpawner(
             IMapObjectRegistryService objectRegistry,
             IMapChunkLayoutService layout,
             IMapVisualChunkRootService roots,
-            [Zenject.InjectOptional] IGeneratorTerrainLevelService terrainLevels = null)
+            [Zenject.InjectOptional] IGeneratorTerrainLevelService terrainLevels = null,
+            [Zenject.InjectOptional] EnvironmentDecorationConfig config = null,
+            [Zenject.InjectOptional] EnvironmentObjectPlacementResolver placementResolver = null)
         {
             _objectRegistry = objectRegistry ?? throw new ArgumentNullException(nameof(objectRegistry));
             _layout = layout ?? throw new ArgumentNullException(nameof(layout));
             _roots = roots ?? throw new ArgumentNullException(nameof(roots));
             _terrainLevels = terrainLevels;
+            _placementResolver = placementResolver;
+            _alignToSurface = config?.VisualVariation?.AlignToSurface ?? true;
+            _footprintShrink = config?.Footprint?.FootprintShrink ?? 0.9f;
         }
 
         /// <summary>
@@ -87,21 +95,48 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Transform root = GetDecorationRoot(coord);
             var instance = UnityEngine.Object.Instantiate(definition.VisualPrefab, root, false);
             instance.name = $"{definition.Id}_{placement.TileX}_{placement.TileY}";
-            var localPosition = placement.Position;
+
+            // Placement positions are authored in cell units; convert to world
+            // units so offsets stay proportional at any cell size.
+            float cellSize = Mathf.Max(0.0001f, _layout.CellSize);
+            var localPosition = new Vector3(
+                placement.Position.x * cellSize,
+                placement.Position.y,
+                placement.Position.z * cellSize);
+            Quaternion localRotation = placement.Rotation;
             if (_terrainLevels != null
                 && _terrainLevels.TryGetSurfaceHeight(cell, out float surfaceY))
             {
-                localPosition.y = surfaceY;
+                if (_alignToSurface
+                    && _terrainLevels.TryGetSurfaceNormal(cell, cellSize, out Vector3 normal)
+                    && normal.y < 0.9999f)
+                {
+                    localRotation = Quaternion.FromToRotation(Vector3.up, normal) * localRotation;
+                }
+
+                // Ground the prefab's lowest transformed point on the lowest
+                // terrain under its footprint, not the pivot on the anchor
+                // cell — this keeps rocks from floating over slopes.
+                localPosition.y = (_placementResolver != null
+                    ? _placementResolver.ResolveGroundedY(
+                        definition.VisualPrefab,
+                        new Vector3(localPosition.x, 0f, localPosition.z),
+                        localRotation,
+                        placement.Scale,
+                        cellSize,
+                        SurfaceHeightOrNaN,
+                        surfaceY,
+                        _footprintShrink)
+                    : surfaceY) + placement.YOffset;
             }
             instance.transform.localPosition = localPosition;
-            instance.transform.localRotation = placement.Rotation;
+            instance.transform.localRotation = localRotation;
             instance.transform.localScale = placement.Scale;
 
-            // Ensure decorations don't cast shadows or have colliders (purely visual)
+            // Decorations keep their prefab-authored shadow casting; only ensure they receive shadows.
             var renderers = instance.GetComponentsInChildren<Renderer>(true);
             foreach (var renderer in renderers)
             {
-                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 renderer.receiveShadows = true;
             }
 
@@ -116,6 +151,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             return true;
         }
+
+        private float SurfaceHeightOrNaN(Vector2Int cell)
+            => _terrainLevels.TryGetSurfaceHeight(cell, out float h) ? h : float.NaN;
 
         private Transform GetDecorationRoot(MapChunkCoord coord)
         {
