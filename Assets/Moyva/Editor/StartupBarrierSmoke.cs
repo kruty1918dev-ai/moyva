@@ -59,6 +59,14 @@ public static class StartupBarrierSmoke
             if (EditorApplication.timeSinceStartup - began > 160) { Finish(mode, "FAIL timeout"); return; }
             foreach (var context in UnityEngine.Object.FindObjectsByType<SceneContext>())
             {
+                if (mode == "menu" && !launched && context.gameObject.scene.name == "HomeMenu")
+                {
+                    var starter = context.Container.TryResolve<IHomeMenuGameStarter>(); if (starter == null) continue;
+                    launched = true;
+                    GameLaunchContext.ConfigureMenuNewGame(0, "Menu smoke", 42, 0, 0, 0, 1, true,
+                        isLocalPlayerHost: true, localPlayerId: "smoke-menu");
+                    transition = starter.StartGameAsync();
+                }
                 if (mode == "host" && !launched && context.gameObject.scene.name == "HomeMenu")
                 {
                     var starter = context.Container.TryResolve<IHomeMenuGameStarter>(); if (starter == null) continue;

@@ -10,6 +10,10 @@ namespace Kruty1918.Moyva.Jsonization.Editor
 {
     public static class JsonizationBuildService
     {
+        /// <summary>Parameterless -executeMethod entry for ad-hoc player builds.</summary>
+        public static void DevelopmentPlayerSmokeFromCli()
+            => DevelopmentPlayerSmoke("Temp/ai/player-build-report.json", "Build/PlayerSmoke");
+
         public static string DevelopmentPlayerSmoke(string reportPath, string outputDirectory)
         {
             string[] scenes = EditorBuildSettings.scenes

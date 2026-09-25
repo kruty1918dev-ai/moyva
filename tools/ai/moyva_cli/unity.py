@@ -46,7 +46,7 @@ class UnityBridge:
         found = find_unity(self.project)
         if not found["matches"]: raise ControlError("Install the exact Unity version " + found["expected"] + " using Unity Hub.")
         if unity_processes(self.project): return {"state":"RUNNING","message":"This project is already open."}
-        subprocess.Popen([found["path"],"-projectPath",str(self.project.root)], stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        subprocess.Popen([found["path"],"-projectPath",str(self.project.root),"-automated"], stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
         return {"state":"STARTING"}
 
 def unity_processes(project):
