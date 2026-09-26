@@ -1,0 +1,30 @@
+newmtl GrassTop
+Kd 0.40000 0.61176 0.40784
+Ka 0.1 0.1 0.1
+Ks 0 0 0
+illum 1
+
+newmtl GrassBevel
+Kd 0.54510 0.68627 0.44706
+Ka 0.1 0.1 0.1
+Ks 0 0 0
+illum 1
+
+newmtl EarthWall
+Kd 0.40784 0.35294 0.30196
+Ka 0.1 0.1 0.1
+Ks 0 0 0
+illum 1
+
+newmtl SandTop
+Kd 0.78431 0.71373 0.53333
+Ka 0.1 0.1 0.1
+Ks 0 0 0
+illum 1
+
+newmtl SandBevel
+Kd 0.87843 0.80000 0.61176
+Ka 0.1 0.1 0.1
+Ks 0 0 0
+illum 1
+

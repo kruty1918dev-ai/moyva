@@ -7,11 +7,14 @@ using UnityEngine;
 namespace Kruty1918.Moyva.Generator.Editor
 {
     /// <summary>
-    /// Imports the KayKit cliff tile set (TileSet-1.fbx) as the single shared
-    /// dual-grid mesh set used by every atlas theme. Each source mesh is baked
-    /// to the canonical contract: 1 m quad footprint, plateau top at Y = 0,
-    /// pivot at quad centre, identity rotation/scale, faceted normals and
-    /// regenerated UVs (planar tops, box-projected walls).
+    /// Imports the cliff dual-grid mesh set as the single shared
+    /// dual-grid mesh set used by every atlas theme. The beveled OBJ set
+    /// under <c>Models/Beveled/</c> (Moyva_DualGrid_19_Beveled_Models) is the
+    /// preferred source; <c>Models/TileSet-1.fbx</c> remains as the fallback.
+    /// Each source mesh is baked to the canonical contract: 1 m quad
+    /// footprint, plateau top at Y = 0, pivot at quad centre, identity
+    /// rotation/scale, faceted normals and regenerated UVs (planar tops
+    /// and bevels, box-projected walls).
     ///
     /// The generated prefabs keep their existing paths
     /// (Generated/Prefabs/{theme}_{form}[_low].prefab), so all TilePreset and
@@ -20,12 +23,15 @@ namespace Kruty1918.Moyva.Generator.Editor
     /// </summary>
     internal static class MoyvaCliffTileAssetBuilder
     {
+        internal const string SourceObjFolder =
+            MoyvaAtlasPackImporter.PackRoot + "/Models/Beveled";
         private const string SourceFbxPath =
             MoyvaAtlasPackImporter.PackRoot + "/Models/TileSet-1.fbx";
         private const string SourcesFolder =
             MoyvaAtlasPackImporter.PackRoot + "/Textures/Sources";
 
         private const float TopNormalY = 0.55f;
+        private const float FlatTopNormalY = 0.9f;
         private const float HighDropMeters = 0.5f;
         private const float LowDropMeters = 0.25f;
 
@@ -35,7 +41,27 @@ namespace Kruty1918.Moyva.Generator.Editor
         private const int Ne = 4;
         private const int Nw = 8;
 
+        /// <summary>
+        /// Canonical source model per form. Names exist in both the beveled
+        /// OBJ set and the legacy FBX; per Moyva_Bevel_Masks.json the chosen
+        /// pieces carry pack masks corner=1 (NW high), edge=3 (N half),
+        /// interior=7 (missing SE), merged=6 (NE+SW diagonal) and fill=15
+        /// (all four quadrants raised). The canonical yaw is auto-derived
+        /// from plateau quadrant coverage, so the pack's NW=1/NE=2/SW=4/SE=8
+        /// bit order is only used to pick a representative variant.
+        /// </summary>
         private static readonly Dictionary<string, string> FormModels =
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["corner"] = "Cliff_Corner_Tile",
+                ["edge"] = "Cliff_Edge_Tile",
+                ["interior"] = "Cliff_Int_Corner_Tile",
+                ["merged"] = "Cliff_Double_Corner_Tile",
+                ["fill"] = "Cliff_Fill_Tile.013",
+            };
+
+        /// <summary>FBX node names that match the beveled picks.</summary>
+        private static readonly Dictionary<string, string> LegacyFormModels =
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["corner"] = "Cliff_Corner_Tile.003",
@@ -101,20 +127,24 @@ namespace Kruty1918.Moyva.Generator.Editor
         /// </summary>
         public static int Build()
         {
-            if (!File.Exists(SourceFbxPath))
+            bool useObjSet = AssetDatabase.IsValidFolder(SourceObjFolder)
+                && Directory.GetFiles(SourceObjFolder, "*.obj").Length > 0;
+            if (!useObjSet && !File.Exists(SourceFbxPath))
             {
-                Debug.LogWarning($"[MoyvaCliffTiles] Source FBX missing: {SourceFbxPath}. Skipping.");
+                Debug.LogWarning($"[MoyvaCliffTiles] No sources: {SourceObjFolder} and {SourceFbxPath} missing. Skipping.");
                 return 0;
             }
 
-            PrepareFbxImporter();
-
-            var sourceMeshes = LoadSourceMeshes();
+            var models = useObjSet ? FormModels : LegacyFormModels;
+            var sourceMeshes = useObjSet
+                ? LoadObjSourceMeshes()
+                : LoadFbxSourceMeshes();
             if (sourceMeshes.Count == 0)
-                throw new InvalidDataException("No meshes found in " + SourceFbxPath);
+                throw new InvalidDataException("No meshes found in " +
+                    (useObjSet ? SourceObjFolder : SourceFbxPath));
 
             var baked = new Dictionary<string, MeshData>(StringComparer.Ordinal);
-            foreach (var pair in FormModels)
+            foreach (var pair in models)
             {
                 if (!sourceMeshes.TryGetValue(pair.Value, out var source)
                     || source.mesh == null)
@@ -145,13 +175,14 @@ namespace Kruty1918.Moyva.Generator.Editor
             var materials = new Dictionary<string, Material>(StringComparer.Ordinal);
             foreach (string theme in MoyvaAtlasPackImporter.Themes)
                 materials[theme] = CreateOrUpdateThemeMaterial(theme);
+            Material sideMaterial = CreateOrUpdateSideMaterial();
 
             foreach (string theme in MoyvaAtlasPackImporter.Themes)
             {
                 foreach (string form in Forms)
                 {
-                    RewritePrefab($"{theme}_{form}", meshes[form], materials[theme]);
-                    RewritePrefab($"{theme}_{form}_low", meshes[form + "_low"], materials[theme]);
+                    RewritePrefab($"{theme}_{form}", meshes[form], materials[theme], sideMaterial);
+                    RewritePrefab($"{theme}_{form}_low", meshes[form + "_low"], materials[theme], sideMaterial);
                 }
             }
 
@@ -186,12 +217,60 @@ namespace Kruty1918.Moyva.Generator.Editor
         }
 
         /// <summary>
+        /// Loads the beveled OBJ set. Each file is authored in meters with the
+        /// pivot at the footprint centre and Y up, so the bake matrix is the
+        /// identity — only the OBJ importer conversion has to be neutralised
+        /// (readable mesh, authored normals kept for the winding check, no
+        /// generated materials).
+        /// </summary>
+        private static Dictionary<string, SourceMesh> LoadObjSourceMeshes()
+        {
+            var result = new Dictionary<string, SourceMesh>(StringComparer.Ordinal);
+            foreach (string path in Directory.GetFiles(SourceObjFolder, "*.obj"))
+            {
+                PrepareObjImporter(path);
+                Mesh mesh = null;
+                foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(path))
+                {
+                    if (asset is Mesh candidate && mesh == null)
+                        mesh = candidate;
+                }
+                if (mesh == null)
+                    throw new InvalidDataException("No mesh in " + path);
+
+                string key = Path.GetFileNameWithoutExtension(path);
+                result[key] = new SourceMesh { mesh = mesh, bakeMatrix = Matrix4x4.identity };
+            }
+            return result;
+        }
+
+        private static void PrepareObjImporter(string path)
+        {
+            if (!(AssetImporter.GetAtPath(path) is ModelImporter importer))
+            {
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+                importer = AssetImporter.GetAtPath(path) as ModelImporter;
+            }
+            if (importer == null)
+                throw new FileNotFoundException("ModelImporter unavailable for " + path);
+
+            importer.isReadable = true;
+            importer.useFileScale = false;
+            importer.globalScale = 1f;
+            importer.importNormals = ModelImporterNormals.Import;
+            importer.importTangents = ModelImporterTangents.None;
+            importer.materialImportMode = ModelImporterMaterialImportMode.None;
+            importer.SaveAndReimport();
+        }
+
+        /// <summary>
         /// Maps model node names to their imported mesh plus a rotation/scale
         /// bake matrix. Translation is dropped: authored pivots are already the
         /// quad centres; scene placement is irrelevant.
         /// </summary>
-        private static Dictionary<string, SourceMesh> LoadSourceMeshes()
+        private static Dictionary<string, SourceMesh> LoadFbxSourceMeshes()
         {
+            PrepareFbxImporter();
             GameObject root = AssetDatabase.LoadMainAssetAtPath(SourceFbxPath) as GameObject;
             if (root == null)
                 throw new InvalidDataException("FBX main asset is not a GameObject: " + SourceFbxPath);
@@ -216,6 +295,7 @@ namespace Kruty1918.Moyva.Generator.Editor
         private sealed class MeshData
         {
             public Vector3[] verts;
+            public Vector3[] normals;
             public int[] triangles;
             public int yaw;
 
@@ -241,13 +321,50 @@ namespace Kruty1918.Moyva.Generator.Editor
             for (int i = 0; i < verts.Length; i++)
                 baked[i] = source.bakeMatrix.MultiplyPoint3x4(verts[i]);
 
+            Vector3[] srcNormals = source.mesh.normals;
+            var bakedNormals = new Vector3[verts.Length];
+            for (int i = 0; i < verts.Length; i++)
+            {
+                Vector3 n = i < srcNormals.Length ? srcNormals[i] : Vector3.up;
+                bakedNormals[i] = source.bakeMatrix.MultiplyVector(n).normalized;
+            }
+
             var data = new MeshData
             {
                 verts = baked,
+                normals = bakedNormals,
                 triangles = source.mesh.triangles,
             };
+            FixWinding(data);
             EnsureUpAxis(data);
             return data;
+        }
+
+        /// <summary>
+        /// OBJ/FBX handedness conversion may reverse authored winding, which
+        /// would leave every computed face normal pointing inward. Authored
+        /// normals are the ground truth: flip any triangle whose geometric
+        /// normal disagrees with its authored vertex normal.
+        /// </summary>
+        private static void FixWinding(MeshData data)
+        {
+            for (int t = 0; t < data.triangles.Length; t += 3)
+            {
+                int ia = data.triangles[t];
+                int ib = data.triangles[t + 1];
+                int ic = data.triangles[t + 2];
+                Vector3 n = Vector3.Cross(
+                    data.verts[ib] - data.verts[ia],
+                    data.verts[ic] - data.verts[ia]);
+                if (n.sqrMagnitude < 1e-12f)
+                    continue;
+
+                if (Vector3.Dot(n, data.normals[ia]) >= 0f)
+                    continue;
+
+                data.triangles[t + 1] = ic;
+                data.triangles[t + 2] = ib;
+            }
         }
 
         /// <summary>
@@ -283,6 +400,10 @@ namespace Kruty1918.Moyva.Generator.Editor
                 data.verts[i] = flipZ
                     ? new Vector3(v.x, -v.z, v.y)
                     : new Vector3(v.x, v.z, -v.y);
+                Vector3 n = data.normals[i];
+                data.normals[i] = flipZ
+                    ? new Vector3(n.x, -n.z, n.y)
+                    : new Vector3(n.x, n.z, -n.y);
             }
         }
 
@@ -335,9 +456,28 @@ namespace Kruty1918.Moyva.Generator.Editor
             return bestYaw;
         }
 
-        /// <summary>Top-face triangle area per quadrant, indexed SW,SE,NE,NW.</summary>
+        /// <summary>
+        /// Plateau-top triangle area per quadrant, indexed SW,SE,NE,NW.
+        /// Only truly horizontal faces at the highest top level count — the
+        /// bevel ring and the low ground plane are also up-facing and would
+        /// otherwise drown out the plateau distribution.
+        /// </summary>
         private static float[] QuadrantTopAreas(MeshData data)
         {
+            float topY = float.MinValue;
+            for (int t = 0; t < data.triangles.Length; t += 3)
+            {
+                Vector3 a = data.verts[data.triangles[t]];
+                Vector3 b = data.verts[data.triangles[t + 1]];
+                Vector3 c = data.verts[data.triangles[t + 2]];
+                Vector3 n = Vector3.Cross(b - a, c - a);
+                if (n.magnitude < 1e-8f || n.y / n.magnitude < FlatTopNormalY)
+                    continue;
+                float y = (a.y + b.y + c.y) / 3f;
+                if (y > topY)
+                    topY = y;
+            }
+
             var area = new float[4];
             for (int t = 0; t < data.triangles.Length; t += 3)
             {
@@ -346,10 +486,12 @@ namespace Kruty1918.Moyva.Generator.Editor
                 Vector3 c = data.verts[data.triangles[t + 2]];
                 Vector3 n = Vector3.Cross(b - a, c - a);
                 float doubleArea = n.magnitude;
-                if (doubleArea < 1e-8f || n.y / doubleArea < TopNormalY)
+                if (doubleArea < 1e-8f || n.y / doubleArea < FlatTopNormalY)
                     continue;
 
                 Vector3 centroid = (a + b + c) / 3f;
+                if (centroid.y < topY - 0.01f)
+                    continue;
                 area[QuadrantIndex(centroid)] += doubleArea * 0.5f;
             }
             return area;
@@ -412,29 +554,34 @@ namespace Kruty1918.Moyva.Generator.Editor
             }
 
             int triCount = data.triangles.Length;
-            var positions = new Vector3[triCount];
-            var normals = new Vector3[triCount];
-            var uv = new Vector2[triCount];
-            var indices = new int[triCount];
+            // Submesh 0 = tops + bevels (theme material, planar UVs);
+            // submesh 1 = vertical walls and undersides (earth material,
+            // box-projected UVs). The split keeps the authored bevel band
+            // grass-coloured while cliff sides get their own material.
+            var positions = new List<Vector3>(triCount);
+            var normals = new List<Vector3>(triCount);
+            var uv = new List<Vector2>(triCount);
+            var surfaceIndices = new List<int>();
+            var sideIndices = new List<int>();
 
             for (int t = 0; t < triCount; t += 3)
             {
                 Vector3 a = scaled[data.triangles[t]];
                 Vector3 b = scaled[data.triangles[t + 1]];
                 Vector3 c = scaled[data.triangles[t + 2]];
-                Vector3 n = Vector3.Cross(b - a, c - a).normalized;
-                if (n.sqrMagnitude < 0.5f)
-                    n = Vector3.up;
+                Vector3 n = Vector3.Cross(b - a, c - a);
+                n = n.sqrMagnitude < 1e-12f ? Vector3.up : n.normalized;
 
+                var bucket = n.y > TopNormalY ? surfaceIndices : sideIndices;
                 for (int k = 0; k < 3; k++)
                 {
                     Vector3 p = scaled[data.triangles[t + k]];
-                    positions[t + k] = p;
-                    normals[t + k] = n;
-                    uv[t + k] = n.y > TopNormalY || n.y < -TopNormalY
+                    positions.Add(p);
+                    normals.Add(n);
+                    uv.Add(n.y > TopNormalY || n.y < -TopNormalY
                         ? new Vector2(p.x + 0.5f, p.z + 0.5f)
-                        : WallUv(p, n, drop);
-                    indices[t + k] = t + k;
+                        : WallUv(p, n, drop));
+                    bucket.Add(positions.Count - 1);
                 }
             }
 
@@ -447,10 +594,12 @@ namespace Kruty1918.Moyva.Generator.Editor
                 mesh.Clear();
 
             mesh.name = name;
-            mesh.vertices = positions;
-            mesh.normals = normals;
-            mesh.uv = uv;
-            mesh.triangles = indices;
+            mesh.vertices = positions.ToArray();
+            mesh.normals = normals.ToArray();
+            mesh.uv = uv.ToArray();
+            mesh.subMeshCount = 2;
+            mesh.SetTriangles(surfaceIndices, 0);
+            mesh.SetTriangles(sideIndices, 1);
             mesh.RecalculateBounds();
             mesh.RecalculateTangents();
 
@@ -507,6 +656,49 @@ namespace Kruty1918.Moyva.Generator.Editor
             return AssetDatabase.LoadAssetAtPath<Material>(path);
         }
 
+        /// <summary>
+        /// Shared material for the second submesh: vertical walls and
+        /// undersides of every theme/form. Uses the earth albedo with the
+        /// same shading fields as the theme materials so cliff sides read
+        /// as soil/rock instead of the top texture stretched sideways.
+        /// </summary>
+        private static Material CreateOrUpdateSideMaterial()
+        {
+            const string path =
+                MoyvaAtlasPackImporter.CliffMaterialsFolder + "/moyva_cliff_side.mat";
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+                shader = Shader.Find("Standard");
+            if (shader == null)
+                throw new InvalidOperationException("URP Lit or Standard shader is required.");
+
+            Texture2D albedo = PrepareThemeTexture("dirt");
+
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            bool created = material == null;
+            if (created)
+                material = new Material(shader);
+
+            material.shader = shader;
+            material.name = "moyva_cliff_side";
+            material.enableInstancing = true;
+            if (material.HasProperty("_BaseMap")) material.SetTexture("_BaseMap", albedo);
+            if (material.HasProperty("_MainTex")) material.SetTexture("_MainTex", albedo);
+            if (material.HasProperty("_BumpMap")) material.SetTexture("_BumpMap", null);
+            if (material.HasProperty("_MetallicGlossMap")) material.SetTexture("_MetallicGlossMap", null);
+            material.DisableKeyword("_NORMALMAP");
+            material.DisableKeyword("_METALLICGLOSSMAP");
+            material.DisableKeyword("_METALLICSPECGLOSSMAP");
+            if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", 0.08f);
+            if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", 0f);
+
+            if (created)
+                AssetDatabase.CreateAsset(material, path);
+            else
+                EditorUtility.SetDirty(material);
+            return AssetDatabase.LoadAssetAtPath<Material>(path);
+        }
+
         private static Texture2D PrepareThemeTexture(string theme)
         {
             string path = $"{SourcesFolder}/{ThemeTextures[theme]}";
@@ -530,7 +722,8 @@ namespace Kruty1918.Moyva.Generator.Editor
         /// every serialized object id stable, so TilePreset references and the
         /// atlas-tile-set.json entries survive unchanged.
         /// </summary>
-        private static void RewritePrefab(string name, Mesh mesh, Material material)
+        private static void RewritePrefab(
+            string name, Mesh mesh, Material material, Material sideMaterial)
         {
             string path = $"{MoyvaAtlasPackImporter.PrefabsFolder}/{name}.prefab";
 
@@ -551,7 +744,7 @@ namespace Kruty1918.Moyva.Generator.Editor
                                ?? root.AddComponent<MeshCollider>();
 
                 meshFilter.sharedMesh = mesh;
-                renderer.sharedMaterial = material;
+                renderer.sharedMaterials = new[] { material, sideMaterial };
                 // Open surface collision is deliberate (matches atlas prefabs).
                 collider.sharedMesh = mesh;
 

@@ -1,0 +1,33 @@
+{
+  "cell_size_m": 2,
+  "quadrant_size_m": 1,
+  "top_inset_m": 0.075,
+  "bevel_drop_m": 0.075,
+  "corner_bits": {
+    "NW": 1,
+    "NE": 2,
+    "SW": 4,
+    "SE": 8
+  },
+  "mesh_masks": {
+    "Cliff_Corner_Tile": 1,
+    "Cliff_Corner_Tile.001": 2,
+    "Cliff_Corner_Tile.002": 4,
+    "Cliff_Corner_Tile.003": 8,
+    "Cliff_Edge_Tile": 3,
+    "Cliff_Edge_Tile.001": 5,
+    "Cliff_Edge_Tile.002": 10,
+    "Cliff_Edge_Tile.003": 12,
+    "Cliff_Double_Corner_Tile": 6,
+    "Cliff_Double_Corner_Tile.001": 9,
+    "Cliff_Double_Corner_Tile.002": 6,
+    "Cliff_Int_Corner_Tile": 7,
+    "Cliff_Int_Corner_Tile.001": 11,
+    "Cliff_Fill_Tile": 0,
+    "Cliff_Fill_Tile.001": 0,
+    "Cliff_Fill_Tile.003": 0,
+    "Cliff_Fill_Tile.008": 0,
+    "Cliff_Fill_Tile.011": 0,
+    "Cliff_Fill_Tile.013": 15
+  }
+}

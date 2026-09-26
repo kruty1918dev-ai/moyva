@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using Kruty1918.Moyva.Generator.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -31,6 +33,8 @@ namespace Kruty1918.Moyva.Generator.Editor
             BuildMaskSections(root.transform);
             BuildAssembledPlatforms(root.transform);
             BuildStairSection(root.transform);
+            BuildBeveledSourceRow(root.transform);
+            BuildVariedHeightMap(root.transform);
             SetupLightingAndCamera();
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -194,6 +198,157 @@ namespace Kruty1918.Moyva.Generator.Editor
             go.transform.SetParent(parent, false);
             go.transform.SetPositionAndRotation(position, rotation);
             return go;
+        }
+
+        /// <summary>
+        /// All 19 beveled source OBJs in two rows at their authored scale,
+        /// so every shipped model can be eyeballed against the pack renders.
+        /// </summary>
+        private static void BuildBeveledSourceRow(Transform root)
+        {
+            var section = new GameObject("Beveled_Sources").transform;
+            section.SetParent(root, false);
+            const float zBase = 44f;
+
+            string[] files = Directory.GetFiles(
+                MoyvaCliffTileAssetBuilder.SourceObjFolder, "*.obj");
+            Array.Sort(files, StringComparer.Ordinal);
+            Material preview = AssetDatabase.LoadAssetAtPath<Material>(
+                $"{MoyvaAtlasPackImporter.CliffMaterialsFolder}/moyva_theme_stone.mat");
+
+            for (int i = 0; i < files.Length; i++)
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(files[i]);
+                if (prefab == null)
+                {
+                    Debug.LogWarning($"[MoyvaAtlasValidation] Cannot load {files[i]}");
+                    continue;
+                }
+
+                var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+                go.name = Path.GetFileNameWithoutExtension(files[i]);
+                go.transform.SetParent(section, false);
+                go.transform.SetPositionAndRotation(
+                    new Vector3((i % 7) * 3f, 0f, zBase + (i / 7) * 3f),
+                    Quaternion.identity);
+                if (preview != null)
+                    foreach (var r in go.GetComponentsInChildren<Renderer>())
+                        r.sharedMaterial = preview;
+            }
+        }
+
+        /// <summary>
+        /// A small two-level terrain patch built from real mask dispatch:
+        /// a raised platform beside a lower plateau plus a stepped edge, so
+        /// high/high, low/low and low/high neighbour seams are all covered.
+        /// </summary>
+        private static void BuildVariedHeightMap(Transform root)
+        {
+            var section = new GameObject("Varied_Heights").transform;
+            section.SetParent(root, false);
+            const float zBase = 30f;
+            const int w = 8, h = 6;
+
+            // Logical heights: right half raised one step, upper-left bump.
+            var heights = new int[w, h];
+            for (int x = 0; x < w; x++)
+            for (int z = 0; z < h; z++)
+                heights[x, z] = x >= 4 ? 1 : 0;
+            for (int x = 1; x <= 2; x++)
+            for (int z = 3; z <= 4; z++)
+                heights[x, z] = 1;
+
+            // Dual-grid fragment at vertex (x,z) sees corner cells
+            // (x,z) SW, (x+1,z) SE, (x,z+1) NW, (x+1,z+1) NE.
+            for (int x = -1; x <= w; x++)
+            for (int z = -1; z <= h; z++)
+            {
+                int sw = HeightAt(heights, x, z);
+                int se = HeightAt(heights, x + 1, z);
+                int nw = HeightAt(heights, x, z + 1);
+                int ne = HeightAt(heights, x + 1, z + 1);
+                int top = Mathf.Max(Mathf.Max(sw, se), Mathf.Max(nw, ne));
+                if (top == 0)
+                    continue; // ground plane is not part of the tile set
+
+                int mask = AtlasDualGridShapes.BuildMask(
+                    northWest: nw == top,
+                    northEast: ne == top,
+                    southWest: sw == top,
+                    southEast: se == top);
+                if (mask == 0)
+                    continue;
+
+                SpawnForm(section, "grass", mask, lowVariant: false,
+                    new Vector3(x + 0.5f, top * 0.5f, zBase + z + 0.5f));
+            }
+        }
+
+        private static int HeightAt(int[,] heights, int x, int z)
+            => x < 0 || z < 0 || x >= heights.GetLength(0) || z >= heights.GetLength(1)
+                ? -1
+                : heights[x, z];
+
+        /// <summary>
+        /// Renders the saved validation scene from a few fixed viewpoints
+        /// into PNGs so batch runs leave inspectable evidence.
+        /// </summary>
+        public static void CaptureForBatch()
+        {
+            try
+            {
+                EditorSceneManager.OpenScene(ScenePath);
+                string dir = Path.GetFullPath(
+                    Path.Combine(Application.dataPath, "../Library/ai/beveled-validation"));
+                Directory.CreateDirectory(dir);
+
+                Shot(new Vector3(11f, 26f, 4f), Quaternion.Euler(60f, 0f, 0f),
+                    dir + "/masks_overview.png", 1600, 1200);
+                Shot(new Vector3(4f, 6f, 26f), Quaternion.Euler(35f, -12f, 0f),
+                    dir + "/varied_heights.png", 1600, 1200);
+                Shot(new Vector3(9f, 8f, 38f),
+                    Quaternion.LookRotation(new Vector3(0f, -8f, 9f), Vector3.up),
+                    dir + "/beveled_sources.png", 1600, 900);
+                Shot(new Vector3(8f, 8f, -12f), Quaternion.Euler(30f, 0f, 0f),
+                    dir + "/platforms_stairs.png", 1600, 1200);
+                Shot(new Vector3(2.5f, 4f, -15f),
+                    Quaternion.LookRotation(new Vector3(0f, -4f, 8f), Vector3.up),
+                    dir + "/seam_closeup.png", 1600, 900);
+                EditorApplication.Exit(0);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[MoyvaAtlasValidation] Capture failed: {ex}");
+                EditorApplication.Exit(1);
+            }
+        }
+
+        private static void Shot(
+            Vector3 position, Quaternion rotation, string path, int w, int h)
+        {
+            var go = new GameObject("shotcam");
+            try
+            {
+                var cam = go.AddComponent<UnityEngine.Camera>();
+                go.transform.SetPositionAndRotation(position, rotation);
+                cam.clearFlags = CameraClearFlags.Skybox;
+                var rt = new RenderTexture(w, h, 24);
+                cam.targetTexture = rt;
+                cam.Render();
+                RenderTexture.active = rt;
+                var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+                tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+                tex.Apply();
+                RenderTexture.active = null;
+                cam.targetTexture = null;
+                rt.Release();
+                File.WriteAllBytes(path, tex.EncodeToPNG());
+                Debug.Log($"[MoyvaAtlasValidation] Wrote {path}");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+            }
         }
 
         private static void Label(Transform parent, string text, Vector3 position)
