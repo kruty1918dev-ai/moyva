@@ -13,12 +13,9 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _ADVANCED_SHADING
-  - _CAUSTICS
-  - _DISTANCE_NORMALS
+  - _ENVIRONMENTREFLECTIONS_OFF
   - _NORMALMAP
   - _REFRACTION
-  - _SURFACE_FOAM_SINGLE
-  - _TRANSLUCENCY
   - _WAVES
   m_InvalidKeywords:
   - ADVANCED_LIGHTING
@@ -158,7 +155,7 @@ Material:
     - _CausticsBrightness: 2
     - _CausticsChromance: 0.754
     - _CausticsDistortion: 0.246
-    - _CausticsOn: 1
+    - _CausticsOn: 0
     - _CausticsSpeed: 0.1
     - _CausticsTiling: 0.15000004
     - _ColorAbsorption: 0
@@ -173,13 +170,13 @@ Material:
     - _DepthVertical: 4
     - _DisableDepthTexture: 0
     - _DistanceFoamTiling: 0.2
-    - _DistanceNormalsOn: 1
+    - _DistanceNormalsOn: 0
     - _DistanceNormalsTiling: 0.010000007
     - _DstBlend: 0
     - _EdgeFade: 32
     - _EnableDirectionalCaustics: 1
     - _EnvironmentReflections: 1
-    - _EnvironmentReflectionsOn: 1
+    - _EnvironmentReflectionsOn: 0
     - _FlatShadingOn: 0
     - _FlowSpeed: 1
     - _FoamBaseAmount: 0
@@ -189,7 +186,7 @@ Material:
     - _FoamClippingDynamic: 0
     - _FoamDistanceOn: 0
     - _FoamDistortion: 0.62
-    - _FoamOn: 1
+    - _FoamOn: 0
     - _FoamOpacity: 1
     - _FoamSize: 0.314
     - _FoamSpeed: -0.1
@@ -253,10 +250,10 @@ Material:
     - _ReflectionDistortion: 0.07
     - _ReflectionFresnel: 8
     - _ReflectionLighting: 0
-    - _ReflectionStrength: 0.765
+    - _ReflectionStrength: 0
     - _Reflectivity: 1
     - _RefractionAmount: 0.05
-    - _RefractionChromaticAberration: 0.042
+    - _RefractionChromaticAberration: 0
     - _RefractionOn: 1
     - _RefractionStrength: 0.389
     - _RimRize: 1
@@ -289,7 +286,7 @@ Material:
     - _SunReflectionSharp: 0
     - _SunReflectionSharpness: 0.555
     - _SunReflectionSize: 0.955
-    - _SunReflectionStrength: 5.49
+    - _SunReflectionStrength: 0
     - _Surface: 0
     - _TEXTURE_INTERSECTIONOn: 0
     - _TessMax: 200
@@ -300,7 +297,7 @@ Material:
     - _Translucency: 1
     - _TranslucencyCurvatureMask: 0.754
     - _TranslucencyExp: 3.3
-    - _TranslucencyOn: 1
+    - _TranslucencyOn: 0
     - _TranslucencyReflectionMask: 0
     - _TranslucencyStrength: 1
     - _TranslucencyStrengthDirect: 0.04
