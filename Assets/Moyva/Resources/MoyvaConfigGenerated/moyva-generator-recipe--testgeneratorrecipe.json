@@ -88,6 +88,34 @@
       "shoreRecessMeters": 0.02,
       "borderSkirtMeters": 0.4
     },
+    "waterfalls": {
+      "enabled": true,
+      "minDropLevels": 2,
+      "curtainMaterial": {
+        "$asset": "asset.material.stylizedwater3-waterfall.9092099d",
+        "editorPath": "Assets/ThirdParty/Stylized Water 3/Materials/StylizedWater3_Waterfall.mat",
+        "required": true
+      },
+      "edgeFoamPrefab": {
+        "$asset": "asset.game-object.waterfall-edge.ff7c5633",
+        "editorPath": "Assets/ThirdParty/Stylized Water 3/Prefabs/Particles/Waterfall Edge.prefab",
+        "required": false
+      },
+      "impactSplashPrefab": {
+        "$asset": "asset.game-object.waterfall-impact-splashes.acd0d4ef",
+        "editorPath": "Assets/ThirdParty/Stylized Water 3/Prefabs/Particles/Waterfall Impact Splashes.prefab",
+        "required": false
+      },
+      "mistPrefab": {
+        "$asset": "asset.game-object.waterfallmist.808afbe7",
+        "editorPath": "Assets/ThirdParty/Stylized Water 3/Prefabs/Particles/WaterfallMist.prefab",
+        "required": false
+      },
+      "mistMinDropLevels": 3,
+      "maxVfxPerMap": 18,
+      "vfxScale": 0.7,
+      "maxParticlesPerVfx": 60
+    },
     "seedSalt": 7331
   },
   "shore": {

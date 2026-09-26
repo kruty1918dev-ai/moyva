@@ -1,8 +1,35 @@
-# Work State — 2026-09-26 (water depth + seabed + pit fix + FBX tiles)
+# Work State — 2026-09-26 (waterfalls + water depth + seabed + pit fix + FBX tiles)
 
 ## Current task
 
-**Water depth visibility (2026-09-26):**
+**Automatic SW3 waterfalls (2026-09-26):**
+- Cause: `CollectWaterfallSource` drew stretched unit quads on the lake
+  sheet material at every lower water neighbour (min 0.5 m) — turquoise
+  plates, no lip/foam/flow.
+- `RecipeWaterfallConfig` under `hydrology.waterfalls`: `minDropLevels`
+  (2 × `TerrainHeightStep`), `curtainMaterial` + SW3 edge/splash/mist
+  prefabs via `$asset` refs (registered in `MoyvaRuntimeAssetCatalog`).
+- `WaterfallFieldPlanner` — drop edges on rendered sheets pouring onto
+  plan-water; corner-diagonal suppression (own ortho pour OR flank-cell
+  ortho pour into same lower); contiguous same-dir merge → fronts,
+  anchor = middle cell → chunk owner + stable id.
+- `WaterfallChunkMeshService` — 4-point lipped curtain profile per
+  front, one mesh per chunk on `StylizedWater3_Waterfall.mat`
+  (`_WORLDSPACEUV_ON` + dir (0,−1,0) = downward flow on any geometry),
+  merged into the combined chunk mesh. `WaterfallVfxSpawner` — SW3
+  prefabs under per-chunk `Waterfalls` roots, budget + particle caps.
+- Legacy strips suppressed only when `IsActive && HasField`; legacy
+  stays the fallback.
+- `WorldVisualSmoke` +`DumpWaterfalls` (fronts csv, active txt, closeup
+  shots) + fixed `TerrainPlanTests` water-material assertion.
+- Verified seed 6130 same world: `fronts=5 vfxSystems=13`, drops
+  2.22–3.22 m, verts 515861→515517, smoke PASS, 0 errors; planner
+  tests 10/10. Report: `docs/qa/WATERFALLS_2026-09-26.md`; evidence:
+  `docs/qa/evidence/waterfalls-seed6130/`.
+
+## Previous task
+
+**Water depth visibility (2026-09-26) — committed `1dd75d73`:**
 - Runtime water was `StylizedWater3_NintendoStyle` via
   `TileWater.asset` `materialOverride`, with `_DepthHorizontal=0.01`
   → column-depth shading effectively off. `WaterLayerMaterialApplier`

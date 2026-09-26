@@ -46,6 +46,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             out float upperY, out float lowerY);
         /// <summary>Seabed profile config from the active plan; null when absent.</summary>
         RecipeSeabedConfig Seabed { get; }
+        /// <summary>Waterfall front config from the active plan; null when absent.</summary>
+        RecipeWaterfallConfig Waterfalls { get; }
     }
 
     /// <summary>
@@ -68,6 +70,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 : 0.5f;
         public RecipeHydrologyPlan Plan => _plan;
         public RecipeSeabedConfig Seabed => _plan?.Seabed;
+        public RecipeWaterfallConfig Waterfalls => _plan?.Waterfalls;
 
         public void Clear()
         {

@@ -62,13 +62,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _surfaceOnlyFailureCache =
                 new HashSet<TileSurfaceOnlyMeshKey>();
         private readonly SeabedChunkMeshService _seabed;
+        private readonly WaterfallChunkMeshService _waterfalls;
 
         public ChunkTerrainMeshBuilder(
             ChunkFirstRuntimeMeshRegistry meshRegistry,
-            [InjectOptional] SeabedChunkMeshService seabed = null)
+            [InjectOptional] SeabedChunkMeshService seabed = null,
+            [InjectOptional] WaterfallChunkMeshService waterfalls = null)
         {
             _meshRegistry = meshRegistry;
             _seabed = seabed;
+            _waterfalls = waterfalls;
         }
 
         public int Build(
@@ -92,16 +95,21 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
              * provider checks IsActive to decide whether per-cell water-bed
              * columns still need to render.
              */
-            if (_seabed != null)
+            if (_seabed != null || _waterfalls != null)
             {
                 ResolveMapDimensions(
                     resolvedCells,
-                    out int seabedMapWidth,
-                    out int seabedMapHeight);
-                _seabed.Prepare(
+                    out int mapWidth,
+                    out int mapHeight);
+                _seabed?.Prepare(
                     resolvedCells,
-                    seabedMapWidth,
-                    seabedMapHeight,
+                    mapWidth,
+                    mapHeight,
+                    area.CellSize);
+                _waterfalls?.Prepare(
+                    resolvedCells,
+                    mapWidth,
+                    mapHeight,
                     area.CellSize);
             }
 
@@ -133,7 +141,24 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 seabedAdded = true;
             }
 
-            if (fragmentCount == 0 && !seabedAdded)
+            bool waterfallsAdded = false;
+            if (_waterfalls != null
+                && _waterfalls.IsActive
+                && _waterfalls.TryBuildChunkMesh(
+                    area.CoreRect,
+                    out Mesh waterfallMesh,
+                    out Material waterfallMaterial))
+            {
+                _meshRegistry.Register(waterfallMesh);
+                AddSource(new TileMeshSource(
+                    waterfallMesh,
+                    new[] { waterfallMaterial },
+                    Matrix4x4.identity,
+                    tileGeometryMode: TileGeometryMode.SolidTerrain));
+                waterfallsAdded = true;
+            }
+
+            if (fragmentCount == 0 && !seabedAdded && !waterfallsAdded)
                 return 0;
 
             Mesh combined = CombineByMaterial(terrainRoot.name, area);

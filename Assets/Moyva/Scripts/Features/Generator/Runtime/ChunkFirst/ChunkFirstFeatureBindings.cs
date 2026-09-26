@@ -21,6 +21,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             container.Bind<IChunkFirstTwcVisualCleanupService>().To<ChunkFirstTwcVisualCleanupService>().AsSingle();
             container.Bind<IChunkTerrainMeshBuilder>().To<ChunkTerrainMeshBuilder>().AsSingle();
             container.Bind<IChunkFirstObjectSpawner>().To<ChunkFirstObjectSpawner>().AsSingle();
+            container.Bind<WaterfallChunkMeshService>().AsSingle();
+            container.Bind<WaterfallVfxSpawner>().AsSingle();
             container.Bind<IChunkFirstWorldBuildService>().To<ChunkFirstWorldBuildService>().AsSingle();
         }
     }

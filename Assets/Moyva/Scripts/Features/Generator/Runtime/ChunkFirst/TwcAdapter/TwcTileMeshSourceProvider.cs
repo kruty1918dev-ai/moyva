@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly ITerrainPassageMap _passages;
         private readonly IRecipeHydrologyMap _hydrology;
         private readonly SeabedChunkMeshService _seabed;
+        private readonly WaterfallChunkMeshService _waterfalls;
         private readonly Dictionary<string, TilesBuildLayer> _buildLayerByGuid = new Dictionary<string, TilesBuildLayer>(System.StringComparer.Ordinal);
         private readonly Dictionary<GameObject, PrefabMeshTemplate[]> _meshTemplatesByPrefab =
             new Dictionary<GameObject, PrefabMeshTemplate[]>();
@@ -28,13 +29,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             [InjectOptional] IAtlasTileSetCatalog atlas = null,
             [InjectOptional] ITerrainPassageMap passages = null,
             [InjectOptional] IRecipeHydrologyMap hydrology = null,
-            [InjectOptional] SeabedChunkMeshService seabed = null)
+            [InjectOptional] SeabedChunkMeshService seabed = null,
+            [InjectOptional] WaterfallChunkMeshService waterfalls = null)
         {
             _environment = environment;
             _atlas = atlas;
             _passages = passages;
             _hydrology = hydrology;
             _seabed = seabed;
+            _waterfalls = waterfalls;
         }
 
         public int CollectMeshSources(ResolvedTileComposition composition, List<TileMeshSource> results)
@@ -65,7 +68,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
             if (sample.TileGeometryMode == TileGeometryMode.SurfaceOnly)
             {
-                added += CollectWaterfallSource(composition, buildLayer, preset, results);
+                // Curtain fronts own every qualifying drop edge once the
+                // waterfall field built; the stretched strips stay as the
+                // fallback when the feature is off or could not build.
+                if (_waterfalls == null || !_waterfalls.IsActive || !_waterfalls.HasField)
+                    added += CollectWaterfallSource(composition, buildLayer, preset, results);
                 // The chunked seabed owns the underwater volume when its
                 // field built; per-cell sand columns would coplanar-fight
                 // its surface. Without a field the columns stay as fallback.

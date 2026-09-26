@@ -20,6 +20,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly IChunkFirstTwcVisualCleanupService _twcVisualCleanup;
         private readonly IChunkTerrainMeshBuilder _meshBuilder;
         private readonly IChunkFirstObjectSpawner _objectSpawner;
+        private readonly WaterfallChunkMeshService _waterfalls;
+        private readonly WaterfallVfxSpawner _waterfallVfx;
         private readonly ChunkFirstRuntimeMeshRegistry _meshRegistry;
         private readonly Dictionary<Vector2Int, ResolvedTileComposition> _resolved = new Dictionary<Vector2Int, ResolvedTileComposition>();
         private readonly List<MapChunkCoord> _singleChunk = new List<MapChunkCoord>(1);
@@ -37,7 +39,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             IChunkFirstTwcVisualCleanupService twcVisualCleanup,
             IChunkTerrainMeshBuilder meshBuilder,
             IChunkFirstObjectSpawner objectSpawner,
-            ChunkFirstRuntimeMeshRegistry meshRegistry)
+            ChunkFirstRuntimeMeshRegistry meshRegistry,
+            [Zenject.InjectOptional] WaterfallChunkMeshService waterfalls = null,
+            [Zenject.InjectOptional] WaterfallVfxSpawner waterfallVfx = null)
         {
             _environment = environment;
             _chunkSettings = chunkSettings;
@@ -50,6 +54,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _twcVisualCleanup = twcVisualCleanup;
             _meshBuilder = meshBuilder;
             _objectSpawner = objectSpawner;
+            _waterfalls = waterfalls;
+            _waterfallVfx = waterfallVfx;
             _meshRegistry = meshRegistry;
         }
 
@@ -86,6 +92,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 ResolveCompositions(worldData.LogicalTileMap, areas);
                 BuildTerrainMeshes(areas);
                 _objectSpawner.Spawn(worldData);
+                _waterfallVfx?.Spawn(_waterfalls);
 
                 return CreateResult(worldData, configuration);
             }

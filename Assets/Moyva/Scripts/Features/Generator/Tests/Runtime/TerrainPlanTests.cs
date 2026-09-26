@@ -108,7 +108,7 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
             using var serialized = new UnityEditor.SerializedObject(preset);
             var material = serialized.FindProperty("materialOverride").objectReferenceValue as Material;
             Assert.IsNotNull(material);
-            Assert.AreEqual("Assets/ThirdParty/Stylized Water 3/Materials/StylizedWater3_NintendoStyle.mat",
+            Assert.AreEqual("Assets/Moyva/Art/Materials/WaterMaterial.mat",
                 UnityEditor.AssetDatabase.GetAssetPath(material));
             Assert.IsNotNull(material.shader);
             Assert.IsFalse(material.shader.name.Contains("InternalErrorShader"));

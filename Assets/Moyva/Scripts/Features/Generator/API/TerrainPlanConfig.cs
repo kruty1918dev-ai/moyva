@@ -199,6 +199,9 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Continuous sloping seabed under water bodies; replaces per-cell bed columns.")]
         public RecipeSeabedConfig Seabed = new();
 
+        [Tooltip("Stylized Water 3 waterfall curtains at water-to-water drops; replaces stretched water strips.")]
+        public RecipeWaterfallConfig Waterfalls = new();
+
         [Tooltip("Seed salt so hydrology does not correlate with relief or layer masks.")]
         public int SeedSalt = 7331;
     }
@@ -241,5 +244,45 @@ namespace Kruty1918.Moyva.Generator.API
 
         [Tooltip("Vertical drop of the skirt at water cells on the map border so the bed edge never opens to void.")]
         [Min(0f)] public float BorderSkirtMeters = 0.4f;
+    }
+
+    /// <summary>
+    /// Waterfall fronts: curtain meshes on the Stylized Water 3 waterfall
+    /// material (world-space UV scroll runs downward on any geometry) plus
+    /// the package's edge/splash/mist VFX prefabs. The drop threshold is
+    /// expressed in terrain-height-step units so it follows the level grid
+    /// instead of an absolute meter constant.
+    /// </summary>
+    [System.Serializable]
+    public sealed class RecipeWaterfallConfig
+    {
+        public bool Enabled = true;
+
+        [Tooltip("Minimum surface drop between an upper water cell and its lower water neighbour, in terrain-height-step units. Two levels is the recommended starting threshold.")]
+        [Min(1)] public int MinDropLevels = 2;
+
+        [Tooltip("Front curtain material. The SW3 waterfall material scrolls foam downward in world space; falls back to the water preset material when unset.")]
+        public Material CurtainMaterial;
+
+        [Tooltip("Foam strip prefab placed along the fall lip (Stylized Water 3 'Waterfall Edge').")]
+        public GameObject EdgeFoamPrefab;
+
+        [Tooltip("Impact splash prefab placed at the fall base (Stylized Water 3 'Waterfall Impact Splashes').")]
+        public GameObject ImpactSplashPrefab;
+
+        [Tooltip("Mist prefab placed at the base of tall falls (Stylized Water 3 'WaterfallMist').")]
+        public GameObject MistPrefab;
+
+        [Tooltip("Drop height, in terrain-height-step units, from which a mist plume is added at the base.")]
+        [Min(1)] public int MistMinDropLevels = 3;
+
+        [Tooltip("Hard cap on spawned waterfall VFX objects per map (mobile particle budget). The largest fronts win.")]
+        [Min(0)] public int MaxVfxPerMap = 18;
+
+        [Tooltip("Uniform scale applied to VFX prefabs; widths additionally scale the edge-foam emitter.")]
+        [Range(0.25f, 2f)] public float VfxScale = 0.7f;
+
+        [Tooltip("Cap on per-instance particle counts so SW3 prefabs stay inside the mobile budget.")]
+        [Min(1)] public int MaxParticlesPerVfx = 60;
     }
 }

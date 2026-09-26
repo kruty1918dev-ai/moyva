@@ -452,6 +452,7 @@ public static class WorldVisualSmoke
         DumpLogicalMap(outDir, signal);
         DumpHydrology(outDir, signal);
         DumpSeabed(outDir, signal, targets);
+        DumpWaterfalls(outDir, signal, targets);
         DumpWaterMaterial(outDir, targets);
 
         File.WriteAllText(Path.Combine(outDir, "manifest.txt"), manifest.ToString());
@@ -687,6 +688,120 @@ public static class WorldVisualSmoke
         {
             if (probe != null) UnityEngine.Object.Destroy(probe);
             if (seabedMesh != null) UnityEngine.Object.Destroy(seabedMesh);
+        }
+    }
+
+    static void DumpWaterfalls(string outDir, WorldGeneratedDataSignal signal, List<MeshFilter> targets)
+    {
+        GameObject probe = null;
+        Mesh curtainMesh = null;
+        try
+        {
+            float cs = signal.CellSize <= 0.0001f ? 1f : signal.CellSize;
+            var svcType = FindGeneratorType("Kruty1918.Moyva.Generator.Runtime.ChunkFirst.WaterfallChunkMeshService");
+            if (svcType == null || lastContainer == null) return;
+            object svc = lastContainer.TryResolve(svcType);
+            if (svc == null) return;
+            bool active = svcType.GetProperty("IsActive")?.GetValue(svc) is bool a && a;
+            bool hasField = svcType.GetProperty("HasField")?.GetValue(svc) is bool f && f;
+            float minDrop = svcType.GetProperty("MinDropMeters")?.GetValue(svc) is float md ? md : float.NaN;
+            var fronts = svcType.GetProperty("Fronts")?.GetValue(svc) as System.Collections.IList;
+
+            int vfxCount = 0;
+            var spawned = UnityEngine.Object.FindObjectsByType<ParticleSystem>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < spawned.Length; i++)
+            {
+                if (spawned[i].name.StartsWith("wfall_", StringComparison.Ordinal))
+                    vfxCount++;
+            }
+            File.WriteAllText(Path.Combine(outDir, "waterfall-active.txt"),
+                $"waterfallsActive={active} fieldBuilt={hasField} minDropM={minDrop:F2} fronts={(fronts != null ? fronts.Count : -1)} vfxSystems={vfxCount}\n");
+
+            var sb = new StringBuilder("anchorX;anchorY;dirX;dirY;widthCells;topY;bottomY;drop\n");
+            if (fronts != null)
+            {
+                for (int i = 0; i < fronts.Count; i++)
+                {
+                    object fr = fronts[i];
+                    var anchor = (Vector2Int)GetMember(fr, "Anchor");
+                    var dir = (Vector2Int)GetMember(fr, "Dir");
+                    int w = (int)GetMember(fr, "WidthCells");
+                    float top = (float)GetMember(fr, "TopY");
+                    float bot = (float)GetMember(fr, "BottomY");
+                    float drop = (float)GetMember(fr, "Drop");
+                    sb.Append(anchor.x).Append(';').Append(anchor.y).Append(';')
+                      .Append(dir.x).Append(';').Append(dir.y).Append(';')
+                      .Append(w).Append(';')
+                      .Append(top.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)).Append(';')
+                      .Append(bot.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)).Append(';')
+                      .Append(drop.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)).Append('\n');
+                }
+            }
+            File.WriteAllText(Path.Combine(outDir, "waterfalls.csv"), sb.ToString());
+            if (!hasField || fronts == null || fronts.Count == 0)
+                return;
+
+            // Isolated curtain render over the whole map + close-up of the
+            // largest front inside the real terrain.
+            var tryBuild = svcType.GetMethod("TryBuildChunkMesh");
+            if (tryBuild != null)
+            {
+                object[] bargs = { new RectInt(0, 0, signal.Width, signal.Height), null, null };
+                if ((bool)tryBuild.Invoke(svc, bargs) && bargs[1] is Mesh mesh && bargs[2] is Material mat)
+                {
+                    curtainMesh = mesh;
+                    probe = new GameObject("__waterfall_probe");
+                    var mf = probe.AddComponent<MeshFilter>();
+                    var mr = probe.AddComponent<MeshRenderer>();
+                    mf.sharedMesh = mesh;
+                    mr.sharedMaterial = mat;
+                    var alone = new List<MeshFilter> { mf };
+                    Vector3 center = signal.HasMapWorldBounds
+                        ? signal.MapWorldBoundsCenter
+                        : new Vector3(signal.Width * cs * 0.5f, 0f, signal.Height * cs * 0.5f);
+                    float R = Mathf.Max(signal.Width, signal.Height) * cs;
+                    ShotAt(alone, outDir, "waterfalls_topdown",
+                        center + Vector3.up * (R + 60f),
+                        Quaternion.Euler(90f, 0f, 0f), ortho: true, orthoSize: R * 0.55f);
+                }
+            }
+
+            // Close-up: widest front — camera looks at the fall face from
+            // the lower side, like a player panning the game camera.
+            int best = 0;
+            float bestScore = -1f;
+            for (int i = 0; i < fronts.Count; i++)
+            {
+                object fr = fronts[i];
+                float score = (float)GetMember(fr, "Drop")
+                    * (int)GetMember(fr, "WidthCells");
+                if (score > bestScore) { bestScore = score; best = i; }
+            }
+            object front = fronts[best];
+            var fdir = (Vector2Int)GetMember(front, "Dir");
+            var fcenter = (Vector3)GetMember(front, "Center");
+            float ftop = (float)GetMember(front, "TopY");
+            float fbot = (float)GetMember(front, "BottomY");
+            int fwidth = (int)GetMember(front, "WidthCells");
+            Vector3 n = new Vector3(fdir.x, 0f, fdir.y).normalized;
+            Vector3 look = new Vector3(fcenter.x * cs, (ftop + fbot) * 0.5f, fcenter.z * cs);
+            float dist = Mathf.Max(6f, fwidth * cs * 1.6f + 4f);
+            Vector3 cam = look + n * dist + Vector3.up * (dist * 0.45f);
+            ShotAt(targets, outDir, "waterfall_closeup",
+                cam, Quaternion.LookRotation(look - cam, Vector3.up));
+            ShotAt(targets, outDir, "waterfall_closeup_top",
+                look + Vector3.up * (dist + 6f),
+                Quaternion.Euler(70f, 0f, 0f), ortho: true, orthoSize: dist * 0.7f);
+        }
+        catch (Exception e)
+        {
+            File.AppendAllText("Library/ai/visual-smoke-errors.log", "DumpWaterfalls: " + e + "\n");
+        }
+        finally
+        {
+            if (probe != null) UnityEngine.Object.Destroy(probe);
+            if (curtainMesh != null) UnityEngine.Object.Destroy(curtainMesh);
         }
     }
 
