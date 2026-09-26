@@ -71,6 +71,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 RuleEvaluators = _placementRuleEvaluators,
                 SkipInfluenceRules = _placementRulesProvider != null
                     && !_placementRulesProvider.EnableInfluenceZoneRules,
+                AllowBuildingAnywhereExceptWater =
+                    _placementRulesProvider != null
+                    && _placementRulesProvider.AllowBuildingAnywhereExceptWater,
             };
         }
 

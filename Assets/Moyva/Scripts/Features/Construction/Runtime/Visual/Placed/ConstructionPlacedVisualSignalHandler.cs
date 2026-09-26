@@ -88,17 +88,23 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         def,
                         placedPrefab,
                         ownerId);
+                ConstructionRotation normalizedRotation =
+                    ConstructionRotationUtility.Normalize(
+                        signal.RotationQuarterTurns);
                 _placedVisuals.Replace(
                     signal.Position,
                     signal.BuildingId,
                     placedPrefab,
                     ConstructionRotationUtility.ToWorldRotation(
-                        ConstructionRotationUtility.Normalize(
-                            signal.RotationQuarterTurns)),
+                        normalizedRotation),
                     def.ResolveVisualYOffset(),
                     sourceVisual,
                     def.Presentation,
-                    ownerId);
+                    ownerId,
+                    footprintCells: BuildingFootprintUtility.GetOccupiedCells(
+                        def,
+                        signal.Position,
+                        normalizedRotation));
 
                 if (showConstructionVisual)
                     _placedVisuals.MarkUnderConstruction(signal.Position);

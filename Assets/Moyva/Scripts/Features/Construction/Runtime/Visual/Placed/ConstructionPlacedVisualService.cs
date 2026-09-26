@@ -22,6 +22,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly Dictionary<Vector2Int, string> _buildingIdByPosition = new();
         private readonly Dictionary<Vector2Int, string> _ownerIdByPosition = new();
         private readonly Dictionary<Vector2Int, Quaternion> _baseRotationByPosition = new();
+        private readonly Dictionary<Vector2Int, IReadOnlyList<Vector2Int>> _footprintCellsByPosition = new();
         private readonly HashSet<Vector2Int> _demolitionPreviewPositions = new();
         private readonly HashSet<Vector2Int> _underConstructionPositions = new();
         private readonly SpriteSelectionHighlighter _selectionHighlighter = new();
@@ -65,9 +66,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             GameObject sourceVisual = null,
             EntityPresentationConfig presentation = null,
             string ownerId = null,
-            bool instantVisual = false)
+            bool instantVisual = false,
+            IReadOnlyList<Vector2Int> footprintCells = null)
         {
+            // Capture stored cells before Remove() clears the registry entry.
+            if (footprintCells == null)
+                _footprintCellsByPosition.TryGetValue(position, out footprintCells);
             Remove(position);
+            if (footprintCells != null && footprintCells.Count > 0)
+                _footprintCellsByPosition[position] = footprintCells;
+            else
+                _footprintCellsByPosition.Remove(position);
             string objectName = $"Building_{buildingId}_{position.x}_{position.y}";
             GameObject instance = sourceVisual != null
                 ? PrepareSourceVisual(
@@ -77,7 +86,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     objectName,
                     rotation,
                     visualOffsetY,
-                    presentation)
+                    presentation,
+                    footprintCells)
                 : _visualFactory.CreateInstance(
                     prefab,
                     position,
@@ -86,7 +96,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ResolveSortingOrder(),
                     rotation,
                     visualOffsetY: visualOffsetY,
-                    presentation: presentation);
+                    presentation: presentation,
+                    footprintCells: footprintCells);
             if (instance == null)
                 return;
 
@@ -247,6 +258,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _buildingIdByPosition.Remove(position);
             _ownerIdByPosition.Remove(position);
             _baseRotationByPosition.Remove(position);
+            _footprintCellsByPosition.Remove(position);
             _demolitionPreviewPositions.Remove(position);
             _underConstructionPositions.Remove(position);
             return instance;
@@ -458,6 +470,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _baseRotationByPosition.Clear();
             _demolitionPreviewPositions.Clear();
             _underConstructionPositions.Clear();
+            _footprintCellsByPosition.Clear();
             ClearSelection();
         }
 
@@ -478,7 +491,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string objectName,
             Quaternion rotation,
             float visualOffsetY,
-            EntityPresentationConfig presentation)
+            EntityPresentationConfig presentation,
+            IReadOnlyList<Vector2Int> footprintCells = null)
         {
             if (sourceVisual == null)
                 return null;
@@ -503,7 +517,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     isPreviewVisual: false,
                     presentation != null
                         ? presentation.ResolveGroundOffsetY(visualOffsetY)
-                        : visualOffsetY)
+                        : visualOffsetY,
+                    footprintCells: footprintCells)
                 : sourceVisual.transform.position;
             targetPosition = EntityPresentationApplier.ResolvePositionOffset(
                 targetPosition,

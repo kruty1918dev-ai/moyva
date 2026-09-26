@@ -17,6 +17,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly EnvironmentObjectPlacementResolver _placementResolver;
         private readonly FootprintRules _footprintRules;
         private readonly Dictionary<MapChunkCoord, Transform> _objectRoots = new Dictionary<MapChunkCoord, Transform>();
+        private readonly Dictionary<Vector2Int, List<GameObject>> _propsByCell = new Dictionary<Vector2Int, List<GameObject>>();
+        private readonly HashSet<Vector2Int> _clearedPropCells = new HashSet<Vector2Int>();
 
         public ChunkFirstObjectSpawner(
             ITileWorldCreatorBuildEnvironment environment,
@@ -38,6 +40,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         public int Spawn(GeneratedWorldData worldData)
         {
+            // A fresh world build resets cleared-footprint exclusions; cleared
+            // cells are re-recorded by the placement signals that follow.
+            _clearedPropCells.Clear();
             Clear();
             if (worldData?.LogicalTileMap != null)
                 return SpawnStacks(worldData.LogicalTileMap, worldData.Seed);
@@ -72,6 +77,50 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                         Object.DestroyImmediate(pair.Value.GetChild(i).gameObject);
                 }
             }
+
+            _propsByCell.Clear();
+        }
+
+        public int ClearPropsInCells(IReadOnlyList<Vector2Int> cells)
+        {
+            if (cells == null || cells.Count == 0)
+                return 0;
+
+            _clearedPropCells.UnionWith(cells);
+            int cleared = 0;
+            for (int i = 0; i < cells.Count; i++)
+            {
+                if (!_propsByCell.TryGetValue(cells[i], out var props))
+                    continue;
+
+                for (int p = 0; p < props.Count; p++)
+                {
+                    GameObject prop = props[p];
+                    if (prop == null)
+                        continue;
+
+                    if (Application.isPlaying)
+                        Object.Destroy(prop);
+                    else
+                        Object.DestroyImmediate(prop);
+                    cleared++;
+                }
+
+                _propsByCell.Remove(cells[i]);
+            }
+
+            return cleared;
+        }
+
+        private void TrackProp(Vector2Int cell, GameObject instance)
+        {
+            if (!_propsByCell.TryGetValue(cell, out var props))
+            {
+                props = new List<GameObject>(1);
+                _propsByCell[cell] = props;
+            }
+
+            props.Add(instance);
         }
 
         private int SpawnStacks(LogicalTileMap map, int seed)
@@ -86,6 +135,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
                 bool waterCell = HasSurfaceOnlyTerrain(stack);
                 string terrainTileId = map.TileIds[x, y];
+                var cell = new Vector2Int(x, y);
                 int candidateIndex = 0;
                 for (int i = 0; i < stack.Samples.Count; i++)
                 {
@@ -103,6 +153,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                         continue;
                     }
 
+                    // Prop cells cleared by a committed building footprint
+                    // stay clear on every respawn of this world.
+                    if (_clearedPropCells.Contains(cell)
+                        && sample.LayerKind != LayerKind.Building)
+                    {
+                        continue;
+                    }
+
                     // Tile-tagged spawn/build blocks (shore sand) apply to the
                     // object layer as well as to decorations.
                     if (!AllowsPlacement(
@@ -114,7 +172,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                         continue;
                     }
 
-                    if (TrySpawnSample(map, sample, new Vector2Int(x, y), seed, candidateIndex))
+                    if (TrySpawnSample(map, sample, cell, seed, candidateIndex))
                         spawned++;
                     candidateIndex++;
                 }
@@ -221,7 +279,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             instance.name = $"{prefab.name}_{hash:x8}";
             instance.transform.localPosition = position;
             if (sample.LayerKind != LayerKind.Building)
+            {
                 instance.transform.localRotation = rotation;
+                TrackProp(cell, instance);
+            }
+
             return true;
         }
 
@@ -308,6 +370,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 }
 
                 var cell = new Vector2Int(x, y);
+                if (skipWaterCells && _clearedPropCells.Contains(cell))
+                    continue;
+
                 if (!_layout.TryGetChunkCoord(cell, out var coord))
                     continue;
 
@@ -358,6 +423,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 var instance = Object.Instantiate(prefab, root, false);
                 instance.name = $"{prefab.name}_{hash:x8}";
                 instance.transform.localPosition = position;
+                if (skipWaterCells)
+                    TrackProp(cell, instance);
                 spawned++;
             }
 

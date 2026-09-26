@@ -26,13 +26,21 @@ namespace Kruty1918.Moyva.Construction.API
                 if (!request.IsTerrainBlocked(position))
                     continue;
 
-                result?.AddBlocker(new BuildingPlacementBlocker
-                {
-                    Kind = BuildingPlacementBlockerKind.Terrain,
-                    Message = "Footprint contains a terrain cell blocked for construction.",
-                    Position = position,
-                    BuildingId = request.BuildingId,
-                });
+                result?.AddBlocker(request.AllowBuildingAnywhereExceptWater
+                    ? new BuildingPlacementBlocker
+                    {
+                        Kind = BuildingPlacementBlockerKind.Water,
+                        Message = "Footprint overlaps water.",
+                        Position = position,
+                        BuildingId = request.BuildingId,
+                    }
+                    : new BuildingPlacementBlocker
+                    {
+                        Kind = BuildingPlacementBlockerKind.Terrain,
+                        Message = "Footprint contains a terrain cell blocked for construction.",
+                        Position = position,
+                        BuildingId = request.BuildingId,
+                    });
                 return true;
             }
 
@@ -60,6 +68,7 @@ namespace Kruty1918.Moyva.Construction.API
             }
 
             if (!requiresFlatGround
+                || request.AllowBuildingAnywhereExceptWater
                 || request.GetTerrainLevel == null)
             {
                 return false;

@@ -44,6 +44,12 @@ namespace Kruty1918.Moyva.Construction.API
             BuildingDefinition definition,
             BuildingPlacementEvaluationResult result)
         {
+            // "Build anywhere on dry land" keeps only the surface gate
+            // (water overlap); per-building terrain modules and required
+            // terrain ids are location restrictions this policy removes.
+            if (request.AllowBuildingAnywhereExceptWater)
+                return IsBlockedByTerrain(request, definition, result);
+
             if (BuildingDefinitionCapabilities.TryGetEnabledModule(
                     definition,
                     out TerrainPlacementRuleModule module))

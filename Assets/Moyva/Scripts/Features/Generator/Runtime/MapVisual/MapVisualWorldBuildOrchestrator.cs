@@ -220,6 +220,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 _terrainLevelService.SetLevelMap(worldData.TerrainLevelMap);
             if (worldData.HeightMap != null && !_terrainLevelService.HasSurfaceHeightMap)
                 _terrainLevelService.SetSurfaceHeightMap(worldData.HeightMap);
+
+            // Publish (or clear, when the world has no logical stacks) the
+            // wet mask so placement water checks always match this world.
+            if (_terrainLevelService is IGeneratorTerrainWaterService waterService)
+                waterService.SetWaterMap(
+                    TileWorldCreatorTerrainHeightPublisher.BuildWaterMap(worldData));
         }
     }
 

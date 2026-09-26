@@ -30,6 +30,30 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             reason = null;
 
+            // "Build anywhere on dry land": the only natural-surface
+            // rejection is a real water surface under the footprint —
+            // a water-tagged tile or a SurfaceOnly river/lake sheet over a
+            // land gameplay tile. Terrain id lists, levels, edges, the
+            // "no-build" tag and biome rules are location restrictions this
+            // policy removes.
+            if (placementRulesProvider?.AllowBuildingAnywhereExceptWater == true)
+            {
+                if (placementRulesProvider.AllowBuildingOnWater)
+                    return false;
+
+                if (IsWaterCell(
+                        position,
+                        gridService,
+                        tileSettings,
+                        generatedTerrainLevelQuery))
+                {
+                    reason = "footprint cell carries a water surface";
+                    return true;
+                }
+
+                return false;
+            }
+
             if (placementRulesProvider != null && !placementRulesProvider.EnableTerrainRules)
                 return false;
 
@@ -80,6 +104,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 && terrainTagQuery.HasTerrainTag(
                     tileTypeId,
                     WaterTerrainTag);
+            // Rivers/lakes rendered over land tile ids carry a surface-only
+            // water sheet; the published wet mask is their canonical record.
+            if (!isWater
+                && generatedTerrainLevelQuery is IGeneratedTerrainWaterQuery waterQuery
+                && waterQuery.TryGetWaterCell(position, out bool maskWater)
+                && maskWater)
+            {
+                isWater = true;
+            }
             bool allowBuildingOnWater =
                 placementRulesProvider?.AllowBuildingOnWater ?? false;
             if (isWater && !allowBuildingOnWater)
@@ -120,6 +153,31 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Water surface at the cell: a water-tagged tile id (sea/lake tile)
+        /// or a published wet-mask cell (river/lake sheet rendered over a
+        /// land gameplay tile). Missing mask data simply means "no recorded
+        /// water sheet".
+        /// </summary>
+        private static bool IsWaterCell(
+            Vector2Int position,
+            IGridService gridService,
+            ITileSettingsService tileSettings,
+            IGeneratedTerrainLevelQuery generatedTerrainLevelQuery)
+        {
+            if (gridService != null
+                && gridService.TryGetTileData(position, out string tileTypeId)
+                && tileSettings is ITerrainTagQuery tagQuery
+                && tagQuery.HasTerrainTag(tileTypeId, WaterTerrainTag))
+            {
+                return true;
+            }
+
+            return generatedTerrainLevelQuery is IGeneratedTerrainWaterQuery waterQuery
+                   && waterQuery.TryGetWaterCell(position, out bool isWater)
+                   && isWater;
         }
 
         public static bool IsEdgeTerrainTile(

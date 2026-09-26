@@ -11,5 +11,6 @@ namespace Kruty1918.Moyva.Construction.API
         Terrain = 6,
         Adjacency = 7,
         Prerequisite = 8,
+        Water = 9,
     }
 }

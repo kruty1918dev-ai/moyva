@@ -36,6 +36,46 @@ namespace Kruty1918.Moyva.Generator.Runtime
             float[,] surfaceHeightMap = BuildSurfaceHeightMap(worldData, configuration);
             if (surfaceHeightMap != null)
                 _terrainLevelService.SetSurfaceHeightMap(surfaceHeightMap);
+
+            if (_terrainLevelService is IGeneratorTerrainWaterService waterService)
+                waterService.SetWaterMap(BuildWaterMap(worldData));
+        }
+
+        /// <summary>
+        /// Wet mask of the generated world: a cell is water when its logical
+        /// stack carries a SurfaceOnly terrain sample — the sheet rendered
+        /// for seas, rivers and lakes, including rivers running over a land
+        /// gameplay tile id. Same rule the object spawner and the decoration
+        /// generator apply for water cells.
+        /// </summary>
+        internal static bool[,] BuildWaterMap(GeneratedWorldData worldData)
+        {
+            var logicalMap = worldData?.LogicalTileMap;
+            if (logicalMap == null)
+                return null;
+
+            var waterMap = new bool[logicalMap.Width, logicalMap.Height];
+            for (int x = 0; x < logicalMap.Width; x++)
+            for (int y = 0; y < logicalMap.Height; y++)
+            {
+                var stack = logicalMap.GetCellStack(x, y);
+                if (stack == null)
+                    continue;
+
+                for (int i = 0; i < stack.Samples.Count; i++)
+                {
+                    var sample = stack.Samples[i];
+                    if (sample.IsTerrainLike
+                        && sample.TileGeometryMode
+                            == TileGeometryMode.SurfaceOnly)
+                    {
+                        waterMap[x, y] = true;
+                        break;
+                    }
+                }
+            }
+
+            return waterMap;
         }
 
         private float[,] BuildSurfaceHeightMap(GeneratedWorldData worldData, Configuration configuration)

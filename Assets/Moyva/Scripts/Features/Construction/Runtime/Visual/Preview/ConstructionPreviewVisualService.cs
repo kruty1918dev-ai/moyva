@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private static readonly int UseCellMaskPropertyId = Shader.PropertyToID("_UseCellMask");
 
         private readonly Dictionary<Vector2Int, GameObject> _previewByPosition = new();
+        private readonly Dictionary<Vector2Int, IReadOnlyList<Vector2Int>> _footprintCellsByPosition = new();
         private readonly Dictionary<EntityId, Stack<GameObject>> _previewPoolByPrefabId = new();
         private readonly Dictionary<GameObject, EntityId> _prefabIdByPreviewInstance = new();
         private readonly List<GameObject> _gridHoverHighlights = new();
@@ -76,6 +77,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             Remove(signal.Position);
+            IReadOnlyList<Vector2Int> footprintCells =
+                BuildingFootprintUtility.GetOccupiedCells(
+                    def,
+                    signal.Position,
+                    ConstructionRotationUtility.Normalize(signal.RotationQuarterTurns));
             GameObject basePrefab = _paletteResolver != null
                 ? _paletteResolver.ResolvePreviewPrefab(def, ownerId)
                 : def.ResolvePreviewPrefab();
@@ -85,11 +91,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 signal.Position,
                 signal.BuildingId,
                 def.ResolveVisualYOffset(),
-                def.Presentation);
+                def.Presentation,
+                footprintCells);
             if (instance == null)
                 return null;
 
             _previewByPosition[signal.Position] = instance;
+            _footprintCellsByPosition[signal.Position] = footprintCells;
             ApplyPreviewStyle(instance, signal.PreviewState);
             return instance;
         }
@@ -114,7 +122,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string buildingId,
             float visualOffsetY = 0f,
             EntityPresentationConfig presentation = null,
-            Quaternion? baseRotation = null)
+            Quaternion? baseRotation = null,
+            IReadOnlyList<Vector2Int> footprintCells = null)
         {
             if (!_previewByPosition.TryGetValue(fromPosition, out GameObject instance) || instance == null)
                 return false;
@@ -123,6 +132,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
 
             _previewByPosition.Remove(fromPosition);
+
+            if (footprintCells != null)
+                _footprintCellsByPosition[toPosition] = footprintCells;
+            else if (_footprintCellsByPosition.TryGetValue(fromPosition, out IReadOnlyList<Vector2Int> storedCells))
+                _footprintCellsByPosition[toPosition] = storedCells;
+            _footprintCellsByPosition.Remove(fromPosition);
 
             if (_previewByPosition.TryGetValue(toPosition, out GameObject existing)
                 && existing != null
@@ -171,13 +186,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             // DragPlacementFix: Y always comes from normal terrain alignment.
             // Cursor following is XZ-only, so a base-plane ray can never pull
             // the preview below an elevated tile.
+            _footprintCellsByPosition.TryGetValue(position, out IReadOnlyList<Vector2Int> dragCells);
+            if (dragCells == null && surfaceTile != position)
+                _footprintCellsByPosition.TryGetValue(surfaceTile, out dragCells);
             Vector3 target = ResolveAlignedTarget(
                 instance,
                 surfaceTile,
                 isPreviewVisual: true,
                 visualOffsetY,
                 presentation,
-                baseRotation);
+                baseRotation,
+                footprintCells: dragCells);
 
             if (!snapToGrid)
             {
@@ -274,6 +293,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ReleasePreviewToPool(instance);
 
             _previewByPosition.Remove(position);
+            _footprintCellsByPosition.Remove(position);
         }
 
         /// <summary>Очищає всі preview-візуали.</summary>
@@ -288,6 +308,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             _previewByPosition.Clear();
+            _footprintCellsByPosition.Clear();
         }
 
         /// <summary>Звільняє ресурси сервісу.</summary>
@@ -389,7 +410,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Vector2Int position,
             string buildingId,
             float visualOffsetY,
-            EntityPresentationConfig presentation)
+            EntityPresentationConfig presentation,
+            IReadOnlyList<Vector2Int> footprintCells = null)
         {
             string prefabTag =
                 prefab != null ? prefab.name : "NULL";
@@ -408,7 +430,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ResolveSortingOrder(),
                     isPreviewVisual: true,
                     visualOffsetY: visualOffsetY,
-                    presentation: presentation);
+                    presentation: presentation,
+                    footprintCells: footprintCells);
             }
             else
             {
@@ -423,7 +446,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ResolveSortingOrder(),
                     isPreviewVisual: true,
                     visualOffsetY: visualOffsetY,
-                    presentation: presentation);
+                    presentation: presentation,
+                    footprintCells: footprintCells);
             }
 
             if (instance == null)
@@ -564,13 +588,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             bool isPreviewVisual,
             float visualOffsetY,
             EntityPresentationConfig presentation,
-            Quaternion? baseRotation)
+            Quaternion? baseRotation,
+            IReadOnlyList<Vector2Int> footprintCells = null)
         {
             Vector3 alignedPosition;
             float resolvedVisualOffsetY =
                 presentation != null
                     ? presentation.ResolveGroundOffsetY(visualOffsetY)
                     : visualOffsetY;
+
+            if (footprintCells == null)
+                _footprintCellsByPosition.TryGetValue(position, out footprintCells);
 
             if (_terrainAlignment != null)
             {
@@ -579,7 +607,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         instance,
                         position,
                         isPreviewVisual,
-                        resolvedVisualOffsetY);
+                        resolvedVisualOffsetY,
+                        footprintCells);
                 return EntityPresentationApplier.ResolvePositionOffset(
                     alignedPosition,
                     baseRotation ?? instance?.transform.rotation ?? Quaternion.identity,

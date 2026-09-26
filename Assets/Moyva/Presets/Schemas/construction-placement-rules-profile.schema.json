@@ -61,6 +61,11 @@
       "title": "Allow Building On Water",
       "description": "Глобальне правило для будівель у режимі «Успадкувати». Залиште вимкненим для звичайних наземних будівель."
     },
+    "allowBuildingAnywhereExceptWater": {
+      "type": "boolean",
+      "title": "Allow Building Anywhere Except Water",
+      "description": "Канонічна політика «будь-яка вільна суха земля»: terrain/біом/висота, сусідство, відступ, туман і зона впливу не блокують розміщення; вода, межі карти, зайнятість, вартість і права доступу діють як завжди."
+    },
     "allowBuildingOnHills": {
       "type": "boolean",
       "title": "Allow Building On Hills"

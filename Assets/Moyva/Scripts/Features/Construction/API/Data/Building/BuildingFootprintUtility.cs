@@ -62,6 +62,29 @@ namespace Kruty1918.Moyva.Construction.API
                 index,
                 rotation);
 
+        /// <summary>
+        /// All cells the footprint occupies at <paramref name="origin"/> under
+        /// <paramref name="rotation"/>, in stable index order.
+        /// </summary>
+        public static Vector2Int[] GetOccupiedCells(
+            BuildingDefinition definition,
+            Vector2Int origin,
+            ConstructionRotation rotation)
+        {
+            int count = GetOccupiedCellCount(definition);
+            var cells = new Vector2Int[count];
+            for (int index = 0; index < count; index++)
+            {
+                cells[index] = GetOccupiedCell(
+                    definition,
+                    origin,
+                    index,
+                    rotation);
+            }
+
+            return cells;
+        }
+
         public static bool Contains(BuildingDefinition definition, Vector2Int origin, Vector2Int position)
             => Contains(
                 definition,

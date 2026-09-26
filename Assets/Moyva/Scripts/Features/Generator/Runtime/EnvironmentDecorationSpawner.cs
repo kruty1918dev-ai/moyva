@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly float _footprintShrink;
         private readonly Dictionary<MapChunkCoord, Transform> _decorationRoots = new Dictionary<MapChunkCoord, Transform>();
         private readonly List<MapChunkCoord> _singleChunkBuffer = new List<MapChunkCoord>(1);
+        private readonly HashSet<Vector2Int> _clearedDecorationCells = new HashSet<Vector2Int>();
 
         public EnvironmentDecorationSpawner(
             IMapObjectRegistryService objectRegistry,
@@ -51,6 +52,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// </summary>
         public int Spawn(DecorationPlacementResult placementResult)
         {
+            // A fresh decoration pass resets footprint-cleared cells; cleared
+            // cells are re-recorded by the placement signals that follow.
+            _clearedDecorationCells.Clear();
             Clear();
             if (placementResult == null || placementResult.Count == 0)
                 return 0;
@@ -88,6 +92,70 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _decorationRoots.Clear();
         }
 
+        /// <summary>
+        /// Destroys decorations anchored to the given cells and excludes them
+        /// from future spawn passes until the next world decoration build.
+        /// </summary>
+        public int ClearDecorationsInCells(IReadOnlyList<Vector2Int> cells)
+        {
+            if (cells == null || cells.Count == 0)
+                return 0;
+
+            var cleared = new HashSet<Vector2Int>(cells);
+            _clearedDecorationCells.UnionWith(cleared);
+            int removed = 0;
+            foreach (var pair in _decorationRoots)
+            {
+                Transform root = pair.Value;
+                if (root == null)
+                    continue;
+
+                for (int i = root.childCount - 1; i >= 0; i--)
+                {
+                    Transform child = root.GetChild(i);
+                    if (!TryParseAnchorCell(child.name, out Vector2Int cell)
+                        || !cleared.Contains(cell))
+                    {
+                        continue;
+                    }
+
+                    if (Application.isPlaying)
+                        UnityEngine.Object.Destroy(child.gameObject);
+                    else
+                        UnityEngine.Object.DestroyImmediate(child.gameObject);
+                    removed++;
+                }
+            }
+
+            return removed;
+        }
+
+        /// <summary>Parses the trailing _{x}_{y} anchor suffix written by
+        /// TrySpawnDecoration; the asset id itself may contain underscores.</summary>
+        private static bool TryParseAnchorCell(string name, out Vector2Int cell)
+        {
+            cell = default;
+            if (string.IsNullOrEmpty(name))
+                return false;
+
+            int ySep = name.LastIndexOf('_');
+            if (ySep <= 0 || ySep >= name.Length - 1)
+                return false;
+
+            int xSep = name.LastIndexOf('_', ySep - 1);
+            if (xSep <= 0)
+                return false;
+
+            if (!int.TryParse(name.Substring(xSep + 1, ySep - xSep - 1), out int x)
+                || !int.TryParse(name.Substring(ySep + 1), out int y))
+            {
+                return false;
+            }
+
+            cell = new Vector2Int(x, y);
+            return true;
+        }
+
         private bool TrySpawnDecoration(DecorationPlacement placement)
         {
             // Performance profile thins light ground cover only — trees,
@@ -98,6 +166,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 && _graphicsSettings.Settings.Profile == GraphicsQualityProfile.Performance
                 && IsLightweightDecor(placement.Type)
                 && (placement.Position.GetHashCode() & 1) == 1)
+            {
+                return false;
+            }
+
+            if (_clearedDecorationCells.Contains(
+                    new Vector2Int(placement.TileX, placement.TileY)))
             {
                 return false;
             }

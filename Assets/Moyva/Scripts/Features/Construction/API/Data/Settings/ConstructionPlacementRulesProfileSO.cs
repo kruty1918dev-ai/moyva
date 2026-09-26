@@ -34,6 +34,11 @@ public sealed class ConstructionPlacementRulesProfileSO : JsonConfigObject
         [SerializeField] private bool _allowBuildingOnWater;
 
         [BoxGroup("Terrain")]
+        [LabelText("Будувати будь-де, крім води")]
+        [Tooltip("Дозволяє будівництво на будь-якій вільній суші: terrain/біом/висота, сусідство, відступ, туман і зона впливу не блокують розміщення. Вода, межі карти, зайнятість, вартість і права доступу перевіряються як завжди.")]
+        [SerializeField] private bool _allowBuildingAnywhereExceptWater;
+
+        [BoxGroup("Terrain")]
         [LabelText("Дозволити пагорби")]
         [SerializeField] private bool _allowBuildingOnHills = true;
 
@@ -66,6 +71,7 @@ public sealed class ConstructionPlacementRulesProfileSO : JsonConfigObject
         public bool EnableInfluenceZoneRules => _enableInfluenceZoneRules;
         public bool EnableTerrainRules => _enableTerrainRules;
         public bool AllowBuildingOnWater => _allowBuildingOnWater;
+        public bool AllowBuildingAnywhereExceptWater => _allowBuildingAnywhereExceptWater;
         public bool AllowBuildingOnHills => _allowBuildingOnHills;
         public bool BlockEdgeTerrainTiles => _blockEdgeTerrainTiles;
         public bool EnableFogRules => _enableFogRules;

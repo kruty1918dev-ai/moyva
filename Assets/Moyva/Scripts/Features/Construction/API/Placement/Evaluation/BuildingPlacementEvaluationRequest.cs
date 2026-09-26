@@ -46,5 +46,13 @@ namespace Kruty1918.Moyva.Construction.API
         public int MaxInfluenceRadius = -1;
         public IReadOnlyList<IBuildingPlacementRuleEvaluator> RuleEvaluators;
         public bool SkipInfluenceRules;
+
+        /// <summary>
+        /// Canonical "build anywhere on free dry land" policy: terrain,
+        /// adjacency, spacing, fog and influence location gates are skipped;
+        /// the water-overlap check (via <see cref="IsTerrainBlocked"/>),
+        /// bounds, occupancy and registered evaluators still apply.
+        /// </summary>
+        public bool AllowBuildingAnywhereExceptWater;
     }
 }

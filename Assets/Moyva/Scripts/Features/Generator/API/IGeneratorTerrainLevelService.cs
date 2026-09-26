@@ -59,4 +59,18 @@ namespace Kruty1918.Moyva.Generator.API
     {
         int TerrainDataVersion { get; }
     }
+
+    /// <summary>
+    /// Optional water-surface contract: the generated world's wet mask —
+    /// cells whose logical stack carries a SurfaceOnly terrain sample
+    /// (sea, rivers and lakes rendered over land tile ids). Kept separate so
+    /// existing IGeneratorTerrainLevelService implementations remain
+    /// source-compatible.
+    /// </summary>
+    public interface IGeneratorTerrainWaterService
+    {
+        bool HasWaterMap { get; }
+        void SetWaterMap(bool[,] waterMap);
+        bool TryGetWaterCell(Vector2Int position, out bool isWater);
+    }
 }

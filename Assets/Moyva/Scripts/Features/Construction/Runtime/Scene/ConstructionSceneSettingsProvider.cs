@@ -43,6 +43,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public bool EnableFogRules => _sceneContext?.ResolvePlacementRulesProfile()?.EnableFogRules ?? true;
         public bool RequireVisibleFogTile => _sceneContext?.ResolvePlacementRulesProfile()?.RequireVisibleFogTile ?? true;
         public bool AllowBuildingOnWater => _sceneContext?.ResolvePlacementRulesProfile()?.AllowBuildingOnWater ?? false;
+        public bool AllowBuildingAnywhereExceptWater => _sceneContext?.ResolvePlacementRulesProfile()?.AllowBuildingAnywhereExceptWater ?? false;
         public bool AllowBuildingOnHills => _sceneContext?.ResolvePlacementRulesProfile()?.AllowBuildingOnHills ?? true;
         public bool BlockEdgeTerrainTiles => _sceneContext?.ResolvePlacementRulesProfile()?.BlockEdgeTerrainTiles ?? true;
         public string[] BlockedTileIds => _sceneContext?.ResolvePlacementRulesProfile()?.BlockedTileIds ?? System.Array.Empty<string>();

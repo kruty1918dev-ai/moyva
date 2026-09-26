@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Kruty1918.Moyva.Presentation.API;
 using Kruty1918.Moyva.Presentation.Runtime;
 using UnityEngine;
@@ -27,7 +28,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Quaternion? forcedRotation = null,
             bool isPreviewVisual = false,
             float visualOffsetY = 0f,
-            EntityPresentationConfig presentation = null)
+            EntityPresentationConfig presentation = null,
+            IReadOnlyList<Vector2Int> footprintCells = null)
         {
             if (prefab == null)
             {
@@ -64,7 +66,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     forcedRotation,
                     isPreviewVisual,
                     visualOffsetY,
-                    presentation);
+                    presentation,
+                    footprintCells);
             }
             catch (Exception ex)
             {
@@ -85,7 +88,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Quaternion? forcedRotation = null,
             bool isPreviewVisual = false,
             float visualOffsetY = 0f,
-            EntityPresentationConfig presentation = null)
+            EntityPresentationConfig presentation = null,
+            IReadOnlyList<Vector2Int> footprintCells = null)
         {
             if (instance == null)
             {
@@ -98,7 +102,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     forcedRotation,
                     isPreviewVisual,
                     visualOffsetY,
-                    presentation);
+                    presentation,
+                    footprintCells);
             }
 
             if (prefab == null || parent == null)
@@ -116,7 +121,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     forcedRotation,
                     isPreviewVisual,
                     visualOffsetY,
-                    presentation);
+                    presentation,
+                    footprintCells);
             }
             catch (Exception ex)
             {
@@ -133,7 +139,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     forcedRotation,
                     isPreviewVisual,
                     visualOffsetY,
-                    presentation);
+                    presentation,
+                    footprintCells);
             }
         }
 
@@ -147,7 +154,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Quaternion? forcedRotation,
             bool isPreviewVisual,
             float visualOffsetY,
-            EntityPresentationConfig presentation)
+            EntityPresentationConfig presentation,
+            IReadOnlyList<Vector2Int> footprintCells)
         {
             Vector3 worldPos =
                 _terrainAlignmentService.ResolveWorldPosition(
@@ -176,7 +184,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 isPreviewVisual,
                 presentation != null
                     ? presentation.ResolveGroundOffsetY(visualOffsetY)
-                    : visualOffsetY);
+                    : visualOffsetY,
+                footprintCells);
             EntityPresentationApplier.ApplyPositionOffset(
                 instance,
                 presentation,

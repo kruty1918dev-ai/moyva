@@ -158,6 +158,11 @@ namespace Kruty1918.Moyva.Generator
             }
 
             container.Bind<EnvironmentObjectPlacementResolver>().AsSingle();
+            // Runs without the decoration spawner as well: committed building
+            // footprints still clear stack-spawned props (trees/rocks).
+            container.BindInterfacesAndSelfTo<EnvironmentDecorationClearingService>()
+                .AsSingle()
+                .NonLazy();
         }
 
         public static void InstallStartup(DiContainer container)

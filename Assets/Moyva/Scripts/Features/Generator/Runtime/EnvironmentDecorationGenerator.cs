@@ -168,6 +168,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (IsRoadTile(excludedTileId))
                 return true;
 
+            // A building-occupied cell is always decoration-free regardless
+            // of the exclusion radius.
+            if (worldData.BuildingMap != null
+                && x >= 0 && x < worldData.BuildingMap.GetLength(0)
+                && y >= 0 && y < worldData.BuildingMap.GetLength(1)
+                && !string.IsNullOrWhiteSpace(worldData.BuildingMap[x, y]))
+            {
+                return true;
+            }
+
             // Check building exclusion
             if (_config.Exclusions.BuildingExclusionRadius > 0 && worldData.BuildingMap != null)
             {

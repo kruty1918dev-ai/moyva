@@ -392,6 +392,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             public bool EnableFogRules { get; set; }
             public bool RequireVisibleFogTile { get; set; }
             public bool AllowBuildingOnWater { get; set; }
+            public bool AllowBuildingAnywhereExceptWater { get; set; }
             public bool AllowBuildingOnHills { get; set; } = true;
             public bool BlockEdgeTerrainTiles { get; set; }
             public string[] BlockedTileIds { get; set; }

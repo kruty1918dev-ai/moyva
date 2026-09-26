@@ -5,12 +5,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
 {
     public sealed class GeneratorTerrainLevelService :
         IGeneratorTerrainLevelService,
-        IGeneratorTerrainDataVersionProvider
+        IGeneratorTerrainDataVersionProvider,
+        IGeneratorTerrainWaterService
     {
         private int[,] _levelMap;
         private float[,] _surfaceHeightMap;
         private bool _hasExplicitSurfaceHeightMap;
         private int _terrainDataVersion;
+        private bool[,] _waterMap;
 
         public bool HasLevelMap => _levelMap != null;
         public bool HasSurfaceHeightMap => _surfaceHeightMap != null;
@@ -25,6 +27,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _levelMap = null;
             _surfaceHeightMap = null;
             _hasExplicitSurfaceHeightMap = false;
+            _waterMap = null;
             CurrentHillLevelData = null;
             MarkTerrainDataChanged();
         }
@@ -102,6 +105,28 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         public float[,] CopySurfaceHeightMap() => CloneSurfaceHeightMap(_surfaceHeightMap);
+
+        public bool HasWaterMap => _waterMap != null;
+
+        public void SetWaterMap(bool[,] waterMap)
+        {
+            _waterMap = waterMap;
+            MarkTerrainDataChanged();
+        }
+
+        public bool TryGetWaterCell(Vector2Int position, out bool isWater)
+        {
+            isWater = false;
+            if (_waterMap == null
+                || position.x < 0 || position.x >= _waterMap.GetLength(0)
+                || position.y < 0 || position.y >= _waterMap.GetLength(1))
+            {
+                return false;
+            }
+
+            isWater = _waterMap[position.x, position.y];
+            return true;
+        }
 
         private void MarkTerrainDataChanged()
         {

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
@@ -8,6 +9,9 @@ using Zenject;
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class ConstructionTerrainAlignmentService {
+        private const string FoundationSkirtName = "FoundationSkirt";
+        private const float FoundationOverlapY = 0.04f;
+        private const float FoundationDepthMarginY = 0.15f;
         private const float BuildingSurfaceOffsetY = 0.5f;
         private const float PreviewSurfaceOffsetY = 0.7f;
         /// <summary>
@@ -27,6 +31,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConditionalWeakTable<GameObject, CachedVisualMetrics> _visualMetrics = new();
         private readonly float _buildingSurfaceOffsetY;
         private readonly float _previewSurfaceOffsetY;
+        private Material _foundationMaterial;
 
         [Inject]
         public ConstructionTerrainAlignmentService(
@@ -141,13 +146,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return projected;
         }
 
-        public Vector3 ResolveAlignedInstancePosition(GameObject instance, Vector2Int tile, bool isPreviewVisual, float visualOffsetY = 0f)
+        public Vector3 ResolveAlignedInstancePosition(GameObject instance, Vector2Int tile, bool isPreviewVisual, float visualOffsetY = 0f, IReadOnlyList<Vector2Int> footprintCells = null)
         {
             Vector3 fallback = ResolveWorldPosition(tile, 0.1f);
             if (instance == null || !GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
                 return fallback;
 
-            return ResolveCachedAlignedPosition(instance, tile, isPreviewVisual, visualOffsetY);
+            return ResolveCachedAlignedPosition(instance, tile, isPreviewVisual, visualOffsetY, footprintCells);
         }
 
         /// <summary>
@@ -165,7 +170,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 return;
             }
-            if (!GridSurfacePlacementUtility.TryResolveRendererBounds(instance, out Bounds bounds))
+            if (!TryResolveBuildingBounds(instance, out Bounds bounds))
                 return;
 
             float footprint = Mathf.Max(bounds.size.x, bounds.size.z);
@@ -176,25 +181,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
             instance.transform.localScale *= limit / footprint;
         }
 
-        public void AlignInstanceToTerrainSurface(GameObject instance, Vector2Int tile, bool isPreviewVisual, float visualOffsetY = 0f)
+        public void AlignInstanceToTerrainSurface(GameObject instance, Vector2Int tile, bool isPreviewVisual, float visualOffsetY = 0f, IReadOnlyList<Vector2Int> footprintCells = null)
         {
             if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection) || instance == null)
                 return;
 
-            instance.transform.position = ResolveCachedAlignedPosition(instance, tile, isPreviewVisual, visualOffsetY);
+            instance.transform.position = ResolveCachedAlignedPosition(instance, tile, isPreviewVisual, visualOffsetY, footprintCells);
         }
 
         private Vector3 ResolveCachedAlignedPosition(
             GameObject instance,
             Vector2Int tile,
             bool isPreviewVisual,
-            float visualOffsetY)
+            float visualOffsetY,
+            IReadOnlyList<Vector2Int> footprintCells)
         {
             CachedVisualMetrics metrics = _visualMetrics.GetValue(instance, CreateVisualMetrics);
             Vector3 gridCenter = ResolveGridCenter(tile);
-            float targetSurfaceY = ResolveTerrainSurfaceY(tile)
+            float targetSurfaceY = ResolveFootprintSurfaceY(tile, footprintCells)
                 + ResolveVisualSurfaceOffsetY(isPreviewVisual)
                 + visualOffsetY;
+
+            UpdateFootprintFoundation(instance, footprintCells, targetSurfaceY);
 
             if (!metrics.HasRendererBounds)
             {
@@ -210,13 +218,48 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 gridCenter.z - metrics.CenterOffsetZ);
         }
 
+        /// <summary>Renderer bounds of the building alone — the foundation
+        /// skirt is excluded so it never feeds footprint metrics.</summary>
+        private static bool TryResolveBuildingBounds(
+            GameObject instance,
+            out Bounds bounds)
+        {
+            bounds = default;
+            if (instance == null)
+                return false;
+
+            var renderers = instance.GetComponentsInChildren<Renderer>(true);
+            bool hasBounds = false;
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                var renderer = renderers[i];
+                if (renderer == null
+                    || !renderer.enabled
+                    || renderer.name == FoundationSkirtName)
+                {
+                    continue;
+                }
+
+                if (!hasBounds)
+                {
+                    bounds = renderer.bounds;
+                    hasBounds = true;
+                    continue;
+                }
+
+                bounds.Encapsulate(renderer.bounds);
+            }
+
+            return hasBounds;
+        }
+
         private static CachedVisualMetrics CreateVisualMetrics(GameObject instance)
         {
-            if (instance == null
-                || !GridSurfacePlacementUtility.TryResolveRendererBounds(instance, out Bounds bounds))
-            {
+            // The foundation skirt hangs below the building; it must not feed
+            // the bottom-offset, or reused previews would float by the skirt
+            // depth. Compute bounds excluding skirt renderers.
+            if (!TryResolveBuildingBounds(instance, out Bounds bounds))
                 return CachedVisualMetrics.Empty;
-            }
 
             Vector3 rootPosition = instance.transform.position;
             return new CachedVisualMetrics(
@@ -246,6 +289,174 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return 0f;
 
             return isPreviewVisual ? _previewSurfaceOffsetY : _buildingSurfaceOffsetY;
+        }
+
+        /// <summary>
+        /// Building base level: the highest terrain surface under the
+        /// footprint, so multi-cell buildings on sloped dry ground never
+        /// sink into an uphill cell. Uneven drops are covered by the
+        /// foundation skirt instead of rejecting placement.
+        /// </summary>
+        private float ResolveFootprintSurfaceY(
+            Vector2Int tile,
+            IReadOnlyList<Vector2Int> footprintCells)
+        {
+            float surfaceY = ResolveTerrainSurfaceY(tile);
+            if (footprintCells == null)
+                return surfaceY;
+
+            for (int index = 0; index < footprintCells.Count; index++)
+            {
+                float cellY = ResolveTerrainSurfaceY(footprintCells[index]);
+                if (cellY > surfaceY)
+                    surfaceY = cellY;
+            }
+
+            return surfaceY;
+        }
+
+        /// <summary>
+        /// Keeps a solid plinth under the building base when the footprint
+        /// spans a terrain drop: the base sits on the highest cell and the
+        /// skirt reaches down into the lowest one, hiding the gap. Flat
+        /// footprints remove any stale skirt.
+        /// </summary>
+        private void UpdateFootprintFoundation(
+            GameObject instance,
+            IReadOnlyList<Vector2Int> footprintCells,
+            float targetSurfaceY)
+        {
+            if (instance == null || !instance)
+                return;
+
+            Transform existing = instance.transform.Find(FoundationSkirtName);
+            if (footprintCells == null || footprintCells.Count < 2)
+            {
+                if (existing != null)
+                    DestroySkirt(existing);
+                return;
+            }
+
+            float minSurfaceY = targetSurfaceY;
+            bool hasSurface = false;
+            Vector3 minCorner = new Vector3(float.MaxValue, 0f, float.MaxValue);
+            Vector3 maxCorner = new Vector3(float.MinValue, 0f, float.MinValue);
+            float halfCellX = 0.5f;
+            float halfCellZ = 0.5f;
+            if (_gridGeometry != null
+                && _gridGeometry.TryGetCellSize(out Vector2 cellSize))
+            {
+                halfCellX = cellSize.x * 0.5f;
+                halfCellZ = cellSize.y * 0.5f;
+            }
+
+            for (int index = 0; index < footprintCells.Count; index++)
+            {
+                Vector2Int cell = footprintCells[index];
+                float surfaceY = ResolveTerrainSurfaceY(cell);
+                if (!hasSurface || surfaceY < minSurfaceY)
+                {
+                    minSurfaceY = surfaceY;
+                    hasSurface = true;
+                }
+
+                Vector3 center = ResolveGridCenter(cell);
+                minCorner.x = Mathf.Min(minCorner.x, center.x - halfCellX);
+                minCorner.z = Mathf.Min(minCorner.z, center.z - halfCellZ);
+                maxCorner.x = Mathf.Max(maxCorner.x, center.x + halfCellX);
+                maxCorner.z = Mathf.Max(maxCorner.z, center.z + halfCellZ);
+            }
+
+            float drop = targetSurfaceY - minSurfaceY;
+            if (!hasSurface || drop <= 0.01f)
+            {
+                if (existing != null)
+                    DestroySkirt(existing);
+                return;
+            }
+
+            Transform skirt = existing;
+            if (skirt == null)
+            {
+                var skirtObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                skirtObject.name = FoundationSkirtName;
+                var collider = skirtObject.GetComponent<Collider>();
+                if (collider != null)
+                {
+                    if (Application.isPlaying)
+                        Object.Destroy(collider);
+                    else
+                        Object.DestroyImmediate(collider);
+                }
+
+                var renderer = skirtObject.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    renderer.sharedMaterial = ResolveFoundationMaterial();
+                    renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+                    renderer.receiveShadows = true;
+                }
+
+                skirt = skirtObject.transform;
+                skirt.SetParent(instance.transform, worldPositionStays: false);
+            }
+
+            float topY = targetSurfaceY + FoundationOverlapY;
+            float bottomY = minSurfaceY - FoundationDepthMarginY;
+            float height = Mathf.Max(0.01f, topY - bottomY);
+            Vector3 lossyScale = instance.transform.lossyScale;
+            float parentX = Mathf.Max(0.0001f, Mathf.Abs(lossyScale.x));
+            float parentY = Mathf.Max(0.0001f, Mathf.Abs(lossyScale.y));
+            float parentZ = Mathf.Max(0.0001f, Mathf.Abs(lossyScale.z));
+
+            // The footprint cells are already the rotated set, so the skirt
+            // is axis-aligned in world space; the parent-frame size and the
+            // world-space position convert through the instance transform.
+            skirt.localRotation = Quaternion.identity;
+            skirt.position = new Vector3(
+                (minCorner.x + maxCorner.x) * 0.5f,
+                (topY + bottomY) * 0.5f,
+                (minCorner.z + maxCorner.z) * 0.5f);
+            Vector3 rotatedSize = new Vector3(
+                maxCorner.x - minCorner.x,
+                height,
+                maxCorner.z - minCorner.z);
+            Vector3 inv = Quaternion.Inverse(instance.transform.rotation)
+                * new Vector3(rotatedSize.x, 0f, rotatedSize.z);
+            skirt.localScale = new Vector3(
+                Mathf.Abs(inv.x) / parentX,
+                rotatedSize.y / parentY,
+                Mathf.Abs(inv.z) / parentZ);
+        }
+
+        private static void DestroySkirt(Transform skirt)
+        {
+            if (skirt == null)
+                return;
+
+            if (Application.isPlaying)
+                Object.Destroy(skirt.gameObject);
+            else
+                Object.DestroyImmediate(skirt.gameObject);
+        }
+
+        private Material ResolveFoundationMaterial()
+        {
+            if (_foundationMaterial != null)
+                return _foundationMaterial;
+
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+                shader = Shader.Find("Standard");
+            _foundationMaterial = new Material(shader != null ? shader : Shader.Find("Diffuse"))
+            {
+                name = "Moyva_FoundationSkirt",
+            };
+            if (_foundationMaterial.HasProperty("_BaseColor"))
+                _foundationMaterial.SetColor("_BaseColor", new Color(0.36f, 0.27f, 0.18f, 1f));
+            else if (_foundationMaterial.HasProperty("_Color"))
+                _foundationMaterial.SetColor("_Color", new Color(0.36f, 0.27f, 0.18f, 1f));
+            return _foundationMaterial;
         }
 
         private float ResolveTerrainSurfaceY(Vector2Int tile)

@@ -107,33 +107,39 @@ namespace Kruty1918.Moyva.Construction.API
                 return false;
 
             bool adjacencyBlocked =
-                IsBlockedByRequiredNeighborOffsets(
-                    request,
-                    definition,
-                    result)
-                || IsBlockedByTileRequirements(
-                    request,
-                    definition,
-                    result);
+                !request.AllowBuildingAnywhereExceptWater
+                && (IsBlockedByRequiredNeighborOffsets(
+                        request,
+                        definition,
+                        result)
+                    || IsBlockedByTileRequirements(
+                        request,
+                        definition,
+                        result));
             if (result != null)
                 result.AdjacencyBlocked = adjacencyBlocked;
             if (adjacencyBlocked)
                 return false;
 
-            bool spacingBlocked = IsBlockedBySpacing(request, definition, result);
+            bool spacingBlocked =
+                !request.AllowBuildingAnywhereExceptWater
+                && IsBlockedBySpacing(request, definition, result);
             if (result != null)
                 result.SpacingBlocked = spacingBlocked;
             if (spacingBlocked)
                 return false;
 
-            bool fogBlocked = IsBlockedByFog(request, definition, result);
+            bool fogBlocked =
+                !request.AllowBuildingAnywhereExceptWater
+                && IsBlockedByFog(request, definition, result);
             if (result != null)
                 result.FogBlocked = fogBlocked;
             if (fogBlocked)
                 return false;
 
             bool influenceBlocked =
-                IsBlockedByInfluenceZone(request, result);
+                !request.AllowBuildingAnywhereExceptWater
+                && IsBlockedByInfluenceZone(request, result);
             if (result != null)
                 result.InfluenceZoneBlocked = influenceBlocked;
             if (influenceBlocked)
@@ -242,6 +248,7 @@ namespace Kruty1918.Moyva.Construction.API
                     result.InfluenceZoneBlocked = true;
                     break;
                 case BuildingPlacementBlockerKind.Terrain:
+                case BuildingPlacementBlockerKind.Water:
                     result.TerrainBlocked = true;
                     break;
                 case BuildingPlacementBlockerKind.Adjacency:

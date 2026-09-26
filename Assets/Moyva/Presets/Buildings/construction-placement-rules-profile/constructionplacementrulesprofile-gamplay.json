@@ -9,6 +9,7 @@
   "enableInfluenceZoneRules": true,
   "enableTerrainRules": true,
   "allowBuildingOnWater": false,
+  "allowBuildingAnywhereExceptWater": true,
   "allowBuildingOnHills": true,
   "blockEdgeTerrainTiles": false,
   "enableFogRules": true,

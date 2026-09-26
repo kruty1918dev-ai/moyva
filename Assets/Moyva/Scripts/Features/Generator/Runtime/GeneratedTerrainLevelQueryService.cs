@@ -9,7 +9,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
     public sealed class GeneratedTerrainLevelQueryService :
         IGeneratedTerrainLevelQuery,
         IGridTerrainSurfaceQuery,
-        IGeneratedTerrainSurfaceVersionQuery
+        IGeneratedTerrainSurfaceVersionQuery,
+        IGeneratedTerrainWaterQuery
     {
         private readonly IGeneratorTerrainLevelService _terrainLevelService;
 
@@ -47,6 +48,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             return _terrainLevelService.TryGetSurfaceHeight(position, out surfaceY);
+        }
+
+        public bool HasWaterMap =>
+            _terrainLevelService is IGeneratorTerrainWaterService waterService
+            && waterService.HasWaterMap;
+
+        public bool TryGetWaterCell(Vector2Int position, out bool isWater)
+        {
+            isWater = false;
+            return _terrainLevelService is IGeneratorTerrainWaterService waterService
+                   && waterService.TryGetWaterCell(position, out isWater);
         }
     }
 }
