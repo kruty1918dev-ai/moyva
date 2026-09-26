@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
@@ -365,189 +366,117 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
         }
 
         [Test]
-        public void CornerHeights_Evaluate_Bilinear()
+        public void ExactWeld_IdenticalAttributes_PreservesVertexData()
         {
-            var corners = new TileMeshCornerHeights(
-                northWest: 1f, northEast: 1.5f,
-                southWest: 0f, southEast: 0.5f,
-                reference: 0f);
-
-            Assert.AreEqual(0f, corners.Evaluate(0f, 0f), 0.0001f);
-            Assert.AreEqual(0.5f, corners.Evaluate(1f, 0f), 0.0001f);
-            Assert.AreEqual(1f, corners.Evaluate(0f, 1f), 0.0001f);
-            Assert.AreEqual(1.5f, corners.Evaluate(1f, 1f), 0.0001f);
-            Assert.AreEqual(0.75f, corners.Evaluate(0.5f, 0.5f), 0.0001f);
-        }
-
-        [Test]
-        public void Warp_FlatCorners_PassesThrough()
-        {
-            Mesh quad = CreateUnitQuad();
+            // Two quads sharing an edge; the shared corner vertices carry
+            // identical position+normal+uv, so the weld collapses them without
+            // moving any vertex or inventing attributes. Index renumbering and
+            // per-triangle index reorder are allowed, but every welded
+            // triangle must still reference a real source triangle's vertices.
+            Mesh mesh = CreateTwoQuadStrip();
+            Mesh welded = null;
             try
             {
-                var source = new TileMeshSource(
-                    quad, null, Matrix4x4.identity,
-                    tileHalfExtent: 0.5f,
-                    cornerHeights: new TileMeshCornerHeights(0f, 0f, 0f, 0f, 0f));
+                Assert.IsTrue(
+                    ExactVertexWeldMeshUtility.TryCreate(mesh, out welded));
+                Assert.NotNull(welded);
+                // 8 source verts -> the two shared corners are byte-identical,
+                // so exactly 2 collapse: 6 distinct verts remain.
+                Assert.AreEqual(6, welded.vertexCount);
 
-                Assert.IsFalse(TileSurfaceHeightWarpUtility.TryCreate(
-                    source, quad, out Mesh warped));
-                Assert.IsNull(warped);
+                var sourcePositions = new HashSet<Vector3>(mesh.vertices);
+                foreach (Vector3 v in welded.vertices)
+                    Assert.IsTrue(sourcePositions.Contains(v),
+                        $"Weld invented a vertex at {v}.");
+
+                // Triangle-for-triangle: welded tri i must cover the same three
+                // positions as source tri i (dedup keeps identical positions).
+                int[] src = mesh.triangles;
+                int[] dst = welded.triangles;
+                Assert.AreEqual(src.Length, dst.Length);
+                for (int i = 0; i < src.Length; i += 3)
+                {
+                    var a = new HashSet<Vector3>(new[]
+                        { mesh.vertices[src[i]], mesh.vertices[src[i + 1]], mesh.vertices[src[i + 2]] });
+                    var b = new HashSet<Vector3>(new[]
+                        { welded.vertices[dst[i]], welded.vertices[dst[i + 1]], welded.vertices[dst[i + 2]] });
+                    Assert.IsTrue(a.SetEquals(b),
+                        $"Triangle {i / 3} lost or moved vertices.");
+                }
             }
             finally
             {
-                Object.DestroyImmediate(quad);
-            }
-        }
-
-        [Test]
-        public void Warp_Slope_DisplacesVertsToCornerHeights()
-        {
-            Mesh quad = CreateUnitQuad();
-            Mesh warped = null;
-            try
-            {
-                var source = new TileMeshSource(
-                    quad, null, Matrix4x4.identity,
-                    tileHalfExtent: 0.5f,
-                    cornerHeights: new TileMeshCornerHeights(
-                        northWest: 1f, northEast: 1f,
-                        southWest: 0f, southEast: 0f,
-                        reference: 0f));
-
-                Assert.IsTrue(TileSurfaceHeightWarpUtility.TryCreate(
-                    source, quad, out warped));
-
-                // Quad verts: SW(-0.5,-0.5) NW(-0.5,0.5) NE(0.5,0.5) SE(0.5,-0.5)
-                Assert.AreEqual(0f, warped.vertices[0].y, 0.0001f);
-                Assert.AreEqual(1f, warped.vertices[1].y, 0.0001f);
-                Assert.AreEqual(1f, warped.vertices[2].y, 0.0001f);
-                Assert.AreEqual(0f, warped.vertices[3].y, 0.0001f);
-            }
-            finally
-            {
-                if (warped != null) Object.DestroyImmediate(warped);
-                Object.DestroyImmediate(quad);
+                if (welded != null) Object.DestroyImmediate(welded);
+                Object.DestroyImmediate(mesh);
             }
         }
 
         [Test]
-        public void Warp_SharedEdge_ProducesIdenticalBorderHeights()
+        public void ExactWeld_DifferingAttributes_KeepsVerticesDistinct()
         {
-            Mesh quadWest = CreateUnitQuad();
-            Mesh quadEast = CreateUnitQuad();
-            Mesh warpedWest = null;
-            Mesh warpedEast = null;
+            // Same position on two verts but different normals/uv must NOT
+            // merge: the weld keys on the full attribute byte set, not position
+            // alone, so a position-only weld would wrongly collapse them.
+            var mesh = new Mesh
+            {
+                vertices = new[]
+                {
+                    new Vector3(0, 0, 0), new Vector3(0, 0, 1), new Vector3(1, 0, 1),
+                    new Vector3(0, 0, 0), new Vector3(1, 0, 1), new Vector3(1, 0, 0)
+                },
+                normals = new[]
+                {
+                    Vector3.up, Vector3.up, Vector3.up,
+                    Vector3.right, Vector3.right, Vector3.right
+                },
+                uv = new[]
+                {
+                    Vector2.zero, Vector2.up, Vector2.one,
+                    Vector2.zero, Vector2.up, Vector2.one
+                },
+                triangles = new[] { 0, 1, 2, 3, 4, 5 }
+            };
+            Mesh welded = null;
             try
             {
-                // Two fragments side by side along X. West covers x in
-                // [-1,0], east covers [0,1]. Their shared edge (x=0) uses the
-                // same two corner heights, so warped world Y must coincide.
-                var westSource = new TileMeshSource(
-                    quadWest, null, Matrix4x4.Translate(new Vector3(-0.5f, 0f, 0f)),
-                    tileHalfExtent: 0.5f,
-                    cornerHeights: new TileMeshCornerHeights(
-                        northWest: 0f, northEast: 1f,
-                        southWest: 0f, southEast: 0.5f,
-                        reference: 0f));
-                // The east fragment's flat top is placed at its reference
-                // height (1), matching production placement alignment.
-                var eastSource = new TileMeshSource(
-                    quadEast, null, Matrix4x4.Translate(new Vector3(0.5f, 1f, 0f)),
-                    tileHalfExtent: 0.5f,
-                    cornerHeights: new TileMeshCornerHeights(
-                        northWest: 1f, northEast: 2f,
-                        southWest: 0.5f, southEast: 1.5f,
-                        reference: 1f));
-
-                Assert.IsTrue(TileSurfaceHeightWarpUtility.TryCreate(
-                    westSource, quadWest, out warpedWest));
-                Assert.IsTrue(TileSurfaceHeightWarpUtility.TryCreate(
-                    eastSource, quadEast, out warpedEast));
-
-                // West fragment east edge verts (local x=+0.5): SE, NE.
-                float westSe = westSource.LocalMatrix.MultiplyPoint3x4(warpedWest.vertices[3]).y;
-                float westNe = westSource.LocalMatrix.MultiplyPoint3x4(warpedWest.vertices[2]).y;
-                // East fragment west edge verts (local x=-0.5): SW, NW.
-                float eastSw = eastSource.LocalMatrix.MultiplyPoint3x4(warpedEast.vertices[0]).y;
-                float eastNw = eastSource.LocalMatrix.MultiplyPoint3x4(warpedEast.vertices[1]).y;
-
-                Assert.AreEqual(0.5f, westSe, 0.0001f);
-                Assert.AreEqual(1f, westNe, 0.0001f);
-                Assert.AreEqual(westSe, eastSw, 0.0001f);
-                Assert.AreEqual(westNe, eastNw, 0.0001f);
+                bool created = ExactVertexWeldMeshUtility.TryCreate(mesh, out welded);
+                // Either no weld happened (positions differ only by attribute)
+                // or it produced exactly the same distinct vertex count.
+                if (created)
+                    Assert.AreEqual(mesh.vertexCount, welded.vertexCount);
             }
             finally
             {
-                if (warpedWest != null) Object.DestroyImmediate(warpedWest);
-                if (warpedEast != null) Object.DestroyImmediate(warpedEast);
-                Object.DestroyImmediate(quadWest);
-                Object.DestroyImmediate(quadEast);
+                if (welded != null) Object.DestroyImmediate(welded);
+                Object.DestroyImmediate(mesh);
             }
         }
 
-        [Test]
-        public void Warp_RotatedFragment_KeepsWorldOrientedCorners()
+        private static Mesh CreateTwoQuadStrip()
         {
-            Mesh quad = CreateUnitQuad();
-            Mesh warped = null;
-            try
+            // Shared edge verts (1,0,0)/(1,0,1) repeat with identical uv so
+            // they are byte-identical and weldable.
+            var verts = new[]
             {
-                // 90 degree yaw: the local north-east corner faces world south-east.
-                var source = new TileMeshSource(
-                    quad, null,
-                    Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(0f, 90f, 0f), Vector3.one),
-                    tileHalfExtent: 0.5f,
-                    cornerHeights: new TileMeshCornerHeights(
-                        northWest: 1f, northEast: 1f,
-                        southWest: 0f, southEast: 0f,
-                        reference: 0f));
+                new Vector3(0, 0, 0), new Vector3(0, 0, 1),
+                new Vector3(1, 0, 1), new Vector3(1, 0, 0),
+                new Vector3(1, 0, 0), new Vector3(1, 0, 1),
+                new Vector3(2, 0, 1), new Vector3(2, 0, 0)
+            };
+            var uvs = new Vector2[verts.Length];
+            for (int i = 0; i < verts.Length; i++)
+                uvs[i] = new Vector2(verts[i].x * 0.5f, verts[i].z);
+            var normals = new Vector3[verts.Length];
+            for (int i = 0; i < normals.Length; i++)
+                normals[i] = Vector3.up;
 
-                Assert.IsTrue(TileSurfaceHeightWarpUtility.TryCreate(
-                    source, quad, out warped));
-
-                // Under +90 yaw, local verts map: idx0 -> world NW,
-                // idx1 -> world NE, idx2 -> world SE, idx3 -> world SW.
-                // The north half of the field sits at height 1.
-                Assert.AreEqual(1f, warped.vertices[0].y, 0.0001f);
-                Assert.AreEqual(1f, warped.vertices[1].y, 0.0001f);
-                Assert.AreEqual(0f, warped.vertices[2].y, 0.0001f);
-                Assert.AreEqual(0f, warped.vertices[3].y, 0.0001f);
-            }
-            finally
+            return new Mesh
             {
-                if (warped != null) Object.DestroyImmediate(warped);
-                Object.DestroyImmediate(quad);
-            }
-        }
-
-        [Test]
-        public void WarpKey_DistinguishesCornerHeights()
-        {
-            Mesh quad = CreateUnitQuad();
-            try
-            {
-                var flat = new TileMeshSource(
-                    quad, null, Matrix4x4.identity, tileHalfExtent: 0.5f,
-                    cornerHeights: new TileMeshCornerHeights(0f, 0f, 0f, 0f, 0f));
-                var sloped = new TileMeshSource(
-                    quad, null, Matrix4x4.identity, tileHalfExtent: 0.5f,
-                    cornerHeights: new TileMeshCornerHeights(1f, 0f, 0f, 0f, 0f));
-                var same = new TileMeshSource(
-                    quad, null, Matrix4x4.identity, tileHalfExtent: 0.5f,
-                    cornerHeights: new TileMeshCornerHeights(1f, 0f, 0f, 0f, 0f));
-
-                Assert.AreEqual(
-                    TileHeightWarpMeshKey.Create(sloped, quad),
-                    TileHeightWarpMeshKey.Create(same, quad));
-                Assert.AreNotEqual(
-                    TileHeightWarpMeshKey.Create(flat, quad),
-                    TileHeightWarpMeshKey.Create(sloped, quad));
-            }
-            finally
-            {
-                Object.DestroyImmediate(quad);
-            }
+                vertices = verts,
+                normals = normals,
+                uv = uvs,
+                triangles = new[] { 0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7 }
+            };
         }
 
         [Test]
@@ -626,21 +555,6 @@ namespace Kruty1918.Moyva.Generator.Tests.Runtime
                 .Resolve(Vector2Int.zero, neighborhood);
 
             Assert.IsFalse(result.HasWaterSurface);
-        }
-
-        private static Mesh CreateUnitQuad()
-        {
-            return new Mesh
-            {
-                vertices = new[]
-                {
-                    new Vector3(-0.5f, 0f, -0.5f), new Vector3(-0.5f, 0f, 0.5f),
-                    new Vector3(0.5f, 0f, 0.5f), new Vector3(0.5f, 0f, -0.5f)
-                },
-                normals = new[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up },
-                triangles = new[] { 0, 1, 2, 0, 2, 3 },
-                uv = new[] { Vector2.zero, Vector2.up, Vector2.one, Vector2.right }
-            };
         }
 
         [Test]

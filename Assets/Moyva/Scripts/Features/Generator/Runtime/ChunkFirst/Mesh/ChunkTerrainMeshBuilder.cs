@@ -60,12 +60,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly HashSet<TileSurfaceOnlyMeshKey>
             _surfaceOnlyFailureCache =
                 new HashSet<TileSurfaceOnlyMeshKey>();
-        private readonly Dictionary<TileHeightWarpMeshKey, Mesh>
-            _warpedMeshCache =
-                new Dictionary<TileHeightWarpMeshKey, Mesh>();
-        private readonly HashSet<TileHeightWarpMeshKey>
-            _warpedPassthroughCache =
-                new HashSet<TileHeightWarpMeshKey>();
         public ChunkTerrainMeshBuilder(ChunkFirstRuntimeMeshRegistry meshRegistry)
         {
             _meshRegistry = meshRegistry;
@@ -668,7 +662,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     ? ResolveSurfaceOnlyMesh(source)
                     : ResolveSolidTerrainMesh(source);
 
-            mesh = ResolveWarpedMesh(source, mesh);
             return ResolveBorderClampedMesh(source, mesh);
         }
 
@@ -772,50 +765,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return processed;
         }
 
-        /// <summary>
-        /// Applies the corner-height slope warp to the resolved mesh. Runs
-        /// after surface-only filtering and vertical fill so overlays and
-        /// generated closure skirts tilt together with the surface. Sources
-        /// without corner heights (normal-grid tiles, stair passages) pass
-        /// through untouched.
-        /// </summary>
-        private Mesh ResolveWarpedMesh(TileMeshSource source, Mesh mesh)
-        {
-            // SurfaceOnly sheets (water) must keep a flat plane; only solid
-            // terrain fragments are sheared onto the corner-height field.
-            if (mesh == null
-                || !source.HasCornerHeights
-                || source.TileGeometryMode != TileGeometryMode.SolidTerrain)
-            {
-                return mesh;
-            }
-
-            TileHeightWarpMeshKey key =
-                TileHeightWarpMeshKey.Create(source, mesh);
-            if (_warpedPassthroughCache.Contains(key))
-                return mesh;
-
-            if (_warpedMeshCache.TryGetValue(key, out Mesh cached)
-                && cached != null)
-            {
-                return cached;
-            }
-
-            if (!TileSurfaceHeightWarpUtility.TryCreate(
-                    source,
-                    mesh,
-                    out Mesh warped)
-                || warped == null)
-            {
-                _warpedPassthroughCache.Add(key);
-                return mesh;
-            }
-
-            _warpedMeshCache[key] = warped;
-            _meshRegistry.Register(warped);
-            return warped;
-        }
-
         private Mesh ResolveSurfaceOnlyMesh(TileMeshSource source)
         {
             TileSurfaceOnlyMeshKey key =
@@ -895,10 +844,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             /*
              * ExactVertexWeldMeshUtility preserves the final appearance while
              * removing unreferenced vertices and exact duplicates introduced
-             * by mesh combining. It runs in every mode: with slope-warped
-             * fragments the shared border vertices carry identical payloads
-             * and welding eliminates the coincident-edge seams that skipping
-             * it left visible during Editor Play Mode.
+             * by mesh combining. It keys on the full vertex attribute set, so
+             * it never averages or repositions vertices: it only collapses
+             * byte-identical duplicates and reorders indices.
              */
             if (ExactVertexWeldMeshUtility.TryCreate(
                     mesh,

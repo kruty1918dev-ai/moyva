@@ -1,6 +1,30 @@
-# Work State — 2026-09-26 (QA cycle: seed 5150 + gameplay harness)
+# Work State — 2026-09-26 (square FBX tiles + QA harness)
 
 ## Current task
+
+**Square tiles keep authored FBX shape — removed the slope warp
+(2026-09-26):**
+- Root cause: `ChunkTerrainMeshBuilder.ResolveWarpedMesh` →
+  `TileSurfaceHeightWarpUtility` sheared each dual-grid land fragment onto a
+  bilinear field of the four neighbours' continuous `SurfaceHeight` (jitter +
+  level steps) → wavy same-level seams + ramped tops. Redundant: the dual-grid
+  forms (`MatchesMain` opens a side on differing identity/height) +
+  `edgeBottoms` side walls + stair modules already encode and close every
+  transition.
+- Removed the warp end-to-end: `ResolveWarpedMesh`, caches,
+  `TileMeshCornerHeights`/`CornerHeights`, provider threading; deleted
+  `TileSurfaceHeightWarpUtility` + `TileHeightWarpMeshKey`.
+- Kept `ExactVertexWeldMeshUtility` (full-attribute weld, no averaging) and
+  `ResolveBorderClampedMesh` (folds overshoot apron → flush rim; not the
+  deformer).
+- Evidence `docs/qa/evidence/fbx-square-seed6130/`, report
+  `docs/qa/FBX_SQUARE_TILES_2026-09-26.md`. Seed 6130, `worldHash` unchanged,
+  verts 699362→701058, nanVerts=0, 0 errors; `control_fbx` shows authored
+  `grass_fill` == generated flat tiles.
+- `WorldVisualSmoke` extended: movement/turn/deploy probe + `control_fbx`.
+- EditMode 873/873 (was 877; −6 warp tests, +2 weld-preservation tests).
+
+## Previous task (completed)
 
 **Autonomous QA cycle (seed 5150) — gameplay-level coverage added
 (2026-09-26):**

@@ -621,20 +621,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 topRightSurface,
                 bottomLeftSurface,
                 bottomRightSurface);
-            /*
-             * The fragment spans the quad between the four surrounding cell
-             * centers; those cells' surface heights are the fragment's corner
-             * heights. Missing neighbours fall back to the cell surface so map
-             * edges stay flat.
-             */
-            TileMeshCornerHeights cornerHeights = IsFinite(mainSurface)
-                ? new TileMeshCornerHeights(
-                    ResolveFiniteOrFallback(topLeftSurface, mainSurface),
-                    ResolveFiniteOrFallback(topRightSurface, mainSurface),
-                    ResolveFiniteOrFallback(bottomLeftSurface, mainSurface),
-                    ResolveFiniteOrFallback(bottomRightSurface, mainSurface),
-                    mainSurface)
-                : default;
 
             int packMask = AtlasDualGridShapes.BuildMask(
                 northWest: topLeft,
@@ -649,7 +635,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     tileData.tilePosition,
                     occludedSides,
                     edgeBottoms,
-                    cornerHeights,
                     results))
             {
                 return;
@@ -669,8 +654,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 Vector3.one,
                 occludedSides,
                 edgeBottoms,
-                results,
-                cornerHeights);
+                results);
         }
 
         /// <summary>
@@ -686,7 +670,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Vector2 tilePosition,
             TileMeshOccludedSides occludedSides,
             TileMeshEdgeBottoms edgeBottoms,
-            TileMeshCornerHeights cornerHeights,
             List<TileMeshSource> results)
         {
             if (_atlas == null
@@ -731,8 +714,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                        Vector3.one,
                        occludedSides,
                        edgeBottoms,
-                       results,
-                       cornerHeights) > 0;
+                       results) > 0;
         }
 
         /// <summary>
@@ -831,8 +813,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Vector3 scaleSign,
             TileMeshOccludedSides occludedSides,
             TileMeshEdgeBottoms edgeBottoms,
-            List<TileMeshSource> results,
-            TileMeshCornerHeights cornerHeights = default)
+            List<TileMeshSource> results)
         {
             GameObject prefab = preset.GetTile(tileType, out float xRotationOffset, out float yRotationOffset);
             if (prefab == null)
@@ -850,8 +831,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 scaleSign,
                 occludedSides,
                 edgeBottoms,
-                results,
-                cornerHeights);
+                results);
         }
 
         private int TryAddPrefabMeshSources(
@@ -866,8 +846,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Vector3 scaleSign,
             TileMeshOccludedSides occludedSides,
             TileMeshEdgeBottoms edgeBottoms,
-            List<TileMeshSource> results,
-            TileMeshCornerHeights cornerHeights = default)
+            List<TileMeshSource> results)
         {
             var sample = composition.MainTerrain;
             if (!TryGetMeshTemplates(prefab, out PrefabMeshTemplate[] templates))
@@ -944,8 +923,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     sample.AuthoredClosurePolicy,
                     edgeBottoms,
                     sample.TileGeometryMode,
-                    generateMissingClosure: i == missingClosureOwner,
-                    cornerHeights: cornerHeights);
+                    generateMissingClosure: i == missingClosureOwner);
                     
                 if (!meshSource.IsValid)
                     continue;
