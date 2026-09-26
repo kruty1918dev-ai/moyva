@@ -3,7 +3,7 @@
   "model": "generator-map-recipe",
   "version": 1,
   "id": "testgeneratorrecipe",
-  "seed": 0,
+  "seed": 777,
   "sharedSettings": {
     "mapWidth": 0,
     "mapHeight": 0,
@@ -70,7 +70,7 @@
     "sinkMaxMeters": 0.1,
     "riverAccumulationThreshold": 10,
     "riverMinSourceMeters": 0.25,
-    "riverMaxFraction": 0.03,
+    "riverMaxFraction": 0.08,
     "lakeMinDepthMeters": 0.5,
     "lakeMaxFraction": 0.03,
     "waterSurfaceOffsetMeters": -0.03,
@@ -86,7 +86,12 @@
     "blendCells": 1,
     "shoreLiftMeters": 0.04,
     "risePerCellMeters": 0.2,
-    "maxDropToWaterMeters": 0.9
+    "maxDropToWaterMeters": 0.9,
+    "bandCoverage": 0.55,
+    "seedSalt": 947,
+    "waterTileIds": [
+      "swamp"
+    ]
   },
   "layers": [
     {
