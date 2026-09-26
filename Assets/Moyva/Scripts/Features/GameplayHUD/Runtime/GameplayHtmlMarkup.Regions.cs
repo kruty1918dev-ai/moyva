@@ -36,6 +36,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             html.Clear();
             if (state.OpenPanelId == GameplayHtmlPanel.Kingdom)
                 AppendDashboard(html, snapshot, state);
+            if (state.Guidance != null && state.Guidance.Open)
+                AppendGuidance(html, snapshot, state);
             if (state.IsGameOver)
                 AppendGameOver(html, snapshot, state);
             else if (state.IsPaused)

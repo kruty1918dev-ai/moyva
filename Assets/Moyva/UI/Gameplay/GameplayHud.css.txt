@@ -602,3 +602,36 @@
 .vp-short .command-bar { min-height: 50px; padding: 5px 8px; }
 .vp-short .task { padding: 9px; }
 .vp-short .context-scroll { max-height: 330px; }
+
+/* Action-guidance popup — blocked-action helper listing every blocker with
+   its fix options; reuses the scrim/dashboard shell. */
+.guidance-dialog { width: 860px; height: 620px; max-width: 92%; }
+.guidance-scroll { width: 100%; flex-grow: 1; min-height: 0; margin-top: 10px; }
+.guidance-banner {
+  display: flex; flex-direction: row; align-items: center; flex-shrink: 0;
+  margin-top: 10px; padding: 10px 12px;
+  background-color: rgb(28, 46, 30); border-left-width: 3px;
+  border-left-color: rgb(126, 190, 116);
+}
+.guidance-blocker {
+  display: flex; flex-direction: column; flex-shrink: 0; width: 100%;
+  margin-bottom: 6px; background-color: rgb(22, 24, 31);
+  border-left-width: 2px; border-left-color: rgb(94, 96, 101);
+}
+.guidance-blocker.focused { border-left-color: rgb(235, 191, 81); background-color: rgb(36, 34, 27); }
+.guidance-blocker.resolved { border-left-color: rgb(99, 126, 91); opacity: 0.72; }
+.guidance-blocker-head {
+  display: flex; flex-direction: row; align-items: flex-start; width: 100%;
+  padding: 10px 11px; gap: 10px; background-color: rgba(0,0,0,0); border-width: 0; text-align: left;
+}
+.guidance-blocker-head:hover { background-color: rgb(48, 43, 34); }
+.guidance-options {
+  display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px;
+  padding: 0 11px 10px 44px;
+}
+.guidance-options .button { min-width: 0; }
+.building-row.guidance-focus {
+  background-color: rgb(76, 59, 28); border-left-color: rgb(235, 191, 81);
+  border-width: 1px; border-color: rgb(235, 191, 81);
+}
+.vp-compact .guidance-dialog { width: 92%; height: 88%; }

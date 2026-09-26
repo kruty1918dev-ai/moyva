@@ -365,12 +365,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             if (request.ActionId != UiActionIds.Diagnostics.PanelClose
-                || (_state.OpenPanelId == GameplayHtmlPanel.None && !_readModel.HasSelection))
+                || (_state.OpenPanelId == GameplayHtmlPanel.None
+                    && !_readModel.HasSelection
+                    && (_state.Guidance == null || !_state.Guidance.Open)))
             {
                 return UiActionResult.Ignored(UiActionReason.WrongContext);
             }
 
-            if (_state.OpenPanelId != GameplayHtmlPanel.None)
+            // Bridge ordering: guidance popup first, then open panels, then
+            // the selection panel — one press peels exactly one layer.
+            if (_state.OpenPanelId != GameplayHtmlPanel.None
+                || (_state.Guidance != null && _state.Guidance.Open))
                 _bridge.ClosePanel();
             else
                 _signals.Fire(new WorldInfoPanelClosedSignal());

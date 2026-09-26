@@ -128,6 +128,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 int visibleCount = filteredOptions.Count;
                 int pageCount = Math.Max(1, (visibleCount + ConstructionPageSize - 1) / ConstructionPageSize);
                 int pageIndex = Math.Min(Math.Max(0, state.ConstructionPageIndex), pageCount - 1);
+                // A guidance "Build {producer}" navigation targets one card:
+                // page to it once, then keep the highlight for a few seconds.
+                string focusBuildingId = state.ConsumeConstructionFocusJump();
+                int focusIndex = -1;
+                if (!string.IsNullOrWhiteSpace(focusBuildingId))
+                {
+                    focusIndex = filteredOptions.FindIndex(
+                        o => string.Equals(o.Id, focusBuildingId, StringComparison.Ordinal));
+                    if (focusIndex >= 0)
+                    {
+                        pageIndex = Math.Min(focusIndex / ConstructionPageSize, pageCount - 1);
+                        state.SetConstructionPageIndex(pageIndex);
+                    }
+                }
+                string highlightedId = state.HighlightedConstructionId;
                 int firstIndex = pageIndex * ConstructionPageSize;
                 int lastExclusive = Math.Min(firstIndex + ConstructionPageSize, visibleCount);
                 for (int index = firstIndex; index < lastExclusive; index++)
@@ -148,6 +163,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                             : state.T(option.UnavailableReason);
                     html.Append("<button data-key=\"").Append(E(option.Id)).Append("\" className=\"building-row ")
                         .Append(string.Equals(option.Id, snapshot.SelectedBuildingId, StringComparison.Ordinal) ? "selected" : string.Empty)
+                        .Append(index == focusIndex
+                            || string.Equals(option.Id, highlightedId, StringComparison.Ordinal)
+                            ? " guidance-focus" : string.Empty)
                         .Append("\" data-tooltip=\"").Append(E(rowTooltip)).Append("\" ")
                         .Append(option.CanSelect ? string.Empty : "disabled=\"true\"")
                         .Append(" onClick=\"Globals.gameplay.SelectBuilding('").Append(J(option.Id)).Append("')\">");
@@ -186,7 +204,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 {
                     GameplayNotificationViewSnapshot item = state.Notifications[index];
                     DataRow(html, item.Message, item.Kind.ToUpperInvariant(), item.CreatedAt.ToString("HH:mm:ss"), key: $"notif-{item.Id}");
-                    if (item.Position.HasValue)
+                    if (item.Goal != null)
+                        html.Append(Button(state.T("DETAILS"), $"Globals.gameplay.OpenNotification('{item.Id}')", "button primary", state.T("Review what blocks this action"), false, key: $"notif-{item.Id}-view"));
+                    else if (item.Position.HasValue)
                         html.Append(Button(state.T("VIEW"), $"Globals.gameplay.OpenNotification('{item.Id}')", "button primary", state.T("Go to this event"), false, key: $"notif-{item.Id}-view"));
                     html.Append(Button(state.T("DISMISS"), $"Globals.gameplay.RemoveNotification('{item.Id}')", "button", state.T("Remove this notification"), false, key: $"notif-{item.Id}-dismiss"));
                 }
@@ -439,6 +459,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
             else
             {
+                // A minimized guidance session stays reachable — reopen the
+                // blocker list for the saved goal without auto-acting.
+                if (snapshot.Guidance != null && !state.Guidance.Open)
+                {
+                    string chipLabel = snapshot.Guidance.GoalKind == GuidanceGoalKind.Recruitment
+                        ? state.TF("GOAL: recruit {0}", state.T(snapshot.Guidance.GoalLabel))
+                        : state.TF("GOAL: {0}", state.T(snapshot.Guidance.GoalLabel));
+                    html.Append(Button(chipLabel, "Globals.gameplay.GuidanceReopen()",
+                        "button", state.T("Review what blocks this action")));
+                }
                 html.Append(Button(state.T("CAPITAL"), "Globals.gameplay.FocusCapital()", "button", state.T("Return camera to your capital")));
                 html.Append(Button(state.T("BUILD"), "Globals.gameplay.Construction()", "button primary", state.T("Open construction")));
                 if (!string.IsNullOrWhiteSpace(snapshot.SelectionId))
@@ -667,7 +697,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 : string.Empty;
             html.Append("<view id=\"gameplay-side-panel\" className=\"side-panel\" data-motion-role=\"panel\"")
                 .Append(exitMotion).Append('>');
-            PanelHeaderContent(html, eyebrow, title, close, null);
+            PanelHeaderContent(html, eyebrow, title, close, state);
         }
 
         private static void PanelHeaderContent(StringBuilder html, string eyebrow, string title, bool close, GameplayHtmlState state)

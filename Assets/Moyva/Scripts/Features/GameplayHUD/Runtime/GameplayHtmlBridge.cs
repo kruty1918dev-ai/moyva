@@ -78,6 +78,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             if (_state.PanelClosing)
                 return;
+            // The guidance popup dismisses before any underlying panel so a
+            // single Esc/X press only peels the topmost layer.
+            if (_state.Guidance != null && _state.Guidance.Open)
+            {
+                _state.MinimizeGuidance();
+                return;
+            }
             if (_state.OpenPanelId == GameplayHtmlPanel.Construction)
             {
                 UiActionResult closeResult = Execute(UiActionIds.Construction.Close, "GameplayHTML");
@@ -117,6 +124,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 buildingId);
             if (result.Status == UiActionStatus.Performed)
             {
+                _state.ClearConstructionFocus();
                 string displayName = _readModel.ResolveBuildingDisplayName(buildingId);
                 _state.SetFeedback(_state.TF("Selected {0}. Choose a tile on the map.", _state.T(displayName)));
                 return;
@@ -164,7 +172,32 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     ? _state.T("Choose a location on the map before confirming.")
                     : _state.T("The placement was rejected by gameplay rules.");
             _state.SetFeedback(_state.T(reason));
+
+            // Deliberate confirm → guidance popup with the full blocker list.
+            // Preview/hover checks never reach this method, so the popup only
+            // opens on an explicit player action.
+            TryOpenPlacementGuidance();
         }
+
+        /// <summary>Deliberate rejected placement confirm → opens the guidance
+        /// popup describing every blocker across pending placements.</summary>
+        private void TryOpenPlacementGuidance()
+        {
+            if (_readModel == null
+                || _roles?.Resolve().Role == LocalGameplayRole.Client)
+                return;
+            var pending = _construction?.GetPendingPlacements();
+            if (pending == null || pending.Count == 0)
+                return;
+            if (_readModel.TryBuildPlacementGuidance(
+                    ResolveGuidanceOwnerId(), pending, out GuidanceGoal goal))
+                _state.OpenGuidance(goal);
+        }
+
+        private string ResolveGuidanceOwnerId()
+            => _readModel?.CurrentOwnerId
+               ?? _construction?.GetActiveOwner()
+               ?? "player_0";
 
         public void CancelPlacement()
         {
@@ -215,7 +248,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!long.TryParse(value?.ToString(), out long id)) return;
             foreach (var item in _state.Notifications)
             {
-                if (item.Id != id || !item.Position.HasValue) continue;
+                if (item.Id != id) continue;
+                // Guidance-linked notifications reopen the popup; the model
+                // rebuilds from live state, so a resolved deficit shows its
+                // resume-goal CTA instead of a stale warning.
+                if (item.Goal != null)
+                {
+                    _state.ReopenGuidance(item.Goal);
+                    return;
+                }
+                if (!item.Position.HasValue) return;
                 _cameraFocus?.FocusGridPosition(item.Position.Value, item.TargetId);
                 _state.ClosePanel();
                 if (_readModel.TryResolveNotificationBuilding(item.Position.Value, out string buildingId))
@@ -249,6 +291,150 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void ClearProducerFilter()
             => _state.SetConstructionProducerFilter(string.Empty);
+
+        // ---- Action guidance (blocked-action popup) ----
+
+        public void GuidanceMove(object delta, object total)
+            => _state.MoveGuidanceFocus(ToInt(delta), ToInt(total));
+        public void GuidanceSelect(object value)
+        {
+            if (int.TryParse(value?.ToString(), out int index))
+                _state.SetGuidanceFocus(index);
+        }
+        public void GuidanceClose() => _state.MinimizeGuidance();
+        public void GuidanceDismissGoal() => _state.CloseGuidance();
+        public void GuidanceReopen()
+        {
+            if (_state.Guidance != null)
+            {
+                _state.Guidance.Open = true;
+                _state.MarkDirty();
+            }
+        }
+
+        /// <summary>"Build {producer}": keep the goal, collapse the popup,
+        /// open construction and point the list at the suggested building so
+        /// the player places it through the normal flow.</summary>
+        public void GuidanceBuildProducer(object value)
+        {
+            string buildingId = value?.ToString()?.Trim();
+            if (string.IsNullOrWhiteSpace(buildingId))
+                return;
+            UiActionResult openResult = Execute(UiActionIds.Construction.Open, "GameplayHTML");
+            if (openResult.Status == UiActionStatus.Rejected)
+            {
+                SetResult(openResult, _state.T("Construction is unavailable."));
+                return;
+            }
+            _state.SetConstructionFocus(buildingId);
+            _state.MinimizeGuidance();
+            _state.SetFeedback(_state.TF(
+                "Build {0} to produce what is missing.",
+                _readModel?.ResolveBuildingDisplayName(buildingId) ?? buildingId));
+        }
+
+        /// <summary>"Go to {producer}": focus the existing placed producer and
+        /// open its info panel — collapses the popup so it does not overlap.</summary>
+        public void GuidanceFocusBuilding(object x, object y, object buildingId)
+        {
+            _cameraFocus?.FocusGridPosition(
+                new Vector2Int(ToInt(x), ToInt(y)),
+                buildingId?.ToString());
+            _state.MinimizeGuidance();
+            if (_readModel != null && _readModel.TryResolveNotificationBuilding(
+                    new Vector2Int(ToInt(x), ToInt(y)), out string resolvedId))
+            {
+                _notificationSignals?.Fire(new BuildingInfoPanelRequestedSignal
+                { BuildingId = resolvedId, Position = new Vector2Int(ToInt(x), ToInt(y)) });
+            }
+        }
+
+        /// <summary>"Supply it" — reuses the existing supply panel for the
+        /// placement position; collapses the popup.</summary>
+        public void GuidanceSupply(object x, object y, object buildingId)
+        {
+            _state.MinimizeGuidance();
+            OpenSupply(x, y, buildingId);
+        }
+
+        /// <summary>"Open queue" — shows the recruiting building's queue so
+        /// queued training that holds reservations can be cancelled.</summary>
+        public void GuidanceOpenQueue()
+        {
+            _state.MinimizeGuidance();
+            _state.SetSelectionTab(GameplaySelectionTab.Queue);
+        }
+
+        /// <summary>Return to the saved goal: re-enter building placement or
+        /// reopen the recruiting building's Recruit tab, re-validating the
+        /// saved context. Stale context explains itself instead of acting.</summary>
+        public void GuidanceResumeGoal()
+        {
+            GuidanceSession session = _state.Guidance;
+            if (session?.Goal == null)
+                return;
+            GuidanceGoal goal = session.Goal;
+
+            if (goal.Kind == GuidanceGoalKind.Recruitment)
+            {
+                _state.MinimizeGuidance();
+                if (_readModel != null && _readModel.TryResolveNotificationBuilding(
+                        goal.Position, out string buildingId))
+                {
+                    _notificationSignals?.Fire(new BuildingInfoPanelRequestedSignal
+                    { BuildingId = buildingId, Position = goal.Position });
+                    _state.SetSelectionTab(GameplaySelectionTab.Recruit);
+                    _state.SetFeedback(_state.T("Back to recruitment — review the unit and try again."));
+                }
+                else
+                {
+                    _state.SetFeedback(_state.T("The recruiting building is gone — select a new one."));
+                }
+                return;
+            }
+
+            if (goal.Kind != GuidanceGoalKind.Placement)
+                return;
+
+            var pending = _construction?.GetPendingPlacements();
+            if (pending != null && pending.Count > 0
+                && pending.ContainsKey(goal.Position))
+            {
+                // Placement still pending — just reopen construction so the
+                // player confirms through the normal flow.
+                Execute(UiActionIds.Construction.Open, "GameplayHTML");
+                _state.MinimizeGuidance();
+                _state.SetFeedback(_state.T("Confirm the pending placement when ready."));
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(goal.BuildingId))
+            {
+                _state.SetFeedback(_state.T("The pending placement was cleared — pick a building again."));
+                _state.MinimizeGuidance();
+                return;
+            }
+
+            // Re-select the original building and re-offer the saved position
+            // so the player re-places through the canonical flow.
+            UiActionResult openResult = Execute(UiActionIds.Construction.Open, "GameplayHTML");
+            if (openResult.Status == UiActionStatus.Rejected)
+            {
+                SetResult(openResult, _state.T("Construction is unavailable."));
+                return;
+            }
+            Execute(UiActionIds.Construction.SelectBuilding,
+                UiActionSource.Button, "GameplayHTML", goal.BuildingId);
+            _state.MinimizeGuidance();
+            bool previewed = _construction?.TryPreviewAt(goal.Position) ?? false;
+            string goalName = _readModel?.ResolveBuildingDisplayName(goal.BuildingId)
+                ?? goal.BuildingId;
+            _state.SetFeedback(previewed
+                ? _state.TF("Back to {0} — the saved tile is ready to confirm.", goalName)
+                : _state.TF("Back to {0} — that tile is no longer valid, choose a new one.", goalName));
+        }
+
+
 
         public void SetConstructionCategory(object value)
             => _state.SetConstructionCategory(value?.ToString());
@@ -424,9 +610,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string details = string.IsNullOrWhiteSpace(result.Details)
                 ? _state.T(result.Reason.ToString())
                 : _state.T(result.Details);
+
+            // Guidance goal: reopening this notification or the popup itself
+            // rebuilds the blocker list from live canonical queries.
+            GuidanceGoal goal = null;
+            if (_readModel != null
+                && _roles?.Resolve().Role != LocalGameplayRole.Client)
+            {
+                _readModel.TryBuildRecruitmentGuidance(
+                    ResolveGuidanceOwnerId(), _readModel.SelectionPosition,
+                    unitTypeId, out goal);
+            }
             _state.AddNotification(
                 _state.TF("Cannot recruit {0}: {1}", _state.T(unitTypeId), details),
-                "Warning");
+                "Warning", goal: goal);
+            if (goal != null)
+                _state.OpenGuidance(goal);
         }
 
         public void CancelRecruitment(object value)

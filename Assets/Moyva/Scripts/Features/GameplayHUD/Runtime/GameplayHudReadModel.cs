@@ -62,6 +62,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly GameplaySupplyPanel _supplyPanel;
         private readonly IConstructionSupplyService _supply;
         private readonly ICaravanService _caravans;
+        private readonly EconomyDatabaseSO _economyDatabase;
+        private GameplayGuidanceResolver _guidanceResolver;
         private readonly Dictionary<EntityId, Sprite> _prefabSpriteCache = new();
         private readonly Dictionary<string, Sprite> _icons = new(StringComparer.Ordinal);
         private readonly HashSet<string> _reportedMissingIcons = new(StringComparer.Ordinal);
@@ -75,6 +77,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private string _lastPreviewMessage = string.Empty;
 
         public bool HasSelection => _selectionKind != WorldInfoSelectionKind.None;
+
+        /// <summary>Selected world position — the recruiting building's tile
+        /// while a recruitment building is selected.</summary>
+        public Vector2Int SelectionPosition => _selectionPosition;
+        public WorldInfoSelectionKind CurrentSelectionKind => _selectionKind;
 
         /// <summary>Локалізує source text; без сервісу повертає source.</summary>
         private string T(string key) => _loca?.T(key) ?? key ?? string.Empty;
@@ -336,6 +343,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _supplyPanel = supplyPanel;
             _supply = supply;
             _caravans = caravans;
+            _economyDatabase = economyDatabase;
 
             foreach (var resource in JsonConfigRuntime.GetAll<EconomyResourceDefinition>())
                 if (resource != null && resource.Icon != null)
@@ -434,6 +442,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
             CaptureRecruitment(snapshot, ownerId);
             CaptureSelectionDetails(snapshot, ownerId);
+            snapshot.Guidance = CaptureGuidance(state, ownerId);
             CaptureAttackPreview(snapshot);
             CaptureCapturePreview(snapshot, ownerId);
             if (_selectionKind == WorldInfoSelectionKind.Unit)
@@ -450,6 +459,119 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             snapshot.Icons = _publishedIcons;
             ValidateVisibleIcons(snapshot);
             return snapshot;
+        }
+
+        /// <summary>Rebuilds the guidance view model from canonical queries on
+        /// every capture: fulfilled blockers disappear automatically and the
+        /// "all resolved" state falls out of the live data.</summary>
+        private GameplayGuidanceViewSnapshot CaptureGuidance(
+            GameplayHtmlState state, string ownerId)
+        {
+            GuidanceSession session = state?.Guidance;
+            if (session == null || session.Goal == null)
+                return null;
+
+            _guidanceResolver ??= new GameplayGuidanceResolver(
+                _buildings, _construction, _availability, _portfolio,
+                _lifecycle, _population, _economy, _economyDatabase, _supply, _recruitment);
+
+            GuidanceGoal goal = session.Goal;
+            GuidanceModel model;
+            if (goal.Kind == GuidanceGoalKind.Recruitment)
+            {
+                model = _guidanceResolver.BuildRecruitment(
+                    ownerId, goal.Position, goal.UnitTypeId);
+            }
+            else
+            {
+                // Only this goal's placements — unrelated pendings added later
+                // must not leak into the blocker list.
+                var pending = new Dictionary<Vector2Int, string>();
+                var all = _construction?.GetPendingPlacements();
+                if (all != null)
+                    foreach (var pair in all)
+                        if (string.Equals(pair.Value, goal.BuildingId, StringComparison.Ordinal))
+                            pending[pair.Key] = pair.Value;
+                model = _guidanceResolver.BuildPlacement(ownerId, pending);
+            }
+
+            var snapshot = new GameplayGuidanceViewSnapshot
+            {
+                GoalKind = goal.Kind,
+                GoalLabel = goal.Kind == GuidanceGoalKind.Recruitment
+                    ? ResolveUnitDisplayName(goal.UnitTypeId)
+                    : ResolveBuildingDisplayName(goal.BuildingId),
+                GoalBuildingId = goal.BuildingId,
+                GoalUnitTypeId = goal.UnitTypeId,
+                GoalPosition = goal.Position,
+                PlacementCount = goal.PlacementCount,
+                FocusIndex = session.FocusIndex,
+                TotalBlockers = model.Blockers.Count,
+                PendingBlockers = model.PendingCount,
+                AllResolved = model.Blockers.Count == 0
+                    || model.Blockers.TrueForAll(b => b.Resolved),
+                Blockers = model.Blockers.Select(b =>
+                    new GameplayGuidanceBlockerSnapshot(
+                        b.Kind,
+                        b.Kind == GuidanceBlockerKind.Resource
+                            ? ResolveResourceDisplayName(b.ResourceId)
+                            : b.Title,
+                        b.Detail, b.ResourceId,
+                        b.Required, b.Available, b.Reserved, b.Resolved,
+                        b.Options.Select(o => new GameplayGuidanceOptionSnapshot(
+                            o.Kind, o.BuildingId, o.ResourceId, o.Detail,
+                            o.Position ?? default, o.Position.HasValue))
+                        .ToArray())).ToArray(),
+            };
+            return snapshot;
+        }
+
+        /// <summary>Builds the placement-goal guidance after a rejected
+        /// confirm; returns false when there is nothing to explain (caller
+        /// keeps plain feedback).</summary>
+        public bool TryBuildPlacementGuidance(string ownerId,
+            IReadOnlyDictionary<Vector2Int, string> pending, out GuidanceGoal goal)
+        {
+            goal = null;
+            if (pending == null || pending.Count == 0)
+                return false;
+            _guidanceResolver ??= new GameplayGuidanceResolver(
+                _buildings, _construction, _availability, _portfolio,
+                _lifecycle, _population, _economy, _economyDatabase, _supply, _recruitment);
+            var probe = _guidanceResolver.BuildPlacement(ownerId, pending);
+            if (probe == null || probe.Blockers.Count == 0)
+                return false;
+            goal = probe.Goal;
+            return true;
+        }
+
+        /// <summary>Builds the recruitment-goal guidance after a rejected
+        /// enqueue; false when no explainable blocker exists.</summary>
+        public bool TryBuildRecruitmentGuidance(string ownerId,
+            Vector2Int buildingPosition, string unitTypeId, out GuidanceGoal goal)
+        {
+            goal = null;
+            if (string.IsNullOrWhiteSpace(unitTypeId))
+                return false;
+            _guidanceResolver ??= new GameplayGuidanceResolver(
+                _buildings, _construction, _availability, _portfolio,
+                _lifecycle, _population, _economy, _economyDatabase, _supply, _recruitment);
+            var probe = _guidanceResolver.BuildRecruitment(
+                ownerId, buildingPosition, unitTypeId.Trim());
+            if (probe == null || probe.Blockers.Count == 0)
+                return false;
+            goal = probe.Goal;
+            return true;
+        }
+
+        private string ResolveUnitDisplayName(string unitTypeId)
+        {
+            if (string.IsNullOrWhiteSpace(unitTypeId))
+                return "unit";
+            var config = _unitConfigs?.GetConfig(unitTypeId.Trim());
+            return string.IsNullOrWhiteSpace(config?.DisplayName)
+                ? T(Display(unitTypeId.Trim()))
+                : T(config.DisplayName.Trim());
         }
 
         private void ValidateVisibleIcons(GameplayHtmlSnapshot snapshot)
@@ -636,6 +758,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 ResolveCombatTargetId(_selectionKind, _selectionId, _selectionPosition),
                 _selectionPosition, out target, out reason);
         }
+
+        /// <summary>Owner id resolution shared with the bridge so guidance
+        /// actions evaluate the same player the HUD displays.</summary>
+        public string CurrentOwnerId => ResolveOwnerId();
 
         private string ResolveOwnerId()
         {

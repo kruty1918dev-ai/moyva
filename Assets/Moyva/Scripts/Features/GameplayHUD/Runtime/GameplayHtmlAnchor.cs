@@ -107,7 +107,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             LayoutMetrics metrics = ResolveLayoutMetrics(width, height);
             int used = 0;
 
-            if (state.IsPaused || state.OpenPanelId == GameplayHtmlPanel.Kingdom)
+            bool guidanceModal = state.Guidance != null && state.Guidance.Open;
+            if (state.IsPaused || state.OpenPanelId == GameplayHtmlPanel.Kingdom
+                || guidanceModal)
             {
                 SetShield(used++, 0f, 0f, width, height);
                 HideUnusedShields(used);

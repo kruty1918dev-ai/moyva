@@ -77,8 +77,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public string ConstructionSearch { get; private set; } = string.Empty;
         public string ConstructionProducerResource { get; private set; } = string.Empty;
         public int ConstructionPageIndex { get; private set; }
+        /// <summary>Building card the construction list should jump to and
+        /// highlight once (consumed by markup on render).</summary>
+        private string _constructionFocusId = string.Empty;
+        private float _constructionFocusUntil = -1f;
+        private bool _constructionFocusPending;
         public Vector2Int? SupplyPosition { get; private set; }
         public string SupplyBuildingId { get; private set; } = string.Empty;
+        /// <summary>Active guidance session — the saved goal plus popup
+        /// visibility. The popup renders when <see cref="GuidanceSession.Open"/>
+        /// is true; a minimized session stays reachable via the goal chip.</summary>
+        public GuidanceSession Guidance { get; private set; }
         public IReadOnlyList<GameplayNotificationViewSnapshot> Notifications => _notifications;
         public int UnreadNotifications { get; private set; }
         public bool Dirty { get; private set; } = true;
@@ -199,6 +208,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             ConstructionCategory = normalized;
             ConstructionProducerResource = string.Empty;
             ConstructionPageIndex = 0;
+            ClearConstructionFocus();
             MarkDirty();
         }
 
@@ -210,6 +220,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             ConstructionSearch = normalized;
             ConstructionProducerResource = string.Empty;
             ConstructionPageIndex = 0;
+            ClearConstructionFocus();
             MarkDirty();
         }
 
@@ -220,6 +231,115 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
             ConstructionProducerResource = normalized;
             ConstructionPageIndex = 0;
+            ClearConstructionFocus();
+            MarkDirty();
+        }
+
+        /// <summary>Points the construction list at a specific building card:
+        /// clears search/category/producer filters so the card is visible,
+        /// arms a one-shot page jump and a ~6 s card highlight.</summary>
+        public void SetConstructionFocus(string buildingId)
+        {
+            ConstructionSearch = string.Empty;
+            ConstructionCategory = string.Empty;
+            ConstructionProducerResource = string.Empty;
+            ConstructionPageIndex = 0;
+            _constructionFocusId = buildingId?.Trim() ?? string.Empty;
+            _constructionFocusPending = !string.IsNullOrEmpty(_constructionFocusId);
+            _constructionFocusUntil = Time.unscaledTime + 6f;
+            MarkDirty();
+        }
+
+        public void ClearConstructionFocus()
+        {
+            _constructionFocusId = string.Empty;
+            _constructionFocusUntil = -1f;
+            _constructionFocusPending = false;
+        }
+
+        /// <summary>One-shot read of the pending page jump — markup consumes
+        /// the flag while the highlight itself stays time-boxed.</summary>
+        internal string ConsumeConstructionFocusJump()
+        {
+            if (!_constructionFocusPending)
+                return null;
+            _constructionFocusPending = false;
+            return Time.unscaledTime <= _constructionFocusUntil
+                ? _constructionFocusId : null;
+        }
+
+        /// <summary>Card id currently highlighted in the construction list —
+        /// expires a few seconds after focus so the player actually sees it.</summary>
+        public string HighlightedConstructionId =>
+            !string.IsNullOrWhiteSpace(_constructionFocusId)
+            && Time.unscaledTime <= _constructionFocusUntil
+                ? _constructionFocusId : string.Empty;
+
+        /// <summary>Markup jumps the construction pager to a focused card;
+        /// keeps the stored index consistent with the visible page.</summary>
+        internal void SetConstructionPageIndex(int index)
+        {
+            int next = Math.Max(0, index);
+            if (next == ConstructionPageIndex)
+                return;
+            ConstructionPageIndex = next;
+            MarkDirty();
+        }
+
+        /// <summary>Opens (or replaces) the guidance session for a rejected
+        /// action. Repeated rejections reuse the single popup instance.</summary>
+        public void OpenGuidance(GuidanceGoal goal)
+        {
+            if (goal == null)
+                return;
+            Guidance = new GuidanceSession(goal) { Open = true };
+            MarkDirty();
+        }
+
+        public void ReopenGuidance(GuidanceGoal goal)
+        {
+            if (goal == null)
+                return;
+            Guidance = new GuidanceSession(goal) { Open = true };
+            MarkDirty();
+        }
+
+        /// <summary>Hides the popup but keeps the goal — a chip offers to
+        /// reopen it or resume the action.</summary>
+        public void MinimizeGuidance()
+        {
+            if (Guidance == null || !Guidance.Open)
+                return;
+            Guidance.Open = false;
+            MarkDirty();
+        }
+
+        public void CloseGuidance()
+        {
+            if (Guidance == null)
+                return;
+            Guidance = null;
+            MarkDirty();
+        }
+
+        public void MoveGuidanceFocus(int delta, int blockerCount)
+        {
+            if (Guidance == null || blockerCount <= 0)
+                return;
+            int next = Math.Clamp(Guidance.FocusIndex + delta, 0, blockerCount - 1);
+            if (next == Guidance.FocusIndex)
+                return;
+            Guidance.FocusIndex = next;
+            MarkDirty();
+        }
+
+        /// <summary>Clicking a blocker card focuses it; clicking the focused
+        /// card again collapses its option list (focus = -1).</summary>
+        public void SetGuidanceFocus(int index)
+        {
+            if (Guidance == null || index < 0)
+                return;
+            Guidance.FocusIndex = index == Guidance.FocusIndex ? -1 : index;
             MarkDirty();
         }
 
@@ -233,16 +353,32 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         }
 
         public void AddNotification(string message, string kind, Vector2Int? position = null,
-            string targetId = null, long queueId = 0, string deliveryDetails = null)
+            string targetId = null, long queueId = 0, string deliveryDetails = null,
+            GuidanceGoal goal = null)
         {
             string normalized = message?.Trim();
             if (string.IsNullOrWhiteSpace(normalized))
                 return;
-            _notifications.Insert(0, new GameplayNotificationViewSnapshot(normalized, kind, ++_nextNotificationId, position, targetId, queueId, deliveryDetails));
+            // Repeated blocked attempts on the same goal refresh the existing
+            // entry instead of stacking duplicates.
+            if (goal != null)
+                _notifications.RemoveAll(item => SameGoal(item.Goal, goal));
+            _notifications.Insert(0, new GameplayNotificationViewSnapshot(normalized, kind, ++_nextNotificationId, position, targetId, queueId, deliveryDetails, goal));
             if (OpenPanelId != GameplayHtmlPanel.Notifications) UnreadNotifications++;
             if (_notifications.Count > 20)
                 _notifications.RemoveAt(_notifications.Count - 1);
             SetFeedback(normalized);
+        }
+
+        private static bool SameGoal(GuidanceGoal a, GuidanceGoal b)
+        {
+            if (a == null || b == null || a.Kind != b.Kind)
+                return false;
+            return a.Kind == GuidanceGoalKind.Recruitment
+                ? a.Position == b.Position
+                    && string.Equals(a.UnitTypeId, b.UnitTypeId, StringComparison.Ordinal)
+                : a.Position == b.Position
+                    && string.Equals(a.BuildingId, b.BuildingId, StringComparison.Ordinal);
         }
 
         public void ClearNotifications()
@@ -320,16 +456,107 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public float Amount { get; }
     }
 
+    internal sealed class GameplayGuidanceOptionSnapshot
+    {
+        public GameplayGuidanceOptionSnapshot(GuidanceOptionKind kind,
+            string buildingId, string resourceId, string detail,
+            Vector2Int position, bool hasPosition)
+        {
+            Kind = kind;
+            BuildingId = buildingId ?? string.Empty;
+            ResourceId = resourceId ?? string.Empty;
+            Detail = detail ?? string.Empty;
+            Position = position;
+            HasPosition = hasPosition;
+        }
+
+        public GuidanceOptionKind Kind { get; }
+        public string BuildingId { get; }
+        public string ResourceId { get; }
+        public string Detail { get; }
+        public Vector2Int Position { get; }
+        public bool HasPosition { get; }
+    }
+
+    internal sealed class GameplayGuidanceBlockerSnapshot
+    {
+        public GameplayGuidanceBlockerSnapshot(GuidanceBlockerKind kind,
+            string title, string detail, string resourceId,
+            float required, float available, float reserved,
+            bool resolved, GameplayGuidanceOptionSnapshot[] options)
+        {
+            Kind = kind;
+            Title = title ?? string.Empty;
+            Detail = detail ?? string.Empty;
+            ResourceId = resourceId ?? string.Empty;
+            Required = required;
+            Available = available;
+            Reserved = reserved;
+            Resolved = resolved;
+            Options = options ?? Array.Empty<GameplayGuidanceOptionSnapshot>();
+        }
+
+        public GuidanceBlockerKind Kind { get; }
+        public string Title { get; }
+        public string Detail { get; }
+        public string ResourceId { get; }
+        public float Required { get; }
+        public float Available { get; }
+        public float Reserved { get; }
+        public bool Resolved { get; }
+        public GameplayGuidanceOptionSnapshot[] Options { get; }
+        public float Missing => Required > Available ? Required - Available : 0f;
+        public string IconGlobalKey => GameplayHtmlIconKeys.Resource(ResourceId);
+    }
+
+    /// <summary>View snapshot for the action-guidance popup — rebuilt from
+    /// canonical queries on every capture so fulfilled blockers drop out and
+    /// numbers stay live.</summary>
+    internal sealed class GameplayGuidanceViewSnapshot
+    {
+        public GuidanceGoalKind GoalKind;
+        /// <summary>Display label for the saved goal (building/unit name).</summary>
+        public string GoalLabel = string.Empty;
+        public string GoalBuildingId = string.Empty;
+        public string GoalUnitTypeId = string.Empty;
+        public Vector2Int GoalPosition;
+        public int PlacementCount;
+        public int FocusIndex;
+        public int TotalBlockers;
+        public int PendingBlockers;
+        public bool AllResolved;
+        public GameplayGuidanceBlockerSnapshot[] Blockers =
+            Array.Empty<GameplayGuidanceBlockerSnapshot>();
+    }
+
+    /// <summary>The saved intent behind a blocked action plus popup
+    /// visibility — persists while the player fixes the blockers so the popup
+    /// can be reopened and the original goal resumed.</summary>
+    internal sealed class GuidanceSession
+    {
+        public GuidanceSession(GuidanceGoal goal)
+        {
+            Goal = goal;
+        }
+
+        public GuidanceGoal Goal { get; }
+        public bool Open;
+        /// <summary>Index of the focused blocker inside the popup.</summary>
+        public int FocusIndex;
+    }
+
     internal readonly struct GameplayNotificationViewSnapshot
     {
         public GameplayNotificationViewSnapshot(string message, string kind, long id = 0,
-            Vector2Int? position = null, string targetId = null, long queueId = 0, string deliveryDetails = null)
+            Vector2Int? position = null, string targetId = null, long queueId = 0,
+            string deliveryDetails = null, GuidanceGoal goal = null)
         {
             Id = id;
             Position = position;
             TargetId = targetId ?? string.Empty;
             QueueId = queueId;
             DeliveryDetails = deliveryDetails ?? string.Empty;
+            Goal = goal;
             CreatedAt = DateTime.Now;
             Message = message ?? string.Empty;
             Kind = kind ?? "Info";
@@ -341,6 +568,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public string TargetId { get; }
         public long QueueId { get; }
         public string DeliveryDetails { get; }
+        /// <summary>Non-null when this notification can reopen the guidance
+        /// popup for the blocked action it describes.</summary>
+        public GuidanceGoal Goal { get; }
         public string Message { get; }
         public string Kind { get; }
     }
@@ -720,6 +950,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public GameplaySupplySnapshot Supply;
         public GameplayLogisticsEntrySnapshot[] Logistics = Array.Empty<GameplayLogisticsEntrySnapshot>();
         public bool HasPendingSupplyDeficit;
+        /// <summary>Non-null while a guidance session exists — blockers are
+        /// rebuilt from canonical queries each capture.</summary>
+        public GameplayGuidanceViewSnapshot Guidance;
         public Vector2Int PendingSupplyPosition;
         public string PendingSupplyBuildingId = string.Empty;
 

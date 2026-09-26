@@ -178,6 +178,24 @@
           "turnsPerCycle": 1,
           "requiresWorkers": false,
           "requiresStorageSpace": false
+        },
+        {
+          "recipeId": "tavern:cook-steak",
+          "inputs": [
+            {
+              "resourceId": "wheat-bundle-food-resources",
+              "amount": 2
+            }
+          ],
+          "outputs": [
+            {
+              "resourceId": "steak-food-resources",
+              "amount": 3
+            }
+          ],
+          "turnsPerCycle": 1,
+          "requiresWorkers": false,
+          "requiresStorageSpace": false
         }
       ],
       "isEnabled": true,

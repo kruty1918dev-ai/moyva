@@ -566,5 +566,70 @@ namespace Kruty1918.Moyva.Tests.Bootstrap
                         new Vector2Int(42, 27), "lumber-camp");
                     fixture.State.OpenPanel(GameplayHtmlPanel.Notifications);
                 });
+
+        /// <summary>P071: the blocked-action guidance popup — every rendered
+        /// control (close, blocker focus, next/prev, per-option action buttons,
+        /// resume-goal) must produce a routed action, a service call or a UI
+        /// state change; dead popups would silently strand the player.</summary>
+        [Test]
+        public void ActionMap_GuidancePopup_EveryEnabledButtonActs()
+            => SweepEnabledButtons("Guidance",
+                GameplayHtmlSnapshot.CreatePreview(Screen("Construction")),
+                (fixture, snapshot) =>
+                {
+                    var goal = new GuidanceGoal
+                    {
+                        Kind = GuidanceGoalKind.Placement,
+                        BuildingId = "lumber-camp",
+                        Position = new Vector2Int(3, 4),
+                        PlacementCount = 1,
+                    };
+                    fixture.State.OpenGuidance(goal);
+                    snapshot.Guidance = new GameplayGuidanceViewSnapshot
+                    {
+                        GoalKind = GuidanceGoalKind.Placement,
+                        GoalLabel = "lumber-camp",
+                        GoalBuildingId = "lumber-camp",
+                        GoalPosition = new Vector2Int(3, 4),
+                        PlacementCount = 1,
+                        FocusIndex = 0,
+                        TotalBlockers = 2,
+                        PendingBlockers = 2,
+                        Blockers = new[]
+                        {
+                            new GameplayGuidanceBlockerSnapshot(
+                                GuidanceBlockerKind.Resource, "wood", string.Empty, "wood",
+                                10f, 2f, 10f, false,
+                                new[]
+                                {
+                                    new GameplayGuidanceOptionSnapshot(
+                                        GuidanceOptionKind.BuildProducer,
+                                        "sawmill", "wood", null, default, false),
+                                    new GameplayGuidanceOptionSnapshot(
+                                        GuidanceOptionKind.FocusProducer,
+                                        "sawmill", "wood", "built",
+                                        new Vector2Int(9, 9), true),
+                                    new GameplayGuidanceOptionSnapshot(
+                                        GuidanceOptionKind.OpenQueue,
+                                        string.Empty, string.Empty, "reserved",
+                                        default, false),
+                                    new GameplayGuidanceOptionSnapshot(
+                                        GuidanceOptionKind.Unobtainable,
+                                        string.Empty, "res-x", "no producer",
+                                        default, false),
+                                }),
+                            new GameplayGuidanceBlockerSnapshot(
+                                GuidanceBlockerKind.Population, "Population",
+                                "Housing is full", string.Empty,
+                                3f, 0f, 0f, false,
+                                new[]
+                                {
+                                    new GameplayGuidanceOptionSnapshot(
+                                        GuidanceOptionKind.BuildHousing,
+                                        "house", string.Empty, null, default, false),
+                                }),
+                        },
+                    };
+                });
     }
 }
